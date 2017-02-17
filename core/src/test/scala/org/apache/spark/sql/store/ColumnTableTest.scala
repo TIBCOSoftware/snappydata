@@ -74,7 +74,7 @@ class ColumnTableTest
       tableName: String, df: DataFrame, startCount: Int, size: Int): Int = {
 
     var count = startCount
-    var result = snc.sql(s"SELECT * FROM $schemaName.$tableName")
+    var result = snc.sql(s"SELECT * FROM $schemaName.$tableName where a = 1")
     assert(result.collect().length === count)
 
     snc.sql(String.format(pattern, schemaName))
@@ -158,6 +158,47 @@ class ColumnTableTest
     var count = 0
 
     try {
+      val lp1 = snc.snappySession.onlyParseSQL(s"SELECT * FROM $schema.$table where a = 1")
+      val lp2 = snc.snappySession.onlyParseSQL(s"SELECT * FROM $schema.$table where a = 2")
+      val hc1 = scala.util.hashing.MurmurHash3.productHash(lp1)
+      val hc2 = scala.util.hashing.MurmurHash3.productHash(lp2)
+      println("HC1 = " + hc1 + " and HC2 = " + hc2)
+      assert(lp1.equals(lp2))
+//      dataDF.write.insertInto(s"$schema.$table")
+//      Thread.sleep(5000)
+//      var result = snc.sql(s"SELECT * FROM $schema.$table where a = 1")
+//      assert(result.collect().length === 1)
+//      result = snc.sql(s"SELECT * FROM $schema.$table where a = 2")
+      //assert(result.collect().length === 1)
+
+      // snc.sql(s"drop table $table")
+    } finally {
+      snc.sql("set spark.sql.caseSensitive = false")
+      snc.sql("set schema = APP")
+    }
+
+    logInfo("Successful")
+  }
+
+  test("Test the creation/dropping 2 of column table using Schema") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length)
+        .map(s => Data(s.head, s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    val schema = "test"
+    val table = "MY_TABLE"
+
+    snc.sql(s"Drop Table if exists $schema.$table")
+    snc.sql(s"Create Table $schema.$table (a INT, b INT, c INT) " +
+        "using column options()")
+
+    // try different variant of set schema
+    val size = dataDF.count().toInt
+    var count = 0
+
+    try {
       // CURRENT SCHEMA = name
       count = checkSetSchema("set current schema = %s", schema, table,
         dataDF, count, size)
@@ -182,7 +223,6 @@ class ColumnTableTest
 
     logInfo("Successful")
   }
-
 
   test("Test the creation/dropping of table using Snappy API") {
     // shouldn't be able to create without schema

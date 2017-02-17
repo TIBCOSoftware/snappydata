@@ -17,76 +17,111 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
+import java.util.Objects
+
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, CodegenFallback, ExprCode}
 import org.apache.spark.sql.types._
 
-class ParamLiteral(val l: Literal, val pos: Int) extends Literal(l.value, l.dataType) {
+class ParamLiteral(val l: Literal, val pos: Int) extends LeafExpression with CodegenFallback {
 
-  override def eval(input: InternalRow): Any = l.eval()
+  //override def eval(input: InternalRow): Any = l.eval()
 
   override def hashCode(): Int = {
-    var hash = dataType.hashCode()
-    hash = hash ^ pos
-    hash
+    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
   }
 
-  override def equals(obj: scala.Any): Boolean = {
+  //override def productArity: Int = 0
+
+  override def equals(obj: Any): Boolean = {
     obj match {
-      case pl: ParamLiteral => ( pl.dataType == dataType && pl.pos == pos)
+      case pl: ParamLiteral => (pl.l.dataType == l.dataType && pl.pos == pos)
       case _ => false
     }
   }
 
-//  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-//    // change the isNull and primitive to consts, to inline them
-//    if (value == null) {
-//      ev.isNull = "true"
-//      ev.copy(s"final ${ctx.javaType(dataType)} ${ev.value} = ${ctx.defaultValue(dataType)};")
-//    } else {
-//      dataType match {
-//        case BooleanType =>
-//          ev.isNull = "false"
-//          ev.value = value.toString
-//          ev.copy("")
-//        case FloatType =>
-//          val v = value.asInstanceOf[Float]
-//          if (v.isNaN || v.isInfinite) {
-//            super[CodegenFallback].doGenCode(ctx, ev)
-//          } else {
-//            ev.isNull = "false"
-//            ev.value = s"${value}f"
-//            ev.copy("")
-//          }
-//        case DoubleType =>
-//          val v = value.asInstanceOf[Double]
-//          if (v.isNaN || v.isInfinite) {
-//            super[CodegenFallback].doGenCode(ctx, ev)
-//          } else {
-//            ev.isNull = "false"
-//            ev.value = s"${value}D"
-//            ev.copy("")
-//          }
-//        case ByteType | ShortType =>
-//          ev.isNull = "false"
-//          ev.value = s"(${ctx.javaType(dataType)})$value"
-//          ev.copy("")
-//        case IntegerType | DateType =>
-//          ev.isNull = "false"
-//          ev.value = value.toString
-//          ev.copy("")
-//        case TimestampType | LongType =>
-//          ev.isNull = "false"
-//          ev.value = s"${value}L"
-//          ev.copy("")
-//        // eval() version may be faster for non-primitive types
-//        case other =>
-//          super[CodegenFallback].doGenCode(ctx, ev)
-//      }
-//    }
-//  }
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    // change the isNull and primitive to consts, to inline them
+    val value = l.value
+    if (value == null) {
+      ev.isNull = "true"
+      ev.copy(s"final ${ctx.javaType(dataType)} ${ev.value} = ${ctx.defaultValue(dataType)};")
+    } else {
+      dataType match {
+        case BooleanType =>
+          ev.isNull = "false"
+          assert (value.isInstanceOf[Boolean], "KN: unexpected type")
+          val valueRef = ctx.addReferenceObj("literal",
+            LiteralValue(value, pos))
+          ev.value = ctx.freshName("value")
+          ev.copy(s"final boolean ${ev.value} = $valueRef != null " +
+            s"? ((Boolean)$valueRef.value()).booleanValue() : ${ctx.defaultValue(dataType)};")
+        case FloatType =>
+          val v = value.asInstanceOf[Float]
+          if (v.isNaN || v.isInfinite) {
+            super[CodegenFallback].doGenCode(ctx, ev)
+          } else {
+            ev.isNull = "false"
+            assert (value.isInstanceOf[Float], "KN: unexpected type")
+            val valueRef = ctx.addReferenceObj("literal",
+              LiteralValue(value, pos))
+            ev.value = ctx.freshName("value")
+            ev.copy(s"float ${ev.value} = ((Float)$valueRef.value()).floatValue();")
+          }
+        case DoubleType =>
+          val v = value.asInstanceOf[Double]
+          if (v.isNaN || v.isInfinite) {
+            super[CodegenFallback].doGenCode(ctx, ev)
+          } else {
+            ev.isNull = "false"
+            ev.value = s"${value}D"
+            ev.copy("")
+          }
+        case ByteType | ShortType =>
+          ev.isNull = "false"
+          ev.value = s"(${ctx.javaType(dataType)})$value"
+          ev.copy("")
+        case IntegerType | DateType =>
+          ev.isNull = "false"
+          ev.value = value.toString
+          ev.copy("")
+        case TimestampType | LongType =>
+          ev.isNull = "false"
+          ev.value = s"${value}L"
+          ev.copy("")
+        // eval() version may be faster for non-primitive types
+        case other =>
+          super[CodegenFallback].doGenCode(ctx, ev)
+      }
+    }
+  }
+
+  override def nullable: Boolean = false
+
+  override def eval(input: InternalRow): Any = l.eval()
+
+  override def dataType: DataType = l.dataType
+
+  override def productElement(n: Int): Any = Nil
+
+  override def productArity: Int = 0
+
+  override def canEqual(that: Any): Boolean = true
 }
 
 object ParamLiteral {
   def apply(l: Literal, pos: Int) = new ParamLiteral(l, pos)
+}
+
+case class LiteralValue(var value: AnyRef, var position: Int)
+  extends KryoSerializable {
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClassAndObject(output, value)
+    output.writeVarInt(position, true)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = ???
 }
