@@ -43,43 +43,8 @@ h4 {
     font-style: italic;
 }
 
-
 /*
-------------------- Define the navigation pane-------------------
-*/
 
-.wy-menu-vertical li.current > a::before {
-    content: url("Images/arrow-20x20-expanded.png");
-    float: left;
-    line-height: 18px;
-    padding: 0em 0em;
-    display: block;
-    position: relative;
-
-    color: #838383;
-}
-/*
-.wy-menu-vertical li > a[class="toctree-l4"]{
-    line-height: 18px;
-    padding: 0.1em 0.1em;
-    display: block;
-    position: relative;
-  margin-left: 10px;
-}
-
-*/
-
-.wy-menu-vertical li > a[class="toctree-l4"]::before {
-    line-height: 11px;
-    padding: 0.1em 0.1em;
-    display: block;
-    position: relative;
-  content: url("Images/dash-20x20-collapsed.png");
-  float: left;
-}
-
-
-/*
 -------------------Formatting for code snippets-------------------
 */
 
@@ -196,16 +161,22 @@ mark {
 
 question {
     color: black;
-    font-size: 16px;
+    font-size: 18px;
     font-style: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background: #cc2222
+    white-space: pre;
+    word-wrap: normal;
+    display: block;
+    background-color: #f5f6f6;
 }
 
 solution {
     color: black;
-    font-size: 12px;
-    font-style: italic;
+    font-size: 14px;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    word-wrap: normal;
+    display: block;
 }
 
 /*
@@ -238,9 +209,3 @@ th {
     position: relative;
     text-shadow: 0 1px 0 #000;  
 }
-
-
-
-
-
-

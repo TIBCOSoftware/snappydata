@@ -9,37 +9,179 @@ repo_url: https://github.com/SnappyDataInc/snappydata
 pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
-- Overview: index.md
-# - Introduction: snappyIntroduction.md
-- Getting Started: quickstart.md
-- Download and Install: install.md
-- Configuration and System Requirements: 'sys_requirement/sys_requirement.md'
-- How Tos: howto.md
-- Best Practises: 'best_practises/best_practises.md'
-- Architecture: architecture.md
-- Managing the Cluster: configuration.md
-- Programming Guide: programming_guide.md
-- Design Database and Schema: 'design_schema/design_schema.md'
-- Replicated and Partitioned Tables: 'concepts/table_types.md'
-- Managing your Data: 'manage_data/manage_data.md'
-- Affinity Modes: deployment.md
-- Backup and Recovery: 'backup/backup.md'
-- Developing Applications: 'developing_applications/developing_applications.md'
-- Import and Export: 'import_export/import_export.md'
-- Caching Data: 'caching/caching.md'
-- Managing and Monitoring: 'monitoring/monitoring.md'
-- Synopsis Data Engine (SDE): aqp.md
-- Troubleshooting and Analysis: 'troubleshooting/troubleshooting.md'
-- Appendix A-SQL Reference Guide: 'sql_reference/sql_reference.md'
-- Appendix B-API Reference Guide: 'api_reference/api_reference.md'
-- Appendix C-Using iSight-Cloud: aqp_aws.md
-- Appendix D-Performance Tuning Guide: 'performance_tuning/performance_tuning.md' 
-- Glossary: 'glossary/glossary.md'
+- Overview: 
+    - Introduction: index.md
+    - Key Features: 'intro/key_features.md'
+    - Extensions to the Spark Runtime: 'intro/extension_to_the_spark_runtime.md'
+    - Spark Challenges for Mixed Workloads (OLTP, OLAP): 'intro/oltp_olap.md'
+- Getting Started: 
+    - Overview: quickstart.md
+    - Option 1- Getting Started with your Spark Distribution: 'quick_start/option1.md'
+    - Option 2- Getting Started Using Spark Scala APIs: 'quick_start/option2.md'
+    - Option 3- 20X Faster than Spark 2.0.2 Caching: 'quick_start/option3.md'
+    - Option 4- Getting Started using SQL: 'quick_start/option4.md'
+    - Option 5- Getting Started by Installing SnappyData On-Premise: 'quick_start/option5.md'
+    - Option 6- Getting Started on AWS: 'quick_start/option6.md'
+    - Option 7- Getting Started with Docker Image: 'quick_start/option7.md'
+- Download and Install: 
+    - Introduction: 'install.md'
+    - Install On Premise: 'install/on_premise.md'
+    - Setting up Cluster on Amazon Web Services (AWS): 'install/on_aws.md'
+    - Building from Source: 'install/from_source.md'
+- Configuration and System Requirements: 
+    - Introduction: sys_requirement.md
+    - Supported Configurations: 'sys_requirement/supported_configurations.md'
+    - Host Machine Requirements: 'sys_requirement/host_machine_requirements.md'
+    - Increase Unicast Buffer Size on Linux Platforms: 'sys_requirement/increase_unicast_buffer_size.md'
+    - Disable SYN Cookies on Linux Platforms: 'sys_requirement/disable_cookies.md'
+    - Filesystem Type for Linux Platforms: 'sys_requirement/filesystem_type.md'
+    - SnappyData Dashboard Requirements: 'sys_requirement/snappydata_dashboard.md'
+- How Tos: 
+    - Overview: howto.md
+    - How to Start a SnappyData Cluster: 'how_to/start_snappydata_cluster.md'
+    - How to Run Spark Job inside the Cluster: 'how_to/run_spark_job_inside_the_cluster.md'
+    - How to Access SnappyData Store from existing Spark Installation using Smart Connector: 'how_to/access_snappydata_store.md'
+    - How to Use SnappyData SQL shell (snappy-shell): 'how_to/use_sql_shell.md'
+    - How to Create Row Tables and Run Queries: 'how_to/create_row_tables_and_run_queries.md'
+    - How to Create Column Tables and Run Queries: 'how_to/create_column_tables_and_run_queries.md'
+    - How to Load Data in SnappyData Tables: 'how_to/load_data_in_snappydata_tables.md'
+    - How to Perform a Collocated Join: 'how_to/perform_a_collocated_join.md'
+    - How to Connect using JDBC Driver: 'how_to/connect_using_jdbc_driver.md'
+    - How to Store and Query JSON Objects: 'how_to/store_and_query_json_objects.md'
+    - How to Store and Query Objects: 'how_to/store_and_query_objects.md'
+    - How to Use Stream Processing with SnappyData: 'how_to/use_stream_processing.md'
+    - How to Use Synopsis Data Engine to Run Approximate Queries: 'how_to/use_synopsis_data_engine.md'
+    - How to Use Python to Create Tables and Run Queries: 'how_to/use_python_to_create_tables_and_run_queries.md'
+- Best Practises: 
+    - Introduction: best_practises.md
+    - Using Index: 'best_practises/using_index.md'
+    - Using Collocated Joins: 'best_practises/collocated_joins.md'
+    - Using Char or Varchar string: 'best_practises/char_varchar_string.md'
+    - Physical designing with SnappyData: 'best_practises/physical_design.md'
+    - Using Row vs Column Tables : 'best_practises/use_row_column_table.md'
+    - Right Affinity Mode to Use : 'best_practises/affinity_mode_to_use.md'
+    - Capacity Planning : 'best_practises/capacity_planning.md'
+- Architecture: 
+    - Introduction: architecture.md
+    - Core Components: 'architecture/core_components.md' 
+    - Data Ingestion Pipeline: 'architecture/data_ingestion_pipeline.md'  
+    - Hybrid Cluster Manager: 'architecture/hybrid_cluster_manager.md'  
+- Managing the Cluster: 
+    - Introduction: configuration.md
+    - Configuration Files: 'configuring_cluster/configuration_files.md'
+    - HDFS with SnappyData Store: 'configuring_cluster/hdfs_with_snappydata_store.md'
+    - Spark Specific Properties: 'configuring_cluster/spark_specific_properties.md'
+    - Example for Multiple-Host Configuration: 'configuring_cluster/example_for_multiple-host.md'
+    - Environment Settings: 'configuring_cluster/environment_settings.md'
+    - Hadoop Provided Settings: 'configuring_cluster/hadoop_provided_settings.md'
+    - Per Component Configuration: 'configuring_cluster/per_component_configuration.md'
+    - Add Servers to the Cluster and Stop Servers: 'configuring_cluster/add_and_stop_servers.md'
+    - Starting Members Individually using Command Line (without scripts): 'configuring_cluster/starting_members_individually_cli.md'
+    - Logging: 'configuring_cluster/logging.md'
+    - Configuring SSH Login without Password: 'configuring_cluster/configuring_ssh_without_password.md'
+- Programming Guide: 
+    - Introduction: programming_guide.md
+    - SnappySession and SnappyStreamingContext: 'pgm_guide/snappysession_and_snappystreamingcontext.md'
+    - SnappyData Jobs: 'pgm_guide/snappydata_jobs.md'
+    - Managing JAR Files: 'pgm_guide/managing_jar_files.md'
+    - Using SnappyData Shell: 'pgm_guide/using_snappydata_shell.md'
+    - Using the Spark Shell and spark-submit: 'pgm_guide/spark_shell_spark_submit.md'
+    - Using JDBC with SnappyData: 'pgm_guide/using_jdbc.md'
+    - Building SnappyData Applications using Spark API: 'pgm_guide/building_apps_spark_api.md'
+    - Tables in SnappyData: 'pgm_guide/tables_in_snappydata.md'
+    - Stream processing using SQL: 'pgm_guide/stream_processing_using_sql.md'
+- Design Database and Schema: 
+    - Introduction: design_schema.md
+    - Physical Design: 'design_schema/physical_design.md'
+    - Using Row and Column Table: 'design_schema/row_column_table.md'
+    - Design Priciples of Scalable: 'design_schema/principles_of_scalable.md'
+    - Identify Entity Groups and Partioning Keys: 'design_schema/entity_group_partitioning_keys.md'
+    - Replicate Dimension Tables: 'design_schema/replicate_dimension_tables.md'
+    - Example for Adapting Database Schema for SnappyData: 'design_schema/adapting_database_scheme.md'
+    - Dealing with Many-to-Many Relationships: 'design_schema/many-to-many-relationship.md'
+- Managing your Data: 
+    - Introduction: manage_data.md
+    - Table Types: 'manage_data/table_types.md'
+    - Partitioning Tables: 'manage_data/partitioned_tables.md'
+    - Replicating Tables: 'manage_data/replicated_tables.md'
+    - Evicting Table Data from Memory: 'manage_data/evicting_table_data_from_memory.md'
+    - Persisting Table Data to SnappyData Disk Stores: 'manage_data/persisting_table_data_to_diskstores.md' 
+    - Managing Tables in Memory: 'manage_data/managing_table_in_memory.md' 
+    - Overview of Disk Stores: 'manage_data/disk_stores.md'  
+    - Additional Topics: 'manage_data/estimating_heap_overhead.md'
+- Affinity Modes: 
+    - Introduction: deployment.md
+    - Local Mode: 'affinity_mode/local_mode.md'
+    - Embedded SnappyData Store Mode: 'affinity_mode/embedded_mode.md'
+    - SnappyData Smart Connector Mode: 'affinity_mode/smartconnector_mode.md'
+- Backup and Recovery: 
+    - Introduction: backup.md
+    - Online and offline backup and recovery : 'backup/onlilne_offline_backup.md'
+    - Redundancy and Data Availability for Failures: 'backup/redundancy_data_availability.md'
+    - Recovering from Failures and Revoking Safely: 'backup/recovery_revoking.md'
+    - Recovery using data extractor; data redundancy implications: 'backup/recovery_using_data_extractor_redundancy.md'
+- Developing Applications: 
+    - Introduction: developing_applications.md
+    - Configuring SnappyData as a JDBC Datasource: 'developing_applications/configuring-JDBC_datasource.md'
+    - Understanding the Data Consistency Model: 'developing_applications/understanding_the_data_consistency.md'
+    - Connecting Java Clients and Peers: 'developing_applications/connecting_java_clients_and_peers.md'
+    - Using Result Sets and Cursors: 'developing_applications/using_result_sets_and_cursors.md'
+    - Storing and Loading JAR Files: 'developing_applications/storing_and_loading_jar_files.md'
+- Import and Export: 
+    - Introduction: import_export.md
+    - Import: 'import_export/import.md'
+    - Export: 'import_export/export.md'
+- Caching Data: 
+    - Introduction: caching.md
+    - Handling DML Events Synchronously: 'caching/handing_dml_events_synchronously.md'
+    - Handling DML Events Asynchronously: 'caching/handing_dml_events_asynchronously.md'
+    - Using DBSynchronizer to Apply DML to an RDBMS: 'caching/dml_to_rdbms.md' 
+- Managing and Monitoring: 
+    - Introduction: monitoring.md
+- Synopsis Data Engine (SDE): 
+    - Introduction: aqp.md
+    - Key Concepts: 'sde/key_concepts.md'
+    - Working with Stratified Sampling: 'sde/stratified_sampling.md'
+    - Running Queries: 'sde/running_queries.md'
+    - Examples: 'sde/examples.md'
+    - Sample Selection: 'sde/sample_selection.md'
+    - High Level Accuracy Contracts (HAC): 'sde/hac.md'
+    - Sketching: 'sde/sketching.md'
+    - Using SDE: 'sde/using_sde.md'
+- Troubleshooting and Analysis: 
+    - Introduction: troubleshooting.md     
+    - Getting thread dumps from GUI or detailed stacks using SIGURG: 'troubleshooting/thread_dumps.md'
+    - Collocating logs and stats using collect-debug-artifacts.sh: 'troubleshooting/collocating_logs.md'
+    - Using VSD (can we make use of GemFire VSD docs?): 'troubleshooting/using_vsd.md'
+    - Enabling/disabling logging levels/traces on-the-fly: 'troubleshooting/logging_levels.md'
+    - Cannot connect using EC2 Scripts: 'troubleshooting/connect_ec2_scripts.md'
+    - Increase memory for Spark executors: 'troubleshooting/increase_memory.md'
+    - Can I read orc files from snappy-shell?: 'troubleshooting/read_orc_files.md'
+    - Observing logs for warning/severe/errors and decoding log messages: 'troubleshooting/observing_logs.md'
+- Appendix A-SQL Reference Guide: 
+    - Introduction: sql_reference.md
+- Appendix B-API Reference Guide: 
+    - Introduction: api_reference.md
+- Appendix C-Using iSight-Cloud: 
+    - Introduction: aqp_aws.md
+    - Setting up SnappyData Cloud Cluster: 'isight/setting_up_cloud_cluster.md'
+    - Loading Data from AWS S3: 'isight/loading_data_s3.md'
+    - Using Apache Zeppelin: 'isight/apache_zeppelin.md'
+    - Using the Interpreter: 'isight/using_interpreter.md'
+    - Using Predefined Notebooks: 'isight/predefined_notebooks.md'
+    - Creating Notebooks - Try it yourself!: 'isight/creating_notebooks.md'
+    - Monitoring SnappyData Cloud Cluster: 'isight/monitoring_cloud_cluster.md'
+    - The Technology Powering iSight Cloud: 'isight/technology.md'
+- Appendix D-Performance Tuning Guide: 
+    - Introduction: performance_tuning.md 
+- Glossary: 
+    - Glossary Terms: 'glossary/glossary.md'
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
     - Contact and Support: techsupport.md
     - License: LICENSE.md
+# *- Replicated and Partitioned Tables: 'manage_data/table_types.md'
 
 theme: readthedocs
 
