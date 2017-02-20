@@ -230,8 +230,7 @@ object SnappyTableStatsProviderService extends Logging {
               val x = key.getKeyColumn(2).getInt
               val currentBucketRegion = itr.getHostedBucketRegion
               if (x == JDBCSourceAsStore.STATROW_COL_INDEX) {
-                val v = RegionEntryUtils.
-                    getValueWithoutFaultInOrOffHeapEntry(currentBucketRegion, rl)
+                val v = currentBucketRegion.get(key)
                 if (v ne null) {
                   val currentVal = v.asInstanceOf[Array[Array[Byte]]]
                   val rowFormatter = container.
