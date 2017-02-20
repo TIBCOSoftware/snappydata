@@ -92,7 +92,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           stmt.setString(1, uuid)
           stmt.setInt(2, partitionId)
           stmt.setInt(3, JDBCSourceAsStore.STATROW_COL_INDEX)
-          stmt.setBytes(4, batch.stats.asInstanceOf[UnsafeRow].getBytes)
+          stmt.setBytes(4, batch.stats.copy().asInstanceOf[UnsafeRow].getBytes)
           stmt.addBatch()
 
           stmt.executeBatch()

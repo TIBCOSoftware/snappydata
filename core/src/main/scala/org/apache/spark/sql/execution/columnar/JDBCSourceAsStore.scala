@@ -161,7 +161,7 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
         val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
         if (key.getKeyColumn(2).getInt ==
             JDBCSourceAsStore.STATROW_COL_INDEX) {
-          val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(currentBucketRegion, rl)
+          val v = currentBucketRegion.get(key)
           if (v ne null) {
             currentVal = v.asInstanceOf[Array[Array[Byte]]]
             currentKeyUUID = key.getKeyColumn(0)
