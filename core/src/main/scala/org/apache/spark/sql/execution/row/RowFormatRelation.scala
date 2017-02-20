@@ -114,7 +114,7 @@ class RowFormatRelation(
 //        cols
         val indexCols = new Array[String](1)
         GfxdSystemProcedures.getIndexColumns(indexCols, region)
-        Option(indexCols).map(icols => cols ++= icols(0).split(":"))
+        Option(indexCols(0)).foreach(icols => cols ++= icols.split(":"))
         cols
     }
   }
@@ -164,7 +164,6 @@ class RowFormatRelation(
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
          new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition])
-//        throw new AnalysisException("Not expected to be called for " + mode)
     }
   }
 

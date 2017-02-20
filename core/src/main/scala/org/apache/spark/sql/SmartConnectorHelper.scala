@@ -27,9 +27,10 @@ import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.{RelationInfo, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ExternalTableType, RelationInfo, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.{Partition, Logging, SparkContext}
 
 object SmartConnectorHelper extends Logging {
   private lazy val session = SnappyContext(null: SparkContext).snappySession
@@ -200,24 +201,37 @@ object SmartConnectorHelper extends Logging {
       val ois = new ObjectInputStream(baip)
       ois.readObject().asInstanceOf[Table]
     }
-    val bucketCount = getMetaDataStmt.getInt(3)
-    val indexColsString = getMetaDataStmt.getString(5)
-    val indexCols = Option(indexColsString) match {
-      case Some(str) => str.split(":")
-      case None => Array.empty[String]
+    val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
+    tableType match {
+      case snappy_table if tableType == ExternalTableType.Row.toString ||
+          tableType == ExternalTableType.Column.toString ||
+          tableType == ExternalTableType.Sample.toString ||
+          tableType == ExternalTableType.Index.toString =>
+
+        val bucketCount = getMetaDataStmt.getInt(3)
+        val indexColsString = getMetaDataStmt.getString(5)
+        val indexCols = Option(indexColsString) match {
+          case Some(str) => str.split(":")
+          case None => Array.empty[String]
+        }
+        if (bucketCount > 0) {
+          val partitionCols = getMetaDataStmt.getString(4).split(":")
+          val bucketToServerMappingStr = getMetaDataStmt.getString(6)
+          val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
+          val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
+          (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions))
+        } else {
+          val replicaToNodesInfo = getMetaDataStmt.getString(6)
+          val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
+          val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
+          (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions))
+        }
+
+      case _ =>
+        // external tables (csv, parquet etc.)
+        (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[Partition]))
     }
-    if (bucketCount > 0) {
-      val partitionCols = getMetaDataStmt.getString(4).split(":")
-      val bucketToServerMappingStr = getMetaDataStmt.getString(6)
-      val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
-      val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-      (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions))
-    } else {
-      val replicaToNodesInfo = getMetaDataStmt.getString(6)
-      val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
-      val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-      (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions))
-    }
+
   }
 
   def executeMetaDataStatement(tableName: String): Unit = {

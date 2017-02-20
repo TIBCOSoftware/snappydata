@@ -954,10 +954,52 @@ class SnappySession(@transient private val sc: SparkContext,
     plan
   }
 
+  private[sql] def createTable(
+      tableIdent: QualifiedTableName,
+      provider: String,
+      userSpecifiedSchema: Option[StructType],
+      schemaDDL: Option[String],
+      partitionColumns: Array[String],
+      mode: SaveMode,
+      options: Map[String, String],
+      query: LogicalPlan,
+      isBuiltIn: Boolean): LogicalPlan = {
+
+    if (sessionCatalog.tableExists(tableIdent)) {
+      mode match {
+        case SaveMode.ErrorIfExists =>
+          throw new AnalysisException(s"Table $tableIdent already exists. " +
+              "If using SQL CREATE TABLE, you need to use the " +
+              s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
+        case SaveMode.Ignore =>
+          return sessionCatalog.lookupRelation(tableIdent, None)
+        case _ =>
+      }
+    }
+
+    val clustserMode = SnappyContext.getClusterMode(sc)
+    var newMode = SaveMode.Append
+    val plan = clustserMode match {
+      // for smart connector mode create the table here and allow
+      // further processing to load the data
+      case ThinClientConnectorMode(_, _) =>
+        val useSchema = userSpecifiedSchema.getOrElse(Dataset.ofRows(sqlContext.sparkSession, query).schema)
+        val rel = SmartConnectorHelper.createTable(tableIdent,
+          provider, Option(useSchema), schemaDDL, mode, options, isBuiltIn)
+        createTableAsSelect(tableIdent, provider, Option(useSchema), schemaDDL,
+          partitionColumns, SaveMode.Append, options, query, isBuiltIn)
+      case _ =>
+        createTableAsSelect(tableIdent, provider, userSpecifiedSchema, schemaDDL,
+          partitionColumns, mode, options, query, isBuiltIn)
+    }
+
+    plan
+  }
+
   /**
    * Create an external table with given options.
    */
-  private[sql] def createTable(
+  private[sql] def createTableAsSelect(
       tableIdent: QualifiedTableName,
       provider: String,
       userSpecifiedSchema: Option[StructType],
@@ -1598,12 +1640,26 @@ object SnappySession extends Logging {
           case plan: CollectLimitExec => plan.child.execute()
           case _ => df.queryExecution.executedPlan.execute()
         }
-        // add profile listener for all regions that are using cached
-        // partitions of their "leader" region
-        if (rdd.getNumPartitions > 0) {
-          session.sessionState.leaderPartitions.keysIterator.foreach(
-            addBucketProfileListener)
+
+        // TODO: Skipping the adding of profile listener in case of
+        // ThinClientConnectorMode, confirm with Sumedh whether something
+        // more needs to be done
+        SnappyContext.getClusterMode(session.sparkContext) match {
+          case ThinClientConnectorMode(_, _) =>
+          case _ =>
+            // add profile listener for all regions that are using cached
+            // partitions of their "leader" region
+            if (rdd.getNumPartitions > 0) {
+              session.sessionState.leaderPartitions.keysIterator.foreach(
+                addBucketProfileListener)
+            }
         }
+//        // add profile listener for all regions that are using cached
+//        // partitions of their "leader" region
+//        if (rdd.getNumPartitions > 0) {
+//          session.sessionState.leaderPartitions.keysIterator.foreach(
+//            addBucketProfileListener)
+//        }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
     }
     val queryHints = session.synchronized {

@@ -21,6 +21,8 @@ import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{ServiceManager, Locator}
 import io.snappydata.test.dunit.{SerializableRunnable, DistributedTestBase}
 
+import org.apache.spark.sql.SnappyContext
+
 class ThinConnectorSnappyDUnitTest(s: String)
     extends SplitSnappyClusterDUnitTest(s) {
 
@@ -56,6 +58,9 @@ class ThinConnectorSnappyDUnitTest(s: String)
 
   override def testColumnTableStatsInSplitModeWithHA(): Unit = {
   }
+
+
+
 
 }
 

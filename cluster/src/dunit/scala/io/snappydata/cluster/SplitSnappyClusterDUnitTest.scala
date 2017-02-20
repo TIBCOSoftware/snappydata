@@ -239,6 +239,26 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm0.invoke(restartServer)
   }
 
+  def testCTAS(): Unit = {
+    startNetworkServers(3)
+    val snc = SnappyContext(sc)
+    // StandAlone Spark Cluster Operations
+    vm3.invoke(getClass, "splitModeCreateTableUsingCTAS",
+      startArgs :+ locatorProperty :+ Boolean.box(useThinClientConnector) :+
+          Int.box(locatorClientPort))
+
+    val count = snc.sql("select * from customer").count()
+    assert(count == 750, s"Expected 750 rows. Actual rows = $count")
+
+    snc.sql("DROP TABLE CUSTOMER_STAGING")
+    snc.sql("DROP TABLE CUSTOMER")
+
+    val count2 = snc.sql("select * from customer_2").count()
+    assert(count2 == 750, s"Expected 750 rows. Actual rows = $count2")
+    snc.sql("DROP TABLE CUSTOMER_2")
+  }
+
+
 }
 
 object SplitSnappyClusterDUnitTest
@@ -541,5 +561,36 @@ object SplitSnappyClusterDUnitTest
         getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
     assert(stats1.getRowCount == 10000100)
     logInfo("Successful")
+  }
+
+  def splitModeCreateTableUsingCTAS(locatorPort: Int,
+      prop: Properties, locatorProp: String,
+      useThinClientConnector: Boolean, locatorClientPort: Int): Unit = {
+    val snc = getSnappyContextForConnector(locatorPort, locatorProp,
+      useThinClientConnector, locatorClientPort)
+    val customerFile: String = getClass.getResource("/customer.csv").getPath
+
+    snc.sql(s"CREATE EXTERNAL TABLE CUSTOMER_STAGING ( " +
+        "C_CUSTKEY     INTEGER NOT NULL," +
+        "C_NAME        VARCHAR(25) NOT NULL," +
+        "C_ADDRESS     VARCHAR(40) NOT NULL," +
+        "C_NATIONKEY   INTEGER NOT NULL," +
+        "C_PHONE       VARCHAR(15) NOT NULL," +
+        "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
+        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
+        "C_COMMENT     VARCHAR(117) NOT NULL)" +
+        s"USING csv OPTIONS (path '$customerFile')")
+
+    snc.sql(s"CREATE TABLE CUSTOMER AS SELECT * FROM CUSTOMER_STAGING")
+    val count = snc.sql("select * from customer").count()
+    assert(count == 750, s"Expected 750 rows. Actual rows = $count")
+
+    val customerWithHeadersFile: String = getClass.getResource("/customer_with_headers.csv").getPath
+    val customer_csv_DF = snc.read.option("header", "true")
+        .option("inferSchema", "true").csv(customerWithHeadersFile)
+    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
+    customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER_2")
+    val count2 = snc.sql("select * from customer_2").count()
+    assert(count2 == 750, s"Expected 750 rows. Actual rows = $count2")
   }
 }

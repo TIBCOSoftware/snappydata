@@ -173,8 +173,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val session = SnappyContext(null: SparkContext).snappySession
 
         val tableIdent = context.getTableIdentifier
-        val userSpecifiedJsonSchema = context.getUserSpecifiedJsonSchema
-        val userSpecifiedSchema = Option(DataType.fromJson(userSpecifiedJsonSchema).asInstanceOf[StructType])
+        val userSpecifiedJsonSchema = Option(context.getUserSpecifiedJsonSchema)
+        val userSpecifiedSchema = if (userSpecifiedJsonSchema.isDefined) {
+          Option(DataType.fromJson(userSpecifiedJsonSchema.get).asInstanceOf[StructType])
+        } else {
+          None
+        }
         val schemaDDL = Option(context.getSchemaDDL)
         val provider = context.getProvider
         val mode = SmartConnectorHelper.deserialize(context.getMode).asInstanceOf[SaveMode]

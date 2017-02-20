@@ -81,7 +81,6 @@ trait SplitClusterDUnitTestBase extends Logging {
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("column")
 
-    logInfo("sdeshmukh useThinClientConnector =" + useThinClientConnector)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
       startArgs :+ "column" :+ Boolean.box(false) :+ props :+ locatorProperty
