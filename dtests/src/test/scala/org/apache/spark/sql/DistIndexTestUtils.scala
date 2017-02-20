@@ -115,7 +115,10 @@ object DistIndexTestUtils {
 
     tableSizes.foreach(pw.println)
     queries.foreach(q => benchmark(q, tableSizes, snc, pw, fos))
-
+    /*queries.foreach(q => {
+      TPCH_Snappy.queryExecution(q, snc, false, false)
+    pw.println("**** Executed query : " + q )
+    })*/
     snc.sql(s"DROP INDEX idx_orders_cust")
     snc.sql(s"DROP INDEX idx_lineitem_part")
   }
