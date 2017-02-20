@@ -27,7 +27,7 @@ import com.gemstone.gemfire.management.internal.SystemManagementService
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import io.snappydata.test.dunit.SerializableRunnable
 
 import org.apache.spark.sql.collection.Utils
@@ -37,8 +37,38 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val table = "TEST.TEST_TABLE"
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
+  var oldcachedBatchSize: String = _
+  var oldcores: String = _
 
+  override def beforeClass(): Unit = {
+    oldcachedBatchSize = bootProps.getProperty(
+      io.snappydata.Property.CachedBatchSize.name, "")
+    oldcores = bootProps.getProperty(
+      "spark.executor.cores", "")
+    bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
+    bootProps.setProperty("spark.executor.cores", "2")
+
+    super.beforeClass()
+    ClusterManagerTestBase.stopSpark()
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+  }
+
+  override def afterClass(): Unit = {
+    if (oldcachedBatchSize.isEmpty) {
+      bootProps.remove(io.snappydata.Property.CachedBatchSize.name)
+    }
+    else {
+      bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, oldcachedBatchSize)
+    }
+    if (oldcores.isEmpty) {
+      bootProps.remove("spark.executor.cores")
+    }
+    else {
+      bootProps.setProperty("spark.executor.cores", oldcores)
+    }
+    ClusterManagerTestBase.stopSpark()
+    super.afterClass()
+  }
   def nodeShutDown(): Unit = {
     ClusterManagerTestBase.stopSpark()
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
