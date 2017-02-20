@@ -477,6 +477,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   // TODO: SW: cleanup the tempTables handling to error for schema
   def registerTable(tableName: QualifiedTableName,
       plan: LogicalPlan): Unit = synchronized {
+    logInfo(s"sdeshmukh tableName= $tableName", new Throwable)
     tempTables += (tableName.table -> plan)
   }
 
@@ -1059,4 +1060,15 @@ object ExternalTableType {
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
+
+  def isTableBackedByRegion(t: org.apache.hadoop.hive.metastore.api.Table): Boolean = {
+    val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
+    tableType match {
+      case snappy_table if tableType == ExternalTableType.Row.toString ||
+          tableType == ExternalTableType.Column.toString ||
+          tableType == ExternalTableType.Sample.toString ||
+          tableType == ExternalTableType.Index.toString => true
+      case _ => false
+    }
+  }
 }

@@ -255,7 +255,7 @@ trait SplitClusterDUnitTestObject extends Logging {
           .setMaster(s"spark://$hostName:7077")
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-          .set("snappydata.ClusterURL", connectionURL)
+          .set("snappydata.Cluster.URL", connectionURL)
 
       val sc = SparkContext.getOrCreate(conf)
       sc.setLogLevel("DEBUG")

@@ -17,9 +17,10 @@
 package org.apache.spark.sql
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
-import java.sql.{CallableStatement, Connection}
+import java.sql.{SQLException, CallableStatement, Connection}
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
@@ -61,7 +62,7 @@ object SmartConnectorHelper extends Logging {
 
   clusterMode match {
     case ThinClientConnectorMode(_, props) =>
-      initializeConnection
+      initializeConnection()
     case _ =>
   }
 
@@ -78,24 +79,17 @@ object SmartConnectorHelper extends Logging {
     try {
       function
     } catch {
-      case e: Exception if isDisconnectException(e) =>
-        // stale JDBC connection
+      case e: SQLException if isConnectionException(e) =>
+        // attempt to create a new connection if connection
+        // is closed
         conn.close()
-        initializeConnection
+        initializeConnection()
         function
     }
   }
 
-  private def isDisconnectException(t: Throwable): Boolean = {
-    if (t != null) {
-      val tClass = t.getClass.getName
-      tClass.contains("DisconnectedException") ||
-          tClass.contains("DisconnectException") ||
-          (tClass.contains("MetaException") && t.getMessage.contains("retries")) ||
-          isDisconnectException(t.getCause)
-    } else {
-      false
-    }
+  private def isConnectionException(e: SQLException): Boolean = {
+    e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX)
   }
 
   def createTable(
@@ -146,7 +140,7 @@ object SmartConnectorHelper extends Logging {
   def dropTable(tableIdent: QualifiedTableName, ifExists: Boolean = false): Unit = {
     session.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
-    SnappyStoreHiveCatalog.registerRelationDestroy
+    SnappyStoreHiveCatalog.registerRelationDestroy()
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,
@@ -162,7 +156,7 @@ object SmartConnectorHelper extends Logging {
       options: Map[String, String]): Unit = {
     runStmtWithExceptionHandling(
       executeCreateIndexStmt(indexIdent, tableIdent, indexColumns, options))
-    SnappySession.clearAllCache
+    SnappySession.clearAllCache()
   }
 
   private def executeCreateIndexStmt(indexIdent: QualifiedTableName,
@@ -178,8 +172,8 @@ object SmartConnectorHelper extends Logging {
 
   def dropIndex(indexName: QualifiedTableName, ifExists: Boolean): Unit = {
     runStmtWithExceptionHandling(executeDropIndexStmt(indexName, ifExists))
-    SnappyStoreHiveCatalog.registerRelationDestroy
-    SnappySession.clearAllCache
+    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappySession.clearAllCache()
   }
 
   private def executeDropIndexStmt(indexIdent: QualifiedTableName, ifExists: Boolean): Unit = {
@@ -193,7 +187,7 @@ object SmartConnectorHelper extends Logging {
     runStmtWithExceptionHandling(executeMetaDataStatement(in.toString))
 
     val tableObjectBlob = Option(getMetaDataStmt.getBlob(2)).
-        getOrElse(throw new TableNotFoundException(s"Table ${in} not found"))
+        getOrElse(throw new TableNotFoundException(s"Table $in not found"))
 
     val t: Table = {
       val tableObjectBytes = tableObjectBlob.getBytes(1, tableObjectBlob.length().toInt)
@@ -201,37 +195,30 @@ object SmartConnectorHelper extends Logging {
       val ois = new ObjectInputStream(baip)
       ois.readObject().asInstanceOf[Table]
     }
-    val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
-    tableType match {
-      case snappy_table if tableType == ExternalTableType.Row.toString ||
-          tableType == ExternalTableType.Column.toString ||
-          tableType == ExternalTableType.Sample.toString ||
-          tableType == ExternalTableType.Index.toString =>
 
-        val bucketCount = getMetaDataStmt.getInt(3)
-        val indexColsString = getMetaDataStmt.getString(5)
-        val indexCols = Option(indexColsString) match {
-          case Some(str) => str.split(":")
-          case None => Array.empty[String]
-        }
-        if (bucketCount > 0) {
-          val partitionCols = getMetaDataStmt.getString(4).split(":")
-          val bucketToServerMappingStr = getMetaDataStmt.getString(6)
-          val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
-          val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-          (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions))
-        } else {
-          val replicaToNodesInfo = getMetaDataStmt.getString(6)
-          val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
-          val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-          (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions))
-        }
-
-      case _ =>
-        // external tables (csv, parquet etc.)
-        (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[Partition]))
+    if (ExternalTableType.isTableBackedByRegion(t)) {
+      val bucketCount = getMetaDataStmt.getInt(3)
+      val indexColsString = getMetaDataStmt.getString(5)
+      val indexCols = Option(indexColsString) match {
+        case Some(str) => str.split(":")
+        case None => Array.empty[String]
+      }
+      if (bucketCount > 0) {
+        val partitionCols = getMetaDataStmt.getString(4).split(":")
+        val bucketToServerMappingStr = getMetaDataStmt.getString(6)
+        val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
+        val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
+        (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions))
+      } else {
+        val replicaToNodesInfo = getMetaDataStmt.getString(6)
+        val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
+        val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
+        (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions))
+      }
+    } else {
+      // external tables (with source as csv, parquet etc.)
+      (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[Partition]))
     }
-
   }
 
   def executeMetaDataStatement(tableName: String): Unit = {
@@ -256,7 +243,7 @@ object SmartConnectorHelper extends Logging {
     val os: ObjectOutputStream = new ObjectOutputStream(baos)
     os.writeObject(value)
     os.close()
-    baos.toByteArray()
+    baos.toByteArray
   }
 
   def deserialize(value: Array[Byte]): Any = {

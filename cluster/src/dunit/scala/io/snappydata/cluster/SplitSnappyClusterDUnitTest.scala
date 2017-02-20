@@ -473,7 +473,7 @@ object SplitSnappyClusterDUnitTest
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
           .set("spark.testing.reservedMemory", "0")
           .set("spark.sql.autoBroadcastJoinThreshold", "-1")
-          .set("snappydata.ClusterURL", connectionURL)
+          .set("snappydata.Cluster.URL", connectionURL)
       conf.getAll.foreach(println)
 
       val sc = SparkContext.getOrCreate(conf)
@@ -592,5 +592,13 @@ object SplitSnappyClusterDUnitTest
     customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER_2")
     val count2 = snc.sql("select * from customer_2").count()
     assert(count2 == 750, s"Expected 750 rows. Actual rows = $count2")
+
+    //also test temp table
+    snc.sql(s"CREATE TEMPORARY TABLE CUSTOMER_TEMP AS SELECT * FROM CUSTOMER_STAGING")
+    val count3 = snc.sql("select * from CUSTOMER_TEMP").count()
+    assert(count3 == 750, s"Expected 750 rows. Actual rows = $count3")
+    val catalog = snc.snappySession.sessionCatalog
+    assert(catalog.isTemporaryTable(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
+    snc.sql("DROP TABLE CUSTOMER_TEMP")
   }
 }

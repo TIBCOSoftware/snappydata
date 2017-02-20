@@ -1144,7 +1144,11 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return SmartConnectorHelper.dropTable(tableIdent, ifExists)
+        val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
+        if (!isTempTable) {
+          SmartConnectorHelper.dropTable(tableIdent, ifExists)
+          return
+        }
       case _ =>
     }
 
