@@ -21,14 +21,17 @@ import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
+import com.gemstone.gemfire.cache.IsolationLevel
+import com.gemstone.gemfire.internal.cache.{TXManagerImpl, TXStateInterface, BucketRegion, ExternalTableMetaData, LocalRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import io.snappydata.Constant
 
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
@@ -68,7 +71,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             .asInstanceOf[AbstractCompactExecRow]
         lcc.setExecuteLocally(Collections.singleton(bucketID),
           region.getPartitionedRegion, false, null)
+        // Get current tx state and set it into the tc.
+        var tc: GemFireTransaction = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
         try {
+
+          val state: TXStateInterface = TXManagerImpl.getCurrentTXState
+          SanityManager.DEBUG_PRINT("DEBUG", "The txState is " + state)
+          //tc.masqueradeAsTxn()
+          tc.setActiveTXState(state, true)
+          //tc.masqueradeAsTxn(TXManagerImpl.getCurrentTXId, 0)
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
             TransactionController.MODE_RECORD,
@@ -93,6 +104,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             batchID, bucketID)
         } finally {
           lcc.setExecuteLocally(null, null, false, null)
+          tc.clearActiveTXState(false,true);
+          //tc.
         }
       } catch {
         case e: Throwable => throw e
