@@ -62,7 +62,7 @@ object ConnectionUtil {
       case SparkContext.DRIVER_IDENTIFIER => connectionProps.connProps
       case _ => connectionProps.executorConnProps
     }
-    val jdbcOptions = new JDBCOptions(connectionProps.url, null, connProps.asScala.toMap)
+    val jdbcOptions = new JDBCOptions(connectionProps.url, "", connProps.asScala.toMap)
     JdbcUtils.createConnectionFactory(jdbcOptions)()
   }
 

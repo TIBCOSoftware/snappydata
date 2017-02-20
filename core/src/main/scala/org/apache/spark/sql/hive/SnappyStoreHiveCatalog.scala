@@ -48,17 +48,13 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.internal.StaticSQLConf._
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf, UDFFunction}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{DataType, MetadataBuilder, StringType, StructType}
-import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StringType, StructType}
 import org.apache.spark.util.MutableURLClassLoader
 
@@ -526,18 +522,17 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case None =>
     }
   }
-
   /**
-   * Creates a data source table (a table created with USING clause)
-   * in Hive's meta-store.
-   */
+    * Creates a data source table (a table created with USING clause)
+    * in Hive's meta-store.
+    */
   def registerDataSourceTable(
-      tableIdent: QualifiedTableName,
-      userSpecifiedSchema: Option[StructType],
-      partitionColumns: Array[String],
-      provider: String,
-      options: Map[String, String],
-      relation: BaseRelation): Unit = {
+                               tableIdent: QualifiedTableName,
+                               userSpecifiedSchema: Option[StructType],
+                               partitionColumns: Array[String],
+                               provider: String,
+                               options: Map[String, String],
+                               relation: BaseRelation): Unit = {
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
@@ -545,7 +540,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val newOptions = options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
           case Some(c) => options
           case None => options + (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
-              ExternalStoreUtils.getDefaultCachedBatchSize().toString)
+            ExternalStoreUtils.getDefaultCachedBatchSize().toString)
         }
         // invalidate any cached plan for the table
         tableIdent.invalidate()
@@ -560,7 +555,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         // In this case, we split the JSON string and store each part as a
         // separate SerDe property.
         if (userSpecifiedSchema.isDefined) {
-          val threshold = sqlConf.schemaStringLengthThreshold
+          val threshold = sparkConf.get(SCHEMA_STRING_LENGTH_THRESHOLD)
           val schemaJsonString = userSpecifiedSchema.get.json
           // Split the JSON string.
           val parts = schemaJsonString.grouped(threshold).toSeq
@@ -602,22 +597,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           // handle path correctly
         }
 
-    val tableProperties = new mutable.HashMap[String, String]
-    tableProperties.put(HIVE_PROVIDER, provider)
-
-    // Saves optional user specified schema.  Serialized JSON schema string
-    // may be too long to be stored into a single meta-store SerDe property.
-    // In this case, we split the JSON string and store each part as a
-    // separate SerDe property.
-    if (userSpecifiedSchema.isDefined) {
-      val threshold = sparkConf.get(SCHEMA_STRING_LENGTH_THRESHOLD)
-      val schemaJsonString = userSpecifiedSchema.get.json
-      // Split the JSON string.
-      val parts = schemaJsonString.grouped(threshold).toSeq
-      tableProperties.put(HIVE_SCHEMA_NUMPARTS, parts.size.toString)
-      parts.zipWithIndex.foreach { case (part, index) =>
-        tableProperties.put(s"$HIVE_SCHEMA_PART.$index", part)
-      }
         val hiveTable = CatalogTable(
           identifier = tableIdent,
           // Can not inherit from this class. Ideally we should
@@ -630,7 +609,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             outputFormat = None,
             serde = None,
             compressed = false,
-            serdeProperties = newOptions
+            properties = newOptions
           ),
           properties = tableProperties.toMap)
 
@@ -639,57 +618,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case Some(t) =>  // Do nothing
     }
 
-    // get the tableType
-    val tableType = getTableType(relation)
-    tableProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY, tableType.toString)
-    // add baseTable property if required
-    relation match {
-      case dep: DependentRelation => dep.baseTable.foreach { t =>
-        lookupRelation(newQualifiedTableName(t)) match {
-          case LogicalRelation(p: ParentRelation, _, _) =>
-            p.addDependent(dep, this)
-            addDependentRelation(newQualifiedTableName(t),
-              newQualifiedTableName(dep.name))
-          case _ => // ignore
-        }
-        tableProperties.put(JdbcExtendedUtils.BASETABLE_PROPERTY, t)
-      }
-      case _ => // ignore baseTable for others
-    }
-
-    val schemaName = tableIdent.schemaName
-    val dbInHive = client.getDatabaseOption(schemaName)
-    dbInHive match {
-      case Some(x) => // We are all good
-      case None => client.createDatabase(CatalogDatabase(
-        schemaName,
-        description = schemaName,
-        getDefaultDBPath(schemaName),
-        Map.empty[String, String]),
-        ignoreIfExists = true)
-      // Path is empty String for now @TODO for parquet & hadoop relation
-      // handle path correctly
-    }
-
-    val hiveTable = CatalogTable(
-      identifier = tableIdent,
-      // Can not inherit from this class. Ideally we should
-      // be extending from this case class
-      tableType = CatalogTableType.EXTERNAL,
-      schema = new StructType,
-      storage = CatalogStorageFormat(
-        locationUri = None,
-        inputFormat = None,
-        outputFormat = None,
-        serde = None,
-        compressed = false,
-        properties = options
-      ),
-      properties = tableProperties.toMap)
-
-    withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
-    SnappySession.clearAllCache()
   }
+
 
 
   def withHiveExceptionHandling[T](function: => T): T = {

@@ -17,22 +17,21 @@
 
 package org.apache.spark.sql.sources
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
-import io.snappydata.Constant
 import io.snappydata.QueryHint._
-
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
-import org.apache.spark.sql.catalyst.{expressions, plans}
+import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.{expressions, plans}
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 
 /**
@@ -225,7 +224,8 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     val newInput = finalJoinOrder.map(_.index) ++
         input.filterNot(i => finalJoinOrder.exists(_.table == i))
 
-    curPlan = curPlan.copy(plan = ReorderJoin.createOrderedJoin(newInput, newJoinConditions))
+    curPlan = curPlan.copy(plan = ReorderJoin.createOrderedJoin(
+      newInput.map((_, Inner)), newJoinConditions))
 
 
     // add to the visited list, as plan.flatMap is transformDown which results into child join
