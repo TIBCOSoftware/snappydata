@@ -22,11 +22,9 @@ import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
-
 import org.apache.spark.sql.catalyst.expressions.SpecificInternalRow
 import org.apache.spark.sql.execution.CompactExecRowToMutableRow
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.StructType
 
 final class CachedBatchCreator(
