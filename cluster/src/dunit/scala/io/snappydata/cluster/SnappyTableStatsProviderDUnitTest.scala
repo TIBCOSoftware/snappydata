@@ -37,8 +37,8 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val table = "TEST.TEST_TABLE"
-  var oldcachedBatchSize: String = _
-  var oldcores: String = _
+  var oldcachedBatchSize: String = ""
+  var oldcores: String = ""
 
   override def beforeClass(): Unit = {
     oldcachedBatchSize = bootProps.getProperty(
@@ -51,9 +51,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     super.beforeClass()
     ClusterManagerTestBase.stopSpark()
     ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
-  }
 
-  override def afterClass(): Unit = {
     if (oldcachedBatchSize.isEmpty) {
       bootProps.remove(io.snappydata.Property.CachedBatchSize.name)
     }
@@ -66,6 +64,9 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     else {
       bootProps.setProperty("spark.executor.cores", oldcores)
     }
+  }
+
+  override def afterClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
     super.afterClass()
   }
