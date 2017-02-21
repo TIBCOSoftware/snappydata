@@ -25,8 +25,10 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -189,9 +191,17 @@ class BaseColumnFormatRelation(
     // use bulk insert directly into column store for large number of rows
     if (numRows >= (batchSize * numBuckets)) {
       val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      import session.sqlImplicits._
       implicit val encoder = RowEncoder(schema)
-      return session.sparkContext.parallelize(rows).insertInto(resolvedName)
+      val sessionState = session.sessionState
+      val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
+      val ds = session.createDataset(session.sparkContext.parallelize(rows))
+      return session.sessionState.executePlan(
+        InsertIntoTable(
+          table = UnresolvedRelation(tableIdent),
+          partition = Map.empty[String, Option[String]],
+          child = ds.logicalPlan,
+          overwrite = false,
+          ifNotExists = false)).executedPlan.executeCollect()
           // always expect to create a ColumnInsertExec
           .foldLeft(0)(_ + _.getInt(0))
     }

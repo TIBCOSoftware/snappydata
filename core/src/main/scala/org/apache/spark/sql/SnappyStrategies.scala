@@ -303,8 +303,6 @@ private[sql] object JoinStrategy {
  */
 object SnappyAggregation extends Strategy {
 
-  var enableOptimizedAggregation = true
-
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
     case _ => applyAggregation(plan, isRootPlan = false)
@@ -313,7 +311,7 @@ object SnappyAggregation extends Strategy {
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
-    resultExpressions, child) if enableOptimizedAggregation =>
+    resultExpressions, child) =>
 
       val (functionsWithDistinct, functionsWithoutDistinct) =
         aggregateExpressions.partition(_.isDistinct)

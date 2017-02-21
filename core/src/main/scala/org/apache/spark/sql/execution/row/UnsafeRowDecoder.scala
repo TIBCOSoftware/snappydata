@@ -16,11 +16,14 @@
  */
 package org.apache.spark.sql.execution.row
 
-import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder
 import org.apache.spark.sql.types.{DataType, Decimal, StructField}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
+// TODO: SW: change this to use SerializedRow/Array/Map (for sampler reservoir)
 final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
     extends ColumnDecoder {
 
@@ -102,14 +105,14 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
   override def readInterval(columnBytes: AnyRef, cursor: Long): CalendarInterval =
     holder.row.getInterval(columnIndex)
 
-  override def readArray(columnBytes: AnyRef, cursor: Long): UnsafeArrayData =
+  override def readArray(columnBytes: AnyRef, cursor: Long): ArrayData =
     holder.row.getArray(columnIndex)
 
-  override def readMap(columnBytes: AnyRef, cursor: Long): UnsafeMapData =
+  override def readMap(columnBytes: AnyRef, cursor: Long): MapData =
     holder.row.getMap(columnIndex)
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long): UnsafeRow =
+      cursor: Long): InternalRow =
     holder.row.getStruct(columnIndex, numFields)
 }
 

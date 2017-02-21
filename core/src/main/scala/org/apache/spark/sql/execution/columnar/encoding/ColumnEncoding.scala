@@ -22,10 +22,14 @@ import java.nio.{ByteBuffer, ByteOrder}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import io.snappydata.util.StringUtils
 
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthInBytes
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.collection.BitSet
@@ -173,14 +177,23 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] =
     throw new UnsupportedOperationException(s"readBinary for $toString")
 
-  def readArray(columnBytes: AnyRef, cursor: Long): UnsafeArrayData =
+  def nextArray(columnBytes: AnyRef, cursor: Long): Long =
+    throw new UnsupportedOperationException(s"nextArray for $toString")
+
+  def readArray(columnBytes: AnyRef, cursor: Long): ArrayData =
     throw new UnsupportedOperationException(s"readArray for $toString")
 
-  def readMap(columnBytes: AnyRef, cursor: Long): UnsafeMapData =
+  def nextMap(columnBytes: AnyRef, cursor: Long): Long =
+    throw new UnsupportedOperationException(s"nextMap for $toString")
+
+  def readMap(columnBytes: AnyRef, cursor: Long): MapData =
     throw new UnsupportedOperationException(s"readMap for $toString")
 
+  def nextStruct(columnBytes: AnyRef, cursor: Long): Long =
+    throw new UnsupportedOperationException(s"nextStruct for $toString")
+
   def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long): UnsafeRow =
+      cursor: Long): InternalRow =
     throw new UnsupportedOperationException(s"readStruct for $toString")
 
   /**
@@ -310,7 +323,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def ensureCapacity(cursor: Long, required: Long): Long = {
     if ((cursor + required) <= columnEndPosition) cursor
-    else expand(cursor, 4)
+    else expand(cursor, required)
   }
 
   final def lowerLong: Long = _lowerLong
@@ -429,11 +442,11 @@ trait ColumnEncoder extends ColumnEncoding {
     throw new UnsupportedOperationException(s"writeDouble for $toString")
 
   def writeLongDecimal(cursor: Long, value: Decimal,
-      precision: Int, scale: Int): Long =
+      ordinal: Int, precision: Int, scale: Int): Long =
     throw new UnsupportedOperationException(s"writeLongDecimal for $toString")
 
   def writeDecimal(cursor: Long, value: Decimal,
-      precision: Int, scale: Int): Long =
+      ordinal: Int, precision: Int, scale: Int): Long =
     throw new UnsupportedOperationException(s"writeDecimal for $toString")
 
   def writeDate(cursor: Long, value: Int): Long =
@@ -451,15 +464,114 @@ trait ColumnEncoder extends ColumnEncoding {
   def writeBinary(cursor: Long, value: Array[Byte]): Long =
     throw new UnsupportedOperationException(s"writeBinary for $toString")
 
+  def writeBooleanUnchecked(cursor: Long, value: Boolean): Long =
+    throw new UnsupportedOperationException(s"writeBooleanUnchecked for $toString")
+
+  def writeByteUnchecked(cursor: Long, value: Byte): Long =
+    throw new UnsupportedOperationException(s"writeByteUnchecked for $toString")
+
+  def writeShortUnchecked(cursor: Long, value: Short): Long =
+    throw new UnsupportedOperationException(s"writeShortUnchecked for $toString")
+
   def writeIntUnchecked(cursor: Long, value: Int): Long =
     throw new UnsupportedOperationException(s"writeIntUnchecked for $toString")
 
-  def writeLongUnchecked(cursor: Long, value: Int): Long =
+  def writeLongUnchecked(cursor: Long, value: Long): Long =
     throw new UnsupportedOperationException(s"writeLongUnchecked for $toString")
+
+  def writeFloatUnchecked(cursor: Long, value: Float): Long =
+    throw new UnsupportedOperationException(s"writeFloatUnchecked for $toString")
+
+  def writeDoubleUnchecked(cursor: Long, value: Double): Long =
+    throw new UnsupportedOperationException(s"writeDoubleUnchecked for $toString")
 
   def writeUnsafeData(cursor: Long, baseObject: AnyRef, baseOffset: Long,
       numBytes: Int): Long =
     throw new UnsupportedOperationException(s"writeUnsafeData for $toString")
+
+  // Helper methods for writing complex types and elements inside them.
+  protected final var baseTypeOffset: Long = _
+  protected final var baseDataOffset: Long = _
+
+  @inline final def setOffsetAndSize(cursor: Long, fieldCursor: Long,
+      baseOffset: Long, size: Int): Unit = {
+    val relativeOffset = cursor - columnData.baseOffset - baseOffset
+    val offsetAndSize = (relativeOffset << 32L) | size.toLong
+    Platform.putLong(columnBytes, fieldCursor, offsetAndSize)
+  }
+
+  final def getBaseTypeOffset: Long = baseTypeOffset
+  final def getBaseDataOffset: Long = baseDataOffset
+
+  final def initializeComplexType(cursor: Long, numElements: Int,
+      skipBytes: Int, writeNumElements: Boolean): Long = {
+    val numNullBytes = calculateBitSetWidthInBytes(
+      numElements + (skipBytes << 3))
+    // space for nulls and offsets at the start
+    val fixedWidth = numNullBytes + (numElements << 3)
+    var position = cursor
+    if (position + fixedWidth > columnEndPosition) {
+      position = expand(position, fixedWidth)
+    }
+    // zero out the null bytes for off-heap bytes
+    if (isOffHeap) {
+      var i = 0
+      while (i < numNullBytes) {
+        writeLongUnchecked(position + i, 0L)
+        i += 8
+      }
+    }
+    baseTypeOffset = offset(position)
+    baseDataOffset = baseTypeOffset + numNullBytes
+    if (writeNumElements) {
+      writeIntUnchecked(position + skipBytes - 4, numElements)
+    }
+    position + fixedWidth
+  }
+
+  private final def writeStructData(cursor: Long, value: AnyRef, size: Int,
+      valueOffset: Long, fieldCursor: Long, baseOffset: Long): Long = {
+    val alignedSize = ByteArrayMethods.roundNumberOfBytesToNearestWord(size)
+    // Write the bytes to the variable length portion.
+    var position = cursor
+    if (position + alignedSize > columnEndPosition) {
+      position = expand(position, alignedSize)
+    }
+    Platform.copyMemory(value, valueOffset, columnBytes, position, size)
+    setOffsetAndSize(position, fieldCursor, baseOffset, size)
+    position + alignedSize
+  }
+
+  final def writeStructUTF8String(cursor: Long, value: UTF8String,
+      fieldCursor: Long, baseOffset: Long): Long = {
+    writeStructData(cursor, value.getBaseObject, value.numBytes(),
+      value.getBaseOffset, fieldCursor, baseOffset)
+  }
+
+  final def writeStructBinary(cursor: Long, value: Array[Byte],
+      fieldCursor: Long, baseOffset: Long): Long = {
+    writeStructData(cursor, value, value.length, Platform.BYTE_ARRAY_OFFSET,
+      fieldCursor, baseOffset)
+  }
+
+  final def writeStructDecimal(cursor: Long, value: Decimal,
+      fieldCursor: Long, baseOffset: Long): Long = {
+    // assume precision and scale are matching and ensured by caller
+    val bytes = value.toJavaBigDecimal.unscaledValue.toByteArray
+    writeStructData(cursor, bytes, bytes.length, Platform.BYTE_ARRAY_OFFSET,
+      fieldCursor, baseOffset)
+  }
+
+  final def writeStructInterval(cursor: Long, value: CalendarInterval,
+      fieldCursor: Long, baseOffset: Long): Long = {
+    var position = cursor
+    if (position + 8 > columnEndPosition) {
+      position = expand(position, 8)
+    }
+    Platform.putLong(columnBytes, position, value.microseconds)
+    setOffsetAndSize(position, fieldCursor, baseOffset, value.months)
+    position + 8
+  }
 
   def finish(cursor: Long): ByteBuffer
 
@@ -613,9 +725,8 @@ object ColumnEncoding {
   }
 
   private[columnar] def createUncompressedEncoder(dataType: DataType,
-      nullable: Boolean): ColumnEncoder = {
+      nullable: Boolean): ColumnEncoder =
     if (nullable) new UncompressedEncoderNullable else new UncompressedEncoder
-  }
 
   private[columnar] def createDictionaryEncoder(dataType: DataType,
       nullable: Boolean): ColumnEncoder = dataType match {
@@ -625,55 +736,71 @@ object ColumnEncoding {
       s"DictionaryEncoder not supported for $dataType")
   }
 
-  @inline private[columnar] final def readShort(columnBytes: AnyRef,
-      cursor: Long): Int = if (littleEndian) {
+  @inline final def readShort(columnBytes: AnyRef,
+      cursor: Long): Short = if (littleEndian) {
     Platform.getShort(columnBytes, cursor)
   } else {
     java.lang.Short.reverseBytes(Platform.getShort(columnBytes, cursor))
   }
 
-  @inline private[columnar] final def readInt(columnBytes: AnyRef,
+  @inline final def readInt(columnBytes: AnyRef,
       cursor: Long): Int = if (littleEndian) {
     Platform.getInt(columnBytes, cursor)
   } else {
     java.lang.Integer.reverseBytes(Platform.getInt(columnBytes, cursor))
   }
 
-  @inline private[columnar] final def readLong(columnBytes: AnyRef,
+  @inline final def readLong(columnBytes: AnyRef,
       cursor: Long): Long = if (littleEndian) {
     Platform.getLong(columnBytes, cursor)
   } else {
     java.lang.Long.reverseBytes(Platform.getLong(columnBytes, cursor))
   }
 
-  @inline private[columnar] final def readUTF8String(columnBytes: AnyRef,
+  @inline final def readFloat(columnBytes: AnyRef,
+      cursor: Long): Float = if (littleEndian) {
+    Platform.getFloat(columnBytes, cursor)
+  } else {
+    java.lang.Float.intBitsToFloat(java.lang.Integer.reverseBytes(
+      Platform.getInt(columnBytes, cursor)))
+  }
+
+  @inline final def readDouble(columnBytes: AnyRef,
+      cursor: Long): Double = if (littleEndian) {
+    Platform.getDouble(columnBytes, cursor)
+  } else {
+    java.lang.Double.longBitsToDouble(java.lang.Long.reverseBytes(
+      Platform.getLong(columnBytes, cursor)))
+  }
+
+  @inline final def readUTF8String(columnBytes: AnyRef,
       cursor: Long): UTF8String = {
     val size = readInt(columnBytes, cursor)
     UTF8String.fromAddress(columnBytes, cursor + 4, size)
   }
 
-  @inline private[columnar] final def writeShort(columnBytes: AnyRef,
+  @inline final def writeShort(columnBytes: AnyRef,
       cursor: Long, value: Short): Unit = if (littleEndian) {
     Platform.putShort(columnBytes, cursor, value)
   } else {
     Platform.putShort(columnBytes, cursor, java.lang.Short.reverseBytes(value))
   }
 
-  @inline private[columnar] final def writeInt(columnBytes: AnyRef,
+  @inline final def writeInt(columnBytes: AnyRef,
       cursor: Long, value: Int): Unit = if (littleEndian) {
     Platform.putInt(columnBytes, cursor, value)
   } else {
     Platform.putInt(columnBytes, cursor, java.lang.Integer.reverseBytes(value))
   }
 
-  @inline private[columnar] final def writeLong(columnBytes: AnyRef,
+  @inline final def writeLong(columnBytes: AnyRef,
       cursor: Long, value: Long): Unit = if (littleEndian) {
     Platform.putLong(columnBytes, cursor, value)
   } else {
     Platform.putLong(columnBytes, cursor, java.lang.Long.reverseBytes(value))
   }
 
-  @inline private[columnar] final def writeUTF8String(columnBytes: AnyRef,
+  @inline final def writeUTF8String(columnBytes: AnyRef,
       cursor: Long, value: UTF8String, size: Int): Long = {
     ColumnEncoding.writeInt(columnBytes, cursor, size)
     val position = cursor + 4
@@ -751,8 +878,9 @@ object HeapAllocator extends ColumnAllocator {
   }
 
   override def allocate(size: Long): ColumnData = {
-    new ColumnData(new Array[Byte](checkSize(size)), baseOffset,
-      baseOffset + size)
+    new ColumnData(new Array[Byte](
+      ByteArrayMethods.roundNumberOfBytesToNearestWord(checkSize(size))),
+      baseOffset, baseOffset + size)
   }
 
   override def expand(columnData: ColumnData, cursor: Long,
@@ -761,8 +889,9 @@ object HeapAllocator extends ColumnAllocator {
     val currentUsed = cursor - baseOffset
     val minRequired = currentUsed + required
     // double the size
-    val newLength = math.min(math.max(columnBytes.length << 1L,
-      minRequired), Int.MaxValue >>> 1).asInstanceOf[Int]
+    val newLength = ByteArrayMethods.roundNumberOfBytesToNearestWord(math.min(
+      math.max(columnBytes.length << 1L, minRequired), Int.MaxValue >>> 1)
+        .asInstanceOf[Int])
     if (newLength < minRequired) {
       throw new ArrayIndexOutOfBoundsException(
         s"Cannot allocate more than $newLength bytes but required $minRequired")
@@ -892,7 +1021,7 @@ trait NullableEncoder extends NotNullEncoder {
 
   override protected def initializeNulls(initSize: Int): Int = {
     if (nullWords eq null) {
-      val numWords = UnsafeRow.calculateBitSetWidthInBytes(initSize) >>> 3
+      val numWords = calculateBitSetWidthInBytes(initSize) >>> 3
       maxNulls = numWords.toLong << 6L
       nullWords = new Array[Long](numWords)
       initialNumWords = numWords

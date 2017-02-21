@@ -584,8 +584,14 @@ private[sql] final case class ColumnTableScan(
         s"$cursorVar = $decoder.nextDecimal($buffer, $cursorVar);"
       case CalendarIntervalType =>
         s"$cursorVar = $decoder.nextInterval($buffer, $cursorVar);"
-      case BinaryType | _: ArrayType | _: MapType | _: StructType =>
+      case BinaryType =>
         s"$cursorVar = $decoder.nextBinary($buffer, $cursorVar);"
+      case _: ArrayType =>
+        s"$cursorVar = $decoder.nextArray($buffer, $cursorVar);"
+      case _: MapType =>
+        s"$cursorVar = $decoder.nextMap($buffer, $cursorVar);"
+      case _: StructType =>
+        s"$cursorVar = $decoder.nextStruct($buffer, $cursorVar);"
       case NullType => ""
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")

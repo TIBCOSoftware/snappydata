@@ -38,12 +38,12 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Ascending, AttributeReference, Descending, Expression, GenericRow, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Union}
-import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
@@ -57,7 +57,7 @@ import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionS
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
-import org.apache.spark.sql.types.{DataType, DecimalType, StructType}
+import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -164,30 +164,6 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private[sql] final def executeSQL(sqlText: String): DataFrame =
     super.sql(sqlText)
-
-  // scalastyle:off
-  // Disable style checker so "implicits" object can start with lowercase i
-  /**
-   * :: Experimental ::
-   * (Scala-specific) Implicit methods available in Scala for converting
-   * common Scala objects into [[DataFrame]]s.
-   *
-   * {{{
-   *   val snappySession = SnappyContext(sc).snappySession
-   *   import snappySession.implicits._
-   * }}}
-   *
-   * @since 2.0.0
-   */
-  @Experimental
-  object sqlImplicits extends SQLImplicits with Serializable {
-    protected override def _sqlContext: SnappyContext = self.snappyContext
-
-    implicit def rddOperations[T: u.TypeTag : Encoder](
-        rdd: RDD[T]): RDDOperations[T] = new RDDOperations[T](rdd, self)
-  }
-
-  // scalastyle:on
 
   @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
@@ -1766,35 +1742,4 @@ private final class Expr(val name: String, val e: Expression) {
 
   override def hashCode: Int =
     HashingUtil.finalMix(name.hashCode, e.semanticHash())
-}
-
-class RDDOperations[T: u.TypeTag : Encoder](rdd: RDD[T], session: SnappySession) {
-
-  def insertInto(tableName: String): Array[InternalRow] = {
-    val sessionState = session.sessionState
-    val tableIdent = sessionState.sqlParser.parseTableIdentifier(tableName)
-    val relation = sessionState.catalog.lookupRelation(tableIdent)
-    val relationOutput = relation.output
-    val encoder = implicitly[Encoder[T]].asInstanceOf[ExpressionEncoder[T]]
-    val output = session.sessionCatalog.normalizeSchema(encoder.schema)
-        .zipWithIndex.map { case (f, i) =>
-      // avoid an unnecessary precision/scale clone+cast for DECIMAL types
-      val dataType = f.dataType match {
-        case d: DecimalType => relationOutput(i).dataType match {
-          case dt: DecimalType => dt
-          case _ => d
-        }
-        case t => t
-      }
-      AttributeReference(f.name, dataType, f.nullable, f.metadata)()
-    }
-    val isFlat = !ScalaReflection.definedByConstructorParams(u.typeOf[T])
-    sessionState.executePlan(
-      InsertIntoTable(
-        table = UnresolvedRelation(tableIdent),
-        partition = Map.empty[String, Option[String]],
-        child = new EncoderPlan(rdd, encoder, isFlat, output, session),
-        overwrite = false,
-        ifNotExists = false)).executedPlan.executeCollect()
-  }
 }

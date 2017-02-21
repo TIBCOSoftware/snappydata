@@ -46,6 +46,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
+import org.apache.spark.sql.types.DecimalType
 import org.apache.spark.streaming.Duration
 import org.apache.spark.{Partition, SparkConf}
 
@@ -540,10 +541,11 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     _, _), _, child, _, _) if l.resolved && child.resolved =>
       r.insertableRelation(child.output) match {
         case Some(ir) =>
-          val relation = LogicalRelation(ir.asInstanceOf[BaseRelation],
+          val br = ir.asInstanceOf[BaseRelation]
+          val relation = LogicalRelation(br,
             l.expectedOutputAttributes, l.metastoreTableIdentifier)
           castAndRenameChildOutput(i.copy(table = relation),
-            relation.output, null, child)
+            relation.output, br, null, child)
         case None =>
           throw new AnalysisException(s"$l requires that the query in the " +
               "SELECT clause of the INSERT INTO/OVERWRITE statement " +
@@ -556,7 +558,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(_: RowInsertableRelation, _, _) =>
+        case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
           // First, make sure the data to be inserted have the same number of
           // fields with the schema of the relation.
           val expectedOutput = l.output
@@ -565,7 +567,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
                 "SELECT clause of the PUT INTO statement " +
                 "generates the same number of columns as its schema.")
           }
-          castAndRenameChildOutput(p, expectedOutput, l, child)
+          castAndRenameChildOutput(p, expectedOutput, ir, l, child)
 
         case _ => p
       }
@@ -575,20 +577,21 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       if table.resolved && child.resolved => table match {
       case relation: CatalogRelation =>
         val metadata = relation.catalogTable
-        preprocess(i, metadata.identifier.quotedString,
+        preProcess(i, relation = null, metadata.identifier.quotedString,
           metadata.partitionColumnNames)
       case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
         val tblName = identifier.map(_.quotedString).getOrElse("unknown")
-        preprocess(i, tblName, h.partitionSchema.map(_.name))
-      case LogicalRelation(_: InsertableRelation, _, identifier) =>
+        preProcess(i, h, tblName, h.partitionSchema.map(_.name))
+      case LogicalRelation(ir: InsertableRelation, _, identifier) =>
         val tblName = identifier.map(_.quotedString).getOrElse("unknown")
-        preprocess(i, tblName, Nil)
+        preProcess(i, ir, tblName, Nil)
       case _ => i
     }
   }
 
-  private def preprocess(
+  private def preProcess(
       insert: InsertIntoTable,
+      relation: BaseRelation,
       tblName: String,
       partColNames: Seq[String]): InsertIntoTable = {
 
@@ -618,13 +621,14 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
              |Table partitions: ${partColNames.mkString(",")}
            """.stripMargin)
       }
-      expectedColumns.map(castAndRenameChildOutput(insert, _, null, child))
-          .getOrElse(insert)
+      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+        child)).getOrElse(insert)
     } else {
       // All partition columns are dynamic because because the InsertIntoTable
       // command does not explicitly specify partitioning columns.
-      expectedColumns.map(castAndRenameChildOutput(insert, _, null, child))
-          .getOrElse(insert).copy(partition = partColNames.map(_ -> None).toMap)
+      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+        child)).getOrElse(insert).copy(partition = partColNames
+          .map(_ -> None).toMap)
     }
   }
 
@@ -636,6 +640,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   def castAndRenameChildOutput[T <: LogicalPlan](
       plan: T,
       expectedOutput: Seq[Attribute],
+      relation: BaseRelation,
       newRelation: LogicalRelation,
       child: LogicalPlan): T = {
     val newChildOutput = expectedOutput.zip(child.output).map {
@@ -644,7 +649,14 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
             expected.name == actual.name) {
           actual
         } else {
-          Alias(Cast(actual, expected.dataType), expected.name)()
+          // avoid unnecessary copy+cast when inserting DECIMAL types
+          // into column table
+          actual.dataType match {
+            case _: DecimalType
+              if expected.dataType.isInstanceOf[DecimalType] &&
+                 relation.isInstanceOf[PlanInsertableRelation] => actual
+            case _ => Alias(Cast(actual, expected.dataType), expected.name)()
+          }
         }
     }
 

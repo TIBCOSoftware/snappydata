@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.math.{BigDecimal, BigInteger}
 
-import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.littleEndian
 import org.apache.spark.sql.types._
@@ -86,40 +86,31 @@ abstract class UncompressedDecoderBase
     cursor + 2
 
   override def readShort(columnBytes: AnyRef, cursor: Long): Short =
-    if (littleEndian) Platform.getShort(columnBytes, cursor)
-    else java.lang.Short.reverseBytes(Platform.getShort(columnBytes, cursor))
+    ColumnEncoding.readShort(columnBytes, cursor)
 
   override def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
   override def readInt(columnBytes: AnyRef, cursor: Long): Int =
-    if (littleEndian) Platform.getInt(columnBytes, cursor)
-    else java.lang.Integer.reverseBytes(Platform.getInt(columnBytes, cursor))
+    ColumnEncoding.readInt(columnBytes, cursor)
 
   override def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 8
 
-  override def readLong(columnBytes: AnyRef, cursor: Long): Long = {
-    val result = if (littleEndian) Platform.getLong(columnBytes, cursor)
-    else java.lang.Long.reverseBytes(Platform.getLong(columnBytes, cursor))
-    result
-  }
+  override def readLong(columnBytes: AnyRef, cursor: Long): Long =
+    ColumnEncoding.readLong(columnBytes, cursor)
 
   override def nextFloat(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
   override def readFloat(columnBytes: AnyRef, cursor: Long): Float =
-    if (littleEndian) Platform.getFloat(columnBytes, cursor)
-    else java.lang.Float.intBitsToFloat(java.lang.Integer.reverseBytes(
-      Platform.getInt(columnBytes, cursor)))
+    ColumnEncoding.readFloat(columnBytes, cursor)
 
   override def nextDouble(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 8
 
   override def readDouble(columnBytes: AnyRef, cursor: Long): Double =
-    if (littleEndian) Platform.getDouble(columnBytes, cursor)
-    else java.lang.Double.longBitsToDouble(java.lang.Long.reverseBytes(
-      Platform.getLong(columnBytes, cursor)))
+    ColumnEncoding.readDouble(columnBytes, cursor)
 
   override def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 8
@@ -186,25 +177,54 @@ abstract class UncompressedDecoderBase
     b
   }
 
-  override def readArray(columnBytes: AnyRef, cursor: Long): UnsafeArrayData = {
-    val result = new UnsafeArrayData
+  override def nextArray(columnBytes: AnyRef, cursor: Long): Long = {
+    // cursor == 0 indicates first call so don't increment cursor
+    if (cursor != 0) {
+      val size = ColumnEncoding.readInt(columnBytes, cursor)
+      // size includes the 4 bytes for the size itself
+      cursor + size
+    } else {
+      baseCursor
+    }
+  }
+
+  override def readArray(columnBytes: AnyRef, cursor: Long): SerializedArray = {
+    // 4 bytes for size and then 4 bytes for number of elements
+    val result = new SerializedArray(8)
     val size = ColumnEncoding.readInt(columnBytes, cursor)
-    result.pointTo(columnBytes, cursor + 4, size)
+    result.pointTo(columnBytes, cursor, size)
     result
   }
 
-  override def readMap(columnBytes: AnyRef, cursor: Long): UnsafeMapData = {
-    val result = new UnsafeMapData
-    val size = ColumnEncoding.readInt(columnBytes, cursor)
-    result.pointTo(columnBytes, cursor + 4, size)
+  override def nextMap(columnBytes: AnyRef, cursor: Long): Long = {
+    // cursor == 0 indicates first call so don't increment cursor
+    if (cursor != 0) {
+      var position = cursor
+      // first read is of keyArraySize and second of valueArraySize
+      position += ColumnEncoding.readInt(columnBytes, position)
+      position + ColumnEncoding.readInt(columnBytes, position)
+    } else {
+      baseCursor
+    }
+  }
+
+  override def readMap(columnBytes: AnyRef, cursor: Long): SerializedMap = {
+    val result = new SerializedMap
+    result.pointTo(columnBytes, cursor)
     result
   }
+
+  override def nextStruct(columnBytes: AnyRef, cursor: Long): Long =
+    nextArray(columnBytes, cursor)
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long): UnsafeRow = {
-    val result = new UnsafeRow(numFields)
+      cursor: Long): SerializedRow = {
+    // creates a SerializedRow with skipBytes = 4 and does not change the cursor
+    // itself to get best 8-byte word alignment (the 4 bytes are subsumed
+    //   in the null bit mask at the start)
+    val result = new SerializedRow(4, numFields)
     val size = ColumnEncoding.readInt(columnBytes, cursor)
-    result.pointTo(columnBytes, cursor + 4, size)
+    result.pointTo(columnBytes, cursor, size)
     result
   }
 }
@@ -299,18 +319,27 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
   }
 
   override def writeLongDecimal(cursor: Long, value: Decimal,
-      precision: Int, scale: Int): Long = {
-    if (value.precision != precision || value.scale != scale) {
-      value.changePrecision(precision, value.scale)
+      ordinal: Int, precision: Int, scale: Int): Long = {
+    if ((value.precision != precision || value.scale != scale) &&
+        !value.changePrecision(precision, scale)) {
+      writeIsNull(ordinal)
+      cursor
+    } else {
+      writeLong(cursor, value.toUnscaledLong)
     }
-    writeLong(cursor, value.toUnscaledLong)
   }
 
   override def writeDecimal(cursor: Long, value: Decimal,
-      precision: Int, scale: Int): Long = {
-    val b = value.toJavaBigDecimal.unscaledValue.toByteArray
-    updateDecimalStats(value)
-    writeBinary(cursor, b)
+      ordinal: Int, precision: Int, scale: Int): Long = {
+    if ((value.precision != precision || value.scale != scale) &&
+        !value.changePrecision(precision, scale)) {
+      writeIsNull(ordinal)
+      cursor
+    } else {
+      val b = value.toJavaBigDecimal.unscaledValue.toByteArray
+      updateDecimalStats(value)
+      writeBinary(cursor, b)
+    }
   }
 
   override def writeInterval(cursor: Long, value: CalendarInterval): Long = {
@@ -342,27 +371,67 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
     position + size
   }
 
+  override def writeBooleanUnchecked(cursor: Long, value: Boolean): Long = {
+    val b: Byte = if (value) 1 else 0
+    Platform.putByte(columnBytes, cursor, b)
+    cursor + 1
+  }
+
+  override def writeByteUnchecked(cursor: Long, value: Byte): Long = {
+    Platform.putByte(columnBytes, cursor, value)
+    cursor + 1
+  }
+
+  override def writeShortUnchecked(cursor: Long, value: Short): Long = {
+    ColumnEncoding.writeShort(columnBytes, cursor, value)
+    cursor + 2
+  }
+
   override def writeIntUnchecked(cursor: Long, value: Int): Long = {
     ColumnEncoding.writeInt(columnBytes, cursor, value)
     cursor + 4
   }
 
-  override def writeLongUnchecked(cursor: Long, value: Int): Long = {
+  override def writeLongUnchecked(cursor: Long, value: Long): Long = {
     ColumnEncoding.writeLong(columnBytes, cursor, value)
+    cursor + 8
+  }
+
+  override def writeFloatUnchecked(cursor: Long, value: Float): Long = {
+    if (java.lang.Float.isNaN(value)) {
+      if (littleEndian) Platform.putFloat(columnBytes, cursor, Float.NaN)
+      else Platform.putInt(columnBytes, cursor,
+        java.lang.Integer.reverseBytes(java.lang.Float.floatToIntBits(Float.NaN)))
+    } else {
+      if (littleEndian) Platform.putFloat(columnBytes, cursor, value)
+      else Platform.putInt(columnBytes, cursor,
+        java.lang.Integer.reverseBytes(java.lang.Float.floatToIntBits(value)))
+    }
+    cursor + 4
+  }
+
+  override def writeDoubleUnchecked(cursor: Long, value: Double): Long = {
+    if (java.lang.Double.isNaN(value)) {
+      if (littleEndian) Platform.putDouble(columnBytes, cursor, Double.NaN)
+      else Platform.putLong(columnBytes, cursor,
+        java.lang.Long.reverseBytes(java.lang.Double.doubleToLongBits(Double.NaN)))
+    } else {
+      if (littleEndian) Platform.putDouble(columnBytes, cursor, value)
+      else Platform.putLong(columnBytes, cursor,
+        java.lang.Long.reverseBytes(java.lang.Double.doubleToLongBits(value)))
+    }
     cursor + 8
   }
 
   override def writeUnsafeData(cursor: Long, baseObject: AnyRef,
       baseOffset: Long, numBytes: Int): Long = {
     var position = cursor
-    if (position + numBytes + 4 > columnEndPosition) {
-      position = expand(position, numBytes + 4)
+    if (position + numBytes > columnEndPosition) {
+      position = expand(position, numBytes)
     }
     val columnBytes = this.columnBytes
-    ColumnEncoding.writeInt(columnBytes, position, numBytes)
-    position += 4
-    Platform.copyMemory(baseObject, baseOffset, columnBytes,
-      position, numBytes)
+    // assume size is already written as per skipBytes in SerializedRowData
+    Platform.copyMemory(baseObject, baseOffset, columnBytes, position, numBytes)
     position + numBytes
   }
 }

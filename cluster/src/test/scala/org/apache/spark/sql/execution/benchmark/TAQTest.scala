@@ -152,8 +152,19 @@ class TAQTestJob extends SnappySQLJob with Logging {
 case class Quote(sym: UTF8String, ex: UTF8String, bid: Double,
     time: Timestamp, date: Date)
 
+case class TradeB(bid: Double, syms: Array[UTF8String])
+
+case class TradeC(sym: UTF8String, gid: Int, map: Map[UTF8String, Int])
+
 case class Trade(sym: UTF8String, ex: UTF8String, price: Decimal,
-    time: Timestamp, date: Date, size: Double)
+    time: Timestamp, date: Date, size: Double, c1: Array[UTF8String],
+    c2: Map[UTF8String, Double])
+/*
+case class Trade(sym: UTF8String, ex: UTF8String, price: Decimal,
+    time: Timestamp, date: Date, size: Double, c1: Array[Long],
+    c2: Array[UTF8String], c3: Map[UTF8String, Int],
+    c4: Map[UTF8String, TradeB], c5: TradeC)
+*/
 
 object TAQTest extends Logging {
 
@@ -194,10 +205,27 @@ object TAQTest extends Logging {
        |   price DECIMAL(10,4) NOT NULL,
        |   time TIMESTAMP NOT NULL,
        |   date DATE NOT NULL,
-       |   size DOUBLE NOT NULL
+       |   size DOUBLE NOT NULL,
+       |   c1 ARRAY<STRING> NOT NULL,
+       |   c2 MAP<STRING, Double> NOT NULL
        |)
      """.stripMargin
-
+  val sqlTrade2: String =
+    s"""
+       |CREATE TABLE trade (
+       |   sym CHAR(4) NOT NULL,
+       |   ex VARCHAR(64) NOT NULL,
+       |   price DECIMAL(10,4) NOT NULL,
+       |   time TIMESTAMP NOT NULL,
+       |   date DATE NOT NULL,
+       |   size DOUBLE NOT NULL,
+       |   c1 ARRAY<LONG>,
+       |   c2 ARRAY<STRING> NOT NULL,
+       |   c3 MAP<STRING, INT> NOT NULL,
+       |   c4 MAP<STRING, STRUCT<gid: Int, arr: Array<CHAR(4)>>>,
+       |   c5 STRUCT<sym: STRING, gid: INT, map: Map<String, Int>>
+       |)
+     """.stripMargin
 
   private val d = "2016-06-06"
   // private val s = "SY23"
@@ -249,7 +277,7 @@ object TAQTest extends Logging {
     val Read, Quote, Trade = Value
   }
 
-  private def collect(df: DataFrame): Unit = {
+  private def collect(df: Dataset[Row]): Unit = {
     val result = df.collect()
     // scalastyle:off
     println(s"Count = ${result.length}")
@@ -291,7 +319,7 @@ object TAQTest extends Logging {
     val spark = new SparkSession(sc)
     val session = new SnappySession(sc)
 
-    import session.sqlImplicits._
+    import session.implicits._
 
     val benchmark = new Benchmark("Cache random data", size)
     val quoteRDD = sc.range(0, quoteSize).mapPartitions { itr =>
@@ -365,7 +393,19 @@ object TAQTest extends Logging {
         }
         val time = new Timestamp(cal.getTimeInMillis + gid)
         val dec = Decimal(math.abs(rnd.nextInt() % 100000000), 10, 4)
-        Trade(sym, ex, dec, time, date, rnd.nextDouble() * 1000)
+        val c1 = Array(sym, ex, sym)
+        val bid = rnd.nextDouble() * 1000
+        val c2 = Map(sym -> bid, ex -> bid)
+        /*
+        val c1 = Array(id, id + 1, id + 2, id + 3)
+        val c2 = Array(sym, ex, sym)
+        val idInt = id.toInt
+        val c3 = Map(sym -> idInt, ex -> idInt)
+        val tradeB = TradeB(gid, c2)
+        val c4 = Map(sym -> tradeB, ex -> tradeB)
+        val c5 = TradeC(sym, gid, c3)
+        */
+        Trade(sym, ex, dec, time, date, rnd.nextDouble() * 1000, c1, c2)
       }
     }
 
@@ -382,6 +422,8 @@ object TAQTest extends Logging {
         case f => f.copy(nullable = false)
       }))
 
+    val qDF = session.createDataset(quoteRDD)
+    val tDF = session.createDataset(tradeRDD)
     val sDF = session.createDataset(SYMBOLS)
     val symDF = spark.internalCreateDataFrame(
       spark.createDataset(SYMBOLS).queryExecution.toRdd,
@@ -412,7 +454,6 @@ object TAQTest extends Logging {
         }
         doGC()
         if (cache) {
-          SnappyAggregation.enableOptimizedAggregation = false
           spark.catalog.clearCache()
           cacheTable(spark, "cQuote")
           cacheTable(spark, "cTrade")
@@ -420,7 +461,6 @@ object TAQTest extends Logging {
           spark.sql(query).collect()
         } else {
           assert(snappy, "Only cache=T or snappy=T supported")
-          SnappyAggregation.enableOptimizedAggregation = true
           if (init) {
             session.sql("drop table if exists quote")
             session.sql("drop table if exists trade")
@@ -435,8 +475,8 @@ object TAQTest extends Logging {
                   s"(partition_by 'sym', overflow 'true')")
             }
             session.sql(s"CREATE TABLE S (sym CHAR(4) NOT NULL)")
-            quoteRDD.insertInto("quote")
-            tradeRDD.insertInto("trade")
+            qDF.write.insertInto("quote")
+            tDF.write.insertInto("trade")
             sDF.write.insertInto("S")
           }
           session.sql(query).collect()
@@ -475,11 +515,11 @@ object TAQTest extends Logging {
               collect(spark.sql(query))
             }
           case CreateOp.Quote if snappy =>
-            quoteRDD.insertInto("quote")
+            qDF.write.insertInto("quote")
           case CreateOp.Quote =>
             cacheTable(spark, "cQuote")
           case CreateOp.Trade if snappy =>
-            tradeRDD.insertInto("trade")
+            tDF.write.insertInto("trade")
           case CreateOp.Trade =>
             cacheTable(spark, "cTrade")
         }

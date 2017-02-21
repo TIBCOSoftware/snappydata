@@ -20,8 +20,7 @@ import java.sql.ResultSet
 
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 
-import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.catalyst.util.{DateTimeUtils, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder
 import org.apache.spark.sql.types.{DataType, Decimal, StructField}
 import org.apache.spark.unsafe.Platform
@@ -132,29 +131,29 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
       cursor: Long): CalendarInterval =
     new CalendarInterval(0, rs.getLong(columnPosition))
 
-  override def readArray(columnBytes: AnyRef, cursor: Long): UnsafeArrayData = {
+  override def readArray(columnBytes: AnyRef, cursor: Long): SerializedArray = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
-      val result = new UnsafeArrayData
+      val result = new SerializedArray
       result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
       result
     } else null
   }
 
-  override def readMap(columnBytes: AnyRef, cursor: Long): UnsafeMapData = {
+  override def readMap(columnBytes: AnyRef, cursor: Long): SerializedMap = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
-      val result = new UnsafeMapData
-      result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
+      val result = new SerializedMap
+      result.pointTo(b, Platform.BYTE_ARRAY_OFFSET)
       result
     } else null
   }
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long): UnsafeRow = {
+      cursor: Long): SerializedRow = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
-      val result = new UnsafeRow(numFields)
+      val result = new SerializedRow(0, numFields)
       result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
       result
     } else null
