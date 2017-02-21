@@ -39,21 +39,10 @@ class ConnectionConfBuilder(session: SnappySession) {
   val URL = "url"
   val DRIVER = "driver"
   val poolProvider = "poolimpl"
-  val TABLE = "table"
 
   @transient private val connSettings = new mutable.HashMap[String, String]()
 
   @transient private val poolSettings = new mutable.HashMap[String, String]()
-
-  /**
-    * Set the table name for connection.
-    * @param table Table name for JDBC connection
-    */
-  def setTable(table: String) : ConnectionConfBuilder = {
-    connSettings.put(TABLE, table)
-    this
-  }
-
 
   /**
    * Set the URL for connection. For SnappyData you can skip setting this.
