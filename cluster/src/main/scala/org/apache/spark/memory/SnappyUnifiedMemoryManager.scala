@@ -56,8 +56,11 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val memoryForObject = new mutable.HashMap[String, Long]()
 
-
   val threadsWaitingForStorage = new AtomicInteger()
+
+  val SPARK_CACHE = "_SPARK_CACHE_"
+
+  private[memory] val evictor = new SnappyStorageEvictor
 
   def this(conf: SparkConf, numCores: Int) = {
     this(conf,
@@ -68,8 +71,6 @@ class SnappyUnifiedMemoryManager private[memory](
       acquireStorageMemoryForObject(entry._1, blockId, entry._2, MemoryMode.ON_HEAP)
     }
   }
-
-  private[memory] val evictor = new SnappyStorageEvictor
 
 /*  val mbean = new SnappyMemoryManagerMBean(this)
 
@@ -87,8 +88,6 @@ class SnappyUnifiedMemoryManager private[memory](
   def getExecutionPoolSize = onHeapExecutionMemoryPool.poolSize
 
   def getExecutionMemoryUsed = onHeapExecutionMemoryPool.memoryUsed
-
-
 
   /**
     * This method is copied from Spark. In addition to evicting data from spark block manager,
@@ -120,7 +119,7 @@ class SnappyUnifiedMemoryManager private[memory](
           offHeapStorageMemory,
           maxOffHeapMemory)
     }
-    //if(SnappyMemoryUtils.isCriticalUp) return 0
+    if(SnappyMemoryUtils.isCriticalUp) return 0
 
     /**
       * Grow the execution pool by evicting cached blocks, thereby shrinking the storage pool.
@@ -176,7 +175,14 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes, taskAttemptId, maybeGrowExecutionPool, computeMaxExecutionPoolSize)
   }
 
-  var debugCounter = 0
+
+  override def acquireStorageMemory(
+      blockId: BlockId,
+      numBytes: Long,
+      memoryMode: MemoryMode): Boolean = {
+    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode)
+  }
+
 
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
@@ -201,7 +207,7 @@ class SnappyUnifiedMemoryManager private[memory](
             offHeapStorageMemoryPool,
             maxOffHeapMemory)
       }
-      //if (SnappyMemoryUtils.isCriticalUp) return false
+      if (SnappyMemoryUtils.isCriticalUp) return false
 
       if (numBytes > maxMemory) {
         // Fail fast if the block simply won't fit
@@ -261,6 +267,11 @@ class SnappyUnifiedMemoryManager private[memory](
     super.releaseStorageMemory(numBytes, memoryMode)
   }
 
+  override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
+    memoryForObject(SPARK_CACHE) -= numBytes
+    super.releaseStorageMemory(numBytes, memoryMode)
+  }
+
   override def dropStorageMemoryForObject(name: String, memoryMode: MemoryMode): Long = synchronized {
     println(s"Dropping memory for $name")
     val (executionPool, storagePool, maxMemory) = memoryMode match {
@@ -275,7 +286,6 @@ class SnappyUnifiedMemoryManager private[memory](
     }
 
     val bytesToBeFreed = memoryForObject.getOrElse(name, 0L)
-    //println(s"droping mem for $name $bytesToBeFreed")
     if(bytesToBeFreed > 0){
       super.releaseStorageMemory(bytesToBeFreed, memoryMode)
       memoryForObject.remove(name)
@@ -291,8 +301,6 @@ class SnappyUnifiedMemoryManager private[memory](
 }
 
 private object SnappyUnifiedMemoryManager {
-
-  var debug = false
 
   // Reserving 500MB data for internal tables
   private val RESERVED_SYSTEM_MEMORY_BYTES = 500 * 1024 * 1024
@@ -325,5 +333,4 @@ private object SnappyUnifiedMemoryManager {
     val memoryFraction = conf.getDouble("spark.memory.fraction", 0.90)
     (usableMemory * memoryFraction).toLong
   }
-
 }

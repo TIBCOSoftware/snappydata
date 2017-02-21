@@ -20,15 +20,18 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
 object SnappyMemoryUtils {
-  /**
-   * Checks whether GemFire critical threshold is breached
-   * @return
-   */
-  def isCriticalUp: Boolean = Option(GemFireCacheImpl.getInstance).exists {
-    cache =>
-      val irm = cache.getResourceManager
-      if (irm.getHeapMonitor.getBytesUsed >= irm.getHeapMonitor.getThresholds.getCriticalThresholdBytes) true else false
 
+  /**
+    * Checks whether GemFire critical threshold is breached
+    *
+    * @return
+    */
+  def isCriticalUp: Boolean = Option(GemFireCacheImpl.getInstance).exists { cache =>
+    if (cache.getResourceManager.getHeapMonitor.getBytesUsed >=
+        cache.getResourceManager.getHeapMonitor.getThresholds.getCriticalThresholdBytes) {
+      cache.getResourceManager.getHeapMonitor.updateStateAndSendEvent() // Send critical up event
+      true
+    } else false
   }
 
   /**
