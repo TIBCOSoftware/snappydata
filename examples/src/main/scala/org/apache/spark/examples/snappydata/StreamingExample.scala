@@ -131,9 +131,9 @@ object StreamingExample {
         "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 
     // this conf is used to get a connection a JDBC connection
-    val conf = new ConnectionConfBuilder(snsc.snappySession).setTable("publisher_bid_counts").build()
-
+    val conf = new ConnectionConfBuilder(snsc.snappySession).build
     println()
+
     // process the stream data returned by continuous query and update publisher_bid_counts table
     resultStream.foreachDataFrame(df => {
       if (df.count() > 0L) {

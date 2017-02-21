@@ -41,7 +41,7 @@ object DataUpdateJob extends SnappySQLJob {
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable(tableName)
 
-    val conf = new ConnectionConfBuilder(snc).setTable(tableName).build()
+    val conf = new ConnectionConfBuilder(snc).build
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getConnection(conf)
