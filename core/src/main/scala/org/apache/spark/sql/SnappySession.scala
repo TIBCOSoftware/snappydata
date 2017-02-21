@@ -983,10 +983,10 @@ class SnappySession(@transient private val sc: SparkContext,
       // for smart connector mode create the table here and allow
       // further processing to load the data
       case ThinClientConnectorMode(_, _) =>
-        val useSchema = userSpecifiedSchema.getOrElse(Dataset.ofRows(sqlContext.sparkSession, query).schema)
+        val userSchema = userSpecifiedSchema.getOrElse(Dataset.ofRows(sqlContext.sparkSession, query).schema)
         val rel = SmartConnectorHelper.createTable(tableIdent,
-          provider, Option(useSchema), schemaDDL, mode, options, isBuiltIn)
-        createTableAsSelect(tableIdent, provider, Option(useSchema), schemaDDL,
+          provider, Option(userSchema), schemaDDL, mode, options, isBuiltIn)
+        createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
           partitionColumns, SaveMode.Append, options, query, isBuiltIn)
       case _ =>
         createTableAsSelect(tableIdent, provider, userSpecifiedSchema, schemaDDL,
