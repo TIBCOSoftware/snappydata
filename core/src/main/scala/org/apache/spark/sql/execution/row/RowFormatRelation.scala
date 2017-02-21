@@ -88,30 +88,6 @@ class RowFormatRelation(
         cols ++= relInfo.indexCols
 
       case _ =>
-//        val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
-//        val td = container.getTableDescriptor
-//        if (td ne null) {
-//          val baseColumns = td.getColumnNamesArray
-//          val im = container.getIndexManager
-//          if ((im ne null) && (im.getIndexConglomerateDescriptors ne null)) {
-//            val itr = im.getIndexConglomerateDescriptors.iterator()
-//            while (itr.hasNext) {
-//              // first column of index has to be present in filter to be usable
-//              val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
-//              cols += baseColumns(indexCols(0) - 1)
-//            }
-//          }
-//          // also add primary key
-//          val primaryKey = td.getPrimaryKey
-//          if (primaryKey ne null) {
-//            // first column of primary key has to be present in filter to be usable
-//            val pkCols = primaryKey.getKeyColumns
-//            if (pkCols.nonEmpty) {
-//              cols += baseColumns(pkCols(0) - 1)
-//            }
-//          }
-//        }
-//        cols
         val indexCols = new Array[String](1)
         GfxdSystemProcedures.getIndexColumns(indexCols, region)
         Option(indexCols(0)).foreach(icols => cols ++= icols.split(":"))
@@ -127,7 +103,6 @@ class RowFormatRelation(
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
     val isPartitioned = (numBuckets != 1)
-//    val isPartitioned = region.getPartitionAttributes != null
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>

@@ -660,7 +660,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     cachedDataSourceTables.invalidate(table)
   }
 
-  def isDisconnectException(t: Throwable): Boolean = {
+  private def isDisconnectException(t: Throwable): Boolean = {
     if (t != null) {
       val tClass = t.getClass.getName
       tClass.contains("DisconnectedException") ||

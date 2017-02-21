@@ -40,7 +40,9 @@ class ThinConnectorSnappyDUnitTest(s: String)
           try {
             loc.startNetworkServer("localhost", locatorClientPort, locatorNetProps)
           } catch {
-            case g: GemFireXDRuntimeException => //ignored
+            case g: GemFireXDRuntimeException
+              if g.getMessage.contains("The netserver address")
+                  && g.getMessage.contains("is already in use") => //ignored if already started
           }
         }
         assert(loc.status == FabricService.State.RUNNING)
@@ -58,8 +60,6 @@ class ThinConnectorSnappyDUnitTest(s: String)
 
   override def testColumnTableStatsInSplitModeWithHA(): Unit = {
   }
-
-
 
 
 }

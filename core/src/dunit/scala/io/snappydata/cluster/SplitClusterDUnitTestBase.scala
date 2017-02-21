@@ -288,12 +288,22 @@ trait SplitClusterDUnitTestObject extends Logging {
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, propsMap)
-    // test index create op
-    snc.createIndex("tableName" + "_index", tableName, Map(("COL1" -> None)),
-      Map.empty[String, String])
+    SnappyContext.getClusterMode(snc.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        // test index create op
+        snc.createIndex("tableName" + "_index", tableName, Map(("COL1" -> None)),
+          Map.empty[String, String])
+      case _ =>
+    }
+
     dataDF.write.insertInto(tableName)
-    // test index drop op
-    snc.dropIndex("tableName" + "_index", false)
+
+    SnappyContext.getClusterMode(snc.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        // test index drop op
+        snc.dropIndex("tableName" + "_index", false)
+      case _ =>
+    }
   }
 
   def selectFromTable(snc: SnappyContext, tableName: String,

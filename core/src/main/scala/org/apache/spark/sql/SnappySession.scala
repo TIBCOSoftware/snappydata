@@ -1658,12 +1658,6 @@ object SnappySession extends Logging {
                 addBucketProfileListener)
             }
         }
-//        // add profile listener for all regions that are using cached
-//        // partitions of their "leader" region
-//        if (rdd.getNumPartitions > 0) {
-//          session.sessionState.leaderPartitions.keysIterator.foreach(
-//            addBucketProfileListener)
-//        }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
     }
     val queryHints = session.synchronized {

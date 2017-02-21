@@ -32,8 +32,6 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 
-import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext}
-import org.apache.spark.{SparkContext, Logging, Partition}
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -41,8 +39,9 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.{Logging, Partition}
 
-final class SparkShellRDDHelper extends Logging {
+final class SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
@@ -114,7 +113,6 @@ object SparkShellRDDHelper extends Logging {
   def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
     val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
     val bucketToServerList = getBucketToServerMapping(resolvedName)
-    logInfo("getPartitions bucketToServerList =  " + bucketToServerList.deep.mkString("\n"))
     getPartitions(bucketToServerList)
   }
 
@@ -264,7 +262,6 @@ object SparkShellRDDHelper extends Logging {
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
     val hostInfo = replicaNodesStr.split(";")
-    hostInfo.foreach(h => logInfo("" + h))
     val netUrls = ArrayBuffer.empty[(String, String)]
     for (host <- hostInfo) {
       val hostAddressPort = returnHostPortFromServerString(host)

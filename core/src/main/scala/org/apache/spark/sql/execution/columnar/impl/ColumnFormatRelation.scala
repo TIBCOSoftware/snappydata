@@ -138,7 +138,6 @@ class BaseColumnFormatRelation(
     // finally skipping any IDs greater than the noted ones.
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
-//    val isPartitioned = region.getPartitionAttributes != null
     val isPartitioned = (numBuckets != 1)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {

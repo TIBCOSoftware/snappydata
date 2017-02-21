@@ -498,20 +498,6 @@ object SplitSnappyClusterDUnitTest
     val tblBatchSize100 = "tblBatchSizeBig_split"
 
     val tblBatchSize5 = "tblBatchSizeSmall_split"
-//
-//    // Test setting locators property via environment variable.
-//    // Also enables checking for "spark." or "snappydata." prefix in key.
-//    System.setProperty(locatorProp, s"localhost:$locatorPort")
-//    val hostName = InetAddress.getLocalHost.getHostName
-//    val conf = new SparkConf()
-//        .setAppName("test Application")
-//        .setMaster(s"spark://$hostName:7077")
-//        .set("spark.executor.extraClassPath",
-//          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-//
-//
-//    val sc = SparkContext.getOrCreate(conf)
-//    val snc = SnappyContext(sc)
 
     val snc = getSnappyContextForConnector(locatorPort, locatorProp,
       useThinClientConnector, locatorClientPort)
