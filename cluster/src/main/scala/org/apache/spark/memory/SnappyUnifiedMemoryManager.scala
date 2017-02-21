@@ -71,12 +71,12 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[memory] val evictor = new SnappyStorageEvictor
 
-  val mbean = new SnappyMemoryManagerMBean(this)
+/*  val mbean = new SnappyMemoryManagerMBean(this)
 
   val name = new ObjectName("GemFire:type=SnappyUnifiedManager");
 
   val mbs = ManagementFactory.getPlatformMBeanServer()
-  mbs.registerMBean(mbean, name);
+  mbs.registerMBean(mbean, name);*/
 
   def getStoragePoolSize = onHeapStorageMemoryPool.poolSize
 
@@ -182,7 +182,7 @@ class SnappyUnifiedMemoryManager private[memory](
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = {
-    //println(s"Acquiring mem for $objectName $numBytes")
+    println(s"Acquiring mem [SNAP] for $objectName $numBytes")
     threadsWaitingForStorage.incrementAndGet()
     synchronized {
       if (!memoryForObject.contains(objectName)) {
@@ -255,13 +255,14 @@ class SnappyUnifiedMemoryManager private[memory](
 
 
   override def releaseStorageMemoryForObject(objectName: String, numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
-    //println(s"releasing mem for $objectName $numBytes")
+    println(s"releasing mem for $objectName $numBytes")
+    //Thread.dumpStack()
     memoryForObject(objectName) -= numBytes
     super.releaseStorageMemory(numBytes, memoryMode)
   }
 
   override def dropStorageMemoryForObject(name: String, memoryMode: MemoryMode): Long = synchronized {
-
+    println(s"Dropping memory for $name")
     val (executionPool, storagePool, maxMemory) = memoryMode match {
       case MemoryMode.ON_HEAP => (
           onHeapExecutionMemoryPool,
@@ -273,10 +274,12 @@ class SnappyUnifiedMemoryManager private[memory](
           maxOffHeapMemory)
     }
 
-    val bytesToBeFreed = memoryForObject(name)
+    val bytesToBeFreed = memoryForObject.getOrElse(name, 0L)
     //println(s"droping mem for $name $bytesToBeFreed")
-    super.releaseStorageMemory(bytesToBeFreed, memoryMode)
-    memoryForObject.remove(name)
+    if(bytesToBeFreed > 0){
+      super.releaseStorageMemory(bytesToBeFreed, memoryMode)
+      memoryForObject.remove(name)
+    }
     bytesToBeFreed
   }
 

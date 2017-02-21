@@ -190,6 +190,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def dropStorageMemory(objectName: String): Unit =
     MemoryManagerCallback.memoryManager.dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP)
 
+  override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
+
   override def isSnappyStore: Boolean = true
 
   override def getRegionOverhead(region: LocalRegion): Long = {

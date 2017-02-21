@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.memory
 
 import scala.collection.mutable
@@ -7,9 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import org.apache.spark.storage.BlockId
 import org.apache.spark.{Logging, SparkEnv}
 
-/**
-  * Created by rishim on 13/2/17.
-  */
+
 trait StoreUnifiedManager {
 
   def acquireStorageMemoryForObject(
@@ -36,7 +50,7 @@ class TempMemoryManager extends StoreUnifiedManager {
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = synchronized {
-    println(s"Acquiing memory for $objectName")
+    println(s"Acquiring mem [TEMP] for $objectName $numBytes")
     if (!memoryForObject.contains(objectName)) {
       memoryForObject(objectName) = 0L
     }
@@ -65,7 +79,10 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager {
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
       numBytes: Long,
-      memoryMode: MemoryMode): Boolean = true
+      memoryMode: MemoryMode): Boolean = {
+    println(s"Acquiring mem [NO-OP] for $objectName $numBytes")
+    true
+  }
 
 
   override def dropStorageMemoryForObject(
@@ -84,9 +101,9 @@ object MemoryManagerCallback extends Logging {
   private var snappyUnifiedManager: StoreUnifiedManager = null
   private val noOpMemoryManager :  StoreUnifiedManager = new NoOpSnappyMemoryManager
 
-  def resetMemoryManager(): Unit ={
+  def resetMemoryManager(): Unit = synchronized {
     tempMemoryManager.memoryForObject.clear()
-    snappyUnifiedManager = null
+    snappyUnifiedManager = null // For local mode testing
   }
 
   private final val isCluster = {
@@ -104,7 +121,7 @@ object MemoryManagerCallback extends Logging {
     }
   }
 
-  def memoryManager: StoreUnifiedManager = {
+  def memoryManager: StoreUnifiedManager = synchronized {
     //First check if SnappyUnifiedManager is set. If yes no need to look further.
     if (isCluster && (snappyUnifiedManager ne null)) {
       return snappyUnifiedManager
@@ -131,7 +148,6 @@ object MemoryManagerCallback extends Logging {
       return tempMemoryManager
     }
   }
-
 }
 
 

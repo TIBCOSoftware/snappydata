@@ -17,16 +17,43 @@
 package org.apache.spark.memory
 
 
+import java.lang.management.ManagementFactory
 import java.util.Properties
 
 import io.snappydata.cluster.ClusterManagerTestBase
-import io.snappydata.test.dunit.SerializableRunnable
+import io.snappydata.test.dunit.{SerializableRunnable, VM}
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 import SnappyUnifiedMemoryManagerDUnitTest._
 
 case class DummyData(col1: Int, col2: Int, col3: Int)
+
+class WaitAssert(val error: Int, clazz : Class[_]){
+
+  var value1 = 0L
+  var value2 = 0L
+  var excString = ""
+
+  def assertStorageUsed(vm1: VM, vm2: VM, ignoreByteCount :Int = 0): Boolean = {
+    value1 = vm1.invoke(clazz, "getStorageMemory").asInstanceOf[Long]
+    value2 = vm2.invoke(clazz, "getStorageMemory").asInstanceOf[Long]
+    println(s"vm1_memoryUsed $value1 vm2_memoryUsed $value2")
+    excString = s"failed $value1 & $value2 are not within permissable limit \n"
+
+    if (value1 == value2) return true
+    if(value1 < value2 ){
+      value1 += ignoreByteCount
+    }else{
+      value2 -= ignoreByteCount
+    }
+    if (Math.abs(value1 - value2) < ((value2 * error) / 100)) return true else false
+
+  }
+
+  def exceptionString(): String = excString
+}
+
 class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val col_table = "app.col_table"
@@ -37,22 +64,38 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
+    println("PID = " + ManagementFactory.getRuntimeMXBean().getName())
     snc
+
   }
 
-  def assertApproximate(value1: Long, value2: Long): Unit = {
+  def resetMemoryManagers(): Unit ={
+    vm0.invoke(getClass, "resetStorageMemory")
+    vm1.invoke(getClass, "resetStorageMemory")
+    vm2.invoke(getClass, "resetStorageMemory")
+  }
+  override def tearDown2(): Unit = {
+    resetMemoryManagers
+    super.tearDown2()
+  }
+
+  //Approximate because we include hash map size also, which can vary across VMs
+  def assertApproximate(value1: Long, value2: Long, error: Int = 5): Unit = {
     if (value1 == value2) return
-    if(Math.abs(value1 - value2) > value2 / 10){
+    if(Math.abs(value1 - value2) > ((value2 * error)/ 100)){// Error target should be 1
       throw new java.lang.AssertionError(s"assertion " +
           s"failed $value1 & $value2 are not within permissable limit")
     }
   }
 
-  def testMemoryUsedInReplication(): Unit = {
+  def assertForWait(value1: Long, value2: Long, error: Int = 5): Boolean = {
+    if (value1 == value2) return true
+    if(Math.abs(value1 - value2) < ((value2 * error)/ 100)) return true else false
+  }
+
+  def _testMemoryUsedInReplication(): Unit = {
     val snc = newContext()
-    vm1.invoke(getClass, "resetStorageMemory")
-    vm2.invoke(getClass, "resetStorageMemory")
-    val data = for (i <- 1 to 700) yield (Seq(i, (i + 1), (i + 2)))
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
     val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -64,19 +107,160 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     assertApproximate(vm1_memoryUsed , vm2_memoryUsed)
   }
 
-  def testMemoryUsedInBucketRegions(): Unit = {
+  /**
+    * This test checks column table memory usage when GII is done in a node.
+    * It checks memory usage with reference to the node which was alive at the time
+    * of GII.
+    */
+  def testMemoryUsedInColumnTableWithGII(): Unit = {
+    var props = bootProps.clone().asInstanceOf[java.util.Properties]
+    val port = ClusterManagerTestBase.locPort
+    props.setProperty("eviction-heap-percentage", "80")
+    def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
-    vm1.invoke(getClass, "resetStorageMemory")
-    vm2.invoke(getClass, "resetStorageMemory")
-    val data = for (i <- 1 to 700) yield (Seq(i, (i + 1), (i + 2)))
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
     val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    val options = "OPTIONS (PARTITION_BY 'Col1', REDUNDANCY '1')"
+    val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1', REDUNDANCY '2')"
+    snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
+        options
+    )
+    dataDF.write.insertInto(col_table)
+    vm1.invoke(restartServer(props))
+
+    val waitAssert = new WaitAssert(2, getClass)
+    //Setting ignore bytecount as VM doing GII does have a valid value, hence key is kept as null
+    // This decreases the size of entry overhead
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2, 16000),
+      waitAssert.exceptionString(),
+      20000, 5000, true)
+  }
+
+  /**
+    * This test checks replicated table memory usage when GII is done in a node.
+    * It checks memory usage with reference to the node which was alive at the time
+    * of GII.
+    */
+  def testMemoryUsedInReplicationWithGII(): Unit = {
+    var props = bootProps.clone().asInstanceOf[java.util.Properties]
+    val port = ClusterManagerTestBase.locPort
+    props.setProperty("eviction-heap-percentage", "80")
+    def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    val snc = newContext()
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
+    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+      DummyData(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(rr_table, "row", dataDF.schema, Map.empty[String, String])
+    dataDF.write.insertInto(rr_table)
+    vm1.invoke(restartServer(props))
+
+    val waitAssert = new WaitAssert(2, getClass)
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+      waitAssert.exceptionString(),
+      20000, 5000, true)
+  }
+
+  /**
+    * This test checks row partitioned table memory usage when GII is done in a node.
+    * It checks memory usage with reference to the node which was alive at the time
+    * of GII.
+    */
+  def _testMemoryUsedInRowPartitionedTableWithGII(): Unit = {
+    var props = bootProps.clone().asInstanceOf[java.util.Properties]
+    val port = ClusterManagerTestBase.locPort
+    props.setProperty("eviction-heap-percentage", "80")
+
+    def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    val snc = newContext()
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
+    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+      DummyData(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
     dataDF.write.insertInto(rr_table)
+    vm1.invoke(restartServer(props))
+
+    val waitAssert = new WaitAssert(2, getClass)
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+      waitAssert.exceptionString(),
+      20000, 5000, true)
+  }
+
+  /**
+    * This test checks row partitioned table memory usage when GII is done in a node.
+    * It checks memory usage with reference to the node which was alive at the time
+    * of GII. At the same time we fire deletes on the region.
+    */
+  def _testMemoryUsedInReplicationParTableGIIWithDeletes(): Unit = {
+    var props = bootProps.clone().asInstanceOf[java.util.Properties]
+    val port = ClusterManagerTestBase.locPort
+    props.setProperty("eviction-heap-percentage", "80")
+
+    def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    val snc = newContext()
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
+    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+      DummyData(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1', REDUNDANCY '2')"
+    snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
+        options
+    )
+    dataDF.write.insertInto(rr_table)
+
+    val otherExecutorThread = new Thread(new Runnable {
+      def run() {
+        (1 to 100).map(i=> snc.delete(rr_table, s"col1=$i"))
+      }
+    })
+    otherExecutorThread.start()
+
+    vm1.invoke(restartServer(props))
+    val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
+    val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
+    println(s"vm1_memoryUsed $vm1_memoryUsed vm2_memoryUsed $vm2_memoryUsed")
+
+    ClusterManagerTestBase.waitForCriterion(assertForWait(vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
+      , vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long], 2),
+      s"failed $vm1_memoryUsed & $vm2_memoryUsed are not within permissable limit \n",
+      20000, 5000, true)
+  }
+
+  def _testMemoryUsedInBucketRegions(): Unit = {
+    val snc = newContext()
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
+    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+      DummyData(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', REDUNDANCY '2')"
+    snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
+        options
+    )
+    dataDF.write.insertInto(rr_table)
+
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     println(s"vm1_memoryUsed $vm1_memoryUsed vm2_memoryUsed $vm2_memoryUsed")
@@ -94,14 +278,12 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     }
 
     val snc = newContext()
-    vm1.invoke(getClass, "resetStorageMemory")
-    vm2.invoke(getClass, "resetStorageMemory")
 
-    val data = for (i <- 1 to 700) yield (Seq(i, (i + 1), (i + 2)))
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
     val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    val options = "OPTIONS (PARTITION_BY 'Col1', PERSISTENT 'SYNCHRONOUS')"
+    val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
@@ -126,9 +308,11 @@ object SnappyUnifiedMemoryManagerDUnitTest {
   val memoryMode = MemoryMode.ON_HEAP
 
   def resetStorageMemory() =
-    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    MemoryManagerCallback.resetMemoryManager()
 
-  def getStorageMemory(): Long = SparkEnv.get.memoryManager.storageMemoryUsed
+  def getStorageMemory(): Long = {
+    SparkEnv.get.memoryManager.storageMemoryUsed
+  }
 
   def failTheExecutors: Unit = {
     sc.parallelize(1 until 100, 5).map { i =>
