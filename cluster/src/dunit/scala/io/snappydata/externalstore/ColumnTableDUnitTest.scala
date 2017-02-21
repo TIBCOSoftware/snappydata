@@ -88,6 +88,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   // changing the test to such that batches are created
   // and looking for column table stats
+  // Disabled for now. See SNAP-1353.
   def disabled_testSNAP205_InsertLocalBuckets(): Unit = {
     val snc = SnappyContext(sc)
 
@@ -134,6 +135,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   // changing the test to such that batches are created
   // and looking for column table stats
+  // Disabled for now. See SNAP-1353.
   def disabled_testSNAP205_InsertLocalBucketsNonPartitioning(): Unit = {
     val snc = SnappyContext(sc)
 

@@ -70,7 +70,7 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected def getCurrentValue: A
 
-  def close() {
+  final def close() {
     if (!hasNextValue) return
     try {
       // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
@@ -129,7 +129,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 
 final class ByteArraysIteratorOnScan(container: GemFireContainer,
     bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) with Logging {
+    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
 
   assert(!container.isOffHeap,
     s"Unexpected byte[][] iterator call for off-heap $container")
