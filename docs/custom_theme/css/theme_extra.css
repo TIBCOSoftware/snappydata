@@ -2,16 +2,7 @@
  * Tweak the overal size to better match RTD.
  */
 
-/*
-body {
-    width:100%;
-    background:none;
-    font-family: 'Open Sans', sans-serif;
-    font-size: 15px;
-    padding: 0px;
-    margin: 0px;
-    color: #282828;
-}
+
 .wy-grid-for-nav{
   position: relative !important; 
 }
@@ -21,10 +12,12 @@ body {
 
 .content_container{
   width:70%;
+	
   }
 .wy-grid-for-nav{
   position: relative !important;
-}
+
+	}
 
 .wy-nav-side {
     height: 100%;
@@ -44,6 +37,7 @@ body {
 
   .wy-grid-for-nav{
     position:relative !important;
+
   }
 
 .holder{
@@ -95,10 +89,11 @@ body {
 
     display: block;
 
+
   }
   .content_container {
     max-width: 100% !important;
-  }
+	  }
   .container{
     padding: 0px !important;
   }
@@ -115,23 +110,6 @@ body {
 .navholder {
     width: 100% !important;
 }
-}
-
-
-h3, h4, h5, h6 {
-    color: #2980b9;
-    font-weight: 300;
-    font-family: 'Open Sans', sans-serif;
-}
-
-.logo{
-  float: left;
-  margin-top: 2px;
-  background: url(../img/openbaton.png) center;
-  width: 120px;
-  height:30px;
-  margin-left: 10px;
-
 }
 
 .navcontainer {
@@ -165,7 +143,7 @@ h3, h4, h5, h6 {
     padding: 0px 30px 0px 0px;
     color: #fff;
     text-decoration: none;
-
+    
   }
 
   
@@ -188,7 +166,7 @@ padding-top: 10px;
   width: 0px;
   height:0px;
   margin-right: 20px;
-  background: #ea8e0c url(../img/menu-icon.png);
+  background: #ea8e0c url(../Images/menu-icon.png);
   float: right;
 
 }
@@ -225,31 +203,36 @@ a:hover#menu-icon {
 }
 
 .wy-nav-content-wrap {
-    background:none;
+    background:#edf0f2; /*background color for the main page*/
 }
 
+/*  border color for green vertical block in the left pane selected heading */
 li.current{
     background:none;
-    border-left:4px solid #f9c308;
+    border-left:4px solid #33a179;
 }
 
-
+/*  border color for the left pane sub-nav heading */
 li.subnav_drop a:hover, .subnav a:hover, a:active, .subnav li a:hover  {
     background:none;
-    border-left:4px solid #f9c308;
+    border-left:4px solid #2a2aaf; /* color for the item over which mouse is moved*/	
+    border-left:4px solid #33a179; /* color for the selected item*/
+	
 }
-
+/*  border color around left pane*/
 .wy-menu ,.wy-menu-vertical{
-    border:1px solid #e1e1e5;
+    border:0px solid #e1e1e5;	
 }
-
+/*  border color for opened headings in the left pane*/
 .subnav li {
-    
-    border-bottom:1px solid #e1e1e5;
+    border-bottom:0px solid #e1e1e5;
+    color: #000000;	
 }
 
+/*heading level-1 in left nav*/
 .wy-menu-vertical li{
-   font-size: 15px;
+   font-size: 14px;
+   color: #00000;	
 }
 .wy-side-nav-search {
     z-index: 200;
@@ -277,46 +260,31 @@ li.subnav_drop a:hover, .subnav a:hover, a:active, .subnav li a:hover  {
 
 }
 
-/*
-h1, h2{
-    font-variant: small-caps;
-    text-transform: lowercase;
-    font-family: 'Open Sans', sans-serif;
-}
-
-h1{
-    font-size:3em;
-    line-height: 1.2em;
-}
-*/
-
 .wy-nav-content a:link, .wy-nav-content a:hover, .wy-nav-content a:hover:{
     color: #ea8e0c;
 }
 
+/* hyperlink colors */
 a {
-    color: #ea8e0c;
-    text-decoration: none;
+    color: #003db7;
 }
 
 a:hover{
-    color: #ea8e0c;
-    text-decoration: none;
+    color: #0d79d8;
+    text-decoration: underline;
+    font-style: italic;
+    font-weight: bold;		
 }
-/*
- * Sphinx doesn't have support for section dividers like we do in
- * MkDocs, this styles the section titles in the nav
- *
- * https://github.com/mkdocs/mkdocs/issues/175
- */
+
+/* Line color between headings in left pane*/
 .wy-menu-vertical span {
     line-height: 18px;
     padding: 0.6045em 0em 0.6045em 1.4045em ;
     display: block;
     position: relative;
     font-weight: bold;
-    color: #282828;
-    border-bottom:1px solid #e1e1e5;
+    color: #00000; /*Left Nav- Heading 1 Color*/
+    border-bottom:1px solid #00000; /* line color*/
 }
 
 .wy-menu-vertical span:last-child{
@@ -324,22 +292,24 @@ a:hover{
 } 
 
 .wy-menu-vertical li ul li a{
-    color: #282828;
+    color: #727171; /*Color of the Level 2 menu item*/
 }
+
 .wy-menu-vertical li.on a, .wy-menu-vertical li.current>a {
    padding: 0.6045em 0em 0.6045em 2.4045em ;
-   color: #282828;
+   color: #0f7950; /*Color of the Level 2 selected menu item*/
+   background-color: #ea8e0c;	
     }
+    
 .wy-menu-vertical a {
     padding: 0.6045em 0em 0.6045em 2.4045em ;
     color: #282828;
     }
 
-
-
 nav.stickynav {
     position: relative;
     float: left;
+    background-color: #ffffff;	 /*background color for the nav bar*/
     /* top: 0; */
 }
 
@@ -396,7 +366,7 @@ nav.stickynav {
     overflow-y: auto;
     position: relative;
     float: left;
-    background: none;
+    background: none; /* left pane color */
     width:28%;
 }
 
@@ -415,61 +385,15 @@ nav.stickynav {
  * https://github.com/mkdocs/mkdocs/issues/#348
  */
 .wy-menu-vertical a {
-  font-size: 15px;
+  font-size: 14px;
 }
 
-/*
-/*
- * Fix wrapping in the code highlighting
- *
- * https://github.com/mkdocs/mkdocs/issues/233
- */
-code {
-    white-space: pre;
-}
-
-/*
- * Wrap inline code samples otherwise they shoot of the side and
- * can't be read at all.
- *
- * https://github.com/mkdocs/mkdocs/issues/313
- */
-p code {
-    word-wrap: break-word;
-}
-
-
-/*
- * The CSS classes from highlight.js seem to clash with the
- * ReadTheDocs theme causing some code to be incorrectly made
- * bold and italic.
- *
- * https://github.com/mkdocs/mkdocs/issues/411
- */
-code.cs, code.c {
-    font-weight: inherit;
-    font-style: inherit;
-}
-
-code, .rst-content tt {
-    padding: 2px 5px;
-    color: #ea8e0c;
-    background-color: #fcf3e0;
-    font-size: 100%;
-    border:none;
-}
-/*
- * Fix some issues with the theme and non-highlighted code
- * samples. Without and highlighting styles attached the
- * formatting is broken.
- *
- * https://github.com/mkdocs/mkdocs/issues/319
- */
 .no-highlight {
   display: block;
   padding: 1em;
   color: #333;
 }
+
 
 
 /*
@@ -510,4 +434,4 @@ code, .rst-content tt {
 @media screen and (min-width: 1400px){
     .wy-nav-content {background:none;}
 }
-*/
+

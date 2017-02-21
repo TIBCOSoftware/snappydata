@@ -160,6 +160,9 @@ pages:
     - Observing logs for warning/severe/errors and decoding log messages: 'troubleshooting/observing_logs.md'
 - Appendix A-SQL Reference Guide: 
     - Introduction: sql_reference.md
+    - Statements: 'sql_reference/statements.md'
+    - Functions: 'sql_reference/functions.md'
+    - Procedures: 'sql_reference/procedures.md'
 - Appendix B-API Reference Guide: 
     - Introduction: api_reference.md
 - Appendix C-Using iSight-Cloud: 

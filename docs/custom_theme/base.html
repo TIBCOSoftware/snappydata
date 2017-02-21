@@ -11,7 +11,7 @@
   {% endblock %}
 
   {% if favicon %}<link rel="shortcut icon" href="{{ favicon }}">
-  {% else %}<link rel="shortcut icon" href="{{ base_url }}/img/favicon.ico">{% endif %}
+  {% else %}<link rel="shortcut icon" href="{{ base_url }}favicon.ico">{% endif %}
 
   {# CSS #}
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,300,600,700" rel="stylesheet" type="text/css">
@@ -124,8 +124,8 @@ console.log($( ".subnav" ).find( "li:contains('{{ page_title }}')" ));
 console.log('--------');
   </script>
 
+<!-- Delete drop-down options
 
-<!--
 <div class="navcontainer" style="margin:0px; background:#000;">
     <div class="navholder">
       <nav>
@@ -142,11 +142,9 @@ console.log('--------');
           </ul>
       </nav>
      </div>
+-->     
+
 </div>
--->
-
-<!-- Toc container -->
-
 <div  class="container">
   <div class="holder"> 
         <div class="wy-grid-for-nav">
@@ -165,7 +163,6 @@ console.log('--------');
             &nbsp;
           </nav>
         </div>
-
     <div class="content_container">
         <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
@@ -203,4 +200,3 @@ MkDocs version : {{ mkdocs_version }}
 Build Date UTC : {{ build_date_utc }}
 -->
 {% endif %}
-
