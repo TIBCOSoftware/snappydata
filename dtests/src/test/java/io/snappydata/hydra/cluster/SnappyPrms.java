@@ -18,6 +18,7 @@ package io.snappydata.hydra.cluster;
 
 import hydra.BasePrms;
 import hydra.HydraVector;
+import hydra.TestConfig;
 
 import java.util.Vector;
 
@@ -325,6 +326,13 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long shufflePartitions;
 
+    public static Long dmlOperations;
+
+    public static Long dataFileLocation;
+
+    public static Long csvFileLocation;
+
+
     public static int getRetryCountForJob() {
         Long key = numTimesToRetry;
         return tasktab().intAt(key, tab().intAt(key, 5));
@@ -532,6 +540,26 @@ public class SnappyPrms extends BasePrms {
     public static Vector getSnappyStreamingJobClassNames() {
         Long key = streamingJobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    }
+
+    public static String getDMLOperations(){
+        Long key = dmlOperations;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    }
+
+    public static String[] getCSVFileLocations() {
+        Long key = SnappyPrms.csvFileLocation;
+        Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
+        String[] strArr = new String[tables.size()];
+        for (int i = 0; i < tables.size(); i++) {
+            strArr[i] = (String)tables.elementAt(i);
+        }
+        return strArr;
+    }
+
+    public static String getDataLocations() {
+        Long key = SnappyPrms.dataFileLocation;
+        return TestConfig.tasktab().stringAt(key, TestConfig.tab().stringAt(key, null));
     }
 
     static {
