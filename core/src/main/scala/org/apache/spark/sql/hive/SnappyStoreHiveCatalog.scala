@@ -425,10 +425,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case None => synchronized {
         tempTables.getOrElse(tableIdent.table,
           throw new TableNotFoundException(s"Table '$tableIdent' not found")) match {
-          case lr: LogicalRelation =>
-            // TODO Yogs_2_1_Merge
-            // lr.copy(metastoreTableIdentifier = lr.metastoreTableIdentifier)
-            lr.copy()
+          case lr: LogicalRelation => lr.copy(catalogTable = lr.catalogTable)
+
           case x => x
         }
       }
