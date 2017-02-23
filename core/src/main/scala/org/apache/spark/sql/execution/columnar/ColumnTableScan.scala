@@ -270,8 +270,8 @@ private[sql] final case class ColumnTableScan(
     // (or an extension of it if some special treatment is required)?
     val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
     else null
-    val (weightVarName, weightAssignCode) = if (isForSampleReservoirAsRegion &&
-        output.exists(_.name == Utils.WEIGHTAGE_COLUMN_NAME)) {
+    val (weightVarName, weightAssignCode) = if (output.exists(_.name ==
+      Utils.WEIGHTAGE_COLUMN_NAME)) {
       val varName = ctx.freshName("weightage")
       ctx.addMutableState("long", varName, s"$varName = 0;")
       (varName, s"$varName = $wrappedRow.weight();")
