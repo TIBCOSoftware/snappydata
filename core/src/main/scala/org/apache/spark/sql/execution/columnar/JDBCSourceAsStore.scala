@@ -103,12 +103,13 @@ final class CachedBatchIteratorOnRS(conn: Connection,
   var currentUUID: String = _
   val ps = conn.prepareStatement(fetchColQuery)
   var colBuffers: Option[scala.collection.mutable.HashMap[Int, Array[Byte]]] = null
-
   def getColumnLob(bufferPosition: Int): Array[Byte] = {
     colBuffers match {
       case Some(map) => map(bufferPosition)
       case None =>
-        ps.setString(1, currentUUID)
+        for (i <- requiredColumns.indices) {
+          ps.setString(i + 1, currentUUID)
+        }
         val colIter = ps.executeQuery()
         val bufferMap = new scala.collection.mutable.HashMap[Int, Array[Byte]]
         while(colIter.next()) {

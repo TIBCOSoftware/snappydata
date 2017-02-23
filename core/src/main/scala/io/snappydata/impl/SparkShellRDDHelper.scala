@@ -32,7 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 
-import org.apache.spark.Partition
+import org.apache.spark.{Logging, Partition}
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -50,20 +50,23 @@ final class SparkShellRDDHelper {
       partitionId: Int, requiredColumns: Array[String],
       schema: StructType): (String, String) = {
 
-    val fetchStatsClause = if (useLocatorURL) s" where bucketId = $partitionId " +
-        s" and columnIndex = -1" else s" where columnIndex = -1"
-    val fetchColClause = if (useLocatorURL) s" where bucketId = $partitionId " +
-        s" and uuid = ? "
-    else s" where uuid = ? "
-
     val schemaWithIndex = schema.zipWithIndex
-    val columnIndexString = requiredColumns.map(col => {
+    // to fetch columns create a union all string
+    // (select data, columnIndex from table where
+    //  partitionId = 1 and uuid = ? and columnIndex = 1)
+    // union all
+    // (select data, columnIndex from table where
+    //  partitionId = 1 and uuid = ? and columnIndex = 7)
+    // An OR query like the following results in a bulk table scan
+    // select data, columnIndex from table where partitionId = 1 and
+    //  (columnIndex = 1 or columnIndex = 7)
+    val fetchColString = requiredColumns.map(col => {
       schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
-    }).map(s"columnIndex = " + _).mkString(" or ")
+    }).map(i => s"(select data, columnIndex from $resolvedTableName where " +
+        s"partitionId = $partitionId and uuid = ? and columnIndex = $i)").mkString(" union all ")
     // fetch stats query and fetch columns query
-    (s"select data, uuid from $resolvedTableName $fetchStatsClause",
-        s"select data, columnIndex from   $resolvedTableName " +
-            s" $fetchColClause and ($columnIndexString)")
+    (s"select data, uuid from $resolvedTableName where columnIndex = -1",
+        fetchColString)
   }
 
   def executeQuery(conn: Connection, tableName: String,
