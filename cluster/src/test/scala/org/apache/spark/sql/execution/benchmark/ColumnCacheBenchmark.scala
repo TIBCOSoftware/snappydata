@@ -42,7 +42,7 @@ import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, QueryTest, Row, SparkSession}
+import org.apache.spark.sql.{Dataset, QueryTest, Row, SparkSession}
 import org.apache.spark.util.Benchmark
 
 
@@ -68,17 +68,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   test("cache with randomized keys - query") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = true)
-  }
-
-  /**
-   * Collect a [[DataFrame]] and check whether the collected result matches
-   * the expected answer.
-   */
-  private def collect(df: DataFrame, expectedAnswer: Seq[Row]): Unit = {
-    QueryTest.checkAnswer(df, expectedAnswer, checkToRDD = false) match {
-      case Some(errMessage) => throw new RuntimeException(errMessage)
-      case None => // all good
-    }
   }
 
   def addCaseWithCleanup(
@@ -145,9 +134,9 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           testDF2.write.insertInto("test")
         }
         if (snappy) {
-          collect(snappySession.sql(query), expectedAnswer2)
+          ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
         } else {
-          collect(sparkSession.sql(query), expectedAnswer)
+          ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)
         }
         testCleanup()
       }
@@ -174,9 +163,9 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
       addCaseWithCleanup(benchmark, name, numIters, prepare, cleanup, testCleanup) { _ =>
         if (queryPath) {
           if (snappy) {
-            collect(snappySession.sql(query), expectedAnswer2)
+            ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
           } else {
-            collect(sparkSession.sql(query), expectedAnswer)
+            ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)
           }
         } else {
           // also benchmark the time it takes to build the column buffers
@@ -207,7 +196,18 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
 object ColumnCacheBenchmark {
 
-  def applySchema(df: DataFrame, newSchema: StructType): DataFrame = {
+  /**
+   * Collect a [[Dataset[Row]] and check whether the collected result matches
+   * the expected answer.
+   */
+  def collect(df: Dataset[Row], expectedAnswer: Seq[Row]): Unit = {
+    QueryTest.checkAnswer(df, expectedAnswer, checkToRDD = false) match {
+      case Some(errMessage) => throw new RuntimeException(errMessage)
+      case None => // all good
+    }
+  }
+
+  def applySchema(df: Dataset[Row], newSchema: StructType): Dataset[Row] = {
     df.sqlContext.internalCreateDataFrame(df.queryExecution.toRdd, newSchema)
   }
 }

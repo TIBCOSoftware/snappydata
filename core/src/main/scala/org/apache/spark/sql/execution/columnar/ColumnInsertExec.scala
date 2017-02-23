@@ -186,6 +186,7 @@ case class ColumnInsertExec(child: SparkPlan, overwrite: Boolean,
     }
     s"""
        |$checkEnd; // already done
+       |$numInsertions = 0;
        |int $defaultRowSize = 0;
        |$declarations
        |$defaultBatchSizeTerm = Math.max(
@@ -399,53 +400,53 @@ object ColumnWriter {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
     var isNull = ev.isNull
+    val input = ev.value
     val writeValue = sqlType match {
       case _ if ctx.isPrimitiveType(jt) =>
         val typeName = ctx.primitiveTypeName(jt)
         if (offsetTerm eq null) {
-          s"$cursorTerm = $encoder.write$typeName($cursorTerm, ${ev.value});"
+          s"$cursorTerm = $encoder.write$typeName($cursorTerm, $input);"
         } else {
           // offsetTerm is non-null for recursive writes of StructType
-          s"$encoder.write${typeName}Unchecked($offsetTerm, ${ev.value});"
+          s"$encoder.write${typeName}Unchecked($offsetTerm, $input);"
         }
       case StringType =>
         if (offsetTerm eq null) {
-          s"$cursorTerm = $encoder.writeUTF8String($cursorTerm, ${ev.value});"
+          s"$cursorTerm = $encoder.writeUTF8String($cursorTerm, $input);"
         } else {
           s"$cursorTerm = $encoder.writeStructUTF8String($cursorTerm," +
-              s" ${ev.value}, $offsetTerm, $baseOffsetTerm);"
+              s" $input, $offsetTerm, $baseOffsetTerm);"
         }
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         if (offsetTerm eq null) {
           s"$cursorTerm = $encoder.writeLongDecimal($cursorTerm, " +
-              s"${ev.value}, $batchSizeTerm, ${d.precision}, ${d.scale});"
+              s"$input, $batchSizeTerm, ${d.precision}, ${d.scale});"
         } else {
           // assume caller has already ensured matching precision+scale
-          s"$cursorTerm = $encoder.writeLong($offsetTerm, " +
-              s"${ev.value}.toUnscaledLong());"
+          s"$encoder.writeLongUnchecked($offsetTerm, $input.toUnscaledLong());"
         }
       case d: DecimalType =>
         if (offsetTerm eq null) {
-          s"$cursorTerm = $encoder.writeDecimal($cursorTerm, ${ev.value}, " +
+          s"$cursorTerm = $encoder.writeDecimal($cursorTerm, $input, " +
               s"$batchSizeTerm, ${d.precision}, ${d.scale});"
         } else {
           // assume caller has already ensured matching precision+scale
           s"$cursorTerm = $encoder.writeStructDecimal($cursorTerm, " +
-              s"${ev.value}, $offsetTerm, $baseOffsetTerm);"
+              s"$input, $offsetTerm, $baseOffsetTerm);"
         }
       case CalendarIntervalType =>
         if (offsetTerm eq null) {
-          s"$cursorTerm = $encoder.writeInterval($cursorTerm, ${ev.value});"
+          s"$cursorTerm = $encoder.writeInterval($cursorTerm, $input);"
         } else {
           s"$cursorTerm = $encoder.writeStructInterval($cursorTerm, " +
-              s"${ev.value}, $offsetTerm, $baseOffsetTerm);"
+              s"$input, $offsetTerm, $baseOffsetTerm);"
         }
       case BinaryType =>
         if (offsetTerm eq null) {
-          s"$cursorTerm = $encoder.writeBinary($cursorTerm, ${ev.value});"
+          s"$cursorTerm = $encoder.writeBinary($cursorTerm, $input);"
         } else {
           s"$cursorTerm = $encoder.writeStructBinary($cursorTerm, " +
-              s"${ev.value}, $offsetTerm, $baseOffsetTerm);"
+              s"$input, $offsetTerm, $baseOffsetTerm);"
         }
 
       // TODO: see if it can be proved that SPARK PR#10725 causes no degradation
@@ -453,46 +454,16 @@ object ColumnWriter {
       // removed completely from ColumnEncoder/ColumnDecoder classes
       // TODO: MapObjects creates new variables every time so leads to new
       // plans being compiled for every Dataset being inserted into the
-      // same table.
+      // same table. Change it to generate variables using CodegenContext.
       case a: ArrayType =>
-        genCodeArrayWrite(ctx, a, encoder, cursorTerm, ev,
+        genCodeArrayWrite(ctx, a, encoder, cursorTerm, input,
           batchSizeTerm, offsetTerm, baseOffsetTerm)
-
       case s: StructType =>
-        genCodeStructWrite(ctx, s, encoder, cursorTerm, ev,
+        genCodeStructWrite(ctx, s, encoder, cursorTerm, input,
           batchSizeTerm, offsetTerm, baseOffsetTerm)
-
       case m: MapType =>
-        val keys = ctx.freshName("keys")
-        val values = ctx.freshName("values")
-        val input = ev.value
-        val serializedMapClass = classOf[SerializedMap].getName
-        val writeOffset = if (offsetTerm eq null) ""
-        else s"$encoder.setOffsetAndSize($cursorTerm, $offsetTerm, $baseOffsetTerm, 0);"
-        val serializeMap =
-          s"""
-             |final ArrayData $keys = $input.keyArray();
-             |final ArrayData $values = $input.valueArray();
-             |
-             |// at least 16 bytes for the size+numElements for keys and values
-             |$cursorTerm = $encoder.ensureCapacity($cursorTerm, 16);
-             |$writeOffset
-             |// write the keys with its size and numElements
-             |${genCodeArrayWrite(ctx, ArrayType(m.keyType,
-                containsNull = false), encoder, cursorTerm, ExprCode("", "false",
-                keys), batchSizeTerm, offsetTerm = null, baseOffsetTerm = null)}
-             |// write the values with its size and numElements
-             |${genCodeArrayWrite(ctx, ArrayType(m.valueType,
-                m.valueContainsNull), encoder, cursorTerm, ExprCode("", "false",
-                values), batchSizeTerm, offsetTerm = null, baseOffsetTerm = null)}
-          """.stripMargin
-        s"""
-           |if ($input instanceof $serializedMapClass) {
-           |  final $serializedMapClass map = ($serializedMapClass)($input);
-           |  $cursorTerm = $encoder.writeUnsafeData($cursorTerm,
-           |    map.getBaseObject(), map.getBaseOffset(), map.getSizeInBytes());
-           |} else {$serializeMap}
-        """.stripMargin
+        genCodeMapWrite(ctx, m, encoder, cursorTerm, input,
+          batchSizeTerm, offsetTerm, baseOffsetTerm)
 
       case NullType => isNull = "true"; ""
       case _ =>
@@ -508,10 +479,41 @@ object ColumnWriter {
     } else writeValue
   }
 
-  def genCodeArrayWrite(ctx: CodegenContext, a: ArrayType,
-      encoder: String, cursorTerm: String, ev: ExprCode, batchSizeTerm: String,
+  def genCodeMapWrite(ctx: CodegenContext, m: MapType, encoder: String,
+      cursorTerm: String, input: String, batchSizeTerm: String,
       offsetTerm: String = null, baseOffsetTerm: String = null): String = {
-    val input = ev.value
+    val keys = ctx.freshName("keys")
+    val values = ctx.freshName("values")
+    val serializedMapClass = classOf[SerializedMap].getName
+    val writeOffset = if (offsetTerm eq null) ""
+    else s"$encoder.setOffsetAndSize($cursorTerm, $offsetTerm, $baseOffsetTerm, 0);"
+    s"""
+       |if ($input instanceof $serializedMapClass) {
+       |  final $serializedMapClass map = ($serializedMapClass)($input);
+       |  $cursorTerm = $encoder.writeUnsafeData($cursorTerm,
+       |    map.getBaseObject(), map.getBaseOffset(), map.getSizeInBytes());
+       |} else {
+       |  final ArrayData $keys = $input.keyArray();
+       |  final ArrayData $values = $input.valueArray();
+       |
+       |  // at least 16 bytes for the size+numElements for keys and values
+       |  $cursorTerm = $encoder.ensureCapacity($cursorTerm, 16);
+       |  $writeOffset
+       |  // write the keys with its size and numElements
+       |  ${genCodeArrayWrite(ctx, ArrayType(m.keyType,
+            containsNull = false), encoder, cursorTerm, keys,
+            batchSizeTerm, offsetTerm = null, baseOffsetTerm = null)}
+       |  // write the values with its size and numElements
+       |  ${genCodeArrayWrite(ctx, ArrayType(m.valueType,
+            m.valueContainsNull), encoder, cursorTerm, values,
+            batchSizeTerm, offsetTerm = null, baseOffsetTerm = null)}
+       |}
+    """.stripMargin
+  }
+
+  def genCodeArrayWrite(ctx: CodegenContext, a: ArrayType, encoder: String,
+      cursorTerm: String, input: String, batchSizeTerm: String,
+      offsetTerm: String = null, baseOffsetTerm: String = null): String = {
     val serializedArrayClass = classOf[SerializedArray].getName
     // this is relative offset since re-allocation could mean that initial
     // cursor position is no longer valid (e.g. for off-heap allocator)
@@ -564,9 +566,8 @@ object ColumnWriter {
   }
 
   def genCodeStructWrite(ctx: CodegenContext, s: StructType, encoder: String,
-      cursorTerm: String, ev: ExprCode, batchSizeTerm: String,
+      cursorTerm: String, input: String, batchSizeTerm: String,
       offsetTerm: String = null, baseOffsetTerm: String = null): String = {
-    val input = ev.value
     val serializedRowClass = classOf[SerializedRow].getName
     // this is relative offset since re-allocation could mean that initial
     // cursor position is no longer valid (e.g. for off-heap allocator)

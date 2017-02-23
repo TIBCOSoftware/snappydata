@@ -20,21 +20,19 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, BindReferences, Expression, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, BindReferences, Expression}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.store.CodeGeneration._
-import org.apache.spark.sql.types.{ArrayType, DateType, MapType, StructType}
+import org.apache.spark.sql.types.DateType
 
 /**
  * Efficient SparkPlan with code generation support to consume an RDD
  * that has an [[ExpressionEncoder]].
  */
 case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
-    isFlat: Boolean, output: Seq[Attribute],
-    private[sql] var serialize: Boolean = false)
+    isFlat: Boolean, output: Seq[Attribute])
     extends LeafExecNode with CodegenSupport {
 
   override protected def doExecute(): RDD[InternalRow] = {
@@ -119,106 +117,10 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
       case _ => expr.genCode(ctx)
     }
 
-    val bufferHolderClass = classOf[BufferHolder].getName
     val input = expressions.map { expr =>
       val dataType = Utils.getSQLDataType(expr.dataType)
       val ev = dataType match {
         case DateType => optimizeDate(expr)
-
-        case a: ArrayType if serialize =>
-          val input = expr.genCode(ctx)
-          val result = ctx.freshName("arrayData")
-          ctx.addMutableState(classOf[UnsafeArrayData].getName, result,
-            s"$result = new UnsafeArrayData();")
-          val buffVar = ctx.freshName("arrayTypeBuffer")
-          ctx.addMutableState(bufferHolderClass, buffVar,
-            s"$buffVar = new $bufferHolderClass(new UnsafeRow());")
-          val nullable = expr.nullable && input.isNull != "false"
-          val nullVar = if (nullable) ctx.freshName("arrayIsNull") else "false"
-          val nonNullCode =
-            s"""
-               |$buffVar.cursor = Platform.BYTE_ARRAY_OFFSET;
-               |${generateComplexTypeCode(generateArrayCodeMethod, ctx,
-                 input.value, a.elementType, buffVar)}
-               |$result.pointTo($buffVar.buffer,
-               |  Platform.BYTE_ARRAY_OFFSET, $buffVar.totalSize());
-            """.stripMargin
-          val code = if (nullable) {
-            s"""
-               |${input.code}
-               |final boolean $nullVar = ${input.isNull};
-               |if (!$nullVar) { $nonNullCode }
-            """.stripMargin
-          } else {
-            s"""
-               |${input.code}
-               |$nonNullCode
-            """.stripMargin
-          }
-          ExprCode(code, nullVar, result)
-
-        case m: MapType if serialize =>
-          val input = expr.genCode(ctx)
-          val result = ctx.freshName("mapData")
-          ctx.addMutableState(classOf[UnsafeMapData].getName, result,
-            s"$result = new UnsafeMapData();")
-          val buffVar = ctx.freshName("mapTypeBuffer")
-          ctx.addMutableState(bufferHolderClass, buffVar,
-            s"$buffVar = new $bufferHolderClass(new UnsafeRow());")
-          val nullable = expr.nullable && input.isNull != "false"
-          val nullVar = if (nullable) ctx.freshName("mapIsNull") else "false"
-          val nonNullCode =
-            s"""
-               |$buffVar.cursor = Platform.BYTE_ARRAY_OFFSET;
-               |${generateComplexTypeCode(generateMapCodeMethod, ctx,
-                  input.value, m.keyType, m.valueType, buffVar)}
-               |$result.pointTo($buffVar.buffer,
-               |  Platform.BYTE_ARRAY_OFFSET, $buffVar.totalSize());
-            """.stripMargin
-          val code = if (nullable) {
-            s"""
-               |${input.code}
-               |final boolean $nullVar = ${input.isNull};
-               |if (!$nullVar) { $nonNullCode }
-            """.stripMargin
-          } else {
-            s"""
-               |${input.code}
-               |$nonNullCode
-            """.stripMargin
-          }
-          ExprCode(code, nullVar, result)
-
-        case s: StructType if serialize =>
-          val input = expr.genCode(ctx)
-          val result = ctx.freshName("structData")
-          ctx.addMutableState(classOf[UnsafeRow].getName, result,
-            s"$result = new UnsafeRow(${s.length});")
-          val buffVar = ctx.freshName("structTypeBuffer")
-          ctx.addMutableState(bufferHolderClass, buffVar,
-            s"$buffVar = new $bufferHolderClass($result);")
-          val nullable = expr.nullable && input.isNull != "false"
-          val nullVar = if (nullable) ctx.freshName("structIsNull") else "false"
-          val nonNullCode =
-            s"""
-               |$buffVar.cursor = Platform.BYTE_ARRAY_OFFSET;
-               |${generateComplexTypeCode(generateStructCodeMethod, ctx,
-                 input.value, s.fields.map(_.dataType).toSeq, buffVar)}
-            """.stripMargin
-          val code = if (nullable) {
-            s"""
-               |${input.code}
-               |final boolean $nullVar = ${input.isNull};
-               |if (!$nullVar) { $nonNullCode }
-            """.stripMargin
-          } else {
-            s"""
-               |${input.code}
-               |$nonNullCode
-            """.stripMargin
-          }
-          ExprCode(code, nullVar, result)
-
         case _ => expr.genCode(ctx)
       }
       if (ctx.isPrimitiveType(dataType)) {

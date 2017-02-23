@@ -25,10 +25,10 @@ import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder
-import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, GenericRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
-import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, GenericArrayData, MapData}
+import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, GenericRow}
+import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, GenericArrayData, MapData, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -61,37 +61,31 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
     }
   }
 
-  private[this] val dataType = schema.fields.find(Utils.fieldName(_)
+  private[this] val field = schema.fields.find(Utils.fieldName(_)
       .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
-    s"Field $column does not exist in $table with schema=$schema.")).dataType
+    s"Field $column does not exist in $table with schema=$schema."))
 
-  private[this] val (isArray, struct) = dataType match {
-    case a: ArrayType => (true, None)
-    case m: MapType => (false, None)
-    case s: StructType => (false, Some(s))
+  field.dataType match {
+    case _: ArrayType | _: MapType | _: StructType =>
     case _ => throw Utils.analysisException(
-      s"Complex type conversion: unexpected type $dataType")
+      s"Complex type conversion: unexpected $field")
   }
 
   private[this] lazy val serializer = CodeGeneration
-      .getComplexTypeSerializer(dataType)
+      .getComplexTypeSerializer(field.dataType)
 
-  private[this] lazy val bufferHolder = struct match {
-    case None => new BufferHolder(new UnsafeRow())
-    case Some(s) => new BufferHolder(new UnsafeRow(s.length))
-  }
+  private[this] lazy val encoder = new UncompressedEncoder
 
-  private[this] lazy val validatingConverter = ValidatingConverter(dataType,
-    table, column)
+  private[this] lazy val validatingConverter = ValidatingConverter(
+    field.dataType, table, column)
 
-  private[this] lazy val scalaConverter = Utils.createScalaConverter(dataType)
+  private[this] lazy val scalaConverter = Utils.createScalaConverter(
+    field.dataType)
 
   @volatile private[this] var validated = false
 
-  private[this] def toBytes(v: Any): Array[Byte] = {
-    bufferHolder.cursor = Platform.BYTE_ARRAY_OFFSET
-    serializer.serialize(v, bufferHolder, null)
-  }
+  private[this] def toBytes(v: Any): Array[Byte] =
+    serializer.serialize(v, encoder, field, null)
 
   override def serialize(v: Any, validateAll: Boolean): Array[Byte] = {
     // validate only once when validateAll==false
@@ -114,19 +108,17 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
   }
 
   override def deserialize(bytes: Array[Byte], offset: Int,
-      length: Int): AnyRef = struct match {
-    case None =>
-      if (isArray) {
-        val array = new UnsafeArrayData
-        array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
-        scalaConverter(array).asInstanceOf[Seq[_]].asJava
-      } else {
-        val map = new UnsafeMapData
-        map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
-        scalaConverter(map).asInstanceOf[Map[_, _]].asJava
-      }
-    case Some(s) =>
-      val row = new UnsafeRow(s.length)
+      length: Int): AnyRef = field.dataType match {
+    case _: ArrayType =>
+      val array = new SerializedArray(8) // includes size at start
+      array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
+      scalaConverter(array).asInstanceOf[Seq[_]].asJava
+    case _: MapType =>
+      val map = new SerializedMap
+      map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset)
+      scalaConverter(map).asInstanceOf[Map[_, _]].asJava
+    case s: StructType =>
+      val row = new SerializedRow(4, s.length) // includes size at start
       row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
       scalaConverter(row) match {
         case g: GenericRow =>
