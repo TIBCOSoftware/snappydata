@@ -18,16 +18,16 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue}
-import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 import scala.collection.mutable
 
-class CachedPlanHelperExec(childPlan: CodegenSupport)
+case class CachedPlanHelperExec(childPlan: CodegenSupport)
   extends UnaryExecNode with CodegenSupport {
 
-  var ctxReferences: mutable.ArrayBuffer[Any] = null;
+  var ctxReferences: mutable.ArrayBuffer[Any] = _
 
   override def child: SparkPlan = childPlan
 
@@ -35,26 +35,15 @@ class CachedPlanHelperExec(childPlan: CodegenSupport)
 
   override protected def doProduce(ctx: CodegenContext): String = {
     ctxReferences = ctx.references
-    // childPlan.doProduce(ctx)
-    ""
+    childPlan.produce(ctx, this)
   }
+
+  override def doConsume(ctx: CodegenContext, input: Seq[ExprCode], row: ExprCode): String =
+    parent.doConsume(ctx, input, row)
 
   override protected def doExecute(): RDD[InternalRow] = childPlan.execute()
 
   override def output: Seq[Attribute] = childPlan.output
-
-  override def productElement(n: Int): Any = n match {
-    case 0 => childPlan
-  }
-
-  override def productArity: Int = 1
-
-  override def canEqual(that: Any): Boolean = {
-    if (that.isInstanceOf[CachedPlanHelperExec]) {
-      that == this
-    }
-    else false
-  }
 
   private lazy val allLiterals: Array[LiteralValue] = {
     ctxReferences.filter(
@@ -62,16 +51,10 @@ class CachedPlanHelperExec(childPlan: CodegenSupport)
       _.asInstanceOf[LiteralValue]).sortBy(_.position).toArray
   }
 
-  def replaceConstants(currParsedLp: LogicalPlan): Unit = {
-    val itr = currParsedLp.productIterator.filter({ p: Any => p.isInstanceOf[LiteralValue] })
-    itr.map({ x: Any =>
-      assert(x.isInstanceOf[LiteralValue])
-      val lv = x.asInstanceOf[LiteralValue]
-      allLiterals(lv.position).value = lv.value
-    })
+  def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
+    currLogicalPlan.expressions.foreach {
+      case l: ParamLiteral =>
+        allLiterals(l.pos).value = l.l.value
+    }
   }
-}
-
-object CachedPlanHelperExec {
-  def apply(childPlan: CodegenSupport): CachedPlanHelperExec = new CachedPlanHelperExec(childPlan)
 }

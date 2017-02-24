@@ -50,6 +50,7 @@ class SnappyParser(session: SnappySession)
     reset()
     _input = in
     paramcounter = 0
+    tokenize = false
   }
 
   protected final type WhenElseType = (Seq[(Expression, Expression)],
@@ -638,8 +639,7 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
-    paramliteral |
-    //  literal |
+    ( ( test(tokenize) ~ paramliteral ) | literal ) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
@@ -749,9 +749,23 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
+  // Only when wholeStageEnabled try for tokenization. It should be
+  // true
+  private var tokenize = session.sessionState.conf.wholeStageEnabled
+
+  private def setNoTokenize: Boolean = {
+    tokenize = false
+    true
+  }
+
+  private def setTokenize: Boolean = {
+    tokenize = session.sessionState.conf.wholeStageEnabled
+    true
+  }
+
   override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | desc
+    (test(setTokenize) ~ query.named("select")) | (test(setNoTokenize) ~ (insert | put | dmlOperation | ctes |
+        ddl | set | cache | uncache | desc))
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
@@ -772,6 +786,7 @@ class SnappyParser(session: SnappySession)
     if (queryHints.nonEmpty) {
       session.queryHints ++= queryHints
     }
+    session.isSelect = tokenize
     plan
   }
 

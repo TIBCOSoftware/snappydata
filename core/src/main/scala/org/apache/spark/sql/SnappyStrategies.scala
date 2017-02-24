@@ -635,3 +635,16 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
       }
   }
 }
+
+/**
+  * Rule to collapse the partial and final aggregates if the grouping keys
+  * match or are superset of the child distribution.
+  */
+case class InsertCachedPlanHelper(session: SparkSession) extends Rule[SparkPlan] {
+  override def apply(plan: SparkPlan): SparkPlan = {
+    plan match {
+      case codegen: CodegenSupport => CachedPlanHelperExec(codegen)
+      case _ => plan
+    }
+  }
+}

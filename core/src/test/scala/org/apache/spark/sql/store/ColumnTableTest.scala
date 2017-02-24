@@ -141,7 +141,7 @@ class ColumnTableTest
 
   test("Test the creation/dropping of column table using Schema") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
-      Seq(4, 2, 3), Seq(5, 6, 7))
+      Seq(4, 2, 4), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length)
         .map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -164,14 +164,69 @@ class ColumnTableTest
       val hc2 = scala.util.hashing.MurmurHash3.productHash(lp2)
       println("HC1 = " + hc1 + " and HC2 = " + hc2)
       assert(lp1.equals(lp2))
-//      dataDF.write.insertInto(s"$schema.$table")
-//      Thread.sleep(5000)
-//      var result = snc.sql(s"SELECT * FROM $schema.$table where a = 1")
-//      assert(result.collect().length === 1)
-//      result = snc.sql(s"SELECT * FROM $schema.$table where a = 2")
-      //assert(result.collect().length === 1)
+      dataDF.write.insertInto(s"$schema.$table")
+      Thread.sleep(5000)
+      var result = snc.sql(s"SELECT * FROM $schema.$table where a = 1").collect()
+      assert(result.length === 1)
+      assert(result(0).toSeq === data.head)
 
-      // snc.sql(s"drop table $table")
+      result = snc.sql(s"SELECT * FROM $schema.$table where a = 4").collect()
+      assert(result.length === 1)
+      assert(result(0).toSeq === data(3))
+
+      result = snc.sql(s"SELECT * FROM $schema.$table where a = 2").collect()
+      assert(result.length === 0)
+
+      snc.sql(s"drop table $schema.$table")
+    } finally {
+      snc.sql("set spark.sql.caseSensitive = false")
+      snc.sql("set schema = APP")
+    }
+
+    logInfo("Successful")
+  }
+
+  test("Test tokenize") {
+    val numRows = 10000
+    val data = ((0 to numRows), (0 to numRows), (0 to numRows)).zipped.toArray
+
+
+//    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+//      Seq(4, 2, 4), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length)
+      .map(s => Data(s._1, s._2, s._3))
+    val dataDF = snc.createDataFrame(rdd)
+
+    val schema = "test"
+    val table = "MY_TABLE"
+
+    snc.sql(s"Drop Table if exists $schema.$table")
+    snc.sql(s"Create Table $schema.$table (a INT, b INT, c INT) " +
+      "using column options()")
+
+    // try different variant of set schema
+    val size = dataDF.count().toInt
+    var count = 0
+
+    try {
+      dataDF.write.insertInto(s"$schema.$table")
+      Thread.sleep(5000)
+
+      val q = (0 until 1000) map { x =>
+        s"SELECT * FROM $schema.$table where a = 0"
+      }
+      val start = System.currentTimeMillis()
+      q map { x =>
+        var result = snc.sql(x).collect()
+        assert(result.length === 1)
+//        if ( x % 10 == 0) {
+//          println(s"result = " + result(0))
+//        }
+      }
+      val end = System.currentTimeMillis()
+      println("Time taken = " + (end - start))
+
+      snc.sql(s"drop table $schema.$table")
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")

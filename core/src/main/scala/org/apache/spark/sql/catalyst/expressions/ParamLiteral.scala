@@ -22,22 +22,19 @@ import java.util.Objects
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, CodegenFallback, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 
-class ParamLiteral(val l: Literal, val pos: Int) extends LeafExpression with CodegenFallback {
-
-  //override def eval(input: InternalRow): Any = l.eval()
+case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
 
   override def hashCode(): Int = {
     31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
   }
 
-  //override def productArity: Int = 0
-
   override def equals(obj: Any): Boolean = {
     obj match {
-      case pl: ParamLiteral => (pl.l.dataType == l.dataType && pl.pos == pos)
+      case pl: ParamLiteral =>
+        pl.l.dataType == l.dataType && pl.pos == pos
       case _ => false
     }
   }
@@ -45,77 +42,118 @@ class ParamLiteral(val l: Literal, val pos: Int) extends LeafExpression with Cod
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // change the isNull and primitive to consts, to inline them
     val value = l.value
-    if (value == null) {
-      ev.isNull = "true"
-      ev.copy(s"final ${ctx.javaType(dataType)} ${ev.value} = ${ctx.defaultValue(dataType)};")
-    } else {
-      dataType match {
-        case BooleanType =>
-          ev.isNull = "false"
-          assert (value.isInstanceOf[Boolean], "KN: unexpected type")
-          val valueRef = ctx.addReferenceObj("literal",
-            LiteralValue(value, pos))
-          ev.value = ctx.freshName("value")
-          ev.copy(s"final boolean ${ev.value} = $valueRef != null " +
-            s"? ((Boolean)$valueRef.value()).booleanValue() : ${ctx.defaultValue(dataType)};")
-        case FloatType =>
-          val v = value.asInstanceOf[Float]
-          if (v.isNaN || v.isInfinite) {
-            super[CodegenFallback].doGenCode(ctx, ev)
-          } else {
-            ev.isNull = "false"
-            assert (value.isInstanceOf[Float], "KN: unexpected type")
-            val valueRef = ctx.addReferenceObj("literal",
-              LiteralValue(value, pos))
-            ev.value = ctx.freshName("value")
-            ev.copy(s"float ${ev.value} = ((Float)$valueRef.value()).floatValue();")
-          }
-        case DoubleType =>
-          val v = value.asInstanceOf[Double]
-          if (v.isNaN || v.isInfinite) {
-            super[CodegenFallback].doGenCode(ctx, ev)
-          } else {
-            ev.isNull = "false"
-            ev.value = s"${value}D"
-            ev.copy("")
-          }
-        case ByteType | ShortType =>
-          ev.isNull = "false"
-          ev.value = s"(${ctx.javaType(dataType)})$value"
-          ev.copy("")
-        case IntegerType | DateType =>
-          ev.isNull = "false"
-          ev.value = value.toString
-          ev.copy("")
-        case TimestampType | LongType =>
-          ev.isNull = "false"
-          ev.value = s"${value}L"
-          ev.copy("")
-        // eval() version may be faster for non-primitive types
-        case other =>
-          super[CodegenFallback].doGenCode(ctx, ev)
-      }
+    dataType match {
+      case BooleanType =>
+        val isNull = ctx.freshName("isNull")
+        assert(value.isInstanceOf[Boolean], "KN: unexpected type")
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val valueTerm = ctx.freshName("value")
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final boolean $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
+             |    : ((Boolean)$valueRef.value()).booleanValue();
+           """.stripMargin, isNull, valueTerm)
+      case FloatType =>
+        val isNull = ctx.freshName("isNull")
+        assert(value.isInstanceOf[Float], "KN: unexpected type")
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val valueTerm = ctx.freshName("value")
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final float $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
+             |    : ((Float)$valueRef.value()).floatValue();
+           """.stripMargin, isNull, valueTerm)
+      case DoubleType =>
+        val isNull = ctx.freshName("isNull")
+        assert(value.isInstanceOf[Double], "KN: unexpected type")
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val valueTerm = ctx.freshName("value")
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final double $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
+             |    : ((Double)$valueRef.value()).doubleValue();
+           """.stripMargin, isNull, valueTerm)
+      case ByteType =>
+        val isNull = ctx.freshName("isNull")
+        assert(value.isInstanceOf[Byte], "KN: unexpected type")
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val valueTerm = ctx.freshName("value")
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final byte $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
+             |    : ((Byte)$valueRef.value()).byteValue();
+           """.stripMargin, isNull, valueTerm)
+      case ShortType =>
+        val isNull = ctx.freshName("isNull")
+        assert(value.isInstanceOf[Short], "KN: unexpected type")
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val valueTerm = ctx.freshName("value")
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final short $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
+             |    : ((Short)$valueRef.value()).shortValue();
+           """.stripMargin, isNull, valueTerm)
+      case IntegerType | DateType =>
+        val isNull = ctx.freshName("isNull")
+        assert(value.isInstanceOf[Int], "KN: unexpected type")
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val valueTerm = ctx.freshName("value")
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final int $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
+             |    : ((Integer)$valueRef.value()).intValue();
+           """.stripMargin, isNull, valueTerm)
+      case TimestampType | LongType =>
+        val isNull = ctx.freshName("isNull")
+        assert(value.isInstanceOf[Long], "KN: unexpected type")
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val valueTerm = ctx.freshName("value")
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final long $valueTerm = $isNull ? ${ctx.defaultValue(dataType)}
+             |    : ((Long)$valueRef.value()).longValue();
+           """.stripMargin, isNull, valueTerm)
+      case NullType =>
+        val valueTerm = ctx.freshName("value")
+        ev.copy(s"final Object $valueTerm = null")
+      case other =>
+        val valueRef = ctx.addReferenceObj("literal",
+          LiteralValue(value, pos))
+        val isNull = ctx.freshName("isNull")
+        val valueTerm = ctx.freshName("value")
+        val objectTerm = ctx.freshName("obj")
+        ev.copy(code =
+          s"""
+          Object $objectTerm = $valueRef.value();
+          final boolean $isNull = $objectTerm == null;
+          ${ctx.javaType(this.dataType)} $valueTerm = $objectTerm != null
+             ? (${ctx.boxedType(this.dataType)})$objectTerm : null;
+          """, isNull, valueTerm)
     }
   }
 
-  override def nullable: Boolean = false
+  override def nullable: Boolean = l.nullable
 
   override def eval(input: InternalRow): Any = l.eval()
 
   override def dataType: DataType = l.dataType
-
-  override def productElement(n: Int): Any = Nil
-
-  override def productArity: Int = 0
-
-  override def canEqual(that: Any): Boolean = true
 }
 
-object ParamLiteral {
-  def apply(l: Literal, pos: Int) = new ParamLiteral(l, pos)
-}
-
-case class LiteralValue(var value: AnyRef, var position: Int)
+case class LiteralValue(var value: Any, var position: Int)
   extends KryoSerializable {
 
   override def write(kryo: Kryo, output: Output): Unit = {
@@ -123,5 +161,8 @@ case class LiteralValue(var value: AnyRef, var position: Int)
     output.writeVarInt(position, true)
   }
 
-  override def read(kryo: Kryo, input: Input): Unit = ???
+  override def read(kryo: Kryo, input: Input): Unit = {
+    value = kryo.readClassAndObject(input)
+    position = input.readVarInt(true)
+  }
 }

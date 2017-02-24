@@ -172,6 +172,8 @@ class SnappySession(@transient private val sc: SparkContext,
   @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
+  private[sql] var isSelect = false
+
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
   private val contextObjects = new mutable.HashMap[Any, Any]
@@ -1617,41 +1619,13 @@ object SnappySession extends Logging {
     }
   }
 
-  def printProductElement(obj: Any, depth: Int): Unit = {
-    println("PE called for obj = " + obj + " depth = " + depth)
-    val elem = obj.isInstanceOf[Product]
-    if (elem) {
-      val x = obj.asInstanceOf[Product]
-      val ar = x.productArity
-      (0 until ar).map(i => {
-        val pelem = x.productElement(i)
-        println("PE[" + i + "] = " + pelem + " and class = " + pelem.getClass)
-        printProductElement(pelem, depth + 1)
-      })
-    }
-    else {
-      println("PE called for obj but is not an instance of Product, class name = " + obj.getClass.getName)
-    }
-    println("PPE ending depth = " + depth)
-  }
-
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     try {
       val lp = session.onlyParseSQL(sqlText)
       val key = (session, lp, sqlText)
-      val ar = lp.productArity
-      if (sqlText.toLowerCase.contains("select")) {
-        println("sqlText = " + sqlText + " lp = " + lp)
-        (0 until ar).map(i => {
-          val pelem = lp.productElement(i)
-          println("PE[" + i + "] = " + pelem + " and class = " + pelem.getClass)
-          printProductElement(pelem, 0)
-        })
-        println("sqlText = " + sqlText + " [hashcode] = " + key.hashCode())
-        println("********************************************************")
-      }
       val evaluation = planCache.getUnchecked(key)
       var cachedDF = evaluation._1
+      cachedDF.replaceConstants(lp)
       var queryHints = evaluation._2
       // if null has been returned, then evaluate
       if (cachedDF eq null) {

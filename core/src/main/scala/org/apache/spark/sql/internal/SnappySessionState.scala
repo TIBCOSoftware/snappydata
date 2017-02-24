@@ -211,6 +211,7 @@ class SnappySessionState(snappySession: SnappySession)
     PlanSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
     CollapseCollocatedPlans(snappySession),
+    InsertCachedPlanHelper(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
     ReuseExchange(snappySession.sessionState.conf))
 
