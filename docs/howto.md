@@ -798,15 +798,9 @@ The code snippet below inserts Person objects into a column table. The source co
     val nameAndAddress = snSession.sql("SELECT name, address, emergencyContacts FROM Persons")
 
     //Reconstruct the objects from obtained Row
-    val allPersons = nameAndAddress.collect.map(row => {
-      Person(row(0).asInstanceOf[String],
-        Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],
-          row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        ),
-        row(2).asInstanceOf[Map[String, String]]
-      )
-    })
+    val allPersons = nameAndAddress.as[Person]
+    //allPersons is a Spark Dataset of Person objects. 
+    // Use of the Dataset APIs to transform, query this data set. 
 ```
 
 <a id="howto-streams"></a>
