@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
+import java.util.Objects
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
@@ -1591,12 +1592,12 @@ object SnappySession extends Logging {
   }
 
   private[this] val planCache = {
-    val loader = new CacheLoader[(SnappySession, LogicalPlan, String),
+    val loader = new CacheLoader[CachedKey,
         (CachedDataFrame, Map[String, String])] {
-      override def load(key: (SnappySession, LogicalPlan, String)): (CachedDataFrame,
+      override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
-        val session = key._1
-        val df = session.executeSQL(key._3)
+        val session = key.session
+        val df = session.executeSQL(key.sqlText)
         val hc = df.logicalPlan.hashCode()
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
@@ -1619,13 +1620,35 @@ object SnappySession extends Logging {
     }
   }
 
+  class CachedKey(val session: SnappySession, val lp: LogicalPlan, val sqlText: String) {
+
+    override def hashCode(): Int = {
+      (session, lp).hashCode()
+    }
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case x: CachedKey => {
+          (x.session, x.lp).equals(session, lp)
+        }
+        case _ => false
+      }
+    }
+  }
+
+  object CachedKey {
+    def apply(session: SnappySession, lp: LogicalPlan, sqlText: String):
+      CachedKey = new CachedKey(session, lp, sqlText)
+  }
+
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     try {
       val lp = session.onlyParseSQL(sqlText)
-      val key = (session, lp, sqlText)
+      val key = CachedKey(session, lp, sqlText)
       val evaluation = planCache.getUnchecked(key)
       var cachedDF = evaluation._1
       cachedDF.replaceConstants(lp)
+      // println("cachedDF = " + System.identityHashCode(cachedDF))
       var queryHints = evaluation._2
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
@@ -1667,7 +1690,7 @@ object SnappySession extends Logging {
     val iter = planCache.asMap().keySet().iterator()
     while (iter.hasNext) {
       val item = iter.next()
-      if (item._1.id == sessionId) {
+      if (item.asInstanceOf[CachedKey].session.id == sessionId) {
         iter.remove()
       }
     }

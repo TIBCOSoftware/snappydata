@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution
 
+import org.apache.hadoop.hive.metastore.parser.ExpressionTree.TreeNode
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -51,10 +52,40 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
       _.asInstanceOf[LiteralValue]).sortBy(_.position).toArray
   }
 
-  def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
-    currLogicalPlan.expressions.foreach {
-      case l: ParamLiteral =>
-        allLiterals(l.pos).value = l.l.value
+  def collectParamLiteralNodes(lp: Product): Unit = {
+    val numProductElems = lp.productArity
+    (0 until numProductElems).map { i =>
+      val elem = lp.productElement(i)
+      elem match {
+        case p: ParamLiteral => {
+          allLiterals(p.pos-1).value = p.l.value
+        }
+        case x => {
+          x match {
+            case e: Product => collectParamLiteralNodes(e)
+            case _ => // do nothing
+          }
+        }
+      }
     }
+  }
+
+  def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
+    //println("Before foreach")
+    collectParamLiteralNodes(currLogicalPlan)
+    //println("After foreach")
+  }
+
+  def replaceConstants_2(currLogicalPlan: LogicalPlan): Unit = {
+    currLogicalPlan.expressions.foreach { x => {
+      println("********** " + x)
+      x match {
+        case l: ParamLiteral =>
+          allLiterals(l.pos).value = l.l.value
+        case _ => // do nothing
+      }
+    }
+    }
+    println("*** DONE ***")
   }
 }

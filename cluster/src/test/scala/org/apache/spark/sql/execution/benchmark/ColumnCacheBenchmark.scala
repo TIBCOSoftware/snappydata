@@ -38,8 +38,9 @@
 
 package org.apache.spark.sql.execution.benchmark
 
-import io.snappydata.SnappyFunSuite
+import java.util.concurrent.atomic.AtomicInteger
 
+import io.snappydata.SnappyFunSuite
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
@@ -178,10 +179,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
       }
       def testCleanup(): Unit = {
       }
+
+      val currentId = new AtomicInteger(0)
       addCaseWithCleanup(benchmark, name, numIters, prepare, cleanup, testCleanup) { _ =>
         if (readPathOnly) {
           if (snappy) {
-            collect(snappySession.sql(query), expectedAnswer2)
+            collect(snappySession.sql(s"$query where id > ${currentId.get()}"), expectedAnswer2)
+            currentId.incrementAndGet()
           } else {
             collect(sparkSession.sql(query), expectedAnswer)
           }

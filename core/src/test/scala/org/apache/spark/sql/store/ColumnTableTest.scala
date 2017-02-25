@@ -212,18 +212,22 @@ class ColumnTableTest
       dataDF.write.insertInto(s"$schema.$table")
       Thread.sleep(5000)
 
+      //println("query starts")
       val q = (0 until 1000) map { x =>
-        s"SELECT * FROM $schema.$table where a = 0"
+        s"SELECT * FROM $schema.$table where a = $x"
       }
+      //println("query ends")
       val start = System.currentTimeMillis()
       q map { x =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
-//        if ( x % 10 == 0) {
-//          println(s"result = " + result(0))
-//        }
+        //if ( x % 10 == 0) {
+        println(s"query = $x and result = " + result(0))
+        //}
       }
       val end = System.currentTimeMillis()
+
+      snc.sql(s"SELECT * FROM $schema.$table where a = 1200").collect()
       println("Time taken = " + (end - start))
 
       snc.sql(s"drop table $schema.$table")

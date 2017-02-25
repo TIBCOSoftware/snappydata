@@ -115,7 +115,12 @@ class CachedDataFrame(df: Dataset[Row],
 
   def replaceConstants(lp: LogicalPlan) = {
     queryExecution.executedPlan match {
-      case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
+      case WholeStageCodegenExec(cachedPlan) => {
+        cachedPlan match {
+          case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
+          case _ => // do nothing
+        }
+      }
       case _ => // do nothing
     }
   }
