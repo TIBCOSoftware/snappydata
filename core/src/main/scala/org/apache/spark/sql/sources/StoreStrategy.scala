@@ -33,7 +33,7 @@ object StoreStrategy extends Strategy {
       val cmd =
         CreateMetastoreTableUsing(tableDesc.identifier, None, Some(tableDesc.schema),
           None, SnappyContext.getProvider(tableDesc.provider.get, false), false,
-          tableDesc.properties, false)
+          tableDesc.storage.properties, false)
       ExecutedCommand(cmd) :: Nil
 
     case CreateTable(tableDesc, mode, Some(query)) =>
@@ -41,7 +41,7 @@ object StoreStrategy extends Strategy {
         CreateMetastoreTableUsingSelect(tableDesc.identifier, None, None, None,
           SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
           temporary = false, tableDesc.partitionColumnNames.toArray, mode,
-          tableDesc.properties, query, isBuiltIn = false)
+          tableDesc.storage.properties, query, isBuiltIn = false)
       ExecutedCommand(cmd) :: Nil
 
     case create: CreateMetastoreTableUsing =>
