@@ -17,6 +17,8 @@
 package org.apache.spark.sql.store
 
 
+import scala.collection.mutable
+
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
 import org.scalatest.BeforeAndAfter
@@ -194,8 +196,21 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.insertInto(tableName)
+
     val r2 = result.collect
+
+    val r3 = mutable.HashSet[Int]()
+    r2.map( i => {
+      r3.add(i.getInt(0))
+    })
+
+    (1 to 19999).map(i => {
+      if(!r3.contains(i))
+        println (s"Does not contain ${i}")
+    })
+
     assert(r2.length == 19999)
+
     println("Successful")
   }
 

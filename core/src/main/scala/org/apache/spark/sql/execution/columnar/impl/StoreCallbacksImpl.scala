@@ -71,15 +71,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             .asInstanceOf[AbstractCompactExecRow]
         lcc.setExecuteLocally(Collections.singleton(bucketID),
           region.getPartitionedRegion, false, null)
-        // Get current tx state and set it into the tc.
-        var tc: GemFireTransaction = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
+        val tc = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
         try {
-
           val state: TXStateInterface = TXManagerImpl.getCurrentTXState
-          SanityManager.DEBUG_PRINT("DEBUG", "The txState is " + state)
-          //tc.masqueradeAsTxn()
           tc.setActiveTXState(state, true)
-          //tc.masqueradeAsTxn(TXManagerImpl.getCurrentTXId, 0)
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
             TransactionController.MODE_RECORD,
@@ -104,8 +99,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             batchID, bucketID)
         } finally {
           lcc.setExecuteLocally(null, null, false, null)
-          tc.clearActiveTXState(false,true);
-          //tc.
+          tc.clearActiveTXState(false, true);
         }
       } catch {
         case e: Throwable => throw e

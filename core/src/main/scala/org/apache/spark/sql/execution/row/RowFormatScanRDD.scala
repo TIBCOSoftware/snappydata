@@ -24,7 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{TXState, GemFireCacheImpl, TXId, CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{TXStateProxy, TXState, GemFireCacheImpl, TXId, CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -365,7 +365,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
   val txIdd = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId
   // transaction started by row buffer scan should be used here
   // can there be change in executor threads...in that case we should use masquerade as
-  val tx = GemFireCacheImpl.getInstance().currentTxState.get();//getCacheTransactionManager
+  val tx = GemFireCacheImpl.getInstance().snapshotTxState.get();//getCacheTransactionManager
   //.getTXState
   protected final val itr = container.getEntrySetIteratorForBucketSet(
     bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
@@ -381,7 +381,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
       doMove = false
     }
     // commit here as row and column iteration is complete.
-    if (!hasNextValue && tx !=null) {
+    if (!hasNextValue && tx != null /*TXStateProxy.TX_NOT_SET*/) {
       GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
       GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
     }
