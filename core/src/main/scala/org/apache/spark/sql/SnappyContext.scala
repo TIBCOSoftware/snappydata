@@ -1092,6 +1092,7 @@ object SnappyContext extends Logging {
     ConnectionPool.clear()
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
+    SparkSession.sqlListener.set(null)
     _clusterMode match {
       case _: ExternalClusterMode =>
       case _ => ServiceUtils.clearStaticArtifacts()
