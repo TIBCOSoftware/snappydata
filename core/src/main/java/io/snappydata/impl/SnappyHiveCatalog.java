@@ -45,6 +45,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
+import org.apache.spark.sql.sources.JdbcExtendedUtils;
 import org.apache.spark.sql.store.StoreUtils;
 import org.apache.spark.sql.types.StructType;
 import org.apache.thrift.TException;
@@ -250,11 +251,12 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           StructType schema = ExternalStoreUtils.convertSchemaMap(table.getParameters());
           CaseInsensitiveMap parameters = new CaseInsensitiveMap(
               table.getSd().getSerdeInfo().getParameters());
-          int partitions = ExternalStoreUtils.getTotalPartitions(parameters, true);
+          int partitions = ExternalStoreUtils.getAndSetTotalPartitions(
+              parameters, true);
           Object value = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
           String baseTable = value != null ? value.toString() : "";
-          String dmls = ExternalStoreUtils.
-              getInsertStringWithColumnName(fullyQualifiedName, schema);
+          String dmls = JdbcExtendedUtils.
+              getInsertOrPutString(fullyQualifiedName, schema, false);
           value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;
@@ -265,9 +267,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? null : value.toString();
           return new ExternalTableMetaData(
-              this.dbName + "." + this.tableName,
+              fullyQualifiedName,
               schema,
-              ExternalStoreUtils.getExternalStoreOnExecutor(parameters, partitions),
+              ExternalStoreUtils.getExternalStoreOnExecutor(parameters,
+                  partitions, fullyQualifiedName, schema),
               columnBatchSize,
               columnMaxDeltaRows,
               compressionCodec,

@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.gemstone.gemfire.internal.cache.LocalRegion
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -27,9 +29,9 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
-import org.apache.spark.sql.execution.columnar.{CodegenSupportOnExecutor, ColumnTableScan, ConnectionType}
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.execution.row.RowFormatRelation
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
@@ -127,8 +129,8 @@ private[sql] object PartitionedPhysicalScan {
     relation match {
       case i: IndexColumnFormatRelation =>
         val columnScan = ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, partitionColumnAliases, relation, allFilters,
-          schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, relation.schema,
+          allFilters, schemaAttributes)
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(Array.empty,
@@ -151,17 +153,17 @@ private[sql] object PartitionedPhysicalScan {
           rowBufferScan, otherPartKeys)
       case _: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, partitionColumnAliases, relation, allFilters,
-          schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, relation.schema,
+          allFilters, schemaAttributes)
       case r: SamplingRelation =>
         if (r.isReservoirAsRegion) {
           ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
-            partitionColumnAliases, relation, allFilters, schemaAttributes,
-            isForSampleReservoirAsRegion = true)
+            partitionColumnAliases, relation, relation.schema, allFilters,
+            schemaAttributes, isForSampleReservoirAsRegion = true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-            partitionColumns, partitionColumnAliases, relation, allFilters,
-            schemaAttributes)
+            partitionColumns, partitionColumnAliases, relation, relation.schema,
+            allFilters, schemaAttributes)
         }
       case _: RowFormatRelation =>
         RowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
@@ -176,11 +178,13 @@ private[sql] object PartitionedPhysicalScan {
  * A wrapper plan to immediately execute the child plan without having to do
  * an explicit collect. Only use for plans returning small results.
  */
-case class ExecutePlan(child: SparkPlan) extends UnaryExecNode {
+case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
+    extends UnaryExecNode {
 
   override def output: Seq[Attribute] = child.output
 
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
+    preAction()
     val callSite = sqlContext.sparkContext.getCallSite()
     CachedDataFrame.withNewExecutionId(sqlContext.sparkSession, callSite,
       child.treeString(verbose = true), SparkPlanInfo.fromSparkPlan(child)) {
@@ -201,6 +205,8 @@ case class ExecutePlan(child: SparkPlan) extends UnaryExecNode {
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def table: String
+
+  def region: LocalRegion
 
   def schema: StructType
 

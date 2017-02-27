@@ -18,9 +18,9 @@ package org.apache.spark.sql.store
 
 import scala.util.Try
 
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.Logging
@@ -99,6 +99,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
   // asks for UpdatableRelation
   // withSQLConf doesn't work with sql, as in that case another sqlcontext is used
   test("Test ShadowTable with 1 bucket") {
+    Property.ColumnMaxDeltaRows.set(snc.conf, 4)
     snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
     snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +
         "USING column " +

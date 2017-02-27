@@ -43,7 +43,7 @@ import org.apache.spark.{Logging, Partition, TaskContext}
 Generic class to query column table from SnappyData execution.
  */
 class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
-    numPartitions: Int) extends ExternalStore {
+    val numPartitions: Int) extends ExternalStore {
   self =>
 
   @transient
@@ -68,10 +68,10 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   }
 
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int = -1, batchId: Option[String] = None): Unit = {
+      partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit = {
     // noinspection RedundantDefaultArgument
     tryExecute(tableName, doInsert(tableName, batch, batchId,
-      getPartitionID(tableName, partitionId)),
+      getPartitionID(tableName, partitionId), maxDeltaRows),
       closeOnSuccess = true, onExecutor = true)
   }
 
@@ -81,7 +81,8 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   }
 
   protected def doInsert(tableName: String, batch: ColumnBatch,
-      batchId: Option[String], partitionId: Int): (Connection => Any) = {
+      batchId: Option[String], partitionId: Int,
+      maxDeltaRows: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
@@ -145,9 +146,11 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected[this] final var doMove = true
 
-  protected[this] final var hasNextValue = true
+  protected[this] final var hasNextValue: Boolean = rs ne null
 
-  context.addTaskCompletionListener { _ => close() }
+  if (context ne null) {
+    context.addTaskCompletionListener { _ => close() }
+  }
 
   override final def hasNext: Boolean = {
     var success = false

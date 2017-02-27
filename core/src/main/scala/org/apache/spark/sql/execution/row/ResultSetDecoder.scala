@@ -134,7 +134,7 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
   override def readArray(columnBytes: AnyRef, cursor: Long): SerializedArray = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
-      val result = new SerializedArray
+      val result = new SerializedArray(8) // includes size
       result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
       result
     } else null
@@ -153,7 +153,7 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
       cursor: Long): SerializedRow = {
     val b = rs.getBytes(columnPosition)
     if (b != null) {
-      val result = new SerializedRow(0, numFields)
+      val result = new SerializedRow(4, numFields) // includes size
       result.pointTo(b, Platform.BYTE_ARRAY_OFFSET, b.length)
       result
     } else null

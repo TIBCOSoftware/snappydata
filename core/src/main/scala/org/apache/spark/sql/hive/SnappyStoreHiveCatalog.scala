@@ -56,8 +56,6 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types.{ArrayType, DataType, MapType, MetadataBuilder, StringType, StructField, StructType}
-import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
-import org.apache.spark.sql.types.{DataType, MetadataBuilder, StringType, StructType}
 import org.apache.spark.util.MutableURLClassLoader
 
 /**
@@ -819,8 +817,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
-    val uRLClassLoader = ContextJarUtils.getDriverJar(funcName).getOrElse(org.apache.spark.util.Utils.getContextOrSparkClassLoader)
-    val (actualClassName,typeName) = className.splitAt(className.lastIndexOf("__"))
+    val uRLClassLoader = ContextJarUtils.getDriverJar(funcName).getOrElse(
+      org.apache.spark.util.Utils.getContextOrSparkClassLoader)
+    val (actualClassName, typeName) = className.splitAt(className.lastIndexOf("__"))
     UDFFunction.makeFunctionBuilder(funcName,
       uRLClassLoader.loadClass(actualClassName),
       CatalystSqlParser.parseDataType(typeName.stripPrefix("__")))
@@ -891,7 +890,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case e: AnalysisException => failFunctionLookup(name.funcName)
       case e: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
     }
-    //loadFunctionResources(catalogFunction.resources) // Not needed for Snappy use case
+    // loadFunctionResources(catalogFunction.resources) // Not needed for Snappy use case
 
     // Please note that qualifiedName is provided by the user. However,
     // catalogFunction.identifier.unquotedString is returned by the underlying

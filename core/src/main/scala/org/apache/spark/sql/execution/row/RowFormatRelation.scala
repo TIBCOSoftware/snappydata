@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
@@ -73,12 +73,13 @@ class RowFormatRelation(
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
 
-  private final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
+  private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
+    table, schema, upsert = true)
 
   private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
 
-  @transient private[this] lazy val region: LocalRegion =
+  @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
   private[this] def indexedColumns: mutable.HashSet[String] = {
@@ -193,16 +194,26 @@ class RowFormatRelation(
     }
   }
 
-  /**
-   * If the row is already present, it gets updated otherwise it gets
-   * inserted into the table represented by this relation
-   *
-   * @param data the DataFrame to be upserted
-   * @return number of rows upserted
-   */
-  def put(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, table, schema,
-      connProperties, upsert = true)
+  override def getInsertPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    val partitionExpressions = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    RowInsertExec(child, upsert = false, partitionColumns,
+      partitionExpressions, numBuckets, schema, Some(this), onExecutor = false,
+      resolvedName, connProperties)
+  }
+
+  override def getPutPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    val partitionExpressions = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    RowInsertExec(child, upsert = true, partitionColumns,
+      partitionExpressions, numBuckets, schema, Some(this),
+      onExecutor = false, resolvedName, connProperties)
   }
 
   /**
@@ -220,16 +231,22 @@ class RowFormatRelation(
     }
     val connProps = connProperties.connProps
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
-    val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP)
-    try {
-      val stmt = connection.prepareStatement(putStr)
-      val result = CodeGeneration.executeUpdate(table, stmt,
-        rows, numRows > 1, batchSize, schema.fields, dialect)
-      stmt.close()
-      result
-    } finally {
-      connection.close()
+    // use bulk insert using put plan for large number of rows
+    if (numRows > (batchSize * 4)) {
+      JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+        table, upsert = true)
+    } else {
+      val connection = ConnectionPool.getPoolConnection(table, dialect,
+        connProperties.poolProps, connProps, connProperties.hikariCP)
+      try {
+        val stmt = connection.prepareStatement(putStr)
+        val result = CodeGeneration.executeUpdate(table, stmt,
+          rows, numRows > 1, batchSize, schema.fields, dialect)
+        stmt.close()
+        result
+      } finally {
+        connection.close()
+      }
     }
   }
 
@@ -311,6 +328,9 @@ final class DefaultSource extends MutableRelationProvider {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
+    ExternalStoreUtils.getAndSetTotalPartitions(
+      Some(sqlContext.sparkContext), parameters,
+      forManagedTable = true, forColumnTable = false)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"
@@ -335,7 +355,8 @@ final class DefaultSource extends MutableRelationProvider {
       relation.tableSchema = relation.createTable(mode)
       data match {
         case Some(plan) =>
-          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
+          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
+            overwrite = false)
         case None =>
       }
 

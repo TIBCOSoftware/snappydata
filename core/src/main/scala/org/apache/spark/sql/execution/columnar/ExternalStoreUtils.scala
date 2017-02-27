@@ -25,32 +25,28 @@ import scala.collection.mutable
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
-import io.snappydata.thrift.common.ThriftUtils
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 
-import org.apache.spark.SparkContext
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Utility methods used by external storage layers.
  */
-object ExternalStoreUtils {
+object ExternalStoreUtils extends Logging {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS = "79"
@@ -81,10 +77,10 @@ object ExternalStoreUtils {
   }
 
   private def defaultMaxExternalPoolSize: String =
-    String.valueOf(math.max(32, Runtime.getRuntime.availableProcessors() * 4))
+    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 4))
 
   private def defaultMaxEmbeddedPoolSize: String =
-    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 6))
+    String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
 
   def getAllPoolProperties(url: String, driver: String,
       poolProps: Map[String, String], hikariCP: Boolean,
@@ -285,11 +281,6 @@ object ExternalStoreUtils {
       connProperties.poolProps, connProps, connProperties.hikariCP)
   }
 
-  def getConnector(id: String, connProperties: ConnectionProperties,
-      forExecutor: Boolean): () => Connection = () => {
-    getConnection(id, connProperties, forExecutor)
-  }
-
   def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
     dialect match {
       case GemFireXDDialect => ConnectionType.Embedded
@@ -403,40 +394,6 @@ object ExternalStoreUtils {
     }
   }
 
-  def getInsertString(table: String, userSchema: StructType): String = {
-    val sb = new mutable.StringBuilder("INSERT INTO ")
-    sb.append(table).append(" VALUES (")
-    (1 until userSchema.length).foreach { _ =>
-      sb.append("?,")
-    }
-    sb.append("?)").toString()
-  }
-
-  def getPutString(table: String, userSchema: StructType): String = {
-    val sb = new mutable.StringBuilder("PUT INTO ")
-    sb.append(table).append(" VALUES (")
-    (1 until userSchema.length).foreach { _ =>
-      sb.append("?,")
-    }
-    sb.append("?)").toString()
-  }
-
-  def getInsertStringWithColumnName(table: String,
-      rddSchema: StructType): String = {
-    val sb = new StringBuilder(s"INSERT INTO $table (")
-    val schemaFields = rddSchema.fields
-    (0 until (schemaFields.length - 1)).foreach { i =>
-      sb.append(schemaFields(i).name).append(',')
-    }
-    sb.append(schemaFields(schemaFields.length - 1).name)
-    sb.append(") VALUES (")
-
-    (1 until rddSchema.length).foreach { _ =>
-      sb.append("?,")
-    }
-    sb.append("?)").toString()
-  }
-
   def setStatementParameters(stmt: PreparedStatement,
       row: mutable.ArrayBuffer[Any]): Unit = {
     var col = 1
@@ -472,14 +429,14 @@ object ExternalStoreUtils {
   final val REPLICATE = "REPLICATE"
   final val BUCKETS = "BUCKETS"
 
-  def getTotalPartitions(parameters: java.util.Map[String, String],
+  def getAndSetTotalPartitions(parameters: java.util.Map[String, String],
       forManagedTable: Boolean): Int = {
     // noinspection RedundantDefaultArgument
-    getTotalPartitions(None, parameters.asScala,
+    getAndSetTotalPartitions(None, parameters.asScala,
       forManagedTable, forColumnTable = true, forSampleTable = false)
   }
 
-  def getTotalPartitions(sparkContext: Option[SparkContext],
+  def getAndSetTotalPartitions(sparkContext: Option[SparkContext],
       parameters: mutable.Map[String, String],
       forManagedTable: Boolean, forColumnTable: Boolean = true,
       forSampleTable: Boolean = false): Int = {
@@ -511,34 +468,6 @@ object ExternalStoreUtils {
 
   }
 
-  final def columnBatchesToRows(
-      columnBatches: Iterator[ColumnBatch],
-      requestedColumns: Array[String],
-      schema: StructType, forScan: Boolean): Iterator[InternalRow] = {
-    // check and compare with InMemoryColumnarTableScan
-    val numColumns = requestedColumns.length
-    val columnIndices = new Array[Int](numColumns)
-    val columnDataTypes = new Array[DataType](numColumns)
-    for (index <- 0 until numColumns) {
-      val fieldIndex = schema.fieldIndex(requestedColumns(index))
-      columnIndices(index) = index
-      schema.fields(fieldIndex).dataType match {
-        case udt: UserDefinedType[_] => columnDataTypes(index) = udt.sqlType
-        case other => columnDataTypes(index) = other
-      }
-    }
-    val columnarIterator = GenerateColumnAccessor.generate(columnDataTypes)
-    columnarIterator.initialize(columnBatches.map { batch =>
-      val statsData = batch.statsData
-      val statsRow = new UnsafeRow(
-        numColumns * ColumnStatsSchema.NUM_STATS_PER_COLUMN)
-      statsRow.pointTo(statsData, Platform.BYTE_ARRAY_OFFSET, statsData.length)
-      CachedBatch(batch.numRows, batch.buffers.map(ThriftUtils.toBytes),
-        statsRow)
-    }, columnDataTypes, columnIndices)
-    columnarIterator
-  }
-
   def removeCachedObjects(sqlContext: SQLContext, table: String,
       registerDestroy: Boolean = false): Unit = {
     // clean up the connection pool and caches on executors first
@@ -558,11 +487,60 @@ object ExternalStoreUtils {
     Iterator.empty
   }
 
+  /**
+   * Generates code for this subtree.
+   *
+   * Adapted from WholeStageCodegenExec to allow running on executors.
+   *
+   * @return the tuple of the codegen context and the actual generated source.
+   */
+  def codeGenOnExecutor(plan: CodegenSupport,
+      child: CodegenSupportOnExecutor): (CodegenContext, CodeAndComment) = {
+    val ctx = new CodegenContext
+    val code = child.produceOnExecutor(ctx, plan)
+    val source =
+      s"""
+      public Object generate(Object[] references) {
+        return new GeneratedIterator(references);
+      }
+
+      ${ctx.registerComment(s"""Codegend pipeline for\n${child.treeString.trim}""")}
+      final class GeneratedIterator extends ${classOf[BufferedRowIterator].getName} {
+
+        private Object[] references;
+        ${ctx.declareMutableStates()}
+
+        public GeneratedIterator(Object[] references) {
+          this.references = references;
+        }
+
+        public void init(int index, scala.collection.Iterator inputs[]) {
+          partitionIndex = index;
+          ${ctx.initMutableStates()}
+        }
+
+        ${ctx.declareAddedFunctions()}
+
+        protected void processNext() throws java.io.IOException {
+          ${code.trim}
+        }
+      }
+      """.trim
+
+    // try to compile, helpful for debug
+    val cleanedSource = CodeFormatter.stripOverlappingComments(
+      new CodeAndComment(CodeFormatter.stripExtraNewLines(source),
+        ctx.getPlaceHolderToComments()))
+
+    logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
+    (ctx, cleanedSource)
+  }
+
   def getExternalStoreOnExecutor(parameters : java.util.Map[String, String],
-      partitions: Int): ExternalStore = {
+      partitions: Int, tableName: String, schema: StructType): ExternalStore = {
     val connProperties: ConnectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(None, parameters.asScala)
-    new JDBCSourceAsColumnarStore(connProperties, partitions)
+    new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
   def convertSchemaMap(tableProps: java.util.Map[String, String]): StructType = {

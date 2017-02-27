@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.execution
+package org.apache.spark.sql.execution.row
 
 import java.util.{GregorianCalendar, TimeZone}
 
@@ -24,7 +24,8 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, Resu
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD}
+import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
@@ -199,11 +200,12 @@ private[sql] final case class RowTableScan(
       case _: ArrayType =>
         useHolder = false
         val bytes = ctx.freshName("bytes")
+        val arrayClass = classOf[SerializedArray].getName
         s"""
           final byte[] $bytes = $rowVar.getAsBytes($pos, null);
-          final $javaType $col;
+          final $arrayClass $col;
           if ($bytes != null) {
-            $col = new UnsafeArrayData();
+            $col = new $arrayClass(8); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
@@ -212,12 +214,13 @@ private[sql] final case class RowTableScan(
       case _: MapType =>
         useHolder = false
         val bytes = ctx.freshName("bytes")
+        val mapClass = classOf[SerializedMap].getName
         s"""
           final byte[] $bytes = $rowVar.getAsBytes($pos, null);
-          final $javaType $col;
+          final $mapClass $col;
           if ($bytes != null) {
-            $col = new UnsafeMapData();
-            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
+            $col = new $mapClass();
+            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET);
           } else {
             $col = null;
           }
@@ -225,11 +228,12 @@ private[sql] final case class RowTableScan(
       case s: StructType =>
         useHolder = false
         val bytes = ctx.freshName("bytes")
+        val structClass = classOf[SerializedRow].getName
         s"""
           final byte[] $bytes = $rowVar.getAsBytes($pos, null);
-          final $javaType $col;
+          final $structClass $col;
           if ($bytes != null) {
-            $col = new UnsafeRow(${s.length});
+            $col = new $structClass(4, ${s.length}); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
@@ -319,11 +323,12 @@ private[sql] final case class RowTableScan(
         s"final $javaType $col = $rsVar.getBytes($pos);"
       case _: ArrayType =>
         val bytes = ctx.freshName("bytes")
+        val arrayClass = classOf[SerializedArray].getName
         s"""
           final byte[] $bytes = $rsVar.getBytes($pos);
-          final $javaType $col;
+          final $arrayClass $col;
           if ($bytes != null) {
-            $col = new UnsafeArrayData();
+            $col = new $arrayClass(8); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
@@ -331,23 +336,25 @@ private[sql] final case class RowTableScan(
         """
       case _: MapType =>
         val bytes = ctx.freshName("bytes")
+        val mapClass = classOf[SerializedMap].getName
         s"""
           final byte[] $bytes = $rsVar.getBytes($pos);
-          final $javaType $col;
+          final $mapClass $col;
           if ($bytes != null) {
-            $col = new UnsafeMapData();
-            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
+            $col = new $mapClass();
+            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET);
           } else {
             $col = null;
           }
         """
       case s: StructType =>
         val bytes = ctx.freshName("bytes")
+        val structClass = classOf[SerializedRow].getName
         s"""
           final byte[] $bytes = $rsVar.getBytes($pos);
-          final $javaType $col;
+          final $structClass $col;
           if ($bytes != null) {
-            $col = new UnsafeRow(${s.length});
+            $col = new $structClass(4, ${s.length}); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;

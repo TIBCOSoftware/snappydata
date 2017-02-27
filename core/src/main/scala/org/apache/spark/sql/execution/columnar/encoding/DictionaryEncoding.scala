@@ -224,7 +224,9 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 
   override def initialize(field: StructField, initSize: Int,
-      allocator: ColumnAllocator): Long = {
+      withHeader: Boolean, allocator: ColumnAllocator): Long = {
+    assert(withHeader, "DictionaryEncoding not supported without header")
+
     Utils.getSQLDataType(field.dataType) match {
       case StringType =>
         // re-use the previous map if not too large

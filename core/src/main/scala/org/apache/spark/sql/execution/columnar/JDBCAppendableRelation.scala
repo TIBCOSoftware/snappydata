@@ -29,9 +29,9 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.execution.{ExecutePlan, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.GemFireXDBaseDialect
@@ -112,21 +112,12 @@ case class JDBCAppendableRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val (columnBuffers, requestedColumns) = scanTable(table,
-      requiredColumns, filters)
-    val rdd = columnBuffers.mapPartitionsPreserve { columnBatchIterator =>
-      // Find the ordinals and data types of the requested columns.
-      // If none are requested, use the narrowest (the field with
-      // minimum default element size).
-
-      ExternalStoreUtils.columnBatchesToRows(columnBatchIterator,
-        requestedColumns, schema, forScan = true)
-    }
-    (rdd.asInstanceOf[RDD[Any]], Nil)
+    val rdd = scanTable(table, requiredColumns, filters)
+    (rdd.mapPartitionsPreserve(Iterator[Any](Iterator.empty, _)), Nil)
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[ColumnBatch], Array[String]) = {
+      filters: Array[Filter]): RDD[ColumnBatch] = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -139,18 +130,16 @@ case class JDBCAppendableRelation(
       requiredColumns
     }
 
-    val cachedColumnBuffers: RDD[ColumnBatch] = readLock {
+    readLock {
       externalStore.getColumnBatchRDD(tableName,
         requestedColumns.map(column => externalStore.columnPrefix + column),
         sqlContext.sparkSession)
     }
-    (cachedColumnBuffers, requestedColumns)
   }
 
-  override def getInsertPlan(relation: LogicalRelation, child: SparkPlan,
-      overwrite: Boolean): SparkPlan = {
-    ExecutePlan(new ColumnInsertExec(child, overwrite,
-      Seq.empty, Seq.empty, this, table))
+  override def getInsertPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    new ColumnInsertExec(child, Seq.empty, Seq.empty, this, table)
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
@@ -160,16 +149,24 @@ case class JDBCAppendableRelation(
         .insertInto(table)
   }
 
-  def getColumnBatchParams: (Int, String) = {
-    val columnBatchSize = origOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+  def getColumnBatchParams: (Int, Int, String) = {
+    val session = sqlContext.sparkSession
+    val columnBatchSize = origOptions.get(
+        ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
       case Some(cb) => Integer.parseInt(cb)
-      case None => ExternalStoreUtils.defaultColumnBatchSize(sqlContext.sparkSession)
+      case None => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
-    val compressionCodec = origOptions.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
+    val columnMaxDeltaRows = origOptions.get(
+        ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+      case Some(cd) => Integer.parseInt(cd)
+      case None => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
+    }
+    val compressionCodec = origOptions.get(
+        ExternalStoreUtils.COMPRESSION_CODEC) match {
       case Some(codec) => codec
-      case None => ExternalStoreUtils.defaultCompressionCodec(sqlContext.sparkSession)
+      case None => ExternalStoreUtils.defaultCompressionCodec(session)
     }
-    (columnBatchSize, compressionCodec)
+    (columnBatchSize, columnMaxDeltaRows, compressionCodec)
   }
 
   // truncate both actual and shadow table
@@ -299,8 +296,8 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     val connectionProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(sqlContext.sparkSession), parameters)
 
-    val partitions = ExternalStoreUtils.getTotalPartitions(Some(sc), parameters,
-      forManagedTable = false)
+    val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
+      Some(sc), parameters, forManagedTable = false)
 
     val externalStore = getExternalSource(sqlContext, connectionProperties,
       partitions)

@@ -23,7 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
-import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, SparkPlan}
+import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
 import org.apache.spark.sql.types.DataType
 
 /**
@@ -62,13 +62,14 @@ object StoreStrategy extends Strategy {
 
     case logical.InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
     _, _), part, query, overwrite, false) if part.isEmpty =>
-      p.getInsertPlan(l, planLater(query), overwrite) :: Nil
+      val preAction = if (overwrite) () => p.truncate() else () => ()
+      ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
     case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
-      ExecutedCommand(PutIntoDataSource(l, t, query)) :: Nil
+    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
+      ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
     case r: ExecuteCommand => ExecutedCommand(r) :: Nil
 
@@ -109,28 +110,4 @@ private[sql] case class PutIntoTable(
           DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
             tableAttr.dataType)
       }
-}
-
-/**
- * Puts the results of `query` in to a relation that extends [[RowPutRelation]].
- */
-private[sql] case class PutIntoDataSource(
-    logicalRelation: LogicalRelation,
-    relation: RowPutRelation,
-    query: LogicalPlan)
-    extends ExecuteCommand {
-
-  override def run(session: SparkSession): Seq[Row] = {
-    val snappySession = session.asInstanceOf[SnappySession]
-    val data = Dataset.ofRows(snappySession, query)
-    // Apply the schema of the existing table to the new data.
-    val df = snappySession.internalCreateDataFrame(data.queryExecution.toRdd,
-      logicalRelation.schema)
-    relation.put(df)
-
-    // Invalidate the cache.
-    snappySession.cacheManager.invalidateCache(logicalRelation)
-
-    Seq.empty[Row]
-  }
 }

@@ -28,7 +28,8 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.joins._
-import org.apache.spark.sql.execution.{FilterExec, ProjectExec, RowTableScan}
+import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.{FilterExec, ProjectExec}
 
 class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 

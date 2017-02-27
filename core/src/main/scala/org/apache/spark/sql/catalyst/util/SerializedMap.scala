@@ -52,6 +52,13 @@ final class SerializedMap extends MapData {
    * @param baseOffset the offset within the base object
    */
   def pointTo(baseObject: AnyRef, baseOffset: Long): Unit = {
+    // [sumedh] The reason for writing key and value array sizes separately
+    // rather than writing total size and key size (like in UnsafeMapData)
+    // is that former allows to cleanly align reads on word size of 8 bytes
+    // for both keys and values. This has a small overhead of having to read
+    // two sizes in decoder nextMap calls. One option can be skipBytes=12
+    // when reading keys but avoiding that additional work since optimizing
+    // Map needs a completely different layout for hashing in any case.
     var offset = baseOffset
     val keyArraySize = ColumnEncoding.readInt(baseObject, offset)
     assert(keyArraySize >= 8, s"keyArraySize ($keyArraySize) should >= 8")

@@ -71,6 +71,7 @@ private[sql] final case class ColumnTableScan(
     partitionColumns: Seq[Expression],
     partitionColumnAliases: Seq[Seq[Attribute]],
     @transient baseRelation: PartitionedDataSourceScan,
+    relationSchema: StructType,
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
     isForSampleReservoirAsRegion: Boolean = false)
@@ -80,16 +81,22 @@ private[sql] final case class ColumnTableScan(
 
   override val nodeName: String = "ColumnTableScan"
 
-  override def getMetrics: Map[String, SQLMetric] = super.getMetrics ++ Map(
-    "numRowsBuffer" -> SQLMetrics.createMetric(sparkContext,
-      "number of output rows from row buffer"),
-    "columnBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
-      "column batches seen"),
-    "columnBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
-      "column batches skipped by the predicate")) ++ (
-      if (otherRDDs.isEmpty) Map.empty
-      else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
-        "number of output rows from other RDDs")))
+  override def getMetrics: Map[String, SQLMetric] = {
+    if (sqlContext eq null) Map.empty
+    else super.getMetrics ++ Map(
+      "numRowsBuffer" -> SQLMetrics.createMetric(sparkContext,
+        "number of output rows from row buffer"),
+      "columnBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
+        "column batches seen"),
+      "columnBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
+        "column batches skipped by the predicate")) ++ (
+        if (otherRDDs.isEmpty) Map.empty
+        else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
+          "number of output rows from other RDDs")))
+  }
+
+  override def metricTerm(ctx: CodegenContext, name: String): String =
+    if (sqlContext eq null) null else super.metricTerm(ctx, name)
 
   private def generateStatPredicate(ctx: CodegenContext,
       numRowsTerm: String): String = {
@@ -229,10 +236,10 @@ private[sql] final case class ColumnTableScan(
   else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
       .asInstanceOf[Seq[RDD[Any]]])
 
-  private val otherRDDsPartitionIndex = rdd.getNumPartitions
+  private lazy val otherRDDsPartitionIndex = rdd.getNumPartitions
 
   @transient private val session =
-    sqlContext.sparkSession.asInstanceOf[SnappySession]
+    Option(sqlContext).map(_.sparkSession.asInstanceOf[SnappySession])
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil
@@ -243,10 +250,10 @@ private[sql] final case class ColumnTableScan(
     val numRowsBuffer = metricTerm(ctx, "numRowsBuffer")
     val numRowsOther =
       if (otherRDDs.isEmpty) null else metricTerm(ctx, "numRowsOtherRDDs")
-    val isEmbedded = baseRelation.connectionType match {
+    val isEmbedded = (baseRelation eq null) || (baseRelation.connectionType match {
       case ConnectionType.Embedded => true
       case _ => false
-    }
+    })
     // PartitionedPhysicalRDD always has one input.
     // It returns an iterator of iterators (row + column)
     // except when doing union with multiple RDDs where other
@@ -277,39 +284,35 @@ private[sql] final case class ColumnTableScan(
       (varName, s"$varName = $wrappedRow.weight();")
     } else ("", "")
 
-    val colItrClass = if (!isEmbedded) classOf[ColumnBatchIteratorOnRS].getName
-    else classOf[ColumnBatchIterator].getName
-
+    val iteratorClass = "scala.collection.Iterator"
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
-        ctx.addMutableState("scala.collection.Iterator",
-          rowInputSRR, s"$rowInputSRR = (scala.collection.Iterator)inputs[0].next();")
+        ctx.addMutableState(iteratorClass, rowInputSRR,
+          s"$rowInputSRR = ($iteratorClass)inputs[0].next();")
         ctx.addMutableState(unsafeHolderClass, unsafeHolder,
           s"$unsafeHolder = new $unsafeHolderClass();")
         ctx.addMutableState("boolean", inputIsRowSRR, s"$inputIsRowSRR = true;")
       }
-      ctx.addMutableState("scala.collection.Iterator",
-        rowInput, s"$rowInput = (scala.collection.Iterator)inputs[0].next();")
-      ctx.addMutableState(colItrClass, colInput,
-        s"$colInput = ($colItrClass)inputs[0].next();")
+      ctx.addMutableState(iteratorClass, rowInput,
+        s"$rowInput = ($iteratorClass)inputs[0].next();")
+      ctx.addMutableState(iteratorClass, colInput,
+        s"$colInput = ($iteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = (($rsIterClass)$rowInput).rs();")
     } else {
       ctx.addMutableState("boolean", inputIsOtherRDD,
         s"$inputIsOtherRDD = (partitionIndex >= $otherRDDsPartitionIndex);")
-      ctx.addMutableState("scala.collection.Iterator", rowInput,
-        s"""
-            $rowInput = $inputIsOtherRDD ? inputs[0]
-                : (scala.collection.Iterator)inputs[0].next();
-        """)
-      ctx.addMutableState(colItrClass, colInput,
-        s"$colInput = $inputIsOtherRDD ? null : ($colItrClass)inputs[0].next();")
+      ctx.addMutableState(iteratorClass, rowInput,
+        s"$rowInput = $inputIsOtherRDD ? inputs[0] " +
+            s": ($iteratorClass)inputs[0].next();")
+      ctx.addMutableState(iteratorClass, colInput,
+        s"$colInput = $inputIsOtherRDD ? null : ($iteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
       ctx.addMutableState(unsafeHolderClass, unsafeHolder,
         s"$unsafeHolder = new $unsafeHolderClass();")
     }
-    ctx.addMutableState("scala.collection.Iterator", input,
+    ctx.addMutableState(iteratorClass, input,
       if (isForSampleReservoirAsRegion) s"$input = $rowInputSRR;"
       else s"$input = $rowInput;")
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
@@ -368,7 +371,8 @@ private[sql] final case class ColumnTableScan(
       """
     }
     val incrementNumRowsSnippet = if (otherRDDs.isEmpty) {
-      s"$numRowsBuffer.${metricAdd("1")};"
+      if (numRowsBuffer eq null) ""
+      else s"$numRowsBuffer.${metricAdd("1")};"
     } else {
       s"""
         if ($inputIsOtherRDD) {
@@ -378,8 +382,6 @@ private[sql] final case class ColumnTableScan(
         }
       """
     }
-    val incrementOtherRows = if (otherRDDs.isEmpty) ""
-    else s"$numOutputRows.${metricAdd(metricValue(numRowsOther))};"
 
     val initRowTableDecoders = new StringBuilder
     val batchConsumers = getBatchConsumers(parent)
@@ -391,7 +393,7 @@ private[sql] final case class ColumnTableScan(
       val decoderVar = s"decoder$index"
       val bufferVar = s"buffer$index"
       // projections are not pushed in embedded mode for optimized access
-      val baseIndex = baseRelation.schema.fieldIndex(attr.name)
+      val baseIndex = relationSchema.fieldIndex(attr.name)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
 
       ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
@@ -447,11 +449,21 @@ private[sql] final case class ColumnTableScan(
     val filterFunction = if (!isEmbedded) ""
     else generateStatPredicate(ctx, numBatchRows)
 
+    val incrementBatchOutputRows = if (numOutputRows ne null) {
+      s"$numOutputRows.${metricAdd(numBatchRows)};"
+    } else ""
+    val incrementBufferOutputRows = if (numOutputRows ne null) {
+      s"$numOutputRows.${metricAdd(metricValue(numRowsBuffer))};"
+    } else ""
+    val incrementOtherRows = if (otherRDDs.isEmpty) ""
+    else s"$numOutputRows.${metricAdd(metricValue(numRowsOther))};"
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
+    val incrementBatchCount = if (columnBatchesSeen eq null) ""
+    else s"$columnBatchesSeen.${metricAdd("1")};"
     val batchAssign =
       s"""
         final $columnBatchClass $batch = ($columnBatchClass)$colInput.next();
-        $columnBatchesSeen.${metricAdd("1")};
+        $incrementBatchCount
         $buffers = $batch.buffers();
         $numBatchRows = $batch.numRows();
       """
@@ -492,6 +504,8 @@ private[sql] final case class ColumnTableScan(
          |  if ($input == null) return false;
          |  if (!$input.hasNext()) {
          |    ${switchSRR}if ($input == $rowInput) {
+         |      $incrementBufferOutputRows
+         |      $incrementOtherRows
          |      $input = $colInput;
          |      $inputIsRow = false;
          |      if ($input == null || !$input.hasNext()) {
@@ -507,7 +521,7 @@ private[sql] final case class ColumnTableScan(
          |    $incrementNumRowsSnippet
          |  } else {
          |    $batchInit
-         |    $numOutputRows.${metricAdd(numBatchRows)};
+         |    $incrementBatchOutputRows
          |    // initialize the column buffers and decoders
          |    ${columnBufferInitCode.toString()}
          |  }
@@ -518,7 +532,10 @@ private[sql] final case class ColumnTableScan(
 
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
       columnsInput)).mkString("\n")
-    val finallyCode = session.evaluateFinallyCode(ctx)
+    val finallyCode = session match {
+      case Some(s) => s.evaluateFinallyCode(ctx)
+      case _ => ""
+    }
     val consumeCode = consume(ctx, columnsInput).trim
 
     s"""
@@ -550,9 +567,7 @@ private[sql] final case class ColumnTableScan(
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $numOutputRows.${metricAdd(metricValue(numRowsBuffer))};
        |  $finallyCode
-       |  $incrementOtherRows
        |}
     """.stripMargin
   }
@@ -706,15 +721,15 @@ private[sql] final case class ColumnTableScan(
               }
             }
           """
-        session.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
-          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen))
+        session.foreach(_.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
+          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen)))
       }
       (ExprCode(code, nullVar, col), bufferInit)
     } else {
       if (!dictionary.isEmpty) {
         val dictionaryCode = jtDecl + '\n' + dictionaryAssignCode
-        session.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
-          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen))
+        session.foreach(_.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
+          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen)))
       }
       var code = jtDecl + '\n' + colAssign + '\n'
       if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {

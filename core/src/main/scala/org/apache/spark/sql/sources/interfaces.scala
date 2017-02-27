@@ -25,7 +25,7 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -40,17 +40,17 @@ trait RowInsertableRelation extends SingleRowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
-trait PlanInsertableRelation extends InsertableRelation {
+trait PlanInsertableRelation extends InsertableRelation with DestroyRelation {
 
   /**
    * Get a spark plan for insert. The result of SparkPlan execution should
    * be a count of number of inserted rows.
    */
-  def getInsertPlan(relation: LogicalRelation, child: SparkPlan,
-      overwrite: Boolean): SparkPlan
+  def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
-trait RowPutRelation extends SingleRowInsertableRelation {
+trait RowPutRelation extends SingleRowInsertableRelation with DestroyRelation {
+
   /**
    * If the row is already present, it gets updated otherwise it gets
    * inserted into the table represented by this relation
@@ -62,13 +62,11 @@ trait RowPutRelation extends SingleRowInsertableRelation {
   def put(rows: Seq[Row]): Int
 
   /**
-   * If the row is already present, it gets updated otherwise it gets
-   * inserted into the table represented by this relation
-   *
-   * @param df the <code>DataFrame</code> to be upserted
-   *
+   * Get a spark plan for puts. If the row is already present, it gets updated
+   * otherwise it gets inserted into the table represented by this relation.
+   * The result of SparkPlan execution should be a count of number of rows put.
    */
-  def put(df: DataFrame): Unit
+  def getPutPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
 @DeveloperApi

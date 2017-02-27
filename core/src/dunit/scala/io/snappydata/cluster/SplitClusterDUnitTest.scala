@@ -52,9 +52,6 @@ class SplitClusterDUnitTest(s: String)
   bootProps.setProperty("log-level", "config")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
 
-  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name,
-    SplitClusterDUnitTest.batchSize.toString)
-
   private[this] var host: Host = _
   var vm0: VM = _
   var vm1: VM = _
@@ -95,8 +92,7 @@ class SplitClusterDUnitTest(s: String)
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1 " +
-        s"-J-Dspark.snappydata.column.batchSize=$batchSize",
+    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1",
       s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2

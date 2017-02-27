@@ -20,6 +20,7 @@ import java.io.{File, IOException}
 
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.CommandEntry
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
@@ -35,6 +36,7 @@ import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 
   GfxdUtilLauncher.snappyStore = true
+  ClientSharedUtils.setThriftIsDefault(true)
 
   import SnappyUtilLauncher._
 

@@ -78,7 +78,8 @@ abstract class MutableRelationProvider
         options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       data match {
         case Some(plan) =>
-          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
+          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
+            overwrite = false)
         case None =>
       }
       success = true
@@ -126,7 +127,7 @@ abstract class MutableRelationProvider
     val relation = createRelation(sqlContext, mode, options, schemaString, None)
     var success = false
     try {
-      relation.insert(data)
+      relation.insert(data, overwrite = false)
       success = true
       relation
     } finally {

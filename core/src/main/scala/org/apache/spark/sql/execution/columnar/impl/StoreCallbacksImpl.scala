@@ -40,12 +40,12 @@ import org.apache.spark.{Logging, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
-  val partitioner = new StoreHashFunction
+  private val partitioner = new StoreHashFunction
 
   override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
-    val container = region.getPartitionedRegion
-        .getUserAttribute.asInstanceOf[GemFireContainer]
+    val pr = region.getPartitionedRegion
+    val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
     val catalogEntry: ExternalTableMetaData = container.fetchHiveMetaData(false)
 
     if (catalogEntry != null) {
@@ -66,8 +66,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
         val row: AbstractCompactExecRow = container.newTemplateRow()
             .asInstanceOf[AbstractCompactExecRow]
-        lcc.setExecuteLocally(Collections.singleton(bucketID),
-          region.getPartitionedRegion, false, null)
+        lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
         try {
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
@@ -83,8 +82,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             Seq.empty
           }
 
-          val batchCreator = new ColumnBatchCreator(ColumnFormatRelation
-              .columnBatchTableName(container.getQualifiedTableName),
+          val tableName = container.getQualifiedTableName
+          val batchCreator = new ColumnBatchCreator(pr,
+            ColumnFormatRelation.columnBatchTableName(tableName),
             catalogEntry.schema.asInstanceOf[StructType],
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)

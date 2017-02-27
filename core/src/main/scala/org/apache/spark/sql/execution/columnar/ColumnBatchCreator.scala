@@ -20,22 +20,25 @@ import java.util.UUID
 
 import scala.collection.AbstractIterator
 
-import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
+import io.snappydata.Property
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, LeafExecNode, RowTableScan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode, WholeStageCodegenExec}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 
 final class ColumnBatchCreator(
+    bufferRegion: PartitionedRegion,
     val tableName: String, // internal column table name
     val schema: StructType,
     val externalStore: ExternalStore,
@@ -75,33 +78,37 @@ final class ColumnBatchCreator(
         }
       }
       try {
-        val gen = CodeGeneration.compileCode(tableName + "._BATCH", schema.fields, () => {
+        // the lookup key does not depend on tableName since the generated
+        // code does not (which is passed in the references separately)
+        val gen = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
             dataRDD = null, numBuckets = -1, partitionColumns = Seq.empty,
             partitionColumnAliases = Seq.empty, baseRelation = null)
-          // always create only one column batch hence size is Int.MaxValue
-          val insertPlan = ColumnInsertExec(tableScan, overwrite = false,
-            Seq.empty, Seq.empty, None, Int.MaxValue, -1, tableName, schema,
-            store, useMemberVariables = false, onExecutor = true,
-            nonSerialized = false)
+          // sending negative values for batch size and delta rows will create
+          // only one column batch that will not be checked for size again
+          val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
+            -1, None, (-bufferRegion.getColumnBatchSize, -1,
+                Property.CompressionCodec.defaultValue.get), tableName,
+            onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD semantics
           // and related methods are all ignored
-          val (ctx, code) = doCodeGen(WholeStageCodegenExec(insertPlan),
-            insertPlan)
+          val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
+            WholeStageCodegenExec(insertPlan), insertPlan)
           val references = ctx.references
           // also push the index of batchId reference at the end which can be
           // used by caller to update the reference objects before execution
           references += insertPlan.batchIdRef
           (code, references.toArray)
         })
-        val references = gen._2
+        val references = gen._2.clone()
         // update the batchUUID and bucketId as per the passed values
         // the index of the batchId (and bucketId after that) has already
         // been pushed in during compilation above
         val batchIdRef = references(references.length - 1).asInstanceOf[Int]
         references(batchIdRef) = Some(batchID.toString)
         references(batchIdRef + 1) = bucketID
+        references(batchIdRef + 2) = tableName
         // no harm in passing a references array with an extra element at end
         val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
         iter.init(0, Array(execRows.asInstanceOf[Iterator[InternalRow]]))
@@ -125,17 +132,19 @@ final class ColumnBatchCreator(
    * insertion of rows as they appear. Currently used by sampler that
    * does not have any indexes so there is no dependents handling here.
    */
-  def createColumnBatchBuffer(columnBatchSize: Int): ColumnBatchRowsBuffer = {
-    val gen = CodeGeneration.compileCode(tableName + "._BUFFER", schema.fields, () => {
+  def createColumnBatchBuffer(columnBatchSize: Int, columnMaxDeltaRows: Int,
+      compressionCodec: String): ColumnBatchRowsBuffer = {
+    val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
-      val insertPlan = ColumnInsertExec(bufferPlan, overwrite = false,
-        Seq.empty, Seq.empty, None, columnBatchSize, -1, tableName, schema,
-        externalStore, useMemberVariables = true, onExecutor = true,
-        nonSerialized = false)
+      val insertPlan = ColumnInsertExec(bufferPlan, Seq.empty, Seq.empty,
+        -1, None, (columnBatchSize, columnMaxDeltaRows, compressionCodec),
+        tableName, onExecutor = true, schema, externalStore,
+        useMemberVariables = true)
       // now generate the code with the help of WholeStageCodegenExec
       // this is only used for local code generation while its RDD semantics
       // and related methods are all ignored
-      val (ctx, code) = doCodeGen(WholeStageCodegenExec(insertPlan), insertPlan)
+      val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
+        WholeStageCodegenExec(insertPlan), insertPlan)
       val references = ctx.references.toArray
       (code, references)
     })
@@ -144,75 +153,6 @@ final class ColumnBatchCreator(
     // get the ColumnBatchRowsBuffer by reflection
     iter.getClass.getMethod("getRowsBuffer").invoke(iter)
         .asInstanceOf[ColumnBatchRowsBuffer]
-  }
-
-  /**
-   * Generates code for this subtree.
-   *
-   * Adapted from WholeStageCodegenExec to allow running on executors.
-   *
-   * @return the tuple of the codegen context and the actual generated source.
-   */
-  def doCodeGen(plan: CodegenSupport,
-      child: CodegenSupportOnExecutor): (CodegenContext, CodeAndComment) = {
-    val ctx = new CodegenContext
-    val code = child.produceOnExecutor(ctx, plan)
-    val source =
-      s"""
-      public Object generate(Object[] references) {
-        return new GeneratedIterator(references);
-      }
-
-      ${ctx.registerComment(s"""Codegend pipeline for\n${child.treeString.trim}""")}
-      final class GeneratedIterator extends org.apache.spark.sql.execution.BufferedRowIterator {
-
-        private Object[] references;
-        ${ctx.declareMutableStates()}
-
-        public GeneratedIterator(Object[] references) {
-          this.references = references;
-        }
-
-        public void init(int index, scala.collection.Iterator inputs[]) {
-          partitionIndex = index;
-          ${ctx.initMutableStates()}
-        }
-
-        ${ctx.declareAddedFunctions()}
-
-        protected void processNext() throws java.io.IOException {
-          ${code.trim}
-        }
-      }
-      """.trim
-
-    // try to compile, helpful for debug
-    val cleanedSource = CodeFormatter.stripOverlappingComments(
-      new CodeAndComment(CodeFormatter.stripExtraNewLines(source),
-        ctx.getPlaceHolderToComments()))
-
-    logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
-    (ctx, cleanedSource)
-  }
-}
-
-/**
- * Allow invoking produce/consume calls on executor without requiring
- * a SparkContext.
- */
-trait CodegenSupportOnExecutor extends CodegenSupport {
-
-  /**
-   * Returns Java source code to process the rows from input RDD that
-   * will work on executors too (assuming no sub-query processing required).
-   */
-  def produceOnExecutor(ctx: CodegenContext, parent: CodegenSupport): String = {
-    this.parent = parent
-    ctx.freshNamePrefix = nodeName.toLowerCase
-    s"""
-       |${ctx.registerComment(s"PRODUCE ON EXECUTOR: ${this.simpleString}")}
-       |${doProduce(ctx)}
-     """.stripMargin
   }
 }
 
@@ -225,6 +165,10 @@ trait ColumnBatchRowsBuffer {
   def endRows(): Unit
 }
 
+/**
+ * This class is an adapter over the iterator model as provided by generated
+ * code to closure callbacks model as required by StratifiedSampler.append
+ */
 case class CallbackColumnInsert(_schema: StructType)
     extends LeafExecNode with CodegenSupportOnExecutor {
 

@@ -232,8 +232,9 @@ trait ColumnEncoder extends ColumnEncoding {
 
   protected def initializeNulls(initSize: Int): Int
 
-  final def initialize(field: StructField, initSize: Int): Long = {
-    initialize(field, initSize, HeapAllocator)
+  final def initialize(field: StructField, initSize: Int,
+      withHeader: Boolean): Long = {
+    initialize(field, initSize, withHeader, HeapAllocator)
   }
 
   protected def initializeLimits(): Unit = {
@@ -257,7 +258,7 @@ trait ColumnEncoder extends ColumnEncoding {
   }
 
   def initialize(field: StructField, initSize: Int,
-      allocator: ColumnAllocator): Long = {
+      withHeader: Boolean, allocator: ColumnAllocator): Long = {
     this.allocator = allocator
     val dataType = Utils.getSQLDataType(field.dataType)
     val defSize = defaultSize(dataType)
@@ -268,11 +269,18 @@ trait ColumnEncoder extends ColumnEncoding {
     }
 
     // initialize the lower and upper limits
-    initializeLimits()
+    if (withHeader) initializeLimits()
 
     val numNullWords = initializeNulls(initSize)
+    if (withHeader) initializeLimits()
+    else if (numNullWords != 0) assert(assertion = false,
+      s"Unexpected nulls=$numNullWords for withHeader=false")
+
     if (reuseColumnData eq null) {
-      val initByteSize = 8L /* typeId + nullsSize */ + defSize.toLong * initSize
+      var initByteSize = defSize.toLong * initSize
+      if (withHeader) {
+        initByteSize += 8L /* typeId + nullsSize */
+      }
       columnData = allocator.allocate(initByteSize)
       columnBytes = columnData.bytes
       columnEndPosition = columnData.endPosition
@@ -295,13 +303,15 @@ trait ColumnEncoder extends ColumnEncoding {
       reuseColumnData = null
       reuseUsedSize = 0
     }
-    var cursor = columnData.baseOffset
-    // typeId followed by nulls bitset size and space for values
-    ColumnEncoding.writeInt(columnBytes, cursor, typeId)
-    cursor += 4
-    // write the number of null words
-    ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
-    cursor + 4L + (numNullWords.toLong << 3L)
+    if (withHeader) {
+      var cursor = columnData.baseOffset
+      // typeId followed by nulls bitset size and space for values
+      ColumnEncoding.writeInt(columnBytes, cursor, typeId)
+      cursor += 4
+      // write the number of null words
+      ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
+      cursor + 4L + (numNullWords.toLong << 3L)
+    } else columnData.baseOffset
   }
 
   final def baseOffset: Long = columnData.baseOffset

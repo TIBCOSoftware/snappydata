@@ -1572,7 +1572,7 @@ object SnappySession extends Logging {
       case plan => plan
     }
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
-      case _: ExecutedCommandExec | _: ExecutedCommand =>
+      case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         (null, findShuffleDependencies(plan.childRDD).toArray,

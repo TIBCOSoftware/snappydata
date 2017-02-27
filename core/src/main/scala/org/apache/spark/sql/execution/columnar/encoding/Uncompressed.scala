@@ -219,9 +219,9 @@ abstract class UncompressedDecoderBase
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
       cursor: Long): SerializedRow = {
-    // creates a SerializedRow with skipBytes = 4 and does not change the cursor
-    // itself to get best 8-byte word alignment (the 4 bytes are subsumed
-    //   in the null bit mask at the start)
+    // creates a SerializedRow with skipBytes = 4 and does not change the
+    // cursor itself to get best 8-byte word alignment (the 4 bytes are
+    //   subsumed in the null bit mask at the start)
     val result = new SerializedRow(4, numFields)
     val size = ColumnEncoding.readInt(columnBytes, cursor)
     result.pointTo(columnBytes, cursor, size)
@@ -429,7 +429,6 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
     if (position + numBytes > columnEndPosition) {
       position = expand(position, numBytes)
     }
-    val columnBytes = this.columnBytes
     // assume size is already written as per skipBytes in SerializedRowData
     Platform.copyMemory(baseObject, baseOffset, columnBytes, position, numBytes)
     position + numBytes

@@ -177,7 +177,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
-      url = "jdbc:gemfirexd://localhost:" + netPort + "/"
+      url = "jdbc:gemfirexd:thrift://localhost:" + netPort + "/"
     } else {
       url = "jdbc:snappydata://localhost:" + netPort + "/"
     }

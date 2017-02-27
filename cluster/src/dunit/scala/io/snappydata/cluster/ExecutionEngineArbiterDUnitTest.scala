@@ -17,22 +17,19 @@
 
 package io.snappydata.cluster
 
-import java.sql.{ResultSet, SQLException, SQLSyntaxErrorException, Connection, DriverManager}
+import java.sql.{Connection, DriverManager, SQLException}
 
 import scala.util.Random
 
-import com.gemstone.org.jgroups.oswego.concurrent.Callable
 import com.pivotal.gemfirexd.internal.engine.distributed.metadata.QueryInfo
 import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserver, GemFireXDQueryObserverAdapter, GemFireXDQueryObserverHolder}
-import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineArbiter
 import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineRule.ExecutionEngine
-import io.snappydata.test.dunit.{DistributedTestBase, AvailablePortHelper, SerializableRunnable}
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable}
 import io.snappydata.test.util.TestException
-import junit.framework.Assert
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.types.Decimal
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
   * Tests for query routing from JDBC client driver.
@@ -93,7 +90,7 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     s"localhost:$port"
   }
 
-  override def stopNetServer: Unit = {
+  override def stopNetServer(): Unit = {
     vm2.invoke(classOf[ClusterManagerTestBase], "stopNetworkServers")
   }
 
@@ -148,9 +145,9 @@ trait ExecutionEngineArbiterTestBase {
 
   def startNetServer: String
 
-  def stopNetServer: Unit
+  def stopNetServer(): Unit
 
-  //def setTestHook: Unit
+  // def setTestHook: Unit
 
   def createRowTableAndInsertData(snc: SnappyContext, tableName: String,
       props: Map[String, String] = Map.empty): Unit = {
@@ -251,7 +248,8 @@ trait ExecutionEngineArbiterTestBase {
     try {
       runAndValidateQuery(conn, false,
         s"select * from $testTable -- GEMFIREXD-PROPERTIES executionEngine=Store\n limit 1")
-      DistributedTestBase.fail("Expected syntax error as query was supposed to be executed on store with limit clause",
+      DistributedTestBase.fail("Expected syntax error as query was supposed " +
+          "to be executed on store with limit clause",
         new TestException("Expected Exception"))
     }
     catch {
@@ -309,7 +307,8 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQuery(conn, true, query)
   }
 
-/*  def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
+/*
+    def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
 
     val sc = snc.sparkContext
@@ -353,7 +352,8 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQueryForCostBasedRouting(conn, true,
       s"select col1, col3 from $testTable WHERE col2 > 3")
 
-  }*/
+  }
+*/
 
   def queryHint(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
@@ -445,18 +445,18 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQuery(conn, true, s" select sum(t1.col1)  from $testTable1 t1 , $testTable t2 " +
         s"where t1.col1 = t2.col1 group by t1.col2")
 
-    runAndValidateQuery(conn, false, s" select *  from $testTable1 t1 where col1 in  " +
+    runAndValidateQuery(conn, true, s" select *  from $testTable1 t1 where col1 in  " +
         s"(select avg(col1) from $testTable group by col2)")
 
     runAndValidateQuery(conn, false, s"create index  testIndex on $testTable1(col1)", true)
 
-    runAndValidateQuery(conn, false, s"select count(col1)  from $testTable1 " +
+    runAndValidateQuery(conn, true, s"select count(col1)  from $testTable1 " +
         s" where col1 in ( 5, 1, 2, 4, 5, 6,7,8,9,10) group by col3 ")
 
-    runAndValidateQuery(conn, false, s" select sum(t1.col1)  from $testTable1 t1 , $testTable t2 " +
+    runAndValidateQuery(conn, true, s" select sum(t1.col1)  from $testTable1 t1 , $testTable t2 " +
         s"where t1.col1 = t2.col1 group by t1.col2")
 
-    runAndValidateQuery(conn, false, s"select sum(col1) from" +
+    runAndValidateQuery(conn, true, s"select sum(col1) from" +
         s" $testTable2 where col2 in (select col1 from $testTable1 " +
         s"where col1 in (1,2,3) group by col1)")
 
@@ -466,7 +466,7 @@ trait ExecutionEngineArbiterTestBase {
       s" create table $testTable1 (col1 int primary key , col2 int , col3 int ) " +
           s"using row options (" + "PARTITION_BY 'PRIMARY KEY'" + ")", true)
 
-    runAndValidateQuery(conn, false, s"select sum(col1) from" +
+    runAndValidateQuery(conn, true, s"select sum(col1) from" +
         s" $testTable2 where col2 in (select col1 from $testTable1 " +
         s"where col1 in (1,2,3) group by col1)")
 

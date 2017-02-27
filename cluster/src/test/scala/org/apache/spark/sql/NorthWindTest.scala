@@ -24,6 +24,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.joins._
+import org.apache.spark.sql.execution.row.RowTableScan
 
 class NorthWindTest
     extends SnappyFunSuite

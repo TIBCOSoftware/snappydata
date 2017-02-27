@@ -29,7 +29,7 @@ trait ExternalStore extends Serializable {
   final val columnPrefix = "Col_"
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int = -1, batchId: Option[String] = None): Unit
+      partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit
 
   def getColumnBatchRDD(tableName: String, requiredColumns: Array[String],
       session: SparkSession): RDD[ColumnBatch]

@@ -318,7 +318,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     println("startSparkJob2 " + shadowRegion.size())
 
-    assert(shadowRegion.size() > 0)
+    assert(shadowRegion.size() == 0)
 
     snc.dropTable(tableName, ifExists = true)
     getLogWriter.info("Successful")
@@ -360,7 +360,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("startSparkJob3 " + region.size())
     println("startSparkJob3 " + shadowRegion.size())
 
-    assert(shadowRegion.size() > 0)
+    assert(shadowRegion.size() == 0)
 
     snc.dropTable(tableNameWithPartition, ifExists = true)
     getLogWriter.info("Successful")
@@ -375,7 +375,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
-        "REDUNDANCY '2', COLUMN_BATCH_SIZE '4')")
+        "REDUNDANCY '2', COLUMN_BATCH_SIZE '100')")
 
     var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
       Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
@@ -431,7 +431,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableNameWithPartition, "column", dataDF.schema,
-      props + ("COLUMN_BATCH_SIZE" -> "4"))
+      props + ("COLUMN_BATCH_SIZE" -> "100"))
 
     data.map { r =>
       snc.insert(tableNameWithPartition, Row.fromSeq(r))
@@ -461,9 +461,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
-    
-    val regionSize = region.size() +
-        region.getColumnMaxDeltaRows * shadowRegion.size()
+
+    val regionSize = region.size() + shadowRegion.size() * 3
     assert(1005 == regionSize, s"Unexpected size = $regionSize, expected = 1005")
     assert(shadowRegion.size() > 0)
 
