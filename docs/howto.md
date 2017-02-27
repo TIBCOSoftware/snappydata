@@ -79,7 +79,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where `<leadHostname>` is the host name of your lead node. Use [snappy-shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where `<leadHostname>` is the host name of your lead node. Use [snappy-sql](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
 **Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
 
@@ -231,20 +231,20 @@ You can now create tables and run queries in SnappyData store using your Apache 
 
 
 <a id="howto-snappyShell"></a>
-## How to Use SnappyData SQL shell (snappy-shell)
-`snappy-shell` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
+## How to Use SnappyData SQL shell (snappy-sql)
+`snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: 
-Use the `snappy-shell` and `connect client` command on the Snappy Shell
+Use the `snappy-sql` and `connect client` command on the Snappy Shell
 
 ```
-$ bin/snappy-shell
+$ bin/snappy-sql
 snappy> connect client '<locatorHostName>:1527';
 ```
 
 Where `<locatorHostName>` is the host name of the node on which the locator is started and **1527** is the default port on which the locator listens for connections. 
 
-**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-shell`
+**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-sql`
 
 ```
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
@@ -798,15 +798,9 @@ The code snippet below inserts Person objects into a column table. The source co
     val nameAndAddress = snSession.sql("SELECT name, address, emergencyContacts FROM Persons")
 
     //Reconstruct the objects from obtained Row
-    val allPersons = nameAndAddress.collect.map(row => {
-      Person(row(0).asInstanceOf[String],
-        Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],
-          row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        ),
-        row(2).asInstanceOf[Map[String, String]]
-      )
-    })
+    val allPersons = nameAndAddress.as[Person]
+    //allPersons is a Spark Dataset of Person objects. 
+    // Use of the Dataset APIs to transform, query this data set. 
 ```
 
 <a id="howto-streams"></a>

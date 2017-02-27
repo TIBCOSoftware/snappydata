@@ -17,28 +17,7 @@
 # LICENSE file.
 #
 
-# Starts a server on the machine this script is executed on.
-#
+bin="`dirname "$0"`"
+bin="`cd "$bin"; pwd`"
 
-usage="Usage: snappy-server.sh (start|stop|status) -dir=directory"
-
-sbin="`dirname "$0"`"
-sbin="`cd "$sbin"; pwd`"
-
-mode=$1
-shift
-
-. "$sbin/spark-config.sh"
-. "$sbin/snappy-config.sh"
-
-. "$SPARK_HOME/bin/load-spark-env.sh"
-. "$SPARK_HOME/bin/load-snappy-env.sh"
-
-
-
-# Start up  the server instance
-function start_instance {
-  "$SPARK_HOME"/bin/snappy server "$mode" "$@"
-}
-
-start_instance "$@"
+"$bin"/snappy "$@"
