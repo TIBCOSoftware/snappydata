@@ -99,7 +99,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   def testMemoryUsedInReplication(): Unit = {
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(rr_table, "row", dataDF.schema, Map.empty[String, String])
@@ -113,7 +113,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   def testMemoryUsedInBucketRegions_RowTables(): Unit = {
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', REDUNDANCY '2')"
@@ -131,7 +131,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   def testMemoryUsedInBucketRegions_ColumntTables(): Unit = {
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', REDUNDANCY '2')"
@@ -163,7 +163,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1', REDUNDANCY '2')"
@@ -198,7 +198,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(rr_table, "row", dataDF.schema, Map.empty[String, String])
@@ -227,7 +227,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
@@ -260,7 +260,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
@@ -350,7 +350,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
 
     vm1.invoke(restartServer(props))
-    
+
     val waitAssert = new WaitAssert(2, getClass)
     //The delete operation takes time to propagate
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),

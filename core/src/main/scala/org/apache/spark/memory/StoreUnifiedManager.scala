@@ -18,6 +18,7 @@ package org.apache.spark.memory
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
 import org.apache.spark.storage.BlockId
@@ -30,7 +31,8 @@ trait StoreUnifiedManager {
       objectName : String,
       blockId: BlockId,
       numBytes: Long,
-      memoryMode: MemoryMode): Boolean
+      memoryMode: MemoryMode,
+      buffer: UMMMemoryTracker): Boolean
 
 
   def dropStorageMemoryForObject(objectName : String, memoryMode: MemoryMode): Long
@@ -42,15 +44,16 @@ trait StoreUnifiedManager {
   * This class will store all the memory usage for GemFireXD boot up time when SparkEnv is not initialised.
   * This class will not actually allocate any memory. It is just a temp account holder till SnappyUnifiedManager is started.
   */
-class TempMemoryManager extends StoreUnifiedManager {
+class TempMemoryManager extends StoreUnifiedManager with Logging{
 
   val memoryForObject = new mutable.HashMap[String, Long]()
 
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
       numBytes: Long,
-      memoryMode: MemoryMode): Boolean = synchronized {
-    println(s"Acquiring mem [TEMP] for $objectName $numBytes")
+      memoryMode: MemoryMode,
+      buffer: UMMMemoryTracker): Boolean = synchronized {
+    logDebug(s"Acquiring mem [TEMP] for $objectName $numBytes")
     if (!memoryForObject.contains(objectName)) {
       memoryForObject(objectName) = 0L
     }
@@ -73,14 +76,15 @@ class TempMemoryManager extends StoreUnifiedManager {
 }
 
 
-class NoOpSnappyMemoryManager extends StoreUnifiedManager {
+class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging{
 
 
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
       numBytes: Long,
-      memoryMode: MemoryMode): Boolean = {
-    println(s"Acquiring mem [NO-OP] for $objectName $numBytes")
+      memoryMode: MemoryMode,
+      buffer: UMMMemoryTracker): Boolean = {
+    logDebug(s"Acquiring mem [NO-OP] for $objectName $numBytes")
     true
   }
 

@@ -24,7 +24,7 @@ import org.apache.spark.storage.TestBlockId
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, DiskEntry, ExternalTableMetaData, LocalRegion, RegionEntry}
-import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
+import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
@@ -178,9 +178,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     }
   }
 
-  override def acquireStorageMemory(objectName: String, numBytes: Long): Boolean = {
+  override def acquireStorageMemory(objectName: String, numBytes: Long,
+      buffer: UMMMemoryTracker): Boolean = {
     val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_$objectName")
-    MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName, blockId, numBytes, MemoryMode.ON_HEAP)
+    MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
+      blockId, numBytes, MemoryMode.ON_HEAP, buffer)
   }
 
   override def releaseStorageMemory(objectName: String, numBytes: Long): Unit = {
