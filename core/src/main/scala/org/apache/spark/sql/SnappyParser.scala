@@ -756,18 +756,33 @@ class SnappyParser(session: SnappySession)
   // true
   private var tokenize = session.sessionState.conf.wholeStageEnabled
 
+  private var isselect = false
+
   private def setNoTokenize: Boolean = {
     tokenize = false
     true
   }
 
   private def setTokenize: Boolean = {
-    tokenize = session.sessionState.conf.wholeStageEnabled
+    isselect match {
+      case true => tokenize = session.sessionState.conf.wholeStageEnabled
+      case _ => tokenize = false
+    }
+    true
+  }
+
+  private def setSelect: Boolean = {
+    isselect = true
+    true
+  }
+
+  private def setNoSelect: Boolean = {
+    isselect = false
     true
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (test(setNoTokenize) ~ query.named("select")) | (test(setNoTokenize) ~ (insert | put | dmlOperation | ctes |
+    (test(setSelect) ~ query.named("select")) | (test(setNoSelect) ~ (insert | put | dmlOperation | ctes |
         ddl | set | cache | uncache | desc))
   }
 
