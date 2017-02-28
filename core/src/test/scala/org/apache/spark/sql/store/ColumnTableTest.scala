@@ -222,7 +222,7 @@ class ColumnTableTest
         var result = snc.sql(x).collect()
         assert(result.length === 1)
         //if ( x % 10 == 0) {
-        println(s"query = $x and result = " + result(0))
+        //println(s"query = $x and result = " + result(0))
         //}
       }
       val end = System.currentTimeMillis()

@@ -172,7 +172,10 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
-    literal ~> ((l: Literal) => ParamLiteral(l, paramcounter+1))
+    literal ~> ((l: Literal) => {
+      paramcounter = paramcounter + 1
+      ParamLiteral(l, paramcounter)
+    })
   }
 
   protected final def month: Rule1[Int] = rule {
@@ -670,7 +673,7 @@ class SnappyParser(session: SnappySession)
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
     (FROM ~ ws ~ relations).? ~
-    (WHERE ~ expression).? ~
+    (WHERE ~ (test(setTokenize) ~ expression ~ test(setNoTokenize))).? ~
     groupBy.? ~
     (HAVING ~ expression).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
@@ -764,7 +767,7 @@ class SnappyParser(session: SnappySession)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (test(setTokenize) ~ query.named("select")) | (test(setNoTokenize) ~ (insert | put | dmlOperation | ctes |
+    (test(setNoTokenize) ~ query.named("select")) | (test(setNoTokenize) ~ (insert | put | dmlOperation | ctes |
         ddl | set | cache | uncache | desc))
   }
 

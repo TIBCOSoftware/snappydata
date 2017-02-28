@@ -1558,7 +1558,7 @@ object SnappySession extends Logging {
   private def evaluatePlan(df: DataFrame,
       session: SnappySession): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
-      case WholeStageCodegenExec(plan) => plan
+      case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
       case plan => plan
     }
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
@@ -1598,7 +1598,6 @@ object SnappySession extends Logging {
           Map[String, String]) = {
         val session = key.session
         val df = session.executeSQL(key.sqlText)
-        val hc = df.logicalPlan.hashCode()
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
         // since plan can change once caching is done (due to size stats)
@@ -1647,8 +1646,6 @@ object SnappySession extends Logging {
       val key = CachedKey(session, lp, sqlText)
       val evaluation = planCache.getUnchecked(key)
       var cachedDF = evaluation._1
-      cachedDF.replaceConstants(lp)
-      // println("cachedDF = " + System.identityHashCode(cachedDF))
       var queryHints = evaluation._2
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
@@ -1665,6 +1662,8 @@ object SnappySession extends Logging {
       } else {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
       }
+      // replace the constants from this logical plan
+      cachedDF.replaceConstants(lp)
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()

@@ -45,7 +45,7 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
     dataType match {
       case BooleanType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Boolean], "KN: unexpected type")
+        assert(value.isInstanceOf[Boolean], s"unexpected type $dataType instead of BooleanType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -57,7 +57,7 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case FloatType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Float], "KN: unexpected type")
+        assert(value.isInstanceOf[Float], s"unexpected type $dataType instead of FloatType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -69,7 +69,7 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case DoubleType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Double], "KN: unexpected type")
+        assert(value.isInstanceOf[Double], s"unexpected type $dataType instead of DoubleType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -81,7 +81,7 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case ByteType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Byte], "KN: unexpected type")
+        assert(value.isInstanceOf[Byte], s"unexpected type $dataType instead of ByteType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -93,7 +93,7 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case ShortType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Short], "KN: unexpected type")
+        assert(value.isInstanceOf[Short], s"unexpected type $dataType instead of ShortType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -105,7 +105,7 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case IntegerType | DateType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Int], "KN: unexpected type")
+        assert(value.isInstanceOf[Int], s"unexpected type $dataType instead of DateType or IntegerType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -117,7 +117,7 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case TimestampType | LongType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Long], "KN: unexpected type")
+        assert(value.isInstanceOf[Long], s"unexpected type $dataType instead of TimestampType or LongType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")

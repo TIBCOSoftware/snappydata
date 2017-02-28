@@ -52,18 +52,22 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
       _.asInstanceOf[LiteralValue]).sortBy(_.position).toArray
   }
 
+  private lazy val hasParamLiteralNode = allLiterals.size > 0
+
   def collectParamLiteralNodes(lp: Product): Unit = {
-    val numProductElems = lp.productArity
-    (0 until numProductElems).map { i =>
-      val elem = lp.productElement(i)
-      elem match {
-        case p: ParamLiteral => {
-          allLiterals(p.pos-1).value = p.l.value
-        }
-        case x => {
-          x match {
-            case e: Product => collectParamLiteralNodes(e)
-            case _ => // do nothing
+    if ( hasParamLiteralNode ) {
+      val numProductElems = lp.productArity
+      (0 until numProductElems).map { i =>
+        val elem = lp.productElement(i)
+        elem match {
+          case p: ParamLiteral => {
+            allLiterals(p.pos - 1).value = p.l.value
+          }
+          case x => {
+            x match {
+              case e: Product => collectParamLiteralNodes(e)
+              case _ => // do nothing
+            }
           }
         }
       }
