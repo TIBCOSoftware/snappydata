@@ -61,9 +61,6 @@ object ExternalStoreUtils extends Logging {
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   final val EXTERNAL_DATASOURCE = "EXTERNAL_DATASOURCE"
 
-  /** variable name used for passing partitionId of current column batch */
-  final val COLUMN_BATCH_BUCKETID_VARNAME = "columnBatchBucketId"
-
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
       schema + '.' + tableName

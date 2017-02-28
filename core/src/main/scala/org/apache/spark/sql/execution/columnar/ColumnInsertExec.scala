@@ -59,6 +59,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
   @transient private[sql] var batchIdRef = -1
 
+  @transient private var batchBucketIdTerm: Option[String] = None
+
   def columnBatchSize: Int = batchParams._1
 
   def columnMaxDeltaRows: Int = batchParams._2
@@ -96,8 +98,22 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
     ctx.addMutableState("int", defaultBatchSizeTerm, "")
     val defaultRowSize = ctx.freshName("defaultRowSize")
+
     val childProduce = doChildProduce(ctx)
-    val declarations = encoderCursorTerms.indices.map { i =>
+    child match {
+      case c: CallbackColumnInsert =>
+        ctx.addNewFunction(c.resetInsertions,
+          s"""
+             |public final void ${c.resetInsertions}() {
+             |  $batchSizeTerm = 0;
+             |  $numInsertions = -1;
+             |}
+          """.stripMargin)
+        batchBucketIdTerm = Some(c.bucketIdTerm)
+      case _ =>
+    }
+
+    val (declarations, cursorDeclarations) = encoderCursorTerms.indices.map { i =>
       val (encoder, cursor) = encoderCursorTerms(i)
       ctx.addMutableState(encoderClass, encoder,
         s"""
@@ -108,12 +124,13 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
         ctx.addMutableState("long", cursor, s"$cursor = 0L;")
         ""
       } else s"long $cursor = 0L;"
-      s"""
-         |final $encoderClass $encoder = this.$encoder;
-         |$defaultRowSize += $encoder.defaultSize($schemaTerm.fields()[$i].dataType());
-         |$cursorDeclaration
-      """.stripMargin
-    }.mkString("\n")
+      val declaration =
+        s"""
+           |final $encoderClass $encoder = this.$encoder;
+           |$defaultRowSize += $encoder.defaultSize($schemaTerm.fields()[$i].dataType());
+        """.stripMargin
+      (declaration, cursorDeclaration)
+    }.unzip
     val checkEnd = if (useMemberVariables) {
       "if (!currentRows.isEmpty()) return"
     } else {
@@ -129,18 +146,21 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       """.stripMargin)
     s"""
        |$checkEnd; // already done
-       |$numInsertions = 0;
-       |int $defaultRowSize = 0;
-       |$declarations
-       |$defaultBatchSizeTerm = Math.max(
-       |  (${math.abs(columnBatchSize)} - 8) / $defaultRowSize, 16);
-       |// ceil to nearest multiple of $checkFrequency since size is checked
-       |// every $checkFrequency rows
-       |$defaultBatchSizeTerm = ((($defaultBatchSizeTerm - 1) / $checkFrequency) + 1)
-       |    * $checkFrequency;
-       |$initEncoders
        |$batchSizeDeclaration
-       |$childProduce
+       |${cursorDeclarations.mkString("\n")}
+       |if ($numInsertions < 0) {
+       |  $numInsertions = 0;
+       |  int $defaultRowSize = 0;
+       |  ${declarations.mkString("\n")}
+       |  $defaultBatchSizeTerm = Math.max(
+       |    (${math.abs(columnBatchSize)} - 8) / $defaultRowSize, 16);
+       |  // ceil to nearest multiple of $checkFrequency since size is checked
+       |  // every $checkFrequency rows
+       |  $defaultBatchSizeTerm = ((($defaultBatchSizeTerm - 1) / $checkFrequency) + 1)
+       |      * $checkFrequency;
+       |  $initEncoders
+       |  $childProduce
+       |}
        |if ($batchSizeTerm > 0) {
        |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
@@ -194,10 +214,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val partitionIdCode = if (partitioned) s"$taskContextClass.getPartitionId()"
     else {
       // check for bucketId variable if available
-      ctx.mutableStates.collectFirst {
-        case (_, varName, _) if varName ==
-            ExternalStoreUtils.COLUMN_BATCH_BUCKETID_VARNAME => varName
-      }.getOrElse(
+      batchBucketIdTerm.getOrElse(
         // add as a reference object which can be updated by caller if required
         s"${ctx.addReferenceObj("partitionId", -1, "Integer")}.intValue()")
     }

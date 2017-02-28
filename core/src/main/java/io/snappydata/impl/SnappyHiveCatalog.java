@@ -266,9 +266,12 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()).toString());
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? null : value.toString();
-          return new ExternalTableMetaData(
+          String tableType = table.getParameters().get(
+              JdbcExtendedUtils.TABLETYPE_PROPERTY());
+        return new ExternalTableMetaData(
               fullyQualifiedName,
               schema,
+              tableType,
               ExternalStoreUtils.getExternalStoreOnExecutor(parameters,
                   partitions, fullyQualifiedName, schema),
               columnBatchSize,
@@ -327,7 +330,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private String getType(HiveMetaStoreClient hmc) throws SQLException {
       Table t = getTable(hmc, this.dbName, this.tableName);
       if (t != null) {
-        return t.getParameters().get("EXTERNAL_SNAPPY");
+        return t.getParameters().get(JdbcExtendedUtils.TABLETYPE_PROPERTY());
       } else {
         // assume ROW type in GemFireXD
         return ExternalTableType.Row().toString();
@@ -335,7 +338,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private boolean isTableInStoreDD(Table t) {
-      String type = t.getParameters().get("EXTERNAL_SNAPPY");
+      String type = t.getParameters().get(JdbcExtendedUtils.TABLETYPE_PROPERTY());
       return type.equalsIgnoreCase(ExternalTableType.Row().toString()) ||
           type.equalsIgnoreCase(ExternalTableType.Column().toString()) ||
           type.equalsIgnoreCase(ExternalTableType.Sample().toString());

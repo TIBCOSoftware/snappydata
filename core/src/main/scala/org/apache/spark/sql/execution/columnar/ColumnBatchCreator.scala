@@ -151,8 +151,9 @@ final class ColumnBatchCreator(
     val iter = gen._1.generate(gen._2).asInstanceOf[BufferedRowIterator]
     iter.init(0, Array.empty)
     // get the ColumnBatchRowsBuffer by reflection
-    iter.getClass.getMethod("getRowsBuffer").invoke(iter)
-        .asInstanceOf[ColumnBatchRowsBuffer]
+    val rowsBufferMethod = iter.getClass.getMethod("getRowsBuffer")
+    rowsBufferMethod.setAccessible(true)
+    rowsBufferMethod.invoke(iter).asInstanceOf[ColumnBatchRowsBuffer]
   }
 }
 
@@ -176,16 +177,22 @@ case class CallbackColumnInsert(_schema: StructType)
 
   override lazy val schema: StructType = _schema
 
+  var bucketIdTerm: String = _
+  var resetInsertions: String = _
+
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     throw new UnsupportedOperationException("unexpected invocation")
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val row = ctx.freshName("row")
+    val hasResults = ctx.freshName("hasResults")
+    val clearResults = ctx.freshName("clearResults")
     val rowsBuffer = ctx.freshName("rowsBuffer")
     val rowsBufferClass = classOf[ColumnBatchRowsBuffer].getName
     ctx.addMutableState(rowsBufferClass, rowsBuffer, "")
     // add bucketId variable set to -1 by default
-    val bucketIdTerm = ExternalStoreUtils.COLUMN_BATCH_BUCKETID_VARNAME
+    bucketIdTerm = ctx.freshName("bucketId")
+    resetInsertions = ctx.freshName("resetInsertionsCount")
     ctx.addMutableState("int", bucketIdTerm, s"$bucketIdTerm = -1;")
     val columnsExpr = output.zipWithIndex.map { case (a, i) =>
       BoundReference(i, a.dataType, a.nullable)
@@ -193,14 +200,27 @@ case class CallbackColumnInsert(_schema: StructType)
     ctx.INPUT_ROW = row
     ctx.currentVars = null
     val columnsInput = ctx.generateExpressions(columnsExpr)
+    ctx.addNewFunction(hasResults,
+      s"""
+         |public final boolean $hasResults() {
+         |  return !currentRows.isEmpty();
+         |}
+      """.stripMargin)
+    ctx.addNewFunction(clearResults,
+      s"""
+         |public final void $clearResults() {
+         |  currentRows.clear();
+         |}
+      """.stripMargin)
     ctx.addNewFunction("getRowsBuffer",
       s"""
-         |public $rowsBufferClass getRowsBuffer() {
-         |  currentRows.clear(); // clear any old results
+         |public $rowsBufferClass getRowsBuffer() throws java.io.IOException {
+         |  $clearResults(); // clear any old results
+         |  $resetInsertions(); // reset the counters
          |  // initialize the $rowsBuffer
          |  if (this.$rowsBuffer == null) {
          |    processNext();
-         |    currentRows.clear(); // clear the accumulated dummy zero result
+         |    $clearResults(); // clear the accumulated dummy zero result
          |  }
          |  return this.$rowsBuffer;
          |}
@@ -215,9 +235,16 @@ case class CallbackColumnInsert(_schema: StructType)
     s"""
        |if (this.$rowsBuffer == null) {
        |  this.$rowsBuffer = new $rowsBufferClass() {
-       |    public void startRows(int bucketId) {
-       |      // set the bucketId; rest of initialization done in getRowsBuffer
+       |    public void startRows(int bucketId) throws java.io.IOException {
+       |      // set the bucketId
        |      $bucketIdTerm = bucketId;
+       |      if ($hasResults()) {
+       |        $clearResults(); // clear any old results
+       |        // reset the size and re-initialize encoders
+       |        $resetInsertions();
+       |        processNext();
+       |        $clearResults(); // clear the accumulated dummy zero result
+       |      }
        |    }
        |
        |    public void appendRow(InternalRow $row) {

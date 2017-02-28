@@ -31,8 +31,9 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.Constant
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode}
@@ -83,9 +84,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           }
 
           val tableName = container.getQualifiedTableName
+          // add weightage column for sample tables if required
+          var schema = catalogEntry.schema.asInstanceOf[StructType]
+          if (catalogEntry.tableType == ExternalTableType.Sample.toString &&
+              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+            schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
+              LongType, nullable = false)
+          }
           val batchCreator = new ColumnBatchCreator(pr,
-            ColumnFormatRelation.columnBatchTableName(tableName),
-            catalogEntry.schema.asInstanceOf[StructType],
+            ColumnFormatRelation.columnBatchTableName(tableName), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)
           batchCreator.createAndStoreBatch(sc, row,
