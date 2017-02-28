@@ -24,7 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{TXStateProxy, TXState, GemFireCacheImpl, TXId, CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -184,7 +184,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         ps.close()
       }
     }
-    //conn.setAutoCommit(false)
     val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
@@ -195,8 +194,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }
-    // begin a tx.
-    //GemFireCacheImpl.getInstance().getCacheTransactionManager.begin()
     val rs = stmt.executeQuery()
     /* (hangs for some reason)
     // setup context stack for lightWeightNext calls
@@ -228,9 +225,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
-        //TODO: Suranjan being tx here? as
-        //GemFireCacheImpl.getInstance().getCacheTransactionManager.begin()
-        //val txId = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId
         val txId = null
         new CompactExecRowIteratorOnScan(container, bucketIds, txId)
       } else {
@@ -358,15 +352,9 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 
   protected final var hasNextValue = true
   protected final var doMove = true
-  // Get newTXId from above and use it to create TxState and start tx.
-
-  //TODO:Suranjan Have to fill the tx here for read. May be later. Not now.
-  // Instead for column table do the read after taking snapshot.
-  val txIdd = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId
   // transaction started by row buffer scan should be used here
-  // can there be change in executor threads...in that case we should use masquerade as
-  val tx = GemFireCacheImpl.getInstance().snapshotTxState.get();//getCacheTransactionManager
-  //.getTXState
+  val tx = TXManagerImpl.snapshotTxState.get()
+
   protected final val itr = container.getEntrySetIteratorForBucketSet(
     bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
     false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
@@ -381,12 +369,11 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
       doMove = false
     }
     // commit here as row and column iteration is complete.
-    if (!hasNextValue && tx != null /*TXStateProxy.TX_NOT_SET*/) {
+    if (!hasNextValue) {
       GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
       GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
     }
     hasNextValue
-
   }
 
   override final def next: T = {
