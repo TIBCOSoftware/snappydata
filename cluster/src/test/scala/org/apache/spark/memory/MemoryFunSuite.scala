@@ -32,9 +32,9 @@ class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll
   }
 
   //Only use if sure of the problem
-  def assertApproximate(value1: Long, value2: Long): Unit = {
+  def assertApproximate(value1: Long, value2: Long, error :Int = 2): Unit = {
     if (value1 == value2) return
-    if (Math.abs(value1 - value2) > value2 / 2) {
+    if (Math.abs(value1 - value2) > (value2 * error) / 100) {
       throw new java.lang.AssertionError(s"assertion " +
           s"failed $value1 & $value2 are not within permissable limit")
     }
@@ -53,6 +53,7 @@ class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll
         .config("spark.memory.storageFraction", storageFraction)
         .config("spark.testing.memory", sparkMemory)
         .config("spark.testing.reservedMemory", "0")
+        .config("snappydata.store.critical-heap-percentage", "90")
         .config("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
         .getOrCreate
   }

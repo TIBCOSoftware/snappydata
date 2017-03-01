@@ -163,8 +163,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         options
     )
 
-    val row = Row(100000000, 10000000, 10000000)
-    (1 to 5).map(i => snSession.insert("t1", row))
+    (1 to 5).map(i => snSession.insert("t1", Row(i, 10000000, 10000000)))
 
     val beforeRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     SnappyContext.globalSparkContext.stop()
@@ -311,22 +310,21 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   test("Test storage for column tables with df inserts") {
     val sparkSession = createSparkSession(1, 0, 100000)
     val snSession = new SnappySession(sparkSession.sparkContext)
-    val beforeCreate = SparkEnv.get.memoryManager.storageMemoryUsed
+
     snSession.createTable("t1", "column", struct, cwoptions)
+    val afterCreate = SparkEnv.get.memoryManager.storageMemoryUsed
     val data =(1 to 10).toSeq
 
-    val rdd = sparkSession.sparkContext.parallelize(data, data.length)
+    val rdd = sparkSession.sparkContext.parallelize(data, 2)
         .map(s => Data1(s, s+1, s+2))
     val dataDF = snSession.createDataFrame(rdd)
 
     dataDF.write.insertInto("t1")
 
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0 &&
-        SparkEnv.get.memoryManager.storageMemoryUsed <= 100000)
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed > afterCreate)
     val count = snSession.sql("select * from t1").count()
     assert(count == 10)
     snSession.dropTable("t1")
-    val afterDropTable = SparkEnv.get.memoryManager.storageMemoryUsed
-    assert(beforeCreate == afterDropTable)
+
   }
 }

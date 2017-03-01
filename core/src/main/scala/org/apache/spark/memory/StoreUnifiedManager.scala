@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
 import org.apache.spark.storage.BlockId
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
 
 trait StoreUnifiedManager {
@@ -32,8 +32,8 @@ trait StoreUnifiedManager {
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode,
-      buffer: UMMMemoryTracker): Boolean
-
+      buffer: UMMMemoryTracker,
+      shouldEvict: Boolean): Boolean
 
   def dropStorageMemoryForObject(objectName : String, memoryMode: MemoryMode): Long
 
@@ -52,7 +52,8 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode,
-      buffer: UMMMemoryTracker): Boolean = synchronized {
+      buffer: UMMMemoryTracker,
+      shouldEvict: Boolean): Boolean = synchronized {
     logDebug(s"Acquiring mem [TEMP] for $objectName $numBytes")
     if (!memoryForObject.contains(objectName)) {
       memoryForObject(objectName) = 0L
@@ -73,21 +74,21 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
       memoryMode: MemoryMode): Unit = synchronized {
     memoryForObject(objectName) -= numBytes
   }
+
 }
 
 
-class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging{
-
+class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
 
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode,
-      buffer: UMMMemoryTracker): Boolean = {
+      buffer: UMMMemoryTracker,
+      shouldEvict: Boolean): Boolean = {
     logDebug(s"Acquiring mem [NO-OP] for $objectName $numBytes")
     true
   }
-
 
   override def dropStorageMemoryForObject(
       objectName: String,
@@ -97,6 +98,7 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging{
       objectName: String,
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {}
+
 }
 
 object MemoryManagerCallback extends Logging {

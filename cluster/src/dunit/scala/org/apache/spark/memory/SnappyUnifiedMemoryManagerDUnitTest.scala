@@ -61,13 +61,11 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   val memoryMode = MemoryMode.ON_HEAP
 
   bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
-  bootProps.setProperty("critical-heap-percentage", "90")
+  bootProps.setProperty("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
-    println("PID = " + ManagementFactory.getRuntimeMXBean().getName())
     snc
-
   }
 
   def resetMemoryManagers(): Unit = {
@@ -299,7 +297,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val snc = newContext()
 
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
@@ -316,8 +314,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(restartServer(props))
 
     val waitAssert = new WaitAssert(2, getClass)
-    //The delete operation takes time to propagate
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    // Ignore 32* 500 bytes as while recovering there key is not stored in region entry. Hence region entry overhead increases.
+    //
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2, 16000),
       waitAssert.exceptionString(),
       30000, 5000, true)
 

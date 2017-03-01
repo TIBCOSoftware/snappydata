@@ -39,10 +39,13 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   val cwoptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
 
+  val memoryMode = MemoryMode.ON_HEAP
+
   test("Test storage when storage can borrow from execution memory") {
     val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     snSession.createTable("t1", "row", struct, options)
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
     val row = Row(1, 1, 1)
     snSession.insert("t1", row)
@@ -56,49 +59,67 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     val sparkSession = createSparkSession(1, 0.5)
     val snSession = new SnappySession(sparkSession.sparkContext)
     snSession.createTable("t1", "row", struct, options)
+    var memoryIncreaseDuetoEviction = 0L
+
+    val memoryEventListener = new MemoryEventListener {
+      override def onPositiveMemoryIncreaseDueToEviction(objectName: String, bytes: Long): Unit = {
+        println(s"Got event onPositiveMemoryIncreaseDueToEviction for $objectName $bytes")
+        memoryIncreaseDuetoEviction += bytes
+      }
+    }
+    SnappyUnifiedMemoryManager.addMemoryEventListener(memoryEventListener)
+
+    val snappyMemoryManager = SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager]
+
+    snappyMemoryManager.dropAllObjects(memoryMode)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
-    val memoryMode = MemoryMode.ON_HEAP
     val taskAttemptId = 0L
     //artificially acquire memory
     SparkEnv.get.memoryManager.acquireExecutionMemory(500L, taskAttemptId, memoryMode)
     assert(SparkEnv.get.memoryManager.executionMemoryUsed == 500)
 
-    (1 to 20).map(i => {
-      val row = Row(i, i, i)
-      snSession.insert("t1", row)
-    })
+    import scala.util.control.Breaks._
 
+    var rows = 0
+    try{
+      breakable {
+        for (i <- 1 to 20) {
+          val row = Row(i, i, i)
+          snSession.insert("t1", row)
+          rows += 1
+        }
+      }
+    }catch{
+      case e: Exception => {
+        assert(memoryIncreaseDuetoEviction > 0 )
+      }
+    }
     val count = snSession.sql("select * from t1").count()
-    assert(count == 20)
+    assert(count == rows)
     snSession.dropTable("t1")
   }
 
   test("Test eviction when storage memory has borrowed some memory from execution") {
-    val sparkSession = createSparkSession(1, 0.5, 10000)
+    val sparkSession = createSparkSession(1, 0.5, 1000)
     val snSession = new SnappySession(sparkSession.sparkContext)
     snSession.createTable("t1", "row", struct, options)
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
 
-    (1 to 60).map(i => {
+    (1 to 6).map(i => {
       val row = Row(i, i, i)
       snSession.insert("t1", row)
     })
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 5000L)//based on 32 bytes value and 64 bytes entry overhead
-
-    val memoryMode = MemoryMode.ON_HEAP
-    val taskAttemptId = 0L
-    //artificially acquire memory
-    SparkEnv.get.memoryManager.acquireExecutionMemory(5000L, taskAttemptId, memoryMode)
-    assert(SparkEnv.get.memoryManager.executionMemoryUsed == 5000L)
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 500L)//based on 32 bytes value and 88 bytes entry overhead
     val count = snSession.sql("select * from t1").count()
-    assert(count == 60)
+    assert(count == 6)
 
     //@TODO Uncomment this assertion up once we set per region entry overhead and put a check before eviction
     //assert(SparkEnv.get.memoryManager.storageMemoryUsed == 500L)
     val otherExecutorThread = new Thread(new Runnable {
       def run() {
         //This should not hang as we are dropping the table after this thread is executed.
-        SparkEnv.get.memoryManager.acquireExecutionMemory(5000L, 1L, memoryMode)
+        SparkEnv.get.memoryManager.acquireExecutionMemory(500L, 1L, memoryMode)
       }
     })
     otherExecutorThread.start()
@@ -108,6 +129,5 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
       otherExecutorThread.wait(2000)
     }
 
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0L)
   }
 }

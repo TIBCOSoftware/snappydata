@@ -26,13 +26,10 @@ object SnappyMemoryUtils {
     *
     * @return
     */
-  def isCriticalUp: Boolean = Option(GemFireCacheImpl.getInstance).exists { cache =>
-    if (cache.getResourceManager.getHeapMonitor.getBytesUsed >=
-        cache.getResourceManager.getHeapMonitor.getThresholds.getCriticalThresholdBytes) {
-      cache.getResourceManager.getHeapMonitor.updateStateAndSendEvent() // Send critical up event
-      true
-    } else false
-  }
+  def isCriticalUp(accountedMemory: Long): Boolean =
+    Option(GemFireCacheImpl.getInstance).exists { cache =>
+      cache.getResourceManager.getHeapMonitor.failMemoryRequest(accountedMemory)
+    }
 
   /**
    * Checks whether GemFire eviction threshold is breached

@@ -179,10 +179,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def acquireStorageMemory(objectName: String, numBytes: Long,
-      buffer: UMMMemoryTracker): Boolean = {
+      buffer: UMMMemoryTracker, shouldEvict: Boolean): Boolean = {
     val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_$objectName")
     MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
-      blockId, numBytes, MemoryMode.ON_HEAP, buffer)
+      blockId, numBytes, MemoryMode.ON_HEAP, buffer, shouldEvict)
   }
 
   override def releaseStorageMemory(objectName: String, numBytes: Long): Unit = {

@@ -51,6 +51,8 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   // bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
+  //Keeping it as default for all other dunits as it can create issues like interacting with heap monitor.
+  bootProps.setProperty("spark.memory.manager", "default")
 
   var host: Host = _
   var vm0: VM = _

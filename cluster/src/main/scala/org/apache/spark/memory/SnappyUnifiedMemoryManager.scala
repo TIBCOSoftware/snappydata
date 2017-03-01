@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
 
-import com.gemstone.gemfire.internal.cache.DiskEntry
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
@@ -67,7 +66,7 @@ class SnappyUnifiedMemoryManager private[memory](
       numCores)
     MemoryManagerCallback.tempMemoryManager.memoryForObject.map { entry =>
       val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_${entry._1}")
-      acquireStorageMemoryForObject(entry._1, blockId, entry._2, MemoryMode.ON_HEAP, null)
+      acquireStorageMemoryForObject(entry._1, blockId, entry._2, MemoryMode.ON_HEAP, null, false)
     }
   }
 
@@ -118,8 +117,9 @@ class SnappyUnifiedMemoryManager private[memory](
           offHeapStorageMemory,
           maxOffHeapMemory)
     }
-    if(SnappyMemoryUtils.isCriticalUp){
-      logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. No memory allocated to thread ${Thread.currentThread()}")
+    if(SnappyMemoryUtils.isCriticalUp(getStorageMemoryUsed + getExecutionMemoryUsed)){
+      logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
+          s"No memory allocated to thread ${Thread.currentThread()}")
       return 0
     }
 
@@ -150,8 +150,13 @@ class SnappyUnifiedMemoryManager private[memory](
           } else {
             0L
           }
-          storagePool.decrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
-          executionPool.incrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
+          if(storagePool.poolSize - (spaceToReclaim + bytesEvictedFromStore) >= storagePool.memoryUsed){
+            //Some eviction might have increased the storage memory used which will case some requirement failing
+            // while decreasing pool size.
+            storagePool.decrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
+            executionPool.incrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
+          }
+
         }
       }
     }
@@ -182,15 +187,16 @@ class SnappyUnifiedMemoryManager private[memory](
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = {
-    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null)
+    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null, shouldEvict = true)
   }
 
   private def askStoragePool(objectName: String,
       blockId: BlockId,
       numBytes: Long,
-      memoryMode: MemoryMode): Boolean = {
+      memoryMode: MemoryMode,
+      shouldEvict: Boolean): Boolean = {
 
-    //println(s"Acquiring [SNAP] memory for $objectName $numBytes")
+    println(s"Acquiring [SNAP] memory for $objectName $numBytes")
     threadsWaitingForStorage.incrementAndGet()
     synchronized {
       if (!memoryForObject.contains(objectName)) {
@@ -208,8 +214,9 @@ class SnappyUnifiedMemoryManager private[memory](
             offHeapStorageMemoryPool,
             maxOffHeapMemory)
       }
-      if (SnappyMemoryUtils.isCriticalUp) {
-        logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. No memory allocated to thread ${Thread.currentThread()}")
+      if (SnappyMemoryUtils.isCriticalUp(getStorageMemoryUsed + getExecutionMemoryUsed)) {
+        logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
+            s"No memory allocated to thread ${Thread.currentThread()}")
         return false
       }
 
@@ -234,18 +241,16 @@ class SnappyUnifiedMemoryManager private[memory](
       //First let spark try to free some memory
       val enoughMemory = storagePool.acquireMemory(blockId, numBytes)
       if (!enoughMemory) {
-        //Sufficient memory could not be freed. Time to evict from SnappyData store.
-        val requiredBytes = numBytes - storagePool.memoryFree
-        //Set the thread local variable in DiskEntry to account eviction overhead
-        DiskEntry.entryEvictionMemoryOverHead.set(0L)
-        //Evict data a little more than required based on waiting tasks
-        evictor.evictRegionData(requiredBytes * threadsWaitingForStorage.get())
 
-        val memoryAcquiredDueToEviction = DiskEntry.entryEvictionMemoryOverHead.get
-        if (memoryAcquiredDueToEviction > 0) {
-          storagePool.acquireMemory(blockId, memoryAcquiredDueToEviction)
-          memoryForObject(objectName) += memoryAcquiredDueToEviction
+        if (shouldEvict) {
+          //Sufficient memory could not be freed. Time to evict from SnappyData store.
+          val requiredBytes = numBytes - storagePool.memoryFree
+          //Evict data a little more than required based on waiting tasks
+          evictor.evictRegionData(requiredBytes * threadsWaitingForStorage.get())
+        }else {
+          SnappyUnifiedMemoryManager.invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName, numBytes)
         }
+
         threadsWaitingForStorage.decrementAndGet()
         val couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         if (!couldEvictSomeData) {
@@ -264,11 +269,13 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
 
+
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode,
-      buffer: UMMMemoryTracker): Boolean = {
+      buffer: UMMMemoryTracker,
+      shouldEvict: Boolean): Boolean = {
     logDebug(s"Acquiring [SNAP] memory for $objectName $numBytes")
     if (buffer ne null) {
      // println("buffer is not null")
@@ -279,7 +286,7 @@ class SnappyUnifiedMemoryManager private[memory](
       } else {
         val predictedMemory = numBytes * buffer.getTotalOperationsExpected
         buffer.incAllocatedMemory(predictedMemory)
-        val success = askStoragePool(objectName, blockId, predictedMemory, memoryMode)
+        val success = askStoragePool(objectName, blockId, predictedMemory, memoryMode, shouldEvict)
         SnappyUnifiedMemoryManager.nonBufferMemory.addAndGet(1)
         buffer.setFirstAllocationObject(objectName)
 
@@ -289,13 +296,13 @@ class SnappyUnifiedMemoryManager private[memory](
         success
       }
     } else {
-      askStoragePool(objectName, blockId, numBytes, memoryMode)
+      askStoragePool(objectName, blockId, numBytes, memoryMode, shouldEvict)
     }
   }
 
   override def releaseStorageMemoryForObject(objectName: String, numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
     logDebug(s"releasing [SNAP] memory for $objectName $numBytes")
-    //println(s"releasing [SNAP] memory for $objectName $numBytes")
+    println(s"releasing [SNAP] memory for $objectName $numBytes")
     //Thread.dumpStack()
     memoryForObject(objectName) -= numBytes
     super.releaseStorageMemory(numBytes, memoryMode)
@@ -308,7 +315,7 @@ class SnappyUnifiedMemoryManager private[memory](
 
   override def dropStorageMemoryForObject(name: String, memoryMode: MemoryMode): Long = synchronized {
     logInfo(s"Dropping memory for $name")
-    //println(s"Dropping memory for $name")
+    println(s"Dropping memory for $name")
     val (executionPool, storagePool, maxMemory) = memoryMode match {
       case MemoryMode.ON_HEAP => (
           onHeapExecutionMemoryPool,
@@ -343,6 +350,32 @@ private object SnappyUnifiedMemoryManager extends Logging{
   val bufferMemory = new AtomicInteger()
   val nonBufferMemory = new AtomicInteger()
 
+  val testCallbacks = scala.collection.mutable.ArrayBuffer.empty[MemoryEventListener]
+
+  def addMemoryEventListener(listener : MemoryEventListener): Unit ={
+    testCallbacks += listener
+  }
+
+  def clearMemoryEventListener(): Unit ={
+    testCallbacks.clear()
+  }
+
+  private def invokeListenersOnStorageMemoryAcquireSuccess(objectName : String, bytes : Long): Unit ={
+    testCallbacks.map(l => l.onStorageMemoryAcquireSuccess(objectName, bytes))
+  }
+  private def invokeListenersOnStorageMemoryAcquireFailure(objectName : String, bytes : Long): Unit ={
+    testCallbacks.map(l => l.onStorageMemoryAcquireFailure(objectName, bytes))
+  }
+  private def invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName : String, bytes : Long): Unit ={
+    testCallbacks.map(l => l.onPositiveMemoryIncreaseDueToEviction(objectName, bytes))
+  }
+  private def invokeListenersOnExecutionMemoryAcquireSuccess(taskID : Long, bytes : Long): Unit ={
+    testCallbacks.map(l => l.onExecutionMemoryAcquireSuccess(taskID, bytes))
+  }
+  private def invokeListenersOnExecutionMemoryAcquireFailure(taskID : Long, bytes : Long): Unit ={
+    testCallbacks.map(l => l.onExecutionMemoryAcquireFailure(taskID, bytes))
+  }
+
   /**
     * Return the total amount of memory shared between execution and storage, in bytes.
     * This is a direct copy from UnifiedMemorymanager with an extra check for evit fraction
@@ -373,4 +406,13 @@ private object SnappyUnifiedMemoryManager extends Logging{
     logInfo(s"Total memory allocated for execution and storage pool is $totalMemory")
     totalMemory
   }
+}
+
+//Test listeners. Should not be used in production code.
+class MemoryEventListener{
+  def onStorageMemoryAcquireSuccess(objectName : String, bytes : Long) = {}
+  def onStorageMemoryAcquireFailure(objectName : String, bytes : Long)  = {}
+  def onPositiveMemoryIncreaseDueToEviction(objectName : String, bytes : Long)  = {}
+  def onExecutionMemoryAcquireSuccess(taskAttemptId : Long, bytes : Long)  = {}
+  def onExecutionMemoryAcquireFailure(taskAttemptId : Long, bytes : Long) = {}
 }
