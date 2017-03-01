@@ -32,11 +32,13 @@ object TPCH_Snappy_Query_JDBC {
      val port = args(1)
      val dbName = "TPCH"
 
-     //Class.forName("com.mysql.jdbc.Driver")
+     /* Class.forName("com.mysql.jdbc.Driver")*/
+
      val dbAddress = "jdbc:snappydata://" + host + ":" + port + "/"
      val conn = DriverManager.getConnection(dbAddress)
 
      val queries: Array[String] = args(2).split(",")
+     // scalastyle:off println
      println(queries)
      var isResultCollection: Boolean = args(3).toBoolean
      var warmup: Integer = args(4).toInt
@@ -112,11 +114,12 @@ object TPCH_Snappy_Query_JDBC {
            prepStatement = conn.prepareStatement(TPCH_Snappy.getQuery22_Original)
          }
        }
-       TPCH_Snappy.execute_statement(query, isResultCollection, prepStatement, warmup, runsForAverage, avgPrintStream)
+       TPCH_Snappy.execute_statement(query, isResultCollection, prepStatement, warmup,
+         runsForAverage, avgPrintStream)
        prepStatement.close()
      }
 
-    /*//code for SNAP- 1296
+    /* //code for SNAP- 1296
          println("----------------------------------Use of Statement-------------------------------")
          val stmt = conn.createStatement()
          var rs = stmt.executeQuery(TPCH_Snappy.getQuery10)
