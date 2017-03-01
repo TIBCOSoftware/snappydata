@@ -20,22 +20,20 @@ import java.sql.DriverManager
 import java.util
 
 import scala.util.{Failure, Success, Try}
-
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
-import io.snappydata.{SnappyTableStatsProviderService, SnappyFunSuite}
+import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import io.snappydata.core.{Data, TestData, TestData2}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
+import org.apache.spark.sql._
 
 /**
   * Tests for column tables in GFXD.

@@ -804,7 +804,6 @@ class SnappyParser(session: SnappySession)
     if (queryHints.nonEmpty) {
       session.queryHints ++= queryHints
     }
-    session.isSelect = tokenize
     plan
   }
 

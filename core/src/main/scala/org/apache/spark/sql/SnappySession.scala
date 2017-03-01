@@ -173,8 +173,6 @@ class SnappySession(@transient private val sc: SparkContext,
   @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
-  private[sql] var isSelect = false
-
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
   private val contextObjects = new mutable.HashMap[Any, Any]
@@ -1611,6 +1609,8 @@ object SnappySession extends Logging {
     CacheBuilder.newBuilder().maximumSize(300).build(loader)
   }
 
+  def getPlanCache = planCache
+
   private[spark] def addBucketProfileListener(pr: PartitionedRegion): Unit = {
     val advisers = pr.getRegionAdvisor.getAllBucketAdvisorsHostedAndProxies
         .values().iterator()
@@ -1619,16 +1619,16 @@ object SnappySession extends Logging {
     }
   }
 
-  class CachedKey(val session: SnappySession, val lp: LogicalPlan, val sqlText: String) {
+  class CachedKey(val session: SnappySession, val lp: LogicalPlan, val sqlText: String, val hintHashcode: Int) {
 
     override def hashCode(): Int = {
-      (session, lp).hashCode()
+      (session, lp, hintHashcode).hashCode()
     }
 
     override def equals(obj: Any): Boolean = {
       obj match {
         case x: CachedKey => {
-          (x.session, x.lp).equals(session, lp)
+          (x.session, x.lp, hintHashcode).equals(session, lp, hintHashcode)
         }
         case _ => false
       }
@@ -1637,7 +1637,7 @@ object SnappySession extends Logging {
 
   object CachedKey {
     def apply(session: SnappySession, lp: LogicalPlan, sqlText: String):
-      CachedKey = new CachedKey(session, lp, sqlText)
+      CachedKey = new CachedKey(session, lp, sqlText, session.queryHints.hashCode())
   }
 
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
