@@ -355,6 +355,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
   // transaction started by row buffer scan should be used here
   val tx = TXManagerImpl.snapshotTxState.get()
 
+  //TODO: Suranjan If tx is null then start a GemFire Snapshot tx.
   protected final val itr = container.getEntrySetIteratorForBucketSet(
     bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
     false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
@@ -369,7 +370,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
       doMove = false
     }
     // commit here as row and column iteration is complete.
-    if (!hasNextValue) {
+    if (!hasNextValue && tx != null) {
       GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
       GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
     }
