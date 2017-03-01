@@ -20,7 +20,7 @@
 <glossaryterm>colocation<glossaryterm>
 
 <glossarytext>
-A relationship between two tables whereby the buckets that correspond to the same values of their partitioning fields are guaranteed to be physically located in the same server or peer client. In RowStore, a table configured to be colocated with another table has a dependency on the other table. If the other table needs to be dropped, then the colocated tables must be dropped first.
+A relationship between two tables whereby the buckets that correspond to the same values of their partitioning fields are guaranteed to be physically located in the same server or peer client. In SnappyData, a table configured to be colocated with another table has a dependency on the other table. If the other table needs to be dropped, then the colocated tables must be dropped first.
 </glossarytext>
 
 

@@ -1,0 +1,62 @@
+/* Hide the duplicate page title entry. */
+li.toctree-l3 > a,
+ul.subnav > li > span {
+  display: none;
+}
+/* Hide redirected pages */
+li > a[href*="techsupport.md"] {
+  display: none;
+  font-size: 10pt;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;;	
+}
+
+/* Indent 2nd-level menus.*/
+ul.subnav > li.toctree-l1 > a.current {
+  padding-left: 2.4em !important;
+}
+ul.subnav > li.toctree-l1.current > ul > li > a {
+  padding-left: 3.4em !important;
+}
+
+/* Indent 3rd-level menus.*/
+ul.subnav > ul.subnav,
+ul.subnav > ul.subnav > li {
+  margin-left: -1em;
+}
+ul.subnav > ul.subnav > li > a,
+ul.subnav > ul.subnav > li.current > a {
+  padding-left: 4.4em !important;
+}
+ul.subnav > ul.subnav > li.current > ul > li > a {
+  padding-left: 5.4em !important;
+}
+
+/* Indent 4th-level menus.*/
+ul.subnav > ul.subnav > ul.subnav,
+ul.subnav > ul.subnav > ul.subnav > li {
+  margin-left: -1.5em;
+}
+ul.subnav > ul.subnav > ul.subnav > li > a,
+ul.subnav > ul.subnav > ul.subnav > li.current > a {
+  padding-left: 6.4em !important;
+}
+ul.subnav > ul.subnav > ul.subnav > li.current > ul > li > a {
+  padding-left: 7.4em !important;
+}
+
+/* Add collapsible markers */
+.current a.expander.top-level,
+a.expander.top-level,
+.current .subnav a.expander,
+.subnav a.expander {
+  float: left;
+  margin-left: -1.4em;
+  margin-right: -2.3em;
+  /*padding: 0.4045em 0em 0.4045em 1.618em !important;*/
+  padding-right: 0;
+  z-index: 10;
+}
+
+.collapse {
+  display: none !important;
+} 

@@ -1,4 +1,7 @@
 #Troubleshooting and Analysis
+
+<!--
+
 ###<question> **Getting thread dumps from GUI or detailed stacks using SIGURG**</question></br>
 <solution>
 Text
@@ -95,3 +98,5 @@ Check the conf/locators file and correct it.
 </question>
 <solution> 
 </solution>
+
+-->
