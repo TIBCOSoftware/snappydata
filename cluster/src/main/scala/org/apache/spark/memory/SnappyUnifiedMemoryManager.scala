@@ -64,28 +64,21 @@ class SnappyUnifiedMemoryManager private[memory](
     this(conf,
       SnappyUnifiedMemoryManager.getMaxMemory(conf),
       numCores)
+
     MemoryManagerCallback.tempMemoryManager.memoryForObject.map { entry =>
       val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_${entry._1}")
       acquireStorageMemoryForObject(entry._1, blockId, entry._2, MemoryMode.ON_HEAP, null, false)
     }
   }
 
-/*  val mbean = new SnappyMemoryManagerMBean(this)
+  override def getStoragePoolSize = onHeapStorageMemoryPool.poolSize
 
-  val name = new ObjectName("GemFire:type=SnappyUnifiedManager");
+  override def getStoragePoolMemoryUsed(): Long = onHeapStorageMemoryPool.memoryUsed
 
-  val mbs = ManagementFactory.getPlatformMBeanServer()
-  mbs.registerMBean(mbean, name);*/
+  override def getExecutionPoolUsedMemory: Long = onHeapExecutionMemoryPool.memoryUsed
 
-  def getStoragePoolSize = onHeapStorageMemoryPool.poolSize
+  override def getExecutionPoolSize = onHeapExecutionMemoryPool.poolSize
 
-  def getStorageMemoryUsed = onHeapStorageMemoryPool.memoryUsed
-
-  def getMaxStorageSize = maxStorageSize
-
-  def getExecutionPoolSize = onHeapExecutionMemoryPool.poolSize
-
-  def getExecutionMemoryUsed = onHeapExecutionMemoryPool.memoryUsed
 
   /**
     * This method is copied from Spark. In addition to evicting data from spark block manager,
@@ -117,7 +110,7 @@ class SnappyUnifiedMemoryManager private[memory](
           offHeapStorageMemory,
           maxOffHeapMemory)
     }
-    if(SnappyMemoryUtils.isCriticalUp(getStorageMemoryUsed + getExecutionMemoryUsed)){
+    if(SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed + getExecutionPoolUsedMemory)){
       logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
           s"No memory allocated to thread ${Thread.currentThread()}")
       return 0
@@ -195,7 +188,6 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode,
       shouldEvict: Boolean): Boolean = {
-
     println(s"Acquiring [SNAP] memory for $objectName $numBytes")
     threadsWaitingForStorage.incrementAndGet()
     synchronized {
@@ -214,7 +206,7 @@ class SnappyUnifiedMemoryManager private[memory](
             offHeapStorageMemoryPool,
             maxOffHeapMemory)
       }
-      if (SnappyMemoryUtils.isCriticalUp(getStorageMemoryUsed + getExecutionMemoryUsed)) {
+      if (SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed + getExecutionPoolUsedMemory)) {
         logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
         return false
@@ -303,7 +295,6 @@ class SnappyUnifiedMemoryManager private[memory](
   override def releaseStorageMemoryForObject(objectName: String, numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
     logDebug(s"releasing [SNAP] memory for $objectName $numBytes")
     println(s"releasing [SNAP] memory for $objectName $numBytes")
-    //Thread.dumpStack()
     memoryForObject(objectName) -= numBytes
     super.releaseStorageMemory(numBytes, memoryMode)
   }
@@ -340,6 +331,8 @@ class SnappyUnifiedMemoryManager private[memory](
     memoryForObject.values.foreach(bytes => super.releaseStorageMemory(bytes, memoryMode))
     memoryForObject.clear()
   }
+
+
 }
 
 private object SnappyUnifiedMemoryManager extends Logging{

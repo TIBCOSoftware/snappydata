@@ -38,6 +38,13 @@ trait StoreUnifiedManager {
   def dropStorageMemoryForObject(objectName : String, memoryMode: MemoryMode): Long
 
   def releaseStorageMemoryForObject(objectName : String, numBytes: Long, memoryMode: MemoryMode): Unit
+
+  def getStoragePoolMemoryUsed() : Long
+  def getStoragePoolSize: Long
+  def getExecutionPoolUsedMemory: Long
+  def getExecutionPoolSize: Long
+
+
 }
 
 /**
@@ -75,6 +82,13 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
     memoryForObject(objectName) -= numBytes
   }
 
+  override def getStoragePoolMemoryUsed(): Long = 0L
+
+  override def getStoragePoolSize: Long = 0L
+
+  override def getExecutionPoolUsedMemory: Long = 0L
+
+  override def getExecutionPoolSize: Long = 0L
 }
 
 
@@ -99,6 +113,13 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {}
 
+  override def getStoragePoolMemoryUsed(): Long = 0L
+
+  override def getStoragePoolSize: Long = 0L
+
+  override def getExecutionPoolUsedMemory: Long = 0L
+
+  override def getExecutionPoolSize: Long = 0L
 }
 
 object MemoryManagerCallback extends Logging {

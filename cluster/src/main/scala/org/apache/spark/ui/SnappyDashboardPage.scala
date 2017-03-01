@@ -290,6 +290,26 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemoryToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("storageMemoryUsed")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemorySizeToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("storageMemoryPoolSize")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemoryToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("executionMemoryUsed")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemorySizeToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("executionMemoryPoolSize")}
+              </span>
+            </th>
             <th style="text-align:center; width: 150px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("usedMemory")}
@@ -434,6 +454,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val totalMemory = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
     val usedMemory = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
     val memoryUsage: Double = (usedMemory * 100) / totalMemory
+    val storagePoolUsed = memberDetails.getOrElse("storagePoolUsed", 0).asInstanceOf[Long]
+    val storagePoolSize = memberDetails.getOrElse("storagePoolSize", 0).asInstanceOf[Long]
+    val executionPoolSize = memberDetails.getOrElse("executionPoolSize", 0).asInstanceOf[Long]
+    val executionPoolUsed = memberDetails.getOrElse("executionPoolUsed", 0).asInstanceOf[Long]
 
     <tr>
       <td>
@@ -455,6 +479,18 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         {makeProgressBar(memoryUsage)}
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(storagePoolUsed)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(storagePoolSize)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(executionPoolUsed)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(executionPoolSize)}</div>
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(usedMemory)}</div>
@@ -611,6 +647,14 @@ object SnappyDashboardPage{
   memberStatsColumn += ("locatorTooltip" -> "Member is Locator")
   memberStatsColumn += ("server" -> "Server")
   memberStatsColumn += ("serverTooltip" -> "Member is Server")
+  memberStatsColumn += ("storageMemoryUsed" -> "StorageUsed")
+  memberStatsColumn += ("storageMemoryToolTip" -> "Total storage pool memory used")
+  memberStatsColumn += ("storageMemoryPoolSize" -> "StoragePoolSize")
+  memberStatsColumn += ("storageMemorySizeToolTip" -> "Max storage pool memory size")
+  memberStatsColumn += ("executionMemoryUsed" -> "ExecutionUsed")
+  memberStatsColumn += ("executionMemoryToolTip" -> "Total execution pool memory used")
+  memberStatsColumn += ("executionMemoryPoolSize" -> "ExecutionPoolSize")
+  memberStatsColumn += ("executionMemorySizeToolTip" -> "Max execution pool memory size")
 
   val sparkConnectorsStatsTitle = "Spark Connectors"
   val sparkConnectorsStatsTitleTooltip = "Spark Connectors Summary"

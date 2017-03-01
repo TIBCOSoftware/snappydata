@@ -17,11 +17,12 @@
 
 package org.apache.spark.memory
 
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
+import io.snappydata.core.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 
 import org.apache.spark.SparkEnv
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType, StringType}
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 
 
@@ -38,7 +39,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   val coptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val cwoptions = Map("BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-
+  val poptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "PERSISTENT"-> "SYNCHRONOUS")
+  val memoryMode = MemoryMode.ON_HEAP
 
   test("Test drop table accounting for column table") {
     val sparkSession = createSparkSession(1, 0, 2000000L)
@@ -63,7 +65,27 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     assert(afterDropSize < afterInsertSize)
   }
 
-  val memoryMode = MemoryMode.ON_HEAP
+  test("Test drop table accounting for replicated table") {
+    val sparkSession = createSparkSession(1, 0, 2000000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    val options = Map.empty[String,String]
+
+    val beforeTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.createTable("t1", "row", struct, options)
+    val afterTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterTableSize > beforeTableSize)
+
+    val row = Row(100000000, 10000000, 10000000)
+    (1 to 10).map(i => snSession.insert("t1", row))
+    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.dropTable("t1")
+    val afterDropSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    // For less number of rows in table the below assertion might
+    // fail as some of hive table store dropped table entries.
+    assert(afterDropSize < afterInsertSize)
+  }
+
+
 
   test("Test accounting for column table with eviction") {
     val sparkSession = createSparkSession(1, 0, 10000L)
@@ -226,10 +248,11 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting of delete for row partitioned tables") {
-    val sparkSession = createSparkSession(1, 0)
+    val sparkSession = createSparkSession(1, 0, 10000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
-    snSession.createTable("t1", "row", struct, roptions)
+    snSession.createTable("t1", "row", struct, poptions)
     val afterCreateTable = SparkEnv.get.memoryManager.storageMemoryUsed
+    val region = GemFireCacheImpl.getExisting.getRegion("/APP/T1").asInstanceOf[LocalRegion]
     val row = Row(1, 1, 1)
     snSession.insert("t1", row)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
@@ -237,6 +260,22 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val afterDelete = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(afterDelete == afterCreateTable)
     snSession.dropTable("t1")
+  }
+
+  test("Test Spark Cache") {
+    val sparkSession = createSparkSession(1, 0, 10000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    val beforeCache = SparkEnv.get.memoryManager.storageMemoryUsed
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sparkSession.sparkContext.parallelize(data, 2).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snSession.createDataFrame(rdd)
+    dataDF.cache()
+    println(dataDF.count())
+
+    val afterCache = SparkEnv.get.memoryManager.storageMemoryUsed
+    println(s"afterCache = $afterCache beforeCache= $beforeCache")
+    assert(afterCache > beforeCache)
+    Thread.sleep(Long.MaxValue)
   }
 
   test("Test accounting of delete for replicated tables") {

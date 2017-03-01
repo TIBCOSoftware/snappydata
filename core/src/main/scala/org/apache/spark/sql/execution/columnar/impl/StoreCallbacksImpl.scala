@@ -204,7 +204,17 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     SparkEnv.get.memoryManager.maxOnHeapStorageMemory
   }
 
+  override def getStoragePoolUsedMemory: Long =
+    MemoryManagerCallback.memoryManager.getStoragePoolMemoryUsed()
 
+  override def getStoragePoolSize: Long =
+    MemoryManagerCallback.memoryManager.getStoragePoolSize
+
+  override def getExecutionPoolUsedMemory: Long
+  = MemoryManagerCallback.memoryManager.getExecutionPoolUsedMemory
+
+  override def getExecutionPoolSize: Long =
+    MemoryManagerCallback.memoryManager.getExecutionPoolSize
 }
 
 trait StoreCallback extends Serializable {
