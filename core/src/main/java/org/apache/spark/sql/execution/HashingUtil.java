@@ -41,6 +41,10 @@ public abstract class HashingUtil {
     return h ^ (h >>> 16);
   }
 
+  public static int hashLong(long v) {
+    return hashInt((int)(v ^ (v >>> 32)));
+  }
+
   // Public Murmur3 methods for invocation by generated code.
 
   public static int mixK1(int k1) {

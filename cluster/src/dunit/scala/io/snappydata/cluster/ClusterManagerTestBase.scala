@@ -177,7 +177,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
-      url = "jdbc:gemfirexd://localhost:" + netPort + "/"
+      url = "jdbc:gemfirexd:thrift://localhost:" + netPort + "/"
     } else {
       url = "jdbc:snappydata://localhost:" + netPort + "/"
     }
@@ -220,7 +220,7 @@ object ClusterManagerTestBase {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
-    conf.set(io.snappydata.Property.CachedBatchSize.name, "3")
+    // conf.set(io.snappydata.Property.ColumnBatchSize.name, "64")
     // conf.set("spark.executor.memory", "2g")
     // conf.set("spark.shuffle.manager", "SORT")
     Utils.setDefaultSerializerAndCodec(conf)

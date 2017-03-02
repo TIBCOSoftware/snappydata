@@ -23,22 +23,31 @@ import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder
 import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, GenericRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
-import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, ArrayData, GenericArrayData, MapData}
+import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.CalendarInterval
 
 /**
- * Implementation of <code>ComplexTypeSerializer</code>.
+ * Implementation of <code>ComplexTypeSerializer</code> using SnappyData's
+ * SerializedArray/Map/Row types. These honour platform endianness and
+ * are overall more efficient than Spark's Unsafe* variants.
+ * The serialized sizes are included in the serialized form to make it
+ * consistent with the column table encoding so no additional conversions
+ * will be required when copying to-and-fro from column format vs row format.
+ * <p>
+ * Not required for the thrift JDBC driver that natively supports the complex
+ * types via the simpler getObject() JDBC APIs.
  */
 final class ComplexTypeSerializerImpl(table: String, column: String,
-    connection: Connection) extends ComplexTypeSerializer {
+    connection: Connection) extends ComplexTypeSerializer with Logging {
 
   private[this] val schema = {
     val stmt = connection.prepareCall("CALL SYS.GET_COLUMN_TABLE_SCHEMA(?, ?, ?)")
@@ -61,37 +70,31 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
     }
   }
 
-  private[this] val dataType = schema.fields.find(Utils.fieldName(_)
+  private[this] val field = schema.fields.find(Utils.fieldName(_)
       .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
-    s"Field $column does not exist in $table with schema=$schema.")).dataType
+    s"Field $column does not exist in $table with schema=$schema."))
 
-  private[this] val (isArray, struct) = dataType match {
-    case a: ArrayType => (true, None)
-    case m: MapType => (false, None)
-    case s: StructType => (false, Some(s))
+  field.dataType match {
+    case _: ArrayType | _: MapType | _: StructType =>
     case _ => throw Utils.analysisException(
-      s"Complex type conversion: unexpected type $dataType")
+      s"Complex type conversion: unexpected $field")
   }
 
   private[this] lazy val serializer = CodeGeneration
-      .getComplexTypeSerializer(dataType)
+      .getComplexTypeSerializer(field.dataType)
 
-  private[this] lazy val bufferHolder = struct match {
-    case None => new BufferHolder(new UnsafeRow())
-    case Some(s) => new BufferHolder(new UnsafeRow(s.length))
-  }
+  private[this] lazy val encoder = new UncompressedEncoder
 
-  private[this] lazy val validatingConverter = ValidatingConverter(dataType,
-    table, column)
+  private[this] lazy val validatingConverter = ValidatingConverter(
+    field.dataType, table, column)
 
-  private[this] lazy val scalaConverter = Utils.createScalaConverter(dataType)
+  private[this] lazy val scalaConverter = Utils.createScalaConverter(
+    field.dataType)
 
   @volatile private[this] var validated = false
 
-  private[this] def toBytes(v: Any): Array[Byte] = {
-    bufferHolder.cursor = Platform.BYTE_ARRAY_OFFSET
-    serializer.serialize(v, bufferHolder, null)
-  }
+  private[this] def toBytes(v: Any): Array[Byte] =
+    serializer.serialize(v, encoder, field, null)
 
   override def serialize(v: Any, validateAll: Boolean): Array[Byte] = {
     // validate only once when validateAll==false
@@ -108,24 +111,25 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
         validated = true
         result
       }
-    } else {
-      toBytes(null)
-    }
+    } else null
   }
 
   override def deserialize(bytes: Array[Byte], offset: Int,
-      length: Int): AnyRef = struct match {
-    case None =>
-      if (isArray) {
-        val array = new UnsafeArrayData
-        array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
-        scalaConverter(array).asInstanceOf[Seq[_]].asJava
-      } else {
-        val map = new UnsafeMapData
-        map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
-        scalaConverter(map).asInstanceOf[Map[_, _]].asJava
-      }
-    case Some(s) =>
+      length: Int): AnyRef = field.dataType match {
+    // Below are still handled as Unsafe* types rather than Serialized*
+    // since this what Spark will return as query result and this
+    // avoids one additional conversion (though introduces endianness
+    //    problem e.g. if client endianness is different from that of
+    //    server which will remain a limitation of DRDA driver)
+    case _: ArrayType =>
+      val array = new UnsafeArrayData
+      array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
+      scalaConverter(array).asInstanceOf[Seq[_]].asJava
+    case _: MapType =>
+      val map = new UnsafeMapData
+      map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
+      scalaConverter(map).asInstanceOf[Map[_, _]].asJava
+    case s: StructType =>
       val row = new UnsafeRow(s.length)
       row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET + offset, length)
       scalaConverter(row) match {
@@ -375,7 +379,8 @@ final class GenericValidatingConverter(dataType: DataType,
   }
 }
 
-// Adding this class to make it work with complex type serializer. //TDOD Check with Sumedh
+// Adding this class to make it work with complex type serializer.
+// TODO: Check with Sumedh
 class GenericInternalRowWithSchema(values: Array[Any], val schema: StructType)
     extends GenericInternalRow(values) {
 

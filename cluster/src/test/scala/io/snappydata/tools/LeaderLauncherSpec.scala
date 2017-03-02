@@ -167,7 +167,8 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
       "assert no zero arg message " in {
         intercept[AssertionError] {
-          new LeaderLauncher("Test default net server").initStartupArgs(ArrayBuffer())
+          new LeaderLauncher("Test default net server").initStartupArgs(
+            ArrayBuffer(), exitOnEmptyArgs = false)
         }.getMessage.equals(LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
       }
 
