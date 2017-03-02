@@ -86,7 +86,7 @@ case class SnappyHashAggregateExec(
             .inputAggBufferAttributes)
 
   @transient val (metricAdd, _): (String => String, String => String) =
-    collection.Utils.metricMethods(sparkContext)
+    collection.Utils.metricMethods
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,

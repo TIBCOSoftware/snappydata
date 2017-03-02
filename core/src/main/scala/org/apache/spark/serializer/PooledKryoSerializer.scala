@@ -35,7 +35,7 @@ import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
-import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellCachedBatchRDD, SparkShellRowRDD}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellColumnBatchRDD, SparkShellRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
@@ -134,7 +134,7 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[SparkShellRowRDD], new KryoSerializableSerializer)
     kryo.register(classOf[ColumnarStorePartitionedRDD],
       new KryoSerializableSerializer)
-    kryo.register(classOf[SparkShellCachedBatchRDD],
+    kryo.register(classOf[SparkShellColumnBatchRDD],
       new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)

@@ -20,17 +20,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
-final class RunLengthEncoding extends RunLengthEncodingBase with NotNullColumn
-
-final class RunLengthEncodingNullable
-    extends RunLengthEncodingBase with NullableColumn
-
-abstract class RunLengthEncodingBase extends ColumnEncoding {
-
-  private[this] var runLength = 0
-  private[this] var cursorPos = 0L
-  private[this] var currentValueLong: Long = _
-  private[this] var currentValueString: UTF8String = _
+trait RunLengthEncoding extends ColumnEncoding {
 
   override final def typeId: Int = 1
 
@@ -39,10 +29,25 @@ abstract class RunLengthEncodingBase extends ColumnEncoding {
          IntegerType | DateType | LongType | TimestampType | StringType => true
     case _ => false
   }
+}
 
-  override def initializeDecoding(columnBytes: AnyRef,
+final class RunLengthDecoder
+    extends RunLengthDecoderBase with NotNullDecoder
+
+final class RunLengthDecoderNullable
+    extends RunLengthDecoderBase with NullableDecoder
+
+abstract class RunLengthDecoderBase
+    extends ColumnDecoder with RunLengthEncoding {
+
+  private[this] var runLength = 0
+  private[this] var cursorPos = 0L
+  private[this] var currentValueLong: Long = _
+  private[this] var currentValueString: UTF8String = _
+
+  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = {
-    cursorPos = super.initializeDecoding(columnBytes, field)
+    cursorPos = cursor
     // use the current count + value for cursor since that will be read and
     // written most frequently while actual cursor will be less frequently used
     0L

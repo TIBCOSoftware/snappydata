@@ -230,7 +230,7 @@ object NWTestUtil {
         case "Q35" => assertJoin(snc, NWQueries.Q35, 3, "Q35", tableType, pw)
         case "Q36" => assertJoin(snc, NWQueries.Q36, 290, "Q36", tableType, pw)
         case "Q37" => assertJoin(snc, NWQueries.Q37, 77, "Q37", tableType, pw)
-        case "Q38" => assertJoin(snc, NWQueries.Q38, 2155, "Q38", tableType, pw) // NPE LocalJoin
+        case "Q38" => assertJoin(snc, NWQueries.Q38, 2155, "Q38", tableType, pw)
         case "Q39" => assertJoin(snc, NWQueries.Q39, 9, "Q39", tableType, pw)
         case "Q40" => assertJoin(snc, NWQueries.Q40, 830, "Q40", tableType, pw)
         case "Q41" => assertJoin(snc, NWQueries.Q41, 2155, "Q41", tableType, pw)
@@ -294,7 +294,7 @@ object NWTestUtil {
         case "Q35" => assertJoinFullResultSet(snc, NWQueries.Q35, 3, "Q35", tableType, pw, sqlContext)
         case "Q36" => assertJoinFullResultSet(snc, NWQueries.Q36, 290, "Q36", tableType, pw, sqlContext)
         case "Q37" => assertJoinFullResultSet(snc, NWQueries.Q37, 77, "Q37", tableType, pw, sqlContext)
-        case "Q38" => assertJoinFullResultSet(snc, NWQueries.Q38, 2155, "Q38", tableType, pw, sqlContext) // NPE LocalJoin
+        case "Q38" => assertJoinFullResultSet(snc, NWQueries.Q38, 2155, "Q38", tableType, pw, sqlContext)
         case "Q39" => assertJoinFullResultSet(snc, NWQueries.Q39, 9, "Q39", tableType, pw, sqlContext)
         case "Q40" => assertJoinFullResultSet(snc, NWQueries.Q40, 830, "Q40", tableType, pw, sqlContext)
         case "Q41" => assertJoinFullResultSet(snc, NWQueries.Q41, 2155, "Q41", tableType, pw, sqlContext)
