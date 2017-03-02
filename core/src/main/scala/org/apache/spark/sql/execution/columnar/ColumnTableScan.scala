@@ -394,7 +394,8 @@ private[sql] final case class ColumnTableScan(
       val bufferVar = s"buffer$index"
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = relationSchema.fieldIndex(attr.name)
-      val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
+      val bufferPosition = if (isEmbedded) baseIndex else index
+      val rsPosition = bufferPosition + 1
 
       ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
 
@@ -421,7 +422,7 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState("long", cursor, s"$cursor = 0L;")
       columnBufferInitCode.append(
         s"""
-          $buffer = $buffers[$baseIndex];
+          $buffer = $buffers[$bufferPosition];
           $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
             $planSchema.apply($index));
           // initialize the decoder and store the starting cursor position

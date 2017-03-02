@@ -57,26 +57,20 @@ class SnappyParser(session: SnappySession)
 
   private def toDecimalOrDoubleLiteral(s: String,
       scientific: Boolean): Literal = {
+    // follow the behavior in MS SQL Server
+    // https://msdn.microsoft.com/en-us/library/ms179899.aspx
     if (scientific) {
       Literal(s.toDouble, DoubleType)
     } else {
-      // try double and fallback to decimal if it does not parse
-      try {
-        Literal(s.toDouble, DoubleType)
-      } catch {
-        case _: NumberFormatException =>
-          val decimal = new java.math.BigDecimal(
-            s, BigDecimal.defaultMathContext)
-          // try to use SYSTEM_DEFAULT instead of creating new DecimalType
-          // which is expensive (due to typeTag etc resolved by reflection
-          //   in AtomicType)
-          val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-          if (decimal.precision <= sysDefaultType.precision &&
-              decimal.scale <= sysDefaultType.scale) {
-            Literal(Decimal(decimal), sysDefaultType)
-          } else {
-            Literal(decimal)
-          }
+      val decimal = new java.math.BigDecimal(s, BigDecimal.defaultMathContext)
+      // try to use SYSTEM_DEFAULT instead of creating new DecimalType which
+      // is expensive (due to typeTag etc resolved by reflection in AtomicType)
+      val sysDefaultType = DecimalType.SYSTEM_DEFAULT
+      if (decimal.precision <= sysDefaultType.precision &&
+          decimal.scale <= sysDefaultType.scale) {
+        Literal(Decimal(decimal), sysDefaultType)
+      } else {
+        Literal(decimal)
       }
     }
   }
@@ -115,7 +109,7 @@ class SnappyParser(session: SnappySession)
           Literal(longValue, LongType)
         }
       } catch {
-        case nfe: NumberFormatException =>
+        case _: NumberFormatException =>
           val decimal = BigDecimal(s)
           if (decimal.isValidInt) {
             Literal(decimal.toIntExact)
@@ -516,7 +510,7 @@ class SnappyParser(session: SnappySession)
           case WindowSpecReference(name) =>
             baseWindowMap.get(name) match {
               case Some(spec: WindowSpecDefinition) => spec
-              case Some(ref) => throw Utils.analysisException(
+              case Some(_) => throw Utils.analysisException(
                 s"Window reference '$name' is not a window specification")
               case None => throw Utils.analysisException(
                 s"Cannot resolve window reference '$name'")

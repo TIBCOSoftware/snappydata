@@ -40,7 +40,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   def _testSpark(): Unit = {
-    val snc = SnappyContext(sc)
+    val snc = new SQLContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = false)
     TPCHUtils.queryExecution(snc, isSnappy = false)
     TPCHUtils.validateResult(snc, isSnappy = false)
@@ -134,8 +134,8 @@ object TPCHUtils {
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")
 
-  def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    val tpchDataPath = getClass.getResource("/TPCH").getPath //"/data/wrk/w/TPCH/1GB" //
+  def createAndLoadTables(snc: SQLContext, isSnappy: Boolean): Unit = {
+    val tpchDataPath = getClass.getResource("/TPCH").getPath // "/data/wrk/w/TPCH/1GB"
 
     val usingOptionString =
       s"""
@@ -163,7 +163,7 @@ object TPCHUtils {
       isSnappy, buckets_Cust_Part_PartSupp, null)
   }
 
-  def validateResult(snc: SnappyContext, isSnappy: Boolean): Unit = {
+  def validateResult(snc: SQLContext, isSnappy: Boolean): Unit = {
     val sc: SparkContext = snc.sparkContext
 
     val fineName = if (isSnappy) "Result_Snappy.out" else "Result_Spark.out"
@@ -214,7 +214,7 @@ object TPCHUtils {
     }
   }
 
-  def queryExecution(snc: SnappyContext, isSnappy: Boolean, warmup: Int = 0,
+  def queryExecution(snc: SQLContext, isSnappy: Boolean, warmup: Int = 0,
       runsForAverage: Int = 1, isResultCollection: Boolean = true): Unit = {
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
