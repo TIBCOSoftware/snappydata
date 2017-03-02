@@ -110,6 +110,19 @@ allprojects {
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.5.3'
     pulseVersion = '1.5.1'
+    springVersion = '3.2.17.RELEASE'
+    protobufVersion = '2.6.1'
+    sunJerseyVersion = '1.19.1'
+    hadoopJettyVersion = '6.1.26'
+    jsr305Version = '3.0.1'
+    hbaseVersion = '0.98.17-hadoop2'
+    guavaVersion = '14.0.1'
+    nettyAllVersion = '4.0.29.Final'
+    jlineVersion = '2.14.2'
+    antVersion = '1.9.7'
+    osgiVersion = '6.0.0'
+    servletAPIVersion = '3.1.0'
+    pxfVersion = '2.5.1.0'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
@@ -118,11 +131,30 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
     commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
     sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
+    PRODUCT_NAME = 'SnappyData RowStore'
+    GEMFIRE_PRODUCT = 'Pivotal GemFire'
+    PRODUCT_MAJOR = '1'
+    PRODUCT_MINOR = '5'
+    PRODUCT_MAINT = '3'
+    PRODUCT_CLASSFIER = ''
+    PRODUCT_RELEASE_STAGE = ''
+    PRODUCT_VERSION = "${PRODUCT_MAJOR}.${PRODUCT_MINOR}.${PRODUCT_MAINT}${PRODUCT_CLASSFIER}"
+    PRODUCT_VENDOR = 'SnappyData, Inc.'
+    COPYRIGHT = "Copyright 2016, ${PRODUCT_VENDOR} All rights reserved."
+
+
+    if (rootProject.name == 'snappy-store') {
+      subprojectBase = ':'
+      gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
+    } else {
+      subprojectBase = ':snappy-store:'
+      gitCmd = "git --git-dir=${project(':snappy-store').projectDir}/.git --work-tree=${project(':snappy-store').projectDir}"
+    }
+
   }
 
   if (!buildRoot.isEmpty()) {
@@ -140,6 +172,24 @@ allprojects {
   }
 }
 
+  ext {
+    productDir = file("${rootProject.buildDir}/store")
+    locDir = 'com/pivotal/gemfirexd/internal/loc'
+    clientMsgOutDir = "${project(subprojectBase + 'gemfirexd-core').buildDir}/client/${locDir}"
+    if (!project.hasProperty('sanity')) {
+      isSane = 'true'
+    } else {
+      isSane = sanity
+    }
+
+    if (rootProject.name == 'snappy-store') {
+      testResultsBase = "${rootProject.buildDir}/tests"
+    } else {
+      testResultsBase = "${rootProject.buildDir}/tests/store"
+    }
+  }
+
+
 def getProcessId() {
   String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
   return name[0..name.indexOf('@') - 1]
@@ -151,6 +201,24 @@ def getStackTrace(def t) {
   org.codehaus.groovy.runtime.StackTraceUtils.sanitize(t).printStackTrace(pw)
   return sw.toString()
 }
+
+def getManifest(def symname, def imports, def exports, def otherAttrs) {
+  def attrs = [
+    'Manifest-Version'        : '1.0',
+    'Title'                   : PRODUCT_NAME,
+    'Bundle-Name'             : "${PRODUCT_NAME} ${PRODUCT_VERSION} ${PRODUCT_RELEASE_STAGE}",
+    'Bundle-Version'          : PRODUCT_VERSION,
+    'Bundle-Vendor'           : PRODUCT_VENDOR,
+    'Bundle-SymbolicName'     : symname,
+    'Bundle-ActivationPolicy' : 'lazy',
+    'Bundle-NativeCode'       : 'com/sun/jna/win32-x86/jnidispatch.dll; processor=x86;osname=win32, com/sun/jna/win32-x86-64/jnidispatch.dll; processor=x86-64;osname=win32, com/sun/jna/w32ce-arm/jnidispatch.dll; processor=arm;osname=wince,  com/sun/jna/sunos-x86/libjnidispatch.so; processor=x86;osname=sunos, com/sun/jna/sunos-x86-64/libjnidispatch.so; processor=x86-64;osname=sunos, com/sun/jna/sunos-sparc/libjnidispatch.so; processor=sparc;osname=sunos, com/sun/jna/sunos-sparcv9/libjnidispatch.so; processor=sparcv9;osname=sunos,  com/sun/jna/aix-ppc/libjnidispatch.a; processor=ppc;osname=aix, com/sun/jna/aix-ppc64/libjnidispatch.a; processor=ppc64;osname=aix,  com/sun/jna/linux-ppc/libjnidispatch.so; processor=ppc;osname=linux, com/sun/jna/linux-ppc64/libjnidispatch.so; processor=ppc64;osname=linux, com/sun/jna/linux-x86/libjnidispatch.so; processor=x86;osname=linux, com/sun/jna/linux-x86-64/libjnidispatch.so; processor=x86-64;osname=linux, com/sun/jna/linux-arm/libjnidispatch.so; processor=arm;osname=linux, com/sun/jna/linux-ia64/libjnidispatch.so; processor=ia64;osname=linux,  com/sun/jna/freebsd-x86/libjnidispatch.so; processor=x86;osname=freebsd, com/sun/jna/freebsd-x86-64/libjnidispatch.so; processor=x86-64;osname=freebsd, com/sun/jna/openbsd-x86/libjnidispatch.so; processor=x86;osname=openbsd, com/sun/jna/openbsd-x86-64/libjnidispatch.so; processor=x86-64;osname=openbsd,  com/sun/jna/darwin/libjnidispatch.jnilib; osname=macosx;processor=x86;processor=x86-64;processor=ppc',
+    'DynamicImport-Package'   : imports,
+    'Export-Package'          : exports
+  ]
+  attrs.putAll(otherAttrs)
+  return attrs
+}
+
 
 // Skip snappy-spark, snappy-aqp and spark-jobserver that have their own
 // scalaStyle configuration. Skip snappy-store that will not use it.
@@ -569,7 +637,7 @@ subprojects {
 task publishLocal {
   dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
-    p.name != 'gemfirexd' }.collect {
+    p.name != 'snappy-store' }.collect {
       it.getTasksByName('install', false).collect { it.path }
   }
 }
@@ -577,7 +645,7 @@ task publishLocal {
 task publishMaven {
   dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'gemfirexd-prebuild' &&
-    p.name != 'snappy-store' && p.name != 'gemfirexd' }.collect {
+    p.name != 'snappy-store' }.collect {
       it.getTasksByName('uploadArchives', false).collect { it.path }
   }
 }
@@ -586,7 +654,19 @@ task publishMaven {
 task generateSources {
   dependsOn ':snappy-spark:generateSources'
   dependsOn ':snappy-store:generateSources'
+  dependsOn subprojectBase + 'gemfire-jgroups:jgMagic'
+  dependsOn subprojectBase + 'gemfire-core:createVersionPropertiesFile'
+  dependsOn subprojectBase + 'gemfirexd-core:compileJavacc'
+  dependsOn subprojectBase + 'gemfirexd-core:generatePropertiesFiles'
+  dependsOn subprojectBase + 'gemfire-core:createVersionPropertiesFile'
+  dependsOn subprojectBase + 'gemfirexd-shared:createVersionPropertiesFile'
+  dependsOn subprojectBase + 'gemfirexd-core:doSplit'
+  dependsOn subprojectBase + 'gemfirexd-core:odbcMeta'
+  dependsOn subprojectBase + 'gemfirexd-client:generatePropertiesFiles'
+  dependsOn subprojectBase + 'gemfirexd-tools:compileJavacc'
+  dependsOn subprojectBase + 'gemfirexd-tools:generatePropertiesFiles'
 }
+
 
 task product(type: Zip) {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
