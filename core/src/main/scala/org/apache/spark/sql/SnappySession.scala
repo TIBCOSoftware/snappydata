@@ -1662,6 +1662,8 @@ object SnappySession extends Logging {
           ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
         case t => throw t
       }
+      case ee: EntryExistsException => new CachedDataFrame(
+        ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
     }
   }
 

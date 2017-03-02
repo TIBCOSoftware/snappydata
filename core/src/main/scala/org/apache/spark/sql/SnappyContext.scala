@@ -847,9 +847,18 @@ object SnappyContext extends Logging {
 
   private[spark] def addBlockId(executorId: String,
       id: BlockAndExecutorId): Unit = {
-    storeToBlockMap.put(executorId, id)
-    if (id.blockId == null || !id.blockId.isDriver) {
-      totalCoreCount.addAndGet(id.numProcessors)
+    storeToBlockMap.put(executorId, id) match {
+      case None =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
+        }
+      case Some(oldId) =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
+        }
+        if (oldId.blockId == null || !oldId.blockId.isDriver) {
+          totalCoreCount.addAndGet(-oldId.numProcessors)
+        }
     }
     SnappySession.clearAllCache(onlyQueryPlanCache = true)
   }
@@ -901,7 +910,7 @@ object SnappyContext extends Logging {
         SparkEnv.get.blockManager.blockManagerId,
         numCores, numCores)
       storeToBlockMap(cache.getMyId.toString) = blockId
-      totalCoreCount.addAndGet(blockId.numProcessors)
+      totalCoreCount.set(blockId.numProcessors)
       SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
   }
