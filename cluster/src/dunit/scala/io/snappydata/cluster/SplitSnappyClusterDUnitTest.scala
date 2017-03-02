@@ -66,11 +66,11 @@ class SplitSnappyClusterDUnitTest(s: String)
     }
     vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
-    if (num > 1) {
+    if (num > 0) {
       vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
         AvailablePortHelper.getRandomAvailableTCPPort)
     }
-    if (num > 2) {
+    if (num > 1) {
       vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
         AvailablePortHelper.getRandomAvailableTCPPort)
     }
