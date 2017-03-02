@@ -83,11 +83,11 @@ class TokenizationTest
       assert( cacheMap.size() == 4)
 
       // test constants in projection
-      query = s"SELECT a, 'x' FROM $table where a = 0"
+      query = s"select a, 'x' from $table where a = 0"
       snc.sql(query).collect()
       assert( cacheMap.size() == 5)
 
-      query = s"SELECT a, 'y' FROM $table where a = 0"
+      query = s"select a, 'y' from $table where a = 0"
       snc.sql(query).collect()
       assert( cacheMap.size() == 6)
 
@@ -129,7 +129,12 @@ class TokenizationTest
       snc.sql(query).collect()
       assert( cacheMap.size() == 4)
 
+      // let us clear the plan cache
+      snc.clear()
+      assert( cacheMap.size() == 0)
+
       snc.sql(s"drop table $table")
+      snc.sql(s"drop table $table2")
 
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
@@ -172,7 +177,35 @@ class TokenizationTest
     logInfo("Successful")
   }
 
-  test("Test tokenize for joins and sub-queries") {
+  ignore("Test tokenize for joins and sub-queries") {
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table2")
+    var query = s"select * from $table t1, $table2 t2 where t1.a in " +
+      s"( select a from $table2 where b = 5 )"
+    snc.sql(query).collect()
+
+    val cacheMap = SnappySession.getPlanCache.asMap()
+
+    assert( cacheMap.size() == 1)
+
+    query = s"select * from $table t1, $table2 t2 where t1.a in " +
+      s"( select a from $table2 where b = 100 )"
+    snc.sql(query).collect()
+    // assert( cacheMap.size() == 1)
+
+    val q1 = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].sqlText
+    val lp1 = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].lp
+
+    val q2 = cacheMap.keySet().toArray()(1).asInstanceOf[CachedKey].sqlText
+    val lp2 = cacheMap.keySet().toArray()(1).asInstanceOf[CachedKey].lp
+
+    println(q1 + " hashcode = " + lp1.hashCode())
+    println(q2 + " hashcode = " + lp2.hashCode())
+    val eq = lp1.equals(lp2)
+    println(s"Equals = $eq")
+    println(lp1)
+    println(lp2)
     logInfo("Successful")
   }
 
