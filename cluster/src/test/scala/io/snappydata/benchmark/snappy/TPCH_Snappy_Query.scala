@@ -107,7 +107,6 @@ object TPCH_Snappy_Query extends SnappySQLJob {
 
     // scalastyle:off println
     println(s"tempqueries : $tempqueries")
-    // scalastyle:on println
     queries = tempqueries.split("-")
 
     useIndex = if (config.hasPath("useIndex")) {

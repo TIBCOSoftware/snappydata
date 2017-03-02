@@ -49,7 +49,8 @@ object TPCH_Snappy_StreamExecution {
     // scalastyle:off println
     println(s"Started executing $queryNumber")
     if (isResultCollection) {
-      val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
+      val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out"
+                          else s"Spark_${queryNumber}.out"
       val queryFileStream: FileOutputStream = new FileOutputStream(new File(queryFileName))
       val queryPrintStream: PrintStream = new PrintStream(queryFileStream)
       try {
@@ -126,7 +127,7 @@ object TPCH_Snappy_StreamExecution {
         val result = sqlContext.sql(getTempQuery2())
         result.createOrReplaceTempView("ViewQ2")
         val df = sqlContext.sql(getQuery2())
-        //val df = sqlContext.sql(getQuery2_Original())
+        // val df = sqlContext.sql(getQuery2_Original())
         val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q2")
@@ -212,7 +213,7 @@ object TPCH_Snappy_StreamExecution {
         val result = sqlContext.sql(getTempQuery13(useIndex))
         result.createOrReplaceTempView("ViewQ13")
         val df = sqlContext.sql(getQuery13())
-        //val df = sqlContext.sql(getQuery13_Original())
+        // val df = sqlContext.sql(getQuery13_Original())
         val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q13")
@@ -249,7 +250,7 @@ object TPCH_Snappy_StreamExecution {
         val result = sqlContext.sql(getTempQuery17(useIndex))
         result.createOrReplaceTempView("ViewQ17")
         val df = sqlContext.sql(getQuery17(useIndex))
-        //val df = sqlContext.sql(getQuery17_Original())
+        // val df = sqlContext.sql(getQuery17_Original())
         val res = df.collect()
         if (genPlan) {
           printPlan(df, "Q17")
@@ -292,7 +293,7 @@ object TPCH_Snappy_StreamExecution {
         var df: DataFrame = null
         var res1 = res
         df = sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex))
-        //val df = sqlContext.sql(getQuery22_Original())
+        // val df = sqlContext.sql(getQuery22_Original())
         res1 = df.collect()
         if (genPlan) {
           printPlan(df, "Q22")
@@ -645,7 +646,7 @@ object TPCH_Snappy_StreamExecution {
       " limit 100"
   }
 
-  def getResultString2():String = {
+  def getResultString2(): String = {
     "S_ACCTBAL|S_NAME|N_NAME|P_PARTKEY|P_MFGR|S_ADDRESS|S_PHONE|S_COMMENT"
   }
 
@@ -708,8 +709,8 @@ object TPCH_Snappy_StreamExecution {
   }
 
   def getQuery5(): String = {
-    //1. REGION = ASIA;
-    //2. DATE = 1994-01-01.
+    // 1. REGION = ASIA;
+    // 2. DATE = 1994-01-01.
     " select" +
       "        n_name," +
       "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
@@ -811,7 +812,7 @@ object TPCH_Snappy_StreamExecution {
     //    1. NATION = BRAZIL;
     //    2. REGION = AMERICA;
     //    3. TYPE = ECONOMY ANODIZED STEEL.
-    if(!useIndex) {
+    if (!useIndex) {
       "select" +
         "         o_year," +
         "         sum(case" +
@@ -849,7 +850,7 @@ object TPCH_Snappy_StreamExecution {
         "         o_year" +
         " order by" +
         "         o_year"
-    }else{
+    } else {
       "select" +
         "         o_year," +
         "         sum(case" +
@@ -971,7 +972,7 @@ object TPCH_Snappy_StreamExecution {
   }
 
   def getQuery10(): String = {
-    //1.    DATE = 1993-10-01.
+    // 1.DATE = 1993-10-01.
     "select" +
       "         C_CUSTKEY," +
       "         C_NAME," +
@@ -1078,7 +1079,7 @@ object TPCH_Snappy_StreamExecution {
       "         value desc"
   }
 
-  def getResultString11():String = {
+  def getResultString11() : String = {
     "PS_PARTKEY|VALUE"
   }
 
@@ -1186,12 +1187,12 @@ object TPCH_Snappy_StreamExecution {
       "         c_count desc"
   }
 
-  def getResultString13():String = {
+  def getResultString13() : String = {
     "C_COUNT|CUSTDIST"
   }
 
   def getQuery14(useIndex: Boolean): String = {
-    //1.DATE = 1995-09-01.
+    // 1.DATE = 1995-09-01.
     if (!useIndex) {
       "select" +
         "         100.00 * sum(case" +
@@ -1207,7 +1208,7 @@ object TPCH_Snappy_StreamExecution {
         "         l_partkey = p_partkey" +
         "         and l_shipdate >= '1995-09-01'" +
         "         and l_shipdate < add_months ('1995-09-01', 1)"
-    }else{
+    } else {
       "select" +
         "         100.00 * sum(case" +
         "                 when p_type like 'PROMO%'" +
@@ -1354,11 +1355,11 @@ object TPCH_Snappy_StreamExecution {
         " where" +
         "         p_partkey = l_partkey" +
         "         and p_brand = 'Brand#23'" +
-        //"         and p_container = 'MED BOX'" +
+        // "         and p_container = 'MED BOX'" +
         "         and p_container = 'SM PACK'" +
         "         and l_quantity < v_quantity" +
         "         and v_partkey = p_partkey"
-    }else{
+    } else {
       "select" +
         "         sum(l_extendedprice) / 7.0 as avg_yearly" +
         " from" +
@@ -1395,7 +1396,7 @@ object TPCH_Snappy_StreamExecution {
       "                 where" +
       "                         l_partkey = P_PARTKEY" +
       "         )"
-    //" )"
+    // " )"
 
   }
 
@@ -1593,7 +1594,7 @@ object TPCH_Snappy_StreamExecution {
             "         and n_name = 'CANADA'" +
             " order by" +
             "         s_name"
-    }*/
+    } */
 
   def getQuery20_Original(): String = {
     //    1. COLOR = forest.
@@ -1701,51 +1702,51 @@ object TPCH_Snappy_StreamExecution {
 
   }
 
-  def getQuery22(value:String, useIndex: Boolean): String = {
+  def getQuery22(value: String, useIndex: Boolean): String = {
     if (!useIndex) {
       "select" +
-        "         cntrycode," +
-        "         count(*) as numcust," +
-        "         sum(C_ACCTBAL) as totacctbal" +
-        " from (" +
-        "         select" +
-        "                 SUBSTR(C_PHONE,1,2) as cntrycode," +
-        "                 C_ACCTBAL" +
-        "         from" +
-        "                 CUSTOMER  left outer join  ORDERS  on  o_custkey = C_CUSTKEY  " +
-        "         where" +
-        "                 SUBSTR(C_PHONE,1,2) IN" +
-        "                         ('13','31','23','29','30','18','17')" +
-        "                 and C_ACCTBAL > " +
-        "                 " + value +
-        "                 and o_orderkey IS NULL " +
-        "         ) as custsale" +
-        " group by" +
-        "         cntrycode" +
-        " order by" +
-        "         cntrycode"
+          "         cntrycode," +
+          "         count(*) as numcust," +
+          "         sum(C_ACCTBAL) as totacctbal" +
+          " from (" +
+          "         select" +
+          "                 SUBSTR(C_PHONE,1,2) as cntrycode," +
+          "                 C_ACCTBAL" +
+          "         from" +
+          "                 CUSTOMER  left outer join  ORDERS  on  o_custkey = C_CUSTKEY  " +
+          "         where" +
+          "                 SUBSTR(C_PHONE,1,2) IN" +
+          "                         ('13','31','23','29','30','18','17')" +
+          "                 and C_ACCTBAL > " +
+          "                 " + value +
+          "                 and o_orderkey IS NULL " +
+          "         ) as custsale" +
+          " group by" +
+          "         cntrycode" +
+          " order by" +
+          "         cntrycode"
     } else {
       "select" +
-        "         cntrycode," +
-        "         count(*) as numcust," +
-        "         sum(C_ACCTBAL) as totacctbal" +
-        " from (" +
-        "         select" +
-        "                 SUBSTR(C_PHONE,1,2) as cntrycode," +
-        "                 C_ACCTBAL" +
-        "         from" +
-        "                 CUSTOMER  left outer join  ORDERS_CUST  on  o_custkey = C_CUSTKEY  " +
-        "         where" +
-        "                 SUBSTR(C_PHONE,1,2) IN" +
-        "                         ('13','31','23','29','30','18','17')" +
-        "                 and C_ACCTBAL > " +
-        "                 " + value +
-        "                 and o_orderkey IS NULL " +
-        "         ) as custsale" +
-        " group by" +
-        "         cntrycode" +
-        " order by" +
-        "         cntrycode"
+          "         cntrycode," +
+          "         count(*) as numcust," +
+          "         sum(C_ACCTBAL) as totacctbal" +
+          " from (" +
+          "         select" +
+          "                 SUBSTR(C_PHONE,1,2) as cntrycode," +
+          "                 C_ACCTBAL" +
+          "         from" +
+          "                 CUSTOMER  left outer join  ORDERS_CUST  on  o_custkey = C_CUSTKEY  " +
+          "         where" +
+          "                 SUBSTR(C_PHONE,1,2) IN" +
+          "                         ('13','31','23','29','30','18','17')" +
+          "                 and C_ACCTBAL > " +
+          "                 " + value +
+          "                 and o_orderkey IS NULL " +
+          "         ) as custsale" +
+          " group by" +
+          "         cntrycode" +
+          " order by" +
+          "         cntrycode"
     }
   }
 
@@ -1796,7 +1797,7 @@ object TPCH_Snappy_StreamExecution {
   }
 
 
-  def getResultString22():String = {
+  def getResultString22() : String = {
     "CNTRYCODE|NUMCUST|TOTACCTBAL"
   }
 
