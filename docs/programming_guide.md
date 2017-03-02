@@ -323,14 +323,14 @@ Example: Removing a JAR
 CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 ```
 
-## Using SnappyData Shell
-The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interface to the SnappyData cluster. 
+## Using SnappyData SQL Shell
+The SnappyData SQL Shell (snappy-sql) provides a simple command line interface to the SnappyData cluster. 
 It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. 
 Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 ```
 // from the SnappyData base directory  
 $ cd quickstart/scripts  
-$ ../../bin/snappy-shell  
+$ ../../bin/snappy-sql  
 Version 2.0-BETA
 snappy> 
 
@@ -353,7 +353,7 @@ snappy> run 'create_and_load_column_table.sql';
 snappy> run 'create_and_load_row_table.sql';
 ```
 
-The complete list of commands available through _snappy_shell_ can be found [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html)
+The complete list of commands available through Snappy SQL Shell can be found [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html)
 
 ## Using the Spark Shell and spark-submit
 
@@ -367,9 +367,9 @@ To run all SnappyData functionalities you need to create a [SnappySession](http:
 ```bash
 // from the SnappyData base directory  
 # Start the Spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
-$ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port 
+$ bin/spark-sql  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port 
 scala>
-#Try few commands on the spark-shell. Following command shows the tables created using the snappy-shell
+#Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 scala> val airlineDF = snappy.table("airline").show
 scala> val resultset = snappy.sql("select * from airline")
@@ -837,7 +837,7 @@ To ensure optimal performance for SELECT queries executed over JDBC connection (
 Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
 
 ```
-bin/snappy-shell leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
+bin/snappy leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
 ```
 
 Defining the column(s) itself as CLOB, either using SQL or API. In the example below, we define the column 'Col2' to be CLOB.
@@ -982,10 +982,10 @@ For example to create a stream table using kafka source :
  // You can also save the DataFrames to an external table
  dStream.foreachDataFrame(_.write.insertInto(tableName))
 ```
-The streamTable created in the above example can be accessed from snappy-shell and can be queried using ad-hoc SQL queries.
+The streamTable created in the above example can be accessed from snappy-sql and can be queried using ad-hoc SQL queries.
 
-### Stream SQL through Snappy-Shell
-Start a SnappyData cluster and connect through snappy-shell : 
+### Stream SQL through snappy-sql
+Start a SnappyData cluster and connect through snappy-sql: 
 
 ```bash
 //create a connection

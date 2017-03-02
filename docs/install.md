@@ -86,11 +86,11 @@ If SSH is not supported then follow the instructions in the Machines without a S
 The example below starts a locator and server.
 
 ```bash 
-$ bin/snappy-shell locator start  -dir=/node-a/locator1 
-$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+$ bin/snappy locator start  -dir=/node-a/locator1 
+$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
-$ bin/snappy-shell locator stop
-$ bin/snappy-shell server stop
+$ bin/snappy locator stop
+$ bin/snappy server stop
 ``` 
 
 ## Setting up Cluster on Amazon Web Services (AWS)
@@ -117,7 +117,11 @@ To launch the instance and start SnappyData cluster:
 
 6. The search result is displayed. From the search results, click **Select** to choose the AMI with the latest release version.
 
-7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/><Note> Note: You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note>
+7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
+	<note> Note: </note>
+	
+	* <note>You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note>
+	* <note> When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).</note>
 
 8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
 
@@ -129,11 +133,11 @@ To launch the instance and start SnappyData cluster:
 
 10. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the SnappyData AMI.
 
-12. Use SSH to connect to the instance. You require:
+12. Use SSH to connect to the instance using the **ubuntu** username. You require:
 
 	* The private key file of the key pair with which the instance was launched, and 
 
-	* Details of the public hostname or IP address of the instance. 
+	* Details of the public hostname or IP address of the instance. Refer to the following documentation, for more information on [accessing an EC2 instance](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html). 
 
 	<note> Note: </note>
 	

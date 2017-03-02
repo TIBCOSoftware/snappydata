@@ -246,7 +246,7 @@ t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EB
 <a id="getting-started-using-sql"></a> 
 ##Option 4: Getting Started using SQL
 
-We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
+We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
 
 **Create a column table with a simple schema [Int, String] and default options.**
 For details on the options refer to the [Row and Column Tables](programming_guide.md#tables-in-snappydata) section.

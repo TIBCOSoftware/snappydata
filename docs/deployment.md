@@ -89,7 +89,7 @@ In this mode, one can write Spark programs using jobs. For more details, refer t
 bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 ```
 
-Also, you can use [SnappyShell](howto/#how-to-use-snappy-sql-shell-snappy-shell) to create and query tables.
+Also, you can use [SnappySQL](howto/#how-to-use-snappy-sql-shell-snappy-shell) to create and query tables.
 
 You can either [start SnappyData members](install.md) using the `snappy-start-all.sh` script or you can start them individually.
 
@@ -148,8 +148,8 @@ $ sbin/snappy-start-all.sh
 
 ```
 # start members individually
-$ bin/snappy-shell locator start  -dir=/node-a/locator1
-$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+$ bin/snappy locator start  -dir=/node-a/locator1
+$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 ```
 
 **Step 2: Launch the Apache Spark program **

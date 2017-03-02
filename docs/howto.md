@@ -53,14 +53,14 @@ Starting SnappyData Locator using peer discovery on: localhost[10334]
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
 Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 9368 status: running
-Starting SnappyData Server using locators for peer discovery: shirishd-laptop[10334]
+Starting SnappyData Server using locators for peer discovery: user1-laptop[10334]
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-Logs generated in /home/shirishd/snappyData/work/localhost-server-1/snappyserver.log
+Logs generated in /home/user1/snappyData/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 9519 status: running
   Distributed system now has 2 members.
   Other members: localhost(9368:locator)<v0>:16944
-Starting SnappyData Leader using locators for peer discovery: shirishd-laptop[10334]
-Logs generated in /home/shirishd/snappyData/work/localhost-lead-1/snappyleader.log
+Starting SnappyData Leader using locators for peer discovery: user1-laptop[10334]
+Logs generated in /home/user1/snappyData/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 9699 status: running
   Distributed system now has 3 members.
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
@@ -79,7 +79,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://<leadHostname>:5050` in browser, where `<leadHostname>` is the host name of your lead node. Use [snappy-shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check SnappyData UI by opening `http://<leadHostname>:5050` in browser, where `<leadHostname>` is the host name of your lead node. Use [snappy SQL shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
 **Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
 
@@ -230,20 +230,20 @@ You can now create tables and run queries in SnappyData store using your Apache 
 
 
 <a id="howto-snappyShell"></a>
-## How to Use SnappyData SQL shell (snappy-shell)
-`snappy-shell` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
+## How to Use SnappyData SQL shell (snappy-sql)
+`snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: 
-Use the `snappy-shell` and `connect client` command on the Snappy Shell
+Use the `snappy-sql` and `connect client` command on the Snappy SQL Shell
 
 ```
-$ bin/snappy-shell
+$ bin/snappy-sql
 snappy> connect client '<locatorHostName>:1527';
 ```
 
 Where `<locatorHostName>` is the host name of the node on which the locator is started and **1527** is the default port on which the locator listens for connections. 
 
-**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-shell`
+**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-sql`
 
 ```
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
