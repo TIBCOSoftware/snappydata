@@ -30,7 +30,8 @@ object TPCH_Snappy_Tables_JDBC {
 //     val user = "root"
 //     val password = ""
 
-     //Class.forName("com.mysql.jdbc.Driver")
+     /* Class.forName("com.mysql.jdbc.Driver") */
+
      val dbAddress = "jdbc:snappydata://" + host + ":" + port + "/"
      val conn = DriverManager.getConnection(dbAddress)
      val stmt = conn.createStatement
