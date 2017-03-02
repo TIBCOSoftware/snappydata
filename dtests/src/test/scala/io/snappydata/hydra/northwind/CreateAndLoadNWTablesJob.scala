@@ -17,6 +17,7 @@
 package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
+import java.lang.System
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northwind
@@ -37,7 +38,7 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
       pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
       NWQueries.dataFilesLocation = dataFilesLocation
       NWTestUtil.dropTables(snc)
-      pw.println(s"Create and load ${tableType} tables Test started")
+      pw.println(s"Create and load ${tableType} tables Test started at : " + System.currentTimeMillis)
       tableType match {
         case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
         case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc)
@@ -45,7 +46,7 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
         case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
         case _ => // the default, catch-all
       }
-      pw.println(s"Create and load ${tableType} tables Test completed successfully")
+      pw.println(s"Create and load ${tableType} tables Test completed successfully at : " + System.currentTimeMillis)
       pw.close()
     } match {
       case Success(v) => pw.close()

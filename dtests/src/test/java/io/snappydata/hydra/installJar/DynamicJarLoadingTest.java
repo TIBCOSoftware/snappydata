@@ -337,7 +337,6 @@ public class DynamicJarLoadingTest extends SnappyTest {
             } else {
                 pb = new ProcessBuilder(SnappyShellPath, command, "-file=" + jarFilePath, "-name=" + jarIdentifier,
                         "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
-                Log.getLogWriter().info("SS - installJar command : " + pb.command() + " : " + pb.toString() );
             }
             snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {

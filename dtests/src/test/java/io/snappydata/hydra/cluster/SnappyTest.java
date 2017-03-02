@@ -172,7 +172,6 @@ public class SnappyTest implements Serializable {
         String clusterTestsJar = getUserAppJarLocation("snappydata-cluster*tests.jar", hd
                 .getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
                 hd.getFileSep() + ".." + hd.getFileSep());
-        Log.getLogWriter().info("SS - clusterTestsJar : " + clusterTestsJar);
         return clusterTestsJar;
     }
 
