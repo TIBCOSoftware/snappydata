@@ -32,7 +32,7 @@ import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{RelationInfo, QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -88,11 +88,20 @@ class BaseColumnFormatRelation(
     new PartitionStatistics(schema)
   }
 
-  override lazy val numBuckets: Int = {
-    SnappyContext.getClusterMode(_context.sparkContext) match {
+  lazy val relInfo: RelationInfo = {
+    val mode = SnappyContext.getClusterMode(_context.sparkContext)
+    mode match {
       case ThinClientConnectorMode(_, _) =>
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
-        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table)).numBuckets
+        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
+      case _ =>
+        new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition], -1)
+    }
+  }
+
+  override lazy val numBuckets: Int = {
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => relInfo.numBuckets
       case _ => region.getTotalNumberOfBuckets
     }
   }
@@ -163,7 +172,8 @@ class BaseColumnFormatRelation(
           connProperties,
           filters,
           // use same partitions as the column store (SNAP-1083)
-          partitions
+          partitions,
+          relInfo.embdClusterRelDestroyVersion
         )
     }
   }

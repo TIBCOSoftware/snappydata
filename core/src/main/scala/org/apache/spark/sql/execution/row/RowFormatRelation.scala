@@ -125,20 +125,22 @@ class RowFormatRelation(
           requiredColumns,
           connProperties,
           handledFilters,
-          _parts = relInfo.partitions
+          _parts = relInfo.partitions,
+          relInfo.embdClusterRelDestroyVersion
         )
     }
     (rdd, Nil)
   }
 
-  lazy val relInfo: RelationInfo = {
+//  lazy val relInfo: RelationInfo = {
+  def relInfo: RelationInfo = {
     val mode = SnappyContext.getClusterMode(_context.sparkContext)
      mode match {
       case ThinClientConnectorMode(_, _) =>
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-         new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition])
+         new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition], -1)
     }
   }
 

@@ -33,12 +33,13 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{ThinClientConnectorMode, SplitClusterMode, AnalysisException, SnappyContext}
+import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode, SplitClusterMode, AnalysisException}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 import org.apache.log4j.{Level, Logger}
 
+case class OrderData(ref: Int, description: String, amount: Long)
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
  */
@@ -141,6 +142,8 @@ trait SplitClusterDUnitTestBase extends Logging {
     testObject.verifySplitModeOperations("column", isComplex = true, props)
   }
 
+
+
   protected def skewNetworkServers: Boolean = false
 
   final def testColumnTableCreation(): Unit = {
@@ -154,6 +157,41 @@ trait SplitClusterDUnitTestBase extends Logging {
   final def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643(skewNetworkServers)
   }
+
+  final def testTableFormChanges(): Unit = {
+    if (skewNetworkServers) {
+      startNetworkServers(2)
+    } else {
+      startNetworkServers(3)
+    }
+
+    // StandAlone Spark Cluster Operations
+    // row table
+    vm3.invoke(getClass, "createDropTablesInSplitMode",
+      startArgs :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort) :+ "ROW")
+
+    testObject.createDropEmbeddedModeTables("ROW")
+
+    vm3.invoke(getClass, "verifyTableFormInSplitMOde",
+      startArgs :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+
+    // StandAlone Spark Cluster Operations
+    // column table
+    vm3.invoke(getClass, "createDropTablesInSplitMode",
+      startArgs :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort) :+ "COLUMN")
+
+    testObject.createDropEmbeddedModeTables("COLUMN")
+
+    vm3.invoke(getClass, "verifyTableFormInSplitMOde",
+      startArgs :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+
+  }
+
+
 }
 
 trait SplitClusterDUnitTestObject extends Logging {
@@ -170,6 +208,20 @@ trait SplitClusterDUnitTestObject extends Logging {
       props: Map[String, String]): Unit
 
   def assertTableNotCachedInHiveCatalog(tableName: String): Unit
+
+  def createDropEmbeddedModeTables(tableType: String): Unit = {
+  }
+
+  def createDropTablesInSplitMode(locatorPort: Int,
+      prop: Properties, locatorProp: String,
+      useThinClientConnector: Boolean, locatorClientPort: Int,
+      tableType: String): Unit = {
+  }
+
+  def verifyTableFormInSplitMOde(locatorPort: Int,
+      prop: Properties, locatorProp: String,
+      useThinClientConnector: Boolean, locatorClientPort: Int): Unit = {
+  }
 
   def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
       prop: Properties, tableType: String, isComplex: Boolean,

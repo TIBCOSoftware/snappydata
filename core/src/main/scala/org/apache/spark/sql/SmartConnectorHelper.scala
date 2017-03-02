@@ -53,7 +53,7 @@ object SmartConnectorHelper extends Logging {
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
   private val dropSnappyIdxString = "call sys.DROP_SNAPPY_INDEX(?, ?)"
-  private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?)"
+  private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?, ?)"
   private var getMetaDataStmt: CallableStatement = _
   private var createSnappyTblStmt: CallableStatement = _
   private var dropSnappyTblStmt: CallableStatement = _
@@ -189,6 +189,8 @@ object SmartConnectorHelper extends Logging {
     val tableObjectBlob = Option(getMetaDataStmt.getBlob(2)).
         getOrElse(throw new TableNotFoundException(s"Table $in not found"))
 
+    val embdClusterRelDestroyVersion = getMetaDataStmt.getInt(7)
+
     val t: Table = {
       val tableObjectBytes = tableObjectBlob.getBytes(1, tableObjectBlob.length().toInt)
       val baip = new ByteArrayInputStream(tableObjectBytes)
@@ -208,16 +210,16 @@ object SmartConnectorHelper extends Logging {
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
         val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions))
+        (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions, embdClusterRelDestroyVersion))
       } else {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
         val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions))
+        (t, new RelationInfo(1, Seq.empty[String], indexCols, partitions, embdClusterRelDestroyVersion))
       }
     } else {
       // external tables (with source as csv, parquet etc.)
-      (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[Partition]))
+      (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[Partition], embdClusterRelDestroyVersion))
     }
   }
 
@@ -228,6 +230,7 @@ object SmartConnectorHelper extends Logging {
     getMetaDataStmt.registerOutParameter(4, java.sql.Types.VARCHAR) /*partitioning columns*/
     getMetaDataStmt.registerOutParameter(5, java.sql.Types.VARCHAR) /*index columns*/
     getMetaDataStmt.registerOutParameter(6, java.sql.Types.CLOB) /*bucket to server or replica to server mapping*/
+    getMetaDataStmt.registerOutParameter(7, java.sql.Types.INTEGER) /*relation destroy version*/
     getMetaDataStmt.execute
   }
 

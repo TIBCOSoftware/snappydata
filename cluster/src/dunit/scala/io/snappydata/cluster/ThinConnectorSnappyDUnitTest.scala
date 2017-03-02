@@ -18,10 +18,8 @@ package io.snappydata.cluster
 
 import com.pivotal.gemfirexd.FabricService
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
-import io.snappydata.{ServiceManager, Locator}
-import io.snappydata.test.dunit.{SerializableRunnable, DistributedTestBase}
-
-import org.apache.spark.sql.SnappyContext
+import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
+import io.snappydata.{Locator, ServiceManager}
 
 class ThinConnectorSnappyDUnitTest(s: String)
     extends SplitSnappyClusterDUnitTest(s) {
@@ -60,6 +58,7 @@ class ThinConnectorSnappyDUnitTest(s: String)
 
   override def testColumnTableStatsInSplitModeWithHA(): Unit = {
   }
+
 
 
 }

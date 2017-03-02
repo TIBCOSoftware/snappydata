@@ -17,12 +17,14 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
+import java.sql.SQLException
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
@@ -35,11 +37,12 @@ import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{SparkException, Logging, SparkContext, SparkEnv, TaskContext}
 
 class CachedDataFrame(df: Dataset[Row],
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
@@ -91,10 +94,36 @@ class CachedDataFrame(df: Dataset[Row],
         end - start)
       result
     } catch {
+      case se: SparkException =>
+        val (isCatalogStale, sqlexception) = staleCatalogError(se)
+        if (isCatalogStale) {
+          val snSession = SparkSession.getActiveSession.get.asInstanceOf[SnappySession]
+          snSession.sessionCatalog.invalidateAll()
+          SnappySession.clearAllCache()
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          throw sqlexception
+        } else {
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          throw se
+        }
       case e: Exception =>
         sparkSession.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
+  }
+
+  private def staleCatalogError(se: SparkException): (Boolean, SQLException) = {
+    var cause = se.getCause
+    while (cause != null) {
+      cause match {
+        case sqle: SQLException
+          if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+          return (true, sqle)
+        case _ =>
+          cause = cause.getCause
+      }
+    }
+    (false, null)
   }
 
   override def collect(): Array[Row] = {

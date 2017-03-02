@@ -29,6 +29,9 @@ import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -187,7 +190,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation), table, new RelationInfo(0, Seq.empty, Array.empty, Array.empty))
+        (LogicalRelation(relation), table, new RelationInfo(0, Seq.empty, Array.empty, Array.empty, -1))
       }
     }
 
@@ -380,6 +383,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     cachedDataSourceTables.invalidate(tableIdent)
   }
 
+  def invalidateAll(): Unit = {
+    cachedDataSourceTables.invalidateAll()
+  }
+
   def unregisterAllTables(): Unit = synchronized {
     tempTables.clear()
   }
@@ -477,7 +484,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   // TODO: SW: cleanup the tempTables handling to error for schema
   def registerTable(tableName: QualifiedTableName,
       plan: LogicalPlan): Unit = synchronized {
-    logInfo(s"sdeshmukh tableName= $tableName", new Throwable)
     tempTables += (tableName.table -> plan)
   }
 
@@ -992,10 +998,28 @@ object SnappyStoreHiveCatalog {
     try {
       val globalVersion = relationDestroyVersion
       relationDestroyVersion += 1
+      setRelationDestroyVersionOnAllMembers
       globalVersion
     } finally {
       sync.unlock()
     }
+  }
+
+  def setRelationDestroyVersionOnAllMembers: Unit = {
+    val session = SparkSession.getActiveSession.get
+    SnappyContext.getClusterMode(session.sparkContext) match {
+      case SnappyEmbeddedMode(_, _) =>
+        val version = getRelationDestroyVersion
+        Utils.mapExecutors(session.sqlContext,
+          () => {
+            val profile: GfxdProfile =
+              GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
+            profile.setRelationDestroyVersion(version)
+            Iterator.empty
+          }).count()
+      case _ =>
+    }
+
   }
 
   def getSchemaString(

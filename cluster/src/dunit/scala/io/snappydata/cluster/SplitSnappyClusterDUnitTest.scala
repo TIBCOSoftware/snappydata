@@ -17,12 +17,14 @@
 package io.snappydata.cluster
 
 import java.net.InetAddress
+import java.sql.SQLException
 import java.util.Properties
 
 import scala.language.postfixOps
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
@@ -31,7 +33,8 @@ import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.store.SnappyJoinSuite
-import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession, SplitClusterMode, ThinClientConnectorMode}
+import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
+import org.apache.spark.sql.{Row, SaveMode, SnappyContext, SnappySession, SplitClusterMode, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -258,6 +261,28 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("DROP TABLE CUSTOMER_2")
   }
 
+  def _testUDF(): Unit = {
+    doTestUDF(skewNetworkServers)
+  }
+
+  def doTestUDF(skewServerDistribution: Boolean): Unit = {
+    if (skewServerDistribution) {
+      startNetworkServers(2)
+    } else {
+      startNetworkServers(3)
+    }
+    testObject.createUDFInEmbeddedMode()
+
+    // StandAlone Spark Cluster Operations
+    vm3.invoke(getClass, "verifyUDFInSplitMode",
+      startArgs :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+
+    // StandAlone Spark Cluster Operations
+    vm3.invoke(getClass, "createUDFInSplitMode",
+      startArgs :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+  }
 
 }
 
@@ -308,6 +333,66 @@ object SplitSnappyClusterDUnitTest
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
     logInfo("Successful")
+  }
+
+  def createUDFInEmbeddedMode(): Unit = {
+    val snc = SnappyContext(sc)
+    val rdd = sc.parallelize((1 to 5).map(i => OrderData(i, s"some $i", i)))
+    val refDf = snc.createDataFrame(rdd)
+    snc.sql("DROP TABLE IF EXISTS RR_TABLE")
+    snc.sql("DROP TABLE IF EXISTS COL_TABLE")
+
+    snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, price BIGINT)")
+    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  LONG) using column options()")
+
+    refDf.write.insertInto("RR_TABLE")
+    refDf.write.insertInto("COL_TABLE")
+
+    val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return 6; " +
+        "}" +
+        "}"
+    val file = UserDefinedFunctionsDUnitTest.createUDFClass("IntegerUDF", udfText)
+    val jar = UserDefinedFunctionsDUnitTest.createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    val row = snc.sql("select intudf(description) from col_table").collect()
+//    row.foreach(r => println(r))
+    row.foreach(r => assert(r(0) == 6))
+  }
+
+  def createUDFInSplitMode(locatorPort: Int,
+      prop: Properties, locatorProp: String,
+      useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
+
+    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
+      locatorProp, useThinConnectorMode, locatorClientPort)
+
+    val udfText = "public class IntegerUDF2 implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return 8; " +
+        "}" +
+        "}"
+
+    val file2 = UserDefinedFunctionsDUnitTest.createUDFClass("IntegerUDF2", udfText)
+    val jar = UserDefinedFunctionsDUnitTest.createJarFile(Seq(file2))
+    snc.sql(s"CREATE FUNCTION APP.intudf2 AS IntegerUDF2 " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    val row2 = snc.sql("select intudf2(description) from col_table").collect()
+    row2.foreach(r => println(r))
+    row2.foreach(r => assert(r(0) == 8))
+  }
+
+  def verifyUDFInSplitMode(locatorPort: Int,
+      prop: Properties, locatorProp: String,
+      useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorPort, locatorProp,
+      useThinConnectorMode, locatorClientPort)
+    val row = snc.sql("select intudf(description) from col_table").collect()
+    row.foreach(r => assert(r(0) == 6))
   }
 
   override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
@@ -586,5 +671,72 @@ object SplitSnappyClusterDUnitTest
     val catalog = snc.snappySession.sessionCatalog
     assert(catalog.isTemporaryTable(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
     snc.sql("DROP TABLE CUSTOMER_TEMP")
+  }
+
+  override def createDropEmbeddedModeTables(
+      tableType: String): Unit = {
+    val snc = SnappyContext(sc)
+    val df = snc.table("APP.T1")
+    assert(df.schema.fields.length == 3)
+    snc.dropTable("APP.T1")
+
+    snc.sql(s"CREATE TABLE T1(COL1 STRING, COL2 STRING) USING $tableType OPTIONS (PARTITION_BY 'COL1')")
+    snc.sql("INSERT INTO T1 VALUES('AA', 'AA')")
+    snc.sql("INSERT INTO T1 VALUES('BB', 'BB')")
+    snc.sql("INSERT INTO T1 VALUES('CC', 'CC')")
+    snc.sql("INSERT INTO T1 VALUES('DD', 'DD')")
+    snc.sql("INSERT INTO T1 VALUES('EE', 'EE')")
+
+  }
+
+  var connectorSnc: SnappyContext = null
+  override def createDropTablesInSplitMode(locatorPort: Int,
+      prop: Properties, locatorProp: String,
+      useThinClientConnector: Boolean, locatorClientPort: Int,
+      tableType: String): Unit = {
+    if (connectorSnc == null) {
+      connectorSnc = getSnappyContextForConnector(locatorPort, locatorProp,
+        useThinClientConnector, locatorClientPort)
+    }
+    // row table
+    connectorSnc.sql(s"CREATE TABLE T1(C1 INT, C2 INT, C3 INT) USING $tableType OPTIONS (PARTITION_BY 'C1')")
+    connectorSnc.sql("INSERT INTO T1 VALUES(1, 1, 1)")
+    connectorSnc.sql("INSERT INTO T1 VALUES(2, 2, 2)")
+    connectorSnc.sql("INSERT INTO T1 VALUES(3, 3, 3)")
+    connectorSnc.sql("INSERT INTO T1 VALUES(4, 4, 4)")
+    connectorSnc.sql("INSERT INTO T1 VALUES(5, 5, 5)")
+
+    val rs = connectorSnc.sql("select * from t1 order by c1").collect()
+    assert(rs.length == 5)
+    assert(rs(0).getAs[Int]("C1") == 1)
+    assert(rs(0).getAs[Int]("C2") == 1)
+    assert(rs(0).getAs[Int]("C3") == 1)
+  }
+
+  override def verifyTableFormInSplitMOde(locatorPort: Int,
+      prop: Properties, locatorProp: String,
+      useThinClientConnector: Boolean, locatorClientPort: Int): Unit = {
+    if (connectorSnc == null) {
+      connectorSnc = getSnappyContextForConnector(locatorPort, locatorProp,
+        useThinClientConnector, locatorClientPort)
+    }
+    var resultDF = connectorSnc.sql("select * from t1 order by col1")
+    var rs: Array[Row] = null
+    try {
+      rs = resultDF.collect()
+    } catch {
+      case sqle: SQLException
+        if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+
+        resultDF = connectorSnc.sql("select * from t1 order by col1")
+        rs = resultDF.collect()
+      case e: Exception => throw e
+    }
+    assert(rs.length == 5)
+    assert(rs(0).getAs[String]("COL1").equals("AA"))
+    assert(rs(0).getAs[String]("COL2").equals("AA"))
+
+    connectorSnc.dropTable("APP.T1")
+
   }
 }

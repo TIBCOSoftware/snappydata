@@ -57,8 +57,6 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       sqlConf: SQLConf,
       hadoopConf: Configuration) {
 
-  private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
-
   def getCachedRelationInfo(table: QualifiedTableName): RelationInfo = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
     sync.lock()
@@ -219,7 +217,9 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
 
 }
 
-case class RelationInfo(val numBuckets: Int, val partitioningCols: Seq[String],
-    val indexCols: Array[String],
-    val partitions: Array[org.apache.spark.Partition]) {
+case class RelationInfo(numBuckets: Int = 1,
+    partitioningCols: Seq[String] = Seq.empty,
+    indexCols: Array[String] = Array.empty,
+    partitions: Array[org.apache.spark.Partition] = Array.empty,
+    embdClusterRelDestroyVersion: Int = -1) {
 }
