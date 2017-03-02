@@ -145,10 +145,12 @@ class NorthWindTest
         case "Q35" => NWQueries.assertJoin(snc, NWQueries.Q35, "Q35", 3, 4, classOf[HashJoinExec])
         case "Q36" => NWQueries.assertJoin(snc, NWQueries.Q36, "Q36", 290, 1, classOf[HashJoinExec])
         case "Q37" => NWQueries.assertJoin(snc, NWQueries.Q37, "Q37", 77, 4, classOf[HashJoinExec])
-        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1, classOf[HashJoinExec])
+        case "Q38" => NWQueries.assertJoin(snc, NWQueries.Q38, "Q38", 2155, 1,
+          classOf[HashJoinExec])
         case "Q39" => NWQueries.assertJoin(snc, NWQueries.Q39, "Q39", 9, 1, classOf[HashJoinExec])
         case "Q40" => NWQueries.assertJoin(snc, NWQueries.Q40, "Q40", 830, 1, classOf[HashJoinExec])
-        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 1, classOf[HashJoinExec])
+        case "Q41" => NWQueries.assertJoin(snc, NWQueries.Q41, "Q41", 2155, 1,
+          classOf[HashJoinExec])
         case "Q42" => NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, 1, classOf[HashJoinExec])
         case "Q43" => NWQueries.assertJoin(snc, NWQueries.Q43, "Q43", 830, 1,
           classOf[SortMergeJoinExec])
@@ -164,7 +166,8 @@ class NorthWindTest
           classOf[BroadcastNestedLoopJoinExec])
         case "Q49" => NWQueries.assertJoin(snc, NWQueries.Q49, "Q49", 1788650, 5,
           classOf[BroadcastNestedLoopJoinExec])
-        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 1, classOf[HashJoinExec])
+        case "Q50" => NWQueries.assertJoin(snc, NWQueries.Q50, "Q50", 2155, 1,
+          classOf[HashJoinExec])
         case "Q51" => NWQueries.assertJoin(snc, NWQueries.Q51, "Q51", 2155, 1,
           classOf[SortMergeJoinExec])
         case "Q52" => NWQueries.assertJoin(snc, NWQueries.Q52, "Q52", 2155, 1,
