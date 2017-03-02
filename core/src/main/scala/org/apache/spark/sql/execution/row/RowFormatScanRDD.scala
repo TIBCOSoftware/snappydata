@@ -370,7 +370,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
       doMove = false
     }
     // commit here as row and column iteration is complete.
-    if (!hasNextValue && tx != null) {
+    if (!hasNextValue && tx != null && !(tx.asInstanceOf[TXStateProxy]).isClosed()) {
       GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
       GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
     }
