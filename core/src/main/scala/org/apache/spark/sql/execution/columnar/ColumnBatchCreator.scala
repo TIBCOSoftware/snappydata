@@ -136,8 +136,10 @@ final class ColumnBatchCreator(
       compressionCodec: String): ColumnBatchRowsBuffer = {
     val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
+      // no puts into row buffer for now since it causes split of rows held
+      // together and thus failures in ClosedFormAccuracySuite etc
       val insertPlan = ColumnInsertExec(bufferPlan, Seq.empty, Seq.empty,
-        -1, None, (columnBatchSize, columnMaxDeltaRows, compressionCodec),
+        -1, None, (columnBatchSize, -1, compressionCodec),
         tableName, onExecutor = true, schema, externalStore,
         useMemberVariables = true)
       // now generate the code with the help of WholeStageCodegenExec
