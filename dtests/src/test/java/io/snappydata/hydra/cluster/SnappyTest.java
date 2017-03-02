@@ -103,8 +103,6 @@ public class SnappyTest implements Serializable {
     public static long lastCycledTime = 0;
     public static long lastCycledTimeForLead = 0;
     public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
-    /*public static int sleepTimeSecsForJobStatus = TestConfig.tab().intAt(SnappyPrms
-            .sleepTimeSecsForJobStatus, 120);*/ //secs
     public static final int THOUSAND = 1000;
     public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "snappyStore");
     public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
