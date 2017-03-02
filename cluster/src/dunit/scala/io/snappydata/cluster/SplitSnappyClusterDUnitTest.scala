@@ -511,6 +511,9 @@ object SplitSnappyClusterDUnitTest
 
     val testJoins = {
       if (useThinClientConnector) {
+        // TODO: Fix this. For thin client connector, there is
+        // a shuffle introduced because of which if ClusterSnappyJoinSuite
+        // is used test fails
         new SnappyJoinSuite()
       } else {
         new ClusterSnappyJoinSuite()
