@@ -30,7 +30,9 @@ import org.apache.spark.{SparkConf, SparkContext}
 object TPCH_Spark {
 
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("TPCH_Spark") /*.set("snappydata.store.locators","localhost:10334")*/
+    val conf = new SparkConf().setAppName("TPCH_Spark")
+
+    /* .set("snappydata.store.locators","localhost:10334") */
 
     val usingOptionString = null
     val props = null
@@ -48,33 +50,43 @@ object TPCH_Spark {
     var sqlSparkProperties = args(5).split(",")
 
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"Spark_LoadPerf.out"))
-    var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
+    var loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
 
     var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Spark_Average.out"))
-    var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
+    var avgPrintStream: PrintStream = new PrintStream(avgFileStream)
 
 
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulatePartTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createAndPopulateOrderTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateRegionTable(
+      usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateNationTable(
+      usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateSupplierTable(
+      usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulateCustomerTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartSuppTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
 
 //    snc.sql(s"set spark.sql.shuffle.partitions=83")
 //    snc.sql(s"set spark.sql.inMemoryColumnarStorage.compressed=false")
 //    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=41943040")
-    //snc.sql(s"set spark.sql.crossJoin.enabled = true")
+    // snc.sql(s"set spark.sql.crossJoin.enabled = true")
     for(prop <- sqlSparkProperties) {
+      // scalastyle:off println
       println(prop)
       snc.sql(s"set $prop")
     }
 
     for (i <- 1 to 1) {
       for (query <- queries) {
-          TPCH_Snappy.execute(query, snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
+          TPCH_Snappy.execute(query, snc, isResultCollection, isSnappy, i, useIndex, warmup,
+            runsForAverage, avgPrintStream)
       }
     }
     TPCH_Snappy.close
