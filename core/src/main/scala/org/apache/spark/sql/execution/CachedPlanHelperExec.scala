@@ -54,42 +54,18 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
 
   private lazy val hasParamLiteralNode = allLiterals.size > 0
 
-  def collectParamLiteralNodes(lp: Product): Unit = {
+  def collectParamLiteralNodes(lp: LogicalPlan): Unit = {
     if ( hasParamLiteralNode ) {
-      val numProductElems = lp.productArity
-      (0 until numProductElems).map { i =>
-        val elem = lp.productElement(i)
-        elem match {
-          case p: ParamLiteral => {
-            allLiterals(p.pos - 1).value = p.l.value
-          }
-          case x => {
-            x match {
-              case e: Product => collectParamLiteralNodes(e)
-              case _ => // do nothing
-            }
-          }
+      lp transformAllExpressions {
+        case p: ParamLiteral => {
+          allLiterals(p.pos - 1).value = p.l.value
+          p
         }
       }
     }
   }
 
   def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
-    //println("Before foreach")
     collectParamLiteralNodes(currLogicalPlan)
-    //println("After foreach")
-  }
-
-  def replaceConstants_2(currLogicalPlan: LogicalPlan): Unit = {
-    currLogicalPlan.expressions.foreach { x => {
-      println("********** " + x)
-      x match {
-        case l: ParamLiteral =>
-          allLiterals(l.pos).value = l.l.value
-        case _ => // do nothing
-      }
-    }
-    }
-    println("*** DONE ***")
   }
 }
