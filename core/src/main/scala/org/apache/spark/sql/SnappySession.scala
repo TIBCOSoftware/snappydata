@@ -40,8 +40,8 @@ import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, In, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -62,7 +62,6 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
-import org.datanucleus.store.rdbms.sql.SQLText
 
 
 class SnappySession(@transient private val sc: SparkContext,
@@ -1636,8 +1635,24 @@ object SnappySession extends Logging {
   }
 
   object CachedKey {
-    def apply(session: SnappySession, lp: LogicalPlan, sqlText: String):
-      CachedKey = new CachedKey(session, lp, sqlText, session.queryHints.hashCode())
+    def apply(session: SnappySession, lp: LogicalPlan, sqlText: String): CachedKey = {
+      // normalize lp so that two queries can be determined to be equal
+      val tlp = lp transformAllExpressions {
+        case s: ScalarSubquery =>
+          s.copy(exprId = ExprId(0))
+        case e: Exists =>
+          e.copy(exprId = ExprId(0))
+        case l: ListQuery =>
+          l.copy(exprId = ExprId(0))
+        case p: PredicateSubquery =>
+          p.copy(exprId = ExprId(0))
+        case a: AttributeReference =>
+          AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
+        case a: Alias =>
+          Alias(a.child, a.name)(exprId = ExprId(0))
+      }
+      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode())
+    }
   }
 
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {

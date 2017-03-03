@@ -177,7 +177,7 @@ class TokenizationTest
     logInfo("Successful")
   }
 
-  ignore("Test tokenize for joins and sub-queries") {
+  test("Test tokenize for joins and sub-queries") {
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     createSimpleTableAndPoupulateData(numRows, s"$table2")
@@ -192,20 +192,7 @@ class TokenizationTest
     query = s"select * from $table t1, $table2 t2 where t1.a in " +
       s"( select a from $table2 where b = 100 )"
     snc.sql(query).collect()
-    // assert( cacheMap.size() == 1)
-
-    val q1 = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].sqlText
-    val lp1 = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].lp
-
-    val q2 = cacheMap.keySet().toArray()(1).asInstanceOf[CachedKey].sqlText
-    val lp2 = cacheMap.keySet().toArray()(1).asInstanceOf[CachedKey].lp
-
-    println(q1 + " hashcode = " + lp1.hashCode())
-    println(q2 + " hashcode = " + lp2.hashCode())
-    val eq = lp1.equals(lp2)
-    println(s"Equals = $eq")
-    println(lp1)
-    println(lp2)
+    assert( cacheMap.size() == 1)
     logInfo("Successful")
   }
 
