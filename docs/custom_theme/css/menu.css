@@ -7,12 +7,12 @@ ul.subnav > li > span {
 li > a[href*="techsupport.md"] {
   display: none;
   font-size: 10pt;
-  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;;	
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 /* Indent 2nd-level menus.*/
 ul.subnav > li.toctree-l1 > a.current {
-  padding-left: 2.4em !important;
+  padding-left: 2.4em !important;	
 }
 ul.subnav > li.toctree-l1.current > ul > li > a {
   padding-left: 3.4em !important;
@@ -21,14 +21,14 @@ ul.subnav > li.toctree-l1.current > ul > li > a {
 /* Indent 3rd-level menus.*/
 ul.subnav > ul.subnav,
 ul.subnav > ul.subnav > li {
-  margin-left: -1em;
+  margin-left: -1em;	
 }
 ul.subnav > ul.subnav > li > a,
 ul.subnav > ul.subnav > li.current > a {
   padding-left: 4.4em !important;
 }
 ul.subnav > ul.subnav > li.current > ul > li > a {
-  padding-left: 5.4em !important;
+  padding-left: 5.4em !important;	
 }
 
 /* Indent 4th-level menus.*/
@@ -38,7 +38,7 @@ ul.subnav > ul.subnav > ul.subnav > li {
 }
 ul.subnav > ul.subnav > ul.subnav > li > a,
 ul.subnav > ul.subnav > ul.subnav > li.current > a {
-  padding-left: 6.4em !important;
+  padding-left: 6.4em !important;	
 }
 ul.subnav > ul.subnav > ul.subnav > li.current > ul > li > a {
   padding-left: 7.4em !important;
@@ -60,3 +60,26 @@ a.expander.top-level,
 .collapse {
   display: none !important;
 } 
+
+/* TOC Padding*/
+.toctree-l1  a
+{
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+/*heading level-1 in left nav*/
+.wy-menu-vertical li{
+   font-size: 16px;
+   color: #000088;	
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  text-transform: uppercase;	
+  font-weight: bold;	
+}
+
+.wy-menu-vertical li ul li a{
+  /*Color of the Level 2 menu item*/
+  color: #00000;	
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  text-transform: capitalize;
+}
