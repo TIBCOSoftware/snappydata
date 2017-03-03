@@ -34,7 +34,7 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import org.junit.Assert
 
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{SparkConf, SparkContext}
@@ -109,6 +109,19 @@ class SplitClusterDUnitTest(s: String)
     vm3.invoke(getClass, "startSparkCluster", productDir)
   }
 
+  def startSparkCluster(productDir: String): Unit = {
+    logInfo(s"Starting spark cluster in $productDir/work")
+    (productDir + "/sbin/start-all.sh") !!
+  }
+
+  def stopSparkCluster(productDir: String): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    logInfo(s"Stopping spark cluster in $productDir/work")
+    if (sparkContext != null) sparkContext.stop()
+    (productDir + "/sbin/stop-all.sh") !!
+  }
+
+
   override def afterClass(): Unit = {
     super.afterClass()
     vm3.invoke(getClass, "stopSparkCluster", productDir)
@@ -129,7 +142,7 @@ class SplitClusterDUnitTest(s: String)
     }
   }
 
-  override protected def startNetworkServers(num: Int): Unit = {
+  override protected def startNetworkServers(): Unit = {
     // no change to network servers at runtime in this mode
   }
 

@@ -23,24 +23,51 @@ import io.snappydata.benchmark.snappy.TPCH_Snappy
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
-import org.apache.log4j.{Level, Logger}
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.TPCHUtils._
+import org.apache.spark.{Logging, SparkContext}
 
-class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
+    with Logging {
 
   bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "10000")
-  
+  override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
+
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")
 
+  protected val productDir =
+    SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
+
+  override def beforeClass(): Unit = {
+    super.beforeClass()
+    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+  }
+
+  override def afterClass(): Unit = {
+    super.afterClass()
+    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+  }
+
   def testSnappy(): Unit = {
+    startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
-    TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+
+    // create table randomly either using smart connector or
+    // from embedded mode
+    if ((System.currentTimeMillis() % 2) == 0) {
+      logInfo("CREATING TABLE USING SMART CONNECTOR")
+      vm3.invoke(classOf[SmartConnectorFunctions],
+        "createTablesUsingConnector", ClusterManagerTestBase.locPort)
+    } else {
+      logInfo("CREATING TABLE IN EMBEDDED MODE")
+      TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+    }
     TPCHUtils.queryExecution(snc, isSnappy = true)
     TPCHUtils.validateResult(snc, isSnappy = true)
+
+    vm3.invoke(classOf[SmartConnectorFunctions],
+      "queryValidationOnConnector", ClusterManagerTestBase.locPort)
   }
 
   def _testSpark(): Unit = {
@@ -139,7 +166,8 @@ object TPCHUtils {
     "20", "21", "22")
 
   def createAndLoadTables(snc: SnappyContext, isSnappy: Boolean): Unit = {
-    val tpchDataPath = getClass.getResource("/TPCH").getPath //"/data/wrk/w/TPCH/1GB" //
+    val tpchDataPath = getClass.getResource("/TPCH").getPath //"/data/wrk/w/TPCH/1GB"
+     // val tpchDataPath = "/home/hemant/repos/snappyData/tests/common/src/main/resources/TPCH"
 
     val usingOptionString =
       s"""

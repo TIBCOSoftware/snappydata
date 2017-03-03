@@ -51,51 +51,35 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override def beforeClass(): Unit = {
     super.beforeClass()
-    vm3.invoke(getClass, "startSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
-    vm3.invoke(getClass, "stopSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
 
-  override protected def startNetworkServers(num: Int): Unit = {
-    if (num > 3 || num < 1) {
-      throw new IllegalArgumentException(
-        s"unexpected number of network servers to start: $num")
-    }
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
-    if (num > 0) {
-      vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-        AvailablePortHelper.getRandomAvailableTCPPort)
-    }
-    if (num > 1) {
-      vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-        AvailablePortHelper.getRandomAvailableTCPPort)
-    }
+  override protected def startNetworkServers(): Unit = {
+    startNetworkServersOnAllVMs()
   }
 
   override protected def testObject = SplitSnappyClusterDUnitTest
 
-  // skip the non-skewed tests since it is already run in Spark+Snappy mode
-  override protected def skewNetworkServers: Boolean = true
-
   def testCollocatedJoinInSplitModeRowTable(): Unit = {
-    startNetworkServers(3)
+    startNetworkServers()
     testObject.createRowTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE1" :+ "PR_TABLE2")
   }
 
   def testCollocatedJoinInSplitModeColumnTable(): Unit = {
-    startNetworkServers(3)
+    startNetworkServers()
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4")
   }
   def testColumnTableStatsInSplitMode(): Unit = {
-    startNetworkServers(3)
+    startNetworkServers()
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
         "1")
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
@@ -107,7 +91,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def doTestBatchSize(): Unit = {
-    startNetworkServers(3)
+    startNetworkServers()
     val snc = SnappyContext(sc)
     val tblBatchSizeSmall = "APP.tblBatchSizeSmall_embedded"
     val tblSizeBig = "APP.tblBatchSizeBig_embedded"
@@ -183,7 +167,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testColumnTableStatsInSplitModeWithHA(): Unit = {
-    startNetworkServers(3)
+    startNetworkServers()
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
         "1")
     val props = bootProps
