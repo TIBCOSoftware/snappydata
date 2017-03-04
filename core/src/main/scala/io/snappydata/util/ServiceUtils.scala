@@ -100,11 +100,10 @@ object ServiceUtils {
 
     "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
-          "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1) + "/"
+          "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl + "/")
   }
 
   def clearStaticArtifacts(): Unit = {
-
   }
 }

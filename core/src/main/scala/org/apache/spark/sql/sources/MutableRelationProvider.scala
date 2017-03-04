@@ -22,13 +22,12 @@ import scala.collection.mutable
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SaveMode, SnappySession, execution}
+import org.apache.spark.sql.{DataFrame, Dataset, SQLContext, SaveMode, SnappySession}
 
 abstract class MutableRelationProvider
     extends ExternalSchemaRelationProvider
@@ -47,9 +46,8 @@ abstract class MutableRelationProvider
     val numPartitions = parameters.remove("numpartitions")
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
-    val sc = sqlContext.sparkContext
-    val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(
+      Some(sqlContext.sparkSession), parameters)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null
@@ -80,7 +78,8 @@ abstract class MutableRelationProvider
         options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       data match {
         case Some(plan) =>
-          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
+          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
+            overwrite = false)
         case None =>
       }
       success = true
@@ -128,7 +127,7 @@ abstract class MutableRelationProvider
     val relation = createRelation(sqlContext, mode, options, schemaString, None)
     var success = false
     try {
-      relation.insert(data)
+      relation.insert(data, overwrite = false)
       success = true
       relation
     } finally {

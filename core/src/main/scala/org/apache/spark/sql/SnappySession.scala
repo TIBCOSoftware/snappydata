@@ -29,7 +29,7 @@ import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-import com.gemstone.gemfire.internal.shared.FinalizeObject
+import com.gemstone.gemfire.internal.shared.{FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
@@ -38,25 +38,27 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, In, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias, Union}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
@@ -93,7 +95,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sharedState: SnappySharedState = {
-    existingSharedState.getOrElse(new SnappySharedState(sc))
+    existingSharedState.getOrElse(new SnappySharedState(sc, id))
   }
 
   private[spark] lazy val cacheManager = sharedState.cacheManager
@@ -110,13 +112,13 @@ class SnappySession(@transient private val sc: SparkContext,
       clazz.getConstructor(classOf[SnappySession]).
         newInstance(self).asInstanceOf[SnappySessionState]
     } catch {
-      case NonFatal(e) =>
-        new SnappySessionState(this)
+      case NonFatal(_) => new SnappySessionState(this)
     }
   }
 
   @transient
-  lazy val sessionCatalog = sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+  lazy val sessionCatalog: SnappyStoreHiveCatalog =
+    sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
   @transient
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
@@ -402,18 +404,29 @@ class SnappySession(@transient private val sc: SparkContext,
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableName full table name to be truncated
+   * @param ifExists  attempt truncate only if the table exists
    */
-  def truncateTable(tableName: String): Unit =
-    truncateTable(sessionCatalog.newQualifiedTableName(tableName))
+  def truncateTable(tableName: String, ifExists: Boolean = false): Unit = {
+    truncateTable(sessionCatalog.newQualifiedTableName(tableName), ifExists,
+      ignoreIfUnsupported = false)
+  }
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableIdent qualified name of table to be truncated
+   * @param ifExists   attempt truncate only if the table exists
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
-      ignoreIfUnsupported: Boolean = false): Unit = {
-    val plan = sessionCatalog.lookupRelation(tableIdent)
+      ifExists: Boolean, ignoreIfUnsupported: Boolean): Unit = {
+    val plan = try {
+      sessionCatalog.lookupRelation(tableIdent)
+    } catch {
+      case tnfe: TableNotFoundException =>
+        if (ifExists) return else throw tnfe
+    }
     cacheManager.uncacheQuery(Dataset.ofRows(this, plan))
     plan match {
       case LogicalRelation(br, _, _) =>
@@ -429,6 +442,15 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
+  override def createDataset[T: Encoder](data: RDD[T]): Dataset[T] = {
+    val encoder = encoderFor[T]
+    val output = sessionCatalog.normalizeSchema(encoder.schema).toAttributes
+    val c = encoder.clsTag.runtimeClass
+    val isFlat = !(classOf[Product].isAssignableFrom(c) ||
+        classOf[DefinedByConstructorParams].isAssignableFrom(c))
+    val plan = new EncoderPlan[T](data, encoder, isFlat, output, self)
+    Dataset[T](self, plan)
+  }
 
   /**
    * Creates a [[DataFrame]] from an RDD[Row]. User can specify whether
@@ -991,8 +1013,7 @@ class SnappySession(@transient private val sc: SparkContext,
           val plan = new PreprocessTableInsertOrPut(sessionState.conf).apply(
             sessionState.catalog.lookupRelation(tableIdent))
           EliminateSubqueryAliases(plan) match {
-            case l@LogicalRelation(ir: InsertableRelation, _, _) =>
-              Some(ir)
+            case LogicalRelation(ir: InsertableRelation, _, _) => Some(ir)
             case o => throw new AnalysisException(
               s"Saving data in ${o.toString} is not supported.")
           }
@@ -1003,25 +1024,24 @@ class SnappySession(@transient private val sc: SparkContext,
       case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query)), None)
 
-      case None => {
+      case None =>
         val data = Dataset.ofRows(this, query)
         val df = userSpecifiedSchema match {
           // If we are inserting into an existing table, just use the existing schema.
-          case Some(s) => {
+          case Some(s) =>
             if (s.size != data.schema.size) {
               throw new AnalysisException(s"The column number " +
-                  s"of the specified schema[${s}] "
+                  s"of the specified schema[$s] "
                   + s"doesn't match the data schema[${data.schema}]'s")
             }
             s.zip(data.schema).
                 find(x => x._1.dataType != x._2.dataType) match {
-              case Some(x) => throw new AnalysisException(s"The column types " +
-                  s"of the specified schema[${s}] " +
+              case Some(_) => throw new AnalysisException(s"The column types " +
+                  s"of the specified schema[$s] " +
                   s"doesn't match the data schema[${data.schema}]'s")
               case None => // do nothing
             }
             data.toDF(s.fieldNames: _*)
-          }
           case None => data
         }
 
@@ -1047,7 +1067,6 @@ class SnappySession(@transient private val sc: SparkContext,
               options = params).write(mode, df)
             (r, Some(r.schema))
         }
-      }
     }
 
     // need to register if not existing in catalog
@@ -1281,7 +1300,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(sparkContext), new mutable.HashMap[String, String])
+      Some(this), new mutable.HashMap[String, String])
     val conn = JdbcUtils.createConnectionFactory(connProperties.url,
       connProperties.connProps)()
     try {
@@ -1507,7 +1526,7 @@ private class FinalizeSession(session: SnappySession)
 
   private var sessionId = session.id
 
-  override protected def getHolder = FinalizeObject.getServerHolder
+  override def getHolder: FinalizeHolder = FinalizeObject.getServerHolder
 
   override protected def doFinalize(): Boolean = {
     if (sessionId != SnappySession.INVALID_ID) {
@@ -1531,14 +1550,14 @@ object SnappySession extends Logging {
 
     override def profileCreated(profile: Profile): Unit = {
       // clear all plans pessimistically for now
-      clearAllCache()
+      clearAllCache(onlyQueryPlanCache = true)
     }
 
     override def profileUpdated(profile: Profile): Unit = {}
 
     override def profileRemoved(profile: Profile, destroyed: Boolean): Unit = {
       // clear all plans pessimistically for now
-      clearAllCache()
+      clearAllCache(onlyQueryPlanCache = true)
     }
   }
 
@@ -1559,7 +1578,7 @@ object SnappySession extends Logging {
       case plan => plan
     }
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
-      case _: ExecutedCommandExec | _: ExecutedCommand =>
+      case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         (null, findShuffleDependencies(plan.childRDD).toArray,
@@ -1691,6 +1710,8 @@ object SnappySession extends Logging {
           ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
         case t => throw t
       }
+      case ee: EntryExistsException => new CachedDataFrame(
+        ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
     }
   }
 
@@ -1710,8 +1731,18 @@ object SnappySession extends Logging {
     }
   }
 
-  def clearAllCache(): Unit = {
+  def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
     planCache.invalidateAll()
+    if (!onlyQueryPlanCache) {
+      CodeGeneration.clearAllCache()
+      val sc = SnappyContext.globalSparkContext
+      if (sc ne null) {
+        Utils.mapExecutors(sc, (_, _) => {
+          CodeGeneration.clearAllCache()
+          Iterator.empty
+        })
+      }
+    }
   }
 
   // TODO: hemant : Its clumsy design to use where SnappySession.Builder
