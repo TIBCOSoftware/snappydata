@@ -59,12 +59,12 @@ class StringAsVarcharTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
     s.executeUpdate(s"insert into $tableName values(333, 'aaa', 'hello')")
     s.executeUpdate(s"update $tableName set name='abc1' where id=111")
     val rs = s.executeQuery(s"select id, name, address from $tableName")
-    if (rs.next()) {
+    while (rs.next()) {
       println(s"${rs.getInt(1)} ${rs.getString(2)} ${rs.getString(3)}")
     }
     val rs2 = s.executeQuery(s"select id from $tableName where name='abc1'")
     if (rs2.next()) {
-      assert(rs.getInt(1) == 111)
+      assert(rs2.getInt(1) == 111)
     }
 
     rs.close()
