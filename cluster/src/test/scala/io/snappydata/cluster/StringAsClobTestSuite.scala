@@ -23,7 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-class StringAsVarcharTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
+class StringAsClobTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
   var serverHostPort = ""
