@@ -166,6 +166,8 @@ trait ColumnBatchRowsBuffer {
   def appendRow(row: InternalRow): Unit
 
   def endRows(): Unit
+
+  def setIsSampleData(): Unit
 }
 
 /**
@@ -181,6 +183,7 @@ case class CallbackColumnInsert(_schema: StructType)
 
   var bucketIdTerm: String = _
   var resetInsertions: String = _
+  var isSampleDataTerm: String = _
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     throw new UnsupportedOperationException("unexpected invocation")
@@ -195,7 +198,9 @@ case class CallbackColumnInsert(_schema: StructType)
     // add bucketId variable set to -1 by default
     bucketIdTerm = ctx.freshName("bucketId")
     resetInsertions = ctx.freshName("resetInsertionsCount")
+    isSampleDataTerm = ctx.freshName("isSampleDataFlag")
     ctx.addMutableState("int", bucketIdTerm, s"$bucketIdTerm = -1;")
+    ctx.addMutableState("boolean", isSampleDataTerm, s"$isSampleDataTerm = false;")
     val columnsExpr = output.zipWithIndex.map { case (a, i) =>
       BoundReference(i, a.dataType, a.nullable)
     }
@@ -237,6 +242,7 @@ case class CallbackColumnInsert(_schema: StructType)
     s"""
        |if (this.$rowsBuffer == null) {
        |  this.$rowsBuffer = new $rowsBufferClass() {
+       |
        |    public void startRows(int bucketId) throws java.io.IOException {
        |      // set the bucketId
        |      $bucketIdTerm = bucketId;
@@ -264,6 +270,10 @@ case class CallbackColumnInsert(_schema: StructType)
        |      // invoke the parent's processNext() that will just insert
        |      // the column batch created so far
        |      processNext();
+       |    }
+       |
+       |    public void setIsSampleData() {
+       |      $isSampleDataTerm = true;
        |    }
        |  };
        |}
