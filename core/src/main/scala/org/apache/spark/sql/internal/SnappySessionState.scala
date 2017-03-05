@@ -21,9 +21,11 @@ import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
+
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
-import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, OptionalConfigEntry, TypedConfigBuilder}
+
+import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf

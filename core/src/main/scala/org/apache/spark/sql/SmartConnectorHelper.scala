@@ -25,6 +25,7 @@ import io.snappydata.Property
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
 
+import org.apache.spark.sql.catalyst.catalog.CatalogFunction
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
@@ -54,11 +55,15 @@ object SmartConnectorHelper extends Logging {
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
   private val dropSnappyIdxString = "call sys.DROP_SNAPPY_INDEX(?, ?)"
   private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?, ?)"
+  private val createUDFString = "call sys.CREATE_SNAPPY_UDF(?, ?, ?, ?)"
+  private val dropUDFString = "call sys.DROP_SNAPPY_UDF(?, ?)"
   private var getMetaDataStmt: CallableStatement = _
   private var createSnappyTblStmt: CallableStatement = _
   private var dropSnappyTblStmt: CallableStatement = _
   private var createSnappyIdxStmt: CallableStatement = _
   private var dropSnappyIdxStmt: CallableStatement = _
+  private var createUDFStmt: CallableStatement = _
+  private var dropUDFStmt: CallableStatement = _
 
   clusterMode match {
     case ThinClientConnectorMode(_, props) =>
@@ -73,6 +78,8 @@ object SmartConnectorHelper extends Logging {
     createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)
     dropSnappyIdxStmt = conn.prepareCall(dropSnappyIdxString)
     getMetaDataStmt  = conn.prepareCall(getMetaDataStmtString)
+    createUDFStmt = conn.prepareCall(createUDFString)
+    dropUDFStmt = conn.prepareCall(dropUDFString)
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {
@@ -223,7 +230,7 @@ object SmartConnectorHelper extends Logging {
     }
   }
 
-  def executeMetaDataStatement(tableName: String): Unit = {
+  private def executeMetaDataStatement(tableName: String): Unit = {
     getMetaDataStmt.setString(1, tableName)
     getMetaDataStmt.registerOutParameter(2, java.sql.Types.BLOB) /*Hive table object*/
     getMetaDataStmt.registerOutParameter(3, java.sql.Types.INTEGER) /*bucket count*/
@@ -232,6 +239,21 @@ object SmartConnectorHelper extends Logging {
     getMetaDataStmt.registerOutParameter(6, java.sql.Types.CLOB) /*bucket to server or replica to server mapping*/
     getMetaDataStmt.registerOutParameter(7, java.sql.Types.INTEGER) /*relation destroy version*/
     getMetaDataStmt.execute
+  }
+
+  def executeCreateUDFStatement(db: String, functionName: String,
+      className: String, funcResources: Array[(String, String)]): Unit = {
+    createUDFStmt.setString(1, db)
+    createUDFStmt.setString(2, functionName)
+    createUDFStmt.setString(3, className)
+    createUDFStmt.setBlob(4, getBlob(funcResources))
+    createUDFStmt.execute
+  }
+
+  def executeDropUDFStatement(db: String, functionName: String): Unit = {
+    dropUDFStmt.setString(1, db)
+    dropUDFStmt.setString(2, functionName)
+    dropUDFStmt.execute
   }
 
   def getBlob(value: Any, conn: Connection = conn): java.sql.Blob = {

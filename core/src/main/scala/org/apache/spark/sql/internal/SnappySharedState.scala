@@ -17,7 +17,8 @@
 package org.apache.spark.sql.internal
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.hive.{HiveClientUtil, SnappyExternalCatalog}
+import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext}
+import org.apache.spark.sql.hive.{SnappyConnectorExternalCatalog, HiveClientUtil, SnappyExternalCatalog}
 
 /**
  * Right now we are not overriding anything from Spark's built in SharedState. We need to
@@ -32,7 +33,11 @@ private[sql] class SnappySharedState(override val sparkContext: SparkContext)
    */
   lazy val metadataHive = new HiveClientUtil(sparkContext).client
 
+  override lazy val externalCatalog = SnappyContext.getClusterMode(sparkContext) match {
+    case ThinClientConnectorMode(_, _) =>
+      new SnappyConnectorExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
+    case _ =>
+      new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
+  }
 
-  override lazy val externalCatalog =
-    new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
 }

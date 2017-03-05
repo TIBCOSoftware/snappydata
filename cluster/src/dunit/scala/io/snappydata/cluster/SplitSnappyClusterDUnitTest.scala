@@ -34,7 +34,7 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.store.SnappyJoinSuite
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
-import org.apache.spark.sql.{Row, SaveMode, SnappyContext, SnappySession, SplitClusterMode, ThinClientConnectorMode}
+import org.apache.spark.sql.{AnalysisException, Row, SaveMode, SnappyContext, SnappySession, SplitClusterMode, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -261,7 +261,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("DROP TABLE CUSTOMER_2")
   }
 
-  def _testUDF(): Unit = {
+  def testUDF(): Unit = {
     doTestUDF(skewNetworkServers)
   }
 
@@ -274,14 +274,18 @@ class SplitSnappyClusterDUnitTest(s: String)
     testObject.createUDFInEmbeddedMode()
 
     // StandAlone Spark Cluster Operations
+    vm3.invoke(getClass, "createUDFInSplitMode",
+      startArgs :+ locatorProperty
+          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+
+    testObject.verifyUDFInEmbeddedMode()
+
+    // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyUDFInSplitMode",
       startArgs :+ locatorProperty
           :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
 
-    // StandAlone Spark Cluster Operations
-    vm3.invoke(getClass, "createUDFInSplitMode",
-      startArgs :+ locatorProperty
-          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+
   }
 
 }
@@ -348,6 +352,7 @@ object SplitSnappyClusterDUnitTest
     refDf.write.insertInto("RR_TABLE")
     refDf.write.insertInto("COL_TABLE")
 
+    // create a udf in embedded mode
     val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
         " @Override public Integer call(String s){ " +
         "               return 6; " +
@@ -355,10 +360,10 @@ object SplitSnappyClusterDUnitTest
         "}"
     val file = UserDefinedFunctionsDUnitTest.createUDFClass("IntegerUDF", udfText)
     val jar = UserDefinedFunctionsDUnitTest.createJarFile(Seq(file))
-    snc.sql(s"CREATE FUNCTION APP.intudf AS IntegerUDF " +
+    snc.sql(s"CREATE FUNCTION APP.intudf_embeddedmode AS IntegerUDF " +
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
-    val row = snc.sql("select intudf(description) from col_table").collect()
+    val row = snc.sql("select intudf_embeddedmode(description) from col_table").collect()
 //    row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 6))
   }
@@ -370,6 +375,7 @@ object SplitSnappyClusterDUnitTest
     val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
       locatorProp, useThinConnectorMode, locatorClientPort)
 
+    // create a udf in split mode
     val udfText = "public class IntegerUDF2 implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
         " @Override public Integer call(String s){ " +
         "               return 8; " +
@@ -378,12 +384,28 @@ object SplitSnappyClusterDUnitTest
 
     val file2 = UserDefinedFunctionsDUnitTest.createUDFClass("IntegerUDF2", udfText)
     val jar = UserDefinedFunctionsDUnitTest.createJarFile(Seq(file2))
-    snc.sql(s"CREATE FUNCTION APP.intudf2 AS IntegerUDF2 " +
+    snc.sql(s"CREATE FUNCTION APP.intudf_splitmode AS IntegerUDF2 " +
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
-    val row2 = snc.sql("select intudf2(description) from col_table").collect()
+    val row2 = snc.sql("select intudf_splitmode(description) from col_table").collect()
     row2.foreach(r => println(r))
     row2.foreach(r => assert(r(0) == 8))
+
+    // use function created in embedded mode
+    val row = snc.sql("select intudf_embeddedmode(description) from col_table").collect()
+    row.foreach(r => assert(r(0) == 6))
+    snc.sql("drop function APP.intudf_embeddedmode")
+    assert(snc.snappySession.sql(s"SHOW FUNCTIONS APP.intudf_embeddedmode").collect().length == 0)
+  }
+
+  def verifyUDFInEmbeddedMode(): Unit = {
+    val snc =  SnappyContext(sc)
+    // use function created in splitmode
+    val row2 = snc.sql("select intudf_splitmode(description) from col_table").collect()
+    row2.foreach(r => println(r))
+    row2.foreach(r => assert(r(0) == 8))
+    snc.sql("drop function APP.intudf_splitmode")
+    assert(snc.snappySession.sql(s"SHOW FUNCTIONS APP.intudf_splitmode").collect().length == 0)
   }
 
   def verifyUDFInSplitMode(locatorPort: Int,
@@ -391,8 +413,15 @@ object SplitSnappyClusterDUnitTest
       useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorPort, locatorProp,
       useThinConnectorMode, locatorClientPort)
-    val row = snc.sql("select intudf(description) from col_table").collect()
-    row.foreach(r => assert(r(0) == 6))
+
+    // function that was dropped in embedded mode
+    try {
+      val row2 = snc.sql("select intudf_splitmode(description) from col_table").collect()
+    } catch {
+      case e: AnalysisException if e.getMessage.contains("Undefined function") => // do nothing
+    }
+    assert(snc.snappySession.sql(s"SHOW FUNCTIONS APP.intudf_splitmode").collect().length == 0)
+
   }
 
   override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
