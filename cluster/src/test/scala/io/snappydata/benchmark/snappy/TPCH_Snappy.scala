@@ -35,7 +35,8 @@ object TPCH_Snappy {
     planFileStream.close()
   }
 
-  def execute_statement(queryNumber: String, isResultCollection: Boolean, stmt: PreparedStatement, warmup: Integer, runsForAverage: Integer, avgPrintStream: PrintStream = null): Unit = {
+  def execute_statement(queryNumber: String, isResultCollection: Boolean, stmt: PreparedStatement,
+      warmup: Integer, runsForAverage: Integer, avgPrintStream: PrintStream = null): Unit = {
 
     var queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
     var queryPrintStream = new PrintStream(queryFileStream)
@@ -67,10 +68,11 @@ object TPCH_Snappy {
 
     var rs: ResultSet = null
     try {
+      // scalastyle:off println
       println(s"Started executing $queryNumber")
       if (isResultCollection) {
         rs = queryExecution(queryNumber, stmt)
-        //queryPrintStream.println(s"$resultFormat")
+        // queryPrintStream.println(s"$resultFormat")
         val rsmd = rs.getMetaData()
         val columnsNumber = rsmd.getColumnCount();
         var count: Int = 0
@@ -95,9 +97,9 @@ object TPCH_Snappy {
         for (i <- 1 to (warmup + runsForAverage)) {
           val startTime = System.currentTimeMillis()
           rs = queryExecution(queryNumber, stmt)
-          //rs = stmt.executeQuery(query)
+          // rs = stmt.executeQuery(query)
           while (rs.next()) {
-            //just iterating over result
+            // just iterating over result
           }
           val endTime = System.currentTimeMillis()
           val iterationTime = endTime - startTime
@@ -840,7 +842,7 @@ object TPCH_Snappy {
       " limit 100"
   }
 
-  def getResultString2():String = {
+  def getResultString2(): String = {
     "S_ACCTBAL|S_NAME|N_NAME|P_PARTKEY|P_MFGR|S_ADDRESS|S_PHONE|S_COMMENT"
   }
 
@@ -903,8 +905,8 @@ object TPCH_Snappy {
   }
 
   def getQuery5: String = {
-    //1. REGION = ASIA;
-    //2. DATE = 1994-01-01.
+    // 1. REGION = ASIA;
+    // 2. DATE = 1994-01-01.
       " select" +
           "        n_name," +
           "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
@@ -1166,7 +1168,7 @@ object TPCH_Snappy {
   }
 
   def getQuery10: String = {
-    //1.    DATE = 1993-10-01.
+    // 1.DATE = 1993-10-01.
       "select" +
           "         C_CUSTKEY," +
           "         C_NAME," +
@@ -1273,7 +1275,7 @@ object TPCH_Snappy {
       "         value desc"
   }
 
-  def getResultString11():String = {
+  def getResultString11(): String = {
     "PS_PARTKEY|VALUE"
   }
 
@@ -1381,12 +1383,12 @@ object TPCH_Snappy {
           "         c_count desc"
   }
 
-  def getResultString13():String = {
+  def getResultString13(): String = {
     "C_COUNT|CUSTDIST"
   }
 
   def getQuery14(useIndex: Boolean): String = {
-    //1.DATE = 1995-09-01.
+    // 1.DATE = 1995-09-01.
       if (!useIndex) {
         "select" +
             "         100.00 * sum(case" +
@@ -1402,7 +1404,7 @@ object TPCH_Snappy {
             "         l_partkey = p_partkey" +
             "         and l_shipdate >= '1995-09-01'" +
             "         and l_shipdate < add_months ('1995-09-01', 1)"
-      }else{
+      } else {
         "select" +
             "         100.00 * sum(case" +
             "                 when p_type like 'PROMO%'" +
@@ -1625,11 +1627,11 @@ object TPCH_Snappy {
             " where" +
             "         p_partkey = l_partkey" +
             "         and p_brand = 'Brand#23'" +
-            //"         and p_container = 'MED BOX'" +
+            // "         and p_container = 'MED BOX'" +
             "         and p_container = 'SM PACK'" +
             "         and l_quantity < v_quantity" +
             "         and v_partkey = p_partkey"
-      }else{
+      } else {
         "select" +
             "         sum(l_extendedprice) / 7.0 as avg_yearly" +
             " from" +
@@ -2064,7 +2066,7 @@ object TPCH_Snappy {
   }
 
 
-  def getResultString22():String = {
+  def getResultString22(): String = {
     "CNTRYCODE|NUMCUST|TOTACCTBAL"
   }
 

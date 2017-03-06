@@ -179,7 +179,7 @@ class ClusterManagerTestBase(s: String)
     Utils.classForName(driver).newInstance
     var url: String = null
     if (useGemXDURL) {
-      url = "jdbc:gemfirexd://localhost:" + netPort + "/"
+      url = "jdbc:gemfirexd:thrift://localhost:" + netPort + "/"
     } else {
       url = "jdbc:snappydata://localhost:" + netPort + "/"
     }
@@ -218,8 +218,6 @@ object ClusterManagerTestBase extends Logging {
    * Only a single instance of SnappyLead should be started.
    */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
-    props.setProperty(io.snappydata.Property.CachedBatchSize.name, "3")
-
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     val server: Lead = ServiceManager.getLeadInstance
     server.start(props)

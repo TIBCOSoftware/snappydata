@@ -40,7 +40,6 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  */
 trait SplitClusterDUnitTestBase extends Logging {
 
-
   def vm0: VM
 
   def vm1: VM
@@ -53,15 +52,13 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def testObject: SplitClusterDUnitTestObject
 
-  protected def props = testObject.props
+  protected def props: Map[String, String] = testObject.props
 
   protected def productDir: String
 
   protected def locatorProperty: String
 
   protected def startNetworkServers(): Unit
-
-  protected def batchSize = testObject.batchSize
 
   def doTestColumnTableCreation(): Unit = {
     startNetworkServers()
@@ -133,8 +130,6 @@ trait SplitClusterDUnitTestBase extends Logging {
 trait SplitClusterDUnitTestObject extends Logging {
 
   val props = Map.empty[String, String]
-
-  val batchSize = 100
 
   def createTablesAndInsertData(tableType: String): Unit
 
@@ -271,7 +266,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       dec2(1), ts(3))
     data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, "8", Decimal("1.8")),
       dec2(2), ts(4))
-    for (i <- 1 to 1000) {
+    for (_ <- 1 to 1000) {
       var rnd: Long = 0L
       var rnd1 = 0
       do {

@@ -37,34 +37,6 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val table = "TEST.TEST_TABLE"
-  var oldcachedBatchSize: String = ""
-  var oldcores: String = ""
-
-  override def beforeClass(): Unit = {
-    oldcachedBatchSize = bootProps.getProperty(
-      io.snappydata.Property.CachedBatchSize.name, "")
-    oldcores = bootProps.getProperty(
-      "spark.executor.cores", "")
-    bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
-    bootProps.setProperty("spark.executor.cores", "2")
-
-    super.beforeClass()
-    ClusterManagerTestBase.stopSpark()
-    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
-
-    if (oldcachedBatchSize.isEmpty) {
-      bootProps.remove(io.snappydata.Property.CachedBatchSize.name)
-    }
-    else {
-      bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, oldcachedBatchSize)
-    }
-    if (oldcores.isEmpty) {
-      bootProps.remove("spark.executor.cores")
-    }
-    else {
-      bootProps.setProperty("spark.executor.cores", oldcores)
-    }
-  }
 
   override def afterClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
@@ -79,6 +51,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
+    io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, 5120)
     snc
   }
 
@@ -198,13 +171,13 @@ object SnappyTableStatsProviderDUnitTest {
     var result = new SnappyRegionStats(tableName)
     if (isColumnTable) {
       result.setColumnTable(true)
-      val cachedBatchTableName = ColumnFormatRelation.cachedBatchTableName(tableName)
-      result = getDetailsForPR(cachedBatchTableName, true, result)
+      val columnBatchTableName = ColumnFormatRelation.columnBatchTableName(tableName)
+      result = getDetailsForPR(columnBatchTableName, true, result)
     }
     getDetailsForPR(tableName, false, result)
   }
 
-  def getDetailsForPR(table: String, isCachedBatchTable: Boolean,
+  def getDetailsForPR(table: String, isColumnBatchTable: Boolean,
       stats: SnappyRegionStats): SnappyRegionStats = {
     val region = Misc.getRegionForTable(table, true).asInstanceOf[PartitionedRegion]
     val managementService = ManagementService.getManagementService(Misc.getGemFireCache).
@@ -230,7 +203,7 @@ object SnappyTableStatsProviderDUnitTest {
           (msize + br.getSizeInMemory + overhead, tsize + br.getTotalBytes + overhead)
         }
     stats.setReplicatedTable(false)
-    val size = if (isCachedBatchTable) regionBean.getRowsInCachedBatches
+    val size = if (isColumnBatchTable) regionBean.getRowsInColumnBatches
     else regionBean.getEntryCount
     stats.setRowCount(stats.getRowCount + size)
     entryOverhead *= entryCount

@@ -16,12 +16,14 @@
  */
 package org.apache.spark.sql.sources
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecutedCommand, ExecuteCommand}
+import org.apache.spark.sql.backwardcomp.{ExecuteCommand, ExecutedCommand}
 import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
+import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
 import org.apache.spark.sql.types.DataType
 
 /**
@@ -31,12 +33,12 @@ object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-        false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
+    false, opts, _, _, allowExisting, _) =>
       ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
           onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
     case a@CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
-      bucketSpec, mode, opts, _) =>
+    _, mode, opts, _) =>
       val query = a.productElement(6).asInstanceOf[LogicalPlan]
 
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
@@ -53,11 +55,21 @@ object StoreStrategy extends Strategy {
     case drop: DropTable =>
       ExecutedCommand(drop) :: Nil
 
-    case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
+    case p: EncoderPlan[_] =>
+      val plan = p.asInstanceOf[EncoderPlan[Any]]
+      EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
+        plan.encoder, plan.isFlat, plan.output) :: Nil
+
+    case logical.InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
+    _, _), part, query, overwrite, false) if part.isEmpty =>
+      val preAction = if (overwrite) () => p.truncate() else () => ()
+      ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
+
+    case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
-      ExecutedCommand(PutIntoDataSource(l, t, query)) :: Nil
+    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
+      ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
     case r: ExecuteCommand => ExecutedCommand(r) :: Nil
 
@@ -98,28 +110,4 @@ private[sql] case class PutIntoTable(
           DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
             tableAttr.dataType)
       }
-}
-
-/**
- * Puts the results of `query` in to a relation that extends [[RowPutRelation]].
- */
-private[sql] case class PutIntoDataSource(
-    logicalRelation: LogicalRelation,
-    relation: RowPutRelation,
-    query: LogicalPlan)
-    extends ExecuteCommand {
-
-  override def run(session : SparkSession): Seq[Row] = {
-    val snappySession = session.asInstanceOf[SnappySession]
-    val data = Dataset.ofRows(snappySession, query)
-    // Apply the schema of the existing table to the new data.
-    val df = snappySession.internalCreateDataFrame(data.queryExecution.toRdd,
-      logicalRelation.schema)
-    relation.put(df)
-
-    // Invalidate the cache.
-    snappySession.cacheManager.invalidateCache(logicalRelation)
-
-    Seq.empty[Row]
-  }
 }

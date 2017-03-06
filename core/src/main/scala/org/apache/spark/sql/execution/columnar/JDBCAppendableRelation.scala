@@ -24,13 +24,13 @@ import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.{LogicalRelation}
 import org.apache.spark.sql.hive.{QualifiedTableName}
 import org.apache.spark.sql.jdbc.{JdbcDialect}
-import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
 
@@ -49,6 +49,7 @@ abstract case class JDBCAppendableRelation(
     @transient override val sqlContext: SQLContext) extends BaseRelation
     with PrunedUnsafeFilteredScan
     with InsertableRelation
+    with PlanInsertableRelation
     with DestroyRelation
     with IndexableRelation
     with Logging
@@ -69,6 +70,8 @@ abstract case class JDBCAppendableRelation(
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
   })
+
+  def numBuckets: Int = -1
 
   override def sizeInBytes: Long = {
     SnappyTableStatsProviderService.getTableStatsFromService(table) match {
@@ -103,7 +106,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Array[String]) = {
+      filters: Array[Filter]): RDD[Any] = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -116,60 +119,43 @@ abstract case class JDBCAppendableRelation(
       requiredColumns
     }
 
-    val cachedColumnBuffers: RDD[Any] = readLock {
-      externalStore.getCachedBatchRDD(tableName,
+    readLock {
+      externalStore.getColumnBatchRDD(tableName,
         requestedColumns.map(column => externalStore.columnPrefix + column),
         sqlContext.sparkSession, schema)
     }
-    (cachedColumnBuffers, requestedColumns)
   }
 
-  override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
-    insert(df.queryExecution.toRdd, df, overwrite)
+  override def getInsertPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    new ColumnInsertExec(child, Seq.empty, Seq.empty, this, table)
   }
 
-  def cachedBatchAggregate(batch: CachedBatch): Unit = {
-    externalStore.storeCachedBatch(table, batch)
+  override def insert(data: DataFrame, overwrite: Boolean): Unit = {
+    // use the normal DataFrameWriter which will create an InsertIntoTable plan
+    // that will use the getInsertPlan above (in StoreStrategy)
+    data.write.mode(if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+        .insertInto(table)
   }
 
-  def getCachedBatchParams: (Integer, Boolean) = {
-    val columnBatchSize = origOptions.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+  def getColumnBatchParams: (Int, Int, String) = {
+    val session = sqlContext.sparkSession
+    val columnBatchSize = origOptions.get(
+        ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
       case Some(cb) => Integer.parseInt(cb)
-      case None => ExternalStoreUtils.getDefaultCachedBatchSize()
+      case None => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
-    val useCompression = origOptions.get(ExternalStoreUtils.USE_COMPRESSION) match {
-      case Some(uc) => java.lang.Boolean.parseBoolean(uc)
-      case None => true
+    val columnMaxDeltaRows = origOptions.get(
+        ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+      case Some(cd) => Integer.parseInt(cd)
+      case None => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
-    (columnBatchSize, useCompression)
-  }
-
-  protected def insert(rdd: RDD[InternalRow], df: DataFrame,
-      overwrite: Boolean): Unit = {
-
-    // We need to truncate the table
-    if (overwrite) {
-      truncate()
+    val compressionCodec = origOptions.get(
+        ExternalStoreUtils.COMPRESSION_CODEC) match {
+      case Some(codec) => codec
+      case None => ExternalStoreUtils.defaultCompressionCodec(session)
     }
-    val (columnBatchSize, useCompression) = getCachedBatchParams
-    val output = df.logicalPlan.output
-    val cached = rdd.mapPartitionsPreserve(rowIterator => {
-
-      def columnBuilders = output.map { attribute =>
-        val columnType = ColumnType(attribute.dataType)
-        val initialBufferSize = columnType.defaultSize * columnBatchSize
-        ColumnBuilder(attribute.dataType, initialBufferSize,
-          attribute.name, useCompression)
-      }.toArray
-
-      val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
-        schema, cachedBatchAggregate)
-      rowIterator.foreach(holder.appendRow)
-      holder.forceEndOfBatch()
-      Iterator.empty
-    }, preservesPartitioning = true)
-    // trigger an Action to materialize 'cached' batch
-    cached.count()
+    (columnBatchSize, columnMaxDeltaRows, compressionCodec)
   }
 
   // truncate both actual and shadow table
@@ -198,13 +184,13 @@ abstract case class JDBCAppendableRelation(
     } finally {
       conn.close()
     }
-    createExternalTableForCachedBatches(table, externalStore)
+    createExternalTableForColumnBatches(table, externalStore)
   }
 
-  protected def createExternalTableForCachedBatches(tableName: String,
+  protected def createExternalTableForColumnBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
-      "createExternalTableForCachedBatches: expected non-empty table name")
+      "createExternalTableForColumnBatches: expected non-empty table name")
 
     val (primarykey, partitionStrategy) = dialect match {
       // The driver if not a loner should be an accesor only

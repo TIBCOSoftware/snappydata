@@ -130,18 +130,23 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableName full table name to be truncated
+   * @param ifExists  attempt truncate only if the table exists
    */
-  def truncateTable(tableName: String): Unit = snappySession.truncateTable(tableName)
-
+  def truncateTable(tableName: String, ifExists: Boolean = false): Unit = {
+    snappySession.truncateTable(tableName, ifExists)
+  }
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableIdent qualified name of table to be truncated
+   * @param ifExists   attempt truncate only if the table exists
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
-      ignoreIfUnsupported: Boolean = false): Unit = {
-    snappySession.truncateTable(tableIdent, ignoreIfUnsupported)
+      ifExists: Boolean, ignoreIfUnsupported: Boolean): Unit = {
+    snappySession.truncateTable(tableIdent, ifExists, ignoreIfUnsupported)
   }
 
 
@@ -842,11 +847,20 @@ object SnappyContext extends Logging {
 
   private[spark] def addBlockId(executorId: String,
       id: BlockAndExecutorId): Unit = {
-    storeToBlockMap.put(executorId, id)
-    if (id.blockId == null || !id.blockId.isDriver) {
-      totalCoreCount.addAndGet(id.numProcessors)
+    storeToBlockMap.put(executorId, id) match {
+      case None =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
+        }
+      case Some(oldId) =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
+        }
+        if (oldId.blockId == null || !oldId.blockId.isDriver) {
+          totalCoreCount.addAndGet(-oldId.numProcessors)
+        }
     }
-    SnappySession.clearAllCache()
+    SnappySession.clearAllCache(onlyQueryPlanCache = true)
   }
 
   private[spark] def removeBlockId(
@@ -856,7 +870,7 @@ object SnappyContext extends Logging {
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(-id.numProcessors)
         }
-        SnappySession.clearAllCache()
+        SnappySession.clearAllCache(onlyQueryPlanCache = true)
         s
       case None => None
     }
@@ -896,8 +910,8 @@ object SnappyContext extends Logging {
         SparkEnv.get.blockManager.blockManagerId,
         numCores, numCores)
       storeToBlockMap(cache.getMyId.toString) = blockId
-      totalCoreCount.addAndGet(blockId.numProcessors)
-      SnappySession.clearAllCache()
+      totalCoreCount.set(blockId.numProcessors)
+      SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
   }
 
@@ -1062,7 +1076,7 @@ object SnappyContext extends Logging {
   private def stopSnappyContext(): Unit = {
     val sc = globalSparkContext
     if (_globalSNContextInitialized) {
-      // then on the driver
+      // clear static objects on the driver
       clearStaticArtifacts()
 
       if (_globalClear ne null) {
@@ -1085,10 +1099,11 @@ object SnappyContext extends Logging {
   /** Cleanup static artifacts on this lead/executor. */
   def clearStaticArtifacts(): Unit = {
     ConnectionPool.clear()
-    CodeGeneration.clearCache()
+    CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
+    SparkSession.sqlListener.set(null)
     _clusterMode match {
-      case m: ExternalClusterMode =>
+      case _: ExternalClusterMode =>
       case _ => ServiceUtils.clearStaticArtifacts()
     }
   }

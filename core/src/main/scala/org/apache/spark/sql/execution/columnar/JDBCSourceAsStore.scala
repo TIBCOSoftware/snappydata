@@ -16,17 +16,19 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
 
 import scala.language.implicitConversions
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, OffHeapRegionEntry}
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey,
-GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry}
+import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer,
+RowFormatter}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
+import io.snappydata.thrift.common.BufferedBlob
 
-import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.row.PRValuesIterator
+import org.apache.spark.sql.execution.{PartitionedPhysicalScan}
 import org.apache.spark.{Logging, TaskContext}
 
 abstract class ResultSetIterator[A](conn: Connection,
@@ -35,9 +37,11 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected[this] final var doMove = true
 
-  protected[this] final var hasNextValue = true
+  protected[this] final var hasNextValue: Boolean = rs ne null
 
-  context.addTaskCompletionListener { _ => close() }
+  if (context ne null) {
+    context.addTaskCompletionListener { _ => close() }
+  }
 
   override final def hasNext: Boolean = {
     var success = false
@@ -94,7 +98,7 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 }
 
-final class CachedBatchIteratorOnRS(conn: Connection,
+final class ColumnBatchIteratorOnRS(conn: Connection,
     requiredColumns: Array[String],
     stmt: Statement, rs: ResultSet,
     context: TaskContext,
@@ -102,8 +106,8 @@ final class CachedBatchIteratorOnRS(conn: Connection,
     extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
   var currentUUID: String = _
   val ps = conn.prepareStatement(fetchColQuery)
-  var colBuffers: Option[scala.collection.mutable.HashMap[Int, Array[Byte]]] = null
-  def getColumnLob(bufferPosition: Int): Array[Byte] = {
+  var colBuffers: Option[scala.collection.mutable.HashMap[Int, ByteBuffer]] = null
+  def getColumnLob(bufferPosition: Int): ByteBuffer = {
     colBuffers match {
       case Some(map) => map(bufferPosition)
       case None =>
@@ -111,9 +115,14 @@ final class CachedBatchIteratorOnRS(conn: Connection,
           ps.setString(i + 1, currentUUID)
         }
         val colIter = ps.executeQuery()
-        val bufferMap = new scala.collection.mutable.HashMap[Int, Array[Byte]]
+        val bufferMap = new scala.collection.mutable.HashMap[Int, ByteBuffer]
         while(colIter.next()) {
-          bufferMap.put(colIter.getInt(2), colIter.getBytes(1))
+          val colBlob = colIter.getBlob(1) match {
+            case blob: BufferedBlob => blob.getAsBuffer
+            case blob => ByteBuffer.wrap(blob.getBytes(
+              1, blob.length().asInstanceOf[Int]))
+          }
+          bufferMap.put(colIter.getInt(2), colBlob)
         }
         colBuffers = Some(bufferMap)
         bufferMap(bufferPosition)
@@ -125,31 +134,32 @@ final class CachedBatchIteratorOnRS(conn: Connection,
     colBuffers = None
     rs.getBytes(1)
   }
-
 }
+case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
+    statsData: Array[Byte])
 
-final class ByteArraysIteratorOnScan(container: GemFireContainer,
+final class ColumnBatchIterator(container: GemFireContainer,
     bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
+    extends PRValuesIterator[Array[Byte]](container, bucketIds) {
 
   assert(!container.isOffHeap,
     s"Unexpected byte[][] iterator call for off-heap $container")
 
-  protected var currentVal: Array[Array[Byte]] = _
-  var rowFormatter: RowFormatter = _
+  protected var currentVal: Array[Byte] = _
   var currentKeyUUID: DataValueDescriptor = _
   var currentKeyPartitionId: DataValueDescriptor = _
   var currentBucketRegion: BucketRegion = _
   val baseRegion: LocalRegion = container.getRegion
 
-  def getColumnLob(bufferPosition: Int): Array[Byte] = {
+  def getColumnLob(bufferPosition: Int): ByteBuffer = {
     val key = new CompactCompositeRegionKey(Array(
       currentKeyUUID, currentKeyPartitionId, new SQLInteger(bufferPosition)),
       container.getExtraTableInfo());
     val rl = if (currentBucketRegion != null) currentBucketRegion.get(key) else baseRegion.get(key)
     val value = rl.asInstanceOf[Array[Array[Byte]]]
     val rf = container.getRowFormatter(value(0))
-    rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION)
+
+    ByteBuffer.wrap(rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION))
   }
 
   override protected def moveNext(): Unit = {
@@ -163,41 +173,15 @@ final class ByteArraysIteratorOnScan(container: GemFireContainer,
         if (key.getKeyColumn(2).getInt ==
             JDBCSourceAsStore.STATROW_COL_INDEX) {
           val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
-            else baseRegion.get(key)
+          else baseRegion.get(key)
           if (v ne null) {
-            currentVal = v.asInstanceOf[Array[Array[Byte]]]
+            val value = v.asInstanceOf[Array[Array[Byte]]]
             currentKeyUUID = key.getKeyColumn(0)
             currentKeyPartitionId = key.getKeyColumn(1)
-            rowFormatter = container.getRowFormatter(currentVal(0))
+            val rowFormatter = container.getRowFormatter(value(0))
+            currentVal = rowFormatter.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION);
             return
           }
-        }
-      }
-    }
-    hasNextValue = false
-  }
-}
-
-final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
-      bucketIds) {
-
-  assert(container.isOffHeap,
-    s"Unexpected off-heap iterator call for on-heap $container")
-
-  override protected val currentVal: OffHeapCompactExecRowWithLobs = container
-      .newTemplateRow().asInstanceOf[OffHeapCompactExecRowWithLobs]
-
-  override protected def moveNext(): Unit = {
-    while (itr.hasNext) {
-      val rl = itr.next().asInstanceOf[RowLocation]
-      val owner = itr.getHostedBucketRegion
-      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-        val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
-        if ((v ne null) && (RegionEntryUtils.fillRowUsingAddress(container, owner,
-          v.asInstanceOf[OffHeapRegionEntry], currentVal, false) ne null)) {
-          return
         }
       }
     }

@@ -115,12 +115,12 @@ object SnappyTableStatsProviderService extends Logging {
         // check if there has been a substantial change in table
         // stats, and clear the plan cache if so
         if (prevTableSizeInfo.size != tableSizeInfo.size) {
-          SnappySession.clearAllCache()
+          SnappySession.clearAllCache(onlyQueryPlanCache = true)
         } else {
           val prevTotalRows = prevTableSizeInfo.values.map(_.getRowCount).sum
           val newTotalRows = tableSizeInfo.values.map(_.getRowCount).sum
           if (math.abs(newTotalRows - prevTotalRows) > 0.1 * prevTotalRows) {
-            SnappySession.clearAllCache()
+            SnappySession.clearAllCache(onlyQueryPlanCache = true)
           }
         }
       }
@@ -220,10 +220,9 @@ object SnappyTableStatsProviderService extends Logging {
             val numColumnsInStatBlob = numColumnsInBaseTbl * 5
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-
             // Resetting PR Numrows in cached batch as this will be calculated every time.
             // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-            var rowsInCachedBatch: Long = 0
+            var rowsInColumnBatch: Long = 0
             while (itr.hasNext) {
               val rl = itr.next().asInstanceOf[RowLocation]
               val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
@@ -239,11 +238,11 @@ object SnappyTableStatsProviderService extends Logging {
                   val unsafeRow = new UnsafeRow(numColumnsInStatBlob);
                   unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
                     statBytes.length);
-                  rowsInCachedBatch += unsafeRow.getInt(3);
+                  rowsInColumnBatch += unsafeRow.getInt(3);
                 }
               }
             }
-            pr.getPrStats.setPRNumRowsInCachedBatches(rowsInCachedBatch)
+            pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
           }
         }
       }
