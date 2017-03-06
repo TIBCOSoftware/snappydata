@@ -1,0 +1,4 @@
+#Overview
+Tables in SnappyData can be partitioned or replicated. A replicated table keeps a copy of its entire data set locally on every SnappyData server in its server group. A partitioned table manages large volumes of data by partitioning it into manageable chunks and distributing those chunks across all members in the table’s server group.
+
+By default, all tables are replicated unless you specify partitioning in the CREATE TABLE statement. The schema information for all SnappyData objects is visible at all times to all peer members of the distributed system including peer clients, but excluding standalone locators.

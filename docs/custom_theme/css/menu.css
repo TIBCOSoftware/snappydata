@@ -70,8 +70,8 @@ a.expander.top-level,
 
 /*heading level-1 in left nav*/
 .wy-menu-vertical li{
-   font-size: 16px;
-   color: #000088;	
+  font-size: 12px;
+  color: #000088;	
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   text-transform: uppercase;	
   font-weight: bold;	
