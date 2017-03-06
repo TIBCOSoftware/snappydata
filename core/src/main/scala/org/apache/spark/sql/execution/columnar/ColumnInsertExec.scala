@@ -61,8 +61,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
   @transient private var batchBucketIdTerm: Option[String] = None
 
-  @transient private var isSampleDataTerm: Option[String] = None
-
   def columnBatchSize: Int = batchParams._1
 
   def columnMaxDeltaRows: Int = batchParams._2
@@ -112,7 +110,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
              |}
           """.stripMargin)
         batchBucketIdTerm = Some(c.bucketIdTerm)
-        isSampleDataTerm = Some(c.isSampleDataTerm)
       case _ =>
     }
 
@@ -267,8 +264,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     }
     storeColumnBatchArgs = s"$batchSizeTerm, ${batchFunctionCall.toString()}"
     s"""
-       |if ( ${isSampleDataTerm.map(x => s"!$x && ").getOrElse("")}$columnBatchSize > 0 &&
-       |($batchSizeTerm & $checkMask) == 0 &&
+       |if ($columnBatchSize > 0 &&($batchSizeTerm & $checkMask) == 0 &&
        |    $batchSizeTerm > 0) {
        |  // check if batch size has exceeded max allowed
        |  long $sizeTerm = 0L;
