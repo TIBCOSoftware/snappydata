@@ -290,27 +290,27 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 150px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemoryToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("storageMemoryUsed")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 150px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemorySizeToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("storageMemoryPoolSize")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 150px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemoryToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("executionMemoryUsed")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 150px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemorySizeToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("executionMemoryPoolSize")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 250px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("usedMemory")}
               </span>

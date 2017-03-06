@@ -20,10 +20,12 @@ package org.apache.spark.memory
 import java.lang.management.ManagementFactory
 import java.util.Properties
 
+import com.pivotal.gemfirexd.DistributedSQLTestBase
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 
 import org.apache.spark.SparkEnv
+import org.apache.spark.jdbc.{ConnectionUtil, ConnectionConf, ConnectionConfBuilder}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 import SnappyUnifiedMemoryManagerDUnitTest._
 
@@ -62,6 +64,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
   bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
   bootProps.setProperty("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
+  bootProps.setProperty("critical-heap-percentage", "90")
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
@@ -282,7 +285,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     //The delete operation takes time to propagate
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
-      30000, 5000, true)
+      60000, 5000, true)
   }
 
 
@@ -355,6 +358,47 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
       30000, 5000, true)
+  }
+
+  def testMemoryAfterRebalance_ColumnTable(): Unit = {
+    val props = bootProps.clone().asInstanceOf[java.util.Properties]
+    val port = ClusterManagerTestBase.locPort
+
+    def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    def rebalance(conf: ConnectionConf): SerializableRunnable = new SerializableRunnable() {
+      override def run(): Unit = {
+        val conn = ConnectionUtil.getConnection(conf)
+        val stmt = conn.createStatement
+        stmt.execute("call sys.rebalance_all_buckets()")
+      }
+    }
+
+    val snc = newContext()
+    val conf = new ConnectionConfBuilder(snc.snappySession).build()
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+
+    val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
+      DummyData(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', PERSISTENT 'SYNCHRONOUS', REDUNDANCY '1')"
+    snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
+        options
+    )
+    dataDF.write.insertInto(col_table)
+
+    vm1.invoke(restartServer(props))
+    val vm1_memoryUsed_before_rebalance = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
+    vm1.invoke(rebalance(conf))
+    val vm1_memoryUsed_after_rebalance = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
+    println(s"vm1_memoryUsed_before_rebalance $vm1_memoryUsed_before_rebalance " +
+        s"vm1_memoryUsed_after_rebalance $vm1_memoryUsed_after_rebalance")
+    assert(vm1_memoryUsed_before_rebalance + 10000 < vm1_memoryUsed_after_rebalance)
+
   }
 }
 

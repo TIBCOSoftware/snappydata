@@ -63,7 +63,6 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
     val memoryEventListener = new MemoryEventListener {
       override def onPositiveMemoryIncreaseDueToEviction(objectName: String, bytes: Long): Unit = {
-        println(s"Got event onPositiveMemoryIncreaseDueToEviction for $objectName $bytes")
         memoryIncreaseDuetoEviction += bytes
       }
     }

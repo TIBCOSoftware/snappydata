@@ -188,9 +188,13 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode,
       shouldEvict: Boolean): Boolean = {
-    println(s"Acquiring [SNAP] memory for $objectName $numBytes")
+    println(s"Acquiring [SNAP] memory for $objectName $numBytes $shouldEvict")
+    //Thread.dumpStack()
     threadsWaitingForStorage.incrementAndGet()
     synchronized {
+      if(!shouldEvict){
+        SnappyUnifiedMemoryManager.invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName, numBytes)
+      }
       if (!memoryForObject.contains(objectName)) {
         memoryForObject(objectName) = 0L
       }
@@ -239,8 +243,6 @@ class SnappyUnifiedMemoryManager private[memory](
           val requiredBytes = numBytes - storagePool.memoryFree
           //Evict data a little more than required based on waiting tasks
           evictor.evictRegionData(requiredBytes * threadsWaitingForStorage.get())
-        }else {
-          SnappyUnifiedMemoryManager.invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName, numBytes)
         }
 
         threadsWaitingForStorage.decrementAndGet()
@@ -305,8 +307,7 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   override def dropStorageMemoryForObject(name: String, memoryMode: MemoryMode): Long = synchronized {
-    logInfo(s"Dropping memory for $name")
-    println(s"Dropping memory for $name")
+    logDebug(s"Dropping memory for $name")
     val (executionPool, storagePool, maxMemory) = memoryMode match {
       case MemoryMode.ON_HEAP => (
           onHeapExecutionMemoryPool,
