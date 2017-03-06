@@ -22,7 +22,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.joins.{LocalJoin, SortMergeJoinExec}
+import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
@@ -70,7 +70,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val qe = new QueryExecution(snc.snappySession, countDf.logicalPlan)
     val plan = qe.executedPlan
     val lj = plan collectFirst {
-      case lc: LocalJoin => lc
+      case lc: HashJoinExec => lc
     }
     lj.getOrElse(sys.error(s"Can't find Local join in a 1 partitioned relation"))
 
@@ -115,7 +115,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val qe = new QueryExecution(snc.snappySession, countDf.logicalPlan)
 
     val lj = qe.executedPlan collectFirst {
-      case lc: LocalJoin => lc
+      case lc: HashJoinExec => lc
     }
     lj.getOrElse(sys.error(s"Can't find Local join in a 1 partitioned relation"))
 

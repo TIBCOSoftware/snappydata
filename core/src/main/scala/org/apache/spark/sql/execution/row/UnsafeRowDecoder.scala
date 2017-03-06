@@ -16,13 +16,16 @@
  */
 package org.apache.spark.sql.execution.row
 
-import org.apache.spark.sql.catalyst.expressions.{UnsafeArrayData, UnsafeMapData, UnsafeRow}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
+import org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder
 import org.apache.spark.sql.types.{DataType, Decimal, StructField}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
-final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
-    extends ColumnEncoding {
+// TODO: SW: change this to use SerializedRow/Array/Map (for sampler reservoir)
+final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
+    extends ColumnDecoder {
 
   override def typeId: Int = -2
 
@@ -32,9 +35,9 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
   override protected def hasNulls: Boolean = true
 
   override protected def initializeNulls(columnBytes: AnyRef,
-      field: StructField): Long = 0L
+      cursor: Long, field: StructField): Long = 0L
 
-  override def initializeDecoding(columnBytes: AnyRef,
+  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = 0L
 
   override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
@@ -102,14 +105,14 @@ final class UnsafeRowEncodingAdapter(holder: UnsafeRowHolder, columnIndex: Int)
   override def readInterval(columnBytes: AnyRef, cursor: Long): CalendarInterval =
     holder.row.getInterval(columnIndex)
 
-  override def readArray(columnBytes: AnyRef, cursor: Long): UnsafeArrayData =
+  override def readArray(columnBytes: AnyRef, cursor: Long): ArrayData =
     holder.row.getArray(columnIndex)
 
-  override def readMap(columnBytes: AnyRef, cursor: Long): UnsafeMapData =
+  override def readMap(columnBytes: AnyRef, cursor: Long): MapData =
     holder.row.getMap(columnIndex)
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long): UnsafeRow =
+      cursor: Long): InternalRow =
     holder.row.getStruct(columnIndex, numFields)
 }
 

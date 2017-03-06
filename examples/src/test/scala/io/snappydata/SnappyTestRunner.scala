@@ -16,6 +16,7 @@
  */
 package io.snappydata
 
+// scalastyle:off
 import java.io._
 
 import com.gemstone.gemfire.internal.AvailablePort
@@ -29,32 +30,35 @@ import scala.sys.process._
 import scala.util.parsing.json.JSON
 
 /**
- * Extensible Abstract test suite to test different shell based commands like submit jobs, snappy shell, spark shell etc.
+ * Extensible Abstract test suite to test different shell based commands
+ * like submit jobs, snappy shell, spark shell etc.
  * The output of each of the processes are captured and validated.
  *
- * Class extending can mix match different methods like SnappyShell, Job to create a test case.
+ * Class extending can mix match different methods like SnappyShell,
+ * Job to create a test case.
  */
 abstract class SnappyTestRunner extends FunSuite
 with BeforeAndAfterAll
 with Serializable
 with Logging with Retries {
+// scalastyle:on
 
   var snappyHome = ""
   var localHostName = ""
   var currWorkingDir = ""
 
-  //One can ovveride this method to pass other parameters like heap size.
-  def servers = s"$localHostName\n$localHostName"
+  // One can ovveride this method to pass other parameters like heap size.
+  def servers: String = s"$localHostName\n$localHostName"
 
-  def snappyShell = s"$snappyHome/bin/snappy-sql"
+  def snappyShell: String = s"$snappyHome/bin/snappy-sql"
 
-  def sparkShell = s"$snappyHome/bin/spark-shell"
+  def sparkShell: String = s"$snappyHome/bin/spark-shell"
 
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
   private  var locatorDirPath = ""
 
   implicit class X(in: Seq[String]) {
-    def pipe(cmd: String) =
+    def pipe(cmd: String): Stream[String] =
       cmd #< new ByteArrayInputStream(in.mkString("\n").getBytes) lineStream
   }
 
@@ -95,6 +99,7 @@ with Logging with Retries {
     val (out1, err1) = executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
   }
 
+  // scalastyle:off println
   def executeProcess(name: String , command: String): (String, String) = {
     val stdoutStream = new ByteArrayOutputStream
     val stderrStream = new ByteArrayOutputStream
@@ -126,7 +131,8 @@ with Logging with Retries {
     })
   }
 
-  def Job(jobClass: String, lead: String, jarPath: String, confs: Seq[String] = Seq.empty[String]): Unit = {
+  def Job(jobClass: String, lead: String, jarPath: String,
+      confs: Seq[String] = Seq.empty[String]): Unit = {
 
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
 
@@ -134,14 +140,14 @@ with Logging with Retries {
 
     val jobStatus = s"$snappyHome/bin/snappy-job.sh status --lead $lead --job-id "
 
-    val jobCommand = s"$jobSubmit --app-name ${jobClass}_${System.currentTimeMillis()} --class $jobClass $confStr"
+    val jobCommand: String = s"$jobSubmit --app-name " +
+        s"${jobClass}_${System.currentTimeMillis()} --class $jobClass $confStr"
 
     val (out, err) = executeProcess("snappyCluster", jobCommand)
 
     val jobSubmitStr = out
 
-    val jsonStr = if (jobSubmitStr.charAt(2) == '{')
-      jobSubmitStr.substring(2)
+    val jsonStr = if (jobSubmitStr.charAt(2) == '{') jobSubmitStr.substring(2)
     else jobSubmitStr.substring(4)
 
     def json = JSON.parseFull(jsonStr)
@@ -214,7 +220,8 @@ with Logging with Retries {
     }
   }
 
-  def SparkShell(confs: Seq[String], options: String, scalaStatements: Seq[String]): Unit ={
+  def SparkShell(confs: Seq[String], options: String,
+      scalaStatements: Seq[String]): Unit = {
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     scalaStatements pipe s"$snappyShell $confStr $options" foreach (s => {
       println(s)
@@ -224,10 +231,12 @@ with Logging with Retries {
     })
   }
 
-/*  def withExceptionHandling[T](function: => T): T = {
+/*
+  def withExceptionHandling[T](function: => T): T = {
     try {
       function
     } catch {
       case e: Exception => throw e
-  }*/
+  }
+*/
 }
