@@ -30,8 +30,6 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
   // set default batch size for this test
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "100")
-
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
   var serverHostPort = -1
   val tableName = "order_line_col"
