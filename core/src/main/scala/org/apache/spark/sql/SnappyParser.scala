@@ -675,7 +675,7 @@ class SnappyParser(session: SnappySession)
     (FROM ~ ws ~ relations).? ~
     (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
-    (HAVING ~ expression).? ~
+    (HAVING ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
       val base = f.asInstanceOf[Option[LogicalPlan]].getOrElse(OneRowRelation)

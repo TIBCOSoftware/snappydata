@@ -133,6 +133,15 @@ class TokenizationTest
       snc.clear()
       assert( cacheMap.size() == 0)
 
+      // let us test for having
+      query = s"select t1.b, SUM(t1.a) from $table t1 group by t1.b having SUM(t1.a) > 0"
+      snc.sql(query).collect()
+      assert( cacheMap.size() == 1)
+
+      query = s"select t1.b, SUM(t1.a) from $table t1 group by t1.b having SUM(t1.a) > 5"
+      snc.sql(query).collect()
+      assert( cacheMap.size() == 1)
+
       snc.sql(s"drop table $table")
       snc.sql(s"drop table $table2")
 
