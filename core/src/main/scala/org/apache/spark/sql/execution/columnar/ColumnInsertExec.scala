@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
@@ -181,7 +180,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val sizeTerm = ctx.freshName("size")
 
     val encoderClass = classOf[ColumnEncoder].getName
-    val taskContextClass = classOf[TaskContext].getName
     val buffersCode = new StringBuilder
     val batchFunctionDeclarations = new StringBuilder
     val batchFunctionCall = new StringBuilder
@@ -211,7 +209,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", None,
       classOf[Option[_]].getName)
-    val partitionIdCode = if (partitioned) s"$taskContextClass.getPartitionId()"
+    val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
       batchBucketIdTerm.getOrElse(
