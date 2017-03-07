@@ -16,9 +16,24 @@
  */
 package io.snappydata.util
 
+import java.text.NumberFormat
+import javax.annotation.Nonnull
+
+import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.types.UTF8String
+
 object StringUtils {
 
-  val numFormatter = java.text.NumberFormat.getInstance
+  val numFormatter: NumberFormat = java.text.NumberFormat.getInstance
+
+  def cloneIfRequired(@Nonnull s: UTF8String): UTF8String = {
+    if (s.getBaseOffset == Platform.BYTE_ARRAY_OFFSET &&
+        s.getBaseObject.asInstanceOf[Array[Byte]].length == s.numBytes) {
+      s
+    } else {
+      s.clone()
+    }
+  }
 
   /**
    * Defines a few String Interpolators.  Interpolators are things like

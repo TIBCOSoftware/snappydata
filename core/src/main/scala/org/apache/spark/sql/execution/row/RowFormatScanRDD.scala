@@ -348,7 +348,7 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](val container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], txId: TXId) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer]) extends Iterator[T] {
 
   protected final var hasNextValue = true
   protected final var doMove = true
@@ -388,7 +388,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
     bucketIds: java.util.Set[Integer], txId: TXId)
-    extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds, txId) {
+    extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
 
   override protected val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]

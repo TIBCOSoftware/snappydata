@@ -8,6 +8,51 @@
 ####################################################################################################
 
 
+Release 0.8
+
+  Insert Performance Optimizations - Insert into tables is much more optimized and performant now.
+  A new insert plan has been introduced which uses code generation and a new encoding format.
+
+  Fixes backward compatibility with Spark 2.0.0 - The 0.8 SnappyData release is based on the Spark
+  2.0.2 version. The Smart connector mode with Spark 2.0.0 and 2.0.1 got broken.
+
+  [SNAP-1146] Fixes RowBuffer bloating. Data was not being aged into the internal compressed
+  columnar format leading to unoptimized storage and hence bad query performances.
+
+  [SNAP-1308] Incorrect number of entries displayed on UI if insert was being done from a Spark app
+  using Smart Connector.
+
+  [SNAP-1293] The driver process of external Spark app using Smart connector were incorrectly being
+  displayed as members of SnappyData cluster.
+
+  [SNAP-1282] The Spark web UI stopped working with SnappyData 0.7. Fixed.
+
+  [SNAP-1243] UI incorrectly displaying multiple entries for the same lead node after restarts.
+
+  [SNAP-1296] ResultsSet obtained from PreparedStatement.executeQuery returned 0 column count
+  from its metadata. However SNAP-1311 needs to be fixed for complete support of Prepared
+  Statement jdbc api. Being worked on.
+
+  [SNAP-1291] Queries issued with execution-engine=store hint were getting ignored in some cases
+
+  [SNAP-1287] Query execution using indexes on row tables was sometimes throwing ClasscastException
+
+  [SNAP-1269] Create tables using schema of other table but with different column names were using
+  column names of the source tables itself.
+
+  [SNAP-1134] A job throwing exception remained in hung state instead of reporting failure
+
+  [SNAP-982] Support for persistent UDFs added. Even after restart the UDF can be used now
+
+  Enhancements in SDE
+  - Sample selection logic enhanced. It can now select best suited sample table even if SQL
+    functions are used on QCS columns while creating sample tables.
+
+  - Poisson multiplicity generator logic for bootstrap is improved. Error estimated using
+    bootstrap are now more accurate.
+
+  - Improved performance of closed-form and bootstrap error estimations.
+
 Release 0.7
 
   [SNAP-1260] Miscellaneous plan optimizations.

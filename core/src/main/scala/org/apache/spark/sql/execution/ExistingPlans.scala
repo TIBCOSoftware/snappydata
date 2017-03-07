@@ -18,9 +18,10 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.gemstone.gemfire.internal.cache.LocalRegion
+
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{AnalysisException, SnappySession}
-import org.apache.spark.sql.catalyst.errors._
+import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
@@ -30,9 +31,10 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.execution.row.RowFormatRelation
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
@@ -52,24 +54,25 @@ private[sql] abstract class PartitionedPhysicalScan(
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
-    extends DataSourceScanExec with CodegenSupport {
+    extends DataSourceScanExec with CodegenSupportOnExecutor {
 
-  def getMetrics: Map[String, SQLMetric] = Map(
-    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
+  def getMetrics: Map[String, SQLMetric] = {
+    if (sqlContext eq null) Map.empty
+    else Map("numOutputRows" -> SQLMetrics.createMetric(sparkContext,
+      "number of output rows"))
+  }
 
   override lazy val metrics: Map[String, SQLMetric] = getMetrics
 
-  private val extraInformation = relation.toString
+  private lazy val extraInformation = relation.toString
 
   protected lazy val numPartitions: Int = dataRDD.getNumPartitions
 
-  override lazy val schema: StructType = StructType.fromAttributes(output)
-
   @transient val (metricAdd, metricValue): (String => String, String => String) =
-    Utils.metricMethods(sparkContext)
+    Utils.metricMethods
 
   // RDD cast as RDD[InternalRow] below just to satisfy interfaces like
-  // inputRDDs though its actually of CachedBatches, CompactExecRows, etc
+  // inputRDDs though its actually of ColumnBatches, CompactExecRows, etc
   override val rdd: RDD[InternalRow] = dataRDD.asInstanceOf[RDD[InternalRow]]
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
@@ -126,8 +129,8 @@ private[sql] object PartitionedPhysicalScan {
     relation match {
       case i: IndexColumnFormatRelation =>
         val columnScan = ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, partitionColumnAliases, relation, allFilters,
-          schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, relation.schema,
+          allFilters, schemaAttributes)
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(Array.empty,
@@ -136,8 +139,8 @@ private[sql] object PartitionedPhysicalScan {
         def resolveCol(left: Attribute, right: AttributeReference) =
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
-        val rowBufferScan = RowTableScan(output, baseTableRDD, numBuckets,
-          Seq.empty, Seq.empty, table)
+        val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
+          output), baseTableRDD, numBuckets, Seq.empty, Seq.empty, table)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +
@@ -150,20 +153,20 @@ private[sql] object PartitionedPhysicalScan {
           rowBufferScan, otherPartKeys)
       case _: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-          partitionColumns, partitionColumnAliases, relation, allFilters,
-          schemaAttributes)
+          partitionColumns, partitionColumnAliases, relation, relation.schema,
+          allFilters, schemaAttributes)
       case r: SamplingRelation =>
         if (r.isReservoirAsRegion) {
           ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
-            partitionColumnAliases, relation, allFilters, schemaAttributes,
-            isForSampleReservoirAsRegion = true)
+            partitionColumnAliases, relation, relation.schema, allFilters,
+            schemaAttributes, isForSampleReservoirAsRegion = true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
-            partitionColumns, partitionColumnAliases, relation, allFilters,
-            schemaAttributes)
+            partitionColumns, partitionColumnAliases, relation, relation.schema,
+            allFilters, schemaAttributes)
         }
       case _: RowFormatRelation =>
-        RowTableScan(output, rdd, numBuckets,
+        RowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
           partitionColumns, partitionColumnAliases, relation)
     }
 
@@ -171,9 +174,39 @@ private[sql] object PartitionedPhysicalScan {
     SparkPlanInfo.fromSparkPlan(plan)
 }
 
+/**
+ * A wrapper plan to immediately execute the child plan without having to do
+ * an explicit collect. Only use for plans returning small results.
+ */
+case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
+    extends UnaryExecNode {
+
+  override def output: Seq[Attribute] = child.output
+
+  protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
+    preAction()
+    val callSite = sqlContext.sparkContext.getCallSite()
+    CachedDataFrame.withNewExecutionId(sqlContext.sparkSession, callSite,
+      child.treeString(verbose = true), SparkPlanInfo.fromSparkPlan(child)) {
+      child.executeCollect()
+    }
+  }
+
+  override def executeCollect(): Array[InternalRow] = sideEffectResult
+
+  override def executeTake(limit: Int): Array[InternalRow] =
+    sideEffectResult.take(limit)
+
+  override protected def doExecute(): RDD[InternalRow] = {
+    sqlContext.sparkContext.parallelize(sideEffectResult, 1)
+  }
+}
+
 trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def table: String
+
+  def region: LocalRegion
 
   def schema: StructType
 

@@ -16,24 +16,32 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.types.{DataType, LongType, TimestampType}
+import org.apache.spark.sql.types.{DataType, LongType, StructField, TimestampType}
 import org.apache.spark.unsafe.Platform
 
-final class LongDeltaEncoding extends LongDeltaEncodingBase with NotNullColumn
+trait LongDeltaEncoding extends ColumnEncoding {
 
-final class LongDeltaEncodingNullable
-    extends LongDeltaEncodingBase with NullableColumn
-
-abstract class LongDeltaEncodingBase extends ColumnEncoding {
-
-  private[this] final var prev: Long = 0L
-
-  override final def typeId: Int = 5
+  override final def typeId: Int = 6
 
   override final def supports(dataType: DataType): Boolean = dataType match {
     case LongType | TimestampType => true
     case _ => false
   }
+}
+
+final class LongDeltaDecoder
+    extends LongDeltaDecoderBase with NotNullDecoder
+
+final class LongDeltaDecoderNullable
+    extends LongDeltaDecoderBase with NullableDecoder
+
+abstract class LongDeltaDecoderBase
+    extends ColumnDecoder with LongDeltaEncoding {
+
+  private[this] final var prev: Long = 0L
+
+  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      field: StructField): Long = cursor
 
   override final def nextLong(columnBytes: AnyRef, cursor: Long): Long = {
     val delta = Platform.getByte(columnBytes, cursor)

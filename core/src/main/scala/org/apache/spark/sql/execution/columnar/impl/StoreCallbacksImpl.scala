@@ -34,21 +34,22 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import io.snappydata.Constant
 
-import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore, ExternalStoreUtils}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappyContext, SnappySession, SplitClusterMode, _}
+import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode}
 import org.apache.spark.{Logging, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
-  val partitioner = new StoreHashFunction
+  private val partitioner = new StoreHashFunction
 
-  override def createCachedBatch(region: BucketRegion, batchID: UUID,
+  override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
-    val container = region.getPartitionedRegion
-        .getUserAttribute.asInstanceOf[GemFireContainer]
+    val pr = region.getPartitionedRegion
+    val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
     val catalogEntry: ExternalTableMetaData = container.fetchHiveMetaData(false)
 
     if (catalogEntry != null) {
@@ -69,9 +70,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
         val row: AbstractCompactExecRow = container.newTemplateRow()
             .asInstanceOf[AbstractCompactExecRow]
-        lcc.setExecuteLocally(Collections.singleton(bucketID),
-          region.getPartitionedRegion, false, null)
         val tc = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
+        lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
         try {
           val state: TXStateInterface = TXManagerImpl.getCurrentTXState
           tc.setActiveTXState(state, true)
@@ -89,14 +89,20 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             Seq.empty
           }
 
-          val batchCreator = new CachedBatchCreator(
-            ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
-            container.getQualifiedTableName, catalogEntry.schema.asInstanceOf[StructType],
+          val tableName = container.getQualifiedTableName
+          // add weightage column for sample tables if required
+          var schema = catalogEntry.schema.asInstanceOf[StructType]
+          if (catalogEntry.tableType == ExternalTableType.Sample.toString &&
+              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+            schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
+              LongType, nullable = false)
+          }
+          val batchCreator = new ColumnBatchCreator(pr,
+            ColumnFormatRelation.columnBatchTableName(tableName), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
-            dependents,
-            catalogEntry.cachedBatchSize, catalogEntry.useCompression)
+            catalogEntry.compressionCodec)
           batchCreator.createAndStoreBatch(sc, row,
-            batchID, bucketID)
+            batchID, bucketID, dependents)
         } finally {
           lcc.setExecuteLocally(null, null, false, null)
           tc.clearActiveTXState(false, true);
@@ -129,8 +135,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     partitioner.computeHash(dvds, numPartitions)
   }
 
-  override def cachedBatchTableName(table: String): String = {
-    ColumnFormatRelation.cachedBatchTableName(table)
+  override def columnBatchTableName(table: String): String = {
+    ColumnFormatRelation.columnBatchTableName(table)
   }
 
   override def snappyInternalSchemaName(): String = {
