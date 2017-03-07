@@ -673,7 +673,7 @@ class SnappyParser(session: SnappySession)
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
     (FROM ~ ws ~ relations).? ~
-    (WHERE ~ (test(setTokenize) ~ expression ~ test(setNoTokenize))).? ~
+    (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
     (HAVING ~ expression).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
@@ -758,31 +758,27 @@ class SnappyParser(session: SnappySession)
 
   private var isselect = false
 
-  private def setNoTokenize: Boolean = {
-    tokenize = false
-    true
-  }
-
-  private def setTokenize: Boolean = {
-    isselect match {
+  protected final def TOKENIZE_BEGIN: Rule0 = rule {
+    MATCH ~> {() => isselect match {
       case true => tokenize = session.sessionState.conf.wholeStageEnabled
       case _ => tokenize = false
-    }
-    true
+    }}
   }
 
-  private def setSelect: Boolean = {
-    isselect = true
-    true
+  protected final def TOKENIZE_END: Rule0 = rule {
+    MATCH ~> {() => tokenize = false}
   }
 
-  private def setNoSelect: Boolean = {
-    isselect = false
-    true
+  private def SET_SELECT: Rule0 = rule {
+    MATCH ~> {() => isselect = true}
+  }
+
+  private def SET_NOSELECT: Rule0 = rule {
+    MATCH ~> {() => isselect = false}
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (test(setSelect) ~ query.named("select")) | (test(setNoSelect) ~ (insert | put | dmlOperation | ctes |
+    (SET_SELECT ~ query.named("select")) | (SET_NOSELECT ~ (insert | put | dmlOperation | ctes |
         ddl | set | cache | uncache | desc))
   }
 

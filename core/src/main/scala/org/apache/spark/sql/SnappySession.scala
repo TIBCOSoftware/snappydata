@@ -25,6 +25,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -33,12 +34,14 @@ import com.gemstone.gemfire.internal.shared.{FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders._
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, In, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias, Union}
@@ -1637,7 +1640,9 @@ object SnappySession extends Logging {
     }
   }
 
-  class CachedKey(val session: SnappySession, val lp: LogicalPlan, val sqlText: String, val hintHashcode: Int) {
+  class CachedKey(
+      val session: SnappySession, val lp: LogicalPlan,
+      val sqlText: String, val hintHashcode: Int) {
 
     override def hashCode(): Int = {
       (session, lp, hintHashcode).hashCode()
@@ -1646,7 +1651,7 @@ object SnappySession extends Logging {
     override def equals(obj: Any): Boolean = {
       obj match {
         case x: CachedKey => {
-          (x.session, x.lp, hintHashcode).equals(session, lp, hintHashcode)
+          (x.session, x.lp, x.hintHashcode).equals(session, lp, hintHashcode)
         }
         case _ => false
       }
@@ -1669,6 +1674,8 @@ object SnappySession extends Logging {
           AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
         case a: Alias =>
           Alias(a.child, a.name)(exprId = ExprId(0))
+        case ae: AggregateExpression =>
+          ae.copy(resultId = ExprId(0))
       }
       new CachedKey(session, tlp, sqlText, session.queryHints.hashCode())
     }
