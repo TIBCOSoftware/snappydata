@@ -161,7 +161,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   def getShadowRegionSize(tbl: String) : Long = {
     // divide by three as 2 entries are for column and one is a base entry
     Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName(tbl).toUpperCase,
+        columnBatchTableName(tbl).toUpperCase,
       true).asInstanceOf[PartitionedRegion].size() /3
   }
 
