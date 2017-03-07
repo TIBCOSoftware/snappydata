@@ -82,7 +82,7 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
       val resolvedName = ExternalStoreUtils.lookupName(tableName,
         connection.getSchema)
       // split the batch and put into row buffer if it is small
-      if (false && maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
+      if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
         GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
         // the lookup key depends only on schema and not on the table
         // name since the prepared statement specific to the table is
