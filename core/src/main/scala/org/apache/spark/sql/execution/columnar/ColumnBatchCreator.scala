@@ -111,7 +111,7 @@ final class ColumnBatchCreator(
         references(batchIdRef + 2) = tableName
         // no harm in passing a references array with an extra element at end
         val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
-        iter.init(0, Array(execRows.asInstanceOf[Iterator[InternalRow]]))
+        iter.init(bucketID, Array(execRows.asInstanceOf[Iterator[InternalRow]]))
         while (iter.hasNext) {
           iter.next() // ignore result which is number of inserted rows
         }
