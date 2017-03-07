@@ -8,12 +8,17 @@ repo_url: https://github.com/SnappyDataInc/snappydata
 
 pages:
 
-- 'Introduction': 'index.md'
-- 'About SnappyData': 'empty.md'
-- 'Overview': 
+- 'Welcome': 'index.md'
+- 'About SnappyData': 'intro/about.md'
+- 'About SnappyData':
     - 'Key Features': 'intro/key_features.md'
     - 'Extensions to the Spark Runtime': 'intro/extension_to_the_spark_runtime.md'
     - 'Spark Challenges for Mixed Workloads (OLTP, OLAP)': 'intro/oltp_olap.md'
+    - 'Architecture': 'architecture.md'
+    - 'Architecture':
+        - 'Core Components': 'architecture/core_components.md'
+        - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
+        - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'
 # -- Topic - Quick Start
 - 'Quick Start': 'quickstart.md'
 - 'Quick Start':
@@ -41,7 +46,7 @@ pages:
         - 'Building from Source': 'install/from_source.md'     
         - 'Cloud Installation': 'install/on_aws.md'     
 # -- Topic - Cloud Services
-- 'Snappy Cloud Services': 'empty.md'
+- 'Snappy Cloud Services': 'cloud/cloud_services.md'
 - 'Snappy Cloud Services':
     - 'Sub-Heading': 'empty.md'
 # -- Topic - Concepts and Theories
@@ -65,7 +70,7 @@ pages:
     - 'Working with heterogenous data': 'empty.md'
     - 'Backup and Recovery': 'backup.md'
     - 'Backup and Recovery':
-        - 'Online and offline backup and recovery': 'concepts/backup/onlilne_offline_backup.md'
+        - 'Online and offline backup and recovery': 'concepts/backup/online_offline_backup.md'
         - 'Redundancy and Data Availability for Failures': 'concepts/backup/redundancy_data_availability.md'
         - 'Recovering from Failures and Revoking Safely': 'concepts/backup/recovery_revoking.md'
         - 'Recovery using data extractor; data redundancy implications': 'concepts/backup/recovery_using_data_extractor_redundancy.md'
