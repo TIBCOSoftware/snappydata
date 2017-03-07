@@ -97,7 +97,6 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
           columnPosition += 1
         }
         stmt.executeUpdate()
-        connection.commit()
         stmt.close()
       }
     }
