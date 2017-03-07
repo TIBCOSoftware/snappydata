@@ -96,6 +96,7 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
        |  if ($rowCount > 0) {
        |    $result += $stmt.executeBatch().length;
        |  }
+       |  $stmt.getConnection().commit();
        |  $stmt.close();
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |} catch (java.sql.SQLException sqle) {

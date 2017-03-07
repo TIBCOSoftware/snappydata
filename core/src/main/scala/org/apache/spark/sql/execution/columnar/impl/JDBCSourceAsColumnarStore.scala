@@ -79,8 +79,6 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
       batchId: Option[String], partitionId: Int,
       maxDeltaRows: Int): (Connection => Any) = {
     (connection: Connection) => {
-      val resolvedName = ExternalStoreUtils.lookupName(tableName,
-        connection.getSchema)
       // split the batch and put into row buffer if it is small
       if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
         GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
@@ -111,6 +109,8 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
         val refs = gen._2.clone()
         // set the statement object for current execution
         val statementRef = refs(refs.length - 1).asInstanceOf[Int]
+        val resolvedName = ExternalStoreUtils.lookupName(tableName,
+          connection.getSchema)
         val putSQL = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
           schema, upsert = true)
         val stmt = connection.prepareStatement(putSQL)
@@ -125,17 +125,21 @@ class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
         while (iter.hasNext) {
           iter.next()
         }
-      } else connectionType match {
-        case ConnectionType.Embedded =>
-          val region = Misc.getRegionForTable(resolvedName, true)
-              .asInstanceOf[PartitionedRegion]
-          val batchUUID = Some(batchId.getOrElse(region.newJavaUUID().toString))
-          super.doInsert(resolvedName, batch, batchUUID, partitionId,
-            maxDeltaRows)(connection)
+      } else {
+        val resolvedColumnTableName = ExternalStoreUtils.lookupName(
+          columnTableName, connection.getSchema)
+        connectionType match {
+          case ConnectionType.Embedded =>
+            val region = Misc.getRegionForTable(resolvedColumnTableName, true)
+                .asInstanceOf[PartitionedRegion]
+            val batchID = Some(batchId.getOrElse(region.newJavaUUID().toString))
+            super.doInsert(resolvedColumnTableName, batch, batchID, partitionId,
+              maxDeltaRows)(connection)
 
-        case _ =>
-          super.doInsert(columnTableName, batch, batchId, partitionId,
-            maxDeltaRows)(connection)
+          case _ =>
+            super.doInsert(resolvedColumnTableName, batch, batchId, partitionId,
+              maxDeltaRows)(connection)
+        }
       }
     }
   }
