@@ -279,6 +279,12 @@ private[sql] final case class ColumnTableScan(
     } else ("", "")
 
     val iteratorClass = "scala.collection.Iterator"
+    val colIteratorClass = if (isEmbedded) {
+      "org.apache.spark.sql.execution.columnar.ColumnBatchIterator"
+    }
+    else {
+      "org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS"
+    }
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         ctx.addMutableState(iteratorClass, rowInputSRR,
@@ -289,8 +295,8 @@ private[sql] final case class ColumnTableScan(
       }
       ctx.addMutableState(iteratorClass, rowInput,
         s"$rowInput = ($iteratorClass)inputs[0].next();")
-      ctx.addMutableState(iteratorClass, colInput,
-        s"$colInput = ($iteratorClass)inputs[0].next();")
+      ctx.addMutableState(colIteratorClass, colInput,
+        s"$colInput = ($colIteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = (($rsIterClass)$rowInput).rs();")
     } else {
@@ -299,8 +305,8 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState(iteratorClass, rowInput,
         s"$rowInput = $inputIsOtherRDD ? inputs[0] " +
             s": ($iteratorClass)inputs[0].next();")
-      ctx.addMutableState(iteratorClass, colInput,
-        s"$colInput = $inputIsOtherRDD ? null : ($iteratorClass)inputs[0].next();")
+      ctx.addMutableState(colIteratorClass, colInput,
+        s"$colInput = $inputIsOtherRDD ? null : ($colIteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
       ctx.addMutableState(unsafeHolderClass, unsafeHolder,
@@ -312,7 +318,6 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
 
     ctx.currentVars = null
-    val columnBatchClass = classOf[ColumnBatch].getName
     val encodingClass = classOf[ColumnEncoding].getName
     val decoderClass = classOf[ColumnDecoder].getName
     val rsDecoderClass = classOf[ResultSetDecoder].getName
@@ -324,7 +329,7 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
 
-    ctx.addMutableState("java.nio.ByteBuffer[]", buffers, s"$buffers = null;")
+    ctx.addMutableState("byte[]", buffers, s"$buffers = null;")
     ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
     ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
 
@@ -448,7 +453,7 @@ private[sql] final case class ColumnTableScan(
     val platformClass = classOf[Platform].getName
     // Stat row contains 5 stats per column as specified in PartitionStatistics
     // If number of stats in PartitionStatistics is changed this should be changed.
-    val numColumnsInStatBlob = relation.schema.size * 5
+    val numColumnsInStatBlob = relationSchema.size * 5
     ctx.addNewFunction(getUnsafeRow,
       s"""
          |
