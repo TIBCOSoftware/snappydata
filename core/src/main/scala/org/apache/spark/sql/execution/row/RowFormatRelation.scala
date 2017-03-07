@@ -369,9 +369,6 @@ final class DefaultSource extends MutableRelationProvider {
       relation
     } finally {
       if (!success && !relation.tableExists) {
-        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
-          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }
