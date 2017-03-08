@@ -19,18 +19,32 @@ You can run the examples in any of the following ways:
 The following topics are covered in this section:
 
 * [How to Start a SnappyData Cluster](#howto-startCluster)
+
 * [How to Run Spark Job inside the Cluster](#howto-job)
+
 * [How to Access SnappyData Store from existing Spark Installation using Smart Connector](#howto-splitmode)
+
 * [How to Create Row Tables and Run Queries](#howto-row)
+
 * [How to Create Column Tables and Run Queries](#howto-column)
+
 * [How to Load Data in SnappyData Tables](#howto-load)
-* [How to perform a Collocated Join](#howto-collacatedJoin)
+
+* [How to Perform a Collocated Join](#howto-collacatedJoin)
+
 * [How to Connect using JDBC Driver](#howto-jdbc)
+
 * [How to Store and Query JSON Objects](#howto-JSON)
+
 * [How to Store and Query Objects](#howto-objects)
+
 * [How to Use Stream Processing with SnappyData](#howto-streams)
+
 * [How to Use Synopsis Data Engine to Run Approximate Queries](#howto-sde)
+
 * [How to Use Python to Create Tables and Run Queries](#howto-python)
+
+* [How to Connect using ODBC Driver](#howto-odbc)
 
 
 <a id="howto-startCluster"></a>
@@ -53,14 +67,14 @@ Starting SnappyData Locator using peer discovery on: localhost[10334]
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
 Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 9368 status: running
-Starting SnappyData Server using locators for peer discovery: shirishd-laptop[10334]
+Starting SnappyData Server using locators for peer discovery: user1-laptop[10334]
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-Logs generated in /home/shirishd/snappyData/work/localhost-server-1/snappyserver.log
+Logs generated in /home/user1/snappyData/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 9519 status: running
   Distributed system now has 2 members.
   Other members: localhost(9368:locator)<v0>:16944
-Starting SnappyData Leader using locators for peer discovery: shirishd-laptop[10334]
-Logs generated in /home/shirishd/snappyData/work/localhost-lead-1/snappyleader.log
+Starting SnappyData Leader using locators for peer discovery: user1-laptop[10334]
+Logs generated in /home/user1/snappyData/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 9699 status: running
   Distributed system now has 3 members.
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
@@ -79,7 +93,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://<leadHostname>:4040` in browser, where `<leadHostname>` is the host name of your lead node. Use [snappy-sql](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check SnappyData UI by opening `http://<leadHostname>:5050` in browser, where `<leadHostname>` is the host name of your lead node. Use [Snappy SQL shell](#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
 **Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
 
@@ -231,11 +245,11 @@ You can now create tables and run queries in SnappyData store using your Apache 
 
 
 <a id="howto-snappyShell"></a>
-## How to Use SnappyData SQL shell (snappy-sql)
-`snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-shell` uses JDBC connections to execute SQL.
+## How to Use Snappy SQL shell (snappy-sql)
+`snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: 
-Use the `snappy-sql` and `connect client` command on the Snappy Shell
+Use the `snappy-sql` and `connect client` command on the Snappy SQL Shell
 
 ```
 $ bin/snappy-sql
@@ -674,7 +688,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 ```
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
     // Read a JSON file using Spark API
-    val people = snSession.jsonFile(some_people_path)
+    val people = snSession.read.json(some_people_path)
     people.printSchema()
 ```
 
@@ -1100,3 +1114,31 @@ This same table can be created by using createTable API. First we create a schem
 ```
 
 The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py)
+
+<a id="howto-odbc"></a>
+## How to Connect using ODBC Driver
+
+You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.
+
+### Download and Install the ODBC Driver
+
+To download and install the ODBC driver:
+
+1. Download the SnappyData ODBC Driver from the SnappyData Release page. << ADD DOWNLOAD LINK HERE >>. 
+Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.
+
+2. Extract the contents of the **name_of_the.zip** file. 
+
+3. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
+
+### Connect to the SnappyData cluster 
+Once you have installed snappyData ODBC Driver, you can connect to SnappyData cluster in following ways:
+
+* Use the SnappyData Driver Conneciton URL:
+
+		Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
+
+* Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
+ Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
+ When prompted, select the SnappyData ODBC Driver from drivers list and enter a Data Source name, SnappyData Server Host, Port, User and Password. 
+
