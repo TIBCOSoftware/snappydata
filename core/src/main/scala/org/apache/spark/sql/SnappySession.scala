@@ -38,7 +38,7 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, EliminateSubqueryAliases}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
@@ -167,8 +167,29 @@ class SnappySession(@transient private val sc: SparkContext,
   def sqlUncached(sqlText: String): DataFrame =
     snappyContextFunctions.sql(super.sql(sqlText))
 
-  private[sql] final def executeSQL(sqlText: String): DataFrame =
-    super.sql(sqlText)
+  private[sql] final def executeSQL(sqlText: String): DataFrame = {
+    try {
+      super.sql(sqlText)
+    } catch {
+      case e: AnalysisException =>
+        // in case of connector mode, exception can be thrown if
+        // table form is changed (altered) and we have old table
+        // object in SnappyStoreHiveCatalog.cachedDataSourceTables
+        SnappyContext.getClusterMode(sparkContext) match {
+          case ThinClientConnectorMode(_, _) =>
+            val plan = sessionState.sqlParser.parsePlan(sqlText)
+            var tables: Seq[TableIdentifier] = Seq()
+            plan.foreach {
+              case UnresolvedRelation(table, _) => tables = tables.+:(table)
+              case _ =>
+            }
+            tables.foreach(sessionCatalog.refreshTable)
+            Dataset.ofRows(snappyContext.sparkSession, plan)
+          case _ =>
+            throw e
+        }
+    }
+  }
 
   @transient
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty

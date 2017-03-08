@@ -37,8 +37,8 @@ private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
     val className = funcDefinition.className
     val funcResourcesArray: Array[(String, String)] = new Array(funcDefinition.resources.length)
     funcDefinition.resources.zipWithIndex.foreach {
-      case (functionResource: FunctionResource, index: Int) =>
-        funcResourcesArray(index) = (functionResource.resourceType.resourceType, functionResource.uri)
+      case (fr: FunctionResource, index: Int) =>
+        funcResourcesArray(index) = (fr.resourceType.resourceType, fr.uri)
     }
 
     SmartConnectorHelper.executeCreateUDFStatement(db, functionName, className, funcResourcesArray)
