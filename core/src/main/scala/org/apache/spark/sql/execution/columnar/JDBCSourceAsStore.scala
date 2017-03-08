@@ -138,32 +138,52 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte])
 
+object ColumnBatchIterator {
+
+  def apply(container: GemFireContainer,
+      bucketIds: java.util.Set[Integer]): ColumnBatchIterator = {
+    new ColumnBatchIterator(container, bucketIds, null)
+
+  }
+
+  def apply(batch: ColumnBatch): ColumnBatchIterator = {
+    new ColumnBatchIterator(null, null, batch)
+  }
+}
+
 final class ColumnBatchIterator(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
+    bucketIds: java.util.Set[Integer], val batch: ColumnBatch)
     extends PRValuesIterator[Array[Byte]](container, bucketIds) {
 
-  assert(!container.isOffHeap,
-    s"Unexpected byte[][] iterator call for off-heap $container")
+  if (container ne null){
+    assert(!container.isOffHeap,
+      s"Unexpected byte[][] iterator call for off-heap $container")
+  }
 
   protected var currentVal: Array[Byte] = _
   var currentKeyUUID: DataValueDescriptor = _
   var currentKeyPartitionId: DataValueDescriptor = _
   var currentBucketRegion: BucketRegion = _
-  val baseRegion: LocalRegion = container.getRegion
+  val baseRegion: LocalRegion = if (container ne null) container.getRegion else null
+  var batchProcessed = false
 
   def getColumnLob(bufferPosition: Int): ByteBuffer = {
-    val key = new CompactCompositeRegionKey(Array(
-      currentKeyUUID, currentKeyPartitionId, new SQLInteger(bufferPosition)),
-      container.getExtraTableInfo());
-    val rl = if (currentBucketRegion != null) currentBucketRegion.get(key) else baseRegion.get(key)
-    val value = rl.asInstanceOf[Array[Array[Byte]]]
-    val rf = container.getRowFormatter(value(0))
-
-    ByteBuffer.wrap(rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION))
+    if (container ne null) {
+      val key = new CompactCompositeRegionKey(Array(
+        currentKeyUUID, currentKeyPartitionId, new SQLInteger(bufferPosition)),
+        container.getExtraTableInfo());
+      val rl = if (currentBucketRegion != null) currentBucketRegion.get(key)
+      else baseRegion.get(key)
+      val value = rl.asInstanceOf[Array[Array[Byte]]]
+      val rf = container.getRowFormatter(value(0))
+      ByteBuffer.wrap(rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION))
+    } else {
+      batch.buffers(bufferPosition - 1)
+    }
   }
 
   override protected def moveNext(): Unit = {
-    while (itr.hasNext) {
+    while ((container ne null) && itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
       currentBucketRegion = itr.getHostedBucketRegion
       // get the stat row region entries only. region entries for individual columns
@@ -184,6 +204,11 @@ final class ColumnBatchIterator(container: GemFireContainer,
           }
         }
       }
+    }
+    if ((container eq null) && !batchProcessed) {
+      currentVal = batch.statsData
+      batchProcessed = true
+      return
     }
     hasNextValue = false
   }

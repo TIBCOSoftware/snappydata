@@ -296,6 +296,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     var upperIsNull = "false"
     var canBeNull = false
     val nullCount = ctx.freshName("nullCount")
+    val count = ctx.freshName("count")
     val sqlType = Utils.getSQLDataType(field.dataType)
     val jt = ctx.javaType(sqlType)
     val boundsCode = sqlType match {
@@ -347,12 +348,14 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       s"""
          |$boundsCode
          |$nullsCode
-         |final int $nullCount = $encoder.nullCount();""".stripMargin
+         |final int $nullCount = $encoder.nullCount();
+         |final int $count = $encoder.count();""".stripMargin
 
     (code, ColumnStatsSchema(field.name, field.dataType).schema, Seq(
       ExprCode("", lowerIsNull, lower),
       ExprCode("", upperIsNull, upper),
-      ExprCode("", "false", nullCount)))
+      ExprCode("", "false", nullCount),
+      ExprCode("", "false", count)))
   }
 }
 

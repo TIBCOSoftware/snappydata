@@ -30,19 +30,19 @@ import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
-import com.gemstone.gemfire.internal.cache.{LocalRegion, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer, RegionEntryUtils}
+import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer}
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
 
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.PartitionedPhysicalScan
+import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, JDBCSourceAsStore}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.unsafe.Platform
@@ -212,12 +212,10 @@ object SnappyTableStatsProviderService extends Logging {
             table.endsWith(Constant.SHADOW_TABLE_SUFFIX)) {
           if (container != null) {
             val bufferTable = JDBCAppendableRelation.getTableName(table)
-            val numColumnsInBaseTbl = Misc.getMemStore.getAllContainers.asScala.find(c => {
-              c.getQualifiedTableName.equalsIgnoreCase(bufferTable)}).get.getNumColumns
+            val numColumnsInBaseTbl = (Misc.getMemStore.getAllContainers.asScala.find(c => {
+              c.getQualifiedTableName.equalsIgnoreCase(bufferTable)}).get.getNumColumns) - 1
 
-            // Stat row contains 5 stats per column as specified in PartitionStatistics
-            // If number of stats in PartitionStatistics is changed this should be changed.
-            val numColumnsInStatBlob = numColumnsInBaseTbl * 5
+            val numColumnsInStatBlob = numColumnsInBaseTbl * ColumnStatsSchema.NUM_STATS_PER_COLUMN
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
             // Resetting PR Numrows in cached batch as this will be calculated every time.
@@ -238,7 +236,7 @@ object SnappyTableStatsProviderService extends Logging {
                   val unsafeRow = new UnsafeRow(numColumnsInStatBlob);
                   unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
                     statBytes.length);
-                  rowsInColumnBatch += unsafeRow.getInt(3);
+                  rowsInColumnBatch += unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA);
                 }
               }
             }

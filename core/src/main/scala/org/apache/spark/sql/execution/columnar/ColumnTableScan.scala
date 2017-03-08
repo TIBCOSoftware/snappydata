@@ -451,9 +451,7 @@ private[sql] final case class ColumnTableScan(
     val statBytes = ctx.freshName("statBytes")
     val colNextBytes = ctx.freshName("colNextBytes")
     val platformClass = classOf[Platform].getName
-    // Stat row contains 5 stats per column as specified in PartitionStatistics
-    // If number of stats in PartitionStatistics is changed this should be changed.
-    val numColumnsInStatBlob = relationSchema.size * 5
+    val numColumnsInStatBlob = relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN
     ctx.addNewFunction(getUnsafeRow,
       s"""
          |
@@ -476,11 +474,12 @@ private[sql] final case class ColumnTableScan(
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val incrementBatchCount = if (columnBatchesSeen eq null) ""
     else s"$columnBatchesSeen.${metricAdd("1")};"
+    val countIndexInSchema = ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA
     val batchAssign =
       s"""
         final byte[] $colNextBytes = (byte[])$colInput.next();
         UnsafeRow unsafeRow = $getUnsafeRow($colNextBytes);
-        $numBatchRows = unsafeRow.getInt(3);
+        $numBatchRows = unsafeRow.getInt($countIndexInSchema);
         $incrementBatchCount
         $buffers = $colNextBytes;
       """

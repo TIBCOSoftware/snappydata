@@ -222,6 +222,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final var _upperStr: UTF8String = _
   protected final var _lowerDecimal: Decimal = _
   protected final var _upperDecimal: Decimal = _
+  protected final var _count: Integer = 0
 
   def sizeInBytes(cursor: Long): Long = cursor - columnData.baseOffset
 
@@ -352,6 +353,8 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def upperString: UTF8String = _upperStr
 
+  final def count: Integer = _count
+
   @inline protected final def updateLongStats(value: Long): Unit = {
     val lower = _lowerLong
     if (value < lower) {
@@ -361,6 +364,7 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperLong) {
       _upperLong = value
     }
+    _count = _count + 1
   }
 
   @inline protected final def updateDoubleStats(value: Double): Unit = {
@@ -372,6 +376,7 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperDouble) {
       _upperDouble = value
     }
+    _count = _count + 1
   }
 
   @inline protected final def updateStringStats(value: UTF8String): Unit = {
@@ -389,6 +394,7 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperStr = value
       }
     }
+    _count = _count + 1
   }
 
   @inline protected final def updateStringStatsClone(value: UTF8String): Unit = {
@@ -407,6 +413,7 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperStr = StringUtils.cloneIfRequired(value)
       }
     }
+    _count = _count + 1
   }
 
   @inline protected final def updateDecimalStats(value: Decimal): Unit = {
@@ -424,6 +431,7 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperDecimal = value
       }
     }
+    _count = _count + 1
   }
 
   def nullCount: Int
@@ -820,7 +828,7 @@ object ColumnEncoding {
   }
 }
 
-private[columnar] case class ColumnStatsSchema(fieldName: String,
+case class ColumnStatsSchema(fieldName: String,
     dataType: DataType) {
   val upperBound: AttributeReference = AttributeReference(
     fieldName + ".upperBound", dataType)()
@@ -828,14 +836,17 @@ private[columnar] case class ColumnStatsSchema(fieldName: String,
     fieldName + ".lowerBound", dataType)()
   val nullCount: AttributeReference = AttributeReference(
     fieldName + ".nullCount", IntegerType, nullable = false)()
+  val count: AttributeReference = AttributeReference(
+    fieldName + ".count", IntegerType, nullable = false)()
 
-  val schema = Seq(lowerBound, upperBound, nullCount)
+  val schema = Seq(lowerBound, upperBound, nullCount, count)
 
   assert(schema.length == ColumnStatsSchema.NUM_STATS_PER_COLUMN)
 }
 
-private[columnar] object ColumnStatsSchema {
-  val NUM_STATS_PER_COLUMN = 3
+object ColumnStatsSchema {
+  val NUM_STATS_PER_COLUMN = 4
+  val COUNT_INDEX_IN_SCHEMA = 3
 }
 
 final class ColumnData(val bytes: AnyRef, val baseOffset: Long,

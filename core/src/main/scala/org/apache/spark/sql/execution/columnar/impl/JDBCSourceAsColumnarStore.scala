@@ -245,7 +245,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             // put the single ColumnBatch in the iterator read by generated code
             iter.init(0, Array(Iterator[Any](new ResultSetTraversal(
               conn = null, stmt = null, rs = null, context = null),
-              Iterator(batch)).asInstanceOf[Iterator[InternalRow]]))
+              ColumnBatchIterator(batch)).asInstanceOf[Iterator[InternalRow]]))
             // ignore the result which is the update count
             while (iter.hasNext) {
               iter.next()
@@ -319,7 +319,7 @@ final class ColumnarStorePartitionedRDD(
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
     }
-    new ColumnBatchIterator(container, bucketIds)
+    ColumnBatchIterator(container, bucketIds)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
