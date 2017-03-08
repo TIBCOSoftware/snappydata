@@ -13,7 +13,7 @@ Data in tables is primarily managed in-memory with one or more consistent copies
 <a id="snappysession"></a>
 ## SnappySession and SnappyStreamingContext
 
-[SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
+[SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
 Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
 [Streaming Context](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
@@ -367,7 +367,6 @@ To run all SnappyData functionalities you need to create a [SnappySession](http:
 ```bash
 // from the SnappyData base directory  
 # Start the Spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
-# Change the UI port because the default port 4040 is being used by Snappy’s lead. 
 $ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
 scala>
 #Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
@@ -398,6 +397,20 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 //   connection at a server endpoint
 ```
 <Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
+
+## Multiple Language Binding using Thrift Protocol
+SnappyData provides support for Apache Thrift protocol enabling users to access the  cluster from other languages that are not supported directly by SnappyData. 
+Thrift allows efficient and reliable communication across programming languages like Java, Python, PHP, Ruby, Elixir, Perl and other languages. For more information on Thrift, refer to the [Apache Thrift documentation](https://thrift.apache.org/).
+
+Refer to the following documents for information on support provided by SnappyData:</br>
+
+ * [**About SnappyData Thrift**](https://github.com/SnappyDataInc/snappydata/blob/master/cluster/README-thrift.md): Contains detailed information about the feature and it's capabilities.
+
+ * [**The Thrift Interface Definition Language (IDL)**](https://github.com/SnappyDataInc/snappy-store/blob/snappy/master/gemfirexd/shared/src/main/java/io/snappydata/thrift/common/snappydata.thrift): This is a Thrift interface definition file for the SnappyData service.
+
+ * [**Example**](https://github.com/SnappyDataInc/snappy-store/blob/snappy/master/gemfirexd/tools/src/test/java/io/snappydata/app/TestThrift.java):
+ Example of the Thrift definitions using the SnappyData Thrift IDL.
+
 
 ## Building SnappyData Applications using Spark API
 
@@ -665,7 +678,8 @@ PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a repli
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
-PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string maps to default diskstore
+PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’, 
+DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
 )
 [AS select_statement];
@@ -736,7 +750,9 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    6. PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
-   7. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+   7. DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
+
+   8. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
    
    Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
 
@@ -1026,3 +1042,85 @@ dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 
 ### Dynamic (ad-hoc) Continuous Queries
 Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.
+
+## User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)
+Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
+The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
+
+<note>Note: Support for UDFs is available in SnappyData 0.8 and higher.</note>
+
+### Create User Defined Function
+
+You can simply extend any one of the interfaces in the package **org.apache.spark.sql.api.java**. 
+The **org.apache.spark.sql.api.java** package allows the execution of relational queries, including those expressed in SQL using Spark.
+
+These interfaces can be included in your client application by adding **snappy-spark-sql_2.11-2.0.3-2.jar** to your classpath.
+
+#### **Define a UDF class**
+
+The number in the interfaces (UDF1 to UDF22) signifies the number of parameters an UDF can take.
+
+<note> Note: Currently, any UDF which can take more than 22 parameters is not supported. </note>
+
+```
+package some.package
+import org.apache.spark.sql.api.java.UDF1
+
+class StringLengthUDF extends UDF1[String, Int] {
+ override def call(t1: String): Int = t1.length
+}
+```
+<a id= create_udf> </a>
+#### **Create the UDF Function**
+After defining an UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-shell` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
+
+```
+CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USING JAR '/path/to/file/udf.ja
+```
+
+You can write a JAVA or SCALA class to write an UDF implementation. 
+
+<note>Note: For input/output types: 
+</br>The framework always returns the Java types to the UDFs. So, if you are writing `scala.math.BigDecimal` as an input type or output type, an exception is reported. You can use `java.math.BigDecimal` in the SCALA code. </note>
+
+
+**Return Types to UDF program type mapping **
+
+| SnappyData Type | UDF Type |
+| --- | --- |
+|STRING|java.lang.String|
+|INTEGER|java.lang.Integer|
+|LONG|java.lang.Long|
+|DOUBLE|java.lang.Double|
+|DECIMAL|java.math.BigDecimal|
+|DATE|java.sql.Date|
+|TIMESTAMP|java.sql.Timestamp|
+|FLOAT|java.lang.Float|
+|BOOLEAN|java.lang.Boolean|
+|SHORT|java.lang.Short|
+|BYTE|java.lang.Byte|
+
+#### **Use the UDF**
+
+```
+select strnglen(string_column) from <table>
+```
+If you try to use an UDF on a different type of column, for example, an **Int** column an exception is reported.
+
+
+#### **Drop the Function**
+
+```
+DROP FUNCTION IF EXISTS app.strnglen
+```
+
+#### **Modifying an Existing UDF**
+
+ 1) Drop the existing UDF
+
+ 2) Modify the UDF code and [recreate the new UDF](#create_udf). You can create a UDF with the same name as that of the dropped UDF.
+
+
+### Create User Defined Aggregate Functions
+
+SnappyData uses same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
