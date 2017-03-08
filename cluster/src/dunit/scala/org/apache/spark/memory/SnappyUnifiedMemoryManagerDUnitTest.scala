@@ -20,6 +20,7 @@ package org.apache.spark.memory
 import java.lang.management.ManagementFactory
 import java.util.Properties
 
+import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.pivotal.gemfirexd.DistributedSQLTestBase
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
@@ -77,6 +78,11 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm2.invoke(getClass, "resetStorageMemory")
   }
 
+  override def setUp(): Unit = {
+    super.setUp()
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+  }
+
   override def tearDown2(): Unit = {
     resetMemoryManagers
     super.tearDown2()
@@ -104,6 +110,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(rr_table, "row", dataDF.schema, Map.empty[String, String])
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
@@ -121,6 +128,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
 
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
@@ -139,6 +147,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
 
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
@@ -171,6 +180,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
     vm1.invoke(restartServer(props))
 
@@ -203,6 +213,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(rr_table, "row", dataDF.schema, Map.empty[String, String])
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
     vm1.invoke(restartServer(props))
 
@@ -236,6 +247,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
     vm1.invoke(restartServer(props))
 
@@ -269,6 +281,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
 
     val otherExecutorThread = new Thread(new Runnable {
@@ -307,6 +320,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
     var vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
@@ -337,13 +351,14 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val snc = newContext()
 
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 4).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
     var vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
@@ -389,6 +404,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
     )
+    setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
 
     vm1.invoke(restartServer(props))
@@ -427,6 +443,12 @@ object SnappyUnifiedMemoryManagerDUnitTest {
       case _: Throwable =>
     }
     Thread.sleep(1000)
+  }
+
+  def setLocalRegionMaxTempMemory :Unit = {
+    sc.parallelize(1 until 100, 5).map { i =>
+      LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    }.collect()
   }
 
 }

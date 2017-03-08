@@ -17,8 +17,8 @@
 package org.apache.spark.memory
 
 
+import com.gemstone.gemfire.internal.cache.LocalRegion
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappySession}
@@ -44,6 +44,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   test("Test storage when storage can borrow from execution memory") {
     val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, options)
     SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
@@ -58,6 +59,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   test("Test storage when storage can not borrow from execution memory") {
     val sparkSession = createSparkSession(1, 0.5)
     val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, options)
     var memoryIncreaseDuetoEviction = 0L
 
@@ -101,6 +103,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   test("Test eviction when storage memory has borrowed some memory from execution") {
     val sparkSession = createSparkSession(1, 0.5, 1000)
     val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, options)
     SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)

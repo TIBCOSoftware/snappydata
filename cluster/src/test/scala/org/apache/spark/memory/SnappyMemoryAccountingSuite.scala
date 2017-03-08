@@ -38,8 +38,10 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
       .add(StructField("col2", IntegerType, true))
       .add(StructField("col3", IntegerType, true))
 
-  val options = Map("PARTITION_BY" -> "col1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val coptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
+  val options = Map("PARTITION_BY" -> "col1", "EVICTION_BY" ->
+    "LRUHEAPPERCENT", "OVERFLOW" -> "true")
+  val coptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1",
+    "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val cwoptions = Map("BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val poptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "PERSISTENT" -> "SYNCHRONOUS")
@@ -129,7 +131,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
     val taskAttemptId = 0L
-    //artificially acquire memory
+    // artificially acquire memory
     SparkEnv.get.memoryManager.acquireExecutionMemory(5000L, taskAttemptId, memoryMode)
 
     var memoryIncreaseDuetoEviction = 0L
@@ -141,7 +143,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     }
     SnappyUnifiedMemoryManager.addMemoryEventListener(memoryEventListener)
 
-    //208 *10. 208 is the row size + memory overhead
+    // 208 *10. 208 is the row size + memory overhead
     import scala.util.control.Breaks._
 
     var rows = 0

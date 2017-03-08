@@ -17,8 +17,9 @@
 
 package org.apache.spark.memory
 
+import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.core.FileCleaner
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
-
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll {
@@ -29,6 +30,8 @@ class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll
       snappySession.dropTable("t1", true)
       SnappyContext.globalSparkContext.stop()
     }
+    TestUtil.stopNetServer()
+    FileCleaner.cleanStoreFiles()
   }
 
   //Only use if sure of the problem
