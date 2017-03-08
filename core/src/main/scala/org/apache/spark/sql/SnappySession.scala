@@ -1702,6 +1702,7 @@ object SnappySession extends Logging {
         queryHints = evaluation._2
       } else {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
+        cachedDF.reset()
       }
       // replace the constants from this logical plan
       cachedDF.replaceConstants(lp)

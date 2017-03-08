@@ -174,7 +174,7 @@ class SnappyParser(session: SnappySession)
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
-      ParamLiteral(l, paramcounter)
+      ParamLiteral(l.value, l.dataType, paramcounter)
     })
   }
 

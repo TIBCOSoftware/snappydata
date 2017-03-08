@@ -18,19 +18,23 @@ package org.apache.spark.sql
 
 import java.nio.ByteBuffer
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.concurrent.unsafe.UnsafeAtomicReferenceUpdater
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
@@ -40,7 +44,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, NarrowDependency, Partition, ShuffleDependency, SparkContext, SparkEnv, TaskContext}
 
 class CachedDataFrame(df: Dataset[Row],
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
@@ -75,6 +79,36 @@ class CachedDataFrame(df: Dataset[Row],
       }
     }
   }
+
+  private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
+  private lazy val unsafe = UnsafeHolder.getUnsafe
+  private lazy val rdd_partitions_ = {
+    val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
+    _f.setAccessible(true)
+    unsafe.objectFieldOffset(_f)
+  }
+
+  @tailrec
+  private def clearPartitions(rdd: Seq[RDD[_]]): Unit = {
+    val children = rdd.flatMap(r => if (r != null) {
+      r.dependencies.map {
+        case d: NarrowDependency[_] => d.rdd
+        case s: ShuffleDependency[_, _, _] => s.rdd
+      }
+    } else None)
+
+    rdd.foreach {
+      case null =>
+      case r: RDD[_] =>
+        // f.set(r, null)
+        unsafe.putObject(r, rdd_partitions_, null)
+    }
+    if (children.isEmpty) {
+      return
+    }
+    clearPartitions(children)
+  }
+
 
   /**
    * Wrap a Dataset action to track the QueryExecution and time cost,
@@ -115,16 +149,14 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
-  def replaceConstants(lp: LogicalPlan) = {
-    queryExecution.executedPlan match {
-      case WholeStageCodegenExec(cachedPlan) => {
-        cachedPlan match {
-          case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
-          case _ => // do nothing
-        }
+  private[sql] def replaceConstants(lp: LogicalPlan) = queryExecution.executedPlan match {
+    case WholeStageCodegenExec(cachedPlan) => {
+      cachedPlan match {
+        case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
+        case _ => // do nothing
       }
-      case _ => // do nothing
     }
+    case _ => // do nothing
   }
 
   def collectWithHandler[U: ClassTag, R: ClassTag](

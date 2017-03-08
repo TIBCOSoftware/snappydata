@@ -18,6 +18,9 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
@@ -25,7 +28,8 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{Cast, Literal, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -57,7 +61,7 @@ import org.apache.spark.{Logging, Partition}
  * as do a bulk insert by a Spark DataFrame.
  * Bulk insert example is shown above.
  */
-class BaseColumnFormatRelation(
+abstract class BaseColumnFormatRelation(
     _table: String,
     _provider: String,
     _mode: SaveMode,
@@ -96,14 +100,49 @@ class BaseColumnFormatRelation(
       ColumnFormatRelation.columnBatchTableName(table)
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Any] = {
-    super.scanTable(externalColumnTableName, requiredColumns, filters)
+      filters: Array[Filter], _ignore: => Int): RDD[Any] = {
+
+    // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
+    // RDDs needn't have to care for orderless hashing scheme at invocation point.
+    val (pruningExpressions, fields) = partitionColumns.map { pc =>
+      filters.collectFirst {
+          case EqualTo(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
+            (v, schema(a))
+          case EqualNullSafe(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
+            (v, schema(a))
+      }
+    }.filter(_.nonEmpty).map(_.get).unzip
+
+    val pcFields = StructType(fields).toAttributes
+    val mutableRow = new SpecificMutableRow(pcFields.map(_.dataType))
+    val bucketIdGeneration = UnsafeProjection.create(
+      HashPartitioning(pcFields, numBuckets)
+          .partitionIdExpression :: Nil, pcFields)
+
+    def prunePartitions: Int = {
+      if (pruningExpressions.nonEmpty) {
+        pruningExpressions.zipWithIndex.foreach { case (e, i) =>
+          mutableRow(i) = e.eval(null)
+        }
+        bucketIdGeneration(mutableRow).getInt(0)
+      } else {
+        -1
+      }
+    }
+
+    // note: filters is expected to be already split by CNF.
+    // see PhysicalOperation#unapply
+    super.scanTable(externalColumnTableName, requiredColumns, filters, prunePartitions)
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val rdd = scanTable(table, requiredColumns, filters)
-    val zipped = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+    val rdd = scanTable(table, requiredColumns, filters, -1)
+    val partitionEvaluator = rdd match {
+      case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
+      case r => () => r.partitions
+    }
+    val zipped = buildRowBufferRDD(partitionEvaluator, requiredColumns, filters,
       useResultSet = true).zipPartitions(rdd) { (leftItr, rightItr) =>
       Iterator[Any](leftItr, rightItr)
     }
@@ -114,13 +153,17 @@ class BaseColumnFormatRelation(
   def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], RDD[Any],
       Seq[RDD[InternalRow]]) = {
-    val rdd = scanTable(table, requiredColumns, filters)
-    val rowRDD = buildRowBufferRDD(rdd.partitions, requiredColumns, filters,
+    val rdd = scanTable(table, requiredColumns, filters, -1)
+    val partitionEvaluator = rdd match {
+      case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
+      case r => () => r.partitions
+    }
+    val rowRDD = buildRowBufferRDD(partitionEvaluator, requiredColumns, filters,
       useResultSet = true)
     (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
   }
 
-  def buildRowBufferRDD(partitions: Array[Partition],
+  def buildRowBufferRDD(partitionEvaluator: () => Array[Partition],
       requiredColumns: Array[String], filters: Array[Filter],
       useResultSet: Boolean): RDD[Any] = {
     // TODO: Suranjan scanning over column rdd before row will make sure
@@ -145,7 +188,7 @@ class BaseColumnFormatRelation(
           connProperties,
           Array.empty[Filter],
           // use same partitions as the column store (SNAP-1083)
-          partitions
+          partitionEvaluator
         )
       case _ =>
         new SmartConnectorRowRDD(
@@ -156,7 +199,7 @@ class BaseColumnFormatRelation(
           connProperties,
           filters,
           // use same partitions as the column store (SNAP-1083)
-          partitions
+          partitionEvaluator
         )
     }
   }

@@ -19,14 +19,16 @@ package io.snappydata.cluster
 import java.sql.{Connection, DriverManager}
 
 import scala.collection.mutable.ListBuffer
+
 import com.gemstone.gemfire.cache.CacheException
 import com.pivotal.gemfirexd.internal.engine.access.index.{OpenMemIndex, SortedMap2IndexScanController}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserverHolder, GemFireXDQueryObserverAdapter, GemFireXDQueryObserver}
+import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserver, GemFireXDQueryObserverAdapter, GemFireXDQueryObserverHolder}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.conglomerate.Conglomerate
 import com.pivotal.gemfirexd.internal.impl.sql.compile.StatementNode
-import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
+import io.snappydata.benchmark.TPCHColumnPartitionedTable
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.store.CreateIndexTest

@@ -30,7 +30,7 @@ import org.junit.Assert
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{SaveMode, SingleNodeTest, SnappyContext}
 
 /**
  * Tests for query routing from JDBC client driver.
@@ -602,4 +602,12 @@ class QueryRoutingDUnitTest(val s: String)
     }
 
   }
+
+  def testNodesPruning(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val snc = SnappyContext(sc)
+    SingleNodeTest.testNodesPruning(snc)
+  }
+
 }

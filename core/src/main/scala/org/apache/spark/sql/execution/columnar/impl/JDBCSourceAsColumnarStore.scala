@@ -20,7 +20,9 @@ import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
+import scala.annotation.meta.param
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -34,6 +36,7 @@ import io.snappydata.thrift.internal.ClientBlob
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
@@ -41,7 +44,7 @@ import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDK
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SnappySession, SparkSession}
+import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -178,12 +181,12 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
 
   override def getColumnBatchRDD(tableName: String, requiredColumns: Array[String],
-      session: SparkSession, schema: StructType): RDD[Any] = {
+  prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession,
-          tableName, this)
+          tableName, prunePartitions, this)
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -309,8 +312,37 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 final class ColumnarStorePartitionedRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
+    @(transient @param) partitionPruner: => Int,
     @transient private val store: JDBCSourceAsColumnarStore)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
+
+  private[this] var allPartitions: Array[Partition] = _
+  private val evaluatePartitions: () => Array[Partition] = () => {
+    store.tryExecute(tableName, conn => {
+      val resolvedName = ExternalStoreUtils.lookupName(tableName,
+        conn.getSchema)
+      val region = Misc.getRegionForTable(resolvedName, true)
+      partitionPruner match {
+        case -1 if allPartitions != null =>
+          allPartitions
+        case -1 =>
+          allPartitions = session.sessionState.getTablePartitions(
+            region.asInstanceOf[PartitionedRegion])
+          allPartitions
+        case bucketId: Int =>
+          val pr = region.asInstanceOf[PartitionedRegion]
+          import scala.collection.JavaConverters._
+          val distMembers = pr.getRegionAdvisor.getBucketOwners(bucketId).asScala
+          val prefNodes = distMembers.collect {
+            case m if SnappyContext.containsBlockId(m.toString) =>
+              Utils.getHostExecutorId(SnappyContext.getBlockId(
+                m.toString).get.blockId)
+          }
+          Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
+            pr.getTotalNumberOfBuckets, prefNodes.toSeq))
+      }
+    })
+  }
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
@@ -326,14 +358,10 @@ final class ColumnarStorePartitionedRDD(
   }
 
   override protected def getPartitions: Array[Partition] = {
-    store.tryExecute(tableName, conn => {
-      val resolvedName = ExternalStoreUtils.lookupName(tableName,
-        conn.getSchema)
-      val region = Misc.getRegionForTable(resolvedName, true)
-      session.sessionState.getTablePartitions(
-        region.asInstanceOf[PartitionedRegion])
-    })
+    evaluatePartitions()
   }
+
+  def getPartitionEvaluator: () => Array[Partition] = evaluatePartitions
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
@@ -405,10 +433,10 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _columns: Array[String],
     _connProperties: ConnectionProperties,
     _filters: Array[Filter] = Array.empty[Filter],
-    _parts: Array[Partition] = Array.empty[Partition])
+    _partEval: () => Array[Partition] = () => Array.empty[Partition])
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-      _filters, _parts) {
+      _filters, _partEval) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
@@ -432,7 +460,10 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args)
+      ExternalStoreUtils.setStatementParameters(stmt, args.map {
+        case pl: ParamLiteral => pl.convertedLiteral
+        case v => v
+      })
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
@@ -450,6 +481,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
+    val parts = partitionEvaluator()
     if (parts != null && parts.length > 0) {
       return parts
     }
