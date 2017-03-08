@@ -38,7 +38,7 @@ private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
   override def count(): Long = sparkContext.runJob(this, RDDs.getIteratorSize _).sum
 }
 
-private[spark] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
+private[sql] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
     prev: RDD[T],
     f: (TaskContext, Int, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean = false, p: (Int) => Seq[String])

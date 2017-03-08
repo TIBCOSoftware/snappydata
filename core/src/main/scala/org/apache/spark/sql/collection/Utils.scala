@@ -49,7 +49,6 @@ import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningC
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
-import org.apache.spark.sql.execution.datasources.json.JacksonGenerator
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
@@ -66,9 +65,9 @@ object Utils {
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
 
   // 1 - (1 - 0.95) / 2 = 0.975
-  final val Z95Percent = new NormalDistribution().
+  final val Z95Percent: Double = new NormalDistribution().
       inverseCumulativeProbability(0.975)
-  final val Z95Squared = Z95Percent * Z95Percent
+  final val Z95Squared: Double = Z95Percent * Z95Percent
 
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
     var index = start
@@ -276,7 +275,7 @@ object Utils {
     val sc = sqlContext.sparkContext
     val cleanedF = sc.clean(f)
     new ExecutorLocalRDD[T](sc,
-      (context: TaskContext, part: ExecutorLocalPartition) => cleanedF())
+      (_: TaskContext, _: ExecutorLocalPartition) => cleanedF())
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
@@ -710,7 +709,7 @@ object Utils {
     }
   }
 
-  def metricMethods(sc: SparkContext): (String => String, String => String) = {
+  def metricMethods: (String => String, String => String) = {
     if (usingEnhancedSpark) {
       (v => s"addLong($v)", v => s"$v.longValue()")
     } else {

@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
-import java.util.UUID
 
 import scala.reflect.ClassTag
 
@@ -29,13 +28,14 @@ trait ExternalStore extends Serializable {
 
   final val columnPrefix = "Col_"
 
-  def storeCachedBatch(tableName: String, batch: CachedBatch,
-      partitionId: Int = -1, batchId: Option[UUID] = None): Unit
+  def storeColumnBatch(tableName: String, batch: ColumnBatch,
+      partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit
 
-  def getCachedBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch]
+  def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
+      session: SparkSession): RDD[ColumnBatch]
 
-  def getConnectedExternalStore(tableName: String, onExecutor: Boolean): ConnectedExternalStore
+  def getConnectedExternalStore(tableName: String,
+      onExecutor: Boolean): ConnectedExternalStore
 
   def getConnection(id: String, onExecutor: Boolean): java.sql.Connection
 
@@ -44,7 +44,7 @@ trait ExternalStore extends Serializable {
   def tryExecute[T: ClassTag](tableName: String,
       f: Connection => T,
       closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
-    (implicit c: Option[Connection] = None): T = {
+      (implicit c: Option[Connection] = None): T = {
     var isClosed = false
     val conn = c.getOrElse(getConnection(tableName, onExecutor))
     try {
@@ -60,8 +60,7 @@ trait ExternalStore extends Serializable {
       }
     }
   }
-
-} // ExternalStore
+}
 
 trait ConnectedExternalStore extends ExternalStore {
 
@@ -81,18 +80,13 @@ trait ConnectedExternalStore extends ExternalStore {
     connectedInstance.close()
   }
 
-/*
-  override def getConnection(id: String,
-    onExecutor: Boolean): java.sql.Connection = connectedInstance
-*/
-
   override def tryExecute[T: ClassTag](tableName: String,
-    f: Connection => T,
-    closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
-    (implicit c: Option[Connection]): T = {
+      f: Connection => T,
+      closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+      (implicit c: Option[Connection]): T = {
     assert(!connectedInstance.isClosed)
     val ret = super.tryExecute(tableName, f,
-      closeOnSuccess = false /* responsibility of the user to close later */,
+      closeOnSuccess = false /* responsibility of the user to close later */ ,
       onExecutor)(
       implicitly, Some(connectedInstance))
 
@@ -108,5 +102,4 @@ trait ConnectedExternalStore extends ExternalStore {
     dependentAction = Some(f)
     this
   }
-
 }

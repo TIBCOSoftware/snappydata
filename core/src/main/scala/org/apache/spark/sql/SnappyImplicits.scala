@@ -189,9 +189,9 @@ object snappy extends Serializable {
         Project(inputDataCols ++ inputPartCols, df.logicalPlan)
       }.getOrElse(df.logicalPlan)
 
-      df.sparkSession.sessionState.executePlan(PutIntoTable(
-          UnresolvedRelation(session.sessionState.catalog
-              .newQualifiedTableName(tableName)), input)).toRdd.count()
+      df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
+        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+          .executedPlan.executeCollect()
     }
   }
 }
