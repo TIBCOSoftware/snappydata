@@ -26,37 +26,37 @@ class ThinConnectorSnappyDUnitTest(s: String)
 
   override protected val useThinClientConnector = true
 
-  override def setUp(): Unit = {
-    super.setUp()
-    DistributedTestBase.invokeInLocator(new SerializableRunnable() {
-      override def run(): Unit = {
-        val loc: Locator = ServiceManager.getLocatorInstance
-        if (loc.status != FabricService.State.RUNNING) {
-          loc.start("localhost", locatorClientPort, locatorNetProps)
-        }
-        if (locatorClientPort > 0) {
-          try {
-            loc.startNetworkServer("localhost", locatorClientPort, locatorNetProps)
-          } catch {
-            case g: GemFireXDRuntimeException
-              if g.getMessage.contains("The netserver address")
-                  && g.getMessage.contains("is already in use") => //ignored if already started
-          }
-        }
-        assert(loc.status == FabricService.State.RUNNING)
-      }
-    })
-  }
+//  override def setUp(): Unit = {
+//    super.setUp()
+//    DistributedTestBase.invokeInLocator(new SerializableRunnable() {
+//      override def run(): Unit = {
+//        val loc: Locator = ServiceManager.getLocatorInstance
+//        if (loc.status != FabricService.State.RUNNING) {
+//          loc.start("localhost", locatorClientPort, locatorNetProps)
+//        }
+//        if (locatorClientPort > 0) {
+//          try {
+//            loc.startNetworkServer("localhost", locatorClientPort, locatorNetProps)
+//          } catch {
+//            case g: GemFireXDRuntimeException
+//              if g.getMessage.contains("The netserver address")
+//                  && g.getMessage.contains("is already in use") => //ignored if already started
+//          }
+//        }
+//        assert(loc.status == FabricService.State.RUNNING)
+//      }
+//    })
+//  }
 
   override def tearDown2(): Unit = {
     super.tearDown2()
     vm3.invoke(getClass, "stopSparkContext")
   }
 
-  override def testColumnTableStatsInSplitMode(): Unit = {
+  override def _testColumnTableStatsInSplitMode(): Unit = {
   }
 
-  override def testColumnTableStatsInSplitModeWithHA(): Unit = {
+  override def _testColumnTableStatsInSplitModeWithHA(): Unit = {
   }
 
 

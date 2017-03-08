@@ -290,10 +290,10 @@ object SparkShellRDDHelper extends Logging {
       (null, null, null)
     } else {
       val host: String = matcher.group(1)
-      val addr: String = matcher.group(2)
-      val address = if (addr.charAt(0) == '/') addr.drop(1) else addr
+      val address: String = matcher.group(2)
       val portStr: String = matcher.group(3)
-      (address, host, portStr)
+//      (address, host, portStr)
+      (host, host, portStr)
     }
   }
 

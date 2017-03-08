@@ -215,6 +215,7 @@ object SmartConnectorHelper extends Logging {
       if (bucketCount > 0) {
         val partitionCols = getMetaDataStmt.getString(4).split(":")
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
+        logInfo(s"sdeshmukh bucketToServerMappingStr = $bucketToServerMappingStr")
         val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
         (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, partitions, embdClusterRelDestroyVersion))
