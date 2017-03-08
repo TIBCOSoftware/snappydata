@@ -119,7 +119,7 @@ To launch the instance and start SnappyData cluster:
 
 7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
 	<note> Note:  </note>
-	* <note> You can continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note>
+	* <note> You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note>
 	* <note> When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).</note>
 
 8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
