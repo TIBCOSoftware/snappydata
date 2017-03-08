@@ -710,11 +710,6 @@ final class DefaultSource extends SchemaRelationProvider
       relation
     } finally {
       if (!success && !relation.tableExists) {
-        if (!isRelationforSample) {
-          val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(tableName),
-            Some(relation))
-        }
         // destroy the relation
         relation.destroy(ifExists = true)
       }

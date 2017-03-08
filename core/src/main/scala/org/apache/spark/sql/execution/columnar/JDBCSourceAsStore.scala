@@ -22,8 +22,7 @@ import java.sql.{Connection, ResultSet, Statement}
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry}
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer,
-RowFormatter}
+import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
 import io.snappydata.thrift.common.BufferedBlob
 
