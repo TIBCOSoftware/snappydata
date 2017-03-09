@@ -71,7 +71,7 @@ object SmartConnectorHelper extends Logging {
     case _ =>
   }
 
-  private def initializeConnection(): Unit = {
+  def initializeConnection(): Unit = {
     conn = connFactory()
     createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
     dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
@@ -96,7 +96,8 @@ object SmartConnectorHelper extends Logging {
   }
 
   private def isConnectionException(e: SQLException): Boolean = {
-    e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX)
+    e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX) ||
+    e.getSQLState.startsWith(SQLState.LANG_DEAD_STATEMENT)
   }
 
   def createTable(

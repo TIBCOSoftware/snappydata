@@ -35,9 +35,7 @@ import junit.framework.Assert
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.store.SnappyJoinSuite
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
-import org.apache.spark.sql.{AnalysisException, Row, SaveMode, SnappyContext, SnappySession, SplitClusterMode, ThinClientConnectorMode}
-import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession}
-import org.apache.spark.sql.{Encoders, SaveMode, SnappyContext, SnappySession}
+import org.apache.spark.sql._
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -262,11 +260,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def doTestUDF(skewServerDistribution: Boolean): Unit = {
-    if (skewServerDistribution) {
-      startNetworkServers(2)
-    } else {
-      startNetworkServers(3)
-    }
+    startNetworkServers(3)
     testObject.createUDFInEmbeddedMode()
 
     // StandAlone Spark Cluster Operations
@@ -394,6 +388,7 @@ object SplitSnappyClusterDUnitTest
     row.foreach(r => assert(r(0) == 6))
     snc.sql("drop function APP.intudf_embeddedmode")
     assert(snc.snappySession.sql(s"SHOW FUNCTIONS APP.intudf_embeddedmode").collect().length == 0)
+    snc.sparkContext.stop()
   }
 
   def verifyUDFInEmbeddedMode(): Unit = {
@@ -774,6 +769,9 @@ object SplitSnappyClusterDUnitTest
     assert(rs(0).getAs[String]("COL2").equals("AA"))
 
     connectorSnc.dropTable("APP.T1")
+
+    connectorSnc.sparkContext.stop()
+    connectorSnc = null
 
   }
 }

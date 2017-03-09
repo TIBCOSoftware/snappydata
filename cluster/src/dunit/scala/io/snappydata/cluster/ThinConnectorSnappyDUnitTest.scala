@@ -53,10 +53,10 @@ class ThinConnectorSnappyDUnitTest(s: String)
     vm3.invoke(getClass, "stopSparkContext")
   }
 
-  override def _testColumnTableStatsInSplitMode(): Unit = {
+  override def testColumnTableStatsInSplitMode(): Unit = {
   }
 
-  override def _testColumnTableStatsInSplitModeWithHA(): Unit = {
+  override def testColumnTableStatsInSplitModeWithHA(): Unit = {
   }
 
 

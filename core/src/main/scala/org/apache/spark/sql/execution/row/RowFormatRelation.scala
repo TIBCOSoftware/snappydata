@@ -109,20 +109,27 @@ class RowFormatRelation(
       list
     }
 
-    val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
-    val td = container.getTableDescriptor
-    if (td ne null) {
-      val primaryKey = td.getPrimaryKey
-      if (primaryKey ne null) {
-        // all columns of primary key have to be present in filter to be usable
-        val equalToColumns = getEqualToColumns(filters)
-        val cols = primaryKey.getKeyColumns
-        val baseColumns = td.getColumnNamesArray
-        val pkCols = cols.map(c => baseColumns(c - 1))
-        if (pkCols.forall(equalToColumns.contains)) return pkCols
-      }
+    SnappyContext.getClusterMode(_context.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        // TODO: [shirishd] Fix this for connector mode
+        Array.empty[String]
+      case _ =>
+        val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
+        val td = container.getTableDescriptor
+        if (td ne null) {
+          val primaryKey = td.getPrimaryKey
+          if (primaryKey ne null) {
+            // all columns of primary key have to be present in filter to be usable
+            val equalToColumns = getEqualToColumns(filters)
+            val cols = primaryKey.getKeyColumns
+            val baseColumns = td.getColumnNamesArray
+            val pkCols = cols.map(c => baseColumns(c - 1))
+            if (pkCols.forall(equalToColumns.contains)) return pkCols
+          }
+        }
+        Array.empty[String]
     }
-    Array.empty[String]
+
   }
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {

@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{DelegateRDD, SnappySession}
+import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext, DelegateRDD, SnappySession}
 
 /**
  * Common methods for bulk inserts into column and row tables.
@@ -83,18 +83,23 @@ abstract class TableInsertExec(override val child: SparkPlan,
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     val inputRDDs = child.asInstanceOf[CodegenSupport].inputRDDs()
-    // wrap shuffle RDDs to set preferred locations as per target table
-    if (partitioned) {
-      inputRDDs.map { rdd =>
-        val region = relation.get.asInstanceOf[PartitionedDataSourceScan]
-            .region.asInstanceOf[PartitionedRegion]
-        assert(numBuckets == rdd.getNumPartitions)
-        new DelegateRDD(sparkContext, rdd,
-          Array.tabulate(numBuckets)(
-            StoreUtils.getBucketPreferredLocations(region, _)))
-      }
+    SnappyContext.getClusterMode(sqlContext.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        inputRDDs
+      case _ =>
+        // wrap shuffle RDDs to set preferred locations as per target table
+        if (partitioned) {
+          inputRDDs.map { rdd =>
+            val region = relation.get.asInstanceOf[PartitionedDataSourceScan]
+                .region.asInstanceOf[PartitionedRegion]
+            assert(numBuckets == rdd.getNumPartitions)
+            new DelegateRDD(sparkContext, rdd,
+              Array.tabulate(numBuckets)(
+                StoreUtils.getBucketPreferredLocations(region, _)))
+          }
+        }
+        else inputRDDs
     }
-    else inputRDDs
   }
 
   protected def doChildProduce(ctx: CodegenContext): String = {
