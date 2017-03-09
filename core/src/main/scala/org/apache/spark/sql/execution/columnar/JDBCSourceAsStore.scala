@@ -197,6 +197,7 @@ abstract class ResultSetIterator[A](conn: Connection,
       case e: Exception => logWarning("Exception closing statement", e)
     }
     try {
+      conn.commit()
       conn.close()
       logDebug("closed connection for task " + context.partitionId())
     } catch {

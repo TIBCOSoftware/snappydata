@@ -604,7 +604,10 @@ private[sql] final case class ColumnTableScan(
        |  throw new RuntimeException(e);
        |} finally {
        |  $numOutputRows.${metricAdd(metricValue(numRowsBuffer))};
-       |  //com.gemstone.gemfire.internal.cache.GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+       |  //GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+       |  //com.gemstone.gemfire.internal.cache.GemFireCacheImpl.getInstance()
+       |  //.getCacheTransactionManager.commit()
+       |
        |  $finallyCode
        |  $incrementOtherRows
        |}
