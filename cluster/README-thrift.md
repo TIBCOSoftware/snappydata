@@ -4,17 +4,17 @@ SnappyData store now has support for Thrift protocol that provides functionality
 JDBC/ODBC protocols and can be used to access the store from other languages not yet supported
 directly by SnappyData.  Compared to the Spark [thrift server](http://spark.apache.org/docs/latest/sql-programming-guide.html#running-the-thrift-jdbcodbc-server) based on Hive, this has multiple advantages:
 
-* Hive thrift server has no session/connection support making it impossible to support
-  concurrent connections (as noted in its [documentation](https://cwiki.apache.org/confluence/display/Hive/HiveServer2+Thrift+API))
+* Spark Hive thrift server provides a single point of entry that will spawn its own executors.
+  In the SnappyData embedded mode, this means that only one "lead" node can act as a thrift-server
+  at any point of time. The thrift server implementation in SnappyData has no such limitation
+  that can be started on each of the executors.
 * Enables writing a driver with implicit failover, high-availability characteristics.
   The SnappyData JDBC driver is based on thrift API which uses these characteristics of the API.
 * Hive thrift API is quite limited and lacks a lot of functionality required for full
   JDBC/ODBC compliance. The thrift API supported by SnappyData store is rich enough to write
   a fully compliant JDBC/ODBC drivers including mutability, cursors etc.
-* Spark Hive thrift server provides a single point of entry that will spawn its own executors.
-  In the SnappyData embedded mode, this means that only one "lead" node can act as a thrift-server
-  at any point of time. The thrift server implementation in SnappyData has no such limitation
-  that can be started on each of the executors.
+* There is no open source ODBC driver available for Hive thrift server so that limits
+  its usefulness in terms of overall tools connectivity (e.g. Tableau).
 
 
 ## Thrift server
