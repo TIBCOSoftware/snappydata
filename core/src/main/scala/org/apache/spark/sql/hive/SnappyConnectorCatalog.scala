@@ -57,6 +57,8 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       sqlConf: SQLConf,
       hadoopConf: Configuration) {
 
+  lazy val connectorHelper = new SmartConnectorHelper
+
   def getCachedRelationInfo(table: QualifiedTableName): RelationInfo = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
     sync.lock()
@@ -86,7 +88,8 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
         logDebug(s"Creating new cached data source for $in")
 
-        val (hiveTable: Table, relationInfo: RelationInfo) = SmartConnectorHelper.getHiveTableAndMetadata(in)
+//        val (hiveTable: Table, relationInfo: RelationInfo) = SmartConnectorHelper.getHiveTableAndMetadata(in)
+        val (hiveTable: Table, relationInfo: RelationInfo) = connectorHelper.getHiveTableAndMetadata(in)
 
 //        val table: CatalogTable = in.getTable(client)
         val table: CatalogTable = getCatalogTable(new org.apache.hadoop.hive.ql.metadata.Table(hiveTable)).get

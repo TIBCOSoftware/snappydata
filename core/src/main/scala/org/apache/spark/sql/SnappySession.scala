@@ -939,7 +939,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return SmartConnectorHelper.createTable(tableIdent,
+        return sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.createTable(tableIdent,
           provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
       case _ =>
     }
@@ -1024,7 +1024,7 @@ class SnappySession(@transient private val sc: SparkContext,
       // further processing to load the data
       case ThinClientConnectorMode(_, _) =>
         val userSchema = userSpecifiedSchema.getOrElse(Dataset.ofRows(sqlContext.sparkSession, query).schema)
-        val rel = SmartConnectorHelper.createTable(tableIdent,
+        val rel = sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.createTable(tableIdent,
           provider, Option(userSchema), schemaDDL, mode, options, isBuiltIn)
         createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
           partitionColumns, SaveMode.Append, options, query, isBuiltIn)
@@ -1183,7 +1183,7 @@ class SnappySession(@transient private val sc: SparkContext,
       case ThinClientConnectorMode(_, _) =>
         val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
         if (!isTempTable) {
-          SmartConnectorHelper.dropTable(tableIdent, ifExists)
+          sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.dropTable(tableIdent, ifExists)
           return
         }
       case _ =>
@@ -1306,7 +1306,8 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return SmartConnectorHelper.createIndex(indexIdent, tableIdent, indexColumns, options)
+        return sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.
+            createIndex(indexIdent, tableIdent, indexColumns, options)
       case _ =>
     }
 
@@ -1362,7 +1363,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return SmartConnectorHelper.dropIndex(indexName, ifExists)
+        return sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.dropIndex(indexName, ifExists)
       case _ =>
     }
 

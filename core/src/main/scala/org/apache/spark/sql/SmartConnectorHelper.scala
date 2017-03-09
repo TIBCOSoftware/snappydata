@@ -34,7 +34,8 @@ import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, Logging, SparkContext}
 
-object SmartConnectorHelper extends Logging {
+class SmartConnectorHelper extends Logging {
+
   private lazy val session = SnappyContext(null: SparkContext).snappySession
   private lazy val clusterMode = SnappyContext.getClusterMode(session.sparkContext)
 
@@ -126,8 +127,8 @@ object SmartConnectorHelper extends Logging {
     }
     createSnappyTblStmt.setString(3, jsonSchema)
     createSnappyTblStmt.setString(4, schemaDDL.orNull)
-    createSnappyTblStmt.setBlob(5, getBlob(mode))
-    createSnappyTblStmt.setBlob(6, getBlob(options))
+    createSnappyTblStmt.setBlob(5, SmartConnectorHelper.getBlob(mode, conn))
+    createSnappyTblStmt.setBlob(6, SmartConnectorHelper.getBlob(options, conn))
     createSnappyTblStmt.setBoolean(7, isBuiltIn)
     createSnappyTblStmt.execute()
   }
@@ -173,8 +174,8 @@ object SmartConnectorHelper extends Logging {
       options: Map[String, String]): Unit = {
     createSnappyIdxStmt.setString(1, indexIdent.schemaName + "." + indexIdent.table)
     createSnappyIdxStmt.setString(2, tableIdent.schemaName + "." + tableIdent.table)
-    createSnappyIdxStmt.setBlob(3, getBlob(indexColumns))
-    createSnappyIdxStmt.setBlob(4, getBlob(options))
+    createSnappyIdxStmt.setBlob(3, SmartConnectorHelper.getBlob(indexColumns, conn))
+    createSnappyIdxStmt.setBlob(4, SmartConnectorHelper.getBlob(options, conn))
     createSnappyIdxStmt.execute()
   }
 
@@ -248,7 +249,7 @@ object SmartConnectorHelper extends Logging {
     createUDFStmt.setString(1, db)
     createUDFStmt.setString(2, functionName)
     createUDFStmt.setString(3, className)
-    createUDFStmt.setBlob(4, getBlob(funcResources))
+    createUDFStmt.setBlob(4, SmartConnectorHelper.getBlob(funcResources, conn))
     createUDFStmt.execute
   }
 
@@ -257,8 +258,11 @@ object SmartConnectorHelper extends Logging {
     dropUDFStmt.setString(2, functionName)
     dropUDFStmt.execute
   }
+}
 
-  def getBlob(value: Any, conn: Connection = conn): java.sql.Blob = {
+object SmartConnectorHelper {
+
+  def getBlob(value: Any, conn: Connection): java.sql.Blob = {
     val serializedValue: Array[Byte] = serialize(value)
     val blob = conn.createBlob()
     blob.setBytes(1, serializedValue)
@@ -278,5 +282,4 @@ object SmartConnectorHelper extends Logging {
     val ois = new ObjectInputStream(baip)
     ois.readObject()
   }
-
 }

@@ -19,7 +19,8 @@ package org.apache.spark.sql.hive
 
 import org.apache.hadoop.conf.Configuration
 
-import org.apache.spark.sql.{SmartConnectorHelper, SnappySession}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.{SnappyContext, SmartConnectorHelper, SnappySession}
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, CatalogFunction}
 import org.apache.spark.sql.hive.client.HiveClient
 
@@ -40,13 +41,14 @@ private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
       case (fr: FunctionResource, index: Int) =>
         funcResourcesArray(index) = (fr.resourceType.resourceType, fr.uri)
     }
-
-    SmartConnectorHelper.executeCreateUDFStatement(db, functionName, className, funcResourcesArray)
+    val sessionCatalog = SnappyContext(null: SparkContext).snappySession.sessionCatalog.asInstanceOf[SnappyConnectorCatalog]
+    sessionCatalog.connectorHelper.executeCreateUDFStatement(db, functionName, className, funcResourcesArray)
     SnappySession.clearAllCache()
   }
 
   override def dropFunction(db: String, name: String): Unit = {
-    SmartConnectorHelper.executeDropUDFStatement(db, name)
+    val sessionCatalog = SnappyContext(null: SparkContext).snappySession.sessionCatalog.asInstanceOf[SnappyConnectorCatalog]
+    sessionCatalog.connectorHelper.executeDropUDFStatement(db, name)
     SnappySession.clearAllCache()
   }
 }
