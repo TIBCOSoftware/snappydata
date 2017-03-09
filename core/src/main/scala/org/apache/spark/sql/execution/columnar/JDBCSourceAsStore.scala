@@ -75,9 +75,8 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
       closeOnSuccess = true, onExecutor = true)
   }
 
-  protected def getPartitionID(tableName: String,
-      partitionId: Int = -1): Int = {
-    rand.nextInt(numPartitions)
+  protected def getPartitionID(tableName: String, partitionId: Int): Int = {
+    if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
   }
 
   protected def doInsert(tableName: String, batch: ColumnBatch,
