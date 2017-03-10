@@ -186,11 +186,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def releaseStorageMemory(objectName: String, numBytes: Long): Unit = {
-    MemoryManagerCallback.memoryManager.releaseStorageMemoryForObject(objectName, numBytes, MemoryMode.ON_HEAP)
+    MemoryManagerCallback.memoryManager.
+      releaseStorageMemoryForObject(objectName, numBytes, MemoryMode.ON_HEAP)
   }
 
-  override def dropStorageMemory(objectName: String): Unit =
-    MemoryManagerCallback.memoryManager.dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP)
+  override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
+    MemoryManagerCallback.memoryManager.
+      dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
 
   override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
 

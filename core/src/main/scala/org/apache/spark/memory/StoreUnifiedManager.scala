@@ -16,13 +16,12 @@
  */
 package org.apache.spark.memory
 
-import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-
 import org.apache.spark.storage.BlockId
-import org.apache.spark.{Logging, SparkConf, SparkEnv}
+import org.apache.spark.{Logging, SparkEnv}
+
+import scala.collection.mutable
 
 
 trait StoreUnifiedManager {
@@ -35,9 +34,11 @@ trait StoreUnifiedManager {
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean
 
-  def dropStorageMemoryForObject(objectName : String, memoryMode: MemoryMode): Long
+  def dropStorageMemoryForObject(objectName : String, memoryMode: MemoryMode,
+                                 ignoreNumBytes : Long): Long
 
-  def releaseStorageMemoryForObject(objectName : String, numBytes: Long, memoryMode: MemoryMode): Unit
+  def releaseStorageMemoryForObject(objectName : String, numBytes: Long,
+                                    memoryMode: MemoryMode): Unit
 
   def getStoragePoolMemoryUsed() : Long
   def getStoragePoolSize: Long
@@ -48,8 +49,10 @@ trait StoreUnifiedManager {
 }
 
 /**
-  * This class will store all the memory usage for GemFireXD boot up time when SparkEnv is not initialised.
-  * This class will not actually allocate any memory. It is just a temp account holder till SnappyUnifiedManager is started.
+  * This class will store all the memory usage for GemFireXD boot up time when SparkEnv
+  * is not initialised.
+  * This class will not actually allocate any memory.
+  * It is just a temp account holder till SnappyUnifiedManager is started.
   */
 class TempMemoryManager extends StoreUnifiedManager with Logging{
 
@@ -71,7 +74,8 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
 
   override def dropStorageMemoryForObject(
       objectName: String,
-      memoryMode: MemoryMode): Long = synchronized {
+      memoryMode: MemoryMode,
+      ignoreNumBytes : Long): Long = synchronized {
     memoryForObject.remove(objectName).getOrElse(0L)
   }
 
@@ -106,7 +110,8 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
 
   override def dropStorageMemoryForObject(
       objectName: String,
-      memoryMode: MemoryMode): Long = 0L
+      memoryMode: MemoryMode,
+      ignoreNumBytes : Long): Long = 0L
 
   override def releaseStorageMemoryForObject(
       objectName: String,
@@ -126,7 +131,7 @@ object MemoryManagerCallback extends Logging {
 
   val tempMemoryManager = new TempMemoryManager
   private var snappyUnifiedManager: StoreUnifiedManager = null
-  private val noOpMemoryManager :  StoreUnifiedManager = new NoOpSnappyMemoryManager
+  private val noOpMemoryManager : StoreUnifiedManager = new NoOpSnappyMemoryManager
 
   def resetMemoryManager(): Unit = synchronized {
     tempMemoryManager.memoryForObject.clear()
@@ -149,7 +154,7 @@ object MemoryManagerCallback extends Logging {
   }
 
   def memoryManager: StoreUnifiedManager = synchronized {
-    //First check if SnappyUnifiedManager is set. If yes no need to look further.
+    // First check if SnappyUnifiedManager is set. If yes no need to look further.
     if (isCluster && (snappyUnifiedManager ne null)) {
       return snappyUnifiedManager
     }

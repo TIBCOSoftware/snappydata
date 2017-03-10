@@ -211,9 +211,9 @@ object SnappyTableStatsProviderService extends Logging {
             val colPos = container.getTableDescriptor.getColumnDescriptor("NUMROWS").getPosition
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-            //Resetting PR Numrows in cached batch as this will be calculated every time.
-            //TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-            var rowsInCachedBatch:Long = 0
+            // Resetting PR Numrows in cached batch as this will be calculated every time.
+            // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
+            var rowsInCachedBatch : Long = 0
             while (itr.hasNext) {
               rowsInCachedBatch = rowsInCachedBatch + itr.next().asInstanceOf[RowLocation]
                   .getRow(container).getColumn(colPos).getInt
@@ -225,7 +225,8 @@ object SnappyTableStatsProviderService extends Logging {
     }
   }
 
-  def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats], Map[String, SnappyIndexStats]) = {
+  def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
+    Map[String, SnappyIndexStats]) = {
     val snc = this.snc
     if (snc == null) return (Map.empty, Map.empty)
     val (tableStats, indexStats) = getStatsFromAllServers
@@ -271,7 +272,7 @@ object SnappyTableStatsProviderService extends Logging {
         asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
         .asScala
     }
-    (result.flatMap(_.getRegionStats.asScala),result.flatMap(_.getIndexStats.asScala))
+    (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }
 
 }

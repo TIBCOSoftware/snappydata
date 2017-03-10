@@ -19,8 +19,9 @@ package org.apache.spark.memory
 
 import java.sql.DriverManager
 
-import com.gemstone.gemfire.internal.cache.LocalRegion
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -36,17 +37,66 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
       .add(StructField("col2", IntegerType, true))
       .add(StructField("col3", IntegerType, true))
 
-  val options = Map("PARTITION_BY" -> "col1", "EVICTION_BY" ->
-      "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val coptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1",
-    "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val cwoptions = Map("BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT",
-    "OVERFLOW" -> "true")
-  val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val poptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "PERSISTENT" -> "SYNCHRONOUS")
+
   val memoryMode = MemoryMode.ON_HEAP
 
-  test("Test CreateIndex on row partitioned table") {
+  test("Test Drop index releases memory"){
+    val sparkSession = createSparkSession(1, 0, 2000000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    val serverHostPort = TestUtil.startNetServer()
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+
+    val options = "OPTIONS (PARTITION_BY 'col1', " +
+      "BUCKETS '1')"
+    snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
+      ") " + " USING row " +
+      options
+    )
+    (1 to 20).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
+    SparkEnv.get.memoryManager.
+      asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    stmt.execute("create index t1_index1 on t1 (col1)")
+    val afterCreateIndex = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterCreateIndex > 0)
+    stmt.execute("drop index t1_index1")
+    val afterDropIndex = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterDropIndex <   afterCreateIndex)
+  }
+
+  test("Test Put Overhead on row partitioned table") {
+    val sparkSession = createSparkSession(1, 0, 2000000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    val serverHostPort = TestUtil.startNetServer()
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+
+    val options = "OPTIONS (PARTITION_BY 'col1', " +
+      "BUCKETS '1')"
+    snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
+      ") " + " USING row " +
+      options
+    )
+    (1 to 10).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    val afterInsertSize_WithoutIndex = SparkEnv.get.memoryManager.storageMemoryUsed
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    stmt.execute("create index t1_index1 on t1 (col1)")
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    (1 to 10).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
+    val afterIndexCreationSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterIndexCreationSize > afterInsertSize_WithoutIndex)
+    stmt.execute("drop index t1_index1")
+    snSession.dropTable("t1")
+  }
+
+
+
+  ignore("Test CreateIndex before insert") {
     val sparkSession = createSparkSession(1, 0, 2000000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     val serverHostPort = TestUtil.startNetServer()
@@ -59,22 +109,23 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     val afterTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(afterTableSize > beforeTableSize)
 
-    val row = Row(100000000, 10000000, 10000000)
-    (1 to 10).map(i => snSession.insert("t1", Row(i, i, i)))
-    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
-    val afterIndexCreationSize = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterIndexCreationSize $afterIndexCreationSize")
-    assert(afterIndexCreationSize > afterInsertSize)
-    stmt.execute("drop index t1_index1")
-    val afterIndexDropSize = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterIndexDropSize $afterIndexDropSize")
+
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    (1 to 10).map(i => snSession.insert("t1", Row(i, i, i)))
+    val afterPutWithoutIndex = SparkEnv.get.memoryManager.storageMemoryUsed
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    SnappyTableStatsProviderService.getAggregatedStatsOnDemand
+    (1 to 10).map(i => snSession.insert("t1", Row(i, i, i)))
+    val afterPutWitIndex = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterPutWitIndex > afterPutWithoutIndex)
     snSession.dropTable("t1")
-    TestUtil.stopNetServer()
   }
+
 
   ignore("Test CreateIndex on row persistent partitioned table") {
     val sparkSession = createSparkSession(1, 0, 2000000L)
@@ -99,7 +150,6 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
     val afterIndexCreationSize = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterIndexCreationSize $afterIndexCreationSize")
     assert(afterIndexCreationSize > afterInsertSize)
     snSession.dropTable("t1")
   }
@@ -123,7 +173,6 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
     val afterIndexCreationSize = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterIndexCreationSize $afterIndexCreationSize")
     assert(afterIndexCreationSize > afterInsertSize)
     snSession.dropTable("t1")
   }
@@ -148,8 +197,118 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
     val afterIndexCreationSize = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterIndexCreationSize $afterIndexCreationSize")
     assert(afterIndexCreationSize > afterInsertSize)
+    snSession.dropTable("t1")
+  }
+
+  ignore("Test Index recovery on row partitioned table") {
+    var sparkSession = createSparkSession(1, 0, 2000000L)
+    var snSession = new SnappySession(sparkSession.sparkContext)
+    val serverHostPort = TestUtil.startNetServer()
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    val options = Map("PARTITION_BY" -> "col1",
+      "BUCKETS" -> "1",
+      "PERSISTENT" -> "SYNCHRONOUS"
+    )
+    snSession.createTable("t1", "row", struct, options)
+    (1 to 10).map(i => snSession.insert("t1", Row(i, i, i)))
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    stmt.execute("create index t1_index1 on t1 (col1)")
+    val afterIndex = SparkEnv.get.memoryManager.storageMemoryUsed
+    println(afterIndex)
+    SnappyContext.globalSparkContext.stop()
+    sparkSession = createSparkSession(1, 0, 2000000L)
+    snSession = new SnappySession(sparkSession.sparkContext)
+    val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
+    println(afterRecoverySize)
+    assertApproximate(afterIndex, afterRecoverySize, 10)
+    snSession.dropTable("t1")
+  }
+
+  ignore("Test Index recovery on row repliacted table") {
+    var sparkSession = createSparkSession(1, 0, 2000000L)
+    var snSession = new SnappySession(sparkSession.sparkContext)
+    val serverHostPort = TestUtil.startNetServer()
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    val options = Map("PERSISTENT" -> "SYNCHRONOUS")
+    snSession.createTable("t1", "row", struct, options)
+    (1 to 10).map(i => snSession.insert("t1", Row(i, i, i)))
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    stmt.execute("create index t1_index1 on t1 (col1)")
+    val afterIndex = SparkEnv.get.memoryManager.storageMemoryUsed
+    println(afterIndex)
+    SnappyContext.globalSparkContext.stop()
+    sparkSession = createSparkSession(1, 0, 2000000L)
+    snSession = new SnappySession(sparkSession.sparkContext)
+    val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
+    println(afterRecoverySize)
+    assertApproximate(afterIndex, afterRecoverySize, 10)
+    snSession.dropTable("t1")
+  }
+
+  ignore("Test Index recovery on row partitioned table with overflow") {
+    var sparkSession = createSparkSession(1, 0, 2000000L)
+    var snSession = new SnappySession(sparkSession.sparkContext)
+    val serverHostPort = TestUtil.startNetServer()
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+
+    val options = "OPTIONS (BUCKETS '1', " +
+      "PARTITION_BY 'Col1', " +
+      "EVICTION_BY 'LRUCOUNT 30', " +
+      "OVERFLOW 'true')"
+    snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
+      ") " + " USING row " +
+      options
+    )
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    stmt.execute("create index t1_index1 on t1 (col1, col2)")
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    (1 to 30).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
+    val afterThreeEntries = SparkEnv.get.memoryManager.storageMemoryUsed
+    val avgEntrySize = afterThreeEntries /3
+    println(avgEntrySize)
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    (31 to 60).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
+    val withOverflow = SparkEnv.get.memoryManager.storageMemoryUsed
+    val avgEntrySizeWithOverflow = withOverflow /3
+    println(avgEntrySizeWithOverflow)
+    assert(avgEntrySizeWithOverflow > avgEntrySize)
+    snSession.dropTable("t1")
+  }
+
+  ignore("Test Index recovery on row replicated table with overflow") {
+    var sparkSession = createSparkSession(1, 0, 2000000L)
+    var snSession = new SnappySession(sparkSession.sparkContext)
+    val serverHostPort = TestUtil.startNetServer()
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+
+    val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 30', " +
+      "OVERFLOW 'true')"
+    snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
+      ") " + " USING row " +
+      options
+    )
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    stmt.execute("create index t1_index1 on t1 (col1, col2)")
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    (1 to 30).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
+    val afterThreeEntries = SparkEnv.get.memoryManager.storageMemoryUsed
+    val avgEntrySize = afterThreeEntries /3
+    println(avgEntrySize)
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    (31 to 60).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
+    val withOverflow = SparkEnv.get.memoryManager.storageMemoryUsed
+    val avgEntrySizeWithOverflow = withOverflow /3
+    println(avgEntrySizeWithOverflow)
+    assert(avgEntrySizeWithOverflow > avgEntrySize)
     snSession.dropTable("t1")
   }
 }

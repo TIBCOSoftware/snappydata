@@ -143,8 +143,10 @@ class SnappyUnifiedMemoryManager private[memory](
           } else {
             0L
           }
-          if(storagePool.poolSize - (spaceToReclaim + bytesEvictedFromStore) >= storagePool.memoryUsed){
-            //Some eviction might have increased the storage memory used which will case some requirement failing
+          if(storagePool.poolSize - (spaceToReclaim + bytesEvictedFromStore)
+            >= storagePool.memoryUsed){
+            // Some eviction might have increased the storage memory used which will
+            // case some requirement failing
             // while decreasing pool size.
             storagePool.decrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
             executionPool.incrementPoolSize(spaceToReclaim + bytesEvictedFromStore)
@@ -180,7 +182,8 @@ class SnappyUnifiedMemoryManager private[memory](
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = {
-    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null, shouldEvict = true)
+    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null,
+      shouldEvict = true)
   }
 
   private def askStoragePool(objectName: String,
@@ -192,8 +195,9 @@ class SnappyUnifiedMemoryManager private[memory](
     //Thread.dumpStack()
     threadsWaitingForStorage.incrementAndGet()
     synchronized {
-      if(!shouldEvict){
-        SnappyUnifiedMemoryManager.invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName, numBytes)
+      if (!shouldEvict) {
+        SnappyUnifiedMemoryManager.
+          invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName, numBytes)
       }
       if (!memoryForObject.contains(objectName)) {
         memoryForObject(objectName) = 0L
@@ -218,7 +222,8 @@ class SnappyUnifiedMemoryManager private[memory](
 
       if (numBytes > maxMemory) {
         // Fail fast if the block simply won't fit
-        logWarning(s"Will not store $blockId for $objectName as the required space ($numBytes bytes) exceeds our " +
+        logWarning(s"Will not store $blockId for $objectName as " +
+          s"the required space ($numBytes bytes) exceeds our " +
             s"memory limit ($maxMemory bytes)")
         return false
       }
@@ -226,32 +231,35 @@ class SnappyUnifiedMemoryManager private[memory](
         // There is not enough free memory in the storage pool, so try to borrow free memory from
         // the execution pool.
         val memoryBorrowedFromExecution = Math.min(executionPool.memoryFree, numBytes)
-        val actualBorrowedMemory = if (storagePool.poolSize + memoryBorrowedFromExecution > maxStorageSize) {
-          maxStorageSize - storagePool.poolSize
-        } else {
-          memoryBorrowedFromExecution
-        }
+        val actualBorrowedMemory =
+          if (storagePool.poolSize + memoryBorrowedFromExecution > maxStorageSize) {
+            maxStorageSize - storagePool.poolSize
+          } else {
+            memoryBorrowedFromExecution
+          }
         executionPool.decrementPoolSize(actualBorrowedMemory)
         storagePool.incrementPoolSize(actualBorrowedMemory)
       }
-      //First let spark try to free some memory
+      // First let spark try to free some memory
       val enoughMemory = storagePool.acquireMemory(blockId, numBytes)
       if (!enoughMemory) {
 
         if (shouldEvict) {
-          //Sufficient memory could not be freed. Time to evict from SnappyData store.
+          // Sufficient memory could not be freed. Time to evict from SnappyData store.
           val requiredBytes = numBytes - storagePool.memoryFree
-          //Evict data a little more than required based on waiting tasks
+          // Evict data a little more than required based on waiting tasks
           evictor.evictRegionData(requiredBytes * threadsWaitingForStorage.get())
         }
 
         threadsWaitingForStorage.decrementAndGet()
         val couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         if (!couldEvictSomeData) {
-          logWarning(s"Could not allocate memory for $blockId of $objectName. Memory pool size " + storagePool.memoryUsed)
+          logWarning(s"Could not allocate memory for $blockId of " +
+            s"$objectName. Memory pool size " + storagePool.memoryUsed)
         } else {
           memoryForObject(objectName) += numBytes
-          logDebug(s"Allocated memory for $blockId of $objectName. Memory pool size " + storagePool.memoryUsed)
+          logDebug(s"Allocated memory for $blockId of " +
+            s"$objectName. Memory pool size " + storagePool.memoryUsed)
         }
         couldEvictSomeData
       } else {
@@ -294,11 +302,18 @@ class SnappyUnifiedMemoryManager private[memory](
     }
   }
 
-  override def releaseStorageMemoryForObject(objectName: String, numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
+  override def releaseStorageMemoryForObject(objectName: String,
+                                             numBytes: Long,
+                                             memoryMode: MemoryMode): Unit = synchronized {
     logDebug(s"releasing [SNAP] memory for $objectName $numBytes")
     println(s"releasing [SNAP] memory for $objectName $numBytes")
-    memoryForObject(objectName) -= numBytes
-    super.releaseStorageMemory(numBytes, memoryMode)
+    memoryForObject.get(objectName) match {
+      case Some(x) => {
+        memoryForObject(objectName) -= numBytes
+        super.releaseStorageMemory(numBytes, memoryMode)
+      }
+      case None => // Do nothing
+    }
   }
 
   override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
@@ -306,26 +321,31 @@ class SnappyUnifiedMemoryManager private[memory](
     super.releaseStorageMemory(numBytes, memoryMode)
   }
 
-  override def dropStorageMemoryForObject(name: String, memoryMode: MemoryMode): Long = synchronized {
-    logDebug(s"Dropping memory for $name")
-    val (executionPool, storagePool, maxMemory) = memoryMode match {
-      case MemoryMode.ON_HEAP => (
+  override def dropStorageMemoryForObject(name: String,
+                                          memoryMode: MemoryMode,
+                                          ignoreNumBytes: Long): Long =
+    synchronized {
+      logDebug(s"Dropping memory for $name")
+      val (executionPool, storagePool, maxMemory) = memoryMode match {
+        case MemoryMode.ON_HEAP => (
           onHeapExecutionMemoryPool,
           onHeapStorageMemoryPool,
           maxOnHeapStorageMemory)
-      case MemoryMode.OFF_HEAP => (
+        case MemoryMode.OFF_HEAP => (
           offHeapExecutionMemoryPool,
           offHeapStorageMemoryPool,
           maxOffHeapMemory)
-    }
+      }
 
-    val bytesToBeFreed = memoryForObject.getOrElse(name, 0L)
-    if(bytesToBeFreed > 0){
-      super.releaseStorageMemory(bytesToBeFreed, memoryMode)
-      memoryForObject.remove(name)
+      val bytesToBeFreed = memoryForObject.getOrElse(name, 0L)
+      val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
+
+      if (numBytes > 0) {
+        super.releaseStorageMemory(numBytes, memoryMode)
+        memoryForObject.remove(name)
+      }
+      bytesToBeFreed
     }
-    bytesToBeFreed
-  }
 
   // Test Hook. Not to be used anywhere else
   private[memory] def dropAllObjects(memoryMode: MemoryMode): Unit = synchronized {
@@ -346,27 +366,31 @@ private object SnappyUnifiedMemoryManager extends Logging{
 
   val testCallbacks = scala.collection.mutable.ArrayBuffer.empty[MemoryEventListener]
 
-  def addMemoryEventListener(listener : MemoryEventListener): Unit ={
+  def addMemoryEventListener(listener: MemoryEventListener): Unit = {
     testCallbacks += listener
   }
 
-  def clearMemoryEventListener(): Unit ={
+  def clearMemoryEventListener(): Unit = {
     testCallbacks.clear()
   }
 
-  private def invokeListenersOnStorageMemoryAcquireSuccess(objectName : String, bytes : Long): Unit ={
+  private def invokeListenersOnStorageMemoryAcquireSuccess(objectName: String, bytes: Long): Unit = {
     testCallbacks.map(l => l.onStorageMemoryAcquireSuccess(objectName, bytes))
   }
-  private def invokeListenersOnStorageMemoryAcquireFailure(objectName : String, bytes : Long): Unit ={
+
+  private def invokeListenersOnStorageMemoryAcquireFailure(objectName: String, bytes: Long): Unit = {
     testCallbacks.map(l => l.onStorageMemoryAcquireFailure(objectName, bytes))
   }
-  private def invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName : String, bytes : Long): Unit ={
+
+  private def invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName: String, bytes: Long): Unit = {
     testCallbacks.map(l => l.onPositiveMemoryIncreaseDueToEviction(objectName, bytes))
   }
-  private def invokeListenersOnExecutionMemoryAcquireSuccess(taskID : Long, bytes : Long): Unit ={
+
+  private def invokeListenersOnExecutionMemoryAcquireSuccess(taskID: Long, bytes: Long): Unit = {
     testCallbacks.map(l => l.onExecutionMemoryAcquireSuccess(taskID, bytes))
   }
-  private def invokeListenersOnExecutionMemoryAcquireFailure(taskID : Long, bytes : Long): Unit ={
+
+  private def invokeListenersOnExecutionMemoryAcquireFailure(taskID: Long, bytes: Long): Unit = {
     testCallbacks.map(l => l.onExecutionMemoryAcquireFailure(taskID, bytes))
   }
 
