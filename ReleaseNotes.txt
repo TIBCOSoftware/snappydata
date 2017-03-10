@@ -24,11 +24,13 @@ Release 0.8
   Apache Thrift protocol enabling users to access the cluster from other languages that are not
   supported directly by SnappyData.
 
-  Insert Performance Optimizations - Insert into tables is much more optimized and performant now.
-  A new insert plan has been introduced which uses code generation and a new encoding format.
+  [SNAP-490] Insert Performance Optimizations - Insert into tables is much more optimized and
+  performant now. A new insert plan has been introduced which uses code generation
+  and a new encoding format.
 
   Fixes backward compatibility with Spark 2.0.0 - The 0.8 SnappyData release is based on the Spark
-  2.0.2 version. And, the SnappyData Smart Connector is now backward compatible with Spark 2.0.0 and 2.0.1 releases. 
+  2.0.2 version. And, the SnappyData Smart Connector is now backward compatible with
+  Spark 2.0.0 and 2.0.1 releases.
 
   [SNAP-1146] Fixes RowBuffer bloating. Data was not being aged into the internal compressed
   columnar format leading to unoptimized storage and hence bad query performances.
@@ -114,9 +116,10 @@ Release 0.7
   [SNAP-1067] Optimized GROUP BY (HashAggregateExec) and HASH JOIN. Optimized hash table
     for GROUP BY (HashAggregateExec) and for LocalJoin.
 
-  [SNAP-1087] Maintain stats (which include lower bound, upper bound, null count, etc.) for every
-    column. And then uses the upper bound and lower bound values of columns to filter out the cached
-    batches. This will be a perf enhancement for the queries which filters extensively.
+  [SNAP-1087] Maintain stats (which include lower bound, upper bound, null count, etc.)
+    for every column. And then uses the upper bound and lower bound values of columns to
+    filter out the cached batches. This will be a perf enhancement for the queries which
+    filters extensively.
 
   [SNAP-1084] Cache and return CatalogTable instead of going to hive
 
@@ -151,9 +154,9 @@ Release 0.7
 
   [SNAP-1188] Set batch uuid to previous record if the current batchuuid is null.
 
-  [SNAP-69] Fix SparkJobServer rootDir to point to current working directory instead of /tmp. Redirecting 
-    rootdir from /tmp to "-dir" startup parameter via gemfirexd.system.home variable set in the
-    launcher.
+  [SNAP-69] Fix SparkJobServer rootDir to point to current working directory instead of /tmp.
+    Redirecting rootdir from /tmp to "-dir" startup parameter via gemfirexd.system.home variable
+    set in the launcher.
 
   Fixing failure for optimized=T case in TPCETrade
 
@@ -215,7 +218,7 @@ Release 0.6
 
   [SNAP-981] Support Snappy with multiple Hadoop version
 
-  [SNAP-979] Correct table size and count shown on the Snappy UI tab 
+  [SNAP-979] Correct table size and count shown on the Snappy UI tab
 
   [SNAP-936] Automatic selection of execution engine based on query type. Query hint also provided
     to select a particular engine for execution
@@ -233,7 +236,7 @@ Release 0.6
     and it will be available to all executors, store and driver node the jar uploaded via the job
     server also follows the same norm.
 
-  [SNAP-824] Support for CUBE/ROLLUP/GROUPING SETS through sql. Support for window clauses and 
+  [SNAP-824] Support for CUBE/ROLLUP/GROUPING SETS through sql. Support for window clauses and
     partition/distribute by
 
   SPARK 2.0 merge
@@ -252,19 +255,19 @@ Release 0.6
 
   [SNAP-864] Script to launch SnappyData cluster on Amazon Web Services EC2 instances.
 
-  [AQP-77] exception " STRATIFIED_SAMPLER_WEIGHTAGE#411L missing 
+  [AQP-77] exception " STRATIFIED_SAMPLER_WEIGHTAGE#411L missing
 
-  [AQP-94] Class cast exception if aggregate is on string column 
+  [AQP-94] Class cast exception if aggregate is on string column
 
-  [AQP-107] scala.MatchError,while using reserved word sample_ in the query 
+  [AQP-107] scala.MatchError,while using reserved word sample_ in the query
 
   [AQP-143] Unexpected error for query on empty table
 
-  [AQP-154] Actual sample count varies with varying number of columns in QCS. 
+  [AQP-154] Actual sample count varies with varying number of columns in QCS.
 
-  [AQP-177] Unable to drop the sample table 
+  [AQP-177] Unable to drop the sample table
 
-  [AQP-190] Relative Error estimates are wildly OFF 
+  [AQP-190] Relative Error estimates are wildly OFF
 
   [AQP-199] Use of alias in FROM clause results in Sample not being selected
 
@@ -275,20 +278,20 @@ Release 0.6
   [AQP-205] Bug in abortSegment implementation of stratum cache/ concurrent segment hashmap causes
     count to be inocrrect
 
-  [AQP-206] Exception while using error_functions in HAVING clause 
+  [AQP-206] Exception while using error_functions in HAVING clause
 
-  [AQP-207] Join query fails with error while evaluating an expression 
+  [AQP-207] Join query fails with error while evaluating an expression
 
-  [AQP-210] Mathematical expression involving error estimates not working 
+  [AQP-210] Mathematical expression involving error estimates not working
 
-  [AQP-212] HAC behavior 'local_omit' doesnot work as expected. 
+  [AQP-212] HAC behavior 'local_omit' doesnot work as expected.
 
   [AQP-213] Exception when using errorFuntion in HAVING clause with HAC behavior 'run_on_full_table'
     and 'partial_run_on_base_table'
 
-  [AQP-214] Need support for functions in sample creation 
+  [AQP-214] Need support for functions in sample creation
 
-  [AQP-216] Cannot use float datatype for sample creted on row table 
+  [AQP-216] Cannot use float datatype for sample creted on row table
 
 
 Release 0.5
