@@ -28,7 +28,7 @@ Release 0.8
   A new insert plan has been introduced which uses code generation and a new encoding format.
 
   Fixes backward compatibility with Spark 2.0.0 - The 0.8 SnappyData release is based on the Spark
-  2.0.2 version. The Smart connector mode with Spark 2.0.0 and 2.0.1 got broken.
+  2.0.2 version. And, the SnappyData Smart Connector is now backward compatible with Spark 2.0.0 and 2.0.1 releases. 
 
   [SNAP-1146] Fixes RowBuffer bloating. Data was not being aged into the internal compressed
   columnar format leading to unoptimized storage and hence bad query performances.
