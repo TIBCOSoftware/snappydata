@@ -27,7 +27,7 @@ This section contains instructions and examples using which, you can try out Sna
 $ cd <Spark_Install_dir>
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
 
 This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
@@ -150,7 +150,7 @@ We load millions of rows into a cached Spark DataFrame, run some analytic querie
 ```bash
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.7-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.8-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
 **If you have downloaded SnappyData **:
@@ -304,8 +304,8 @@ Now that we have seen the basic working of SnappyData tables, let us run the [be
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
 ```bash
-$ tar -xzf snappydata-0.7-bin.tar.gz
-$ cd snappydata-0.7-bin/
+$ tar -xzf snappydata-0.8-bin.tar.gz
+$ cd snappydata-0.8-bin/
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
