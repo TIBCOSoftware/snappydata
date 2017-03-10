@@ -184,23 +184,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation#cachedBatchTableName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="cachedBatchTableName(table:String):String"></a>
-      <a id="cachedBatchTableName(String):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">cachedBatchTableName</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation$@cachedBatchTableName(table:String):String" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -224,6 +207,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation#columnBatchTableName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="columnBatchTableName(table:String):String"></a>
+      <a id="columnBatchTableName(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">columnBatchTableName</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation$@columnBatchTableName(table:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -316,18 +316,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation#getIndexUpdateStruct" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getIndexUpdateStruct(indexEntry:org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry,connectedExternalStore:org.apache.spark.sql.execution.columnar.ConnectedExternalStore):org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation.IndexUpdateStruct"></a>
-      <a id="getIndexUpdateStruct(ExecutorCatalogEntry,ConnectedExternalStore):IndexUpdateStruct"></a>
+      <a id="getIndexUpdateStruct(indexEntry:com.gemstone.gemfire.internal.cache.ExternalTableMetaData,connectedExternalStore:org.apache.spark.sql.execution.columnar.ConnectedExternalStore):org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation.IndexUpdateStruct"></a>
+      <a id="getIndexUpdateStruct(ExternalTableMetaData,ConnectedExternalStore):IndexUpdateStruct"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getIndexUpdateStruct</span><span class="params">(<span name="indexEntry">indexEntry: <a href="StoreCallbacksImpl$$ExecutorCatalogEntry.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry">ExecutorCatalogEntry</a></span>, <span name="connectedExternalStore">connectedExternalStore: <a href="../ConnectedExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ConnectedExternalStore">ConnectedExternalStore</a></span>)</span><span class="result">: <a href="#IndexUpdateStruct=((java.sql.PreparedStatement,org.apache.spark.sql.catalyst.InternalRow)=&gt;Int,java.sql.PreparedStatement)" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation.IndexUpdateStruct">IndexUpdateStruct</a></span>
+        <span class="name">getIndexUpdateStruct</span><span class="params">(<span name="indexEntry">indexEntry: <span class="extype" name="com.gemstone.gemfire.internal.cache.ExternalTableMetaData">ExternalTableMetaData</span></span>, <span name="connectedExternalStore">connectedExternalStore: <a href="../ConnectedExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ConnectedExternalStore">ConnectedExternalStore</a></span>)</span><span class="result">: <a href="#IndexUpdateStruct=((java.sql.PreparedStatement,org.apache.spark.sql.catalyst.InternalRow)=&gt;Int,java.sql.PreparedStatement)" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation.IndexUpdateStruct">IndexUpdateStruct</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation$@getIndexUpdateStruct(indexEntry:org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl.ExecutorCatalogEntry,connectedExternalStore:org.apache.spark.sql.execution.columnar.ConnectedExternalStore):org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation.IndexUpdateStruct" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation$@getIndexUpdateStruct(indexEntry:com.gemstone.gemfire.internal.cache.ExternalTableMetaData,connectedExternalStore:org.apache.spark.sql.execution.columnar.ConnectedExternalStore):org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation.IndexUpdateStruct" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

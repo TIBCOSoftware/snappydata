@@ -227,19 +227,19 @@
 <p>The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.</p>
 <ul>
 <li>
-<p><strong> SnappyData 0.7 download link </strong>
-<a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.zip">(zip)</a></p>
+<p><strong> SnappyData 0.8 download link </strong>
+<a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.zip">(zip)</a></p>
 </li>
 <li>
-<p><strong>SnappyData 0.7 (hadoop provided) download link</strong> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.zip">(zip)</a>
+<p><strong>SnappyData 0.8 (hadoop provided) download link</strong> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.zip">(zip)</a>
 <a id="singlehost"></a></p>
 </li>
 </ul>
 <h3 id="single-host-installation">Single Host Installation</h3>
 <p>This is the simplest form of deployment and can be used for testing and POCs.</p>
 <p>Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory. </p>
-<pre><code class="bash">$ tar -xzf snappydata-0.7-bin.tar.gz   
-$ cd snappydata-0.7-bin/
+<pre><code class="bash">$ tar -xzf snappydata-0.8-bin.tar.gz   
+$ cd snappydata-0.8-bin/
 </code></pre>
 
 <p>Start a basic cluster with one data node, one lead, and one locator</p>
@@ -267,8 +267,8 @@ $ cd snappydata-0.7-bin/
 </li>
 <li>
 <p>Extract the downloaded archive file and go to SnappyData home directory.</p>
-<pre><code>$ tar -xzf snappydata-0.7-bin.tar.gz 
-$ cd snappydata-0.7-bin/
+<pre><code>$ tar -xzf snappydata-0.8-bin.tar.gz 
+$ cd snappydata-0.8-bin/
 </code></pre>
 </li>
 <li>
@@ -304,11 +304,11 @@ $ cd snappydata-0.7-bin/
 </ol>
 <p><Note> Note: We are providing all configuration parameter as command line arguments rather than reading from a conf file.</Note></p>
 <p>The example below starts a locator and server.</p>
-<pre><code class="bash">$ bin/snappy-shell locator start  -dir=/node-a/locator1 
-$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+<pre><code class="bash">$ bin/snappy locator start  -dir=/node-a/locator1
+$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
-$ bin/snappy-shell locator stop
-$ bin/snappy-shell server stop
+$ bin/snappy locator stop
+$ bin/snappy server stop
 </code></pre>
 
 <h2 id="setting-up-cluster-on-amazon-web-services-aws">Setting up Cluster on Amazon Web Services (AWS)</h2>
@@ -341,7 +341,7 @@ $ bin/snappy-shell server stop
 <p>On the <strong>Choose an Instance Type</strong> page, select the instance type as per the requirement of your use case and then click <strong>Review and Launch</strong> to launch the instance with default configurations. <br/>
     <note> Note:  </note></p>
 <ul>
-<li><note> You can continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note></li>
+<li><note> You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note></li>
 <li><note> When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).</note></li>
 </ul>
 </li>
@@ -368,7 +368,7 @@ $ bin/snappy-shell server stop
 </li>
 <li>
 <p>Details of the public hostname or IP address of the instance. 
- Refer to the following documentation, for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html">accessing an EC2 instance</a>.</p>
+Refer to the following documentation, for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html">accessing an EC2 instance</a>.</p>
 </li>
 </ul>
 <p><note> Note: </note></p>
@@ -413,7 +413,7 @@ If you already have set up the AWS Command Line Interface on your local machine,
 </ul>
 <h4 id="cluster-management">Cluster Management</h4>
 <h5 id="launching-snappydata-cluster">Launching SnappyData Cluster</h5>
-<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappydata-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
+<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
 <p>Enter the command in the following format.</p>
 <p><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;</code></p>
 <p>Here, <code>&lt;your-key-name&gt;</code> refers to the EC2 Key Pair, <code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file and <code>&lt;action&gt;</code> refers to the action to be performed (for example, launch, start, stop).</p>
@@ -601,7 +601,7 @@ Options:
 <p>Building SnappyData requires JDK 7+ installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>). </p>
 <p>Quickstart to build all components of SnappyData:</p>
 <p><strong>Latest release branch</strong></p>
-<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.7 --recursive
+<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.8 --recursive
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
@@ -615,7 +615,7 @@ Options:
 <p>The product is in <strong>build-artifacts/scala-2.11/snappy</strong></p>
 <p>If you want to build only the top-level SnappyData project but pull in jars for other projects (<em>spark</em>, <em>store</em>, <em>spark-jobserver</em>):</p>
 <p><strong>Latest release branch</strong></p>
-<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.7
+<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.8
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>

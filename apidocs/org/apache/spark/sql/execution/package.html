@@ -403,6 +403,24 @@ the 100 new partitions will claim 10 of the current partitions.
       </a>
     </span>
       <p class="shortcomment cmt">An interface for those physical operators that support codegen.</p>
+    </li><li name="org.apache.spark.sql.execution.CodegenSupportOnExecutor" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="CodegenSupportOnExecutorextendsSparkPlanwithCodegenSupport"></a>
+      <a id="CodegenSupportOnExecutor:CodegenSupportOnExecutor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="CodegenSupportOnExecutor.html"><span class="name">CodegenSupportOnExecutor</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CodegenSupportOnExecutorextendsSparkPlanwithCodegenSupport" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Allow invoking produce/consume calls on executor without requiring
+a SparkContext.</p>
     </li><li name="org.apache.spark.sql.execution.CollapseCodegenStages" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CollapseCodegenStagesextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
       <a id="CollapseCodegenStages:CollapseCodegenStages"></a>
@@ -439,23 +457,6 @@ the 100 new partitions will claim 10 of the current partitions.
       <p class="shortcomment cmt">Take the first <code>limit</code> elements and collect them to a single partition.</p><div class="fullcomment"><div class="comment cmt"><p>Take the first <code>limit</code> elements and collect them to a single partition.</p><p>This operator will be used when a logical <code>Limit</code> operation is the final operator in an
 logical plan, which happens when the user is collecting results back to the driver.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.CompactExecRowToMutableRow" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="CompactExecRowToMutableRowextendsResultNullHolder"></a>
-      <a id="CompactExecRowToMutableRow:CompactExecRowToMutableRow"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="CompactExecRowToMutableRow.html"><span class="name">CompactExecRowToMutableRow</span></a><span class="result"> extends <a href="ResultNullHolder.html" class="extype" name="org.apache.spark.sql.execution.ResultNullHolder">ResultNullHolder</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CompactExecRowToMutableRowextendsResultNullHolder" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.DataSourceScanExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="DataSourceScanExecextendsSparkPlanwithLeafExecNode"></a>
       <a id="DataSourceScanExec:DataSourceScanExec"></a>
@@ -491,6 +492,61 @@ logical plan, which happens when the user is collecting results back to the driv
     </span>
       <p class="shortcomment cmt">Takes the input row from child and turns it into object using the given deserializer expression.</p><div class="fullcomment"><div class="comment cmt"><p>Takes the input row from child and turns it into object using the given deserializer expression.
 The output of this operator is a single-field safe row containing the deserialized object.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.EncoderPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EncoderPlan[T]extendsLogicalRDD"></a>
+      <a id="EncoderPlan[T]:EncoderPlan[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="EncoderPlan.html"><span class="name">EncoderPlan</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="LogicalRDD.html" class="extype" name="org.apache.spark.sql.execution.LogicalRDD">LogicalRDD</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@EncoderPlan[T]extendsLogicalRDD" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.EncoderScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EncoderScanExecextendsSparkPlanwithLeafExecNodewithCodegenSupportwithProductwithSerializable"></a>
+      <a id="EncoderScanExec:EncoderScanExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="EncoderScanExec.html"><span class="name">EncoderScanExec</span></a><span class="params">(<span name="rdd">rdd: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="encoder">encoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<span class="extype" name="scala.Any">Any</span>]</span>, <span name="isFlat">isFlat: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@EncoderScanExecextendsSparkPlanwithLeafExecNodewithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Efficient SparkPlan with code generation support to consume an RDD
+that has an <span class="extype" name="ExpressionEncoder">ExpressionEncoder</span>.</p>
+    </li><li name="org.apache.spark.sql.execution.ExecutePlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExecutePlanextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
+      <a id="ExecutePlan:ExecutePlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExecutePlan.html"><span class="name">ExecutePlan</span></a><span class="params">(<span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="preAction">preAction: () ⇒ <span class="extype" name="scala.Unit">Unit</span> = <span class="symbol">() =&gt; ()</span></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ExecutePlanextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A wrapper plan to immediately execute the child plan without having to do
+an explicit collect.</p><div class="fullcomment"><div class="comment cmt"><p>A wrapper plan to immediately execute the child plan without having to do
+an explicit collect. Only use for plans returning small results.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.ExpandExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ExpandExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable"></a>
@@ -834,6 +890,23 @@ that consumes an RDD iterator of InternalRow.
       </a>
     </span>
       <p class="shortcomment cmt">Logical plan node for scanning data from an RDD.</p>
+    </li><li name="org.apache.spark.sql.execution.LongKey" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="LongKeyextendsAnyRef"></a>
+      <a id="LongKey:LongKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LongKey.html"><span class="name">LongKey</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@LongKeyextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.MapElementsExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MapElementsExecextendsSparkPlanwithObjectConsumerExecwithObjectProducerExecwithCodegenSupportwithProductwithSerializable"></a>
       <a id="MapElementsExec:MapElementsExec"></a>
@@ -1198,40 +1271,6 @@ changing them, because a lot of developers use the feature for debugging.
       </a>
     </span>
       <p class="shortcomment cmt">Created by vivekb on 21/10/16.</p>
-    </li><li name="org.apache.spark.sql.execution.ResultNullHolder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ResultNullHolderextendsResultWasNull"></a>
-      <a id="ResultNullHolder:ResultNullHolder"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ResultNullHolder.html"><span class="name">ResultNullHolder</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.ResultWasNull">ResultWasNull</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ResultNullHolderextendsResultWasNull" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.ResultSetNullHolder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ResultSetNullHolderextendsResultNullHolder"></a>
-      <a id="ResultSetNullHolder:ResultSetNullHolder"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ResultSetNullHolder.html"><span class="name">ResultSetNullHolder</span></a><span class="result"> extends <a href="ResultNullHolder.html" class="extype" name="org.apache.spark.sql.execution.ResultNullHolder">ResultNullHolder</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ResultSetNullHolderextendsResultNullHolder" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.RowDataSourceScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RowDataSourceScanExecextendsSparkPlanwithDataSourceScanExecwithCodegenSupportwithProductwithSerializable"></a>
       <a id="RowDataSourceScanExec:RowDataSourceScanExec"></a>
@@ -1798,6 +1837,23 @@ last time slot and short fall from previous rounds.</p>
 meta-data including number of samples collected, total number of rows
 in the stratum seen so far, the QCS key, reservoir of samples etc.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.StringKey" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="StringKeyextendsAnyRef"></a>
+      <a id="StringKey:StringKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StringKey.html"><span class="name">StringKey</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StringKeyextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.SubqueryExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SubqueryExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="SubqueryExec:SubqueryExec"></a>
@@ -1816,6 +1872,23 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
     </span>
       <p class="shortcomment cmt">Physical plan for a subquery.</p><div class="fullcomment"><div class="comment cmt"><p>Physical plan for a subquery.</p><p>This is used to generate tree string for SparkScalarSubquery.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.TableInsertExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TableInsertExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportOnExecutor"></a>
+      <a id="TableInsertExec:TableInsertExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TableInsertExec.html"><span class="name">TableInsertExec</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TableInsertExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportOnExecutor" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Common methods for bulk inserts into column and row tables.</p>
     </li><li name="org.apache.spark.sql.execution.TakeOrderedAndProjectExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TakeOrderedAndProjectExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="TakeOrderedAndProjectExec:TakeOrderedAndProjectExec"></a>
@@ -2218,23 +2291,6 @@ of specialized classes: <span class="extype" name="RowBoundOrdering">RowBoundOrd
 pool and connection properties.</p><div class="fullcomment"><div class="comment cmt"><p>A global way to obtain a pooled DataSource with a given set of
 pool and connection properties.</p><p>Supports Tomcat-JDBC pool and HikariCP.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.Constants" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Constants"></a>
-      <a id="Constants:Constants"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="Constants$.html"><span class="name">Constants</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@Constants" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.DataSourceScanExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DataSourceScanExec"></a>
       <a id="DataSourceScanExec:DataSourceScanExec"></a>

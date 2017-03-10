@@ -185,6 +185,27 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.Executor#addReplClassLoaderIfNeeded" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addReplClassLoaderIfNeeded(parent:ClassLoader):ClassLoader"></a>
+      <a id="addReplClassLoaderIfNeeded(ClassLoader):ClassLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addReplClassLoaderIfNeeded</span><span class="params">(<span name="parent">parent: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>)</span><span class="result">: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@addReplClassLoaderIfNeeded(parent:ClassLoader):ClassLoader" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">If the REPL is in use, add another ClassLoader that will read
+new classes defined by the REPL as the user types code
+</p><div class="fullcomment"><div class="comment cmt"><p>If the REPL is in use, add another ClassLoader that will read
+new classes defined by the REPL as the user types code
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>Executor</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -337,6 +358,23 @@ created by the interpreter to the search path
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor#getName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getName(path:String):String"></a>
+      <a id="getName(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getName</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@getName(path:String):String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -747,6 +785,23 @@ tasks instead of taking the JVM down.</p></div><dl class="paramcmts block"><dt c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.executor.Executor#replClassLoader" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="replClassLoader:ClassLoader"></a>
+      <a id="replClassLoader:ClassLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">replClassLoader</span><span class="result">: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@replClassLoader:ClassLoader" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Executor</dd></dl></div>
     </li><li name="org.apache.spark.executor.Executor#stop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stop():Unit"></a>
       <a id="stop():Unit"></a>
@@ -824,7 +879,7 @@ SparkContext. Also adds any new JARs we fetched to the class loader.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">urlClassLoader</span><span class="result">: <span class="extype" name="org.apache.spark.util.MutableURLClassLoader">MutableURLClassLoader</span></span>

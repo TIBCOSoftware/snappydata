@@ -226,6 +226,23 @@ are subject to change between minor releases.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.SessionJarUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SessionJarUtilsextendsAnyRef"></a>
+      <a id="SessionJarUtils:SessionJarUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SessionJarUtils.html"><span class="name">SessionJarUtils</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SessionJarUtilsextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.internal.SnappyAQPSessionState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyAQPSessionStateextendsSnappySessionState"></a>
       <a id="SnappyAQPSessionState:SnappyAQPSessionState"></a>
@@ -277,6 +294,23 @@ are subject to change between minor releases.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.StoreInitRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StoreInitRDDextendsRDD[(com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember,org.apache.spark.storage.BlockManagerId)]"></a>
+      <a id="StoreInitRDD:StoreInitRDD"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StoreInitRDD.html"><span class="name">StoreInitRDD</span></a><span class="result"> extends <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember">InternalDistributedMember</span>, <a href="../../storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@StoreInitRDDextendsRDD[(com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember,org.apache.spark.storage.BlockManagerId)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This RDD registers a store for each table being created.</p>
     </li><li name="org.apache.spark.sql.internal.VariableSubstitution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="VariableSubstitutionextendsAnyRef"></a>
       <a id="VariableSubstitution:VariableSubstitution"></a>
@@ -304,7 +338,28 @@ are subject to change between minor releases.
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.internal.HiveSerDe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.internal.ContextJarUtils" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ContextJarUtils"></a>
+      <a id="ContextJarUtils:ContextJarUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ContextJarUtils$.html"><span class="name">ContextJarUtils</span></a><span class="result"> extends <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@ContextJarUtils" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An utility class to store jar file reference with their individual classloaders.</p><div class="fullcomment"><div class="comment cmt"><p>An utility class to store jar file reference with their individual classloaders.
+This is to reflect class changes at driver side.
+e.g. If an UDF definition changes the driver should pick up the correct UDF class.
+This class can not initialize itself after a driver failure. So the callers will have  to make sure that the classloader gets
+initialized after a driver startup. Usually it can be achieved by adding classloader at query time.</p></div></div>
+    </li><li name="org.apache.spark.sql.internal.HiveSerDe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="HiveSerDe"></a>
       <a id="HiveSerDe:HiveSerDe"></a>
       <h4 class="signature">
@@ -351,6 +406,23 @@ are subject to change between minor releases.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SQLConfigEntry" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.UDFFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UDFFunction"></a>
+      <a id="UDFFunction:UDFFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="UDFFunction$.html"><span class="name">UDFFunction</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@UDFFunction" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

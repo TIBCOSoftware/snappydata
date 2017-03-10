@@ -91,7 +91,7 @@
                 
                     <li><a class="toctree-l4" href="#how-to-access-snappydata-store-from-an-existing-spark-installation-using-smart-connector">How to Access SnappyData store from an Existing Spark Installation using Smart Connector</a></li>
                 
-                    <li><a class="toctree-l4" href="#how-to-use-snappydata-sql-shell-snappy-shell">How to Use SnappyData SQL shell (snappy-shell)</a></li>
+                    <li><a class="toctree-l4" href="#how-to-use-snappy-sql-shell-snappy-sql">How to Use Snappy SQL shell (snappy-sql)</a></li>
                 
                     <li><a class="toctree-l4" href="#how-to-create-row-tables-and-run-queries">How to Create Row Tables and Run Queries</a></li>
                 
@@ -112,6 +112,8 @@
                     <li><a class="toctree-l4" href="#how-to-use-synopsis-data-engine-to-run-approximate-queries">How to Use Synopsis Data Engine to Run Approximate Queries</a></li>
                 
                     <li><a class="toctree-l4" href="#how-to-use-python-to-create-tables-and-run-queries">How to Use Python to Create Tables and Run Queries</a></li>
+                
+                    <li><a class="toctree-l4" href="#how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</a></li>
                 
             
             </ul>
@@ -234,7 +236,7 @@
             <div class="section">
               
                 <h1 id="overview">Overview</h1>
-<p>This section introduces you to several common operations such as, starting a cluster, working with tables(load, query, update), working with streams and running approximate queries.</p>
+<p>This section introduces you to several common operations such as, starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.</p>
 <p><strong>Running the Examples:</strong>
 Topics in this section refer to source code examples that are shipped with the product. Instructions to run these examples can be found in the source code.</p>
 <p>Source code for these examples is located in the <strong>quickstart/src/main/scala/org/apache/spark/examples/snappydata</strong> and in <strong>quickstart/python</strong> directories of the SnappyData product distribution.</p>
@@ -251,19 +253,48 @@ Topics in this section refer to source code examples that are shipped with the p
 <p><Note> Note: SnappyData also supports Java API. Refer to the <a href="../programming_guide/#building-snappy-applications-using-spark-api">documentation</a> for more details on Java API.</note></p>
 <p>The following topics are covered in this section:</p>
 <ul>
-<li><a href="#howto-startCluster">How to Start a SnappyData Cluster</a></li>
-<li><a href="#howto-job">How to Run Spark Job inside the Cluster</a></li>
-<li><a href="#howto-splitmode">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a></li>
-<li><a href="#howto-row">How to Create Row Tables and Run Queries</a></li>
-<li><a href="#howto-column">How to Create Column Tables and Run Queries</a></li>
-<li><a href="#howto-load">How to Load Data in SnappyData Tables</a></li>
-<li><a href="#howto-collacatedJoin">How to perform a Collocated Join</a></li>
-<li><a href="#howto-jdbc">How to Connect using JDBC Driver</a></li>
-<li><a href="#howto-JSON">How to Store and Query JSON Objects</a></li>
-<li><a href="#howto-objects">How to Store and Query Objects</a></li>
-<li><a href="#howto-streams">How to Use Stream Processing with SnappyData</a></li>
-<li><a href="#howto-sde">How to Use Synopsis Data Engine to Run Approximate Queries</a></li>
-<li><a href="#howto-python">How to Use Python to Create Tables and Run Queries</a></li>
+<li>
+<p><a href="#howto-startCluster">How to Start a SnappyData Cluster</a></p>
+</li>
+<li>
+<p><a href="#howto-job">How to Run Spark Job inside the Cluster</a></p>
+</li>
+<li>
+<p><a href="#howto-splitmode">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a></p>
+</li>
+<li>
+<p><a href="#howto-row">How to Create Row Tables and Run Queries</a></p>
+</li>
+<li>
+<p><a href="#howto-column">How to Create Column Tables and Run Queries</a></p>
+</li>
+<li>
+<p><a href="#howto-load">How to Load Data in SnappyData Tables</a></p>
+</li>
+<li>
+<p><a href="#howto-collacatedJoin">How to Perform a Collocated Join</a></p>
+</li>
+<li>
+<p><a href="#howto-jdbc">How to Connect using JDBC Driver</a></p>
+</li>
+<li>
+<p><a href="#howto-JSON">How to Store and Query JSON Objects</a></p>
+</li>
+<li>
+<p><a href="#howto-objects">How to Store and Query Objects</a></p>
+</li>
+<li>
+<p><a href="#howto-streams">How to Use Stream Processing with SnappyData</a></p>
+</li>
+<li>
+<p><a href="#howto-sde">How to Use Synopsis Data Engine to Run Approximate Queries</a></p>
+</li>
+<li>
+<p><a href="#howto-python">How to Use Python to Create Tables and Run Queries</a></p>
+</li>
+<li>
+<p><a href="#howto-odbc">How to Connect using ODBC Driver</a></p>
+</li>
 </ul>
 <p><a id="howto-startCluster"></a></p>
 <h2 id="how-to-start-a-snappydata-cluster">How to Start a SnappyData Cluster</h2>
@@ -279,14 +310,14 @@ Topics in this section refer to source code examples that are shipped with the p
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
 Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 9368 status: running
-Starting SnappyData Server using locators for peer discovery: shirishd-laptop[10334]
+Starting SnappyData Server using locators for peer discovery: user1-laptop[10334]
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-Logs generated in /home/shirishd/snappyData/work/localhost-server-1/snappyserver.log
+Logs generated in /home/user1/snappyData/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 9519 status: running
   Distributed system now has 2 members.
   Other members: localhost(9368:locator)&lt;v0&gt;:16944
-Starting SnappyData Leader using locators for peer discovery: shirishd-laptop[10334]
-Logs generated in /home/shirishd/snappyData/work/localhost-lead-1/snappyleader.log
+Starting SnappyData Leader using locators for peer discovery: user1-laptop[10334]
+Logs generated in /home/user1/snappyData/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 9699 status: running
   Distributed system now has 3 members.
   Other members: localhost(9368:locator)&lt;v0&gt;:16944, 192.168.63.1(9519:datastore)&lt;v1&gt;:46966
@@ -303,7 +334,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)&lt;v0&gt;:16944, 192.168.63.1(9519:datastore)&lt;v1&gt;:46966
 </code></pre>
 
-<p>You can check SnappyData UI by opening <code>http://&lt;leadHostname&gt;:4040</code> in browser, where <code>&lt;leadHostname&gt;</code> is the host name of your lead node. Use <a href="#howto-snappyShell">snappy-shell</a> to connect to the cluster and perform various SQL operations.</p>
+<p>You can check SnappyData UI by opening <code>http://&lt;leadHostname&gt;:5050</code> in browser, where <code>&lt;leadHostname&gt;</code> is the host name of your lead node. Use <a href="#howto-snappyShell">Snappy SQL shell</a> to connect to the cluster and perform various SQL operations.</p>
 <p><strong>Shutdown Cluster</strong>: You can shutdown the cluster using the <code>sbin/snappy-stop-all.sh</code> command:</p>
 <pre><code>$ sbin/snappy-stop-all.sh
 The SnappyData Leader has stopped.
@@ -352,13 +383,13 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 &lt;dependency&gt;
     &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
     &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
-    &lt;version&gt;0.7&lt;/version&gt;
+    &lt;version&gt;0.8&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre>
 
 <p><strong>Example: SBT dependency</strong>:</p>
 <pre><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.7&quot;
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.8&quot;
 </code></pre>
 
 <p><strong>Running the Job</strong>: 
@@ -372,9 +403,10 @@ For example, the command submits the job and runs it as:</p>
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
-    --lead [leadHost:port]
+    --lead hostNameOfLead:8090
 </code></pre>
 
+<p>In the above comand, <strong>--lead</strong> option specifies the host name of the lead node along with the port on which it accepts jobs (default 8090).</p>
 <p><strong>Output</strong>: It returns output similar to:</p>
 <pre><code>{
   &quot;status&quot;: &quot;STARTED&quot;,
@@ -429,16 +461,16 @@ You can now create tables and run queries in SnappyData store using your Apache 
 </code></pre>
 
 <p><a id="howto-snappyShell"></a></p>
-<h2 id="how-to-use-snappydata-sql-shell-snappy-shell">How to Use SnappyData SQL shell (snappy-shell)</h2>
-<p><code>snappy-shell</code> can be used to execute SQL on SnappyData cluster. In the background, <code>snappy-shell</code> uses JDBC connections to execute SQL.</p>
+<h2 id="how-to-use-snappy-sql-shell-snappy-sql">How to Use Snappy SQL shell (snappy-sql)</h2>
+<p><code>snappy-sql</code> can be used to execute SQL on SnappyData cluster. In the background, <code>snappy-sql</code> uses JDBC connections to execute SQL.</p>
 <p><strong>Connect to a SnappyData Cluster</strong>: 
-Use the <code>snappy-shell</code> and <code>connect client</code> command on the Snappy Shell</p>
-<pre><code>$ bin/snappy-shell
+Use the <code>snappy-sql</code> and <code>connect client</code> command on the Snappy SQL Shell</p>
+<pre><code>$ bin/snappy-sql
 snappy&gt; connect client '&lt;locatorHostName&gt;:1527';
 </code></pre>
 
 <p>Where <code>&lt;locatorHostName&gt;</code> is the host name of the node on which the locator is started and <strong>1527</strong> is the default port on which the locator listens for connections. </p>
-<p><strong>Execute SQL queries</strong>: Once connected you can execute SQL queries using <code>snappy-shell</code></p>
+<p><strong>Execute SQL queries</strong>: Once connected you can execute SQL queries using <code>snappy-sql</code></p>
 <pre><code>snappy&gt; CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
 
 snappy&gt; INSERT INTO APP.PARTSUPP VALUES(100, 1, 5000, 100);
@@ -770,7 +802,7 @@ preparedStmt1.executeBatch()
 preparedStmt1.close()
 </code></pre>
 
-<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>com.pivotal.gemfirexd.jdbc.ClientDriver</strong> class.</Note></p>
+<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</Note></p>
 <p><a id="howto-JSON"></a></p>
 <h2 id="how-to-store-and-query-json-objects">How to Store and Query JSON Objects</h2>
 <p>You can insert JSON data in SnappyData tables and execute queries on the tables.</p>
@@ -833,15 +865,7 @@ The source code for JSON example is located at <a href="https://github.com/Snapp
         &quot;address.lane &quot; +
         &quot;FROM people&quot;)
 
-    val builder = new StringBuilder
-    nameAndAddress.collect.map(row =&gt; {
-      builder.append(s&quot;${row(0)} ,&quot;)
-      builder.append(s&quot;${row(1)} ,&quot;)
-      builder.append(s&quot;${row(2)} ,&quot;)
-      builder.append(s&quot;${row(3)} ,&quot;)
-      builder.append(s&quot;${row(4)} \n&quot;)
-    })
-    builder.toString
+nameAndAddress.toJSON.show()
 
 </code></pre>
 
@@ -851,7 +875,7 @@ The source code for JSON example is located at <a href="https://github.com/Snapp
 <p><strong>Code Example: Insert Person object into the column table</strong></p>
 <p>The code snippet below inserts Person objects into a column table. The source code for this example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala">WorkingWithObjects.scala</a>. After creating SnappySession, the Person objects is inserted using Spark API and loads into a SnappyData table.</p>
 <p><strong>Get a SnappySession</strong>:</p>
-<pre><code>    val spark: SparkSession = SparkSession
+<pre><code class="scala">    val spark: SparkSession = SparkSession
         .builder
         .appName(&quot;CreateReplicatedRowTable&quot;)
         .master(&quot;local[4]&quot;)
@@ -861,49 +885,46 @@ The source code for JSON example is located at <a href="https://github.com/Snapp
 </code></pre>
 
 <p><strong>Create DataFrame objects</strong>:</p>
-<pre><code>    //Import the implicits for automatic conversion between Objects to DataSets.
+<pre><code class="scala">    //Import the implicits for automatic conversion between Objects to DataSets.
     import snSession.implicits._
 
     // Create a Dataset using Spark APIs
-    val people = Seq(Person(&quot;Tom&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;)), Person(&quot;Ned&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;))).toDS()
+    val people = Seq(Person(&quot;Tom&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;), Map(&quot;frnd1&quot;-&gt; &quot;8998797979&quot;, &quot;frnd2&quot; -&gt; &quot;09878786886&quot;))
+      , Person(&quot;Ned&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;), Map.empty[String,String])).toDS()
 </code></pre>
 
 <p><strong>Create a SnappyData table and insert data into it</strong>:</p>
-<pre><code>    //Drop the table if it exists.
-    snSession.dropTable(&quot;people&quot;, ifExists = true)
+<pre><code class="scala">    //Drop the table if it exists.
+    snSession.dropTable(&quot;Persons&quot;, ifExists = true)
 
     //Create a columnar table with a Struct to store Address
-    snSession.sql(&quot;CREATE table Persons(name String, address Struct&lt;city: String, state:String&gt;) using column options()&quot;)
+    snSession.sql(&quot;CREATE table Persons(name String, address Struct&lt;city: String, state:String&gt;, &quot; +
+         &quot;emergencyContacts Map&lt;String,String&gt;) using column options()&quot;)
 
     // Write the created DataFrame to the columnar table.
-    people.write.insertInto(&quot;people&quot;)
+    people.write.insertInto(&quot;Persons&quot;)
 
     //print schema of the table
     println(&quot;Print Schema of the table\n################&quot;)
-    println(snSession.table(&quot;people&quot;).schema)
+    println(snSession.table(&quot;Persons&quot;).schema)
 
 
     // Append more people to the column table
-    val morePeople = Seq(Person(&quot;Jon Snow&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;)),
-      Person(&quot;Rob Stark&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;)),
-      Person(&quot;Michael&quot;, Address(&quot;Null&quot;, &quot;California&quot;))).toDS()
+    val morePeople = Seq(Person(&quot;Jon Snow&quot;, Address(&quot;Columbus&quot;, &quot;Ohio&quot;), Map.empty[String,String]),
+      Person(&quot;Rob Stark&quot;, Address(&quot;San Diego&quot;, &quot;California&quot;), Map.empty[String,String]),
+      Person(&quot;Michael&quot;, Address(&quot;Null&quot;, &quot;California&quot;), Map.empty[String,String])).toDS()
 
-    morePeople.write.insertInto(&quot;people&quot;)
+    morePeople.write.insertInto(&quot;Persons&quot;)
 </code></pre>
 
 <p><strong>Execute query on the table and return results</strong>:</p>
-<pre><code>    // Query it like any other table
-    val nameAndAddress = snSession.sql(&quot;SELECT name, address FROM Persons&quot;)
+<pre><code class="scala">    // Query it like any other table
+    val nameAndAddress = snSession.sql(&quot;SELECT name, address, emergencyContacts FROM Persons&quot;)
 
     //Reconstruct the objects from obtained Row
-    val allPersons = nameAndAddress.collect.map(row =&gt; {
-      Person(row(0).asInstanceOf[String],
-        Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],//Struct type in the schema  is returned as a Row.
-          row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        )
-      )
-    })
+    val allPersons = nameAndAddress.as[Person]
+    //allPersons is a Spark Dataset of Person objects. 
+    // Use of the Dataset APIs to transform, query this data set. 
 </code></pre>
 
 <p><a id="howto-streams"></a></p>
@@ -1159,7 +1180,46 @@ This same table can be created by using createTable API. First we create a schem
     snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 </code></pre>
 
-<p>The complete source code for the above example is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/examples/src/main/python/CreateTable.py">CreateTable.py</a></p>
+<p>The complete source code for the above example is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py">CreateTable.py</a></p>
+<p><a id="howto-odbc"></a></p>
+<h2 id="how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</h2>
+<p>You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.</p>
+<h3 id="download-and-install-the-odbc-driver">Download and Install the ODBC Driver</h3>
+<p>To download and install the ODBC driver:</p>
+<ol>
+<li>
+<p>Download the SnappyData ODBC Driver from the <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>.<br />
+Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.</p>
+<ul>
+<li>
+<p>32-bit: <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc32.zip">snappydata-0.8-odbc32 Installer</a></p>
+</li>
+<li>
+<p>64-bit: <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc64.zip">snappydata-0.8-odbc64 Installer</a></p>
+</li>
+</ul>
+</li>
+<li>
+<p>Extract the contents of the downloaded file. </p>
+</li>
+<li>
+<p>Double-click on the <strong>SnappyDataODBCDriverInstaller.msi</strong> file, and follow the steps to complete the installation.</p>
+</li>
+</ol>
+<h3 id="connect-to-the-snappydata-cluster">Connect to the SnappyData cluster</h3>
+<p>Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:</p>
+<ul>
+<li>
+<p>Use the SnappyData Driver Conneciton URL:</p>
+<pre><code>Driver=SnappyData ODBC Driver;server=&lt;ServerHost&gt;;port=&lt;ServerPort&gt;;user=&lt;userName&gt;;password=&lt;password&gt;
+</code></pre>
+</li>
+<li>
+<p>Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
+ Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
+ When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. </p>
+</li>
+</ul>
               
             </div>
           </div>

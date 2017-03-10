@@ -50,8 +50,9 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Utilities to generate code for exchanging data from Spark layer
-(Row, InternalRow) to store (Statement, ExecRow).</p><p>This is both more efficient and allows better code reuse with the code
-generation facilities of Spark (esp for complex types like ArrayType).
+(Row, InternalRow) to store (Statement, ExecRow).</p><p>This extends the Spark code generation facilities to allow lazy
+generation of code string itself only if not found in cache
+(and using some other lookup key than the code string)
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -165,19 +166,19 @@ generation facilities of Spark (esp for complex types like ArrayType).
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.store.CodeGeneration#clearCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="clearCache():Unit"></a>
-      <a id="clearCache():Unit"></a>
+    </li><li name="org.apache.spark.sql.store.CodeGeneration#clearAllCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="clearAllCache(skipTypeCache:Boolean):Unit"></a>
+      <a id="clearAllCache(Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">clearCache</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">clearAllCache</span><span class="params">(<span name="skipTypeCache">skipTypeCache: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@clearCache():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@clearAllCache(skipTypeCache:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -205,6 +206,23 @@ generation facilities of Spark (esp for complex types like ArrayType).
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.store.CodeGeneration#compileCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="compileCode(name:String,schema:Array[org.apache.spark.sql.types.StructField],genCode:()=&gt;(org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment,Array[Any])):(org.apache.spark.sql.catalyst.expressions.codegen.GeneratedClass,Array[Any])"></a>
+      <a id="compileCode(String,Array[StructField],()⇒(CodeAndComment,Array[Any])):(GeneratedClass,Array[Any])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compileCode</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="scala.Array">Array</span>[<a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>, <span name="genCode">genCode: () ⇒ (<a href="../catalyst/expressions/codegen/CodeAndComment.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment">CodeAndComment</a>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Any">Any</span>])</span>)</span><span class="result">: (<a href="../catalyst/expressions/codegen/GeneratedClass.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.GeneratedClass">GeneratedClass</a>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Any">Any</span>])</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@compileCode(name:String,schema:Array[org.apache.spark.sql.types.StructField],genCode:()=&gt;(org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment,Array[Any])):(org.apache.spark.sql.catalyst.expressions.codegen.GeneratedClass,Array[Any])" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -274,18 +292,18 @@ generation facilities of Spark (esp for complex types like ArrayType).
     </span>
       
     </li><li name="org.apache.spark.sql.store.CodeGeneration#executeUpdate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="executeUpdate(name:String,stmt:java.sql.PreparedStatement,rows:Iterator[org.apache.spark.sql.catalyst.InternalRow],multipleRows:Boolean,batchSize:Int,schema:Array[org.apache.spark.sql.types.DataType],dialect:org.apache.spark.sql.jdbc.JdbcDialect):Int"></a>
-      <a id="executeUpdate(String,PreparedStatement,Iterator[InternalRow],Boolean,Int,Array[DataType],JdbcDialect):Int"></a>
+      <a id="executeUpdate(name:String,stmt:java.sql.PreparedStatement,rows:Iterator[org.apache.spark.sql.catalyst.InternalRow],multipleRows:Boolean,batchSize:Int,schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect):Int"></a>
+      <a id="executeUpdate(String,PreparedStatement,Iterator[InternalRow],Boolean,Int,Array[StructField],JdbcDialect):Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">executeUpdate</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="stmt">stmt: <span class="extype" name="java.sql.PreparedStatement">PreparedStatement</span></span>, <span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="multipleRows">multipleRows: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="batchSize">batchSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="schema">schema: <span class="extype" name="scala.Array">Array</span>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>, <span name="dialect">dialect: <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">executeUpdate</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="stmt">stmt: <span class="extype" name="java.sql.PreparedStatement">PreparedStatement</span></span>, <span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="multipleRows">multipleRows: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="batchSize">batchSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="schema">schema: <span class="extype" name="scala.Array">Array</span>[<a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>, <span name="dialect">dialect: <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@executeUpdate(name:String,stmt:java.sql.PreparedStatement,rows:Iterator[org.apache.spark.sql.catalyst.InternalRow],multipleRows:Boolean,batchSize:Int,schema:Array[org.apache.spark.sql.types.DataType],dialect:org.apache.spark.sql.jdbc.JdbcDialect):Int" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@executeUpdate(name:String,stmt:java.sql.PreparedStatement,rows:Iterator[org.apache.spark.sql.catalyst.InternalRow],multipleRows:Boolean,batchSize:Int,schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect):Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -313,6 +331,23 @@ generation facilities of Spark (esp for complex types like ArrayType).
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.store.CodeGeneration#genStmtSetters" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="genStmtSetters(schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect,rowInput:Int=&gt;org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,stmt:String,schemaTerm:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
+      <a id="genStmtSetters(Array[StructField],JdbcDialect,(Int)⇒ExprCode,String,String,CodegenContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genStmtSetters</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Array">Array</span>[<a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>, <span name="dialect">dialect: <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>, <span name="rowInput">rowInput: (<span class="extype" name="scala.Int">Int</span>) ⇒ <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="stmt">stmt: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schemaTerm">schemaTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@genStmtSetters(schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect,rowInput:Int=&gt;org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,stmt:String,schemaTerm:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -360,6 +395,23 @@ generation facilities of Spark (esp for complex types like ArrayType).
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@getGeneratedIndexStatement(name:String,schema:org.apache.spark.sql.types.StructType,dialect:org.apache.spark.sql.jdbc.JdbcDialect):(java.sql.PreparedStatement,org.apache.spark.sql.catalyst.InternalRow)=&gt;Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.store.CodeGeneration#getRowSetterFragment" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getRowSetterFragment(schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect,row:String,stmt:String,schemaTerm:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
+      <a id="getRowSetterFragment(Array[StructField],JdbcDialect,String,String,String,CodegenContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getRowSetterFragment</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Array">Array</span>[<a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>, <span name="dialect">dialect: <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>, <span name="row">row: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="stmt">stmt: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schemaTerm">schemaTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.CodeGeneration$@getRowSetterFragment(schema:Array[org.apache.spark.sql.types.StructField],dialect:org.apache.spark.sql.jdbc.JdbcDialect,row:String,stmt:String,schemaTerm:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -113,7 +113,7 @@
                 
                     <li><a class="toctree-l4" href="#per-component-configuration">Per Component Configuration</a></li>
                 
-                    <li><a class="toctree-l4" href="#snappy-shell-command-line-utility">snappy-shell Command Line Utility</a></li>
+                    <li><a class="toctree-l4" href="#snappy-command-line-utility">Snappy Command Line Utility</a></li>
                 
                     <li><a class="toctree-l4" href="#logging">Logging</a></li>
                 
@@ -297,7 +297,7 @@ we discuss how the components can be individually configured. We also discuss va
 <p>Start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l).</p>
 </li>
 <li>
-<p>Change the Spark UI port from 4040 to 9090. </p>
+<p>Change the Spark UI port from 5050 to 9090. </p>
 </li>
 <li>
 <p>Set spark.executor.cores as 10 on all servers. </p>
@@ -334,13 +334,13 @@ SERVER_STARTUP_OPTIONS=&quot;-heap-size=4096m&quot;
 LEAD_STARTUP_OPTIONS=&quot;-heap-size=2048m&quot;
 </code></pre>
 
-<h2 id="snappy-shell-command-line-utility">snappy-shell Command Line Utility</h2>
+<h2 id="snappy-command-line-utility">Snappy Command Line Utility</h2>
 <p>Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using the command line. </p>
-<pre><code class="bash">$ bin/snappy-shell locator start  -dir=/node-a/locator1 
-$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+<pre><code class="bash">$ bin/snappy locator start  -dir=/node-a/locator1 
+$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
-$ bin/snappy-shell locator stop
-$ bin/snappy-shell server stop
+$ bin/snappy locator stop
+$ bin/snappy server stop
 </code></pre>
 
 <h2 id="logging">Logging</h2>

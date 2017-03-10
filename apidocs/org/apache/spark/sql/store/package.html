@@ -83,6 +83,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.store.ExecuteKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExecuteKeyextendsAnyRef"></a>
+      <a id="ExecuteKey:ExecuteKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExecuteKey.html"><span class="name">ExecuteKey</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.package@ExecuteKeyextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.store.GeneratedIndexStatement" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="GeneratedIndexStatementextendsAnyRef"></a>
       <a id="GeneratedIndexStatement:GeneratedIndexStatement"></a>
@@ -155,23 +172,6 @@ partitions.</p><div class="fullcomment"><div class="comment cmt"><p>A partitione
 partitions. Each store layer hash computation invokes this to
 get their bucket information.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.store.StoreInitRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StoreInitRDDextendsRDD[(com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember,org.apache.spark.storage.BlockManagerId)]"></a>
-      <a id="StoreInitRDD:StoreInitRDD"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StoreInitRDD.html"><span class="name">StoreInitRDD</span></a><span class="result"> extends <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember">InternalDistributedMember</span>, <a href="../../storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a>)]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.package@StoreInitRDDextendsRDD[(com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember,org.apache.spark.storage.BlockManagerId)]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">This RDD registers a store for each table being created.</p>
     </li></ol>
             </div>
 
@@ -197,8 +197,9 @@ get their bucket information.
     </span>
       <p class="shortcomment cmt">Utilities to generate code for exchanging data from Spark layer
 (Row, InternalRow) to store (Statement, ExecRow).</p><div class="fullcomment"><div class="comment cmt"><p>Utilities to generate code for exchanging data from Spark layer
-(Row, InternalRow) to store (Statement, ExecRow).</p><p>This is both more efficient and allows better code reuse with the code
-generation facilities of Spark (esp for complex types like ArrayType).
+(Row, InternalRow) to store (Statement, ExecRow).</p><p>This extends the Spark code generation facilities to allow lazy
+generation of code string itself only if not found in cache
+(and using some other lookup key than the code string)
 </p></div></div>
     </li><li name="org.apache.spark.sql.store.MembershipAccumulator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="MembershipAccumulator"></a>
@@ -226,7 +227,7 @@ generation facilities of Spark (esp for complex types like ArrayType).
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="StoreUtils$.html"><span class="name">StoreUtils</span></a><span class="result"> extends <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <a href="StoreUtils$.html"><span class="name">StoreUtils</span></a>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.store.package@StoreUtils" title="Permalink" target="_top">

@@ -611,6 +611,29 @@ Creates a <a href="package.html#DataFrame=org.apache.spark.sql.Dataset[org.apach
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappySession#createDataset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createDataset[T](data:org.apache.spark.rdd.RDD[T])(implicitevidence$1:org.apache.spark.sql.Encoder[T]):org.apache.spark.sql.Dataset[T]"></a>
+      <a id="createDataset[T](RDD[T])(Encoder[T]):Dataset[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createDataset</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="data">data: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.SnappySession.createDataset.T">T</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.SnappySession.createDataset.T">T</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.SnappySession.createDataset.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@createDataset[T](data:org.apache.spark.rdd.RDD[T])(implicitevidence$1:org.apache.spark.sql.Encoder[T]):org.apache.spark.sql.Dataset[T]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Creates a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from an RDD of a given type.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Creates a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from an RDD of a given type. This method requires an
+encoder (to convert a JVM object of type <code>T</code> to and from the internal Spark SQL representation)
+that is generally created automatically through implicits from a <code>SparkSession</code>, or can be
+created explicitly by calling static methods on <a href="Encoders$.html" class="extype" name="org.apache.spark.sql.Encoders">Encoders</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a> → <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SparkSession#createDataset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createDataset[T](data:java.util.List[T])(implicitevidence$6:org.apache.spark.sql.Encoder[T]):org.apache.spark.sql.Dataset[T]"></a>
       <a id="createDataset[T](List[T])(Encoder[T]):Dataset[T]"></a>
@@ -634,32 +657,6 @@ encoder (to convert a JVM object of type <code>T</code> to and from the internal
 that is generally created automatically through implicits from a <code>SparkSession</code>, or can be
 created explicitly by calling static methods on <a href="Encoders$.html" class="extype" name="org.apache.spark.sql.Encoders">Encoders</a>.</p><h4> Java Example </h4><pre><span class="std">List</span>&lt;<span class="std">String</span>&gt; data = Arrays.asList(<span class="lit">"hello"</span>, <span class="lit">"world"</span>);
 Dataset&lt;<span class="std">String</span>&gt; ds = spark.createDataset(data, Encoders.STRING());</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
-              
-        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.SparkSession#createDataset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createDataset[T](data:org.apache.spark.rdd.RDD[T])(implicitevidence$5:org.apache.spark.sql.Encoder[T]):org.apache.spark.sql.Dataset[T]"></a>
-      <a id="createDataset[T](RDD[T])(Encoder[T]):Dataset[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">createDataset</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="data">data: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.SparkSession.createDataset.T">T</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.SparkSession.createDataset.T">T</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.SparkSession.createDataset.T">T</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@createDataset[T](data:org.apache.spark.rdd.RDD[T])(implicitevidence$5:org.apache.spark.sql.Encoder[T]):org.apache.spark.sql.Dataset[T]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">:: Experimental ::
-Creates a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from an RDD of a given type.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
-Creates a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> from an RDD of a given type. This method requires an
-encoder (to convert a JVM object of type <code>T</code> to and from the internal Spark SQL representation)
-that is generally created automatically through implicits from a <code>SparkSession</code>, or can be
-created explicitly by calling static methods on <a href="Encoders$.html" class="extype" name="org.apache.spark.sql.Encoders">Encoders</a>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></dd><dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
@@ -2241,22 +2238,23 @@ Returns a <span class="extype" name="StreamingQueryManager">StreamingQueryManage
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#truncateTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="truncateTable(tableName:String):Unit"></a>
-      <a id="truncateTable(String):Unit"></a>
+      <a id="truncateTable(tableName:String,ifExists:Boolean):Unit"></a>
+      <a id="truncateTable(String,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">truncateTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">truncateTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@truncateTable(tableName:String):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@truncateTable(tableName:String,ifExists:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Empties the contents of the table without deleting the catalog entry.</p><div class="fullcomment"><div class="comment cmt"><p>Empties the contents of the table without deleting the catalog entry.</p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>full table name to be truncated</p></dd></dl></div>
+      <p class="shortcomment cmt">Empties the contents of the table without deleting the catalog entry.</p><div class="fullcomment"><div class="comment cmt"><p>Empties the contents of the table without deleting the catalog entry.
+</p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>full table name to be truncated</p></dd><dt class="param">ifExists</dt><dd class="cmt"><p>attempt truncate only if the table exists</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SparkSession#udf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="udf:org.apache.spark.sql.UDFRegistration"></a>
       <a id="udf:UDFRegistration"></a>

@@ -226,23 +226,6 @@ hint for any table disables choice of index and its associated following rules.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="io.snappydata.JOS#ColocatedWithFilters" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColocatedWithFilters:io.snappydata.JOS.Value"></a>
-      <a id="ColocatedWithFilters:Value"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">ColocatedWithFilters</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.JOS.Value">Value</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.JOS$@ColocatedWithFilters:io.snappydata.JOS.Value" title="Permalink" target="_top">
-        <img src="../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="io.snappydata.JOS#ContinueOptimizations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ContinueOptimizations:io.snappydata.JOS.Value"></a>
       <a id="ContinueOptimizations:Value"></a>
@@ -264,6 +247,23 @@ specified explicit index hints for some tables.</p><div class="fullcomment"><div
 specified explicit index hints for some tables.</p><p><code>Note:</code> user specified index hint will be honored and optimizer will only attempt for
 other tables in the query.
 </p></div></div>
+    </li><li name="io.snappydata.JOS#Fixed" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Fixed:io.snappydata.JOS.Value"></a>
+      <a id="Fixed:Value"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Fixed</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.JOS.Value">Value</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.JOS$@Fixed:io.snappydata.JOS.Value" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Don't alter the join order provided by the user.</p>
     </li><li name="io.snappydata.JOS#IncludeGeneratedPaths" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="IncludeGeneratedPaths:io.snappydata.JOS.Value"></a>
       <a id="IncludeGeneratedPaths:Value"></a>
@@ -287,61 +287,6 @@ partitiioned tables, optimizer won't try to derive colocation possibilities with
 tables in between. This switch tells the optimizer to include partition -&gt; replicated -&gt;
 partition like indirect colocation possibilities even if partition -&gt; partition join
 conditions are mentioned.
-</p></div></div>
-    </li><li name="io.snappydata.JOS#LargestColocationChain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="LargestColocationChain:io.snappydata.JOS.Value"></a>
-      <a id="LargestColocationChain:Value"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">LargestColocationChain</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.JOS.Value">Value</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.JOS$@LargestColocationChain:io.snappydata.JOS.Value" title="Permalink" target="_top">
-        <img src="../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="io.snappydata.JOS#NonColocatedWithFilters" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NonColocatedWithFilters:io.snappydata.JOS.Value"></a>
-      <a id="NonColocatedWithFilters:Value"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">NonColocatedWithFilters</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.JOS.Value">Value</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.JOS$@NonColocatedWithFilters:io.snappydata.JOS.Value" title="Permalink" target="_top">
-        <img src="../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="io.snappydata.JOS#ReplicateWithFilters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ReplicateWithFilters:io.snappydata.JOS.Value"></a>
-      <a id="ReplicateWithFilters:Value"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">ReplicateWithFilters</span><span class="result">: <a href="#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="io.snappydata.JOS.Value">Value</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.JOS$@ReplicateWithFilters:io.snappydata.JOS.Value" title="Permalink" target="_top">
-        <img src="../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Applies replicated table with filter conditions in the given order of preference in
-'joinOrder' query hint comma separated values.</p><div class="fullcomment"><div class="comment cmt"><p>Applies replicated table with filter conditions in the given order of preference in
-'joinOrder' query hint comma separated values.</p><p>for e.g. select * from tab --+ joinOrder(CWF, RWF, LCC, NCWF)
-will apply the rule in the mentioned order and rest of the rules will be skipped.
 </p></div></div>
     </li><li name="scala.Enumeration#Value" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Value(i:Int,name:String):Enumeration.this.Value"></a>

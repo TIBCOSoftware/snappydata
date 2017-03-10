@@ -212,18 +212,18 @@ expanding the cache size for bigger reservoir if required in next rounds).
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit#append" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row],partIndex:Int):U"></a>
-      <a id="append[U](Iterator[Row],U,(U,InternalRow)⇒U,(U,Int)⇒U,(U)⇒U,ExpressionEncoder[Row],Int):U"></a>
+      <a id="append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row],partIndex:Int):Long"></a>
+      <a id="append[U](Iterator[Row],U,(U,InternalRow)⇒U,(U,Int)⇒U,(U)⇒U,ExpressionEncoder[Row],Int):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">append</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="processFlush">processFlush: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="startBatch">startBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span>, <span class="extype" name="scala.Int">Int</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="rowEncoder">rowEncoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="partIndex">partIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>
+        <span class="name">append</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="rows">rows: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="processFlush">processFlush: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span>, <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="startBatch">startBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span>, <span class="extype" name="scala.Int">Int</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="endBatch">endBatch: (<span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit.append.U">U</span></span>, <span name="rowEncoder">rowEncoder: <a href="../catalyst/encoders/ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="partIndex">partIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerErrorLimit@append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row],partIndex:Int):U" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerErrorLimit@append[U](rows:Iterator[org.apache.spark.sql.Row],init:U,processFlush:(U,org.apache.spark.sql.catalyst.InternalRow)=&gt;U,startBatch:(U,Int)=&gt;U,endBatch:U=&gt;U,rowEncoder:org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[org.apache.spark.sql.Row],partIndex:Int):Long" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -245,23 +245,6 @@ expanding the cache size for bigger reservoir if required in next rounds).
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit#cacheBatchSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="cacheBatchSize:Int"></a>
-      <a id="cacheBatchSize:Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">cacheBatchSize</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerErrorLimit@cacheBatchSize:Int" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.sources.CastLongTime#castType" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="castType:Int"></a>
       <a id="castType:Int"></a>
@@ -317,6 +300,23 @@ whenever there is a potential significant increase in memory consumption
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit">StratifiedSamplerErrorLimit</a> → AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit#columnBatchSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="columnBatchSize:Int"></a>
+      <a id="columnBatchSize:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">columnBatchSize</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.StratifiedSamplerErrorLimit@columnBatchSize:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.StratifiedSampler#concurrency" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="concurrency:Int"></a>
       <a id="concurrency:Int"></a>
@@ -1088,8 +1088,8 @@ whenever there is a potential significant increase in memory consumption
       </a>
     </span>
       <p class="shortcomment cmt">Store pending values to be flushed in a separate buffer so that we
-do not end up creating too small CachedBatches.</p><div class="fullcomment"><div class="comment cmt"><p>Store pending values to be flushed in a separate buffer so that we
-do not end up creating too small CachedBatches.</p><p>Note that this mini-cache is copy-on-write (to avoid copy-on-read for
+do not end up creating too small ColumnBatches.</p><div class="fullcomment"><div class="comment cmt"><p>Store pending values to be flushed in a separate buffer so that we
+do not end up creating too small ColumnBatches.</p><p>Note that this mini-cache is copy-on-write (to avoid copy-on-read for
 readers) so the buffer inside should never be changed rather the whole
 buffer replaced if required. This should happen only inside flushCache.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></dd></dl></div>

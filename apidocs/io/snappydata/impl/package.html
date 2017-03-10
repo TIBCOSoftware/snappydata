@@ -67,7 +67,7 @@
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="io.snappydata.impl.ComplexTypeSerializerImpl" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ComplexTypeSerializerImplextendsComplexTypeSerializer"></a>
+      <a id="ComplexTypeSerializerImplextendsComplexTypeSerializerwithLogging"></a>
       <a id="ComplexTypeSerializerImpl:ComplexTypeSerializerImpl"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -75,14 +75,21 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ComplexTypeSerializerImpl.html"><span class="name">ComplexTypeSerializerImpl</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.snappy.ComplexTypeSerializer">ComplexTypeSerializer</span></span>
+        <a href="ComplexTypeSerializerImpl.html"><span class="name">ComplexTypeSerializerImpl</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.snappy.ComplexTypeSerializer">ComplexTypeSerializer</span> with <a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.impl.package@ComplexTypeSerializerImplextendsComplexTypeSerializer" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.impl.package@ComplexTypeSerializerImplextendsComplexTypeSerializerwithLogging" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Implementation of <code>ComplexTypeSerializer</code>.</code></p><div class="fullcomment"><div class="comment cmt"><p>Implementation of <code>ComplexTypeSerializer</code>.
+      <p class="shortcomment cmt">Implementation of <code>ComplexTypeSerializer</code> using SnappyData's
+SerializedArray/Map/Row types.</code></p><div class="fullcomment"><div class="comment cmt"><p>Implementation of <code>ComplexTypeSerializer</code> using SnappyData's
+SerializedArray/Map/Row types. These honour platform endianness and
+are overall more efficient than Spark's Unsafe* variants.
+The serialized sizes are included in the serialized form to make it
+consistent with the column table encoding so no additional conversions
+will be required when copying to-and-fro from column format vs row format.</p><p>Not required for the thrift JDBC driver that natively supports the complex
+types via the simpler getObject() JDBC APIs.
 </p></div></div>
     </li><li name="io.snappydata.impl.GenericInternalRowWithSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GenericInternalRowWithSchemaextendsGenericInternalRow"></a>
@@ -136,7 +143,7 @@
     </span>
       
     </li><li name="io.snappydata.impl.LeadImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="LeadImplextendsServerImplwithLeadwithLogging"></a>
+      <a id="LeadImplextendsServerImplwithLeadwithProtocolOverrideswithLogging"></a>
       <a id="LeadImpl:LeadImpl"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -144,10 +151,10 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="LeadImpl.html"><span class="name">LeadImpl</span></a><span class="result"> extends <a href="ServerImpl.html" class="extype" name="io.snappydata.impl.ServerImpl">ServerImpl</a> with <a href="../Lead.html" class="extype" name="io.snappydata.Lead">Lead</a> with <a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <a href="LeadImpl.html"><span class="name">LeadImpl</span></a><span class="result"> extends <a href="ServerImpl.html" class="extype" name="io.snappydata.impl.ServerImpl">ServerImpl</a> with <a href="../Lead.html" class="extype" name="io.snappydata.Lead">Lead</a> with <a href="../ProtocolOverrides.html" class="extype" name="io.snappydata.ProtocolOverrides">ProtocolOverrides</a> with <a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.impl.package@LeadImplextendsServerImplwithLeadwithLogging" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.impl.package@LeadImplextendsServerImplwithLeadwithProtocolOverrideswithLogging" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

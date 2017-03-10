@@ -92,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.common.ErrorAggregateFunction#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(confidence:Double,error:Double,behavior:org.apache.spark.sql.execution.common.HAC.Type):org.apache.spark.sql.execution.common.ErrorAggregateFunction"></a>
+      <a id="&lt;init&gt;(confidence:Double,error:Double,behavior:org.apache.spark.sql.execution.common.HAC.Type,errorEstimateProjs:Seq[(Int,org.apache.spark.sql.execution.closedform.ErrorAggregate.Type,String,String,org.apache.spark.sql.catalyst.expressions.ExprId,org.apache.spark.sql.catalyst.expressions.NamedExpression)],aggregateType:org.apache.spark.sql.execution.closedform.ErrorAggregate.Type):org.apache.spark.sql.execution.common.ErrorAggregateFunction"></a>
       <a id="&lt;init&gt;:ErrorAggregateFunction"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ErrorAggregateFunction</span><span class="params">(<span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>, <span name="behavior">behavior: <a href="HAC$.html#Type=org.apache.spark.sql.execution.common.HAC.Value" class="extmbr" name="org.apache.spark.sql.execution.common.HAC.Type">Type</a></span>)</span>
+        <span class="name">ErrorAggregateFunction</span><span class="params">(<span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>, <span name="behavior">behavior: <a href="HAC$.html#Type=org.apache.spark.sql.execution.common.HAC.Value" class="extmbr" name="org.apache.spark.sql.execution.common.HAC.Type">Type</a></span>, <span name="errorEstimateProjs">errorEstimateProjs: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Int">Int</span>, <a href="../closedform/ErrorAggregate$.html#Type=org.apache.spark.sql.execution.closedform.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.execution.closedform.ErrorAggregate.Type">Type</a>, <span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>, <a href="../../catalyst/expressions/ExprId.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExprId">ExprId</a>, <a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>)]</span>, <span name="aggregateType">aggregateType: <a href="../closedform/ErrorAggregate$.html#Type=org.apache.spark.sql.execution.closedform.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.execution.closedform.ErrorAggregate.Type">Type</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.ErrorAggregateFunction@&lt;init&gt;(confidence:Double,error:Double,behavior:org.apache.spark.sql.execution.common.HAC.Type):org.apache.spark.sql.execution.common.ErrorAggregateFunction" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.ErrorAggregateFunction@&lt;init&gt;(confidence:Double,error:Double,behavior:org.apache.spark.sql.execution.common.HAC.Type,errorEstimateProjs:Seq[(Int,org.apache.spark.sql.execution.closedform.ErrorAggregate.Type,String,String,org.apache.spark.sql.catalyst.expressions.ExprId,org.apache.spark.sql.catalyst.expressions.NamedExpression)],aggregateType:org.apache.spark.sql.execution.closedform.ErrorAggregate.Type):org.apache.spark.sql.execution.common.ErrorAggregateFunction" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -158,23 +158,6 @@ which represent <code>a</code> in <code>bufferLeft</code> and <code>bufferRight<
       </a>
     </span>
       <p class="shortcomment cmt">Attributes of fields in aggBufferSchema.</p><div class="fullcomment"><div class="comment cmt"><p>Attributes of fields in aggBufferSchema.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/expressions/aggregate/AggregateFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction">AggregateFunction</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.common.ErrorAggregateFunction#aggregateType" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="aggregateType:org.apache.spark.sql.execution.closedform.ErrorAggregate.Type"></a>
-      <a id="aggregateType:Type"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">aggregateType</span><span class="result">: <a href="../closedform/ErrorAggregate$.html#Type=org.apache.spark.sql.execution.closedform.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.execution.closedform.ErrorAggregate.Type">Type</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.ErrorAggregateFunction@aggregateType:org.apache.spark.sql.execution.closedform.ErrorAggregate.Type" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Equals#canEqual" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="canEqual(that:Any):Boolean"></a>
       <a id="canEqual(Any):Boolean"></a>
@@ -247,23 +230,6 @@ Children should not change. Immutability required for containsChild optimization
       <p class="shortcomment cmt">Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.  It is
 invalid to query the dataType of an unresolved expression (i.e., when <code>resolved</code> == false).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.common.ErrorAggregateFunction#errorEstimateProjs" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="errorEstimateProjs:Seq[(Int,org.apache.spark.sql.execution.closedform.ErrorAggregate.Type,String,org.apache.spark.sql.catalyst.expressions.ExprId,org.apache.spark.sql.catalyst.expressions.NamedExpression)]"></a>
-      <a id="errorEstimateProjs:Seq[(Int,Type,String,ExprId,NamedExpression)]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">errorEstimateProjs</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Int">Int</span>, <a href="../closedform/ErrorAggregate$.html#Type=org.apache.spark.sql.execution.closedform.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.execution.closedform.ErrorAggregate.Type">Type</a>, <span class="extype" name="scala.Predef.String">String</span>, <a href="../../catalyst/expressions/ExprId.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExprId">ExprId</a>, <a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>)]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.ErrorAggregateFunction@errorEstimateProjs:Seq[(Int,org.apache.spark.sql.execution.closedform.ErrorAggregate.Type,String,org.apache.spark.sql.catalyst.expressions.ExprId,org.apache.spark.sql.catalyst.expressions.NamedExpression)]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.expressions.aggregate.DeclarativeAggregate#evaluateExpression" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="evaluateExpression:org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="evaluateExpression:Expression"></a>
@@ -485,6 +451,23 @@ by the <a href="../../catalyst/expressions/aggregate/DeclarativeAggregate$RichAt
       </a>
     </span>
       <p class="shortcomment cmt">An expression-based aggregate's bufferSchema is derived from bufferAttributes.</p><div class="fullcomment"><div class="comment cmt"><p>An expression-based aggregate's bufferSchema is derived from bufferAttributes.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/expressions/aggregate/DeclarativeAggregate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.DeclarativeAggregate">DeclarativeAggregate</a> → <a href="../../catalyst/expressions/aggregate/AggregateFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction">AggregateFunction</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.common.ErrorAggregateFunction#aggregateType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="aggregateType:org.apache.spark.sql.execution.closedform.ErrorAggregate.Type"></a>
+      <a id="aggregateType:Type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aggregateType</span><span class="result">: <a href="../closedform/ErrorAggregate$.html#Type=org.apache.spark.sql.execution.closedform.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.execution.closedform.ErrorAggregate.Type">Type</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.ErrorAggregateFunction@aggregateType:org.apache.spark.sql.execution.closedform.ErrorAggregate.Type" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply(number:Int):BaseType"></a>
       <a id="apply(Int):Expression"></a>
@@ -882,6 +865,23 @@ implementations should override this to do actual code generation.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.ErrorAggregateFunction@error:Double" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.common.ErrorAggregateFunction#errorEstimateProjs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="errorEstimateProjs:Seq[(Int,org.apache.spark.sql.execution.closedform.ErrorAggregate.Type,String,String,org.apache.spark.sql.catalyst.expressions.ExprId,org.apache.spark.sql.catalyst.expressions.NamedExpression)]"></a>
+      <a id="errorEstimateProjs:Seq[(Int,Type,String,String,ExprId,NamedExpression)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">errorEstimateProjs</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Int">Int</span>, <a href="../closedform/ErrorAggregate$.html#Type=org.apache.spark.sql.execution.closedform.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.execution.closedform.ErrorAggregate.Type">Type</a>, <span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>, <a href="../../catalyst/expressions/ExprId.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExprId">ExprId</a>, <a href="../../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.ErrorAggregateFunction@errorEstimateProjs:Seq[(Int,org.apache.spark.sql.execution.closedform.ErrorAggregate.Type,String,String,org.apache.spark.sql.catalyst.expressions.ExprId,org.apache.spark.sql.catalyst.expressions.NamedExpression)]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -582,7 +582,7 @@ This assumes no database is specified in <code>funcDefinition</code>.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#dropFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#dropFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dropFunction(name:org.apache.spark.sql.catalyst.FunctionIdentifier,ignoreIfNotExists:Boolean):Unit"></a>
       <a id="dropFunction(FunctionIdentifier,Boolean):Unit"></a>
       <h4 class="signature">
@@ -600,7 +600,7 @@ This assumes no database is specified in <code>funcDefinition</code>.
     </span>
       <p class="shortcomment cmt">Drop a metastore function.</p><div class="fullcomment"><div class="comment cmt"><p>Drop a metastore function.
 If no database is specified, assume the function is in the current database.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#dropPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dropPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,specs:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec],ignoreIfNotExists:Boolean):Unit"></a>
       <a id="dropPartitions(TableIdentifier,Seq[TablePartitionSpec],Boolean):Unit"></a>
@@ -1231,6 +1231,23 @@ current database.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog#invalidateBaseTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="invalidateBaseTable(relation:Option[org.apache.spark.sql.sources.BaseRelation]):Unit"></a>
+      <a id="invalidateBaseTable(Option[BaseRelation]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">invalidateBaseTable</span><span class="params">(<span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@invalidateBaseTable(relation:Option[org.apache.spark.sql.sources.BaseRelation]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#invalidateTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="invalidateTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
       <a id="invalidateTable(QualifiedTableName):Unit"></a>
@@ -1746,7 +1763,7 @@ If the specified table is not found in the database then a <span class="extype" 
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#lookupFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#lookupFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="lookupFunction(name:org.apache.spark.sql.catalyst.FunctionIdentifier,children:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="lookupFunction(FunctionIdentifier,Seq[Expression]):Expression"></a>
       <h4 class="signature">
@@ -1769,8 +1786,8 @@ from the underlying external catalog. Then, we will load all resources associate
 with this function (i.e. jars and files). Finally, we create a function builder
 based on the function class and put the builder into the FunctionRegistry.
 The name of this function in the FunctionRegistry will be <code>databaseName.functionName</code>.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#lookupFunctionInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#lookupFunctionInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="lookupFunctionInfo(name:org.apache.spark.sql.catalyst.FunctionIdentifier):org.apache.spark.sql.catalyst.expressions.ExpressionInfo"></a>
       <a id="lookupFunctionInfo(FunctionIdentifier):ExpressionInfo"></a>
       <h4 class="signature">
@@ -1787,7 +1804,7 @@ The name of this function in the FunctionRegistry will be <code>databaseName.fun
       </a>
     </span>
       <p class="shortcomment cmt">Look up the <span class="extype" name="ExpressionInfo">ExpressionInfo</span> associated with the specified function, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>Look up the <span class="extype" name="ExpressionInfo">ExpressionInfo</span> associated with the specified function, assuming it exists.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#lookupRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="lookupRelation(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,alias:Option[String]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
       <a id="lookupRelation(TableIdentifier,Option[String]):LogicalPlan"></a>
@@ -1876,8 +1893,8 @@ the same name, then, if that does not exist, return the table from the current d
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#makeFunctionBuilder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="makeFunctionBuilder(name:String,functionClassName:String):org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder"></a>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#makeFunctionBuilder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="makeFunctionBuilder(funcName:String,className:String):org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder"></a>
       <a id="makeFunctionBuilder(String,String):FunctionBuilder"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1885,15 +1902,15 @@ the same name, then, if that does not exist, return the table from the current d
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">makeFunctionBuilder</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionClassName">functionClassName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalyst/analysis/FunctionRegistry$.html#FunctionBuilder=Seq[org.apache.spark.sql.catalyst.expressions.Expression]=&gt;org.apache.spark.sql.catalyst.expressions.Expression" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder">FunctionBuilder</a></span>
+        <span class="name">makeFunctionBuilder</span><span class="params">(<span name="funcName">funcName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="className">className: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalyst/analysis/FunctionRegistry$.html#FunctionBuilder=Seq[org.apache.spark.sql.catalyst.expressions.Expression]=&gt;org.apache.spark.sql.catalyst.expressions.Expression" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder">FunctionBuilder</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@makeFunctionBuilder(name:String,functionClassName:String):org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@makeFunctionBuilder(funcName:String,className:String):org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Construct a <span class="extype" name="FunctionBuilder">FunctionBuilder</span> based on the provided class that represents a function.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a <span class="extype" name="FunctionBuilder">FunctionBuilder</span> based on the provided class that represents a function.</p><p>This performs reflection to decide what type of <span class="extype" name="Expression">Expression</span> to return in the builder.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -1975,6 +1992,40 @@ the same name, then, if that does not exist, return the table from the current d
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@normalizeSchema(schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#normalizeSchemaField" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizeSchemaField(f:org.apache.spark.sql.types.StructField):org.apache.spark.sql.types.StructField"></a>
+      <a id="normalizeSchemaField(StructField):StructField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeSchemaField</span><span class="params">(<span name="f">f: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result">: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@normalizeSchemaField(f:org.apache.spark.sql.types.StructField):org.apache.spark.sql.types.StructField" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#normalizeType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizeType(dataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.types.DataType"></a>
+      <a id="normalizeType(DataType):DataType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeType</span><span class="params">(<span name="dataType">dataType: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog@normalizeType(dataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.types.DataType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

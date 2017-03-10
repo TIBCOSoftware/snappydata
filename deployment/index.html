@@ -254,13 +254,13 @@
 &lt;dependency&gt;
     &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
     &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
-    &lt;version&gt;0.7&lt;/version&gt;
+    &lt;version&gt;0.8&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre>
 
 <p><strong>Example: SBT dependency</strong></p>
 <pre><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.7&quot;
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.8&quot;
 
 </code></pre>
 
@@ -275,7 +275,7 @@ libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11
 
 <p><strong>Example</strong>: <strong>Launch Apache Spark shell and provide SnappyData dependency as a Spark package</strong>:
 If you already have Spark2.0 installed in your local machine you can directly use <code>--packages</code> option to download the SnappyData binaries.</p>
-<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot;
+<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:0.8-s_2.11&quot;
 </code></pre>
 
 <p><a id="embeddedmode"></a></p>
@@ -300,7 +300,7 @@ Spark executors are dynamically launched when the first Spark Job arrives.</p>
 <pre><code>bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 </code></pre>
 
-<p>Also, you can use <a href="../howto/#how-to-use-snappy-sql-shell-snappy-shell">SnappyShell</a> to create and query tables.</p>
+<p>Also, you can use <a href="../howto/#howto-snappyShell">SnappySQL</a> to create and query tables.</p>
 <p>You can either <a href="../install/">start SnappyData members</a> using the <code>snappy-start-all.sh</code> script or you can start them individually.</p>
 <p>Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:</p>
 <ul>
@@ -358,14 +358,14 @@ $ sbin/snappy-start-all.sh
 </code></pre>
 
 <pre><code># start members individually
-$ bin/snappy-shell locator start  -dir=/node-a/locator1
-$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+$ bin/snappy locator start  -dir=/node-a/locator1
+$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 </code></pre>
 
 <p><strong>Step 2: Launch the Apache Spark program </strong></p>
 <p><strong><em><em>In the Local mode</em></em></strong></p>
 <pre><code class="bash">
-./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot;
+./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages &quot;SnappyDataInc:snappydata:0.8-s_2.11&quot;
 </code></pre>
 
 <p><Note>Note: The <code>spark.snappydata.store.locators</code> property points to the locator of a running SnappyData cluster.</Note></p>
@@ -375,7 +375,7 @@ $scala &gt; val snSession = new SnappySession(spark.sparkContext)
 </code></pre>
 
 <p><strong><em><em>Using external cluster manager</em></em></strong></p>
-<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages &quot;SnappyDataInc:snappydata:0.7-s_2.11&quot;
+<pre><code class="bash">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages &quot;SnappyDataInc:snappydata:0.8-s_2.11&quot;
 </code></pre>
 
 <p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>

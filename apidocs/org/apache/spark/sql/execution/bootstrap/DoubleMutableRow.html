@@ -128,7 +128,7 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(initialValue:Double,seed:Int,numTrials:Int):org.apache.spark.sql.execution.bootstrap.DoubleMutableRow"></a>
+      <a id="&lt;init&gt;(values:Array[Double],numTrials:Int):org.apache.spark.sql.execution.bootstrap.DoubleMutableRow"></a>
       <a id="&lt;init&gt;:DoubleMutableRow"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -136,27 +136,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">DoubleMutableRow</span><span class="params">(<span name="initialValue">initialValue: <span class="extype" name="scala.Double">Double</span></span>, <span name="seed">seed: <span class="extype" name="scala.Int">Int</span></span>, <span name="numTrials">numTrials: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">DoubleMutableRow</span><span class="params">(<span name="values">values: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="numTrials">numTrials: <span class="extype" name="scala.Int">Int</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@&lt;init&gt;(initialValue:Double,seed:Int,numTrials:Int):org.apache.spark.sql.execution.bootstrap.DoubleMutableRow" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(values:Array[Double]):org.apache.spark.sql.execution.bootstrap.DoubleMutableRow"></a>
-      <a id="&lt;init&gt;:DoubleMutableRow"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">DoubleMutableRow</span><span class="params">(<span name="values">values: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>)</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@&lt;init&gt;(values:Array[Double]):org.apache.spark.sql.execution.bootstrap.DoubleMutableRow" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@&lt;init&gt;(values:Array[Double],numTrials:Int):org.apache.spark.sql.execution.bootstrap.DoubleMutableRow" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -222,7 +205,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#add" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="add(value:Double,seed:Int):Unit"></a>
+      <a id="add(value:Double,count:Int):Unit"></a>
       <a id="add(Double,Int):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -230,10 +213,61 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">add</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Double">Double</span></span>, <span name="seed">seed: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">add</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Double">Double</span></span>, <span name="count">count: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@add(value:Double,seed:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@add(value:Double,count:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#add" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="add(value:Double,count:Int,seed:Int):Unit"></a>
+      <a id="add(Double,Int,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">add</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Double">Double</span></span>, <span name="count">count: <span class="extype" name="scala.Int">Int</span></span>, <span name="seed">seed: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@add(value:Double,count:Int,seed:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#addNull" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addNull(count:Int):Unit"></a>
+      <a id="addNull(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addNull</span><span class="params">(<span name="count">count: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@addNull(count:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#addNull" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addNull(count:Int,seed:Int):Unit"></a>
+      <a id="addNull(Int,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addNull</span><span class="params">(<span name="count">count: <span class="extype" name="scala.Int">Int</span></span>, <span name="seed">seed: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@addNull(count:Int,seed:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -829,6 +863,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow">DoubleMutableRow</a> → <a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#numTrials" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="numTrials:Int"></a>
+      <a id="numTrials:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">numTrials</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@numTrials:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#read" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="read(kryo:com.esotericsoftware.kryo.Kryo,in:com.esotericsoftware.kryo.io.Input):Unit"></a>
       <a id="read(Kryo,Input):Unit"></a>
@@ -1001,6 +1052,23 @@ CAN NOT call setNullAt() for decimal column on UnsafeRow, call setDecimal(i, nul
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow">DoubleMutableRow</a> → <a href="../../catalyst/expressions/MutableRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableRow">MutableRow</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#setSeedArray" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setSeedArray(seeds:Array[Int]):Unit"></a>
+      <a id="setSeedArray(Array[Int]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setSeedArray</span><span class="params">(<span name="seeds">seeds: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.bootstrap.DoubleMutableRow@setSeedArray(seeds:Array[Int]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow#setShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setShort(ordinal:Int,value:Short):Unit"></a>
       <a id="setShort(Int,Short):Unit"></a>

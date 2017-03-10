@@ -45,13 +45,13 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">StoreUtils</span><span class="result"> extends <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+        <span class="name">StoreUtils</span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +69,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.store.StoreUtils"><span>StoreUtils</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.store.StoreUtils"><span>StoreUtils</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -1177,19 +1177,19 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.store.StoreUtils#getPartitioningColumn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getPartitioningColumn(parameters:scala.collection.mutable.Map[String,String]):Seq[String]"></a>
-      <a id="getPartitioningColumn(Map[String,String]):Seq[String]"></a>
+    </li><li name="org.apache.spark.sql.store.StoreUtils#getPartitioningColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getPartitioningColumns(parameters:scala.collection.mutable.Map[String,String]):Seq[String]"></a>
+      <a id="getPartitioningColumns(Map[String,String]):Seq[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getPartitioningColumn</span><span class="params">(<span name="parameters">parameters: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+        <span class="name">getPartitioningColumns</span><span class="params">(<span name="parameters">parameters: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@getPartitioningColumn(parameters:scala.collection.mutable.Map[String,String]):Seq[String]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@getPartitioningColumns(parameters:scala.collection.mutable.Map[String,String]):Seq[String]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1228,74 +1228,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.store.StoreUtils#initStore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="initStore(sqlContext:org.apache.spark.sql.SQLContext,table:String,schema:Option[org.apache.spark.sql.types.StructType],partitions:Int,connProperties:org.apache.spark.sql.sources.ConnectionProperties,baseTable:Option[String],dmls:scala.collection.mutable.ArrayBuffer[String]):Unit"></a>
-      <a id="initStore(SQLContext,String,Option[StructType],Int,ConnectionProperties,Option[String],ArrayBuffer[String]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">initStore</span><span class="params">(<span name="sqlContext">sqlContext: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="scala.Option">Option</span>[<a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="partitions">partitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="connProperties">connProperties: <a href="../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>, <span name="dmls">dmls: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">ArrayBuffer.empty</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@initStore(sqlContext:org.apache.spark.sql.SQLContext,table:String,schema:Option[org.apache.spark.sql.types.StructType],partitions:Int,connProperties:org.apache.spark.sql.sources.ConnectionProperties,baseTable:Option[String],dmls:scala.collection.mutable.ArrayBuffer[String]):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
-      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isDebugEnabled:Boolean"></a>
-      <a id="isDebugEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@isDebugEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isInfoEnabled:Boolean"></a>
-      <a id="isInfoEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@isInfoEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1313,227 +1245,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled:Boolean"></a>
-      <a id="isTraceEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@isTraceEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="log:org.slf4j.Logger"></a>
-      <a id="log:Logger"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@log:org.slf4j.Logger" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
-      <a id="logDebug(⇒String,Throwable):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logDebug(msg:=&gt;String):Unit"></a>
-      <a id="logDebug(⇒String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logError(msg:=&gt;String,throwable:Throwable):Unit"></a>
-      <a id="logError(⇒String,Throwable):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logError(msg:=&gt;String):Unit"></a>
-      <a id="logError(⇒String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
-      <a id="logInfo(⇒String,Throwable):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logInfo(msg:=&gt;String):Unit"></a>
-      <a id="logInfo(⇒String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logName:String"></a>
-      <a id="logName:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logName:String" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
-      <a id="logTrace(⇒String,Throwable):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logTrace(msg:=&gt;String):Unit"></a>
-      <a id="logTrace(⇒String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logWarning(msg:=&gt;String,throwable:Throwable):Unit"></a>
-      <a id="logWarning(⇒String,Throwable):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logWarning(msg:=&gt;String):Unit"></a>
-      <a id="logWarning(⇒String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.store.StoreUtils$@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.store.StoreUtils#lookupName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="lookupName(tableName:String,schema:String):String"></a>
       <a id="lookupName(String,String):String"></a>
@@ -1782,9 +1493,7 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.Logging">
-              <h3>Inherited from <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></h3>
-            </div><div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

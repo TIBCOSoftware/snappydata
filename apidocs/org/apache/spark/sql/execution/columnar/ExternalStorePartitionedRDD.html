@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ExternalStorePartitionedRDD</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">ExternalStorePartitionedRDD</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -150,14 +150,14 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#++" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="++(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="++(RDD[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="++(RDD[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span title="gt4s: $plus$plus" class="name">++</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span title="gt4s: $plus$plus" class="name">++</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@++(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -203,14 +203,14 @@ times (use <code>.distinct()</code> to eliminate them).
       <p class="shortcomment cmt">A unique ID for this RDD (within its SparkContext).</p><div class="fullcomment"><div class="comment cmt"><p>A unique ID for this RDD (within its SparkContext).</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#aggregate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$29:scala.reflect.ClassTag[U]):U"></a>
-      <a id="aggregate[U](U)((U,CachedBatch)⇒U,(U,U)⇒U)(ClassTag[U]):U"></a>
+      <a id="aggregate[U](U)((U,ColumnBatch)⇒U,(U,U)⇒U)(ClassTag[U]):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">aggregate</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="zeroValue">zeroValue: <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>)</span><span class="params">(<span name="seqOp">seqOp: (<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>, <span name="combOp">combOp: (<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>, <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>
+        <span class="name">aggregate</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="zeroValue">zeroValue: <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>)</span><span class="params">(<span name="seqOp">seqOp: (<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>, <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>, <span name="combOp">combOp: (<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>, <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD.aggregate.U">U</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$29:scala.reflect.ClassTag[U]):U" title="Permalink" target="_top">
@@ -264,14 +264,14 @@ allocation.
       <p class="shortcomment cmt">Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p><div class="fullcomment"><div class="comment cmt"><p>Persist this RDD with the default storage level (<code>MEMORY_ONLY</code>).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#cartesian" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="cartesian[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$5:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]"></a>
-      <a id="cartesian[U](RDD[U])(ClassTag[U]):RDD[(CachedBatch,U)]"></a>
+      <a id="cartesian[U](RDD[U])(ClassTag[U]):RDD[(ColumnBatch,U)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">cartesian</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.cartesian.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.cartesian.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="org.apache.spark.rdd.RDD.cartesian.U">U</span>)]</span>
+        <span class="name">cartesian</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.cartesian.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.cartesian.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <span class="extype" name="org.apache.spark.rdd.RDD.cartesian.U">U</span>)]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@cartesian[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$5:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]" title="Permalink" target="_top">
@@ -350,14 +350,14 @@ logic. See <a href="../../../rdd/UnionRDD.html" class="extype" name="org.apache.
         </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#coalesce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="coalesce(numPartitions:Int,shuffle:Boolean,partitionCoalescer:Option[org.apache.spark.rdd.PartitionCoalescer])(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="coalesce(Int,Boolean,Option[PartitionCoalescer])(Ordering[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="coalesce(Int,Boolean,Option[PartitionCoalescer])(Ordering[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">coalesce</span><span class="params">(<span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="shuffle">shuffle: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="partitionCoalescer">partitionCoalescer: <span class="extype" name="scala.Option">Option</span>[<a href="../../../rdd/PartitionCoalescer.html" class="extype" name="org.apache.spark.rdd.PartitionCoalescer">PartitionCoalescer</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Option.empty</a></span></span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">coalesce</span><span class="params">(<span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="shuffle">shuffle: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="partitionCoalescer">partitionCoalescer: <span class="extype" name="scala.Option">Option</span>[<a href="../../../rdd/PartitionCoalescer.html" class="extype" name="org.apache.spark.rdd.PartitionCoalescer">PartitionCoalescer</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Option.empty</a></span></span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@coalesce(numPartitions:Int,shuffle:Boolean,partitionCoalescer:Option[org.apache.spark.rdd.PartitionCoalescer])(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -379,14 +379,14 @@ data distributed using a hash partitioner.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#collect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="collect[U](f:PartialFunction[T,U])(implicitevidence$28:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
-      <a id="collect[U](PartialFunction[CachedBatch,U])(ClassTag[U]):RDD[U]"></a>
+      <a id="collect[U](PartialFunction[ColumnBatch,U])(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">collect</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>
+        <span class="name">collect</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.collect.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@collect[U](f:PartialFunction[T,U])(implicitevidence$28:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
@@ -397,14 +397,14 @@ data distributed using a hash partitioner.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#collect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="collect():Array[T]"></a>
-      <a id="collect():Array[CachedBatch]"></a>
+      <a id="collect():Array[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">collect</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">collect</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@collect():Array[T]" title="Permalink" target="_top">
@@ -415,18 +415,18 @@ data distributed using a hash partitioner.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>Note</dt><dd><span class="cmt"><p>this method should only be used if the resulting array is expected to be small, as
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD#compute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="compute(split:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[org.apache.spark.sql.execution.columnar.CachedBatch]"></a>
-      <a id="compute(Partition,TaskContext):Iterator[CachedBatch]"></a>
+      <a id="compute(split:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[org.apache.spark.sql.execution.columnar.ColumnBatch]"></a>
+      <a id="compute(Partition,TaskContext):Iterator[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">compute</span><span class="params">(<span name="split">split: <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">compute</span><span class="params">(<span name="split">split: <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@compute(split:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[org.apache.spark.sql.execution.columnar.CachedBatch]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@compute(split:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[org.apache.spark.sql.execution.columnar.ColumnBatch]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -540,14 +540,14 @@ and increase accuracy when the cardinality is small.
           If <code>sp</code> equals 0, the sparse representation is skipped.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#countByValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countByValue()(implicitord:Ordering[T]):scala.collection.Map[T,Long]"></a>
-      <a id="countByValue()(Ordering[CachedBatch]):Map[CachedBatch,Long]"></a>
+      <a id="countByValue()(Ordering[ColumnBatch]):Map[ColumnBatch,Long]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">countByValue</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="scala.Long">Long</span>]</span>
+        <span class="name">countByValue</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <span class="extype" name="scala.collection.Map">Map</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <span class="extype" name="scala.Long">Long</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@countByValue()(implicitord:Ordering[T]):scala.collection.Map[T,Long]" title="Permalink" target="_top">
@@ -561,14 +561,14 @@ returns an RDD[T, Long] instead of a map.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#countByValueApprox" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="countByValueApprox(timeout:Long,confidence:Double)(implicitord:Ordering[T]):org.apache.spark.partial.PartialResult[scala.collection.Map[T,org.apache.spark.partial.BoundedDouble]]"></a>
-      <a id="countByValueApprox(Long,Double)(Ordering[CachedBatch]):PartialResult[Map[CachedBatch,BoundedDouble]]"></a>
+      <a id="countByValueApprox(Long,Double)(Ordering[ColumnBatch]):PartialResult[Map[ColumnBatch,BoundedDouble]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">countByValueApprox</span><span class="params">(<span name="timeout">timeout: <span class="extype" name="scala.Long">Long</span></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">0.95</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../partial/PartialResult.html" class="extype" name="org.apache.spark.partial.PartialResult">PartialResult</a>[<span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <a href="../../../partial/BoundedDouble.html" class="extype" name="org.apache.spark.partial.BoundedDouble">BoundedDouble</a>]]</span>
+        <span class="name">countByValueApprox</span><span class="params">(<span name="timeout">timeout: <span class="extype" name="scala.Long">Long</span></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">0.95</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../partial/PartialResult.html" class="extype" name="org.apache.spark.partial.PartialResult">PartialResult</a>[<span class="extype" name="scala.collection.Map">Map</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <a href="../../../partial/BoundedDouble.html" class="extype" name="org.apache.spark.partial.BoundedDouble">BoundedDouble</a>]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@countByValueApprox(timeout:Long,confidence:Double)(implicitord:Ordering[T]):org.apache.spark.partial.PartialResult[scala.collection.Map[T,org.apache.spark.partial.BoundedDouble]]" title="Permalink" target="_top">
@@ -599,14 +599,14 @@ RDD is checkpointed or not.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#distinct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="distinct():org.apache.spark.rdd.RDD[T]"></a>
-      <a id="distinct():RDD[CachedBatch]"></a>
+      <a id="distinct():RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">distinct</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">distinct</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@distinct():org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -617,14 +617,14 @@ RDD is checkpointed or not.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#distinct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="distinct(numPartitions:Int)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="distinct(Int)(Ordering[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="distinct(Int)(Ordering[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">distinct</span><span class="params">(<span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">distinct</span><span class="params">(<span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@distinct(numPartitions:Int)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -669,14 +669,14 @@ RDD is checkpointed or not.
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#filter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="filter(f:T=&gt;Boolean):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="filter((CachedBatch)⇒Boolean):RDD[CachedBatch]"></a>
+      <a id="filter((ColumnBatch)⇒Boolean):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">filter</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">filter</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@filter(f:T=&gt;Boolean):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -710,14 +710,14 @@ RDD is checkpointed or not.
         </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#first" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="first():T"></a>
-      <a id="first():CachedBatch"></a>
+      <a id="first():ColumnBatch"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">first</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>
+        <span class="name">first</span><span class="params">()</span><span class="result">: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@first():T" title="Permalink" target="_top">
@@ -745,14 +745,14 @@ RDD is checkpointed or not.
       <p class="shortcomment cmt">Returns the first parent RDD</p><div class="fullcomment"><div class="comment cmt"><p>Returns the first parent RDD</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark">org.apache.spark</a>] </dd><dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#flatMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="flatMap[U](f:T=&gt;TraversableOnce[U])(implicitevidence$4:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
-      <a id="flatMap[U]((CachedBatch)⇒TraversableOnce[U])(ClassTag[U]):RDD[U]"></a>
+      <a id="flatMap[U]((ColumnBatch)⇒TraversableOnce[U])(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <a href="../../../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.rdd.RDD.flatMap.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.flatMap.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.flatMap.U">U</span>]</span>
+        <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <a href="../../../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.rdd.RDD.flatMap.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.flatMap.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.flatMap.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@flatMap[U](f:T=&gt;TraversableOnce[U])(implicitevidence$4:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
@@ -765,14 +765,14 @@ RDD is checkpointed or not.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#fold" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fold(zeroValue:T)(op:(T,T)=&gt;T):T"></a>
-      <a id="fold(CachedBatch)((CachedBatch,CachedBatch)⇒CachedBatch):CachedBatch"></a>
+      <a id="fold(ColumnBatch)((ColumnBatch,ColumnBatch)⇒ColumnBatch):ColumnBatch"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fold</span><span class="params">(<span name="zeroValue">zeroValue: <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>)</span><span class="params">(<span name="op">op: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>
+        <span class="name">fold</span><span class="params">(<span name="zeroValue">zeroValue: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>)</span><span class="params">(<span name="op">op: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>)</span><span class="result">: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@fold(zeroValue:T)(op:(T,T)=&gt;T):T" title="Permalink" target="_top">
@@ -796,14 +796,14 @@ non-distributed collection.
                  from different partitions</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#foreach" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foreach(f:T=&gt;Unit):Unit"></a>
-      <a id="foreach((CachedBatch)⇒Unit):Unit"></a>
+      <a id="foreach((ColumnBatch)⇒Unit):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foreach</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">foreach</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@foreach(f:T=&gt;Unit):Unit" title="Permalink" target="_top">
@@ -814,14 +814,14 @@ non-distributed collection.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#foreachPartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foreachPartition(f:Iterator[T]=&gt;Unit):Unit"></a>
-      <a id="foreachPartition((Iterator[CachedBatch])⇒Unit):Unit"></a>
+      <a id="foreachPartition((Iterator[ColumnBatch])⇒Unit):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">foreachPartition</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">foreachPartition</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@foreachPartition(f:Iterator[T]=&gt;Unit):Unit" title="Permalink" target="_top">
@@ -966,14 +966,14 @@ be called once, so it is safe to implement a time-consuming computation in it.</
       <p class="shortcomment cmt">Get the RDD's current storage level, or StorageLevel.NONE if none is set.</p><div class="fullcomment"><div class="comment cmt"><p>Get the RDD's current storage level, or StorageLevel.NONE if none is set.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#glom" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="glom():org.apache.spark.rdd.RDD[Array[T]]"></a>
-      <a id="glom():RDD[Array[CachedBatch]]"></a>
+      <a id="glom():RDD[Array[ColumnBatch]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">glom</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]]</span>
+        <span class="name">glom</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Array">Array</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@glom():org.apache.spark.rdd.RDD[Array[T]]" title="Permalink" target="_top">
@@ -984,14 +984,14 @@ be called once, so it is safe to implement a time-consuming computation in it.</
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#groupBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupBy[K](f:T=&gt;K,p:org.apache.spark.Partitioner)(implicitkt:scala.reflect.ClassTag[K],implicitord:Ordering[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]"></a>
-      <a id="groupBy[K]((CachedBatch)⇒K,Partitioner)(ClassTag[K],Ordering[K]):RDD[(K,Iterable[CachedBatch])]"></a>
+      <a id="groupBy[K]((ColumnBatch)⇒K,Partitioner)(ClassTag[K],Ordering[K]):RDD[(K,Iterable[ColumnBatch])]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">groupBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span></span>, <span name="p">p: <a href="../../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="kt">kt: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>]</span>, <span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>, <a href="../../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>])]</span>
+        <span class="name">groupBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span></span>, <span name="p">p: <a href="../../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="kt">kt: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>]</span>, <span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>, <a href="../../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>])]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@groupBy[K](f:T=&gt;K,p:org.apache.spark.Partitioner)(implicitkt:scala.reflect.ClassTag[K],implicitord:Ordering[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]" title="Permalink" target="_top">
@@ -1006,14 +1006,14 @@ or <a href="../../../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#groupBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupBy[K](f:T=&gt;K,numPartitions:Int)(implicitkt:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]"></a>
-      <a id="groupBy[K]((CachedBatch)⇒K,Int)(ClassTag[K]):RDD[(K,Iterable[CachedBatch])]"></a>
+      <a id="groupBy[K]((ColumnBatch)⇒K,Int)(ClassTag[K]):RDD[(K,Iterable[ColumnBatch])]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">groupBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="kt">kt: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>, <a href="../../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>])]</span>
+        <span class="name">groupBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="kt">kt: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>, <a href="../../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>])]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@groupBy[K](f:T=&gt;K,numPartitions:Int)(implicitkt:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]" title="Permalink" target="_top">
@@ -1028,14 +1028,14 @@ or <a href="../../../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#groupBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="groupBy[K](f:T=&gt;K)(implicitkt:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]"></a>
-      <a id="groupBy[K]((CachedBatch)⇒K)(ClassTag[K]):RDD[(K,Iterable[CachedBatch])]"></a>
+      <a id="groupBy[K]((ColumnBatch)⇒K)(ClassTag[K]):RDD[(K,Iterable[ColumnBatch])]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">groupBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="kt">kt: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>, <a href="../../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>])]</span>
+        <span class="name">groupBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="kt">kt: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.groupBy.K">K</span>, <a href="../../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>])]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@groupBy[K](f:T=&gt;K)(implicitkt:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[(K,Iterable[T])]" title="Permalink" target="_top">
@@ -1101,14 +1101,14 @@ or <a href="../../../rdd/PairRDDFunctions.html#reduceByKey(func:(V,V)=&gt;V):org
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#intersection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="intersection(other:org.apache.spark.rdd.RDD[T],numPartitions:Int):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="intersection(RDD[CachedBatch],Int):RDD[CachedBatch]"></a>
+      <a id="intersection(RDD[ColumnBatch],Int):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">intersection</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">intersection</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@intersection(other:org.apache.spark.rdd.RDD[T],numPartitions:Int):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -1120,14 +1120,14 @@ elements, even if the input RDDs did.  Performs a hash partition across the clus
 </p></div><dl class="paramcmts block"><dt class="param">numPartitions</dt><dd class="cmt"><p>How many partitions to use in the resulting RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#intersection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="intersection(other:org.apache.spark.rdd.RDD[T],partitioner:org.apache.spark.Partitioner)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="intersection(RDD[CachedBatch],Partitioner)(Ordering[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="intersection(RDD[ColumnBatch],Partitioner)(Ordering[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">intersection</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>, <span name="partitioner">partitioner: <a href="../../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">intersection</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>, <span name="partitioner">partitioner: <a href="../../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@intersection(other:org.apache.spark.rdd.RDD[T],partitioner:org.apache.spark.Partitioner)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -1139,14 +1139,14 @@ elements, even if the input RDDs did.</p><p>Note that this method performs a shu
 </p></div><dl class="paramcmts block"><dt class="param">partitioner</dt><dd class="cmt"><p>Partitioner to use for the resulting RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#intersection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="intersection(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="intersection(RDD[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="intersection(RDD[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">intersection</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">intersection</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@intersection(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -1265,14 +1265,14 @@ because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[N
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#iterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="iterator(split:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[T]"></a>
-      <a id="iterator(Partition,TaskContext):Iterator[CachedBatch]"></a>
+      <a id="iterator(Partition,TaskContext):Iterator[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">iterator</span><span class="params">(<span name="split">split: <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">iterator</span><span class="params">(<span name="split">split: <a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@iterator(split:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[T]" title="Permalink" target="_top">
@@ -1285,14 +1285,14 @@ subclasses of RDD.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#keyBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="keyBy[K](f:T=&gt;K):org.apache.spark.rdd.RDD[(K,T)]"></a>
-      <a id="keyBy[K]((CachedBatch)⇒K):RDD[(K,CachedBatch)]"></a>
+      <a id="keyBy[K]((ColumnBatch)⇒K):RDD[(K,ColumnBatch)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">keyBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.keyBy.K">K</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.keyBy.K">K</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>)]</span>
+        <span class="name">keyBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.keyBy.K">K</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.rdd.RDD.keyBy.K">K</span>, <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>)]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@keyBy[K](f:T=&gt;K):org.apache.spark.rdd.RDD[(K,T)]" title="Permalink" target="_top">
@@ -1532,14 +1532,14 @@ with their cached blocks. If you must use both features, you are advised to set
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="map[U](f:T=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
-      <a id="map[U]((CachedBatch)⇒U)(ClassTag[U]):RDD[U]"></a>
+      <a id="map[U]((ColumnBatch)⇒U)(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.map.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.map.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.map.U">U</span>]</span>
+        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.map.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.map.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.map.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@map[U](f:T=&gt;U)(implicitevidence$3:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
@@ -1550,14 +1550,14 @@ with their cached blocks. If you must use both features, you are advised to set
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#mapPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mapPartitions[U](f:Iterator[T]=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$6:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
-      <a id="mapPartitions[U]((Iterator[CachedBatch])⇒Iterator[U],Boolean)(ClassTag[U]):RDD[U]"></a>
+      <a id="mapPartitions[U]((Iterator[ColumnBatch])⇒Iterator[U],Boolean)(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapPartitions</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitions.U">U</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitions.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitions.U">U</span>]</span>
+        <span class="name">mapPartitions</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitions.U">U</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitions.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitions.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@mapPartitions[U](f:Iterator[T]=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$6:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
@@ -1569,14 +1569,14 @@ should be <code>false</code> unless this is a pair RDD and the input function do
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#mapPartitionsWithIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="mapPartitionsWithIndex[U](f:(Int,Iterator[T])=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$8:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]"></a>
-      <a id="mapPartitionsWithIndex[U]((Int,Iterator[CachedBatch])⇒Iterator[U],Boolean)(ClassTag[U]):RDD[U]"></a>
+      <a id="mapPartitionsWithIndex[U]((Int,Iterator[ColumnBatch])⇒Iterator[U],Boolean)(ClassTag[U]):RDD[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapPartitionsWithIndex</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>
+        <span class="name">mapPartitionsWithIndex</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.mapPartitionsWithIndex.U">U</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@mapPartitionsWithIndex[U](f:(Int,Iterator[T])=&gt;Iterator[U],preservesPartitioning:Boolean)(implicitevidence$8:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[U]" title="Permalink" target="_top">
@@ -1590,14 +1590,14 @@ should be <code>false</code> unless this is a pair RDD and the input function do
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#max" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="max()(implicitord:Ordering[T]):T"></a>
-      <a id="max()(Ordering[CachedBatch]):CachedBatch"></a>
+      <a id="max()(Ordering[ColumnBatch]):ColumnBatch"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">max</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>
+        <span class="name">max</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@max()(implicitord:Ordering[T]):T" title="Permalink" target="_top">
@@ -1607,14 +1607,14 @@ should be <code>false</code> unless this is a pair RDD and the input function do
       <p class="shortcomment cmt">Returns the max of this RDD as defined by the implicit Ordering[T].</p><div class="fullcomment"><div class="comment cmt"><p>Returns the max of this RDD as defined by the implicit Ordering[T].</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the maximum element of the RDD</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#min" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="min()(implicitord:Ordering[T]):T"></a>
-      <a id="min()(Ordering[CachedBatch]):CachedBatch"></a>
+      <a id="min()(Ordering[ColumnBatch]):ColumnBatch"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">min</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>
+        <span class="name">min</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@min()(implicitord:Ordering[T]):T" title="Permalink" target="_top">
@@ -1784,14 +1784,14 @@ have a storage level set yet. Local checkpointing is an exception.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#pipe" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="pipe(command:Seq[String],env:scala.collection.Map[String,String],printPipeContext:(String=&gt;Unit)=&gt;Unit,printRDDElement:(T,String=&gt;Unit)=&gt;Unit,separateWorkingDir:Boolean,bufferSize:Int,encoding:String):org.apache.spark.rdd.RDD[String]"></a>
-      <a id="pipe(Seq[String],Map[String,String],((String)⇒Unit)⇒Unit,(CachedBatch,(String)⇒Unit)⇒Unit,Boolean,Int,String):RDD[String]"></a>
+      <a id="pipe(Seq[String],Map[String,String],((String)⇒Unit)⇒Unit,(ColumnBatch,(String)⇒Unit)⇒Unit,Boolean,Int,String):RDD[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">pipe</span><span class="params">(<span name="command">command: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="env">env: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Map()</a></span></span></span>, <span name="printPipeContext">printPipeContext: ((<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span> = <span class="symbol">null</span></span>, <span name="printRDDElement">printRDDElement: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span> = <span class="symbol">null</span></span>, <span name="separateWorkingDir">separateWorkingDir: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="bufferSize">bufferSize: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">8192</span></span>, <span name="encoding">encoding: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Codec.defaultCharsetCodec.name</a></span></span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+        <span class="name">pipe</span><span class="params">(<span name="command">command: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="env">env: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Map()</a></span></span></span>, <span name="printPipeContext">printPipeContext: ((<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span> = <span class="symbol">null</span></span>, <span name="printRDDElement">printRDDElement: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span> = <span class="symbol">null</span></span>, <span name="separateWorkingDir">separateWorkingDir: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="bufferSize">bufferSize: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">8192</span></span>, <span name="encoding">encoding: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Codec.defaultCharsetCodec.name</a></span></span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@pipe(command:Seq[String],env:scala.collection.Map[String,String],printPipeContext:(String=&gt;Unit)=&gt;Unit,printRDDElement:(T,String=&gt;Unit)=&gt;Unit,separateWorkingDir:Boolean,bufferSize:Int,encoding:String):org.apache.spark.rdd.RDD[String]" title="Permalink" target="_top">
@@ -1872,14 +1872,14 @@ RDD is checkpointed.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#randomSplit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="randomSplit(weights:Array[Double],seed:Long):Array[org.apache.spark.rdd.RDD[T]]"></a>
-      <a id="randomSplit(Array[Double],Long):Array[RDD[CachedBatch]]"></a>
+      <a id="randomSplit(Array[Double],Long):Array[RDD[ColumnBatch]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">randomSplit</span><span class="params">(<span name="weights">weights: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="seed">seed: <span class="extype" name="scala.Long">Long</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.random.nextLong</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]]</span>
+        <span class="name">randomSplit</span><span class="params">(<span name="weights">weights: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>]</span>, <span name="seed">seed: <span class="extype" name="scala.Long">Long</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.random.nextLong</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@randomSplit(weights:Array[Double],seed:Long):Array[org.apache.spark.rdd.RDD[T]]" title="Permalink" target="_top">
@@ -1890,14 +1890,14 @@ RDD is checkpointed.
 </p></div><dl class="paramcmts block"><dt class="param">weights</dt><dd class="cmt"><p>weights for splits, will be normalized if they don't sum to 1</p></dd><dt class="param">seed</dt><dd class="cmt"><p>random seed</p></dd><dt>returns</dt><dd class="cmt"><p>split RDDs in an array</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#reduce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="reduce(f:(T,T)=&gt;T):T"></a>
-      <a id="reduce((CachedBatch,CachedBatch)⇒CachedBatch):CachedBatch"></a>
+      <a id="reduce((ColumnBatch,ColumnBatch)⇒ColumnBatch):ColumnBatch"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">reduce</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>
+        <span class="name">reduce</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>)</span><span class="result">: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@reduce(f:(T,T)=&gt;T):T" title="Permalink" target="_top">
@@ -1910,14 +1910,14 @@ associative binary operator.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#repartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="repartition(numPartitions:Int)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="repartition(Int)(Ordering[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="repartition(Int)(Ordering[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">repartition</span><span class="params">(<span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">repartition</span><span class="params">(<span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@repartition(numPartitions:Int)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -1930,14 +1930,14 @@ which can avoid performing a shuffle.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#sample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sample(withReplacement:Boolean,fraction:Double,seed:Long):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="sample(Boolean,Double,Long):RDD[CachedBatch]"></a>
+      <a id="sample(Boolean,Double,Long):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">sample</span><span class="params">(<span name="withReplacement">withReplacement: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fraction">fraction: <span class="extype" name="scala.Double">Double</span></span>, <span name="seed">seed: <span class="extype" name="scala.Long">Long</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.random.nextLong</a></span></span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">sample</span><span class="params">(<span name="withReplacement">withReplacement: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="fraction">fraction: <span class="extype" name="scala.Double">Double</span></span>, <span name="seed">seed: <span class="extype" name="scala.Long">Long</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.random.nextLong</a></span></span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@sample(withReplacement:Boolean,fraction:Double,seed:Long):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -2038,14 +2038,14 @@ which can avoid performing a shuffle.
       <p class="shortcomment cmt">Assign a name to this RDD</p><div class="fullcomment"><div class="comment cmt"><p>Assign a name to this RDD</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#sortBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sortBy[K](f:T=&gt;K,ascending:Boolean,numPartitions:Int)(implicitord:Ordering[K],implicitctag:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="sortBy[K]((CachedBatch)⇒K,Boolean,Int)(Ordering[K],ClassTag[K]):RDD[CachedBatch]"></a>
+      <a id="sortBy[K]((ColumnBatch)⇒K,Boolean,Int)(Ordering[K],ClassTag[K]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">sortBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.sortBy.K">K</span></span>, <span name="ascending">ascending: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="../../../rdd/RDD.html#partitions:Array[org.apache.spark.Partition]">this.partitions.length</a></span></span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.rdd.RDD.sortBy.K">K</span>]</span>, <span name="ctag">ctag: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.sortBy.K">K</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">sortBy</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.sortBy.K">K</span></span>, <span name="ascending">ascending: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="../../../rdd/RDD.html#partitions:Array[org.apache.spark.Partition]">this.partitions.length</a></span></span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.rdd.RDD.sortBy.K">K</span>]</span>, <span name="ctag">ctag: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.sortBy.K">K</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@sortBy[K](f:T=&gt;K,ascending:Boolean,numPartitions:Int)(implicitord:Ordering[K],implicitctag:scala.reflect.ClassTag[K]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -2090,14 +2090,14 @@ which can avoid performing a shuffle.
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#subtract" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="subtract(other:org.apache.spark.rdd.RDD[T],p:org.apache.spark.Partitioner)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="subtract(RDD[CachedBatch],Partitioner)(Ordering[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="subtract(RDD[ColumnBatch],Partitioner)(Ordering[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">subtract</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>, <span name="p">p: <a href="../../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">subtract</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>, <span name="p">p: <a href="../../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@subtract(other:org.apache.spark.rdd.RDD[T],p:org.apache.spark.Partitioner)(implicitord:Ordering[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -2108,14 +2108,14 @@ which can avoid performing a shuffle.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#subtract" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="subtract(other:org.apache.spark.rdd.RDD[T],numPartitions:Int):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="subtract(RDD[CachedBatch],Int):RDD[CachedBatch]"></a>
+      <a id="subtract(RDD[ColumnBatch],Int):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">subtract</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">subtract</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@subtract(other:org.apache.spark.rdd.RDD[T],numPartitions:Int):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -2126,14 +2126,14 @@ which can avoid performing a shuffle.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#subtract" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="subtract(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="subtract(RDD[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="subtract(RDD[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">subtract</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">subtract</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@subtract(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -2162,14 +2162,14 @@ RDD will be &lt;= us.
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#take" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="take(num:Int):Array[T]"></a>
-      <a id="take(Int):Array[CachedBatch]"></a>
+      <a id="take(Int):Array[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">take</span><span class="params">(<span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">take</span><span class="params">(<span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@take(num:Int):Array[T]" title="Permalink" target="_top">
@@ -2184,14 +2184,14 @@ an exception if called on an RDD of <code>Nothing</code> or <code>Null</code>.</
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#takeOrdered" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="takeOrdered(num:Int)(implicitord:Ordering[T]):Array[T]"></a>
-      <a id="takeOrdered(Int)(Ordering[CachedBatch]):Array[CachedBatch]"></a>
+      <a id="takeOrdered(Int)(Ordering[ColumnBatch]):Array[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">takeOrdered</span><span class="params">(<span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">takeOrdered</span><span class="params">(<span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@takeOrdered(num:Int)(implicitord:Ordering[T]):Array[T]" title="Permalink" target="_top">
@@ -2209,14 +2209,14 @@ sc.parallelize(<span class="std">Seq</span>(<span class="num">2</span>, <span cl
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#takeSample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="takeSample(withReplacement:Boolean,num:Int,seed:Long):Array[T]"></a>
-      <a id="takeSample(Boolean,Int,Long):Array[CachedBatch]"></a>
+      <a id="takeSample(Boolean,Int,Long):Array[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">takeSample</span><span class="params">(<span name="withReplacement">withReplacement: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="num">num: <span class="extype" name="scala.Int">Int</span></span>, <span name="seed">seed: <span class="extype" name="scala.Long">Long</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.random.nextLong</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">takeSample</span><span class="params">(<span name="withReplacement">withReplacement: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="num">num: <span class="extype" name="scala.Int">Int</span></span>, <span name="seed">seed: <span class="extype" name="scala.Long">Long</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.random.nextLong</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@takeSample(withReplacement:Boolean,num:Int,seed:Long):Array[T]" title="Permalink" target="_top">
@@ -2246,14 +2246,14 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
       <p class="shortcomment cmt">A description of this RDD and its recursive dependencies for debugging.</p><div class="fullcomment"><div class="comment cmt"><p>A description of this RDD and its recursive dependencies for debugging.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#toJavaRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toJavaRDD():org.apache.spark.api.java.JavaRDD[T]"></a>
-      <a id="toJavaRDD():JavaRDD[CachedBatch]"></a>
+      <a id="toJavaRDD():JavaRDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toJavaRDD</span><span class="params">()</span><span class="result">: <a href="../../../api/java/JavaRDD.html" class="extype" name="org.apache.spark.api.java.JavaRDD">JavaRDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">toJavaRDD</span><span class="params">()</span><span class="result">: <a href="../../../api/java/JavaRDD.html" class="extype" name="org.apache.spark.api.java.JavaRDD">JavaRDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@toJavaRDD():org.apache.spark.api.java.JavaRDD[T]" title="Permalink" target="_top">
@@ -2263,14 +2263,14 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#toLocalIterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toLocalIterator:Iterator[T]"></a>
-      <a id="toLocalIterator:Iterator[CachedBatch]"></a>
+      <a id="toLocalIterator:Iterator[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toLocalIterator</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">toLocalIterator</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@toLocalIterator:Iterator[T]" title="Permalink" target="_top">
@@ -2300,14 +2300,14 @@ recomputing the input RDD should be cached first.
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#top" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="top(num:Int)(implicitord:Ordering[T]):Array[T]"></a>
-      <a id="top(Int)(Ordering[CachedBatch]):Array[CachedBatch]"></a>
+      <a id="top(Int)(Ordering[ColumnBatch]):Array[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">top</span><span class="params">(<span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">top</span><span class="params">(<span name="num">num: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ord">ord: <a href="../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@top(num:Int)(implicitord:Ordering[T]):Array[T]" title="Permalink" target="_top">
@@ -2325,14 +2325,14 @@ sc.parallelize(<span class="std">Seq</span>(<span class="num">2</span>, <span cl
 all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#treeAggregate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="treeAggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U,depth:Int)(implicitevidence$30:scala.reflect.ClassTag[U]):U"></a>
-      <a id="treeAggregate[U](U)((U,CachedBatch)⇒U,(U,U)⇒U,Int)(ClassTag[U]):U"></a>
+      <a id="treeAggregate[U](U)((U,ColumnBatch)⇒U,(U,U)⇒U,Int)(ClassTag[U]):U"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">treeAggregate</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="zeroValue">zeroValue: <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>)</span><span class="params">(<span name="seqOp">seqOp: (<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>, <span name="combOp">combOp: (<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>, <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>, <span name="depth">depth: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>
+        <span class="name">treeAggregate</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="zeroValue">zeroValue: <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>)</span><span class="params">(<span name="seqOp">seqOp: (<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>, <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>, <span name="combOp">combOp: (<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>, <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>, <span name="depth">depth: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD.treeAggregate.U">U</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@treeAggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U,depth:Int)(implicitevidence$30:scala.reflect.ClassTag[U]):U" title="Permalink" target="_top">
@@ -2343,14 +2343,14 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
 </p></div><dl class="paramcmts block"><dt class="param">depth</dt><dd class="cmt"><p>suggested depth of the tree (default: 2)</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="../../../rdd/RDD.html#aggregate[U](zeroValue:U)(seqOp:(U,T)=&gt;U,combOp:(U,U)=&gt;U)(implicitevidence$29:scala.reflect.ClassTag[U]):U" class="extmbr" name="org.apache.spark.rdd.RDD#aggregate">org.apache.spark.rdd.RDD#aggregate</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#treeReduce" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="treeReduce(f:(T,T)=&gt;T,depth:Int):T"></a>
-      <a id="treeReduce((CachedBatch,CachedBatch)⇒CachedBatch,Int):CachedBatch"></a>
+      <a id="treeReduce((ColumnBatch,ColumnBatch)⇒ColumnBatch,Int):ColumnBatch"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">treeReduce</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>, <span name="depth">depth: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span></span>
+        <span class="name">treeReduce</span><span class="params">(<span name="f">f: (<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>) ⇒ <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>, <span name="depth">depth: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2</span></span>)</span><span class="result">: <a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@treeReduce(f:(T,T)=&gt;T,depth:Int):T" title="Permalink" target="_top">
@@ -2361,14 +2361,14 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
 </p></div><dl class="paramcmts block"><dt class="param">depth</dt><dd class="cmt"><p>suggested depth of the tree (default: 2)</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd><dt>See also</dt><dd><span class="cmt"><p><a href="../../../rdd/RDD.html#reduce(f:(T,T)=&gt;T):T" class="extmbr" name="org.apache.spark.rdd.RDD#reduce">org.apache.spark.rdd.RDD#reduce</a></p></span></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#union" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="union(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="union(RDD[CachedBatch]):RDD[CachedBatch]"></a>
+      <a id="union(RDD[ColumnBatch]):RDD[ColumnBatch]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">union</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>
+        <span class="name">union</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@union(other:org.apache.spark.rdd.RDD[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
@@ -2467,14 +2467,14 @@ times (use <code>.distinct()</code> to eliminate them).
         </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zip" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zip[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$9:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]"></a>
-      <a id="zip[U](RDD[U])(ClassTag[U]):RDD[(CachedBatch,U)]"></a>
+      <a id="zip[U](RDD[U])(ClassTag[U]):RDD[(ColumnBatch,U)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zip</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>)]</span>
+        <span class="name">zip</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <span class="extype" name="org.apache.spark.rdd.RDD.zip.U">U</span>)]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zip[U](other:org.apache.spark.rdd.RDD[U])(implicitevidence$9:scala.reflect.ClassTag[U]):org.apache.spark.rdd.RDD[(T,U)]" title="Permalink" target="_top">
@@ -2489,14 +2489,14 @@ a map on the other).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D])(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$24:scala.reflect.ClassTag[B],implicitevidence$25:scala.reflect.ClassTag[C],implicitevidence$26:scala.reflect.ClassTag[D],implicitevidence$27:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
-      <a id="zipPartitions[B,C,D,V](RDD[B],RDD[C],RDD[D])((Iterator[CachedBatch],Iterator[B],Iterator[C],Iterator[D])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[D],ClassTag[V]):RDD[V]"></a>
+      <a id="zipPartitions[B,C,D,V](RDD[B],RDD[C],RDD[D])((Iterator[ColumnBatch],Iterator[B],Iterator[C],Iterator[D])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[D],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="D">D</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="rdd4">rdd4: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="arg3">arg3: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
+        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="D">D</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="rdd4">rdd4: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="arg3">arg3: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D])(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$24:scala.reflect.ClassTag[B],implicitevidence$25:scala.reflect.ClassTag[C],implicitevidence$26:scala.reflect.ClassTag[D],implicitevidence$27:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
@@ -2506,14 +2506,14 @@ a map on the other).
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$20:scala.reflect.ClassTag[B],implicitevidence$21:scala.reflect.ClassTag[C],implicitevidence$22:scala.reflect.ClassTag[D],implicitevidence$23:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
-      <a id="zipPartitions[B,C,D,V](RDD[B],RDD[C],RDD[D],Boolean)((Iterator[CachedBatch],Iterator[B],Iterator[C],Iterator[D])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[D],ClassTag[V]):RDD[V]"></a>
+      <a id="zipPartitions[B,C,D,V](RDD[B],RDD[C],RDD[D],Boolean)((Iterator[ColumnBatch],Iterator[B],Iterator[C],Iterator[D])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[D],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="D">D</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="rdd4">rdd4: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="arg3">arg3: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
+        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="D">D</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="rdd4">rdd4: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.D">D</span>]</span>, <span name="arg3">arg3: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipPartitions[B,C,D,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],rdd4:org.apache.spark.rdd.RDD[D],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C],Iterator[D])=&gt;Iterator[V])(implicitevidence$20:scala.reflect.ClassTag[B],implicitevidence$21:scala.reflect.ClassTag[C],implicitevidence$22:scala.reflect.ClassTag[D],implicitevidence$23:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
@@ -2523,14 +2523,14 @@ a map on the other).
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C])(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$17:scala.reflect.ClassTag[B],implicitevidence$18:scala.reflect.ClassTag[C],implicitevidence$19:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
-      <a id="zipPartitions[B,C,V](RDD[B],RDD[C])((Iterator[CachedBatch],Iterator[B],Iterator[C])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[V]):RDD[V]"></a>
+      <a id="zipPartitions[B,C,V](RDD[B],RDD[C])((Iterator[ColumnBatch],Iterator[B],Iterator[C])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
+        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C])(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$17:scala.reflect.ClassTag[B],implicitevidence$18:scala.reflect.ClassTag[C],implicitevidence$19:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
@@ -2540,14 +2540,14 @@ a map on the other).
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$14:scala.reflect.ClassTag[B],implicitevidence$15:scala.reflect.ClassTag[C],implicitevidence$16:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
-      <a id="zipPartitions[B,C,V](RDD[B],RDD[C],Boolean)((Iterator[CachedBatch],Iterator[B],Iterator[C])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[V]):RDD[V]"></a>
+      <a id="zipPartitions[B,C,V](RDD[B],RDD[C],Boolean)((Iterator[ColumnBatch],Iterator[B],Iterator[C])⇒Iterator[V])(ClassTag[B],ClassTag[C],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
+        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="C">C</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="rdd3">rdd3: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.C">C</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipPartitions[B,C,V](rdd2:org.apache.spark.rdd.RDD[B],rdd3:org.apache.spark.rdd.RDD[C],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B],Iterator[C])=&gt;Iterator[V])(implicitevidence$14:scala.reflect.ClassTag[B],implicitevidence$15:scala.reflect.ClassTag[C],implicitevidence$16:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
@@ -2557,14 +2557,14 @@ a map on the other).
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B])(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$12:scala.reflect.ClassTag[B],implicitevidence$13:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
-      <a id="zipPartitions[B,V](RDD[B])((Iterator[CachedBatch],Iterator[B])⇒Iterator[V])(ClassTag[B],ClassTag[V]):RDD[V]"></a>
+      <a id="zipPartitions[B,V](RDD[B])((Iterator[ColumnBatch],Iterator[B])⇒Iterator[V])(ClassTag[B],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
+        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B])(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$12:scala.reflect.ClassTag[B],implicitevidence$13:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
@@ -2574,14 +2574,14 @@ a map on the other).
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$10:scala.reflect.ClassTag[B],implicitevidence$11:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]"></a>
-      <a id="zipPartitions[B,V](RDD[B],Boolean)((Iterator[CachedBatch],Iterator[B])⇒Iterator[V])(ClassTag[B],ClassTag[V]):RDD[V]"></a>
+      <a id="zipPartitions[B,V](RDD[B],Boolean)((Iterator[ColumnBatch],Iterator[B])⇒Iterator[V])(ClassTag[B],ClassTag[V]):RDD[V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
+        <span class="name">zipPartitions</span><span class="tparams">[<span name="B">B</span>, <span name="V">V</span>]</span><span class="params">(<span name="rdd2">rdd2: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="preservesPartitioning">preservesPartitioning: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span name="f">f: (<a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>], <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]) ⇒ <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.B">B</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.rdd.RDD.zipPartitions.V">V</span>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipPartitions[B,V](rdd2:org.apache.spark.rdd.RDD[B],preservesPartitioning:Boolean)(f:(Iterator[T],Iterator[B])=&gt;Iterator[V])(implicitevidence$10:scala.reflect.ClassTag[B],implicitevidence$11:scala.reflect.ClassTag[V]):org.apache.spark.rdd.RDD[V]" title="Permalink" target="_top">
@@ -2596,14 +2596,14 @@ of elements in each partition.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipWithIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipWithIndex():org.apache.spark.rdd.RDD[(T,Long)]"></a>
-      <a id="zipWithIndex():RDD[(CachedBatch,Long)]"></a>
+      <a id="zipWithIndex():RDD[(ColumnBatch,Long)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipWithIndex</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="scala.Long">Long</span>)]</span>
+        <span class="name">zipWithIndex</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <span class="extype" name="scala.Long">Long</span>)]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipWithIndex():org.apache.spark.rdd.RDD[(T,Long)]" title="Permalink" target="_top">
@@ -2620,14 +2620,14 @@ the same index assignments, you should sort the RDD with sortByKey() or save it 
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#zipWithUniqueId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="zipWithUniqueId():org.apache.spark.rdd.RDD[(T,Long)]"></a>
-      <a id="zipWithUniqueId():RDD[(CachedBatch,Long)]"></a>
+      <a id="zipWithUniqueId():RDD[(ColumnBatch,Long)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">zipWithUniqueId</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>, <span class="extype" name="scala.Long">Long</span>)]</span>
+        <span class="name">zipWithUniqueId</span><span class="params">()</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>, <span class="extype" name="scala.Long">Long</span>)]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD@zipWithUniqueId():org.apache.spark.rdd.RDD[(T,Long)]" title="Permalink" target="_top">
@@ -2651,7 +2651,7 @@ the same index assignments, you should sort the RDD with sortByKey() or save it 
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.rdd.RDD">
-              <h3>Inherited from <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</h3>
+              <h3>Inherited from <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</h3>
             </div><div class="parent" name="org.apache.spark.internal.Logging">
               <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
             </div><div class="parent" name="scala.Serializable">

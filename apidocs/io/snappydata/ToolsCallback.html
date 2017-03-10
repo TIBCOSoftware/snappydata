@@ -112,6 +112,32 @@
       </a>
     </span>
       
+    </li><li name="io.snappydata.ToolsCallback#doFetchFile" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="doFetchFile(url:String,targetDir:java.io.File,filename:String):java.io.File"></a>
+      <a id="doFetchFile(String,File,String):File"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">doFetchFile</span><span class="params">(<span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="targetDir">targetDir: <span class="extype" name="java.io.File">File</span></span>, <span name="filename">filename: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="java.io.File">File</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.ToolsCallback@doFetchFile(url:String,targetDir:java.io.File,filename:String):java.io.File" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Callback to spark Utils to fetch file
+Download a file or directory to target directory.</p><div class="fullcomment"><div class="comment cmt"><p>Callback to spark Utils to fetch file
+Download a file or directory to target directory. Supports fetching the file in a variety of
+ways, including HTTP, Hadoop-compatible filesystems, and files on a standard filesystem, based
+on the URL parameter. Fetching directories is only supported from Hadoop-compatible
+filesystems.</p><p>If <code>useCache</code> is true, first attempts to fetch the file to a local cache that's shared
+across executors running the same application. <code>useCache</code> is used mainly for
+the executors, and not in local mode.</p><p>Throws SparkException if the target file already exists and has different contents than
+the requested file.
+</p></div></div>
     </li><li name="io.snappydata.ToolsCallback#getOrderlessHashPartitioning" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="getOrderlessHashPartitioning(partitionColumns:Seq[org.apache.spark.sql.catalyst.expressions.Expression],partitionColumnAliases:Seq[Seq[org.apache.spark.sql.catalyst.expressions.Attribute]],numPartitions:Int,numBuckets:Int):org.apache.spark.sql.catalyst.plans.physical.Partitioning"></a>
       <a id="getOrderlessHashPartitioning(Seq[Expression],Seq[Seq[Attribute]],Int,Int):Partitioning"></a>
@@ -142,6 +168,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../index.html#io.snappydata.ToolsCallback@invokeLeadStartAddonService(sc:org.apache.spark.SparkContext):Unit" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.ToolsCallback#removeAddedJar" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="removeAddedJar(sc:org.apache.spark.SparkContext,jarName:String):Unit"></a>
+      <a id="removeAddedJar(SparkContext,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeAddedJar</span><span class="params">(<span name="sc">sc: <a href="../../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="jarName">jarName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.ToolsCallback@removeAddedJar(sc:org.apache.spark.SparkContext,jarName:String):Unit" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

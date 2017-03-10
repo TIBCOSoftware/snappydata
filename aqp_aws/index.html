@@ -145,6 +145,8 @@
             
                 <li class="toctree-l3"><a href="#using-apache-zeppelin">Using Apache Zeppelin</a></li>
                 
+                    <li><a class="toctree-l4" href="#functioning-of-the-snappydata-interpreter-and-snappydata-cluster">Functioning of the SnappyData Interpreter and SnappyData Cluster</a></li>
+                
             
                 <li class="toctree-l3"><a href="#using-the-interpreter">Using the Interpreter</a></li>
                 
@@ -295,9 +297,15 @@ With iSight-Cloud, you can speed up the process of understanding what your data 
 <h4 id="prerequisites">Prerequisites</h4>
 <p>Before you begin:</p>
 <ul>
-<li>Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation</li>
-<li>Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.</li>
-<li>Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster</li>
+<li>
+<p>Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation</p>
+</li>
+<li>
+<p>Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.</p>
+</li>
+<li>
+<p>Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster</p>
+</li>
 </ul>
 <p>SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.</p>
 <p>It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running four processes (locator, lead, a data server and an Apache Zeppelin server) on it.</p>
@@ -433,13 +441,9 @@ For example, using the following command, you can start a SnappyData cluster nam
 <li>
 <p><Note> You can also find AWS related information on the AWS homepage, from the <strong>Account</strong> &gt; <strong>Security Credentials</strong> &gt; <strong>Access Credentials</strong> option.</Note></p>
 </li>
-</ul>
-<blockquote>
-<ul>
-<li>Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
+<li><Note> Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
 </Note></li>
 </ul>
-</blockquote>
 <p>To define a table that references the data in AWS S3, create a paragraph in the following format:</p>
 <pre><code>%sql
 DROP TABLE IF EXISTS &lt;table_name&gt; ;
@@ -479,6 +483,23 @@ CREATE EXTERNAL TABLE &lt;table_name&gt; USING parquet OPTIONS(path '&lt;AWS_SEC
 Launch Apache Zeppelin from the web browser by accessing the host and port associated with your Apache Zeppelin server. For example, http://<code>&lt;zeppelin_host&gt;</code>:<code>&lt;port_number&gt;</code>. The welcome page which lists existing notebooks is displayed.<br />
 SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see <a href="#predefinednotebook">Using Predefined Notebooks</a>.</p>
 <p>Refer to the <a href="http://zeppelin.apache.org/">Apache Zeppelin documentation</a>, for more information.</p>
+<h3 id="functioning-of-the-snappydata-interpreter-and-snappydata-cluster">Functioning of the SnappyData Interpreter and SnappyData Cluster</h3>
+<ol>
+<li>
+<p>When you execute a paragraph in the Apache Zeppelin UI, the query is sent to the Apache Zeppelin Server.</p>
+</li>
+<li>
+<p>The query is then received by the SnappyData Interpreter which is running on the Lead node in the cluster.</p>
+</li>
+<li>
+<p>When the query has completed execution, the results are sent from the SnappyData Interpreter (which is running on the Lead node) to the Apache Zeppelin server.</p>
+</li>
+<li>
+<p>Finally, the results are displayed in the Zepplein UI. </p>
+</li>
+</ol>
+<p>Connecting the SnappyData Interpreter to the SnappyData cluster is represented in the below figure.</p>
+<p><img alt="Example" src="../Images/isightconnect.png" /></p>
 <h2 id="using-the-interpreter">Using the Interpreter</h2>
 <p>SnappyData Interpreter group consists of the interpreters <code>%snappydata.spark</code> and <code>%snappydata.sql</code>.
 To use an interpreter, add the associated interpreter directive with the format, <code>%&lt;Interpreter_name&gt;</code> at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.</p>
@@ -488,8 +509,10 @@ To use an interpreter, add the associated interpreter directive with the format,
 <p><Note>  The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.</Note></p>
 </li>
 <li>
-<p><Note>  It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
-</Note></p>
+<p><Note>  It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter. </Note></p>
+</li>
+<li>
+<p><Note> Each paragraph has its own SnappyData context. When you set a property on one paragraph, the property is applicable only to that paragraph and not to other paragraphs in the notebook.</Note></p>
 </li>
 </ul>
 <h3 id="sql-interpreter">SQL Interpreter</h3>

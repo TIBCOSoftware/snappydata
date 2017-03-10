@@ -266,9 +266,9 @@ SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
       </a>
     </span>
       <p class="shortcomment cmt">Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+as CLOBs in JSON format for routed JDBC/ODBC queries rather
 than as serialized blobs to display better in external tools.</p><div class="fullcomment"><div class="comment cmt"><p>Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+as CLOBs in JSON format for routed JDBC/ODBC queries rather
 than as serialized blobs to display better in external tools.</p><p>Possible values are 'true/1' or 'false/0'</p><p>Example:<br>
 SELECT * FROM t1 --+ complexTypeAsJson(1)
 </p></div></div>

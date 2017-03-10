@@ -456,7 +456,7 @@ is defined (pre-order), and applies the partial function to it.
       <p class="shortcomment cmt">Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.  It is
 invalid to query the dataType of an unresolved expression (i.e., when <code>resolved</code> == false).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgSumPart">BootstrapAddTrialsAvgSumPart</a> → <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#deterministic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgSumPart#deterministic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="deterministic:Boolean"></a>
       <a id="deterministic:Boolean"></a>
       <h4 class="signature">
@@ -479,7 +479,7 @@ children.</p><p>Note that this means that an expression should be considered as 
 - if it relies on some implicit input that is not part of the children expression list.
 - if it has non-deterministic child or children.</p><p>An example would be <code>SparkPartitionID</code> that relies on the partition id returned by TaskContext.
 By default leaf expressions are deterministic as Nil.forall(_.deterministic) returns true.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgSumPart">BootstrapAddTrialsAvgSumPart</a> → <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgSumPart#doGenCode" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doGenCode(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a>
       <a id="doGenCode(CodegenContext,ExprCode):ExprCode"></a>

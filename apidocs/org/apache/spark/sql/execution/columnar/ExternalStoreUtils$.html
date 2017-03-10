@@ -45,14 +45,14 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">ExternalStoreUtils</span>
+        <span class="name">ExternalStoreUtils</span><span class="result"> extends <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Utility methods used by external storage layers.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -70,7 +70,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils"><span>ExternalStoreUtils</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils"><span>ExternalStoreUtils</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -183,6 +183,57 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#COLUMN_BATCH_SIZE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="COLUMN_BATCH_SIZE:String(&quot;COLUMN_BATCH_SIZE&quot;)"></a>
+      <a id="COLUMN_BATCH_SIZE:String(&quot;COLUMN_BATCH_SIZE&quot;)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">COLUMN_BATCH_SIZE</span><span class="result">: String(&quot;COLUMN_BATCH_SIZE&quot;)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@COLUMN_BATCH_SIZE:String(&quot;COLUMN_BATCH_SIZE&quot;)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#COLUMN_MAX_DELTA_ROWS" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="COLUMN_MAX_DELTA_ROWS:String(&quot;COLUMN_MAX_DELTA_ROWS&quot;)"></a>
+      <a id="COLUMN_MAX_DELTA_ROWS:String(&quot;COLUMN_MAX_DELTA_ROWS&quot;)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">COLUMN_MAX_DELTA_ROWS</span><span class="result">: String(&quot;COLUMN_MAX_DELTA_ROWS&quot;)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@COLUMN_MAX_DELTA_ROWS:String(&quot;COLUMN_MAX_DELTA_ROWS&quot;)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#COMPRESSION_CODEC" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="COMPRESSION_CODEC:String(&quot;COMPRESSION_CODEC&quot;)"></a>
+      <a id="COMPRESSION_CODEC:String(&quot;COMPRESSION_CODEC&quot;)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">COMPRESSION_CODEC</span><span class="result">: String(&quot;COMPRESSION_CODEC&quot;)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@COMPRESSION_CODEC:String(&quot;COMPRESSION_CODEC&quot;)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#DEFAULT_SAMPLE_TABLE_BUCKETS" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DEFAULT_SAMPLE_TABLE_BUCKETS:String(&quot;79&quot;)"></a>
       <a id="DEFAULT_SAMPLE_TABLE_BUCKETS:String(&quot;79&quot;)"></a>
@@ -268,6 +319,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#EXTERNAL_DATASOURCE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EXTERNAL_DATASOURCE:String(&quot;EXTERNAL_DATASOURCE&quot;)"></a>
+      <a id="EXTERNAL_DATASOURCE:String(&quot;EXTERNAL_DATASOURCE&quot;)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">EXTERNAL_DATASOURCE</span><span class="result">: String(&quot;EXTERNAL_DATASOURCE&quot;)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@EXTERNAL_DATASOURCE:String(&quot;EXTERNAL_DATASOURCE&quot;)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#INDEX_NAME" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="INDEX_NAME:String(&quot;INDEX_NAME&quot;)"></a>
       <a id="INDEX_NAME:String(&quot;INDEX_NAME&quot;)"></a>
@@ -315,6 +383,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@PARTITION_BY:String(&quot;PARTITION_BY&quot;)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#RELATION_FOR_SAMPLE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RELATION_FOR_SAMPLE:String(&quot;RELATION_FOR_SAMPLE&quot;)"></a>
+      <a id="RELATION_FOR_SAMPLE:String(&quot;RELATION_FOR_SAMPLE&quot;)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">RELATION_FOR_SAMPLE</span><span class="result">: String(&quot;RELATION_FOR_SAMPLE&quot;)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@RELATION_FOR_SAMPLE:String(&quot;RELATION_FOR_SAMPLE&quot;)" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -387,23 +472,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#cachedBatchesToRows" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="cachedBatchesToRows(cachedBatches:Iterator[org.apache.spark.sql.execution.columnar.CachedBatch],requestedColumns:Array[String],schema:org.apache.spark.sql.types.StructType,forScan:Boolean):Iterator[org.apache.spark.sql.catalyst.InternalRow]"></a>
-      <a id="cachedBatchesToRows(Iterator[CachedBatch],Array[String],StructType,Boolean):Iterator[InternalRow]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">cachedBatchesToRows</span><span class="params">(<span name="cachedBatches">cachedBatches: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.columnar.CachedBatch">CachedBatch</span>]</span>, <span name="requestedColumns">requestedColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="forScan">forScan: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@cachedBatchesToRows(cachedBatches:Iterator[org.apache.spark.sql.execution.columnar.CachedBatch],requestedColumns:Array[String],schema:org.apache.spark.sql.types.StructType,forScan:Boolean):Iterator[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -427,6 +495,24 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#codeGenOnExecutor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="codeGenOnExecutor(plan:org.apache.spark.sql.execution.CodegenSupport,child:org.apache.spark.sql.execution.CodegenSupportOnExecutor):(org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment)"></a>
+      <a id="codeGenOnExecutor(CodegenSupport,CodegenSupportOnExecutor):(CodegenContext,CodeAndComment)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">codeGenOnExecutor</span><span class="params">(<span name="plan">plan: <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>, <span name="child">child: <a href="../CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a></span>)</span><span class="result">: (<a href="../../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a>, <a href="../../catalyst/expressions/codegen/CodeAndComment.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment">CodeAndComment</a>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@codeGenOnExecutor(plan:org.apache.spark.sql.execution.CodegenSupport,child:org.apache.spark.sql.execution.CodegenSupportOnExecutor):(org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates code for this subtree.</p><div class="fullcomment"><div class="comment cmt"><p>Generates code for this subtree.</p><p>Adapted from WholeStageCodegenExec to allow running on executors.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the tuple of the codegen context and the actual generated source.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#columnIndicesAndDataTypes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="columnIndicesAndDataTypes(requestedSchema:org.apache.spark.sql.types.StructType,schema:org.apache.spark.sql.types.StructType):Seq[(Int,org.apache.spark.sql.types.StructField)]"></a>
       <a id="columnIndicesAndDataTypes(StructType,StructType):Seq[(Int,StructField)]"></a>
@@ -444,19 +530,87 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#defaultStoreURL" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="defaultStoreURL(sc:org.apache.spark.SparkContext):String"></a>
-      <a id="defaultStoreURL(SparkContext):String"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#convertSchemaMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="convertSchemaMap(tableProps:java.util.Map[String,String]):org.apache.spark.sql.types.StructType"></a>
+      <a id="convertSchemaMap(Map[String,String]):StructType"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">defaultStoreURL</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">convertSchemaMap</span><span class="params">(<span name="tableProps">tableProps: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@defaultStoreURL(sc:org.apache.spark.SparkContext):String" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@convertSchemaMap(tableProps:java.util.Map[String,String]):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#defaultColumnBatchSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultColumnBatchSize(session:org.apache.spark.sql.SparkSession):Int"></a>
+      <a id="defaultColumnBatchSize(SparkSession):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultColumnBatchSize</span><span class="params">(<span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@defaultColumnBatchSize(session:org.apache.spark.sql.SparkSession):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#defaultColumnMaxDeltaRows" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultColumnMaxDeltaRows(session:org.apache.spark.sql.SparkSession):Int"></a>
+      <a id="defaultColumnMaxDeltaRows(SparkSession):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultColumnMaxDeltaRows</span><span class="params">(<span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@defaultColumnMaxDeltaRows(session:org.apache.spark.sql.SparkSession):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#defaultCompressionCodec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultCompressionCodec(session:org.apache.spark.sql.SparkSession):String"></a>
+      <a id="defaultCompressionCodec(SparkSession):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultCompressionCodec</span><span class="params">(<span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@defaultCompressionCodec(session:org.apache.spark.sql.SparkSession):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#defaultStoreURL" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultStoreURL(sparkContext:Option[org.apache.spark.SparkContext]):String"></a>
+      <a id="defaultStoreURL(Option[SparkContext]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultStoreURL</span><span class="params">(<span name="sparkContext">sparkContext: <span class="extype" name="scala.Option">Option</span>[<a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@defaultStoreURL(sparkContext:Option[org.apache.spark.SparkContext]):String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -535,6 +689,40 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getAndSetTotalPartitions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getAndSetTotalPartitions(sparkContext:Option[org.apache.spark.SparkContext],parameters:scala.collection.mutable.Map[String,String],forManagedTable:Boolean,forColumnTable:Boolean,forSampleTable:Boolean):Int"></a>
+      <a id="getAndSetTotalPartitions(Option[SparkContext],Map[String,String],Boolean,Boolean,Boolean):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAndSetTotalPartitions</span><span class="params">(<span name="sparkContext">sparkContext: <span class="extype" name="scala.Option">Option</span>[<a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a>]</span>, <span name="parameters">parameters: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="forManagedTable">forManagedTable: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="forColumnTable">forColumnTable: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="forSampleTable">forSampleTable: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getAndSetTotalPartitions(sparkContext:Option[org.apache.spark.SparkContext],parameters:scala.collection.mutable.Map[String,String],forManagedTable:Boolean,forColumnTable:Boolean,forSampleTable:Boolean):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getAndSetTotalPartitions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getAndSetTotalPartitions(parameters:java.util.Map[String,String],forManagedTable:Boolean):Int"></a>
+      <a id="getAndSetTotalPartitions(Map[String,String],Boolean):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAndSetTotalPartitions</span><span class="params">(<span name="parameters">parameters: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="forManagedTable">forManagedTable: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getAndSetTotalPartitions(parameters:java.util.Map[String,String],forManagedTable:Boolean):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -586,23 +774,6 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getConnector" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getConnector(id:String,connProperties:org.apache.spark.sql.sources.ConnectionProperties,forExecutor:Boolean):()=&gt;java.sql.Connection"></a>
-      <a id="getConnector(String,ConnectionProperties,Boolean):()⇒Connection"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getConnector</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="connProperties">connProperties: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="forExecutor">forExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: () ⇒ <span class="extype" name="java.sql.Connection">Connection</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getConnector(id:String,connProperties:org.apache.spark.sql.sources.ConnectionProperties,forExecutor:Boolean):()=&gt;java.sql.Connection" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getDriver" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getDriver(url:String,dialect:org.apache.spark.sql.jdbc.JdbcDialect):String"></a>
       <a id="getDriver(String,JdbcDialect):String"></a>
@@ -620,36 +791,36 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getInsertString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getInsertString(table:String,userSchema:org.apache.spark.sql.types.StructType):String"></a>
-      <a id="getInsertString(String,StructType):String"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getExternalStoreOnExecutor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getExternalStoreOnExecutor(parameters:java.util.Map[String,String],partitions:Int,tableName:String,schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.execution.columnar.ExternalStore"></a>
+      <a id="getExternalStoreOnExecutor(Map[String,String],Int,String,StructType):ExternalStore"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getInsertString</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="userSchema">userSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">getExternalStoreOnExecutor</span><span class="params">(<span name="parameters">parameters: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitions">partitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getInsertString(table:String,userSchema:org.apache.spark.sql.types.StructType):String" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getExternalStoreOnExecutor(parameters:java.util.Map[String,String],partitions:Int,tableName:String,schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.execution.columnar.ExternalStore" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getInsertStringWithColumnName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getInsertStringWithColumnName(table:String,rddSchema:org.apache.spark.sql.types.StructType):String"></a>
-      <a id="getInsertStringWithColumnName(String,StructType):String"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getExternalTableMetaData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getExternalTableMetaData(schema:String,table:String):com.gemstone.gemfire.internal.cache.ExternalTableMetaData"></a>
+      <a id="getExternalTableMetaData(String,String):ExternalTableMetaData"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getInsertStringWithColumnName</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rddSchema">rddSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">getExternalTableMetaData</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.ExternalTableMetaData">ExternalTableMetaData</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getInsertStringWithColumnName(table:String,rddSchema:org.apache.spark.sql.types.StructType):String" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getExternalTableMetaData(schema:String,table:String):com.gemstone.gemfire.internal.cache.ExternalTableMetaData" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -667,40 +838,6 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getJDBCType(dialect:org.apache.spark.sql.jdbc.JdbcDialect,dataType:org.apache.spark.sql.types.DataType):Int" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getPutString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getPutString(table:String,userSchema:org.apache.spark.sql.types.StructType):String"></a>
-      <a id="getPutString(String,StructType):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getPutString</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="userSchema">userSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getPutString(table:String,userSchema:org.apache.spark.sql.types.StructType):String" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getTotalPartitions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getTotalPartitions(sc:org.apache.spark.SparkContext,parameters:scala.collection.mutable.Map[String,String],forManagedTable:Boolean,forColumnTable:Boolean,forSampleTable:Boolean):Int"></a>
-      <a id="getTotalPartitions(SparkContext,Map[String,String],Boolean,Boolean,Boolean):Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getTotalPartitions</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="forManagedTable">forManagedTable: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="forColumnTable">forColumnTable: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="forSampleTable">forSampleTable: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getTotalPartitions(sc:org.apache.spark.SparkContext,parameters:scala.collection.mutable.Map[String,String],forManagedTable:Boolean,forColumnTable:Boolean,forSampleTable:Boolean):Int" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -739,6 +876,57 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isDebugEnabled:Boolean"></a>
+      <a id="isDebugEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@isDebugEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInfoEnabled:Boolean"></a>
+      <a id="isInfoEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@isInfoEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -773,6 +961,227 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@isTraceEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log:org.slf4j.Logger"></a>
+      <a id="log:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@log:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logDebug(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String):Unit"></a>
+      <a id="logDebug(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logError(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String):Unit"></a>
+      <a id="logError(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logInfo(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String):Unit"></a>
+      <a id="logInfo(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logName:String"></a>
+      <a id="logName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logName:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logTrace(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String):Unit"></a>
+      <a id="logTrace(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logWarning(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String):Unit"></a>
+      <a id="logWarning(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#lookupName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="lookupName(tableName:String,schema:String):String"></a>
       <a id="lookupName(String,String):String"></a>
@@ -1013,18 +1422,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#validateAndGetAllProps" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="validateAndGetAllProps(sc:org.apache.spark.SparkContext,parameters:scala.collection.mutable.Map[String,String]):org.apache.spark.sql.sources.ConnectionProperties"></a>
-      <a id="validateAndGetAllProps(SparkContext,Map[String,String]):ConnectionProperties"></a>
+      <a id="validateAndGetAllProps(session:Option[org.apache.spark.sql.SparkSession],parameters:scala.collection.mutable.Map[String,String]):org.apache.spark.sql.sources.ConnectionProperties"></a>
+      <a id="validateAndGetAllProps(Option[SparkSession],Map[String,String]):ConnectionProperties"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">validateAndGetAllProps</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>
+        <span class="name">validateAndGetAllProps</span><span class="params">(<span name="session">session: <span class="extype" name="scala.Option">Option</span>[<a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>]</span>, <span name="parameters">parameters: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@validateAndGetAllProps(sc:org.apache.spark.SparkContext,parameters:scala.collection.mutable.Map[String,String]):org.apache.spark.sql.sources.ConnectionProperties" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@validateAndGetAllProps(session:Option[org.apache.spark.sql.SparkSession],parameters:scala.collection.mutable.Map[String,String]):org.apache.spark.sql.sources.ConnectionProperties" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1107,7 +1516,9 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="org.apache.spark.Logging">
+              <h3>Inherited from <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

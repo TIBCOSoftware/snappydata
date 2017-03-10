@@ -247,6 +247,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#bulkInsertOrPut" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bulkInsertOrPut(rows:Seq[org.apache.spark.sql.Row],sparkSession:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType,resolvedName:String,upsert:Boolean):Int"></a>
+      <a id="bulkInsertOrPut(Seq[Row],SparkSession,StructType,String,Boolean):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bulkInsertOrPut</span><span class="params">(<span name="rows">rows: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="sparkSession">sparkSession: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="schema">schema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="resolvedName">resolvedName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="upsert">upsert: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@bulkInsertOrPut(rows:Seq[org.apache.spark.sql.Row],sparkSession:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType,resolvedName:String,upsert:Boolean):Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -413,6 +430,23 @@ string specification.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#getInsertOrPutString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getInsertOrPutString(table:String,rddSchema:org.apache.spark.sql.types.StructType,upsert:Boolean):String"></a>
+      <a id="getInsertOrPutString(String,StructType,Boolean):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getInsertOrPutString</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rddSchema">rddSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="upsert">upsert: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getInsertOrPutString(table:String,rddSchema:org.apache.spark.sql.types.StructType,upsert:Boolean):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the SQL for prepare to insert or put rows into a table.</p>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -447,23 +481,6 @@ string specification.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#insertStatement" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="insertStatement(conn:java.sql.Connection,table:String,rddSchema:org.apache.spark.sql.types.StructType,upsert:Boolean):java.sql.PreparedStatement"></a>
-      <a id="insertStatement(Connection,String,StructType,Boolean):PreparedStatement"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">insertStatement</span><span class="params">(<span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rddSchema">rddSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="upsert">upsert: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="java.sql.PreparedStatement">PreparedStatement</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@insertStatement(conn:java.sql.Connection,table:String,rddSchema:org.apache.spark.sql.types.StructType,upsert:Boolean):java.sql.PreparedStatement" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns a PreparedStatement that inserts a row into table via conn.</p>
     </li><li name="org.apache.spark.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isDebugEnabled:Boolean"></a>
       <a id="isDebugEnabled:Boolean"></a>
@@ -787,48 +804,6 @@ string specification.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#savePartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="savePartition(getConnection:()=&gt;java.sql.Connection,table:String,iterator:Iterator[org.apache.spark.sql.catalyst.InternalRow],rddSchema:Array[org.apache.spark.sql.types.DataType],tableSchema:org.apache.spark.sql.types.StructType,dialect:org.apache.spark.sql.jdbc.JdbcDialect,batchSize:Int,upsert:Boolean):Unit"></a>
-      <a id="savePartition(()⇒Connection,String,Iterator[InternalRow],Array[DataType],StructType,JdbcDialect,Int,Boolean):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">savePartition</span><span class="params">(<span name="getConnection">getConnection: () ⇒ <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="iterator">iterator: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="rddSchema">rddSchema: <span class="extype" name="scala.Array">Array</span>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>, <span name="tableSchema">tableSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="dialect">dialect: <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></span>, <span name="batchSize">batchSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="upsert">upsert: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@savePartition(getConnection:()=&gt;java.sql.Connection,table:String,iterator:Iterator[org.apache.spark.sql.catalyst.InternalRow],rddSchema:Array[org.apache.spark.sql.types.DataType],tableSchema:org.apache.spark.sql.types.StructType,dialect:org.apache.spark.sql.jdbc.JdbcDialect,batchSize:Int,upsert:Boolean):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Saves a partition of a DataFrame to the JDBC database.</p><div class="fullcomment"><div class="comment cmt"><p>Saves a partition of a DataFrame to the JDBC database.  This is done in
-a single database transaction in order to avoid repeatedly inserting
-data as much as possible.</p><p>It is still theoretically possible for rows in a DataFrame to be
-inserted into the database more than once if a stage somehow fails after
-the commit occurs but before the stage can return successfully.</p><p>This is not a closure inside saveTable() because apparently cosmetic
-implementation changes elsewhere might easily render such a closure
-non-Serializable.  Instead, we explicitly close over all variables that
-are used.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#saveTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="saveTable(df:org.apache.spark.sql.DataFrame,table:String,tableSchema:org.apache.spark.sql.types.StructType,connProperties:org.apache.spark.sql.sources.ConnectionProperties,upsert:Boolean):Unit"></a>
-      <a id="saveTable(DataFrame,String,StructType,ConnectionProperties,Boolean):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">saveTable</span><span class="params">(<span name="df">df: <a href="../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">DataFrame</a></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableSchema">tableSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="connProperties">connProperties: <a href="ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="upsert">upsert: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@saveTable(df:org.apache.spark.sql.DataFrame,table:String,tableSchema:org.apache.spark.sql.types.StructType,connProperties:org.apache.spark.sql.sources.ConnectionProperties,upsert:Boolean):Unit" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Saves the RDD to the database in a single transaction.</p>
     </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#schemaString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="schemaString(schema:org.apache.spark.sql.types.StructType,dialect:org.apache.spark.sql.jdbc.JdbcDialect):String"></a>
       <a id="schemaString(StructType,JdbcDialect):String"></a>

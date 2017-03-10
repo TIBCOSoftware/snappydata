@@ -384,7 +384,7 @@ query tables, write to tables which reside in a SnappyStore.</p><p>To run this e
 mentioned below.</p><p>1.  Go to SNAPPY_HOME. Your Snappy installation directory.</p><p>2.  Start a Snappy cluster
 ./sbin/snappy-start-all.sh
 This will start a simple cluster with one data node, one lead node and a locator</p><p>3.  Open Snappy Shell
-./bin/snappy-shell
+./bin/snappy-sql
 This will open Snappy shell which can be used to create and query tables.</p><p>4. Connect to the Snappy Cluster. On the shell prompt type
 connect client 'localhost:1527';</p><p>5. Create a column table and insert some rows in SnappyStore. Type the followings in Snappy Shell.</p><p>CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;</p><p>insert into SNAPPY_COL_TABLE VALUES(1,1);
 insert into SNAPPY_COL_TABLE VALUES(2,2);</p><p>6. Run this example to see how this program interacts with the Snappy Cluster
