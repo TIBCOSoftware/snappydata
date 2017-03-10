@@ -1,5 +1,5 @@
 #Overview
-This section introduces you to several common operations such as, starting a cluster, working with tables(load, query, update), working with streams and running approximate queries.
+This section introduces you to several common operations such as, starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.
 
 **Running the Examples:**
 Topics in this section refer to source code examples that are shipped with the product. Instructions to run these examples can be found in the source code.
@@ -44,8 +44,8 @@ The following topics are covered in this section:
 
 * [How to Use Python to Create Tables and Run Queries](#howto-python)
 
-* [How to Connect using ODBC Driver](#howto-odbc)
-
+<!--* [How to Connect using ODBC Driver](#howto-odbc)
+-->
 
 <a id="howto-startCluster"></a>
 ## How to Start a SnappyData Cluster
@@ -1115,6 +1115,8 @@ This same table can be created by using createTable API. First we create a schem
 
 The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py)
 
+
+<!--
 <a id="howto-odbc"></a>
 ## How to Connect using ODBC Driver
 
@@ -1132,7 +1134,7 @@ Depending on your Windows installation, download the 32-bit or 64-bit version of
 3. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
 ### Connect to the SnappyData cluster 
-Once you have installed snappyData ODBC Driver, you can connect to SnappyData cluster in following ways:
+Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in following ways:
 
 * Use the SnappyData Driver Conneciton URL:
 
@@ -1142,3 +1144,4 @@ Once you have installed snappyData ODBC Driver, you can connect to SnappyData cl
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
  When prompted, select the SnappyData ODBC Driver from drivers list and enter a Data Source name, SnappyData Server Host, Port, User and Password. 
 
+-->
