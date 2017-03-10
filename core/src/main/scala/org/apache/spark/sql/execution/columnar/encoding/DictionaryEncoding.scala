@@ -186,7 +186,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   @transient private[this] final var isShortDictionary: Boolean = _
   @transient private[this] final var dictionarySize: Long = _
 
-  override def typeId: Int = if (isShortDictionary) 2 else 3
+  override def typeId: Int = if (isShortDictionary) 2 else BIG_DICTIONARY_TYPE_ID
 
   override def sizeInBytes(cursor: Long): Long = {
     if (dictionarySize > 0 || (stringMap ne null)) {
@@ -293,6 +293,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 
   override final def writeUTF8String(cursor: Long, value: UTF8String): Long = {
+    var position = cursor
     // add or get from dictionary
     val key = stringMap.addString(value, StringInit)
     // update stats only if new key was added
@@ -305,8 +306,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       numStrings += 1
       key.index = index
       if (index == Short.MaxValue && isShortDictionary) {
+        val numUsedIndexes = ((position - columnData.baseOffset) >> 1).toInt
         // allocate with increased size
-        switchToBigDictionary(index, (index << 2) / 3)
+        position = switchToBigDictionary(numUsedIndexes,
+          (numUsedIndexes << 2) / 3)
       }
       val stringTail = this.stringTail
       if (stringTail ne null) {
@@ -318,7 +321,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       }
     }
     // write the index
-    writeIndex(cursor, index)
+    writeIndex(position, index)
   }
 
   override final def writeInt(cursor: Long, value: Int): Long = {
@@ -327,6 +330,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 
   override final def writeLong(cursor: Long, value: Long): Long = {
+    var position = cursor
     // add or get from dictionary
     val key = longMap.addLong(value, LongInit)
     // update stats only if new key was added
@@ -335,14 +339,16 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       index = longArray.size()
       key.index = index
       if (index == Short.MaxValue && isShortDictionary) {
+        val numUsedIndexes = ((position - columnData.baseOffset) >> 1).toInt
         // allocate with increased size
-        switchToBigDictionary(index, (index << 2) / 3)
+        position = switchToBigDictionary(numUsedIndexes,
+          (numUsedIndexes << 2) / 3)
       }
       longArray.add(key.l)
       updateLongStats(value)
     }
     // write the index
-    writeIndex(cursor, index)
+    writeIndex(position, index)
   }
 
   override def finish(indexCursor: Long): ByteBuffer = {
