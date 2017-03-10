@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-class PreapredQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
+class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
   var serverHostPort = ""
