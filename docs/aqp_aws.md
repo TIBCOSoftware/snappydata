@@ -48,7 +48,9 @@ Watch the following  video to learn how easy it is to use iSight CloudBuilder, w
 Before you begin:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation
+
 * Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
+
 * Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 
 
@@ -189,8 +191,7 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 *	<Note> The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.</Note>
 	
 * <Note> You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.</Note>
-	
-> * Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
+* <Note> Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
 </Note>
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
@@ -211,7 +212,6 @@ The values are:
 ```<folder_name>``` | The folder name where the data is stored. Default value: nytaxifaredata 
 
 <a id="LoggingZeppelin"></a>
-
 ##Using Apache Zeppelin
 
 Apache Zeppelin provides web-based notebooks for data exploration. A notebook consists of one or more paragraphs, and each paragraph consists of a section each for code and results.
@@ -219,6 +219,20 @@ Launch Apache Zeppelin from the web browser by accessing the host and port assoc
 SnappyData provides predefined notebooks which are displayed on the home page after you have logged into Apache Zeppelin. For more information, see [Using Predefined Notebooks](#predefinednotebook).
 
 Refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/), for more information.
+
+### Functioning of the SnappyData Interpreter and SnappyData Cluster
+
+ 1. When you execute a paragraph in the Apache Zeppelin UI, the query is sent to the Apache Zeppelin Server.
+ 
+ 2. The query is then received by the SnappyData Interpreter which is running on the Lead node in the cluster.
+
+ 3. When the query has completed execution, the results are sent from the SnappyData Interpreter (which is running on the Lead node) to the Apache Zeppelin server.
+
+ 4. Finally, the results are displayed in the Zepplein UI. 
+
+Connecting the SnappyData Interpreter to the SnappyData cluster is represented in the below figure.
+
+![Example](Images/isightconnect.png)
 
 ##Using the Interpreter##
 SnappyData Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
@@ -228,8 +242,10 @@ To use an interpreter, add the associated interpreter directive with the format,
 
 * <Note>  The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.</Note>
  
-* <Note>  It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter.
-</Note>
+* <Note>  It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter. </Note>
+
+* <Note> Each paragraph has its own SnappyData context. When you set a property on one paragraph, the property is applicable only to that paragraph and not to other paragraphs in the notebook.</Note>
+
 
 ###SQL Interpreter###
 The `%snappydata.sql` code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.
