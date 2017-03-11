@@ -19,12 +19,12 @@ package org.apache.spark.sql.sources
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.backwardcomp.{ExecuteCommand, ExecutedCommand}
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
-import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.{DataType, LongType}
 
 /**
  * Support for DML and other operations on external tables.
@@ -71,38 +71,43 @@ object StoreStrategy extends Strategy {
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
+    case Update(l@LogicalRelation(m: MutableRelation, _, _), child,
+    keyColumns, updateColumns, updateExpressions) =>
+      ExecutePlan(m.getUpdatePlan(l, planLater(child), updateColumns,
+        updateExpressions, keyColumns)) :: Nil
+
+    case Delete(l@LogicalRelation(m: MutableRelation, _, _), child,
+    keyColumns) =>
+      ExecutePlan(m.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
+
     case r: ExecuteCommand => ExecutedCommand(r) :: Nil
 
     case _ => Nil
   }
 }
 
-private[sql] case class ExternalTableDMLCmd(
+case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
     command: String) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
-      case relation: UpdatableRelation => relation.executeUpdate(command)
-      case relation: RowPutRelation => relation.executeUpdate(command)
       case relation: SingleRowInsertableRelation =>
         relation.executeUpdate(command)
       case other => throw new AnalysisException("DML support requires " +
-          "UpdatableRelation/SingleRowInsertableRelation/RowPutRelation" +
-          " but found " + other)
+          "SingleRowInsertableRelation but found " + other)
     }
     Seq.empty[Row]
   }
 }
 
-private[sql] case class PutIntoTable(
-    table: LogicalPlan,
-    child: LogicalPlan)
+case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
     extends LogicalPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
 
-  override def output: Seq[Attribute] = Seq.empty
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
 
   override lazy val resolved: Boolean = childrenResolved &&
       child.output.zip(table.output).forall {
@@ -110,4 +115,29 @@ private[sql] case class PutIntoTable(
           DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
             tableAttr.dataType)
       }
+}
+
+case class Update(table: LogicalPlan, child: LogicalPlan,
+    keyColumns: Seq[Attribute], updateColumns: Seq[Attribute],
+    updateExpressions: Seq[Expression]) extends LogicalPlan {
+
+  assert(updateColumns.length == updateExpressions.length,
+    s"Internal error: updateColumns=${updateColumns.length} " +
+        s"updateExpressions=${updateExpressions.length}")
+
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
+
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
+}
+
+case class Delete(table: LogicalPlan, child: LogicalPlan,
+    keyColumns: Seq[Attribute]) extends LogicalPlan {
+
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
+
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
+
+  override lazy val resolved: Boolean = childrenResolved
 }

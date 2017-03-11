@@ -129,6 +129,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
+  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
@@ -142,7 +143,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
-  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
+  final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }

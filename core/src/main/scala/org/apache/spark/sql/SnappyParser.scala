@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.sources.PutIntoTable
+import org.apache.spark.sql.sources.{Delete, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -453,6 +453,28 @@ class SnappyParser(session: SnappySession)
         })
   }
 
+  /*
+  protected final def inlineTable: Rule1[LogicalPlan] = rule {
+    VALUES ~ (expression + commaSep) ~ AS.? ~ identifier.? ~
+        ('(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~>
+        ((valuesExpr: Seq[Expression], alias: Any, identifiers: Any) => {
+          val rows = valuesExpr.map {
+            case CreateStruct(children) => children // e.g. values (1), (2), (3)
+            case child => Seq(child) // e.g. values 1, 2, 3
+          }
+          val aliases = identifiers match {
+            case None => Seq.tabulate(rows.head.size)(i => s"col${i + 1}")
+            case Some(ids) => ids.asInstanceOf[Seq[String]]
+          }
+          alias match {
+            case None => UnresolvedInlineTable(aliases, rows)
+            case Some(a) => SubqueryAlias(a.asInstanceOf[String],
+              UnresolvedInlineTable(aliases, rows))
+          }
+        })
+  }
+  */
+
   protected final def join: Rule1[JoinRuleType] = rule {
     joinType.? ~ JOIN ~ relationFactor ~ (
         ON ~ expression ~> ((t: Any, r: LogicalPlan, j: Expression) =>
@@ -642,7 +664,9 @@ class SnappyParser(session: SnappySession)
     CURRENT_DATE ~> CurrentDate |
     CURRENT_TIMESTAMP ~> CurrentTimestamp |
     '(' ~ ws ~ (
-        expression ~ ')' ~ ws |
+        (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
+          if (exprs.length == 1) exprs.head else CreateStruct(exprs)
+        ) |
         query ~ ')' ~ ws ~> (ScalarSubquery(_))
     ) |
     signedPrimary |
@@ -687,8 +711,7 @@ class SnappyParser(session: SnappySession)
           // just "group by cols"
           case _ => Aggregate(x._1, expressions, withFilter)
         }
-      }
-      ).getOrElse(Project(expressions, withFilter))
+      }).getOrElse(Project(expressions, withFilter))
       val withDistinct = d.asInstanceOf[Option[Boolean]] match {
         case None => withProjection
         case Some(_) => Distinct(withProjection)
@@ -729,6 +752,34 @@ class SnappyParser(session: SnappySession)
     PUT ~ INTO ~ TABLE.? ~ relation ~ query ~> PutIntoTable
   }
 
+  protected final def update: Rule1[LogicalPlan] = rule {
+    UPDATE ~ tableIdentifier ~ SET ~ ((identifier + ('.' ~ ws)) ~ '=' ~ ws ~
+        expression ~> ((cols: Seq[String], e: Expression) =>
+      UnresolvedAttribute(cols) -> e)). + ~ (WHERE ~ expression).? ~>
+        ((tableName: TableIdentifier, updateExprs: Seq[(UnresolvedAttribute,
+            Expression)], whereExpr: Any) => {
+          val base = UnresolvedRelation(tableName)
+          val withFilter = whereExpr match {
+            case None => base
+            case Some(w) => Filter(w.asInstanceOf[Expression], base)
+          }
+          val (updateColumns, updateExpressions) = updateExprs.unzip
+          Update(base, withFilter, Seq.empty, updateColumns, updateExpressions)
+        })
+  }
+
+  protected final def delete: Rule1[LogicalPlan] = rule {
+    DELETE ~ FROM ~ tableIdentifier ~ (WHERE ~ expression).? ~>
+        ((tableName: TableIdentifier, whereExpr: Any) => {
+          val base = UnresolvedRelation(tableName)
+          val child = whereExpr match {
+            case None => base
+            case Some(w) => Filter(w.asInstanceOf[Expression], base)
+          }
+          Delete(base, child, Seq.empty)
+        })
+  }
+
   protected final def ctes: Rule1[LogicalPlan] = rule {
     WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + commaSep) ~
@@ -737,14 +788,14 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
-    (INSERT ~ INTO | PUT ~ INTO | DELETE ~ FROM | UPDATE) ~ tableIdentifier ~
+    (INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
         ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | desc
+    query.named("select") | insert | put | update | delete | dmlOperation |
+        ctes | ddl | set | cache | uncache | desc
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {

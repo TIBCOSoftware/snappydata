@@ -19,7 +19,6 @@ package org.apache.spark.sql.store
 import java.sql.PreparedStatement
 import java.util.Collections
 
-import scala.collection.JavaConverters._
 import scala.util.hashing.MurmurHash3
 
 import com.gemstone.gemfire.internal.InternalDataSerializer
@@ -409,12 +408,6 @@ object CodeGeneration extends Logging {
     val result = cache.get(new ExecuteKey(name, schema, dialect))
     result.executeStatement(stmt, multipleRows, rows, batchSize, schema)
   }
-
-  def executeUpdate(name: String, stmt: PreparedStatement,
-      rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int =
-    executeUpdate(name, stmt, rows.asJava, multipleRows, batchSize,
-      schema, dialect)
 
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],

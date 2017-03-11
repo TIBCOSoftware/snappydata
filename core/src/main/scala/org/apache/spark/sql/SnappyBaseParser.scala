@@ -21,8 +21,8 @@ import scala.collection.mutable
 import io.snappydata.Constant
 import org.parboiled2._
 
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types._
@@ -33,7 +33,7 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
  */
 abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
-  val caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
+  val caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
 
   private[sql] final val queryHints = new mutable.HashMap[String, String]
 
@@ -419,6 +419,7 @@ object SnappyParserConsts {
   final val PUT = nonReservedKeyword("put")
   final val REFRESH = nonReservedKeyword("refresh")
   final val REGEXP = nonReservedKeyword("regexp")
+  final val RETURNS = nonReservedKeyword("returns")
   final val RLIKE = nonReservedKeyword("rlike")
   final val SEMI = nonReservedKeyword("semi")
   final val SHOW = nonReservedKeyword("show")
@@ -432,7 +433,7 @@ object SnappyParserConsts {
   final val TRUNCATE = nonReservedKeyword("truncate")
   final val UNCACHE = nonReservedKeyword("uncache")
   final val USING = nonReservedKeyword("using")
-  final val RETURNS = nonReservedKeyword("returns")
+  final val VALUES = nonReservedKeyword("values")
 
   // Window analytical functions are non-reserved
   final val DURATION = nonReservedKeyword("duration")

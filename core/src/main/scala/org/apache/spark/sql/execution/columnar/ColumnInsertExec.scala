@@ -29,13 +29,12 @@ import org.apache.spark.unsafe.bitset.BitSetMethods
 /**
  * Generated code plan for bulk insertion into a column table.
  */
-case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
-    _partitionExpressions: Seq[Expression], _numBuckets: Int,
+case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
+    partitionExpressions: Seq[Expression], numBuckets: Int,
     relation: Option[DestroyRelation], batchParams: (Int, Int, String),
-    columnTable: String, onExecutor: Boolean, relationSchema: StructType,
+    columnTable: String, onExecutor: Boolean, tableSchema: StructType,
     externalStore: ExternalStore, useMemberVariables: Boolean)
-    extends TableInsertExec(_child, partitionColumns, _partitionExpressions,
-      _numBuckets, relationSchema, relation, onExecutor) {
+    extends TableInsertExec(partitionColumns, tableSchema, relation, onExecutor) {
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
       partitionExpressions: Seq[Expression],
@@ -83,9 +82,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
     else metricTerm(ctx, "numInsertedRows")
-    schemaTerm = ctx.addReferenceObj("schema", relationSchema,
+    schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
-    encoderCursorTerms = relationSchema.map { _ =>
+    encoderCursorTerms = tableSchema.map { _ =>
       (ctx.freshName("encoder"), ctx.freshName("cursor"))
     }
     numInsertions = ctx.freshName("numInsertions")
@@ -139,14 +138,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     } else {
       s"if ($numInsertions >= 0) return"
     }
-    // no need to stop in iteration at any point
-    ctx.addNewFunction("shouldStop",
-      s"""
-         |@Override
-         |protected final boolean shouldStop() {
-         |  return false;
-         |}
-      """.stripMargin)
     s"""
        |$checkEnd; // already done
        |$batchSizeDeclaration
@@ -177,7 +168,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    val schema = relationSchema
+    val schema = tableSchema
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
 
     val cursorsAsArray = schema.length > MAX_CURSOR_DECLARATIONS
@@ -278,16 +269,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    // no shouldStop check required
-    if (!ctx.addedFunctions.contains("shouldStop")) {
-      ctx.addNewFunction("shouldStop",
-        s"""
-          @Override
-          protected final boolean shouldStop() {
-            return false;
-          }
-        """)
-    }
     storeColumnBatchArgs = s"$batchSizeTerm, ${batchFunctionCall.toString()}"
     s"""
        |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&

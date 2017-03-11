@@ -29,12 +29,11 @@ import org.apache.spark.sql.types.{StructField, StructType}
 /**
  * Generated code plan for bulk insertion into a row table.
  */
-case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
-    partitionColumns: Seq[String], _partitionExpressions: Seq[Expression],
-    _numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
+case class RowInsertExec(child: SparkPlan, upsert: Boolean,
+    partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
+    numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
     onExecutor: Boolean, resolvedName: String, connProps: ConnectionProperties)
-    extends TableInsertExec(_child, partitionColumns, _partitionExpressions,
-      _numBuckets, tableSchema, relation, onExecutor) {
+    extends TableInsertExec(partitionColumns, tableSchema, relation, onExecutor) {
 
   private[sql] var statementRef = -1
 
@@ -77,14 +76,6 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
           """)
     }
     val childProduce = doChildProduce(ctx)
-    // no need to stop in iteration at any point
-    ctx.addNewFunction("shouldStop",
-      s"""
-         |@Override
-         |protected final boolean shouldStop() {
-         |  return false;
-         |}
-      """.stripMargin)
     s"""
        |if ($result >= 0) return;
        |$open

@@ -28,14 +28,14 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, NamedExpression, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.{CatalystConf, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -74,7 +74,7 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
-          AnalyzeChildQuery(snappySession) ::
+          AnalyzeMutableOperations(snappySession, this) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
@@ -184,10 +184,45 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeChildQuery(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+  case class AnalyzeMutableOperations(sparkSession: SparkSession,
+      analyzer: Analyzer) extends Rule[LogicalPlan] {
+
+    private def getKeyAttributes(table: LogicalPlan,
+        child: LogicalPlan, plan: LogicalPlan): Seq[NamedExpression] = {
+      val keyColumns = table match {
+        case LogicalRelation(mutable: MutableRelation, _, _) =>
+          val ks = mutable.getKeyColumns
+          if (ks.isEmpty) throw new AnalysisException(
+            s"Empty key columns for update/delete on $mutable")
+          ks
+        case _ => throw new AnalysisException(
+          s"Update/Delete requires as MutableRelation but got $table")
+      }
+      // resolve key columns right away since this is late stage of analysis
+      keyColumns.map { name =>
+        analysis.withPosition(plan) {
+          child.resolveChildren(
+            name.split('.'), analyzer.resolver).getOrElse(
+            throw new AnalysisException(s"Could not resolve key column $name")
+          )
+        }
+      }
+    }
+
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
+
+      case u@Update(table, child, keyColumns, _, _) if keyColumns.isEmpty =>
+        // add the key columns to the plan
+        val keyAttrs = getKeyAttributes(table, child, u)
+        u.copy(keyColumns = keyAttrs.map(_.toAttribute))
+
+      case d@Delete(table, child, keyColumns) if keyColumns.isEmpty =>
+        // add and project only the key columns
+        val keyAttrs = getKeyAttributes(table, child, d)
+        d.copy(child = Project(keyAttrs, child),
+          keyColumns = keyAttrs.map(_.toAttribute))
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
