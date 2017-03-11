@@ -36,7 +36,7 @@ case class RowDeleteExec(child: SparkPlan, resolvedName: String,
   @transient private var batchCount: String = _
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    val (initCode, endCode) = connectionCodes(ctx)
+    val (initCode, commitCode, endCode) = connectionCodes(ctx)
     result = ctx.freshName("result")
     ctx.addMutableState("long", result, s"$result = -1L;")
     stmt = ctx.freshName("statement")
@@ -57,7 +57,7 @@ case class RowDeleteExec(child: SparkPlan, resolvedName: String,
        |      $result += count;
        |    }
        |    $stmt.close();
-       |    $connTerm.commit();
+       |    $commitCode
        |    ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |  }
        |} catch (java.sql.SQLException sqle) {

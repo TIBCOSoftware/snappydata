@@ -189,15 +189,14 @@ class SnappySessionState(snappySession: SnappySession)
 
     private def getKeyAttributes(table: LogicalPlan,
         child: LogicalPlan, plan: LogicalPlan): Seq[NamedExpression] = {
-      val keyColumns = table match {
+      val keyColumns = table.collectFirst {
         case LogicalRelation(mutable: MutableRelation, _, _) =>
           val ks = mutable.getKeyColumns
           if (ks.isEmpty) throw new AnalysisException(
             s"Empty key columns for update/delete on $mutable")
           ks
-        case _ => throw new AnalysisException(
-          s"Update/Delete requires as MutableRelation but got $table")
-      }
+      }.getOrElse(throw new AnalysisException(
+        s"Update/Delete requires a MutableRelation but got $table"))
       // resolve key columns right away since this is late stage of analysis
       keyColumns.map { name =>
         analysis.withPosition(plan) {

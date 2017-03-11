@@ -39,12 +39,12 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
   @transient private var batchCount: String = _
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    val (initCode, endCode) = connectionCodes(ctx)
+    val (initCode, commitCode, endCode) = connectionCodes(ctx)
     result = ctx.freshName("result")
     ctx.addMutableState("long", result, s"$result = -1L;")
     stmt = ctx.freshName("statement")
     batchCount = ctx.freshName("batchCount")
-    val setStr = updateColumns.map(_.name).mkString("=? AND ")
+    val setStr = updateColumns.map(_.name + "=?").mkString(" AND ")
     val childProduce = doChildProduce(ctx)
     s"""
        |if ($result >= 0L) return;
@@ -61,7 +61,7 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
        |      $result += count;
        |    }
        |    $stmt.close();
-       |    $connTerm.commit();
+       |    $commitCode
        |    ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |  }
        |} catch (java.sql.SQLException sqle) {

@@ -26,6 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -232,10 +233,15 @@ case class JDBCMutableRelation(
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    // use the normal DataFrameWriter which will create an InsertIntoTable plan
+    // use the InsertIntoTable plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
-    data.write.mode(if (overwrite) SaveMode.Overwrite else SaveMode.Append)
-        .insertInto(table)
+    sqlContext.sessionState.executePlan(
+      InsertIntoTable(
+        table = LogicalRelation(this),
+        partition = Map.empty[String, Option[String]],
+        child = data.logicalPlan,
+        overwrite,
+        ifNotExists = false)).toRdd
   }
 
   override def insert(rows: Seq[Row]): Int = {

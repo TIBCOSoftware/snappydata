@@ -63,7 +63,7 @@ abstract class TableMutationExec(forUpdate: Boolean)
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     child.asInstanceOf[CodegenSupport].inputRDDs()
 
-  protected def connectionCodes(ctx: CodegenContext): (String, String) = {
+  protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     if (connTerm eq null) {
       val utilsClass = ExternalStoreUtils.getClass.getName
       connTerm = ctx.freshName("connection")
@@ -80,12 +80,12 @@ abstract class TableMutationExec(forUpdate: Boolean)
            |    throw new java.io.IOException(sqle.toString(), sqle);
            |  }
            |}""".stripMargin
-      (initCode, endCode)
-    } else ("", "")
+      (initCode, s"$connTerm.commit();", endCode)
+    } else ("", "", "")
   }
 
   @transient protected lazy val whereClauseString: String = {
-    keyColumns.map(_.name).mkString("=? AND ")
+    keyColumns.map(_.name + "=?").mkString(" AND ")
   }
 
   protected def doChildProduce(ctx: CodegenContext): String = {
