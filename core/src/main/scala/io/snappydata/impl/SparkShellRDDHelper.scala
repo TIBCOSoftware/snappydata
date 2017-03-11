@@ -17,6 +17,7 @@
 package io.snappydata.impl
 
 import java.sql.{Connection, ResultSet, SQLException, Statement}
+import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -31,6 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
+import io.snappydata.thrift.internal.ClientStatement
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
@@ -60,10 +62,6 @@ final class SparkShellRDDHelper {
     val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
     val statement = conn.createStatement()
     if (!useLocatorURL) {
-      val buckets = partition.buckets.mkString(",")
-      statement.execute(
-        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
-      /*
       statement match {
         case clientStmt: ClientStatement =>
           val numBuckets = partition.buckets.size
@@ -80,7 +78,6 @@ final class SparkShellRDDHelper {
           statement.execute(
             s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
       }
-      */
     }
 
     val rs = statement.executeQuery(query)
