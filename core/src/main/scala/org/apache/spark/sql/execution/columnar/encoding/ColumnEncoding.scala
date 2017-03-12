@@ -230,6 +230,10 @@ trait ColumnEncoder extends ColumnEncoding {
     case _ => dataType.defaultSize
   }
 
+  def initSizeInBytes(dataType: DataType, initSize: Long): Long = {
+    initSize * defaultSize(dataType)
+  }
+
   protected def initializeNulls(initSize: Int): Int
 
   final def initialize(field: StructField, initSize: Int,
@@ -261,25 +265,24 @@ trait ColumnEncoder extends ColumnEncoding {
       withHeader: Boolean, allocator: ColumnAllocator): Long = {
     this.allocator = allocator
     val dataType = Utils.getSQLDataType(field.dataType)
-    val defSize = defaultSize(dataType)
 
     this.forComplexType = dataType match {
       case _: ArrayType | _: MapType | _: StructType => true
       case _ => false
     }
 
-    // initialize the lower and upper limits
-    if (withHeader) initializeLimits()
-
     val numNullWords = initializeNulls(initSize)
+    val numNullBytes = numNullWords.toLong << 3L
+
+    // initialize the lower and upper limits
     if (withHeader) initializeLimits()
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
     if (reuseColumnData eq null) {
-      var initByteSize = defSize.toLong * initSize
+      var initByteSize = initSizeInBytes(dataType, initSize)
       if (withHeader) {
-        initByteSize += 8L /* typeId + nullsSize */
+        initByteSize += 8L + numNullBytes /* typeId + nullsSize */
       }
       columnData = allocator.allocate(initByteSize)
       columnBytes = columnData.bytes
@@ -304,13 +307,13 @@ trait ColumnEncoder extends ColumnEncoding {
       reuseUsedSize = 0
     }
     if (withHeader) {
-      var cursor = columnData.baseOffset
+      var cursor = ensureCapacity(columnData.baseOffset, 8L + numNullBytes)
       // typeId followed by nulls bitset size and space for values
       ColumnEncoding.writeInt(columnBytes, cursor, typeId)
       cursor += 4
       // write the number of null words
       ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
-      cursor + 4L + (numNullWords.toLong << 3L)
+      cursor + 4L + numNullBytes
     } else columnData.baseOffset
   }
 
@@ -427,6 +430,8 @@ trait ColumnEncoder extends ColumnEncoding {
   }
 
   def nullCount: Int
+
+  def isNullable: Boolean
 
   def writeIsNull(ordinal: Int): Unit
 
@@ -669,11 +674,11 @@ object ColumnEncoding {
   }
 
   def getColumnEncoder(field: StructField): ColumnEncoder = {
-    // TODO: SW: Only uncompressed + dictionary encoding for a start.
-    // Need to add RunLength and BooleanBitSet by default (others on explicit
+    // TODO: SW: add RunLength by default (others on explicit
     //    compression level with LZ4/LZF for binary/complex data)
     Utils.getSQLDataType(field.dataType) match {
       case StringType => createDictionaryEncoder(StringType, field.nullable)
+      case BooleanType => createBooleanBitSetEncoder(BooleanType, field.nullable)
       case dataType => createUncompressedEncoder(dataType, field.nullable)
     }
   }
@@ -744,6 +749,14 @@ object ColumnEncoding {
       if (nullable) new DictionaryEncoderNullable else new DictionaryEncoder
     case _ => throw new UnsupportedOperationException(
       s"DictionaryEncoder not supported for $dataType")
+  }
+
+  private[columnar] def createBooleanBitSetEncoder(dataType: DataType,
+      nullable: Boolean): ColumnEncoder = dataType match {
+    case BooleanType => if (nullable) new BooleanBitSetEncoderNullable
+    else new BooleanBitSetEncoder
+    case _ => throw new UnsupportedOperationException(
+      s"BooleanBitSetEncoder not supported for $dataType")
   }
 
   @inline final def readShort(columnBytes: AnyRef,
@@ -987,6 +1000,8 @@ trait NotNullEncoder extends ColumnEncoder {
 
   override def nullCount: Int = 0
 
+  override def isNullable: Boolean = false
+
   override def writeIsNull(ordinal: Int): Unit =
     throw new UnsupportedOperationException(s"writeIsNull for $toString")
 
@@ -1037,10 +1052,10 @@ trait NullableEncoder extends NotNullEncoder {
       initialNumWords = numWords
       numWords
     } else {
-      // trim trailing empty words
-      val numWords = getNumNullWords
+      val numWords = nullWords.length
+      maxNulls = numWords.toLong << 6L
       initialNumWords = numWords
-      // clear rest of the words
+      // clear the words
       var i = 0
       while (i < numWords) {
         if (nullWords(i) != 0L) nullWords(i) = 0L
@@ -1060,6 +1075,8 @@ trait NullableEncoder extends NotNullEncoder {
     }
     sum
   }
+
+  override def isNullable: Boolean = true
 
   override def writeIsNull(ordinal: Int): Unit = {
     if (ordinal < maxNulls) {

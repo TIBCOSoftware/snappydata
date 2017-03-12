@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.math.{BigDecimal, BigInteger}
 
+import com.pivotal.gemfirexd.internal.iapi.util.ReuseFactory
+
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.littleEndian
@@ -320,10 +322,13 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
   override def writeLongDecimal(cursor: Long, value: Decimal,
       ordinal: Int, precision: Int, scale: Int): Long = {
-    if ((value.precision != precision || value.scale != scale) &&
-        !value.changePrecision(precision, scale)) {
-      writeIsNull(ordinal)
-      cursor
+    if ((value eq null) || ((value.precision != precision ||
+        value.scale != scale) && !value.changePrecision(precision, scale))) {
+      if (isNullable) {
+        writeIsNull(ordinal)
+        cursor
+      }
+      else writeLong(cursor, Decimal.ZERO.toUnscaledLong)
     } else {
       writeLong(cursor, value.toUnscaledLong)
     }
@@ -331,42 +336,54 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
   override def writeDecimal(cursor: Long, value: Decimal,
       ordinal: Int, precision: Int, scale: Int): Long = {
-    if ((value.precision != precision || value.scale != scale) &&
-        !value.changePrecision(precision, scale)) {
-      writeIsNull(ordinal)
-      cursor
-    } else {
-      val b = value.toJavaBigDecimal.unscaledValue.toByteArray
-      updateDecimalStats(value)
-      writeBinary(cursor, b)
+    var decimal = value
+    if ((value eq null) || ((value.precision != precision ||
+        value.scale != scale) && !value.changePrecision(precision, scale))) {
+      if (isNullable) {
+        writeIsNull(ordinal)
+        return cursor
+      } else {
+        decimal = Decimal.ZERO
+      }
     }
+    val b = decimal.toJavaBigDecimal.unscaledValue.toByteArray
+    updateDecimalStats(decimal)
+    writeBinary(cursor, b)
   }
 
   override def writeInterval(cursor: Long, value: CalendarInterval): Long = {
-    val position = writeInt(cursor, value.months)
-    writeLong(position, value.microseconds)
+    var months: Int = 0
+    var microseconds: Long = 0L
+    if (value ne null) {
+      months = value.months
+      microseconds = value.microseconds
+    }
+    val position = writeInt(cursor, months)
+    writeLong(position, microseconds)
   }
 
   override def writeUTF8String(cursor: Long, value: UTF8String): Long = {
     var position = cursor
-    val size = value.numBytes
+    val str = if (value ne null) value else UTF8String.EMPTY_UTF8
+    val size = str.numBytes
     if (position + size + 4 > columnEndPosition) {
       position = expand(position, size + 4)
     }
-    updateStringStatsClone(value)
-    ColumnEncoding.writeUTF8String(columnBytes, position, value, size)
+    updateStringStatsClone(str)
+    ColumnEncoding.writeUTF8String(columnBytes, position, str, size)
   }
 
   override def writeBinary(cursor: Long, value: Array[Byte]): Long = {
     var position = cursor
-    val size = value.length
+    val arr = if (value ne null) value else ReuseFactory.getZeroLenByteArray
+    val size = arr.length
     if (position + size + 4 > columnEndPosition) {
       position = expand(position, size + 4)
     }
     val columnBytes = this.columnBytes
     ColumnEncoding.writeInt(columnBytes, position, size)
     position += 4
-    Platform.copyMemory(value, Platform.BYTE_ARRAY_OFFSET, columnBytes,
+    Platform.copyMemory(arr, Platform.BYTE_ARRAY_OFFSET, columnBytes,
       position, size)
     position + size
   }

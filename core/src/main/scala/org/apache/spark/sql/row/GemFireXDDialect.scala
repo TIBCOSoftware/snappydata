@@ -99,7 +99,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def getJDBCType(dt: DataType): Option[JdbcType] = dt match {
     case StringType => Some(JdbcType("CLOB", java.sql.Types.CLOB))
     case BinaryType => Some(JdbcType("BLOB", java.sql.Types.BLOB))
-    case BooleanType => Some(JdbcType("BOOLEAN", java.sql.Types.BOOLEAN))
+    case BooleanType => Some(JdbcType("SMALLINT", java.sql.Types.BOOLEAN))
     // TODO: check if this should be INTEGER for GemFireXD for below two
     case ByteType => Some(JdbcType("SMALLINT", java.sql.Types.INTEGER))
     case ShortType => Some(JdbcType("SMALLINT", java.sql.Types.INTEGER))

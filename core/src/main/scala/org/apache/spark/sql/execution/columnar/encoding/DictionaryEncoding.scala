@@ -294,8 +294,9 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override final def writeUTF8String(cursor: Long, value: UTF8String): Long = {
     var position = cursor
+    val str = if (value ne null) value else UTF8String.EMPTY_UTF8
     // add or get from dictionary
-    val key = stringMap.addString(value, StringInit)
+    val key = stringMap.addString(str, StringInit)
     // update stats only if new key was added
     var index = key.index
     if (index == -1) {
