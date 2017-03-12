@@ -375,7 +375,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       30000, 5000, true)
   }
 
-  def testMemoryAfterRebalance_ColumnTable(): Unit = {
+  def _testMemoryAfterRebalance_ColumnTable(): Unit = {
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
 
