@@ -115,21 +115,23 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
   override def readDate(columnBytes: AnyRef, cursor: Long): Int = {
     defaultCal.clear()
     val date = rs.getDate(columnPosition, defaultCal)
-    if (date ne null) DateTimeUtils.fromJavaDate(date) else 0
+    if (date ne null) DateTimeUtils.fromJavaDate(date) else -1
   }
 
   override def readTimestamp(columnBytes: AnyRef, cursor: Long): Long = {
     defaultCal.clear()
     val timestamp = rs.getTimestamp(columnPosition, defaultCal)
-    if (timestamp ne null) DateTimeUtils.fromJavaTimestamp(timestamp) else 0L
+    if (timestamp ne null) DateTimeUtils.fromJavaTimestamp(timestamp) else -1L
   }
 
   override def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] =
     rs.getBytes(columnPosition)
 
   override def readInterval(columnBytes: AnyRef,
-      cursor: Long): CalendarInterval =
-    new CalendarInterval(0, rs.getLong(columnPosition))
+      cursor: Long): CalendarInterval = {
+    val micros = rs.getLong(columnPosition)
+    if (rs.wasNull()) null else new CalendarInterval(0, micros)
+  }
 
   override def readArray(columnBytes: AnyRef, cursor: Long): SerializedArray = {
     val b = rs.getBytes(columnPosition)
