@@ -123,7 +123,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
    */
   private[this] val NULL_NON_PRIM = -2
   private[this] val numMultiValuesVar = "numMultiValues"
-  private[this] val multiValuesVar = "multiValues"
+  private[this] val nextValueVar = "nextValue"
 
   private type ClassVar = (DataType, String, ExprCode, Int)
 
@@ -136,7 +136,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // Eliminate common expressions and re-use variables.
     // For multi-map case, the full entry class will extend value class
     // so common expressions will be in the entry key fields which will
-    // be same for all values when the multi-value array is filled.
+    // be same for all values when the multi-value list is filled.
     val keyTypes = keyExpressions.map(e => e.dataType -> e.nullable)
     val valueTypes = valueExprIndexes.collect {
       case (e, i) if i >= 0 => e.dataType -> e.nullable
@@ -158,9 +158,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val other = "other"
 
     // For the case of multi-map, key fields cannot be null. Create a
-    // separate value class that the main class will extend. The main class
-    // object will have value class objects as an array (possibly null) that
-    // holds any additional values beyond the one set already inherited.
+    // separate value class that the main class will extend. The value class
+    // object will have the next value class object reference (possibly null)
+    // forming a list that holds any additional values.
     val (entryVars, valClassVars, numNulls, nullDecls) = createClassVars(
       entryTypes, valClassTypes)
     if (!exists) {
@@ -177,9 +177,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             public static class $valueClass {
               $nullDecls
               ${valClassVars.map(e => s"${e._2} ${e._3.value};").mkString("\n")}
+              $valueClass $nextValueVar;
             }
-          """, s" extends $valueClass", "",
-              s"int $numMultiValuesVar;\n$valueClass[] $multiValuesVar;")
+          """, s" extends $valueClass", "", "")
         } else if (multiMap) {
           ("", "", nullDecls, s"int $numMultiValuesVar;")
         } else ("", "", nullDecls, "")
@@ -325,30 +325,14 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         if ($entryVar.$numMultiValuesVar++ == 0) $hashMapTerm.setKeyIsUnique(false);"""
     } else {
       s"""
-        // add to multiValues array
-        final int valueIndex = $entryVar.$numMultiValuesVar;
-        $valueClassName[] values;
-        if (valueIndex != 0) {
-          values = $entryVar.$multiValuesVar;
-          if (valueIndex == values.length) {
-            // increment by 4 or 25%, whichever is larger
-            int increment = Math.max(4, valueIndex >>> 2);
-            $valueClassName[] newValues = new $valueClassName[valueIndex + increment];
-            System.arraycopy(values, 0, newValues, 0, valueIndex);
-            values = $entryVar.$multiValuesVar = newValues;
-          }
-        } else {
-          // start with size 3 for total size 4
-          values = $entryVar.$multiValuesVar = new $valueClassName[3];
-        }
-
+        // add to the start of multiValues list
         final $valueClassName newValue = new $valueClassName();
-        values[valueIndex] = newValue;
-        $entryVar.$numMultiValuesVar++;
+        newValue.$nextValueVar = $entryVar.$nextValueVar;
+        $entryVar.$nextValueVar = newValue;
         ${generateUpdate("newValue", Nil, valueVars, forKey = false, doCopy)}
 
-        // mark map as not unique on second insert for same key
-        if (valueIndex == 0) $hashMapTerm.setKeyIsUnique(false);"""
+        // mark map as not unique on multiple inserts for same key
+        $hashMapTerm.setKeyIsUnique(false);"""
     }
     s"""
       // evaluate the key and value expressions
@@ -824,7 +808,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // common multi-value iteration code fragments
     val entryIndexVar = ctx.freshName("entryIndex")
     val numEntriesVar = ctx.freshName("numEntries")
-    val valuesVar = ctx.freshName("values")
     val declareLocalVars = if (valueClassName.isEmpty) {
       // one consume done when moveNextValue is hit, so initialize with 1
       s"""
@@ -834,9 +817,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       """
     } else {
       s"""
-        int $entryIndexVar = 0;
-        int $numEntriesVar = -1;
-        $valueClassName[] $valuesVar = null;
         // for first iteration, entry object itself has value fields
         $valueClassName $localValueVar = $entryVar;"""
     }
@@ -866,21 +846,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
            |}
          """.stripMargin
       s"""
-        if ($entryIndexVar < $numEntriesVar) {
-          $localValueVar = $valuesVar[$entryIndexVar++];
+        if (($localValueVar = $localValueVar.$nextValueVar) != null) {
           $nullsUpdate
           $dupRow
-        } else if ($numEntriesVar == -1) {
-          // multi-values array hit first time
-          if (($numEntriesVar = $entryVar.$numMultiValuesVar) > 0) {
-            $entryIndexVar = 1;
-            $valuesVar = $entryVar.$multiValuesVar;
-            $localValueVar = $valuesVar[0];
-            $nullsUpdate
-            $dupRow
-          } else {
-            break;
-          }
         } else {
           break;
         }"""

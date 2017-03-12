@@ -19,44 +19,44 @@ package org.apache.spark.sql.store
 import io.snappydata.SnappyFunSuite
 
 /**
- * Update, delete tests for row tables.
+ * Update, delete tests for column tables.
  */
-class RowMutableTest extends SnappyFunSuite {
+class ColumnMutableTest extends SnappyFunSuite {
 
-  test("Simple key updates") {
+  test("Simple single row updates") {
     val session = snc.snappySession
 
-    session.sql("CREATE TABLE RowTableUpdate(CODE INT, " +
-        "DESCRIPTION varchar(100)) USING row")
+    session.sql("CREATE TABLE TableUpdate(CODE INT, " +
+        "DESCRIPTION varchar(100)) USING column")
 
-    session.sql("insert into RowTableUpdate values (5,'test')")
-    session.sql("insert into RowTableUpdate values (6,'test1')")
+    session.sql("insert into TableUpdate values (5,'test')")
+    session.sql("insert into TableUpdate values (6,'test1')")
 
-    val df1 = session.sql("select DESCRIPTION from RowTableUpdate " +
+    val df1 = session.sql("select DESCRIPTION from TableUpdate " +
         "where DESCRIPTION = 'test'")
     assert(df1.count() == 1)
 
-    val d1 = session.sql("select * from RowTableUpdate")
+    val d1 = session.sql("select * from TableUpdate")
     assert(d1.count() == 2)
 
-    session.sql("CREATE TABLE RowTableUpdate2 (CODE INT PRIMARY KEY, " +
-        "DESCRIPTION varchar(100)) USING row AS (select * from  RowTableUpdate)")
+    session.sql("CREATE TABLE TableUpdate2 USING column AS " +
+        "(select * from  TableUpdate)")
 
-    val d2 = session.sql("select * from RowTableUpdate2")
+    val d2 = session.sql("select * from TableUpdate2")
     assert(d2.count() == 2)
 
-    session.sql("update RowTableUpdate2 set DESCRIPTION ='No#complaints' " +
-        "where CODE = 5")
+    session.sql("update TableUpdate2 set DESCRIPTION ='No#complaints' " +
+        "where CODE = 5").collect()
 
-    val df2 = session.sql("select DESCRIPTION from RowTableUpdate2 " +
+    val df2 = session.sql("select DESCRIPTION from TableUpdate2 " +
         "where DESCRIPTION = 'No#complaints' ")
     assert(df2.count() == 1)
 
-    val df3 = session.sql("select DESCRIPTION from RowTableUpdate2 " +
+    val df3 = session.sql("select DESCRIPTION from TableUpdate2 " +
         "where DESCRIPTION in ('No#complaints', 'test1') ")
     assert(df3.count() == 2)
 
-    session.dropTable("RowTableUpdate")
-    session.dropTable("RowTableUpdate2")
+    session.dropTable("TableUpdate")
+    session.dropTable("TableUpdate2")
   }
 }
