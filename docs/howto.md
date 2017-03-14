@@ -1,5 +1,5 @@
 #Overview
-This section introduces you to several common operations such as, starting a cluster, working with tables(load, query, update), working with streams and running approximate queries.
+This section introduces you to several common operations such as, starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.
 
 **Running the Examples:**
 Topics in this section refer to source code examples that are shipped with the product. Instructions to run these examples can be found in the source code.
@@ -45,7 +45,6 @@ The following topics are covered in this section:
 * [How to Use Python to Create Tables and Run Queries](#howto-python)
 
 * [How to Connect using ODBC Driver](#howto-odbc)
-
 
 <a id="howto-startCluster"></a>
 ## How to Start a SnappyData Cluster
@@ -148,14 +147,14 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>0.7</version>
+    <version>0.8</version>
 </dependency>
 ```
 **Example: SBT dependency**:
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
 ```
 
 **Running the Job**: 
@@ -736,15 +735,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
         "address.lane " +
         "FROM people")
 
-    val builder = new StringBuilder
-    nameAndAddress.collect.map(row => {
-      builder.append(s"${row(0)} ,")
-      builder.append(s"${row(1)} ,")
-      builder.append(s"${row(2)} ,")
-      builder.append(s"${row(3)} ,")
-      builder.append(s"${row(4)} \n")
-    })
-    builder.toString
+nameAndAddress.toJSON.show()
 
 ```
 
@@ -1124,15 +1115,18 @@ You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execu
 
 To download and install the ODBC driver:
 
-1. Download the SnappyData ODBC Driver from the SnappyData Release page. << ADD DOWNLOAD LINK HERE >>. 
+1. Download the SnappyData ODBC Driver from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases).  
 Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.
+    * 32-bit: [snappydata-0.8-odbc32 Installer](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc32.zip)
 
-2. Extract the contents of the **name_of_the.zip** file. 
+    * 64-bit: [snappydata-0.8-odbc64 Installer](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc64.zip)
+
+2. Extract the contents of the downloaded file. 
 
 3. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
 ### Connect to the SnappyData cluster 
-Once you have installed snappyData ODBC Driver, you can connect to SnappyData cluster in following ways:
+Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
 
 * Use the SnappyData Driver Conneciton URL:
 
@@ -1140,5 +1134,4 @@ Once you have installed snappyData ODBC Driver, you can connect to SnappyData cl
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
- When prompted, select the SnappyData ODBC Driver from drivers list and enter a Data Source name, SnappyData Server Host, Port, User and Password. 
-
+ When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 

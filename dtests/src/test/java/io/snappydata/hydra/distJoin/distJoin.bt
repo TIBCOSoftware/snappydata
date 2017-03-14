@@ -11,6 +11,9 @@ io/snappydata/hydra/distJoin/distJoinWithLeadHA.conf
   inMemoryColumnarStorageCompressed=false
   dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
   useIndex=true
+  resultCollection=true
+  warmUpIterations=5
+  actualRuns=5
 
 io/snappydata/hydra/distJoin/distJoinWithServerHA.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -25,3 +28,6 @@ io/snappydata/hydra/distJoin/distJoinWithServerHA.conf
   inMemoryColumnarStorageCompressed=false
   dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
   useIndex=true
+  resultCollection=true
+  warmUpIterations=5
+  actualRuns=5

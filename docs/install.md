@@ -17,18 +17,18 @@ Download the latest version of SnappyData from the [SnappyData Release](https://
 
 The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.
 
-* ** SnappyData 0.7 download link **
-[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-bin.zip)
+* ** SnappyData 0.8 download link **
+[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.zip)
 
-* **SnappyData 0.7 (hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.7/snappydata-0.7-without-hadoop-bin.zip)
+* **SnappyData 0.8 (hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.zip)
 <a id="singlehost"></a>
 ### Single Host Installation
 This is the simplest form of deployment and can be used for testing and POCs.
 
 Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory. 
 ```bash
-$ tar -xzf snappydata-0.7-bin.tar.gz   
-$ cd snappydata-0.7-bin/
+$ tar -xzf snappydata-0.8-bin.tar.gz   
+$ cd snappydata-0.8-bin/
 ```
 Start a basic cluster with one data node, one lead, and one locator
 ```
@@ -54,8 +54,8 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 2. Extract the downloaded archive file and go to SnappyData home directory.
 
-		$ tar -xzf snappydata-0.7-bin.tar.gz 
-		$ cd snappydata-0.7-bin/
+		$ tar -xzf snappydata-0.8-bin.tar.gz 
+		$ cd snappydata-0.8-bin/
  
 3. Configure the cluster as described in [How to Configure SnappyData cluster](configuration.md).
 
@@ -404,7 +404,7 @@ Quickstart to build all components of SnappyData:
 
 **Latest release branch**
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.7 --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.8 --recursive
 > cd snappydata
 > ./gradlew product
 ```
@@ -422,7 +422,7 @@ If you want to build only the top-level SnappyData project but pull in jars for 
 
 **Latest release branch**
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.7
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.8
 > cd snappydata
 > ./gradlew product
 ```
