@@ -17,8 +17,7 @@ Depending on your preference you can try any of the following options:
 <a id="getting-started-with-your-spark-distribution"></a>
 ##Option 1: Getting Started with your Spark Distribution
 
-If you are a Spark developer and already using Spark 2.0.2,(Core SnappyData is compatible with Spark 2.0.2 version) 
- the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
+If you are a Spark developer and already using Spark 2.0.0, 2.0.1 or 2.0.2 the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
 
 This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.
 
@@ -28,7 +27,7 @@ This section contains instructions and examples using which, you can try out Sna
 $ cd <Spark_Install_dir>
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
 
 This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
@@ -146,12 +145,12 @@ We load millions of rows into a cached Spark DataFrame, run some analytic querie
 
 **Start the Spark Shell using any of the options mentioned below:**
 
-**If you are using your own Spark 2.0.2 installation:**
+**If you are using your own Spark installation(2.0.0, 2.0.1 or 2.0.2):**
 
 ```bash
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.7-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.8-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
 **If you have downloaded SnappyData **:
@@ -164,7 +163,7 @@ $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-di
 
 ** If you are using Docker**:
 ```bash
-$ docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+$ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
 ### To get the Performance Numbers
@@ -245,7 +244,7 @@ t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EB
 <a id="getting-started-using-sql"></a> 
 ##Option 4: Getting Started using SQL
 
-We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy Shell). For an example, refer to the [How-to](howto/#howto-snappyShell) section.
+We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](howto.md#howto-snappyShell) section.
 
 **Create a column table with a simple schema [Int, String] and default options.**
 For details on the options refer to the [Row and Column Tables](programming_guide.md#tables-in-snappydata) section.
@@ -305,8 +304,8 @@ Now that we have seen the basic working of SnappyData tables, let us run the [be
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
 ```bash
-$ tar -xzf snappydata-0.7-bin.tar.gz
-$ cd snappydata-0.7-bin/
+$ tar -xzf snappydata-0.8-bin.tar.gz
+$ cd snappydata-0.8-bin/
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
@@ -397,7 +396,7 @@ $ docker run hello-world
 
 **Get the Docker Image: ** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
 ```scala
-$  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell
+$  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 ```
 It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
 Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)

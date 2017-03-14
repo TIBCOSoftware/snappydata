@@ -14,16 +14,18 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.execution
+package org.apache.spark.sql.execution.row
 
-import java.util.GregorianCalendar
+import java.util.{GregorianCalendar, TimeZone}
 
-import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
+import com.gemstone.gemfire.internal.shared.ClientSharedData
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, ResultWasNull}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD}
+import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
@@ -36,6 +38,7 @@ import org.apache.spark.sql.types._
  */
 private[sql] final case class RowTableScan(
     output: Seq[Attribute],
+    _schema: StructType,
     dataRDD: RDD[Any],
     numBuckets: Int,
     partitionColumns: Seq[Expression],
@@ -45,30 +48,37 @@ private[sql] final case class RowTableScan(
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) {
 
+  override lazy val schema: StructType = _schema
+
+  override val nodeName: String = "RowTableScan"
+
   override def doProduce(ctx: CodegenContext): String = {
-    // a parent plan may set a custom input (e.g. LocalJoin)
+    // a parent plan may set a custom input (e.g. HashJoinExec)
     // for that case no need to add the "shouldStop()" calls
     // PartitionedPhysicalRDD always has one input
     val input = ctx.freshName("input")
     ctx.addMutableState("scala.collection.Iterator",
       input, s"$input = inputs[0];")
-    val numOutputRows = metricTerm(ctx, "numOutputRows")
+    val numOutputRows = if (sqlContext eq null) null
+    else metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null
 
     val code = dataRDD match {
+      case null =>
+        doProduceWithoutProjection(ctx, input, numOutputRows,
+          output, if (baseRelation ne null) baseRelation.schema else schema)
       case rowRdd: RowFormatScanRDD if !rowRdd.pushProjections =>
         doProduceWithoutProjection(ctx, input, numOutputRows,
-          output, baseRelation)
+          output, baseRelation.schema)
       case _ =>
-        doProduceWithProjection(ctx, input, numOutputRows,
-          output, baseRelation)
+        doProduceWithProjection(ctx, input, numOutputRows, output)
     }
     code
   }
 
   def doProduceWithoutProjection(ctx: CodegenContext, input: String,
       numOutputRows: String, output: Seq[Attribute],
-      baseRelation: PartitionedDataSourceScan): String = {
+      baseSchema: StructType): String = {
     // case of CompactExecRows
     val numRows = ctx.freshName("numRows")
     val row = ctx.freshName("row")
@@ -76,7 +86,6 @@ private[sql] final case class RowTableScan(
     val holder = ctx.freshName("nullHolder")
     val holderClass = classOf[ResultSetNullHolder].getName
     val compactRowClass = classOf[AbstractCompactExecRow].getName
-    val baseSchema = baseRelation.schema
     val columnsRowInput = output.map(a => genCodeCompactRowColumn(ctx,
       row, holder, baseSchema.fieldIndex(a.name), a.dataType, a.nullable))
     s"""
@@ -95,14 +104,13 @@ private[sql] final case class RowTableScan(
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $numOutputRows.${metricAdd(numRows)};
+       |  ${if (numOutputRows eq null) "" else s"$numOutputRows.${metricAdd(numRows)};"}
        |}
     """.stripMargin
   }
 
   def doProduceWithProjection(ctx: CodegenContext, input: String,
-      numOutputRows: String, output: Seq[Attribute],
-      baseRelation: PartitionedDataSourceScan): String = {
+      numOutputRows: String, output: Seq[Attribute]): String = {
     // case of ResultSet
     val numRows = ctx.freshName("numRows")
     val iterator = ctx.freshName("iterator")
@@ -127,7 +135,7 @@ private[sql] final case class RowTableScan(
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $numOutputRows.${metricAdd(numRows)};
+       |  ${if (numOutputRows eq null) "" else s"$numOutputRows.${metricAdd(numRows)};"}
        |}
     """.stripMargin
   }
@@ -192,11 +200,12 @@ private[sql] final case class RowTableScan(
       case _: ArrayType =>
         useHolder = false
         val bytes = ctx.freshName("bytes")
+        val arrayClass = classOf[SerializedArray].getName
         s"""
           final byte[] $bytes = $rowVar.getAsBytes($pos, null);
-          final $javaType $col;
+          final $arrayClass $col;
           if ($bytes != null) {
-            $col = new UnsafeArrayData();
+            $col = new $arrayClass(8); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
@@ -205,12 +214,13 @@ private[sql] final case class RowTableScan(
       case _: MapType =>
         useHolder = false
         val bytes = ctx.freshName("bytes")
+        val mapClass = classOf[SerializedMap].getName
         s"""
           final byte[] $bytes = $rowVar.getAsBytes($pos, null);
-          final $javaType $col;
+          final $mapClass $col;
           if ($bytes != null) {
-            $col = new UnsafeMapData();
-            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
+            $col = new $mapClass();
+            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET);
           } else {
             $col = null;
           }
@@ -218,11 +228,12 @@ private[sql] final case class RowTableScan(
       case s: StructType =>
         useHolder = false
         val bytes = ctx.freshName("bytes")
+        val structClass = classOf[SerializedRow].getName
         s"""
           final byte[] $bytes = $rowVar.getAsBytes($pos, null);
-          final $javaType $col;
+          final $structClass $col;
           if ($bytes != null) {
-            $col = new UnsafeRow(${s.length});
+            $col = new $structClass(4, ${s.length}); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
@@ -312,11 +323,12 @@ private[sql] final case class RowTableScan(
         s"final $javaType $col = $rsVar.getBytes($pos);"
       case _: ArrayType =>
         val bytes = ctx.freshName("bytes")
+        val arrayClass = classOf[SerializedArray].getName
         s"""
           final byte[] $bytes = $rsVar.getBytes($pos);
-          final $javaType $col;
+          final $arrayClass $col;
           if ($bytes != null) {
-            $col = new UnsafeArrayData();
+            $col = new $arrayClass(8); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
@@ -324,23 +336,25 @@ private[sql] final case class RowTableScan(
         """
       case _: MapType =>
         val bytes = ctx.freshName("bytes")
+        val mapClass = classOf[SerializedMap].getName
         s"""
           final byte[] $bytes = $rsVar.getBytes($pos);
-          final $javaType $col;
+          final $mapClass $col;
           if ($bytes != null) {
-            $col = new UnsafeMapData();
-            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
+            $col = new $mapClass();
+            $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET);
           } else {
             $col = null;
           }
         """
       case s: StructType =>
         val bytes = ctx.freshName("bytes")
+        val structClass = classOf[SerializedRow].getName
         s"""
           final byte[] $bytes = $rsVar.getBytes($pos);
-          final $javaType $col;
+          final $structClass $col;
           if ($bytes != null) {
-            $col = new UnsafeRow(${s.length});
+            $col = new $structClass(4, ${s.length}); // includes size
             $col.pointTo($bytes, Platform.BYTE_ARRAY_OFFSET, $bytes.length);
           } else {
             $col = null;
@@ -356,5 +370,25 @@ private[sql] final case class RowTableScan(
     } else {
       ExprCode(code, "false", col)
     }
+  }
+}
+
+class ResultSetNullHolder extends ResultWasNull {
+
+  final var wasNull: Boolean = _
+
+  final lazy val defaultCal: GregorianCalendar =
+    ClientSharedData.getDefaultCleanCalendar
+
+  final lazy val defaultTZ: TimeZone = defaultCal.getTimeZone
+
+  override final def setWasNull(): Unit = {
+    wasNull = true
+  }
+
+  final def wasNullAndClear(): Boolean = {
+    val result = wasNull
+    wasNull = false
+    result
   }
 }

@@ -30,7 +30,7 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, ServerGroupUtils}
+import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
@@ -42,7 +42,8 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
 
-class LeadImpl extends ServerImpl with Lead with Logging {
+class LeadImpl extends ServerImpl with Lead
+    with ProtocolOverrides with Logging {
 
   self =>
 
@@ -125,7 +126,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         }
         conf.set(key, v)
       })
-      // set spark ui port to 5050 that is snappy's default. 
+      // set spark ui port to 5050 that is snappy's default
       conf.set("spark.ui.port",
         bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
 

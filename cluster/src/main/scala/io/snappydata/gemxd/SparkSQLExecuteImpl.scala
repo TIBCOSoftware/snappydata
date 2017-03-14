@@ -417,8 +417,8 @@ object SparkSQLExecuteImpl {
               dvd.setValue(json)
             case StoredFormatIds.SQL_BLOB_ID =>
               // all complex types too work with below because all of
-              // Array, Map, Struct (as well as Binary itself) store data
-              // in the same way in UnsafeRow (offsetAndWidth)
+              // Array, Map, Struct (as well as Binary itself) transport
+              // data in the same way in UnsafeRow (offsetAndWidth)
               dvd.setValue(row.getBinary(index))
             case other => throw new GemFireXDRuntimeException(
               s"SparkSQLExecuteImpl: unexpected typeFormatId $other")

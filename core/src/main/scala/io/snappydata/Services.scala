@@ -37,14 +37,6 @@ trait ProtocolOverrides extends FabricServiceImpl {
   }
 
   abstract override def getNetProtocol: String = {
-    "jdbc:snappydata:"
-  }
-
-  abstract override def getDRDAProtocol: String = {
-    "jdbc:snappydata:drda://"
-  }
-
-  abstract override def getThriftProtocol: String = {
-    "jdbc:snappydata:thrift://"
+    "jdbc:snappydata://"
   }
 }
