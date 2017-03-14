@@ -17,22 +17,20 @@
 
 package io.snappydata.cluster
 
-import java.sql.{ResultSet, SQLException, SQLSyntaxErrorException, Connection, DriverManager}
+import java.sql.{Connection, DriverManager, SQLException}
 
 import scala.util.Random
 
-import com.gemstone.org.jgroups.oswego.concurrent.Callable
 import com.pivotal.gemfirexd.internal.engine.distributed.metadata.QueryInfo
 import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserver, GemFireXDQueryObserverAdapter, GemFireXDQueryObserverHolder}
-import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineArbiter
 import com.pivotal.gemfirexd.internal.impl.sql.rules.ExecutionEngineRule.ExecutionEngine
-import io.snappydata.test.dunit.{DistributedTestBase, AvailablePortHelper, SerializableRunnable}
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable}
 import io.snappydata.test.util.TestException
-import junit.framework.Assert
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.types.Decimal
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
   * Tests for query routing from JDBC client driver.
@@ -86,6 +84,14 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     queryIndexEngineRule(SnappyContext())
   }
 
+  def testPrimaryKeyWithIndex(): Unit = {
+    queryPrimaryWithIndex(SnappyContext())
+  }
+
+  def testMultipleQueryHint(): Unit = {
+    queryWithMultipleHint(SnappyContext())
+  }
+
   override def startNetServer: String = {
     val port = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
@@ -93,7 +99,7 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     s"localhost:$port"
   }
 
-  override def stopNetServer: Unit = {
+  override def stopNetServer(): Unit = {
     vm2.invoke(classOf[ClusterManagerTestBase], "stopNetworkServers")
   }
 
@@ -104,14 +110,21 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
 
           override def testExecutionEngineDecision(queryInfo: QueryInfo, engine:
           ExecutionEngine, queryText: String): Unit = {
+
+            // scalastyle:off println
             if (queryText.equals(query)) {
+              println("SKSK callback getting invoked for follwoing query" +
+                  query + " queryText :" + queryText)
               if (executeOnSpark) {
+                println("SKSK callback getting invoked for follwoing query : asserting spark")
                 assert(engine == ExecutionEngine.SPARK)
               }
               else {
+                println("SKSK callback getting invoked for follwoing query : asserting store")
                 assert(engine == ExecutionEngine.STORE)
               }
             }
+            // scalastyle:on println
           }
         }
 
@@ -148,9 +161,9 @@ trait ExecutionEngineArbiterTestBase {
 
   def startNetServer: String
 
-  def stopNetServer: Unit
+  def stopNetServer(): Unit
 
-  //def setTestHook: Unit
+  // def setTestHook: Unit
 
   def createRowTableAndInsertData(snc: SnappyContext, tableName: String,
       props: Map[String, String] = Map.empty): Unit = {
@@ -251,7 +264,8 @@ trait ExecutionEngineArbiterTestBase {
     try {
       runAndValidateQuery(conn, false,
         s"select * from $testTable -- GEMFIREXD-PROPERTIES executionEngine=Store\n limit 1")
-      DistributedTestBase.fail("Expected syntax error as query was supposed to be executed on store with limit clause",
+      DistributedTestBase.fail("Expected syntax error as query was supposed " +
+          "to be executed on store with limit clause",
         new TestException("Expected Exception"))
     }
     catch {
@@ -285,6 +299,106 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQuery(conn, false, query)
   }
 
+  def queryPrimaryWithIndex(snc: SnappyContext): Unit = {
+    val sc = snc.sparkContext
+
+    snc.sql("create table tabOne(id1 int not null primary key, id2 int not null, " +
+        "name String, address String) USING row OPTIONS(partition_by 'id1')")
+    snc.sql("insert into tabOne values(111, 123, 'aaa', 'hello')")
+    snc.sql("insert into tabOne values(222, 234, 'bbb', 'halo')")
+
+    snc.sql("insert into tabOne values(333, 123, 'aaa', 'hello')")
+    snc.sql("insert into tabOne values(444, 234, 'bbb', 'halo')")
+    snc.sql("insert into tabOne values(555, 234, 'ccc', 'halo')")
+    snc.sql("insert into tabOne values(666, 234, 'ccc', 'halo')")
+
+    snc.sql("create index indexOne on tabOne (id1)")
+    snc.sql("create index indexTwo on tabOne (id2)")
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    var query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Store,index=indexOne\n where id1 = 111"
+    runAndValidateQuery(conn, false, query)
+
+    query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Store,index=indexTwo\n where id2 = 111"
+    runAndValidateQuery(conn, false, query)
+
+    query = "select * from tabOne where id2 = 111"
+    runAndValidateQuery(conn, false, query)
+
+    query = "select * from tabOne where id1 = 111"
+    runAndValidateQuery(conn, false, query)
+
+
+    query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Store,index=indexOne\n where id1 = 111"
+    runAndValidateQuery(conn, false, query)
+
+    query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Store,index=indexTwo\n where id2 = 111"
+    runAndValidateQuery(conn, false, query)
+
+  }
+
+  def queryWithMultipleHint(snc: SnappyContext): Unit = {
+    val sc = snc.sparkContext
+
+    snc.sql("create table tabOne(id1 int not null primary key, id2 int not null, " +
+        "name String, address String) USING row OPTIONS(partition_by 'id1')")
+    snc.sql("insert into tabOne values(111, 123, 'aaa', 'hello')")
+    snc.sql("insert into tabOne values(222, 234, 'bbb', 'halo')")
+
+    snc.sql("insert into tabOne values(333, 123, 'aaa', 'hello')")
+    snc.sql("insert into tabOne values(444, 234, 'bbb', 'halo')")
+    snc.sql("insert into tabOne values(555, 234, 'ccc', 'halo')")
+    snc.sql("insert into tabOne values(666, 234, 'ccc', 'halo')")
+
+    snc.sql("create index indexOne on tabOne (id1)")
+    snc.sql("create index indexTwo on tabOne (id2)")
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    var query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Store,index=indexOne\n where id1 = 111"
+    runAndValidateQuery(conn, false, query)
+
+    query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Store,index=indexTwo\n where id2 = 111"
+    runAndValidateQuery(conn, false, query)
+    query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Spark,index=indexTwo\n where id2 = 111"
+    runAndValidateQuery(conn, true, query)
+
+//    //TODO: We may throw exception in future.
+    query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+        "executionEngine=Spark,index=indexThree\n where id2 = 111"
+    runAndValidateQuery(conn, true, query)
+
+    query = "select * from tabOne --GEMFIREXD-PROPERTIES index=indexTwo\n where id2 = 111"
+    runAndValidateQuery(conn, false, query)
+
+    try {
+      query = "select * from tabOne --GEMFIREXD-PROPERTIES index=indexThree\n where id2 = 111"
+      runAndValidateQuery(conn, true, query)
+
+      // store query hint
+      query = "select * from tabOne --GEMFIREXD-PROPERTIES " +
+          "executionEngine=Store, index=indexThree\n where id2 = 111"
+      // this should not route but throw exception
+      runAndValidateQuery(conn, true, query)
+      DistributedTestBase.fail("Expected syntax error as query has wrong index hint",
+      new TestException("Expected Exception"))
+    }
+    catch {
+      case sqe: SQLException =>
+        if (sqe.getSQLState != SQLState.LANG_INVALID_FORCED_INDEX1) throw sqe
+    }
+  }
+
   def queryIndexEngineRule(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
 
@@ -302,14 +416,59 @@ trait ExecutionEngineArbiterTestBase {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + startNetServer)
 
-    var query: String = s"select col1, col3 from $testTable where col2 = 2"
+    var query = s"select col1, col3 from $testTable where col2 > 1"
+    runAndValidateQuery(conn, true, query)
+
+    query = s"select col1, col3 from $testTable where col2 = 2"
+    runAndValidateQuery(conn, false, query)
+
+    query = s"select col1, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Spark\n where col2 = 2"
+    runAndValidateQuery(conn, true, query)
+
+    query = s"select col1, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Store\n where col2 = 2"
     runAndValidateQuery(conn, false, query)
 
     query = s"select col1, col3 from $testTable where col2 > 1"
     runAndValidateQuery(conn, true, query)
+
+    query = s"select col1, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Store\n where col2 > 1"
+    runAndValidateQuery(conn, false, query)
+
+    query = s"select col1, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Spark\n where col2 > 1"
+    runAndValidateQuery(conn, true, query)
+
+    snc.sql(s"create index col1index on $testTable(col1)")
+
+    query = s"select col2, col3 from $testTable where col1 = 3"
+    runAndValidateQuery(conn, false, query)
+
+    query = s"select col2, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Spark\n where col1 = 3"
+    runAndValidateQuery(conn, true, query)
+
+    query = s"select col2, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Store\n where col1 = 3"
+    runAndValidateQuery(conn, false, query)
+
+    query = s"select col2, col3 from $testTable where col1 > 1"
+    runAndValidateQuery(conn, true, query)
+
+    query = s"select col2, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Store\n where col1 > 1"
+    runAndValidateQuery(conn, false, query)
+
+    query = s"select col2, col3 from $testTable -- GEMFIREXD-PROPERTIES " +
+        s"executionEngine=Spark\n where col1 > 1"
+    runAndValidateQuery(conn, true, query)
+
   }
 
-/*  def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
+/*
+    def indexSelectivityEngineRule(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
 
     val sc = snc.sparkContext
@@ -353,7 +512,8 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQueryForCostBasedRouting(conn, true,
       s"select col1, col3 from $testTable WHERE col2 > 3")
 
-  }*/
+  }
+*/
 
   def queryHint(snc: SnappyContext): Unit = {
     val testTable = "testTable1"
@@ -363,6 +523,31 @@ trait ExecutionEngineArbiterTestBase {
     createRowTableAndInsertData(snc, testTable1, Map("PARTITION_BY" -> "COL1"))
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + startNetServer)
+
+    // Execute  a replicate table query on Spark engine
+    runAndValidateQuery(conn, true,
+      s"select * from $testTable -- GEMFIREXD-PROPERTIES executionEngine=Spark")
+
+    // execute distinct query on partitioned table on store
+    runAndValidateQuery(conn, false,
+      s"select distinct col1  from $testTable1" +
+          s" -- GEMFIREXD-PROPERTIES executionEngine=Store")
+
+
+  }
+
+  def queryMultipleQueryHint(snc: SnappyContext): Unit = {
+    val testTable = "testTable1"
+    val testTable1 = "testTable2"
+
+    createRowTableAndInsertData(snc, testTable)
+    createRowTableAndInsertData(snc, testTable1, Map("PARTITION_BY" -> "COL1"))
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    runAndValidateQuery(conn, true,
+      s"select * from $testTable -- GEMFIREXD-PROPERTIES executionEngine=Spark")
+
 
     // Execute  a replicate table query on Spark engine
     runAndValidateQuery(conn, true,
@@ -445,18 +630,18 @@ trait ExecutionEngineArbiterTestBase {
     runAndValidateQuery(conn, true, s" select sum(t1.col1)  from $testTable1 t1 , $testTable t2 " +
         s"where t1.col1 = t2.col1 group by t1.col2")
 
-    runAndValidateQuery(conn, false, s" select *  from $testTable1 t1 where col1 in  " +
+    runAndValidateQuery(conn, true, s" select *  from $testTable1 t1 where col1 in  " +
         s"(select avg(col1) from $testTable group by col2)")
 
-    runAndValidateQuery(conn, false, s"create index  testIndex on $testTable1(col1)", true)
+    runAndValidateQuery(conn, true, s"create index  testIndex on $testTable1(col1)", true)
 
-    runAndValidateQuery(conn, false, s"select count(col1)  from $testTable1 " +
+    runAndValidateQuery(conn, true, s"select count(col1)  from $testTable1 " +
         s" where col1 in ( 5, 1, 2, 4, 5, 6,7,8,9,10) group by col3 ")
 
-    runAndValidateQuery(conn, false, s" select sum(t1.col1)  from $testTable1 t1 , $testTable t2 " +
+    runAndValidateQuery(conn, true, s" select sum(t1.col1)  from $testTable1 t1 , $testTable t2 " +
         s"where t1.col1 = t2.col1 group by t1.col2")
 
-    runAndValidateQuery(conn, false, s"select sum(col1) from" +
+    runAndValidateQuery(conn, true, s"select sum(col1) from" +
         s" $testTable2 where col2 in (select col1 from $testTable1 " +
         s"where col1 in (1,2,3) group by col1)")
 
@@ -466,9 +651,11 @@ trait ExecutionEngineArbiterTestBase {
       s" create table $testTable1 (col1 int primary key , col2 int , col3 int ) " +
           s"using row options (" + "PARTITION_BY 'PRIMARY KEY'" + ")", true)
 
-    runAndValidateQuery(conn, false, s"select sum(col1) from" +
+    runAndValidateQuery(conn, true, s"select sum(col1) from" +
         s" $testTable2 where col2 in (select col1 from $testTable1 " +
         s"where col1 in (1,2,3) group by col1)")
+
+    // create index on col2 and then check for query execution again
 
     val s = conn.createStatement()
     s.execute(s"drop table $testTable")

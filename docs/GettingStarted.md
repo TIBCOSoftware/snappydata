@@ -7,10 +7,7 @@ Apache Spark is a general purpose parallel computational engine for analytics at
 Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance. For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. Caching within Spark is immutable and results in stale insight.
 
 ### The SnappyData Approach
-At SnappyData, we take a very different approach. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) 
-into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar 
-format as Spark. All query engine operators are more optimized through better vectorization and code generation. 
-The net effect is, an order of magnitude performance improvement when compared to native Spark caching, better Spark performance when working with external data sources.
+At SnappyData, we take a very different approach. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark. All query engine operators are more optimized through better vectorization and code generation. The net effect is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
 
 Essentially, we turn Spark into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries.
 
@@ -53,7 +50,7 @@ By default, when the cluster is started, the data store is bootstrapped and when
 
 SnappyData makes the following contributions to deliver a unified and optimized runtime.
 
-* **Integrating an operational in-memory data store with Spark’s computational model**: We introduce a number of extensions to fuse our runtime with that of Spark. Spark executors run in the same process space as our store’s execution threads, sharing the same pool of memory. When Spark executes tasks in a partitioned manner, it is designed to keep all the available CPU cores busy. <br/> We extend this design by allowing low latency and fine- grained operations to interleave. Furthermore, to support high concurrency, we extend the runtime with a “Job Server” that decouples applications from data servers, operating much in the same way as a traditional database, whereby the state is shared across many clients and applications. <br/>
+* **Integrating an operational in-memory data store with Spark’s computational model**: We introduce a number of extensions to fuse our runtime with that of Spark. Spark executors run in the same process space as our store’s execution threads, sharing the same pool of memory. When Spark executes tasks in a partitioned manner, it is designed to keep all the available CPU cores busy. <br/> We extend this design by allowing low latency and fine- grained operations to interleave and get higher priority, without involving the scheduler. Furthermore, to support high concurrency, we extend the runtime with a “Job Server” that decouples applications from data servers, operating much in the same way as a traditional database, whereby the state is shared across many clients and applications. <br/>
 
 * **Unified API for OLAP, OLTP, and Streaming**: Spark builds on a common set of abstractions to provide a rich API for a diverse range of applications, such as MapReduce, Machine learning, stream processing, and SQL.
 While Spark deserves much of the credit for being the first of its kind to offer a unified API, we further extend its API to: 

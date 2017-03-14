@@ -51,7 +51,7 @@ class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll
         .builder
         .appName(getClass.getName)
         .master("local[*]")
-        .config(io.snappydata.Property.CachedBatchSize.name, cachedBatchSize)
+        .config(io.snappydata.Property.ColumnBatchSize.name, cachedBatchSize)
         .config("spark.memory.fraction", memoryFraction)
         .config("spark.memory.storageFraction", storageFraction)
         .config("spark.testing.memory", sparkMemory)

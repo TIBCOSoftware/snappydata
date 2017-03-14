@@ -63,7 +63,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   val rr_table = "app.rr_table"
   val memoryMode = MemoryMode.ON_HEAP
 
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
+  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "500")
   bootProps.setProperty("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "90")
 
