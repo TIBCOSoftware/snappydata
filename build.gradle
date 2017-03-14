@@ -787,8 +787,8 @@ distributions {
 }
 distTar {
   dependsOn product
-  // also package pulse and VSD
-  dependsOn ':packagePulse', ':packageVSD'
+  // also package VSD
+  dependsOn ':packageVSD'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
@@ -797,8 +797,8 @@ distTar {
 
 distZip {
   dependsOn product
-  // also package pulse and VSD
-  dependsOn ':packagePulse', ':packageVSD'
+  // also package VSD
+  dependsOn ':packageVSD'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'

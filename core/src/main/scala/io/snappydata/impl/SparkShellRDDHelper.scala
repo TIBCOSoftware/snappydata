@@ -17,6 +17,7 @@
 package io.snappydata.impl
 
 import java.sql.{Connection, ResultSet, SQLException, Statement}
+import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -31,6 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
+import io.snappydata.thrift.internal.ClientStatement
 
 import org.apache.spark.{Logging, Partition}
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
@@ -75,11 +77,24 @@ final class SparkShellRDDHelper {
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
     val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
-    val buckets = partition.buckets.mkString(",")
     val statement = conn.createStatement()
     if (!useLocatorURL) {
-      statement.execute(
-        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+      statement match {
+        case clientStmt: ClientStatement =>
+          val numBuckets = partition.buckets.size
+          val bucketSet = if (numBuckets == 1) {
+            Collections.singleton[Integer](partition.buckets.head)
+          } else {
+            val buckets = new java.util.HashSet[Integer](numBuckets)
+            partition.buckets.foreach(buckets.add(_))
+            buckets
+          }
+          clientStmt.setLocalExecutionBucketIds(bucketSet, resolvedName)
+        case _ =>
+          val buckets = partition.buckets.mkString(",")
+          statement.execute(
+            s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+      }
     }
 
     val rs = statement.executeQuery(query)
@@ -107,13 +122,16 @@ final class SparkShellRDDHelper {
       hostList(index)._2
     }
 
+    // enable direct ByteBuffers for best performance
+    val executorProps = connProperties.executorConnProps
+    executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
     // setup pool properties
     val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
-      ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect,
-        props, connProperties.executorConnProps, connProperties.hikariCP)
+      ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect, props,
+        executorProps, connProperties.hikariCP)
     } catch {
       case sqle: SQLException => if (hostList.size == 1 || useLocatorURL) {
         throw sqle

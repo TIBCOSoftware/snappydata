@@ -17,12 +17,16 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, ResultSet, Statement}
+import java.sql.{Blob, Connection, ResultSet, Statement}
+import java.util.UUID
+import java.util.concurrent.locks.ReentrantLock
 
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry}
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer}
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, CompactCompositeKey,
+CompactCompositeRegionKey, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
 import io.snappydata.thrift.common.BufferedBlob
 
@@ -73,7 +77,7 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected def getCurrentValue: A
 
-  final def close() {
+  def close() {
     if (!hasNextValue) return
     try {
       // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
@@ -97,46 +101,6 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 }
 
-final class ColumnBatchIteratorOnRS(conn: Connection,
-    requiredColumns: Array[String],
-    stmt: Statement, rs: ResultSet,
-    context: TaskContext,
-    fetchColQuery: String)
-    extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
-  var currentUUID: String = _
-  val ps = conn.prepareStatement(fetchColQuery)
-  var colBuffers: Option[scala.collection.mutable.HashMap[Int, ByteBuffer]] = null
-  def getColumnLob(bufferPosition: Int): ByteBuffer = {
-    colBuffers match {
-      case Some(map) => map(bufferPosition)
-      case None =>
-        for (i <- requiredColumns.indices) {
-          ps.setString(i + 1, currentUUID)
-        }
-        val colIter = ps.executeQuery()
-        val bufferMap = new scala.collection.mutable.HashMap[Int, ByteBuffer]
-        var index = 1;
-        while (colIter.next()) {
-          val colBlob = colIter.getBlob(1) match {
-            case blob: BufferedBlob => blob.getAsBuffer
-            case blob => ByteBuffer.wrap(blob.getBytes(
-              1, blob.length().asInstanceOf[Int]))
-          }
-          bufferMap.put(index, colBlob)
-          index = index + 1
-        }
-        colBuffers = Some(bufferMap)
-
-        bufferMap(bufferPosition)
-    }
-  }
-
-  override protected def getCurrentValue: Array[Byte] = {
-    currentUUID = rs.getString(2)
-    colBuffers = None
-    rs.getBytes(1)
-  }
-}
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte])
 
@@ -216,6 +180,77 @@ final class ColumnBatchIterator(container: GemFireContainer,
   }
 }
 
+final class ColumnBatchIteratorOnRS(conn: Connection,
+    requiredColumns: Array[String],
+    stmt: Statement, rs: ResultSet,
+    context: TaskContext,
+    fetchColQuery: String)
+    extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
+  var currentUUID: String = _
+  val ps = conn.prepareStatement(fetchColQuery)
+  var colBuffers: Option[scala.collection.mutable.HashMap[Int, (ByteBuffer, Blob)]] = None
+  def getColumnLob(bufferPosition: Int): ByteBuffer = {
+    colBuffers match {
+      case Some(map) => map(bufferPosition)._1
+      case None =>
+        for (i <- requiredColumns.indices) {
+          ps.setString(i + 1, currentUUID)
+        }
+        val colIter = ps.executeQuery()
+        val bufferMap = new scala.collection.mutable.HashMap[Int, (ByteBuffer, Blob)]
+        var index = 1;
+        while (colIter.next()) {
+
+          val colBlob = colIter.getBlob(1)
+          val colBuffer = colBlob match {
+            case blob: BufferedBlob => blob.getAsBuffer
+            case blob => ByteBuffer.wrap(blob.getBytes(
+              1, blob.length().asInstanceOf[Int]))
+          }
+          bufferMap.put(index, (colBuffer, colBlob))
+          index = index + 1
+        }
+        colBuffers = Some(bufferMap)
+
+        bufferMap(bufferPosition)._1
+    }
+  }
+
+  override protected def getCurrentValue: Array[Byte] = {
+    currentUUID = rs.getString(2)
+    colBuffers match {
+      case Some(buffers) =>
+        buffers.values.foreach(b => {
+          b._2.free()
+          // release previous set of buffers immediately
+          UnsafeHolder.releaseIfDirectBuffer(b._1)
+        })
+      case None =>
+    }
+    colBuffers = None
+    val statsData = rs.getBlob(1)
+    val statsBytes = statsData.getBytes(1, statsData.length().asInstanceOf[Int])
+    statsData.free()
+    statsBytes
+  }
+
+  override def close(): Unit = {
+    colBuffers match {
+      case Some(buffers) =>
+        buffers.values.foreach(b => {
+          try {
+            b._2.free()
+          } catch {
+            case e: Exception => logWarning("Exception clearing Blob", e)
+          }
+          // release lastset of buffers immediately
+          UnsafeHolder.releaseIfDirectBuffer(b._1)
+        })
+      case None =>
+    }
+    super.close
+  }
+}
 object JDBCSourceAsStore {
   val STATROW_COL_INDEX = -1
 }
