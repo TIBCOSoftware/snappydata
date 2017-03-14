@@ -1,7 +1,7 @@
 io/snappydata/hydra/distIndex/distIndexResultValidation.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   redundantCopies=1
   buckets_Order_Lineitem=113
   buckets_Cust_Part_PartSupp=113
@@ -14,9 +14,9 @@ io/snappydata/hydra/distIndex/distIndexResultValidation.conf
   resultValidation=true
 
 io/snappydata/hydra/distIndex/distIndexPerformance.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   redundantCopies=1
   buckets_Order_Lineitem=113
   buckets_Cust_Part_PartSupp=113
