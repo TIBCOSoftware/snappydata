@@ -256,6 +256,7 @@ trait ColumnEncoder extends ColumnEncoding {
     _upperStr = null
     _lowerDecimal = null
     _upperDecimal = null
+    _count = 0
   }
 
   def initialize(field: StructField, initSize: Int,

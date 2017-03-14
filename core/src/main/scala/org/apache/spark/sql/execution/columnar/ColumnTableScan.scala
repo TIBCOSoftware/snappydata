@@ -448,6 +448,7 @@ private[sql] final case class ColumnTableScan(
     //   function that will invoke the above function in independent class)
     val filterFunction = generateStatPredicate(ctx, numBatchRows)
     val getUnsafeRow = ctx.freshName("getUnsafeRow")
+    val unsafeRow = ctx.freshName("unsafeRow")
     val statBytes = ctx.freshName("statBytes")
     val colNextBytes = ctx.freshName("colNextBytes")
     val platformClass = classOf[Platform].getName
@@ -478,8 +479,8 @@ private[sql] final case class ColumnTableScan(
     val batchAssign =
       s"""
         final byte[] $colNextBytes = (byte[])$colInput.next();
-        UnsafeRow unsafeRow = $getUnsafeRow($colNextBytes);
-        $numBatchRows = unsafeRow.getInt($countIndexInSchema);
+        UnsafeRow $unsafeRow = $getUnsafeRow($colNextBytes);
+        $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -487,7 +488,7 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          if ($filterFunction(unsafeRow)) {
+          if ($filterFunction($unsafeRow)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
