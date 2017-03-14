@@ -115,15 +115,18 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         }
         val colIter = ps.executeQuery()
         val bufferMap = new scala.collection.mutable.HashMap[Int, ByteBuffer]
-        while(colIter.next()) {
+        var index = 1;
+        while (colIter.next()) {
           val colBlob = colIter.getBlob(1) match {
             case blob: BufferedBlob => blob.getAsBuffer
             case blob => ByteBuffer.wrap(blob.getBytes(
               1, blob.length().asInstanceOf[Int]))
           }
-          bufferMap.put(colIter.getInt(2), colBlob)
+          bufferMap.put(index, colBlob)
+          index = index + 1
         }
         colBuffers = Some(bufferMap)
+
         bufferMap(bufferPosition)
     }
   }
