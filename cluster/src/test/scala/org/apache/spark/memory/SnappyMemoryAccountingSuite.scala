@@ -305,8 +305,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     assert(snSession.sql("select * from t1").collect().length == 10)
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     println(s"beforeRebootMemory $beforeRebootMemory afterRebootMemory $afterRebootMemory")
-    Thread.sleep(1000)
-    assertApproximate(beforeRebootMemory, afterRebootMemory)
+    assertApproximate(beforeRebootMemory, afterRebootMemory, 4)
     snSession.dropTable("t1")
   }
 
