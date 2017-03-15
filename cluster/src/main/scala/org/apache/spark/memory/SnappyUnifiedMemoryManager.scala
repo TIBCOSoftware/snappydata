@@ -18,10 +18,10 @@ package org.apache.spark.memory
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.gemstone.gemfire.internal.cache.LocalRegion
+
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
-
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.{Logging, SparkConf}
 
@@ -71,13 +71,13 @@ class SnappyUnifiedMemoryManager private[memory](
     }
   }
 
-  override def getStoragePoolSize = onHeapStorageMemoryPool.poolSize
+  override def getStoragePoolSize : Long = onHeapStorageMemoryPool.poolSize
 
   override def getStoragePoolMemoryUsed(): Long = onHeapStorageMemoryPool.memoryUsed
 
   override def getExecutionPoolUsedMemory: Long = onHeapExecutionMemoryPool.memoryUsed
 
-  override def getExecutionPoolSize = onHeapExecutionMemoryPool.poolSize
+  override def getExecutionPoolSize : Long = onHeapExecutionMemoryPool.poolSize
 
 
   /**
@@ -110,11 +110,6 @@ class SnappyUnifiedMemoryManager private[memory](
           offHeapStorageMemory,
           maxOffHeapMemory)
     }
-    if(SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed + getExecutionPoolUsedMemory)){
-      logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
-          s"No memory allocated to thread ${Thread.currentThread()}")
-      return 0
-    }
 
     /**
       * Grow the execution pool by evicting cached blocks, thereby shrinking the storage pool.
@@ -125,6 +120,13 @@ class SnappyUnifiedMemoryManager private[memory](
       */
     def maybeGrowExecutionPool(extraMemoryNeeded: Long): Unit = {
       if (extraMemoryNeeded > 0) {
+
+        if (SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed + getExecutionPoolUsedMemory)){
+          logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
+            s"No memory allocated to thread ${Thread.currentThread()}")
+          return
+        }
+
         // There is not enough free memory in the execution pool, so try to reclaim memory from
         // storage. We can reclaim any free memory from the storage pool. If the storage pool
         // has grown to become larger than `storageRegionSize`, we can evict blocks and reclaim
@@ -191,8 +193,8 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode,
       shouldEvict: Boolean): Boolean = {
-    println(s"Acquiring [SNAP] memory for $objectName $numBytes $shouldEvict")
-    //Thread.dumpStack()
+    println(s"Acquiring [SNAP] memory for $objectName $numBytes $shouldEvict ")
+
     threadsWaitingForStorage.incrementAndGet()
     synchronized {
       if (!shouldEvict) {
@@ -214,11 +216,7 @@ class SnappyUnifiedMemoryManager private[memory](
             offHeapStorageMemoryPool,
             maxOffHeapMemory)
       }
-      if (SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed + getExecutionPoolUsedMemory)) {
-        logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
-            s"No memory allocated to thread ${Thread.currentThread()}")
-        return false
-      }
+
 
       if (numBytes > maxMemory) {
         // Fail fast if the block simply won't fit
@@ -243,6 +241,12 @@ class SnappyUnifiedMemoryManager private[memory](
       // First let spark try to free some memory
       val enoughMemory = storagePool.acquireMemory(blockId, numBytes)
       if (!enoughMemory) {
+
+        if (SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed + getExecutionPoolUsedMemory)) {
+          logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
+            s"No memory allocated to thread ${Thread.currentThread()}")
+          return false
+        }
 
         if (shouldEvict) {
           // Sufficient memory could not be freed. Time to evict from SnappyData store.
@@ -278,9 +282,8 @@ class SnappyUnifiedMemoryManager private[memory](
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = {
-    logDebug(s"Acquiring [SNAP] memory for $objectName $numBytes")
+    logDebug(s"Acquiring [SNAP] memory for $objectName $numBytes ")
     if (buffer ne null) {
-     // println("buffer is not null")
       if (buffer.freeMemory() > numBytes) {
         buffer.incMemoryUsed(numBytes)
         SnappyUnifiedMemoryManager.bufferMemory.addAndGet(1)
@@ -374,15 +377,18 @@ private object SnappyUnifiedMemoryManager extends Logging{
     testCallbacks.clear()
   }
 
-  private def invokeListenersOnStorageMemoryAcquireSuccess(objectName: String, bytes: Long): Unit = {
+  private def invokeListenersOnStorageMemoryAcquireSuccess(objectName: String,
+                                                           bytes: Long): Unit = {
     testCallbacks.map(l => l.onStorageMemoryAcquireSuccess(objectName, bytes))
   }
 
-  private def invokeListenersOnStorageMemoryAcquireFailure(objectName: String, bytes: Long): Unit = {
+  private def invokeListenersOnStorageMemoryAcquireFailure(objectName: String,
+                                                           bytes: Long): Unit = {
     testCallbacks.map(l => l.onStorageMemoryAcquireFailure(objectName, bytes))
   }
 
-  private def invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName: String, bytes: Long): Unit = {
+  private def invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName: String,
+                                                                   bytes: Long): Unit = {
     testCallbacks.map(l => l.onPositiveMemoryIncreaseDueToEviction(objectName, bytes))
   }
 
@@ -426,11 +432,11 @@ private object SnappyUnifiedMemoryManager extends Logging{
   }
 }
 
-//Test listeners. Should not be used in production code.
+// Test listeners. Should not be used in production code.
 class MemoryEventListener{
-  def onStorageMemoryAcquireSuccess(objectName : String, bytes : Long) = {}
-  def onStorageMemoryAcquireFailure(objectName : String, bytes : Long)  = {}
-  def onPositiveMemoryIncreaseDueToEviction(objectName : String, bytes : Long)  = {}
-  def onExecutionMemoryAcquireSuccess(taskAttemptId : Long, bytes : Long)  = {}
-  def onExecutionMemoryAcquireFailure(taskAttemptId : Long, bytes : Long) = {}
+  def onStorageMemoryAcquireSuccess(objectName : String, bytes : Long) : Unit = {}
+  def onStorageMemoryAcquireFailure(objectName : String, bytes : Long) : Unit = {}
+  def onPositiveMemoryIncreaseDueToEviction(objectName : String, bytes : Long) : Unit = {}
+  def onExecutionMemoryAcquireSuccess(taskAttemptId : Long, bytes : Long) : Unit = {}
+  def onExecutionMemoryAcquireFailure(taskAttemptId : Long, bytes : Long) : Unit = {}
 }

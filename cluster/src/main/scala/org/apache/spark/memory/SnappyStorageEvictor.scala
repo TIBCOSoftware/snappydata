@@ -21,7 +21,7 @@ package org.apache.spark.memory
 import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import com.gemstone.gemfire.internal.cache.control.InternalResourceManager
 import com.gemstone.gemfire.internal.cache.control.InternalResourceManager.ResourceType
 import com.gemstone.gemfire.internal.cache._
@@ -34,8 +34,7 @@ class SnappyStorageEvictor extends Logging{
     val cache = GemFireCacheImpl.getExisting
     val allRegionList = new java.util.ArrayList[LocalRegion]()
     val irm: InternalResourceManager = cache.getResourceManager
-    import scala.collection.JavaConversions._
-    for (listener <- irm.getResourceListeners(SnappyStorageEvictor.resourceType)) {
+    for (listener <- irm.getResourceListeners(SnappyStorageEvictor.resourceType).asScala) {
       if (listener.isInstanceOf[PartitionedRegion]) {
         val pr: PartitionedRegion = listener.asInstanceOf[PartitionedRegion]
         if (includePartitionedRegion(pr)) {
@@ -50,17 +49,18 @@ class SnappyStorageEvictor extends Logging{
       }
     }
     if (SnappyStorageEvictor.MINIMUM_ENTRIES_PER_BUCKET > 0) {
-      val iter: Iterator[LocalRegion] = allRegionList.iterator
+      val iter = allRegionList.iterator
       while (iter.hasNext) {
         val lr: LocalRegion = iter.next
         if (lr.isInstanceOf[BucketRegion]) {
-          if ((lr.asInstanceOf[BucketRegion]).getNumEntriesInVM <= SnappyStorageEvictor.MINIMUM_ENTRIES_PER_BUCKET) {
+          if ((lr.asInstanceOf[BucketRegion]).getNumEntriesInVM <=
+            SnappyStorageEvictor.MINIMUM_ENTRIES_PER_BUCKET) {
             iter.remove
           }
         }
       }
     }
-    return allRegionList
+    return allRegionList.asScala
   }
 
   @throws(classOf[Exception])
@@ -69,7 +69,7 @@ class SnappyStorageEvictor extends Logging{
     cache.getCachePerfStats.incEvictorJobsStarted
     var bytesEvicted: Long = 0
     var totalBytesEvicted: Long = 0
-    val regionSet = getAllRegionList
+    val regionSet = scala.util.Random.shuffle(getAllRegionList)
     try {
       while (true) {
         cache.getCachePerfStats
@@ -77,11 +77,12 @@ class SnappyStorageEvictor extends Logging{
         if (regionSet.isEmpty) {
           return 0;
         }
-        val iter: Iterator[LocalRegion] = regionSet.iterator
+        val iter = regionSet.asJava.iterator
         while (iter.hasNext) {
           val region: LocalRegion = iter.next
           try {
-            bytesEvicted = (region.entries.asInstanceOf[AbstractLRURegionMap]).centralizedLruUpdateCallback
+            bytesEvicted =
+              (region.entries.asInstanceOf[AbstractLRURegionMap]).centralizedLruUpdateCallback
             if (bytesEvicted == 0) {
               iter.remove
             }
@@ -96,7 +97,8 @@ class SnappyStorageEvictor extends Logging{
             }
             case e: Exception => {
               cache.getCancelCriterion.checkCancelInProgress(e)
-              cache.getLoggerI18n.warning(LocalizedStrings.Eviction_EVICTOR_TASK_EXCEPTION, Array[AnyRef](e.getMessage), e)
+              cache.getLoggerI18n.warning(LocalizedStrings.Eviction_EVICTOR_TASK_EXCEPTION,
+                Array[AnyRef](e.getMessage), e)
             }
           } finally {
             cache.getCachePerfStats
@@ -126,6 +128,7 @@ class SnappyStorageEvictor extends Logging{
 }
 
 object SnappyStorageEvictor{
-  val MINIMUM_ENTRIES_PER_BUCKET: Int = Integer.getInteger("gemfire.HeapLRUCapacityController.inlineEvictionThreshold", 0)
+  val MINIMUM_ENTRIES_PER_BUCKET: Int =
+    Integer.getInteger("gemfire.HeapLRUCapacityController.inlineEvictionThreshold", 0)
   val resourceType = ResourceType.HEAP_MEMORY
 }
