@@ -1114,6 +1114,7 @@ object SnappyContext extends Logging {
         val sessionCatalog = SnappyContext(null: SparkContext).snappySession.
             sessionCatalog.asInstanceOf[SnappyConnectorCatalog]
         sessionCatalog.closeCurrent()
+        ServiceUtils.clearStaticArtifacts()
       case _ => ServiceUtils.clearStaticArtifacts()
 
     }
