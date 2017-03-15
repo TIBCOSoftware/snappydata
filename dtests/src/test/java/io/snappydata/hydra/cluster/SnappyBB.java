@@ -73,34 +73,10 @@ public class SnappyBB extends Blackboard {
     public static int deleteCounter;
     public static int queryCounter;
     public static int numServers;
-    public static int DMLExecuting;
+    public static volatile int DMLExecuting;
     public static int leadThread;
     public static int PauseDerby;
     public static int BlockOps;
     public static int leadResultsReady;
 
-
-    public synchronized List<String> getDerbyOps() {
-        List<String> derbyOps = null;
-        if (SnappyBB.getBB().getSharedMap().containsKey("derbyOps")) {
-            derbyOps = (ArrayList<String>)SnappyBB.getBB().getSharedMap().get("derbyOps");
-            SnappyBB.getBB().getSharedMap().remove("derbyOps");
-        } else
-            Log.getLogWriter().info("No Ops to perform in derby from BB");
-        return derbyOps;
-    }
-
-    public synchronized void writeOpToBB(String stmt) {
-        List<String> derbyOps;
-        Log.getLogWriter().info("Adding operation for derby in BB : " + stmt);
-        if (SnappyBB.getBB().getSharedMap().containsKey("derbyOps")) {
-            derbyOps = (ArrayList<String>)SnappyBB.getBB().getSharedMap().get("derbyOps");
-            if(derbyOps==null)
-                derbyOps = new ArrayList<String>();
-        }  else
-            derbyOps = new ArrayList<String>();
-        derbyOps.add(stmt);
-        SnappyBB.getBB().getSharedMap().put("derbyOps", derbyOps);
-        Log.getLogWriter().info("Added operation for derby in BB : " + stmt);
-    }
 }
