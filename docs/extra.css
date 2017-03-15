@@ -2,17 +2,13 @@ html {
     font-size: 10pt;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
-/*
--------------------Formatting for body text-------------------
-*/
+/* Formatting for body text */
 p{
 font-size: 14px;
 font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
-/*
--------------------Formatting for headings-------------------
-*/
+/* Formatting for headings */
 
 h1{
     color: #000000;
@@ -43,10 +39,7 @@ h4 {
     font-style: italic;
 }
 
-/*
-
--------------------Formatting for code snippets-------------------
-*/
+/* Formatting for code snippets*/
 
 pre code {
   white-space: pre;
@@ -58,9 +51,7 @@ pre code {
   font-size:12px;
 }
 
-/*
--------------------Formatting for inline code-------------------  
-*/
+/* Formatting for inline code */
 
 code {
     white-space: pre-wrap;
@@ -74,9 +65,7 @@ pre .cs, pre .c {
     font-style: inherit;
 }
 
-/*
--------------------Formatting for Note-------------------
-
+/* Formatting for Note 
 note-sub {
     background-color: #e8f7ff; 
     color: green;
@@ -109,9 +98,7 @@ note-sub {
 }
 */
 
-/*
--------------------Formatting for Glossary Term-------------------
-*/
+/* Formatting for Glossary Term */
 
 glossary {
     color: black;
@@ -134,9 +121,7 @@ glossarytext {
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
-/* 
--------------------Image Alignment - Center-------------------
-*/
+/*  Image Alignment - Center */
 img {
     display: block;
     background-color: transparent;
@@ -144,9 +129,7 @@ img {
     margin: 0px auto;
 }
 
-/*
--------------------Formatting for text for review/comments purpose only-------------------
-*/
+/* Formatting for text for review/comments purpose only */
 
 mark {
     color: red;
@@ -155,9 +138,7 @@ mark {
     background-color: #f6f3d7;
 }
 
-/*
--------------------Formatting for TroubleShooting-------------------
-*/
+/* Formatting for TroubleShooting */
 
 question {
     color: black;
@@ -179,9 +160,7 @@ solution {
     display: block;
 }
 
-/*
--------------------Formatting for Tables-------------------
-*/
+/* Formatting for Tables */
       
 table
 {

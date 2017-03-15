@@ -1,6 +1,10 @@
 .wy-side-nav-search {
-  background-color: #3ca980;
-  background: #3ca980;	
+ /* background-color: #3ca980;*/
+  background: #48bd90;	
+}
+
+.wy-side-nav-search > a:hover, .wy-side-nav-search .wy-dropdown > a:hover {
+    background: #48bd90;
 }
 
 a.icon.icon-home:before {
@@ -9,7 +13,6 @@ a.icon.icon-home:before {
   height: 59px;
   content: '';
   background-repeat: no-repeat;
-  background-color: #3ca980;	
 }
 
 a.icon.icon-home {

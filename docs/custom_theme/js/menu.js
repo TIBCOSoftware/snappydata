@@ -1,7 +1,7 @@
 $( document ).ready(function() {
   // Add buttons to allow menu expansion. Note: top-level items are treated differently from sub-menu items.
-  $('ul.subnav').prev().prepend( "<a class='expander'>[+]</a>" );
-  $('ul.subnav').parent().prevUntil('.toctree-l1').prev().prepend( "<a class='expander top-level'>[+]</a>" );
+  $('ul.subnav').prev().prepend( "<a class='expander'>+</a>" );
+  $('ul.subnav').parent().prevUntil('.toctree-l1').prev().prepend( "<a class='expander top-level'>+</a>" );
 
   // Collapse sub-menus.
   $('a.expander').parent().next().addClass( 'collapse' );
@@ -20,14 +20,14 @@ $( document ).ready(function() {
 
   // Change the button to match the (un-)collapsed state of the sub-menu.
   $('a.expander').on('expander', function () {
-      $(this).html("[-]");
+      $(this).html("-");
     if ( $(this).hasClass('top-level') ) {
       if ( $(this).parent().next().next().hasClass('collapse') ) {
-        $(this).html("[+]");
+        $(this).html("+");
       }
     } else {
       if ( $(this).parent().next().hasClass('collapse') ) {
-        $(this).html("[+]");
+        $(this).html("+");
       }
     }
   });

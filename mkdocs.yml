@@ -168,10 +168,9 @@ pages:
     - 'Can I read orc files from snappy-shell?': 'troubleshooting/read_orc_files.md'
     - 'Observing logs for warning/severe/errors and decoding log messages': 'troubleshooting/observing_logs.md'
 # -- Topic - SQL Reference Guide
-- 'SQL Reference Guide': 'sql_reference.md'
-- 'SQL Reference Guide': 
+- 'SnappyData SQL Reference Guide': 'sql_reference.md'
+- 'SnappyData SQL Reference Guide': 
     - 'Statements': 'sql_reference/statements.md'
-    - 'Functions': 'sql_reference/functions.md'
     - 'Procedures': 'sql_reference/procedures.md'   
 # -- Topic - Glossary
 - 'Glossary': 'glossary/glossary.md'
