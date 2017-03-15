@@ -20,6 +20,7 @@ import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.PreparedStatement
 
 import io.snappydata.benchmark.snappy.TPCH_Snappy
+import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -246,7 +247,10 @@ object TPCHUtils {
       runsForAverage: Int = 1, isResultCollection: Boolean = true): Unit = {
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
-    queries.foreach(query => TPCH_Snappy.execute(query, snc,
+//    queries.foreach(query => TPCH_Snappy.execute(query, snc,
+//      isResultCollection, isSnappy, warmup = warmup,
+//      runsForAverage = runsForAverage, avgPrintStream = System.out))
+    queries.foreach(query => QueryExecutor.execute(query, snc,
       isResultCollection, isSnappy, warmup = warmup,
       runsForAverage = runsForAverage, avgPrintStream = System.out))
   }

@@ -17,6 +17,7 @@
 package io.snappydata.hydra.installJar;
 
 import hydra.FileUtil;
+import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
