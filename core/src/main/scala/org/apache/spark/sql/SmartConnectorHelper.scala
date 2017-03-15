@@ -50,7 +50,7 @@ class SmartConnectorHelper extends Logging {
     }
   }
 
-  private var conn: Connection = _
+  private var conn: Connection = null
   private val createSnappyTblString = "call sys.CREATE_SNAPPY_TABLE(?, ?, ?, ?, ?, ?, ?)"
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
@@ -73,6 +73,7 @@ class SmartConnectorHelper extends Logging {
   }
 
   def initializeConnection(): Unit = {
+    close()
     conn = connFactory()
     createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
     dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
@@ -81,6 +82,10 @@ class SmartConnectorHelper extends Logging {
     getMetaDataStmt  = conn.prepareCall(getMetaDataStmtString)
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
+  }
+
+  def close(): Unit = {
+    Option(conn).foreach( c => if (!c.isClosed) c.close())
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {

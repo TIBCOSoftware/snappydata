@@ -40,7 +40,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedObjectCache
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
@@ -1110,7 +1110,12 @@ object SnappyContext extends Logging {
     SparkSession.sqlListener.set(null)
     _clusterMode match {
       case _: ExternalClusterMode =>
+      case ThinClientConnectorMode(_, _) =>
+        val sessionCatalog = SnappyContext(null: SparkContext).snappySession.
+            sessionCatalog.asInstanceOf[SnappyConnectorCatalog]
+        sessionCatalog.closeCurrent()
       case _ => ServiceUtils.clearStaticArtifacts()
+
     }
   }
 
