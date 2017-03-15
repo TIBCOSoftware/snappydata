@@ -79,22 +79,28 @@ final class SparkShellRDDHelper {
     val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
     val statement = conn.createStatement()
     if (!useLocatorURL) {
-      statement match {
-        case clientStmt: ClientStatement =>
-          val numBuckets = partition.buckets.size
-          val bucketSet = if (numBuckets == 1) {
-            Collections.singleton[Integer](partition.buckets.head)
-          } else {
-            val buckets = new java.util.HashSet[Integer](numBuckets)
-            partition.buckets.foreach(buckets.add(_))
-            buckets
-          }
-          clientStmt.setLocalExecutionBucketIds(bucketSet, resolvedName)
-        case _ =>
-          val buckets = partition.buckets.mkString(",")
-          statement.execute(
-            s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
-      }
+      val buckets = partition.buckets.mkString(",")
+      statement.execute(
+        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+      // TODO: currently clientStmt.setLocalExecutionBucketIds is not taking effect probably
+      // due to a bug. Need to be looked into before enabling the code below.
+
+//      statement match {
+//        case clientStmt: ClientStatement =>
+//          val numBuckets = partition.buckets.size
+//          val bucketSet = if (numBuckets == 1) {
+//            Collections.singleton[Integer](partition.buckets.head)
+//          } else {
+//            val buckets = new java.util.HashSet[Integer](numBuckets)
+//            partition.buckets.foreach(buckets.add(_))
+//            buckets
+//          }
+//          clientStmt.setLocalExecutionBucketIds(bucketSet, resolvedName)
+//        case _ =>
+//          val buckets = partition.buckets.mkString(",")
+//          statement.execute(
+//            s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+//      }
     }
 
     val rs = statement.executeQuery(query)
