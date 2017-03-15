@@ -128,11 +128,10 @@ object QueryExecutor {
 
     // scalastyle:off println
     try {
-      var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic)
-
       println(s"Started executing $queryNumber")
 
       if (isResultCollection) {
+        var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic)
         val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, true)
         println(s"$queryNumber : ${resultSet.length}")
 
@@ -147,6 +146,7 @@ object QueryExecutor {
         var totalTime: Long = 0
         queryPrintStream.println(queryNumber)
         for (i <- 1 to (warmup + runsForAverage)) {
+          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic)
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
           if (i == 1) {
