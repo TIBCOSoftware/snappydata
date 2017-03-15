@@ -95,6 +95,9 @@ dependencies {
         testCompile group: 'io.snappydata', name: 'gemfire-core', version: snappyStoreVersion
         testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
     }
+    testRuntime project(':snappy-core_' + scalaBinaryVersion)
+    testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-cluster_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
     testCompile project(':snappy-cluster_' + scalaBinaryVersion)
     testRuntime project(':snappy-cluster_' + scalaBinaryVersion)

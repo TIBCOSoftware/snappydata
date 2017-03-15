@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, ResultSet, Statement}
+import java.sql.{Blob, Connection, ResultSet, Statement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
@@ -27,6 +27,7 @@ import scala.reflect.ClassTag
 import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.NonLocalRegionEntry
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.thrift.common.BufferedBlob
@@ -182,7 +183,7 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected def getCurrentValue: A
 
-  final def close() {
+  def close() {
     if (!hasNextValue) return
     try {
       // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
@@ -255,12 +256,20 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     extends ResultSetIterator[ColumnBatch](conn, stmt, rs, context) {
 
   private val numCols = requiredColumns.length
+  private val colBlobs = new Array[Blob](numCols)
   private val colBuffers = new Array[ByteBuffer](numCols)
 
   override protected def getCurrentValue: ColumnBatch = {
     var i = 0
     while (i < numCols) {
-      colBuffers(i) = rs.getBlob(i + 1) match {
+      val colBlob = colBlobs(i)
+      if (colBlob ne null) {
+        colBlob.free()
+      }
+      // release previous set of buffers immediately
+      UnsafeHolder.releaseIfDirectBuffer(colBuffers(i))
+      colBlobs(i) = rs.getBlob(i + 1)
+      colBuffers(i) = colBlobs(i) match {
         case blob: BufferedBlob => blob.getAsBuffer
         case blob => ByteBuffer.wrap(blob.getBytes(
           1, blob.length().asInstanceOf[Int]))
@@ -269,8 +278,27 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     }
     i += 1
     val numRows = rs.getInt(i)
-    val statsData = rs.getBytes(i + 1)
-    ColumnBatch(numRows, colBuffers, statsData)
+    val statsData = rs.getBlob(i + 1)
+    val statsBytes = statsData.getBytes(1, statsData.length().asInstanceOf[Int])
+    statsData.free()
+    ColumnBatch(numRows, colBuffers, statsBytes)
+  }
+
+  override def close(): Unit = {
+    var i = 0
+    while (i < numCols) {
+      if (colBlobs(i) ne null) {
+        try {
+          colBlobs(i).free()
+        } catch {
+          case e: Exception => logWarning("Exception clearing Blob", e)
+        }
+        // release last set of buffers
+        UnsafeHolder.releaseIfDirectBuffer(colBuffers(i))
+      }
+      i += 1
+    }
+    super.close()
   }
 }
 

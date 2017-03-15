@@ -36,7 +36,7 @@ import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 
   GfxdUtilLauncher.snappyStore = true
-  ClientSharedUtils.setThriftIsDefault(true)
+  ClientSharedUtils.setThriftDefault(true)
 
   import SnappyUtilLauncher._
 

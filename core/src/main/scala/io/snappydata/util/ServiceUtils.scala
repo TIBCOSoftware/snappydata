@@ -87,7 +87,7 @@ object ServiceUtils {
     val locatorServers = scala.collection.mutable.HashMap[DistributedMember, String]()
     locators.asScala.foreach(locator =>
       locatorServers.put(locator,
-        if (ClientSharedUtils.USE_THRIFT_AS_DEFAULT) advisor.getThriftServers(locator)
+        if (ClientSharedUtils.isThriftDefault) advisor.getThriftServers(locator)
         else advisor.getDRDAServers(locator)))
     locatorServers
   }
