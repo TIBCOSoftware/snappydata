@@ -77,7 +77,13 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
-      v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, schema, ctx, v)
+      v: Version, isPreparedPhase: Boolean): SparkSQLExecute = {
+    if (isPreparedPhase) {
+      new SparkSQLPreapreImpl(sql, schema, ctx, v)
+    } else {
+      new SparkSQLExecuteImpl(sql, schema, ctx, v)
+    }
+  }
 
   override def readDataType(in: ByteArrayDataInput): AnyRef = {
     // read the DataType
