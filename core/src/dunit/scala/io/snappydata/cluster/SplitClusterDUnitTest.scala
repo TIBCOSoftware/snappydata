@@ -103,19 +103,6 @@ class SplitClusterDUnitTest(s: String)
     vm3.invoke(getClass, "startSparkCluster", productDir)
   }
 
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
-  }
-
-
   override def afterClass(): Unit = {
     super.afterClass()
     vm3.invoke(getClass, "stopSparkCluster", productDir)
@@ -632,6 +619,18 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
         s"Exception in parsing as JSON: $s", e)
     }
     throw new AssertionError(s"Failed in parsing as JSON: $s")
+  }
+
+  def startSparkCluster(productDir: String): Unit = {
+    logInfo(s"Starting spark cluster in $productDir/work")
+    (productDir + "/sbin/start-all.sh") !!
+  }
+
+  def stopSparkCluster(productDir: String): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    logInfo(s"Stopping spark cluster in $productDir/work")
+    if (sparkContext != null) sparkContext.stop()
+    (productDir + "/sbin/stop-all.sh") !!
   }
 }
 

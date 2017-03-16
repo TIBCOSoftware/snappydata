@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
-import io.snappydata.{Lead, Locator, Server, ServiceManager}
+import io.snappydata.{Lead, Locator, Property, Server, ServiceManager}
 import org.slf4j.LoggerFactory
 import scala.sys.process._
 
@@ -219,6 +219,8 @@ object ClusterManagerTestBase extends Logging {
    */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
     props.setProperty("locators", "localhost[" + locatorPort + ']')
+    props.setProperty(Property.JobServerEnabled.name, "false")
+    props.setProperty("isTest", "true")
     val server: Lead = ServiceManager.getLeadInstance
     server.start(props)
     assert(server.status == FabricService.State.RUNNING)
