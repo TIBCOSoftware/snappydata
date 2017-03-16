@@ -1,0 +1,2 @@
+APP.REGIONS.REGIONID = ::start 1, increment 1
+APP.REGIONS.REGIONDESCRIPTION = Eastern,Western,Northern,Southern

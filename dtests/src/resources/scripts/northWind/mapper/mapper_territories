@@ -1,0 +1,4 @@
+APP.TERRITORIES.TERRITORYID = ::start 1581, increment 150
+APP.TERRITORIES.TERRITORYDESCRIPTION = WestboroBedford,Georgetow,Boston,Cambridge,Braintree,Providence,Hollis,Portsmouth,Wilton,Morristown,Edison,NewYork,NewYork,Mellvile,Fairport,Philadelphia,Neward,Rockville,Greensboro,Cary,Columbia,Atlanta,Savannah,Orlando,Tampa,Louisville,Beachwood,Findlay,Southfield,Troy,BloomfieldHills,Racine,Roseville,Minneapolis,HoffmanEstates,Chicago,Bentonville,Dallas,Austin,Denver,ColoradoSprings,Phoenix,Scottsdale,SantaMonica,MenloPark,SanFrancisco,Campbell,SantaClara,SantaCruz,Bellevue,Redmond,Seattle
+APP.TERRITORIES.REGIONID = ::start 1, increment 1
+
