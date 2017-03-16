@@ -92,7 +92,7 @@ object WorkingWithJson extends SnappySQLJob {
     println
 
     // Query it like any other table
-    val nameAndAddress = snSession.sqlUncached("SELECT " +
+    val nameAndAddress = snSession.sql("SELECT " +
         "name, " +
         "address.city, " +
         "address.state, " +
