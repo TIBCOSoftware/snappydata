@@ -1,1 +1,0 @@
-SnappyData provides built-in system procedures to help you manage the distributed system. For example, you can use system procedures to export or import data, install required JAR files, and install listener implementations.
