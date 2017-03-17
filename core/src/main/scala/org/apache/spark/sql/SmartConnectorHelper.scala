@@ -41,10 +41,9 @@ class SmartConnectorHelper extends Logging {
 
   private lazy val connFactory = {
     clusterMode match {
-      case ThinClientConnectorMode(_, props) =>
+      case ThinClientConnectorMode(_, url) =>
         JdbcUtils.createConnectionFactory(
-          Property.ClusterURL.getOption(session.sparkContext.conf).get +
-              ";route-query=false;" + props, new Properties())
+          url + ";route-query=false;" , new Properties())
       case _ =>
         throw new AnalysisException("Not expected to be called for " + clusterMode)
     }
@@ -67,7 +66,7 @@ class SmartConnectorHelper extends Logging {
   private var dropUDFStmt: CallableStatement = _
 
   clusterMode match {
-    case ThinClientConnectorMode(_, props) =>
+    case ThinClientConnectorMode(_, url) =>
       initializeConnection()
     case _ =>
   }

@@ -575,7 +575,8 @@ object SplitSnappyClusterDUnitTest
       }
       snc
     } else {
-      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
+//      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
+      val connectionURL = s"localhost:$locatorClientPort"
       logInfo(s"URL for connector is $connectionURL")
       val conf = new SparkConf()
           .setAppName("test Application")

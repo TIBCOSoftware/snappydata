@@ -292,10 +292,8 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
           (true, Constant.DEFAULT_EMBEDDED_URL +
               ";host-data=false;disable-streaming=true;default-persistent=true;" +
               props, Constant.JDBC_EMBEDDED_DRIVER)
-        case ThinClientConnectorMode(_, props) =>
-          val url = Property.ClusterURL.getOption(sc.conf).get
-          (true, url + ";route-query=false;" +
-              props, Constant.JDBC_CLIENT_DRIVER)
+        case ThinClientConnectorMode(_, url) =>
+          (true, url + ";route-query=false;", Constant.JDBC_CLIENT_DRIVER)
         case ExternalClusterMode(_, _) =>
           (false, null, null)
       }

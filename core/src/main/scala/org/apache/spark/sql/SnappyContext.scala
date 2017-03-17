@@ -1017,8 +1017,15 @@ object SnappyContext extends Logging {
           if (embedded) ExternalEmbeddedMode(sc, url)
           else SplitClusterMode(sc, url)
       }).orElse(Property.ClusterURL.getOption(conf).collectFirst {
-        case s if !s.isEmpty =>
-          ThinClientConnectorMode(sc, "")
+        case hostPort if !hostPort.isEmpty =>
+          val p = hostPort.split(":")
+          if (p.length != 2 ) {
+            throw new SparkException("Invalid \"host:clientPort\" pattern specified")
+          }
+          val host = p(0)
+          val clientPort = p(1).toInt
+          val url = Constant.DEFAULT_THIN_CLIENT_URL + s"$host:$clientPort/"
+          ThinClientConnectorMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
@@ -1062,7 +1069,7 @@ object SnappyContext extends Logging {
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
         SnappyTableStatsProviderService.start(sc)
       case ThinClientConnectorMode(_, _) =>
-        // currently do nothing
+        // do nothing
 //        SnappyTableStatsProviderService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)

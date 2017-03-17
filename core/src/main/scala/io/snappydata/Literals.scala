@@ -31,6 +31,8 @@ object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
 
+  val DEFAULT_THIN_CLIENT_URL = "jdbc:snappydata://"
+
   val SNAPPY_URL_PREFIX = "snappydata://"
 
   val JDBC_URL_PREFIX = "snappydata://"
@@ -175,8 +177,11 @@ object Property extends Enumeration {
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
   val ClusterURL = Val[String](s"${Constant.PROPERTY_PREFIX}Cluster.URL",
-    "Connection URL for SnappyData cluster when connector mode is " +
-     "used. This URL is of the form \"jdbc:snappydata://localhost:clientPort/\"",
+     "Host and client port combination in the form [host:clientPort]. This " +
+     "is used by smart connector to connect to SnappyData cluster using " +
+     "JDBC driver. This will be used to form a JDBC URL of the form " +
+     "\"jdbc:snappydata://host:clientPort/\". It is recommended that hostname " +
+     "and client port of the locator be specified for this.",
      None, Constant.SPARK_PREFIX)
 
   val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",

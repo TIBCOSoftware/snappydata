@@ -295,7 +295,8 @@ trait SplitClusterDUnitTestObject extends Logging {
       }
       snc
     } else {
-      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
+//      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
+      val connectionURL = s"localhost:$locatorClientPort"
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
