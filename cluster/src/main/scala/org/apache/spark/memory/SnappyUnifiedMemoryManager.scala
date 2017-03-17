@@ -286,18 +286,13 @@ class SnappyUnifiedMemoryManager private[memory](
     if (buffer ne null) {
       if (buffer.freeMemory() > numBytes) {
         buffer.incMemoryUsed(numBytes)
-        SnappyUnifiedMemoryManager.bufferMemory.addAndGet(1)
         true
       } else {
         val predictedMemory = numBytes * buffer.getTotalOperationsExpected
         buffer.incAllocatedMemory(predictedMemory)
         val success = askStoragePool(objectName, blockId, predictedMemory, memoryMode, shouldEvict)
-        SnappyUnifiedMemoryManager.nonBufferMemory.addAndGet(1)
         buffer.setFirstAllocationObject(objectName)
-
         buffer.incMemoryUsed(numBytes)
-        SnappyUnifiedMemoryManager.bufferMemory.addAndGet(1)
-
         success
       }
     } else {
@@ -377,28 +372,11 @@ private object SnappyUnifiedMemoryManager extends Logging{
     testCallbacks.clear()
   }
 
-  private def invokeListenersOnStorageMemoryAcquireSuccess(objectName: String,
-                                                           bytes: Long): Unit = {
-    testCallbacks.map(l => l.onStorageMemoryAcquireSuccess(objectName, bytes))
-  }
-
-  private def invokeListenersOnStorageMemoryAcquireFailure(objectName: String,
-                                                           bytes: Long): Unit = {
-    testCallbacks.map(l => l.onStorageMemoryAcquireFailure(objectName, bytes))
-  }
-
   private def invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName: String,
                                                                    bytes: Long): Unit = {
     testCallbacks.map(l => l.onPositiveMemoryIncreaseDueToEviction(objectName, bytes))
   }
 
-  private def invokeListenersOnExecutionMemoryAcquireSuccess(taskID: Long, bytes: Long): Unit = {
-    testCallbacks.map(l => l.onExecutionMemoryAcquireSuccess(taskID, bytes))
-  }
-
-  private def invokeListenersOnExecutionMemoryAcquireFailure(taskID: Long, bytes: Long): Unit = {
-    testCallbacks.map(l => l.onExecutionMemoryAcquireFailure(taskID, bytes))
-  }
 
   /**
     * Return the total amount of memory shared between execution and storage, in bytes.

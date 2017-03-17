@@ -18,6 +18,8 @@
 package org.apache.spark.memory
 
 
+import java.util.Collections
+
 import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 
@@ -30,7 +32,7 @@ import org.apache.spark.Logging
 
 class SnappyStorageEvictor extends Logging{
 
-  private def getAllRegionList: Seq[LocalRegion] = {
+  private def getAllRegionList: java.util.List[LocalRegion] = {
     val cache = GemFireCacheImpl.getExisting
     val allRegionList = new java.util.ArrayList[LocalRegion]()
     val irm: InternalResourceManager = cache.getResourceManager
@@ -60,7 +62,7 @@ class SnappyStorageEvictor extends Logging{
         }
       }
     }
-    return allRegionList.asScala
+    return allRegionList
   }
 
   @throws(classOf[Exception])
@@ -69,7 +71,8 @@ class SnappyStorageEvictor extends Logging{
     cache.getCachePerfStats.incEvictorJobsStarted
     var bytesEvicted: Long = 0
     var totalBytesEvicted: Long = 0
-    val regionSet = scala.util.Random.shuffle(getAllRegionList)
+    val regionSet = getAllRegionList
+    Collections.shuffle(regionSet)
     try {
       while (true) {
         cache.getCachePerfStats
@@ -77,7 +80,7 @@ class SnappyStorageEvictor extends Logging{
         if (regionSet.isEmpty) {
           return 0;
         }
-        val iter = regionSet.asJava.iterator
+        val iter = regionSet.iterator
         while (iter.hasNext) {
           val region: LocalRegion = iter.next
           try {
