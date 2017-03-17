@@ -939,6 +939,53 @@ object HeapAllocator extends ColumnAllocator {
   override def isOffHeap: Boolean = false
 }
 
+object OffHeapAllocator extends ColumnAllocator {
+
+  private def checkSize(size: Long): Int = {
+    if (size < Int.MaxValue) size.toInt
+    else {
+      throw new IndexOutOfBoundsException(
+        s"Invalid size/index = $size. Max allowed = ${Int.MaxValue - 1}.")
+    }
+  }
+
+  override def allocate(size: Long): ColumnData = {
+    val memorySize = ByteArrayMethods.roundNumberOfBytesToNearestWord(
+      checkSize(size))
+    val address = Platform.allocateMemory(memorySize)
+    new ColumnData(null, address, address + memorySize)
+  }
+
+  override def expand(columnData: ColumnData, cursor: Long,
+      required: Long): ColumnData = {
+    val currentUsed = cursor - columnData.baseOffset
+    val minRequired = currentUsed + required
+    // double the size
+    val newLength = ByteArrayMethods.roundNumberOfBytesToNearestWord(math.min(
+      math.max(columnData.sizeInBytes << 1L, minRequired), Int.MaxValue >>> 1)
+        .asInstanceOf[Int])
+    if (newLength < minRequired) {
+      throw new IndexOutOfBoundsException(
+        s"Cannot allocate more than $newLength bytes but required $minRequired")
+    }
+    val address = Platform.allocateMemory(newLength)
+    Platform.copyMemory(null, columnData.baseOffset, null, address, currentUsed)
+    new ColumnData(null, address, address + newLength)
+  }
+
+  override def copy(source: AnyRef, sourcePos: Long,
+      dest: AnyRef, destPos: Long, size: Long): Unit =
+    Platform.copyMemory(source, sourcePos, dest, destPos, size)
+
+  override def release(columnData: ColumnData): Unit =
+    Platform.freeMemory(columnData.baseOffset)
+
+  override def toBuffer(data: ColumnData): ByteBuffer =
+    UnsafeHolder.allocateDirectBuffer(data.baseOffset, data.sizeInBytes.toInt)
+
+  override def isOffHeap: Boolean = true
+}
+
 trait NotNullDecoder extends ColumnDecoder {
 
   override protected final def hasNulls: Boolean = false

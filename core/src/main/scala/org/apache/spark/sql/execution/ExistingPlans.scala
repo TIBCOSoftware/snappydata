@@ -361,6 +361,13 @@ trait BatchConsumer extends CodegenSupport {
    */
   def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String
+
+  /**
+   * Generate Java source code to do any processing before return after
+   * current row processing i.e. when shouldStop() returns true.
+   */
+  def beforeStop(ctx: CodegenContext, plan: SparkPlan,
+      input: Seq[ExprCode]): String = ""
 }
 
 /**

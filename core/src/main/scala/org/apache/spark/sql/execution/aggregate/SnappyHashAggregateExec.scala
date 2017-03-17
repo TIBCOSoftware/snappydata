@@ -243,7 +243,7 @@ case class SnappyHashAggregateExec(
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {
-    if (groupingExpressions.isEmpty) return false
+    if (groupingExpressions.isEmpty) return true // for beforeStop()
     // check the outputs of the plan
     val planOutput = plan.output
     // linear search is enough instead of map create/lookup like in intersect
@@ -267,8 +267,26 @@ case class SnappyHashAggregateExec(
     }
   }
 
+  override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
+      input: Seq[ExprCode]): String = {
+    if (bufVars eq null) ""
+    else {
+      bufVarUpdates = bufVars.indices.map { i =>
+        val ev = bufVars(i)
+        s"""
+           |// update the member result variables from local variables
+           |this.${ev.isNull} = ${ev.isNull};
+           |this.${ev.value} = ${ev.value};
+        """.stripMargin
+      }.mkString("\n").trim
+      bufVarUpdates
+    }
+  }
+
   // The variables used as aggregation buffer
   @transient private var bufVars: Seq[ExprCode] = _
+  // code to update buffer variables with current values
+  @transient private var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
@@ -292,7 +310,7 @@ case class SnappyHashAggregateExec(
         """.stripMargin
       ExprCode(ev.code + initVars, isNull, value)
     }
-    val initBufVar = evaluateVariables(bufVars)
+    var initBufVar = evaluateVariables(bufVars)
 
     // generate variables for output
     val (resultVars, genResult) = if (modes.contains(Final) ||
@@ -323,13 +341,26 @@ case class SnappyHashAggregateExec(
     }
 
     val doAgg = ctx.freshName("doAggregateWithoutKey")
+    var produceOutput = getChildProducer.asInstanceOf[CodegenSupport].produce(
+      ctx, this)
+    if (bufVarUpdates ne null) {
+      // use local variables while member variables are updated at the end
+      initBufVar = bufVars.indices.map { i =>
+        val ev = bufVars(i)
+        s"""
+           |boolean ${ev.isNull} = this.${ev.isNull};
+           |${ctx.javaType(initExpr(i).dataType)} ${ev.value} = this.${ev.value};
+        """.stripMargin
+      }.mkString("", "\n", initBufVar).trim
+      produceOutput = s"$produceOutput\n$bufVarUpdates"
+    }
     ctx.addNewFunction(doAgg,
       s"""
          |private void $doAgg() throws java.io.IOException {
          |  // initialize aggregation buffer
          |  $initBufVar
          |
-         |  ${getChildProducer.asInstanceOf[CodegenSupport].produce(ctx, this)}
+         |  $produceOutput
          |}
        """.stripMargin)
 

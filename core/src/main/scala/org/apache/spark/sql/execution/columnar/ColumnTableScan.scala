@@ -532,7 +532,9 @@ private[sql] final case class ColumnTableScan(
       """.stripMargin)
 
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
-      columnsInput)).mkString("\n")
+      columnsInput)).mkString("\n").trim
+    val beforeStop = batchConsumers.map(_.beforeStop(ctx, this,
+      columnsInput)).mkString("\n").trim
     val finallyCode = session match {
       case Some(s) => s.evaluateFinallyCode(ctx)
       case _ => ""
@@ -554,6 +556,7 @@ private[sql] final case class ColumnTableScan(
        |      ${moveNextCode.toString()}
        |      $consumeCode
        |      if (shouldStop()) {
+       |        $beforeStop
        |        // increment index for return
        |        $batchIndex = $batchOrdinal + 1;
        |        // set the cursors

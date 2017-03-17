@@ -102,9 +102,9 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     sparkSession.sql("drop table if exists test")
     snappySession.sql("drop table if exists test")
     val testDF = sparkSession.range(size)
-        .selectExpr("id", "floor(rand() * 10000) as k")
+        .selectExpr("id", "(rand() * 1000.0) as k")
     val testDF2 = snappySession.range(size)
-        .selectExpr("id", "floor(rand() * 10000) as k")
+        .selectExpr("id", "(rand() * 1000.0) as k")
     testDF.createOrReplaceTempView("test")
 
     val query = "select avg(k), avg(id) from test"
@@ -130,7 +130,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         } else if (snappy) {
           snappySession.sql("drop table if exists test")
           snappySession.sql(s"create table test (id bigint not null, " +
-              s"k bigint not null) using column")
+              s"k double not null) using column")
           testDF2.write.insertInto("test")
         }
         if (snappy) {
