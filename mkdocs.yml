@@ -21,6 +21,7 @@ pages:
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
 - API: apidocsintro.md
+- Reference Documents: additional_docs.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
@@ -29,6 +30,8 @@ pages:
 
 theme: readthedocs
 
+theme_dir: docs/custom_theme
+
 extra_css: [extra.css]
 
-copyright: Copyright &copy; 2016 SnappyData Inc.
+copyright: Copyright &copy; 2017 SnappyData Inc.

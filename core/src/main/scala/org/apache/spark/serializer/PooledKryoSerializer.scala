@@ -24,8 +24,11 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
-import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
+import com.esotericsoftware.kryo.serializers.{ExternalizableSerializer, JavaSerializer => KryoJavaSerializer}
 import com.esotericsoftware.kryo.{Kryo, KryoException}
+import org.apache.commons.logging.impl.SLF4JLocationAwareLog
+import org.slf4j.helpers.NOPLogger
+import org.slf4j.impl.Log4jLoggerAdapter
 
 import org.apache.spark.broadcast.TorrentBroadcast
 import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
@@ -35,7 +38,7 @@ import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
-import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellColumnBatchRDD, SparkShellRowRDD}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
@@ -124,6 +127,10 @@ final class PooledKryoSerializer(conf: SparkConf)
       BlockManagerId.getCachedBlockManagerId))
     kryo.register(classOf[StorageLevel], new ExternalizableResolverSerializer(
       StorageLevel.getCachedStorageLevel))
+    kryo.register(classOf[SLF4JLocationAwareLog], new KryoJavaSerializer())
+    kryo.register(classOf[Log4jLoggerAdapter], new KryoJavaSerializer())
+    kryo.register(classOf[NOPLogger], new KryoJavaSerializer())
+
     kryo.register(classOf[BlockAndExecutorId], new ExternalizableOnlySerializer)
     kryo.register(classOf[StructType], StructTypeSerializer)
     kryo.register(classOf[NarrowExecutorLocalSplitDep],
@@ -131,10 +138,10 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(CachedDataFrame.getClass, new KryoSerializableSerializer)
     kryo.register(classOf[ConnectionProperties], ConnectionPropertiesSerializer)
     kryo.register(classOf[RowFormatScanRDD], new KryoSerializableSerializer)
-    kryo.register(classOf[SparkShellRowRDD], new KryoSerializableSerializer)
+    kryo.register(classOf[SmartConnectorRowRDD], new KryoSerializableSerializer)
     kryo.register(classOf[ColumnarStorePartitionedRDD],
       new KryoSerializableSerializer)
-    kryo.register(classOf[SparkShellColumnBatchRDD],
+    kryo.register(classOf[SmartConnectorColumnRDD],
       new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)

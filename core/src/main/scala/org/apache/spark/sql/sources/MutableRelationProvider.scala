@@ -72,23 +72,20 @@ abstract class MutableRelationProvider
       relation.tableSchema = relation.createTable(mode)
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-      catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), None, Array.empty[String],
-        classOf[org.apache.spark.sql.row.DefaultSource].getCanonicalName,
-        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
             overwrite = false)
         case None =>
       }
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), None, Array.empty[String],
+        classOf[org.apache.spark.sql.row.DefaultSource].getCanonicalName,
+        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       success = true
       relation
     } finally {
       if (!success && !relation.tableExists) {
-        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
-          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }

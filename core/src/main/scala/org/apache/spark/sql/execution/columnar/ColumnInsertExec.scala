@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
@@ -56,6 +55,10 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   @transient private var storeColumnBatch: String = _
   @transient private var storeColumnBatchArgs: String = _
   @transient private var initEncoders: String = _
+
+  @transient private val MAX_CURSOR_DECLARATIONS = 30
+  @transient private var cursorsArrayTerm: String = _
+  @transient private var cursorsArrayCreate: String = _
 
   @transient private[sql] var batchIdRef = -1
 
@@ -162,6 +165,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  $childProduce
        |}
        |if ($batchSizeTerm > 0) {
+       |  $cursorsArrayCreate
        |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
@@ -176,13 +180,17 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val schema = relationSchema
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
 
+    val cursorsAsArray = schema.length > MAX_CURSOR_DECLARATIONS
+
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
     val sizeTerm = ctx.freshName("size")
+    cursorsArrayTerm = if (cursorsAsArray) ctx.freshName("cursors") else null
 
     val encoderClass = classOf[ColumnEncoder].getName
-    val taskContextClass = classOf[TaskContext].getName
     val buffersCode = new StringBuilder
+    val encoderCursorDeclarations = new StringBuilder
+    val cursorsArrayCode = new StringBuilder
     val batchFunctionDeclarations = new StringBuilder
     val batchFunctionCall = new StringBuilder
     val calculateSize = new StringBuilder
@@ -193,9 +201,16 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
           s"$schemaTerm.fields()[$i], $defaultBatchSizeTerm, true);"
       buffersCode.append(
         s"$buffers[$i] = $encoderTerm.finish($cursorTerm);\n")
-      batchFunctionDeclarations.append(
-        s"$encoderClass $encoderTerm, long $cursorTerm,\n")
-      batchFunctionCall.append(s"$encoderTerm, $cursorTerm,\n")
+      encoderCursorDeclarations.append(
+        s"final $encoderClass $encoderTerm = this.$encoderTerm;\n")
+      if (cursorsAsArray) {
+        encoderCursorDeclarations.append(
+          s"long $cursorTerm = $cursorsArrayTerm[$i];\n")
+        cursorsArrayCode.append(s"$cursorsArrayTerm[$i] = $cursorTerm;\n")
+      } else {
+        batchFunctionDeclarations.append(s"long $cursorTerm,\n")
+        batchFunctionCall.append(s"$cursorTerm,\n")
+      }
       calculateSize.append(
         s"$sizeTerm += $encoderTerm.sizeInBytes($cursorTerm);\n")
       (init, genCodeColumnWrite(ctx, field.dataType, field.nullable, encoderTerm,
@@ -203,15 +218,25 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     }.unzip3
     initEncoders = encodersInit.mkString("\n")
 
-    batchFunctionDeclarations.setLength(
-      batchFunctionDeclarations.length - 2)
-    batchFunctionCall.setLength(batchFunctionCall.length - 2)
+    if (cursorsAsArray) {
+      batchFunctionDeclarations.append(s"long[] $cursorsArrayTerm")
+      batchFunctionCall.append(s"$cursorsArrayTerm")
+      cursorsArrayCreate =
+          s"""
+             |final long[] $cursorsArrayTerm = new long[${schema.length}];
+             |${cursorsArrayCode.toString()}""".stripMargin
+    } else {
+      batchFunctionDeclarations.setLength(
+        batchFunctionDeclarations.length - 2)
+      batchFunctionCall.setLength(batchFunctionCall.length - 2)
+      cursorsArrayCreate = ""
+    }
 
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", None,
       classOf[Option[_]].getName)
-    val partitionIdCode = if (partitioned) s"$taskContextClass.getPartitionId()"
+    val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
       batchBucketIdTerm.getOrElse(
@@ -238,6 +263,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       s"""
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
          |    int $batchSizeTerm, ${batchFunctionDeclarations.toString()}) {
+         |  $encoderCursorDeclarations
          |  // create statistics row
          |  ${statsCode.mkString("\n")}
          |  ${statsEv.code.trim}
@@ -270,6 +296,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  long $sizeTerm = 0L;
        |  ${calculateSize.toString()}
        |  if ($sizeTerm >= $columnBatchSize) {
+       |    $cursorsArrayCreate
        |    $storeColumnBatch(-1, $storeColumnBatchArgs);
        |    $batchSizeTerm = 0;
        |    $initEncoders
@@ -296,6 +323,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     var upperIsNull = "false"
     var canBeNull = false
     val nullCount = ctx.freshName("nullCount")
+    val count = ctx.freshName("count")
     val sqlType = Utils.getSQLDataType(field.dataType)
     val jt = ctx.javaType(sqlType)
     val boundsCode = sqlType match {
@@ -347,12 +375,14 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       s"""
          |$boundsCode
          |$nullsCode
-         |final int $nullCount = $encoder.nullCount();""".stripMargin
+         |final int $nullCount = $encoder.nullCount();
+         |final int $count = $encoder.count();""".stripMargin
 
     (code, ColumnStatsSchema(field.name, field.dataType).schema, Seq(
       ExprCode("", lowerIsNull, lower),
       ExprCode("", upperIsNull, upper),
-      ExprCode("", "false", nullCount)))
+      ExprCode("", "false", nullCount),
+      ExprCode("", "false", count)))
   }
 }
 
