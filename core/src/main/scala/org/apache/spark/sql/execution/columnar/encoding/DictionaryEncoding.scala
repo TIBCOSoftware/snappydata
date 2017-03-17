@@ -320,6 +320,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         this.stringTail = key
       }
     }
+    updateCount
     // write the index
     writeIndex(position, index)
   }
