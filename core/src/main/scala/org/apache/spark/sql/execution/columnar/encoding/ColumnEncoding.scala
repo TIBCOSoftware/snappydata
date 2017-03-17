@@ -365,7 +365,7 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperLong) {
       _upperLong = value
     }
-    _count = _count + 1
+    updateCount
   }
 
   @inline protected final def updateDoubleStats(value: Double): Unit = {
@@ -377,7 +377,7 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperDouble) {
       _upperDouble = value
     }
-    _count = _count + 1
+    updateCount
   }
 
   @inline protected final def updateStringStats(value: UTF8String): Unit = {
@@ -395,6 +395,9 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperStr = value
       }
     }
+  }
+
+  final def updateCount(): Unit = {
     _count = _count + 1
   }
 
@@ -414,7 +417,7 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperStr = StringUtils.cloneIfRequired(value)
       }
     }
-    _count = _count + 1
+    updateCount
   }
 
   @inline protected final def updateDecimalStats(value: Decimal): Unit = {
@@ -432,7 +435,7 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperDecimal = value
       }
     }
-    _count = _count + 1
+    updateCount
   }
 
   def nullCount: Int
