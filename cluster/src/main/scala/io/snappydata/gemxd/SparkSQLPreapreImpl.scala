@@ -38,9 +38,6 @@ class SparkSQLPreapreImpl(override val sql: String,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
 
-    // TODO implement writeMetaData(srh)
-    srh.setHasMetadata()
-
     DataSerializer.writeIntArray(Array[Int](1, StoredFormatIds.SQL_INTEGER_ID, -1, -1), hdos)
 
     msg.lastResult(srh)
