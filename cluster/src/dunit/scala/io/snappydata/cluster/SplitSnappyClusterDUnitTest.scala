@@ -588,9 +588,10 @@ object SplitSnappyClusterDUnitTest
       conf.getAll.foreach(println)
 
       val sc = SparkContext.getOrCreate(conf)
-      sc.setLogLevel("DEBUG")
-      Logger.getLogger("org").setLevel(Level.DEBUG)
-      Logger.getLogger("akka").setLevel(Level.DEBUG)
+//      sc.setLogLevel("DEBUG")
+//      Logger.getRootLogger.setLevel(Level.ALL)
+//      Logger.getLogger("org").setLevel(Level.DEBUG)
+//      Logger.getLogger("akka").setLevel(Level.DEBUG)
       val snc = SnappyContext(sc)
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)

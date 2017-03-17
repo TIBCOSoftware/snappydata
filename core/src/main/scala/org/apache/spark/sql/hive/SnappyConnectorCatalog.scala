@@ -36,7 +36,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.{DataType, StructType}
-import org.apache.spark.sql.{SaveMode, SmartConnectorHelper, SnappyContext, SnappySession}
+import org.apache.spark.sql.{SaveMode, SmartConnectorHelper, SnappySession}
 
 /**
  * Catalog used when SnappyData Connector mode is used over thin client JDBC connection.

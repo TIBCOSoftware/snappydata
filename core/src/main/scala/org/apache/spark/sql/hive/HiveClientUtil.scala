@@ -140,6 +140,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
     val metadataConf = new HiveConf()
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_POOLING_TYPE, "DBCP")
     var warehouse = metadataConf.get(
       HiveConf.ConfVars.METASTOREWAREHOUSE.varname)
     if (warehouse == null || warehouse.isEmpty ||

@@ -16,37 +16,10 @@
  */
 package io.snappydata.cluster
 
-import com.pivotal.gemfirexd.FabricService
-import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
-import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
-import io.snappydata.{Locator, ServiceManager}
-
 class ThinConnectorSnappyDUnitTest(s: String)
     extends SplitSnappyClusterDUnitTest(s) {
 
   override protected val useThinClientConnector = true
-
-//  override def setUp(): Unit = {
-//    super.setUp()
-//    DistributedTestBase.invokeInLocator(new SerializableRunnable() {
-//      override def run(): Unit = {
-//        val loc: Locator = ServiceManager.getLocatorInstance
-//        if (loc.status != FabricService.State.RUNNING) {
-//          loc.start("localhost", locatorClientPort, locatorNetProps)
-//        }
-//        if (locatorClientPort > 0) {
-//          try {
-//            loc.startNetworkServer("localhost", locatorClientPort, locatorNetProps)
-//          } catch {
-//            case g: GemFireXDRuntimeException
-//              if g.getMessage.contains("The netserver address")
-//                  && g.getMessage.contains("is already in use") => //ignored if already started
-//          }
-//        }
-//        assert(loc.status == FabricService.State.RUNNING)
-//      }
-//    })
-//  }
 
   override def tearDown2(): Unit = {
     super.tearDown2()
@@ -58,8 +31,6 @@ class ThinConnectorSnappyDUnitTest(s: String)
 
   override def testColumnTableStatsInSplitModeWithHA(): Unit = {
   }
-
-
 
 }
 

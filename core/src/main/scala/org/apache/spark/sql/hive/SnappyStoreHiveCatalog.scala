@@ -102,7 +102,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val defaultDbDefinition =
       CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
     // Initialize default database if it doesn't already exist
-    client.createDatabase(defaultDbDefinition, ignoreIfExists = true)
+    externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
     client.setCurrentDatabase(defaultName)
     formatDatabaseName(defaultName)
   }

@@ -21,11 +21,40 @@ import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SnappyContext, SmartConnectorHelper, SnappySession}
-import org.apache.spark.sql.catalyst.catalog.{FunctionResource, CatalogFunction}
+import org.apache.spark.sql.catalyst.catalog.{CatalogTable, CatalogDatabase, FunctionResource, CatalogFunction}
 import org.apache.spark.sql.hive.client.HiveClient
 
 private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
     hadoopConf: Configuration) extends SnappyExternalCatalog(cl, hadoopConf) {
+
+  // --------------------------------------------------------------------------
+  // Databases
+  // --------------------------------------------------------------------------
+
+  override def createDatabase(
+      dbDefinition: CatalogDatabase,
+      ignoreIfExists: Boolean): Unit =  {
+  }
+
+  override def dropDatabase(
+      db: String,
+      ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = {
+  }
+
+  override def alterDatabase(dbDefinition: CatalogDatabase): Unit = {}
+
+  // --------------------------------------------------------------------------
+  // Tables
+  // --------------------------------------------------------------------------
+
+  override def createTable(db: String, tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {}
+
+  override def dropTable(db: String, table: String, ignoreIfNotExists: Boolean): Unit = {}
+
+  override def renameTable(db: String, oldName: String, newName: String): Unit = {}
+
+  override def alterTable(db: String, tableDefinition: CatalogTable): Unit = {}
 
   // --------------------------------------------------------------------------
   // Functions
@@ -51,4 +80,6 @@ private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
     sessionCatalog.connectorHelper.executeDropUDFStatement(db, name)
     SnappySession.clearAllCache()
   }
+
+  override def renameFunction(db: String, oldName: String, newName: String): Unit = {}
 }

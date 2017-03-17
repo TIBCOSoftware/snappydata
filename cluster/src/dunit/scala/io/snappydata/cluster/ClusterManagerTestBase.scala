@@ -164,7 +164,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
         if (locNetPort > 0) {
           val loc = ServiceManager.getLocatorInstance
           if (loc != null) {
-            getLogWriter.info("\n\n\n sdeshmukh STOPPING THE N/W SERVER ON LOCATOR \n \n")
             loc.stopAllNetworkServers()
           }
         }
