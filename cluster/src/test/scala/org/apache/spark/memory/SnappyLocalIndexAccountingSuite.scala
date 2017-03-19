@@ -217,12 +217,10 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
     val afterIndex = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(afterIndex)
     SnappyContext.globalSparkContext.stop()
     sparkSession = createSparkSession(1, 0, 2000000L)
     snSession = new SnappySession(sparkSession.sparkContext)
     val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(afterRecoverySize)
     assertApproximate(afterIndex, afterRecoverySize, 10)
     snSession.dropTable("t1")
   }
@@ -240,12 +238,10 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
     val afterIndex = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(afterIndex)
     SnappyContext.globalSparkContext.stop()
     sparkSession = createSparkSession(1, 0, 2000000L)
     snSession = new SnappySession(sparkSession.sparkContext)
     val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(afterRecoverySize)
     assertApproximate(afterIndex, afterRecoverySize, 10)
     snSession.dropTable("t1")
   }
@@ -272,12 +268,10 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     (1 to 30).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
     val afterThreeEntries = SparkEnv.get.memoryManager.storageMemoryUsed
     val avgEntrySize = afterThreeEntries /3
-    println(avgEntrySize)
     SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     (31 to 60).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
     val withOverflow = SparkEnv.get.memoryManager.storageMemoryUsed
     val avgEntrySizeWithOverflow = withOverflow /3
-    println(avgEntrySizeWithOverflow)
     assert(avgEntrySizeWithOverflow > avgEntrySize)
     snSession.dropTable("t1")
   }
@@ -302,12 +296,10 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     (1 to 3).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
     val afterThirtyEntries = SparkEnv.get.memoryManager.storageMemoryUsed
     val avgEntrySize = afterThirtyEntries /3
-    println(avgEntrySize)
     SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     (4 to 6).map(i => snSession.insert("t1", Row(i, i, i, i, i)))
     val withOverflow = SparkEnv.get.memoryManager.storageMemoryUsed
     val avgEntrySizeWithOverflow = withOverflow /3
-    println(avgEntrySizeWithOverflow)
     assert(avgEntrySizeWithOverflow > avgEntrySize)
     assert(snSession.sql("select * from t1").collect().length == 6)
     snSession.dropTable("t1")

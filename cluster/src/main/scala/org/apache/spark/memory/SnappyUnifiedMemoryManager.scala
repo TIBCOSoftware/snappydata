@@ -96,6 +96,7 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       taskAttemptId: Long,
       memoryMode: MemoryMode): Long = synchronized {
+    memTrace(s"Acquiring [SNAP] memory for $taskAttemptId $numBytes")
     assertInvariants()
     assert(numBytes >= 0)
     val (executionPool, storagePool, storageRegionSize, maxMemory) = memoryMode match {
@@ -193,8 +194,6 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode,
       shouldEvict: Boolean): Boolean = {
-    println(s"Acquiring [SNAP] memory for $objectName $numBytes $shouldEvict ")
-
     threadsWaitingForStorage.incrementAndGet()
     synchronized {
       if (!shouldEvict) {
@@ -282,7 +281,7 @@ class SnappyUnifiedMemoryManager private[memory](
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = {
-    logDebug(s"Acquiring [SNAP] memory for $objectName $numBytes ")
+    memTrace(s"Acquiring [SNAP] memory for $objectName $numBytes $shouldEvict")
     if (buffer ne null) {
       if (buffer.freeMemory() > numBytes) {
         buffer.incMemoryUsed(numBytes)
@@ -303,8 +302,7 @@ class SnappyUnifiedMemoryManager private[memory](
   override def releaseStorageMemoryForObject(objectName: String,
                                              numBytes: Long,
                                              memoryMode: MemoryMode): Unit = synchronized {
-    logDebug(s"releasing [SNAP] memory for $objectName $numBytes")
-    println(s"releasing [SNAP] memory for $objectName $numBytes")
+    memTrace(s"releasing [SNAP] memory for $objectName $numBytes")
     memoryForObject.get(objectName) match {
       case Some(x) => {
         memoryForObject(objectName) -= numBytes
@@ -323,7 +321,7 @@ class SnappyUnifiedMemoryManager private[memory](
                                           memoryMode: MemoryMode,
                                           ignoreNumBytes: Long): Long =
     synchronized {
-      logDebug(s"Dropping memory for $name")
+      memTrace(s"Dropping memory for $name")
       val (executionPool, storagePool, maxMemory) = memoryMode match {
         case MemoryMode.ON_HEAP => (
           onHeapExecutionMemoryPool,
@@ -351,6 +349,11 @@ class SnappyUnifiedMemoryManager private[memory](
     memoryForObject.clear()
   }
 
+  private def memTrace(msg : String) : Unit = {
+    if(java.lang.Boolean.getBoolean("snappydata.umm.memtrace")){
+      logInfo(msg)
+    }
+  }
 
 }
 

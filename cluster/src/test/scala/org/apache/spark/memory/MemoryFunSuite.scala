@@ -24,6 +24,13 @@ import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll {
 
+  @Override
+  def beforAll(): Unit ={
+    if (SnappyContext.globalSparkContext != null) {
+      SnappyContext.globalSparkContext.stop()
+    }
+  }
+
   after {
     if (SnappyContext.globalSparkContext != null) {
       val snappySession = new SnappySession(SnappyContext.globalSparkContext)

@@ -27,6 +27,8 @@ import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 
+import scala.actors.Futures._
+
 
 class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
@@ -182,14 +184,12 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     (1 to 5).map(i => snSession.insert("t1", row))
 
     SnappyContext.globalSparkContext.stop()
-    println("SnappyData shutdown")
     assert(SparkEnv.get == null)
     sparkSession = createSparkSession(1, 0, 100000L)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 0)
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"beforeInsertMem $beforeInsertMem afterRebootMemory $afterRebootMemory")
     assert(beforeInsertMem == afterRebootMemory) // 4 bytes for hashmap. Need to check
     snSession.dropTable("t1")
   }
@@ -213,7 +213,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val beforeRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     SnappyContext.globalSparkContext.stop()
 
-    println("Gemxd shutdown")
     assert(SparkEnv.get == null)
     sparkSession = createSparkSession(1, 0, 100000L)
     snSession = new SnappySession(sparkSession.sparkContext)
@@ -221,7 +220,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     assert(snSession.sql("select * from t1").collect().length == 5)
 
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"beforeRebootMemory $beforeRebootMemory afterRebootMemory $afterRebootMemory")
     // Due to a design flaw in recovery we always recover one more value than the LRU limit.
     assertApproximate(beforeRebootMemory, afterRebootMemory)
     snSession.dropTable("t1")
@@ -242,14 +240,12 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     (1 to 5).map(i => snSession.insert("t1", row))
 
     SnappyContext.globalSparkContext.stop()
-    println("SnappyData shutdown")
     assert(SparkEnv.get == null)
     sparkSession = createSparkSession(1, 0, 100000L)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 0)
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"beforeInsertMem $beforeInsertMem afterRebootMemory $afterRebootMemory")
     assert(beforeInsertMem == afterRebootMemory) // 4 bytes for hashmap. Need to check
     snSession.dropTable("t1")
   }
@@ -269,14 +265,12 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     val beforeRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     SnappyContext.globalSparkContext.stop()
-    println("Gemxd shutdown")
     assert(SparkEnv.get == null)
     sparkSession = createSparkSession(1, 0, 100000L)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 5)
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"beforeRebootMemory $beforeRebootMemory afterRebootMemory $afterRebootMemory")
     // Due to a design flaw in recovery we always recover one more value than the LRU limit.
     assertApproximate(beforeRebootMemory, afterRebootMemory)
     snSession.dropTable("t1")
@@ -297,14 +291,12 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     val beforeRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     SnappyContext.globalSparkContext.stop()
-    println("Snappy shutdown")
     assert(SparkEnv.get == null)
     sparkSession = createSparkSession(1, 0, 1000000L)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 10)
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"beforeRebootMemory $beforeRebootMemory afterRebootMemory $afterRebootMemory")
     assertApproximate(beforeRebootMemory, afterRebootMemory, 4)
     snSession.dropTable("t1")
   }
@@ -381,10 +373,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val rdd = sparkSession.sparkContext.parallelize(data, 2).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snSession.createDataFrame(rdd)
     dataDF.cache()
-    println(dataDF.count())
-
+    dataDF.count
     val afterCache = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterCache = $afterCache beforeCache= $beforeCache")
     assert(afterCache > beforeCache)
   }
 
@@ -416,10 +406,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val row = Row(1, 1, "1")
     snSession.insert("t1", row)
     val afterInsert = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterInsert =$afterInsert")
     snSession.update("t1", "COL1=1", Row("XXXXXXXXXX"), "COL3")
     val afterUpdate = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterUpdate =$afterUpdate")
     assert(afterUpdate > afterInsert)
     snSession.dropTable("t1")
   }
@@ -437,10 +425,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val row = Row(1, 1, "1")
     snSession.insert("t1", row)
     val afterInsert = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterInsert =$afterInsert")
     snSession.update("t1", "COL1=1", Row("XXXXXXXXXX"), "COL3")
     val afterUpdate = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterUpdate =$afterUpdate")
     assert(afterUpdate > afterInsert)
     snSession.dropTable("t1")
   }
@@ -455,7 +441,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.insert("t1", row)
     snSession.dropTable("t1")
     val afterDropTable = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s" afterDropTable $afterDropTable beforeCreateTable $beforeCreateTable")
     // Approximate because drop table adds entry in system table which causes memory to grow a bit
     assertApproximate(afterDropTable, beforeCreateTable)
   }
@@ -471,15 +456,49 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val rdd = sparkSession.sparkContext.parallelize(data, 2)
         .map(s => Data1(s, s + 1, s + 2))
     val dataDF = snSession.createDataFrame(rdd)
-
     dataDF.write.insertInto("t1")
-
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > afterCreate)
     val count = snSession.sql("select * from t1").count()
     assert(count == 10)
     snSession.dropTable("t1")
 
   }
+
+  test("Concurrent query mem-check"){
+    val sparkSession = createSparkSession(1, 0, 1000000)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 120 * 100
+
+    val options = "OPTIONS (BUCKETS '5', " +
+      "PARTITION_BY 'Col1', " +
+      "OVERFLOW 'true')"
+
+    snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
+      options
+    )
+    val rowCount = 100
+
+    def runQueries(i : Int): Unit = {
+      for (_ <- 0 until rowCount) {
+        snSession.insert("t1", Row(1, 1, 1))
+      }
+    }
+
+    val tasks = for (i <- 1 to 5) yield future {
+      runQueries(i)
+    }
+
+    // wait a lot
+    awaitAll(20000000L, tasks: _*)
+
+    // Rough estimation of 120 bytes per row
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 *5 )
+    val count = snSession.sql("select * from t1").count()
+    assert(count == 500)
+    snSession.dropTable("t1")
+  }
+
+
 
   //@TODO Place holder for column partitioned tables. Enable them after Sumedh's changes
 
@@ -512,10 +531,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val row = Row(1, 1, "1")
     snSession.insert("t1", row)
     val afterInsert = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterInsert =$afterInsert")
     snSession.update("t1", "COL1=1", Row("XXXXXXXXXX"), "COL3")
     val afterUpdate = SparkEnv.get.memoryManager.storageMemoryUsed
-    println(s"afterUpdate =$afterUpdate")
     assert(afterUpdate > afterInsert)
     snSession.dropTable("t1")
   }

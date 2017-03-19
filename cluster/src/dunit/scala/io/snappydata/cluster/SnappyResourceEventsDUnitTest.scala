@@ -47,15 +47,7 @@ class SnappyResourceEventsDUnitTest (s: String) extends ClusterManagerTestBase(s
     runSparkJobAfterThresholdBreach()
   }
 
-  def testEvictionUp(): Unit = {
-    // Execute the job
-    runSparkJob()
-    vm0.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
-    vm1.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
-    vm2.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
-    runSparkJobAfterThresholdBreach()
-  }
-}
+ }
 
 object SnappyResourceEventsDUnitTest {
 
