@@ -217,10 +217,6 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       relation: Option[BaseRelation]): Unit = {
     // no op
   }
-
-  def closeCurrent(): Unit = {
-    connectorHelper.close()
-  }
 }
 
 case class RelationInfo(numBuckets: Int = 1,

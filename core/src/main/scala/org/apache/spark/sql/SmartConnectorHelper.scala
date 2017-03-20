@@ -38,16 +38,6 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
-  private lazy val connFactory = {
-    clusterMode match {
-      case ThinClientConnectorMode(_, url) =>
-        JdbcUtils.createConnectionFactory(
-          url + ";route-query=false;" , new Properties())
-      case _ =>
-        throw new AnalysisException("Not expected to be called for " + clusterMode)
-    }
-  }
-
   private var conn: Connection = null
   private val createSnappyTblString = "call sys.CREATE_SNAPPY_TABLE(?, ?, ?, ?, ?, ?, ?)"
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
@@ -71,8 +61,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def initializeConnection(): Unit = {
-    close()
-    conn = connFactory()
+    conn = SmartConnectorHelper.getConn()
     createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
     dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
     createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)
@@ -82,10 +71,6 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     dropUDFStmt = conn.prepareCall(dropUDFString)
   }
 
-  def close(): Unit = {
-    Option(conn).foreach( c => if (!c.isClosed) c.close())
-  }
-
   private def runStmtWithExceptionHandling[T](function: => T): T = {
     try {
       function
@@ -93,7 +78,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       case e: SQLException if isConnectionException(e) =>
         // attempt to create a new connection if connection
         // is closed
-        conn.close()
+        SmartConnectorHelper.close()
         initializeConnection()
         function
     }
@@ -263,6 +248,39 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 }
 
 object SmartConnectorHelper {
+  private lazy val conn: ThreadLocal[Connection] = new ThreadLocal[Connection]() {
+    protected override def initialValue(): Connection = {
+      null
+    }
+
+    override def remove() {
+      if (this.get != null) {
+        this.get.close()
+      }
+      super.remove()
+    }
+  }
+
+  private lazy val clusterMode = SnappyContext.getClusterMode(null)
+
+  private lazy val connFactory = {
+    clusterMode match {
+      case ThinClientConnectorMode(_, url) =>
+        JdbcUtils.createConnectionFactory(
+          url + ";route-query=false;" , new Properties())
+      case _ =>
+        throw new AnalysisException("Not expected to be called for " + clusterMode)
+    }
+  }
+
+  def getConn(): Connection = {
+    conn.set(connFactory())
+    conn.get()
+  }
+
+  def close(): Unit = {
+    conn.remove()
+  }
 
   def getBlob(value: Any, conn: Connection): java.sql.Blob = {
     val serializedValue: Array[Byte] = serialize(value)

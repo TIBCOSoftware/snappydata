@@ -1100,6 +1100,7 @@ object SnappyContext extends Logging {
 
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
+      SmartConnectorHelper.close()
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
