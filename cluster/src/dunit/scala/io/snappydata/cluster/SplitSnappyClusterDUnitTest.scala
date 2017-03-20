@@ -95,6 +95,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def testCollocatedJoinInSplitModeRowTable(): Unit = {
     startNetworkServers(3)
+    val snc = new SnappySession(sc)
     testObject.createRowTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE1" :+ "PR_TABLE2" :+ Boolean.box(useThinClientConnector) :+
@@ -103,6 +104,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def testCollocatedJoinInSplitModeColumnTable(): Unit = {
     startNetworkServers(3)
+    val snc = new SnappySession(sc)
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4" :+ Boolean.box(useThinClientConnector) :+
@@ -110,6 +112,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
   def testColumnTableStatsInSplitMode(): Unit = {
     startNetworkServers(3)
+    val snc = new SnappySession(sc)
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
         "1" :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
@@ -274,8 +277,6 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm3.invoke(getClass, "verifyUDFInSplitMode",
       startArgs :+ locatorProperty
           :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
-
-
   }
 
 }
@@ -388,7 +389,7 @@ object SplitSnappyClusterDUnitTest
     row.foreach(r => assert(r(0) == 6))
     snc.sql("drop function APP.intudf_embeddedmode")
     assert(snc.snappySession.sql(s"SHOW FUNCTIONS APP.intudf_embeddedmode").collect().length == 0)
-    snc.sparkContext.stop()
+//    snc.sparkContext.stop()
   }
 
   def verifyUDFInEmbeddedMode(): Unit = {
@@ -566,6 +567,8 @@ object SplitSnappyClusterDUnitTest
           .set("spark.sql.autoBroadcastJoinThreshold", "-1")
 
       val sc = SparkContext.getOrCreate(conf)
+//      val snc = SnappySession.getOrCreate(sc).sqlContext
+
       val snc = SnappyContext(sc)
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
@@ -593,6 +596,7 @@ object SplitSnappyClusterDUnitTest
 //      Logger.getRootLogger.setLevel(Level.ALL)
 //      Logger.getLogger("org").setLevel(Level.DEBUG)
 //      Logger.getLogger("akka").setLevel(Level.DEBUG)
+//      val snc = SnappySession.getOrCreate(sc).sqlContext
       val snc = SnappyContext(sc)
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
@@ -721,7 +725,7 @@ object SplitSnappyClusterDUnitTest
       prop: Properties, locatorProp: String,
       useThinClientConnector: Boolean, locatorClientPort: Int,
       tableType: String): Unit = {
-    if (connectorSnc == null) {
+    if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
       connectorSnc = getSnappyContextForConnector(locatorPort, locatorProp,
         useThinClientConnector, locatorClientPort)
     }
@@ -751,7 +755,7 @@ object SplitSnappyClusterDUnitTest
   override def verifyTableFormInSplitMOde(locatorPort: Int,
       prop: Properties, locatorProp: String,
       useThinClientConnector: Boolean, locatorClientPort: Int): Unit = {
-    if (connectorSnc == null) {
+    if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
       connectorSnc = getSnappyContextForConnector(locatorPort, locatorProp,
         useThinClientConnector, locatorClientPort)
     }
@@ -771,9 +775,5 @@ object SplitSnappyClusterDUnitTest
     assert(rs(0).getAs[String]("COL2").equals("AA"))
 
     connectorSnc.dropTable("APP.T1")
-
-    connectorSnc.sparkContext.stop()
-    connectorSnc = null
-
   }
 }

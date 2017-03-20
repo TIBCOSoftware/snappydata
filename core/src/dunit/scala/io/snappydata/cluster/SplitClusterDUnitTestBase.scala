@@ -32,7 +32,7 @@ import org.junit.Assert
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode, SplitClusterMode, AnalysisException}
+import org.apache.spark.sql.{SnappySession, SnappyContext, ThinClientConnectorMode, SplitClusterMode, AnalysisException}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -138,23 +138,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     testObject.verifySplitModeOperations("column", isComplex = true, props)
   }
 
-
-
-  protected def skewNetworkServers: Boolean = false
-
-  final def testColumnTableCreation(): Unit = {
-    doTestColumnTableCreation(skewNetworkServers)
-  }
-
-  final def testRowTableCreation(): Unit = {
-    doTestRowTableCreation(skewNetworkServers)
-  }
-
-  final def testComplexTypesForColumnTables_SNAP643(): Unit = {
-    doTestComplexTypesForColumnTables_SNAP643(skewNetworkServers)
-  }
-
-  final def testTableFormChanges(): Unit = {
+  def doTestTableFormChanges(skewNetworkServers: Boolean): Unit = {
     if (skewNetworkServers) {
       startNetworkServers(2)
     } else {
@@ -184,9 +168,28 @@ trait SplitClusterDUnitTestBase extends Logging {
     vm3.invoke(getClass, "verifyTableFormInSplitMOde",
       startArgs :+ locatorProperty
           :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
-
   }
 
+  protected def skewNetworkServers: Boolean = false
+
+  final def testColumnTableCreation(): Unit = {
+    doTestColumnTableCreation(skewNetworkServers)
+  }
+
+  final def testRowTableCreation(): Unit = {
+    doTestRowTableCreation(skewNetworkServers)
+  }
+
+  final def testComplexTypesForColumnTables_SNAP643(): Unit = {
+    doTestComplexTypesForColumnTables_SNAP643(skewNetworkServers)
+  }
+
+  final def testTableFormChanges(): Unit = {
+    if (!useThinClientConnector) {
+      return
+    }
+    doTestTableFormChanges(skewNetworkServers)
+  }
 
 }
 
@@ -305,9 +308,9 @@ trait SplitClusterDUnitTestObject extends Logging {
           .set("snappydata.Cluster.URL", connectionURL)
 
       val sc = SparkContext.getOrCreate(conf)
-      sc.setLogLevel("DEBUG")
-      Logger.getLogger("org").setLevel(Level.DEBUG)
-      Logger.getLogger("akka").setLevel(Level.DEBUG)
+//      sc.setLogLevel("DEBUG")
+//      Logger.getLogger("org").setLevel(Level.DEBUG)
+//      Logger.getLogger("akka").setLevel(Level.DEBUG)
       val snc = SnappyContext(sc)
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)

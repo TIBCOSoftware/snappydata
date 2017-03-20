@@ -1117,13 +1117,7 @@ object SnappyContext extends Logging {
     SparkSession.sqlListener.set(null)
     _clusterMode match {
       case _: ExternalClusterMode =>
-      case ThinClientConnectorMode(_, _) =>
-        val sessionCatalog = SnappyContext(null: SparkContext).snappySession.
-            sessionCatalog.asInstanceOf[SnappyConnectorCatalog]
-        sessionCatalog.closeCurrent()
-        ServiceUtils.clearStaticArtifacts()
       case _ => ServiceUtils.clearStaticArtifacts()
-
     }
   }
 

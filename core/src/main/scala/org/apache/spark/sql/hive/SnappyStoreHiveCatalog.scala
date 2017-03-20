@@ -1025,20 +1025,20 @@ object SnappyStoreHiveCatalog {
   }
 
   def setRelationDestroyVersionOnAllMembers: Unit = {
-    val session = SparkSession.getActiveSession.get
-    SnappyContext.getClusterMode(session.sparkContext) match {
-      case SnappyEmbeddedMode(_, _) =>
-        val version = getRelationDestroyVersion
-        Utils.mapExecutors(session.sqlContext,
-          () => {
-            val profile: GfxdProfile =
-              GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
-            profile.setRelationDestroyVersion(version)
-            Iterator.empty
-          }).count()
-      case _ =>
-    }
-
+    SparkSession.getDefaultSession.foreach(session =>
+      SnappyContext.getClusterMode(session.sparkContext) match {
+        case SnappyEmbeddedMode(_, _) =>
+          val version = getRelationDestroyVersion
+          Utils.mapExecutors(session.sqlContext,
+            () => {
+              val profile: GfxdProfile =
+                GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
+              Option(profile).foreach(gp => gp.setRelationDestroyVersion(version))
+              Iterator.empty
+            }).count()
+        case _ =>
+      }
+    )
   }
 
   def getSchemaString(

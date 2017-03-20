@@ -16,6 +16,8 @@
  */
 package io.snappydata.cluster
 
+import org.apache.spark.sql.SnappySession
+
 class ThinConnectorSnappyDUnitTest(s: String)
     extends SplitSnappyClusterDUnitTest(s) {
 
@@ -23,13 +25,15 @@ class ThinConnectorSnappyDUnitTest(s: String)
 
   override def tearDown2(): Unit = {
     super.tearDown2()
-    vm3.invoke(getClass, "stopSparkContext")
+//    vm3.invoke(getClass, "stopSparkContext")
   }
 
   override def testColumnTableStatsInSplitMode(): Unit = {
+    val snc = new SnappySession(sc)
   }
 
   override def testColumnTableStatsInSplitModeWithHA(): Unit = {
+    val snc = new SnappySession(sc)
   }
 
 }
