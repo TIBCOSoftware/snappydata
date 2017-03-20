@@ -100,16 +100,8 @@ object WorkingWithJson extends SnappySQLJob {
         "address.lane " +
         "FROM people")
 
-    val builder = new StringBuilder
-    nameAndAddress.collect.map(row => {
-      builder.append(s"${row(0)} ,")
-      builder.append(s"${row(1)} ,")
-      builder.append(s"${row(2)} ,")
-      builder.append(s"${row(3)} ,")
-      builder.append(s"${row(4)} \n")
-
-    })
-    builder.toString
+    val allPersons = nameAndAddress.toJSON
+    allPersons.show(truncate = false)
   }
 
   def main(args: Array[String]) {
@@ -133,9 +125,7 @@ object WorkingWithJson extends SnappySQLJob {
 
     val snSession = new SnappySession(spark.sparkContext)
     val config = ConfigFactory.parseString(s"json_resource_folder=$jsonFolder")
-    val results = runSnappyJob(snSession, config)
-    println("Printing All People \n################## \n" + results)
-
+    runSnappyJob(snSession, config)
     spark.stop()
   }
 

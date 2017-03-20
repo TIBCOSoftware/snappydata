@@ -18,11 +18,9 @@ package org.apache.spark.sql
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
-
 import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis._
@@ -37,6 +35,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.CalendarInterval
+import org.datanucleus.store.rdbms.sql.expression.ParameterLiteral
 
 class SnappyParser(session: SnappySession)
     extends SnappyDDLParser(session) {
@@ -45,9 +44,13 @@ class SnappyParser(session: SnappySession)
 
   override final def input: ParserInput = _input
 
+  private var paramcounter = 0
+
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
+    paramcounter = 0
+    tokenize = false
   }
 
   protected final type WhenElseType = (Seq[(Expression, Expression)],
@@ -166,6 +169,13 @@ class SnappyParser(session: SnappySession)
     booleanLiteral |
     NULL ~> (() => Literal.create(null, NullType)) |
     intervalLiteral
+  }
+
+  protected final def paramliteral: Rule1[ParamLiteral] = rule {
+    literal ~> ((l: Literal) => {
+      paramcounter = paramcounter + 1
+      ParamLiteral(l, paramcounter)
+    })
   }
 
   protected final def month: Rule1[Int] = rule {
@@ -632,7 +642,7 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
-    literal |
+    ( ( test(tokenize) ~ paramliteral ) | literal ) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
@@ -663,9 +673,9 @@ class SnappyParser(session: SnappySession)
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
     (FROM ~ ws ~ relations).? ~
-    (WHERE ~ expression).? ~
+    (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
-    (HAVING ~ expression).? ~
+    (HAVING ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
       val base = f.asInstanceOf[Option[LogicalPlan]].getOrElse(OneRowRelation)
@@ -742,9 +752,34 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
+  // Only when wholeStageEnabled try for tokenization. It should be
+  // true
+  private var tokenize = session.sessionState.conf.wholeStageEnabled
+
+  private var isselect = false
+
+  protected final def TOKENIZE_BEGIN: Rule0 = rule {
+    MATCH ~> {() => isselect match {
+      case true => tokenize = session.sessionState.conf.wholeStageEnabled
+      case _ => tokenize = false
+    }}
+  }
+
+  protected final def TOKENIZE_END: Rule0 = rule {
+    MATCH ~> {() => tokenize = false}
+  }
+
+  private def SET_SELECT: Rule0 = rule {
+    MATCH ~> {() => isselect = true}
+  }
+
+  private def SET_NOSELECT: Rule0 = rule {
+    MATCH ~> {() => isselect = false}
+  }
+
   override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | desc
+    (SET_SELECT ~ query.named("select")) | (SET_NOSELECT ~ (insert | put | dmlOperation | ctes |
+        ddl | set | cache | uncache | desc))
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
