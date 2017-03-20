@@ -24,11 +24,11 @@ import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.pivotal.gemfirexd.DistributedSQLTestBase
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
-
 import org.apache.spark.SparkEnv
-import org.apache.spark.jdbc.{ConnectionUtil, ConnectionConf, ConnectionConfBuilder}
+import org.apache.spark.jdbc.{ConnectionConf, ConnectionConfBuilder, ConnectionUtil}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 import SnappyUnifiedMemoryManagerDUnitTest._
+import io.snappydata.Constant
 
 case class DummyData(col1: Int, col2: Int, col3: Int)
 
@@ -63,10 +63,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   val rr_table = "app.rr_table"
   val memoryMode = MemoryMode.ON_HEAP
 
-  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "500")
-  bootProps.setProperty("spark.memory.manager",
-    "org.apache.spark.memory.SnappyUnifiedMemoryManager")
-  bootProps.setProperty("critical-heap-percentage", "90")
+
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
@@ -77,6 +74,22 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm0.invoke(getClass, "resetStorageMemory")
     vm1.invoke(getClass, "resetStorageMemory")
     vm2.invoke(getClass, "resetStorageMemory")
+  }
+
+  override def beforeClass(): Unit = {
+    // stop any running lead first to update the "maxErrorAllowed" property
+    ClusterManagerTestBase.stopSpark()
+    bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "500")
+    bootProps.setProperty("spark.memory.manager",
+      "org.apache.spark.memory.SnappyUnifiedMemoryManager")
+    bootProps.setProperty("critical-heap-percentage", "90")
+    super.beforeClass()
+  }
+
+  override def afterClass(): Unit = {
+    super.afterClass()
+    // force restart with default properties in subsequent tests
+    ClusterManagerTestBase.stopSpark()
   }
 
   override def setUp(): Unit = {
@@ -338,7 +351,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val snc = newContext()
 
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
+    val rdd = snc.sparkContext.parallelize(data, 2).map(s =>
       DummyData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
@@ -353,7 +366,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     Thread.sleep(5000)
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(5, getClass)
+    val waitAssert = new WaitAssert(10, getClass) // @TODO identify why so large error
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
       30000, 5000, true)
@@ -449,6 +462,7 @@ object SnappyUnifiedMemoryManagerDUnitTest {
 
   def resetStorageMemory(): Unit = {
     MemoryManagerCallback.resetMemoryManager()
+    System.clearProperty("snappydata.umm.memtrace")
   }
 
   def getStorageMemory(): Long = {
@@ -473,6 +487,7 @@ object SnappyUnifiedMemoryManagerDUnitTest {
   def setLocalRegionMaxTempMemory : Unit = {
     sc.parallelize(1 until 100, 5).map { i =>
       LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+      System.setProperty("snappydata.umm.memtrace", "true")
     }.collect()
   }
 

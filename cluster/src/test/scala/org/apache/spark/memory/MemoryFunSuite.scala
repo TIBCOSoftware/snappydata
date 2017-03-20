@@ -24,12 +24,21 @@ import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll {
 
-  @Override
-  def beforAll(): Unit ={
+  override def afterAll(): Unit = {
+    System.clearProperty("snappydata.umm.memtrace")
+    return
+  }
+
+  override def beforeAll(): Unit = {
     if (SnappyContext.globalSparkContext != null) {
       SnappyContext.globalSparkContext.stop()
     }
+    System.setProperty("snappydata.umm.memtrace", "true")
+    return
   }
+
+
+
 
   after {
     if (SnappyContext.globalSparkContext != null) {
@@ -53,7 +62,7 @@ class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll
   private[memory] def createSparkSession(memoryFraction: Double,
       storageFraction: Double,
       sparkMemory: Long = 1000,
-      cachedBatchSize: Int = 5): SparkSession = {
+      cachedBatchSize: Int = 500): SparkSession = {
     SparkSession
         .builder
         .appName(getClass.getName)

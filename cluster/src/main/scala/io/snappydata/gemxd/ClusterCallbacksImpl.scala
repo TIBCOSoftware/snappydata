@@ -108,6 +108,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def publishColumnTableStats(): Unit = {
-    //SnappyTableStatsProviderService.publishColumnTableRowCountStats()
+    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
   }
 }

@@ -17,12 +17,9 @@
 
 package org.apache.spark.memory
 
-import com.gemstone.gemfire.internal.cache.{AbstractLRURegionMap, GemFireCacheImpl, LocalRegion, PartitionedRegion, RegionEntry}
-import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
-import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.core.Data
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
+import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
@@ -146,19 +143,19 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     SnappyUnifiedMemoryManager.addMemoryEventListener(memoryEventListener)
 
     // 208 *10. 208 is the row size + memory overhead
-    import scala.util.control.Breaks._
 
     var rows = 0
     try {
-      breakable {
-        for (i <- 1 to 20) {
-          val row = Row(100000000, 10000000, 10000000)
-          snSession.insert("t1", row)
-          rows += 1
-        }
+      for (i <- 1 to 100) {
+        val row = Row(100000000, 10000000, 10000000)
+        println(s"RowCount1 = $rows")
+        snSession.insert("t1", row)
+        rows += 1
+        println(s"RowCount2 = $rows")
       }
     } catch {
       case e: Exception => {
+        println(s"RowCount3 in exception = $rows")
         assert(memoryIncreaseDuetoEviction > 0)
       }
     }
@@ -315,7 +312,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
 
     val taskAttemptId = 0L
-    //artificially acquire memory
+    // artificially acquire memory
     SparkEnv.get.memoryManager.acquireExecutionMemory(4000L, taskAttemptId, memoryMode)
     var memoryIncreaseDuetoEviction = 0L
     val memoryEventListener = new MemoryEventListener {
@@ -325,7 +322,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     }
     SnappyUnifiedMemoryManager.addMemoryEventListener(memoryEventListener)
 
-    //208 *10. 208 is the row size + memory overhead
+    // 208 *10. 208 is the row size + memory overhead
     import scala.util.control.Breaks._
 
     var rows = 0
@@ -500,9 +497,9 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
 
 
-  //@TODO Place holder for column partitioned tables. Enable them after Sumedh's changes
+  // @TODO Place holder for column partitioned tables. Enable them after Sumedh's changes
 
-  //Enable test after Sumedh's checkin
+  // Enable test after Sumedh's checkin
   ignore("Test accounting of delete for column partitioned tables") {
     val sparkSession = createSparkSession(1, 0, 10000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
