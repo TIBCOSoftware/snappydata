@@ -26,7 +26,7 @@ Start a basic cluster with one data node, one lead, and one locator
 ```
 ./sbin/snappy-start-all.sh
 ```
-For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](../configuration.md)
+For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](../../../configuring_cluster/configuration_files)
 
 ### Multi-Host Installation
 For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
@@ -49,7 +49,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 		$ tar -xzf snappydata-0.7-bin.tar.gz 
 		$ cd snappydata-0.7-bin/
  
-3. Configure the cluster as described in [How to Configure SnappyData cluster](../../configuring_cluster/configuration_files.md).
+3. Configure the cluster as described in [How to Configure SnappyData cluster](../../../configuring_cluster/configuration_files).
 
 4. After configuring each of the components, run the `snappy-start-all.sh` script:
 

@@ -13,14 +13,14 @@ Some of the advantages of this mode are:
 
 ![Embedded Mode](../../Images/SnappyEmbeddedMode.png)
 
-In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](../../../pgm_guide/snappydata_jobs.md) section.
+In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](../../pgm_guide/snappydata_jobs.md) section.
 
 **Example: Submit a Spark Job to the SnappyData Cluster**
 ```
 bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 ```
 
-Also, you can use [SnappyShell](../../howto/use_sql_shell.md) to create and query tables.
+Also, you can use [SnappyShell](../../how_to/use_sql_shell.md) to create and query tables.
 
 You can either [start SnappyData members](../../install.md) using the `snappy-start-all.sh` script or you can start them individually.
 
