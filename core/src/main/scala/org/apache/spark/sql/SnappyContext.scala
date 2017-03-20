@@ -798,13 +798,13 @@ object SnappyContext extends Logging {
 
   val DEFAULT_SOURCE = ROW_SOURCE
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
-    classOf[execution.columnar.DefaultSource].getCanonicalName,
+    classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
   private val builtinSources = new CaseInsensitiveMap(Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[execution.columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
@@ -1067,7 +1067,7 @@ object SnappyContext extends Logging {
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
         SnappyTableStatsProviderService.start(sc)
-        if(ToolsCallbackInit.toolsCallback != null){
+        if (ToolsCallbackInit.toolsCallback != null) {
           ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
         }
       case _ => // ignore
@@ -1120,21 +1120,26 @@ object SnappyContext extends Logging {
   def getProvider(providerName: String, onlyBuiltIn: Boolean): String = {
     builtinSources.getOrElse(providerName,
       if (onlyBuiltIn) throw new AnalysisException(
-        s"Failed to find a builtin provider $providerName") else providerName)
+        s"Failed to find a builtin provider $providerName")
+      else providerName)
   }
 
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.
-      getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
-    val clazz = org.apache.spark.util.Utils.classForName(
-      "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
-    val method: Method = clazz.getDeclaredMethod("flushReservior")
-    for (s <- sampleRelations) {
-      method.setAccessible(true)
-      method.invoke(s)
+        getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
+    try {
+      val clazz = org.apache.spark.util.Utils.classForName(
+        "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
+      val method: Method = clazz.getDeclaredMethod("flushReservior")
+      for (s <- sampleRelations) {
+        method.setAccessible(true)
+        method.invoke(s)
+      }
+    } catch {
+      case _: ClassNotFoundException =>
+      // do nothing. This situation arises in tests
     }
-
   }
 }
 

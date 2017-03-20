@@ -19,11 +19,6 @@
 
 package io.snappydata
 
-import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
-import scala.language.implicitConversions
-
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.DataPolicy
 import com.gemstone.gemfire.cache.execute.FunctionService
@@ -35,14 +30,22 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
-import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer}
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
-
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
+import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, JDBCSourceAsStore}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Logging, SparkContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 object SnappyTableStatsProviderService extends Logging {
 
@@ -208,15 +211,34 @@ object SnappyTableStatsProviderService extends Logging {
         if (table.startsWith(Constant.INTERNAL_SCHEMA_NAME) &&
             table.endsWith(Constant.SHADOW_TABLE_SUFFIX)) {
           if (container != null) {
-            val colPos = container.getTableDescriptor.getColumnDescriptor("NUMROWS").getPosition
+            val bufferTable = JDBCAppendableRelation.getTableName(table)
+            val numColumnsInBaseTbl = (Misc.getMemStore.getAllContainers.asScala.find(c => {
+              c.getQualifiedTableName.equalsIgnoreCase(bufferTable)}).get.getNumColumns) - 1
+
+            val numColumnsInStatBlob = numColumnsInBaseTbl * ColumnStatsSchema.NUM_STATS_PER_COLUMN
             val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
               true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-            // Resetting PR Numrows in column batch as this will be calculated every time.
+            // Resetting PR Numrows in cached batch as this will be calculated every time.
             // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
             var rowsInColumnBatch: Long = 0
             while (itr.hasNext) {
-              rowsInColumnBatch += itr.next().asInstanceOf[RowLocation]
-                  .getRow(container).getColumn(colPos).getInt
+              val rl = itr.next().asInstanceOf[RowLocation]
+              val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
+              val x = key.getKeyColumn(2).getInt
+              val currentBucketRegion = itr.getHostedBucketRegion
+              if (x == JDBCSourceAsStore.STATROW_COL_INDEX) {
+                val v = currentBucketRegion.get(key)
+                if (v ne null) {
+                  val currentVal = v.asInstanceOf[Array[Array[Byte]]]
+                  val rowFormatter = container.
+                      getRowFormatter(currentVal(0))
+                  val statBytes = rowFormatter.getLob(currentVal, 4)
+                  val unsafeRow = new UnsafeRow(numColumnsInStatBlob);
+                  unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
+                    statBytes.length);
+                  rowsInColumnBatch += unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA);
+                }
+              }
             }
             pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
           }

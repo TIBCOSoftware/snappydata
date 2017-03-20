@@ -22,7 +22,6 @@ import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
-import scala.sys.process._
 import scala.util.Random
 
 import io.snappydata.test.dunit.VM
@@ -59,14 +58,10 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def locatorProperty: String
 
-  protected def startNetworkServers(num: Int): Unit
+  protected def startNetworkServers(): Unit
 
-  def doTestColumnTableCreation(skewServerDistribution: Boolean): Unit = {
-    if (skewServerDistribution) {
-      startNetworkServers(2)
-    } else {
-      startNetworkServers(3)
-    }
+  def doTestColumnTableCreation(): Unit = {
+    startNetworkServers()
 
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("column")
@@ -89,12 +84,8 @@ trait SplitClusterDUnitTestBase extends Logging {
     logInfo("Test Completed Successfully")
   }
 
-  def doTestRowTableCreation(skewServerDistribution: Boolean): Unit = {
-    if (skewServerDistribution) {
-      startNetworkServers(2)
-    } else {
-      startNetworkServers(3)
-    }
+  def doTestRowTableCreation(): Unit = {
+    startNetworkServers()
 
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("row")
@@ -108,13 +99,8 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   }
 
-  def doTestComplexTypesForColumnTables_SNAP643(
-      skewServerDistribution: Boolean): Unit = {
-    if (skewServerDistribution) {
-      startNetworkServers(2)
-    } else {
-      startNetworkServers(3)
-    }
+  def doTestComplexTypesForColumnTables_SNAP643(): Unit = {
+    startNetworkServers()
 
     // Embedded Cluster Operations
     val props = Map("buckets" -> "7")
@@ -128,18 +114,16 @@ trait SplitClusterDUnitTestBase extends Logging {
     testObject.verifySplitModeOperations("column", isComplex = true, props)
   }
 
-  protected def skewNetworkServers: Boolean = false
-
   final def testColumnTableCreation(): Unit = {
-    doTestColumnTableCreation(skewNetworkServers)
+    doTestColumnTableCreation()
   }
 
   final def testRowTableCreation(): Unit = {
-    doTestRowTableCreation(skewNetworkServers)
+    doTestRowTableCreation()
   }
 
   final def testComplexTypesForColumnTables_SNAP643(): Unit = {
-    doTestComplexTypesForColumnTables_SNAP643(skewNetworkServers)
+    doTestComplexTypesForColumnTables_SNAP643()
   }
 }
 
@@ -315,18 +299,6 @@ trait SplitClusterDUnitTestObject extends Logging {
       throw new TestException(s"Environment variable $env is not defined")
     }
     value
-  }
-
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
   }
 }
 
