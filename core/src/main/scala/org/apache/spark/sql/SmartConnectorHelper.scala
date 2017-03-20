@@ -34,10 +34,9 @@ import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, Logging, SparkContext}
 
-class SmartConnectorHelper extends Logging {
+class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
-  private lazy val session = SnappyContext(null: SparkContext).snappySession
-  private lazy val clusterMode = SnappyContext.getClusterMode(session.sparkContext)
+  private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
   private lazy val connFactory = {
     clusterMode match {
@@ -117,7 +116,7 @@ class SmartConnectorHelper extends Logging {
     runStmtWithExceptionHandling(executeCreateTableStmt(tableIdent,
       provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn))
 
-    session.sessionCatalog.lookupRelation(tableIdent)
+    snappySession.sessionCatalog.lookupRelation(tableIdent)
   }
 
   private def executeCreateTableStmt(tableIdent: QualifiedTableName,
@@ -151,7 +150,7 @@ class SmartConnectorHelper extends Logging {
   }
 
   def dropTable(tableIdent: QualifiedTableName, ifExists: Boolean = false): Unit = {
-    session.sessionCatalog.invalidateTable(tableIdent)
+    snappySession.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
     SnappyStoreHiveCatalog.registerRelationDestroy()
   }

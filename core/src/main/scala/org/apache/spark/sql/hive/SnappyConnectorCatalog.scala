@@ -57,7 +57,7 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       sqlConf: SQLConf,
       hadoopConf: Configuration) {
 
-  lazy val connectorHelper = new SmartConnectorHelper
+  lazy val connectorHelper = new SmartConnectorHelper(snappySession)
 
   def getCachedRelationInfo(table: QualifiedTableName): RelationInfo = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
