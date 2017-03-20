@@ -25,15 +25,15 @@ This section provides a brief description of the key terms used in this document
 
 To understand the product follow these easy steps that can get you started quickly:
 
-1. [Setting up SnappyData Cloud Cluster](isight/setting_up_cloud_cluster.md)
+1. [Setting up SnappyData Cloud Cluster](concepts/isight/setting_up_cloud_cluster.md)
 
-	* [Deploying SnappyData Cloud Cluster with iSight CloudBuilder](isight/setting_up_cloud_cluster.md#DeployingClusterCloudFormation)
-	* [Deploying SnappyData Cloud Cluster on AWS using Scripts](isight/setting_up_cloud_cluster.md#DeployingClusterScript)
+	* [Deploying SnappyData Cloud Cluster with iSight CloudBuilder](concepts/isight/setting_up_cloud_cluster.md#DeployingClusterCloudFormation)
+	* [Deploying SnappyData Cloud Cluster on AWS using Scripts](concepts/isight/setting_up_cloud_cluster.md#DeployingClusterScript)
 
-2. [Using Apache Zeppelin](isight/apache_zeppelin.md#LoggingZeppelin)	
-	* [Using Predefined Notebook](isight/predefined_notebooks.md#predefinednotebook)
-	* [Creating your own Notebook](isight/creating_notebooks.md#Creatingnotebook)
+2. [Using Apache Zeppelin](concepts/isight/apache_zeppelin.md#LoggingZeppelin)	
+	* [Using Predefined Notebook](concepts/isight/predefined_notebooks.md#predefinednotebook)
+	* [Creating your own Notebook](concepts/isight/creating_notebooks.md#Creatingnotebook)
 
-3. [Loading Data from AWS S3](isight/loading_data_s3.md#dataAWSS3)
+3. [Loading Data from AWS S3](concepts/isight/loading_data_s3.md#dataAWSS3)
 
-4. [Monitoring SnappyData Cloud Cluster](isight/monitoring_cloud_cluster.md#Monitoring)
+4. [Monitoring SnappyData Cloud Cluster](concepts/isight/monitoring_cloud_cluster.md#Monitoring)

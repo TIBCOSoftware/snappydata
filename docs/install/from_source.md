@@ -111,11 +111,13 @@ To import into IntelliJ:
 * Update IntelliJ to the latest 14.x (or 15.x) version, including the latest Scala plug-in. Older versions have trouble dealing with Scala code particularly, some of the code in Spark.
 
 * Select **Import Project**, and then point to the SnappyData directory. Use external Gradle import. When using JDK 7, add **-XX:MaxPermSize=350m** to VM options in global Gradle settings. Select the default values, and click **Next** in the following screens.<br/> 
-<note> Note:</note> 
 
-	- <note>Ignore the **"Gradle location is unknown warning"**.</note> 
-	- <note>Ensure that a JDK 7/8 installation has been selected.</note> 
-	- <note>Ignore and dismiss the **"Unindexed remote maven repositories found"** warning message if seen.</note>
+	!!!Note:
+		- Ignore the **"Gradle location is unknown warning"**.
+
+		- Ensure that a JDK 7/8 installation has been selected.
+
+		- Ignore and dismiss the **"Unindexed remote maven repositories found"** warning message if seen.
 
 * When import is completed, go to **File> Settings> Editor> Code Style> Scala**. Set the scheme as **Project**. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IntelliJ. Check that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display Indent as 2 and continuation indent as 4 (same as Scala).
 

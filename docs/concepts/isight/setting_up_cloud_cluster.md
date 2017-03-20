@@ -6,7 +6,7 @@ This section discusses the steps required for setting up and deploying SnappyDat
 ###Deploying SnappyData Cloud Cluster with iSight CloudBuilder
 Watch the following  video to learn how easy it is to use iSight CloudBuilder, which generates a SnappyData Cloud Cluster.
 
-[![Cloudbuilder](../Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
+[![Cloudbuilder](../../Images/aws_cloudbuildervideo.png)](https://www.youtube.com/watch?v=jbudjTqWsdI&feature=youtu.be)
 
 ####Prerequisites
 Before you begin:
@@ -28,23 +28,23 @@ Launch the iSight CloudBuilder from [http://www.snappydata.io/cloudbuilder](http
 
 1. Enter the name for your cluster. Each cluster is identified by its unique name. 
 The names and details of the members are automatically derived from the provided cluster name. <br>
-![STEP](../Images/AWS_clustername.png)
+![STEP](../../Images/AWS_clustername.png)
 
 2. Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster.
 Refer to the Amazon documentation for more information on  [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>
-![STEP](../Images/aws_ec2keypair.png)
+![STEP](../../Images/aws_ec2keypair.png)
 
 3. Select an instance based on the capacity that you require. 
-![STEP](../Images/aws_instancetype.png)
+![STEP](../../Images/aws_instancetype.png)
  
 4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.
-![STEP](../Images/aws_ebsvolumesize.png)
+![STEP](../../Images/aws_ebsvolumesize.png)
 
 	!!! Note
 		Currently only Amazon Elastic Block Storage (EBS) is supported. 
 
 5. Enter your email address.  <br>
-![STEP](../Images/aws_email.png)
+![STEP](../../Images/aws_email.png)
 
 6. Click **Generate**.
 
@@ -53,10 +53,10 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	!!! Note
 		* The region you select must match the EC2 Key Pair you created.
 		* If you are not already logged into AWS, you are redirected to the AWS sign-in page.
- ![STEP](../Images/aws_selectedregion.png)
+ ![STEP](../../../Images/aws_selectedregion.png)
 
 8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
-![STEP](../Images/aws_selecttemplate.png)
+![STEP](../../Images/aws_selecttemplate.png)
 
 9. You can change the stack name or click **Next** to use the provided default value.
 
@@ -72,10 +72,10 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation.
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
-![Refresh](../Images/aws_refreshstack.png)
+![Refresh](../../Images/aws_refreshstack.png)
 <a id="Stack"></a>
 13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
-	![Public IP](../Images/aws_links.png)
+	![Public IP](../../Images/aws_links.png)
 
 	!!! Note
 		If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:

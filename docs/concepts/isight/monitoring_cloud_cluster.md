@@ -12,7 +12,7 @@ The Apache Spark Console displays useful information about SnappyData. This incl
 To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: 
 
 1. Click on the **Spark UI** or **Pulse** links provided in the paragraph. 
-![Launch Spark](../Images/aws_pulsespark.png)
+![Launch Spark](../../Images/aws_pulsespark.png)
 
 2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the username and password.
 

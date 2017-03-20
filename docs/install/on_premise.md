@@ -49,7 +49,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 		$ tar -xzf snappydata-0.7-bin.tar.gz 
 		$ cd snappydata-0.7-bin/
  
-3. Configure the cluster as described in [How to Configure SnappyData cluster](../configuration.md).
+3. Configure the cluster as described in [How to Configure SnappyData cluster](../../configuring_cluster/configuration_files.md).
 
 4. After configuring each of the components, run the `snappy-start-all.sh` script:
 

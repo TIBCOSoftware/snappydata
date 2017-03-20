@@ -31,7 +31,7 @@ At the same time, the query is executed on the base table, and the total time re
 %sql show-instant-results-first
 select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howManyTrips, absolute_error(tripTime) from nyctaxi where pickup_latitude < 40.767588 and pickup_latitude > 40.749775 and pickup_longitude > -74.001632 and  pickup_longitude < -73.974595 and dropoff_latitude > 40.716800 and  dropoff_latitude <  40.717776 and dropoff_longitude >  -74.017682 and dropoff_longitude < -74.000945 group by hour(pickup_datetime);
 ```
-![Example](../Images/DirectivesinApacheZeppelin.png)
+![Example](../../Images/DirectivesinApacheZeppelin.png)
 
 !!! Note
 	This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.
