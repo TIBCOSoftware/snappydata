@@ -29,6 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecuto
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
@@ -50,7 +51,8 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv}
 class SparkSQLExecuteImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
-    senderVersion: Version) extends SparkSQLExecute with Logging {
+    senderVersion: Version, isPreparedStatement: Boolean, isPreparedPhase: Boolean,
+    pvs: ParameterValueSet) extends SparkSQLExecute with Logging {
 
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
@@ -65,7 +67,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setSchema(schema)
 
-  private[this] val df = session.sql(sql)
+  private[this] val df = session.sql(sql, isPreparedStatement, isPreparedPhase, pvs)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 

@@ -33,6 +33,7 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Constant
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -161,8 +162,12 @@ class SnappySession(@transient private val sc: SparkContext,
     new SnappySession(sparkContext, Some(sharedState))
   }
 
-  override def sql(sqlText: String): CachedDataFrame =
-    snappyContextFunctions.sql(SnappySession.getPlan(this, sqlText))
+  override def sql(sqlText: String): CachedDataFrame = sql(sqlText, false, false, null)
+
+  def sql(sqlText: String, isPreparedStatement: Boolean,
+      isPreparedPhase: Boolean, pvs: ParameterValueSet): CachedDataFrame =
+    snappyContextFunctions.sql(SnappySession.getPlan(this, sqlText, isPreparedStatement,
+      isPreparedPhase, pvs))
 
   def sqlUncached(sqlText: String): DataFrame =
     snappyContextFunctions.sql(super.sql(sqlText))
@@ -1681,7 +1686,8 @@ object SnappySession extends Logging {
     }
   }
 
-  def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
+  def getPlan(session: SnappySession, sqlText: String, isPreparedStatement: Boolean,
+      isPreparedPhase: Boolean, pvs: ParameterValueSet): CachedDataFrame = {
     try {
       val lp = session.onlyParseSQL(sqlText)
       val key = CachedKey(session, lp, sqlText)

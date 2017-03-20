@@ -20,6 +20,7 @@ import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.SnappyResultHolder
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext
 
@@ -32,7 +33,7 @@ class SparkSQLPreapreImpl(override val sql: String,
     senderVersion: Version) extends SparkSQLExecuteImpl(sql: String,
       schema: String,
       ctx: LeadNodeExecutionContext,
-      senderVersion: Version) with Logging {
+      senderVersion: Version, true, false, null) with Logging {
 
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
