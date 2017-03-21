@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.hive
 
+import java.io.File
+import java.net.URL
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -29,26 +31,32 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException}
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException, NoSuchPermanentFunctionException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
+import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf, UDFFunction}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
-import org.apache.spark.sql.types.{StringType, DataType, MetadataBuilder, StructType}
+import org.apache.spark.sql.types.{ArrayType, DataType, MapType, MetadataBuilder, StringType, StructField, StructType}
+import org.apache.spark.util.MutableURLClassLoader
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -68,7 +76,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       sqlConf,
       hadoopConf) {
 
-  val sparkConf = snappySession.sparkContext.getConf
+  val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
   private[sql] var client = metadataHive
 
@@ -95,6 +103,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     client.setCurrentDatabase(defaultName)
     formatDatabaseName(defaultName)
   }
+
 
   override def setCurrentDatabase(db: String): Unit = {
     val dbName = formatTableName(db)
@@ -165,8 +174,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                   (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")).resolveRelation()
         }
         relation match {
-          case sr: StreamBaseRelation => // Do Nothing as it is not supported for stream relation
-          case pr: ParentRelation =>
+          case _: StreamBaseRelation => // Do Nothing as it is not supported for stream relation
+          case _: ParentRelation =>
             var dependentRelations: Array[String] = Array()
             if (table.properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
               dependentRelations = table.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
@@ -189,8 +198,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   val cachedSampleTables: LoadingCache[QualifiedTableName,
       Seq[(LogicalPlan, String)]] = createCachedSampleTables
 
-  protected def createCachedSampleTables =
+  protected def createCachedSampleTables: LoadingCache[QualifiedTableName,
+      Seq[(LogicalPlan, String)]] = {
     SnappyStoreHiveCatalog.cachedSampleTables
+  }
 
   private var relationDestroyVersion = 0
 
@@ -284,38 +295,49 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     this.relationDestroyVersion = globalVersion + 1
   }
 
+  def normalizeType(dataType: DataType): DataType = dataType match {
+    case a: ArrayType => a.copy(elementType = normalizeType(a.elementType))
+    case m: MapType => m.copy(keyType = normalizeType(m.keyType),
+      valueType = normalizeType(m.valueType))
+    case s: StructType => normalizeSchema(s)
+    case _ => dataType
+  }
+
+  def normalizeSchemaField(f: StructField): StructField = {
+    val name = Utils.toUpperCase(Utils.fieldName(f))
+    val dataType = normalizeType(f.dataType)
+    val metadata = if (f.metadata.contains("name")) {
+      val builder = new MetadataBuilder
+      builder.withMetadata(f.metadata).putString("name", name).build()
+    } else {
+      dataType match {
+        case StringType =>
+          if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+            val builder = new MetadataBuilder
+            builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
+              "STRING").build()
+          } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
+              .equalsIgnoreCase("CLOB")) {
+            // Remove the CharType properties from metadata
+            val builder = new MetadataBuilder
+            builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
+                .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
+          } else {
+            f.metadata
+          }
+        case _ => f.metadata
+      }
+    }
+    f.copy(name = name, dataType = dataType, metadata = metadata)
+  }
+
   def normalizeSchema(schema: StructType): StructType = {
     if (sqlConf.caseSensitiveAnalysis) {
       schema
     } else {
       val fields = schema.fields
       if (fields.exists(f => Utils.hasLowerCase(Utils.fieldName(f)))) {
-        StructType(fields.map { f =>
-          val name = Utils.toUpperCase(Utils.fieldName(f))
-          val metadata = if (f.metadata.contains("name")) {
-            val builder = new MetadataBuilder
-            builder.withMetadata(f.metadata).putString("name", name).build()
-          } else {
-            f.dataType match {
-              case s: StringType =>
-                if (!f.metadata.contains(Constant.CHAR_TYPE_BASE_PROP)) {
-                  val builder = new MetadataBuilder
-                  builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
-                    "STRING").build()
-                } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
-                    .equalsIgnoreCase("CLOB")) {
-                  // Remove the CharType properties from metadata
-                  val builder = new MetadataBuilder
-                  builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
-                      .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
-                } else {
-                  f.metadata
-                }
-              case _ => f.metadata
-            }
-          }
-          f.copy(name = name, metadata = metadata)
-        })
+        StructType(fields.map(normalizeSchemaField))
       } else {
         schema
       }
@@ -379,7 +401,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def unregisterTable(tableIdent: QualifiedTableName): Unit = synchronized {
     val tableName = tableIdent.table
     if (tempTables.contains(tableName)) {
-      snappySession.truncateTable(tableIdent, ignoreIfUnsupported = true)
+      snappySession.truncateTable(tableIdent, ifExists = false,
+        ignoreIfUnsupported = true)
       tempTables -= tableName
     }
   }
@@ -479,7 +502,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       relation: Option[BaseRelation]): Unit = {
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
-      case Some(t) =>
+      case Some(_) =>
         // remove from parent relation, if any
         relation.foreach {
           case dep: DependentRelation => dep.baseTable.foreach { t =>
@@ -525,15 +548,20 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
 
-        val newOptions = options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
-          case Some(c) => options
-          case None => options + (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
-              ExternalStoreUtils.getDefaultCachedBatchSize().toString)
+        var newOptions = options
+        options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+          case Some(_) =>
+          case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
+              ExternalStoreUtils.defaultColumnBatchSize(snappySession).toString)
+        }
+        options.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+          case Some(_) =>
+          case None => newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
+              ExternalStoreUtils.defaultColumnMaxDeltaRows(snappySession).toString)
         }
         // invalidate any cached plan for the table
         tableIdent.invalidate()
         cachedDataSourceTables.invalidate(tableIdent)
-
 
         val tableProperties = new mutable.HashMap[String, String]
         tableProperties.put(HIVE_PROVIDER, provider)
@@ -574,7 +602,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val schemaName = tableIdent.schemaName
         val dbInHive = client.getDatabaseOption(schemaName)
         dbInHive match {
-          case Some(x) => // We are all good
+          case Some(_) => // We are all good
           case None => client.createDatabase(CatalogDatabase(
             schemaName,
             description = schemaName,
@@ -603,11 +631,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
         withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
         SnappySession.clearAllCache()
-      case Some(t) =>  // Do nothing
+      case Some(_) =>  // Do nothing
     }
-
   }
-
 
   def withHiveExceptionHandling[T](function: => T): T = {
     try {
@@ -730,13 +756,158 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def getTableType(relation: BaseRelation): ExternalTableType = {
     relation match {
-      case x: JDBCMutableRelation => ExternalTableType.Row
-      case x: IndexColumnFormatRelation => ExternalTableType.Index
-      case x: JDBCAppendableRelation => ExternalTableType.Column
-      case x: StreamPlan => ExternalTableType.Stream
+      case _: JDBCMutableRelation => ExternalTableType.Row
+      case _: IndexColumnFormatRelation => ExternalTableType.Index
+      case _: JDBCAppendableRelation => ExternalTableType.Column
+      case _: StreamPlan => ExternalTableType.Stream
       case _ => ExternalTableType.External
     }
   }
+
+  private def toUrl(resource: FunctionResource): URL = {
+    val path = resource.uri
+    val uri = new Path(path).toUri
+    if (uri.getScheme == null) {
+      // `path` is a local file path without a URL scheme
+      new File(path).toURI.toURL
+    } else {
+      // `path` is a URL with a scheme
+      uri.toURL
+    }
+  }
+
+  private def addToFuncJars(funcDefinition: CatalogFunction,
+      qualifiedName: FunctionIdentifier): Unit = {
+    val urls = funcDefinition.resources.map { r =>
+      ContextJarUtils.addToSparkJars(funcDefinition.identifier.toString(), r.uri)
+      toUrl(r)
+    }
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+    if(ContextJarUtils.getDriverJar(qualifiedName.unquotedString).isEmpty){
+      ContextJarUtils.addDriverJar(qualifiedName.unquotedString,
+        new MutableURLClassLoader(urls.toArray, parentLoader))
+    }
+  }
+
+  private def removeFromFuncJars(funcDefinition: CatalogFunction,
+      qualifiedName: FunctionIdentifier): Unit = {
+    funcDefinition.resources.foreach { r =>
+      ContextJarUtils.removeFromSparkJars(funcDefinition.identifier.toString(), r.uri)
+    }
+    ContextJarUtils.removeDriverJar(qualifiedName.unquotedString)
+  }
+
+  override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
+    // If the name itself is not qualified, add the current database to it.
+    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
+    val qualifiedName = name.copy(database = database)
+    ContextJarUtils.getDriverJar(qualifiedName.unquotedString) match {
+      case Some(x) => {
+        val catalogFunction = try {
+          externalCatalog.getFunction(currentSchema, qualifiedName.funcName)
+        } catch {
+          case e: AnalysisException => failFunctionLookup(qualifiedName.funcName)
+          case e: NoSuchPermanentFunctionException => failFunctionLookup(qualifiedName.funcName)
+        }
+        removeFromFuncJars(catalogFunction, qualifiedName)
+      }
+      case _ =>
+    }
+    super.dropFunction(name, ignoreIfNotExists)
+  }
+
+  override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
+    val uRLClassLoader = ContextJarUtils.getDriverJar(funcName).getOrElse(
+      org.apache.spark.util.Utils.getContextOrSparkClassLoader)
+    val (actualClassName, typeName) = className.splitAt(className.lastIndexOf("__"))
+    UDFFunction.makeFunctionBuilder(funcName,
+      uRLClassLoader.loadClass(actualClassName),
+      CatalystSqlParser.parseDataType(typeName.stripPrefix("__")))
+  }
+
+  /**
+   * Look up the [[ExpressionInfo]] associated with the specified function, assuming it exists.
+   */
+  override def lookupFunctionInfo(name: FunctionIdentifier): ExpressionInfo = synchronized {
+    // TODO: just make function registry take in FunctionIdentifier instead of duplicating this
+    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
+    val qualifiedName = name.copy(database = database)
+    functionRegistry.lookupFunction(name.funcName)
+        .orElse(functionRegistry.lookupFunction(qualifiedName.unquotedString))
+        .getOrElse {
+          val db = qualifiedName.database.get
+          requireDbExists(db)
+          if (externalCatalog.functionExists(db, name.funcName)) {
+            val metadata = externalCatalog.getFunction(db, name.funcName)
+            new ExpressionInfo(metadata.className, qualifiedName.unquotedString)
+          } else {
+            failFunctionLookup(name.funcName)
+          }
+        }
+  }
+
+  /**
+   * Return an [[Expression]] that represents the specified function, assuming it exists.
+   *
+   * For a temporary function or a permanent function that has been loaded,
+   * this method will simply lookup the function through the
+   * FunctionRegistry and create an expression based on the builder.
+   *
+   * For a permanent function that has not been loaded, we will first fetch its metadata
+   * from the underlying external catalog. Then, we will load all resources associated
+   * with this function (i.e. jars and files). Finally, we create a function builder
+   * based on the function class and put the builder into the FunctionRegistry.
+   * The name of this function in the FunctionRegistry will be `databaseName.functionName`.
+   */
+  override def lookupFunction(
+      name: FunctionIdentifier,
+      children: Seq[Expression]): Expression = synchronized {
+    // Note: the implementation of this function is a little bit convoluted.
+    // We probably shouldn't use a single FunctionRegistry to register all three kinds of functions
+    // (built-in, temp, and external).
+    if (name.database.isEmpty && functionRegistry.functionExists(name.funcName)) {
+      // This function has been already loaded into the function registry.
+      return functionRegistry.lookupFunction(name.funcName, children)
+    }
+
+    // If the name itself is not qualified, add the current database to it.
+    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
+    val qualifiedName = name.copy(database = database)
+
+    if (functionRegistry.functionExists(qualifiedName.unquotedString)) {
+      // This function has been already loaded into the function registry.
+      // Unlike the above block, we find this function by using the qualified name.
+      return functionRegistry.lookupFunction(qualifiedName.unquotedString, children)
+    }
+
+    // The function has not been loaded to the function registry, which means
+    // that the function is a permanent function (if it actually has been registered
+    // in the metastore). We need to first put the function in the FunctionRegistry.
+    // TODO: why not just check whether the function exists first?
+    val catalogFunction = try {
+      externalCatalog.getFunction(currentSchema, name.funcName)
+    } catch {
+      case e: AnalysisException => failFunctionLookup(name.funcName)
+      case e: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
+    }
+    // loadFunctionResources(catalogFunction.resources) // Not needed for Snappy use case
+
+    // Please note that qualifiedName is provided by the user. However,
+    // catalogFunction.identifier.unquotedString is returned by the underlying
+    // catalog. So, it is possible that qualifiedName is not exactly the same as
+    // catalogFunction.identifier.unquotedString (difference is on case-sensitivity).
+    // At here, we preserve the input from the user.
+    val info = new ExpressionInfo(catalogFunction.className, qualifiedName.unquotedString)
+
+    addToFuncJars(catalogFunction, qualifiedName)
+
+    val builder = makeFunctionBuilder(qualifiedName.unquotedString, catalogFunction.className)
+    createTempFunction(qualifiedName.unquotedString, info, builder, ignoreIfExists = false)
+    // Now, we need to create the Expression.
+    functionRegistry.lookupFunction(qualifiedName.unquotedString, children)
+  }
+
+
 
   // -----------------
   // | Other methods |
@@ -785,7 +956,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     try {
       indexes = hiveTable.properties(ExternalStoreUtils.DEPENDENT_RELATIONS) + ","
     } catch {
-      case e: scala.NoSuchElementException =>
+      case _: scala.NoSuchElementException =>
     }
 
     client.alterTable(

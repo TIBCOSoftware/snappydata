@@ -38,9 +38,6 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class QueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
-  // set default batch size for this test
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "10000")
-
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 
   override def tearDown2(): Unit = {

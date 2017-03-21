@@ -27,7 +27,7 @@ import com.gemstone.gemfire.management.internal.SystemManagementService
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import io.snappydata.test.dunit.SerializableRunnable
 
 import org.apache.spark.sql.collection.Utils
@@ -37,8 +37,11 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val table = "TEST.TEST_TABLE"
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "500")
 
+  override def afterClass(): Unit = {
+    ClusterManagerTestBase.stopSpark()
+    super.afterClass()
+  }
   def nodeShutDown(): Unit = {
     ClusterManagerTestBase.stopSpark()
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
@@ -48,6 +51,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
+    io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, 5120)
     snc
   }
 
@@ -167,13 +171,13 @@ object SnappyTableStatsProviderDUnitTest {
     var result = new SnappyRegionStats(tableName)
     if (isColumnTable) {
       result.setColumnTable(true)
-      val cachedBatchTableName = ColumnFormatRelation.cachedBatchTableName(tableName)
-      result = getDetailsForPR(cachedBatchTableName, true, result)
+      val columnBatchTableName = ColumnFormatRelation.columnBatchTableName(tableName)
+      result = getDetailsForPR(columnBatchTableName, true, result)
     }
     getDetailsForPR(tableName, false, result)
   }
 
-  def getDetailsForPR(table: String, isCachedBatchTable: Boolean,
+  def getDetailsForPR(table: String, isColumnBatchTable: Boolean,
       stats: SnappyRegionStats): SnappyRegionStats = {
     val region = Misc.getRegionForTable(table, true).asInstanceOf[PartitionedRegion]
     val managementService = ManagementService.getManagementService(Misc.getGemFireCache).
@@ -199,7 +203,7 @@ object SnappyTableStatsProviderDUnitTest {
           (msize + br.getSizeInMemory + overhead, tsize + br.getTotalBytes + overhead)
         }
     stats.setReplicatedTable(false)
-    val size = if (isCachedBatchTable) regionBean.getRowsInCachedBatches
+    val size = if (isColumnBatchTable) regionBean.getRowsInColumnBatches
     else regionBean.getEntryCount
     stats.setRowCount(stats.getRowCount + size)
     entryOverhead *= entryCount

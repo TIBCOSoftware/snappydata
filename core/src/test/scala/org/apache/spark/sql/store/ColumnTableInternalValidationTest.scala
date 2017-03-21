@@ -18,9 +18,9 @@ package org.apache.spark.sql.store
 
 import scala.util.Try
 
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.Logging
@@ -99,6 +99,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
   // asks for UpdatableRelation
   // withSQLConf doesn't work with sql, as in that case another sqlcontext is used
   test("Test ShadowTable with 1 bucket") {
+    Property.ColumnMaxDeltaRows.set(snc.conf, 4)
     snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
     snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +
         "USING column " +
@@ -112,7 +113,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
         asInstanceOf[PartitionedRegion]
 
     val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+        columnBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2)) // Seq(5, 6))
@@ -136,10 +137,10 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val rCopy = region.getPartitionAttributes.getRedundantCopies
     assert(rCopy == 2)
 
-    assert(region.getColumnBatchSize == 4)
+    assert(region.getColumnMaxDeltaRows == 4)
 
     assert(region.size == 0)
-    assert(shadowRegion.size == 1)
+    assert(shadowRegion.size/3 == 1)
     logInfo("Success")
   }
 
@@ -157,7 +158,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
         asInstanceOf[PartitionedRegion]
 
     val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+        columnBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2), Seq(5, 6))
@@ -181,7 +182,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
-    if (region.getColumnBatchSize == 3) {
+    if (region.getColumnMaxDeltaRows == 3) {
       assert(region.size > 0)
       assert(shadowRegion.size > 0)
     }
@@ -207,7 +208,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
-        cachedBatchTableName("COLUMNTABLE7").toUpperCase()
+        columnBatchTableName("COLUMNTABLE7").toUpperCase()
       , true).asInstanceOf[PartitionedRegion]
 
     snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
@@ -225,13 +226,13 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
-    if (region.getColumnBatchSize == 4) {
+    if (region.getColumnMaxDeltaRows == 4) {
       assert(region.size == 1)
-      assert(shadowRegion.size == 1)
+      assert(shadowRegion.size/3 == 1)
     }
     else {
       assert(region.size == 5)
-      assert(shadowRegion.size == 0)
+      assert(shadowRegion.size/3 == 0)
     }
 
     logInfo("Success")

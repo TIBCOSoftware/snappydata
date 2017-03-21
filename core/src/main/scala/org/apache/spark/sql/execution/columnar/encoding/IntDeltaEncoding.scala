@@ -16,24 +16,32 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.types.{DataType, DateType, IntegerType}
+import org.apache.spark.sql.types.{DataType, DateType, IntegerType, StructField}
 import org.apache.spark.unsafe.Platform
 
-final class IntDeltaEncoding extends IntDeltaEncodingBase with NotNullColumn
+trait IntDeltaEncoding extends ColumnEncoding {
 
-final class IntDeltaEncodingNullable
-    extends IntDeltaEncodingBase with NullableColumn
-
-abstract class IntDeltaEncodingBase extends ColumnEncoding {
-
-  private[this] final var prev: Int = 0
-
-  override final def typeId: Int = 4
+  override final def typeId: Int = 5
 
   override final def supports(dataType: DataType): Boolean = dataType match {
     case IntegerType | DateType => true
     case _ => false
   }
+}
+
+final class IntDeltaDecoder
+    extends IntDeltaDecoderBase with NotNullDecoder
+
+final class IntDeltaDecoderNullable
+    extends IntDeltaDecoderBase with NullableDecoder
+
+abstract class IntDeltaDecoderBase
+    extends ColumnDecoder with IntDeltaEncoding {
+
+  private[this] final var prev: Int = 0
+
+  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      field: StructField): Long = cursor
 
   override final def nextInt(columnBytes: AnyRef, cursor: Long): Long = {
     val delta = Platform.getByte(columnBytes, cursor)

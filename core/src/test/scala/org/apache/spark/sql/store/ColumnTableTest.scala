@@ -17,25 +17,24 @@
 package org.apache.spark.sql.store
 
 import java.sql.DriverManager
-import java.util
 
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
-import io.snappydata.{SnappyTableStatsProviderService, SnappyFunSuite}
 import io.snappydata.core.{Data, TestData, TestData2}
+import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SnappySession, SparkSession, TableNotFoundException}
 
 /**
   * Tests for column tables in GFXD.
@@ -726,24 +725,35 @@ class ColumnTableTest
   }
 
   private def testRowBufferEviction(tableName: String): Unit = {
-    val props = Map("BUCKETS" -> "1")
+    val props = Map("BUCKETS" -> "1", "PARTITION_BY" -> "col1")
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
       Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
+    val snc = new SnappySession(sc)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 50)
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.insertInto(tableName)
     assert(snc.sql(s"select * from $tableName").collect().length == 5)
 
     val conn = DriverManager.getConnection("jdbc:snappydata:;query-routing=false")
-    val rs = conn.createStatement().executeQuery("select count (*) from " +
-        tableName)
-    if (rs.next()) {
-      // The row buffer should not have more than 2 rows as the batch size is 3
-      assert(rs.getInt(1) <= 2)
-    }
-
+    val stmt = conn.createStatement()
+    var rs = stmt.executeQuery(s"select count (*) from $tableName")
+    assert(rs.next())
+    // The row buffer should not have more than 2 rows with small batch size
+    assert(rs.getInt(1) <= 2)
+    assert(!rs.next())
     rs.close()
+
+    // also check with the insert API
+    snc.truncateTable(tableName)
+    snc.insert(tableName, dataDF.collect(): _*)
+    rs = stmt.executeQuery(s"select count (*) from $tableName")
+    assert(rs.next())
+    assert(rs.getInt(1) <= 2)
+    assert(!rs.next())
+    rs.close()
+
     conn.close()
   }
 
@@ -900,38 +910,37 @@ class ColumnTableTest
     // scalastyle:on println
   }
 
-  test("Check cachedBatch num rows") {
-    System.setProperty("snappydata.testForceFlush", "true")
+  test("Check columnBatch num rows") {
     val data = (1 to 200) map (i => Seq(i, +i, +i))
+    val snc = new SnappySession(sc)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 100)
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     val parDF = dataDF.repartition(1)
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
-        " USING column ")
-    try {
-      parDF.write.insertInto(tableName)
-    } finally {
-      System.clearProperty("snappydata.testForceFlush")
-    }
+        " USING column")
+    parDF.write.insertInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
 
-    val r = result.collect
+    val r = result.collect()
     assert(r.length === 200)
 
     val rowBuffer = Misc.getRegionForTable(("APP." + tableName).toUpperCase, true)
-    logInfo(rowBuffer.asInstanceOf[PartitionedRegion].getPrStats
-        .getDataStoreEntryCount.toString)
+    val rowBufferCount = rowBuffer.asInstanceOf[PartitionedRegion].getPrStats
+        .getDataStoreEntryCount
 
     val region = Misc.getRegionForTable(
-      JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
+      ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
     SnappyTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
-        .getPRNumRowsInCachedBatches
+        .getPRNumRowsInColumnBatches
 
-    assert(entries == 200)
+    assert(entries > 180)
+    assert(rowBufferCount !== 0)
+    assert(entries + rowBufferCount === 200)
     logInfo("Successful")
   }
 

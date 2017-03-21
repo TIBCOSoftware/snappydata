@@ -38,6 +38,8 @@ import java.util.{Iterator => JIterator}
 
 import scala.reflect.ClassTag
 
+import org.apache.spark.unsafe.types.UTF8String
+
 /**
  * A fast hash set implementation for non-null data. This hash set supports
  * insertions and updates, but not deletions. It is much faster than Java's
@@ -76,6 +78,62 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   def data: Array[T] = _data
 
   def keyIsUnique: Boolean = _keyIsUnique
+
+  def addString(key: UTF8String, default: UTF8String => T): T = {
+    val hash = key.hashCode()
+    val data = _data
+    val mask = _mask
+    var pos = hash & mask
+    var delta = 1
+    while (true) {
+      val mapKey = data(pos)
+      if (mapKey ne null) {
+        if (mapKey.asInstanceOf[StringKey].s.equals(key)) {
+          // update
+          return mapKey
+        } else {
+          // quadratic probing with position increase by 1, 2, 3, ...
+          pos = (pos + delta) & mask
+          delta += 1
+        }
+      } else {
+        val entry = default(key)
+        // insert into the map and rehash if required
+        data(pos) = entry
+        handleNewInsert()
+        return entry
+      }
+    }
+    throw new AssertionError("not expected to reach")
+  }
+
+  def addLong(key: Long, default: Long => T): T = {
+    val hash = HashingUtil.hashLong(key)
+    val data = _data
+    val mask = _mask
+    var pos = hash & mask
+    var delta = 1
+    while (true) {
+      val mapKey = data(pos)
+      if (mapKey ne null) {
+        if (mapKey.asInstanceOf[LongKey].l == key) {
+          // update
+          return mapKey
+        } else {
+          // quadratic probing with position increase by 1, 2, 3, ...
+          pos = (pos + delta) & mask
+          delta += 1
+        }
+      } else {
+        val entry = default(key)
+        // insert into the map and rehash if required
+        data(pos) = entry.asInstanceOf[T]
+        handleNewInsert()
+        return entry
+      }
+    }
+    throw new AssertionError("not expected to reach")
+  }
 
   def setKeyIsUnique(unique: Boolean): Unit = {
     if (_keyIsUnique != unique) _keyIsUnique = unique
@@ -211,5 +269,25 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private def nextPowerOf2(n: Int): Int = {
     val highBit = Integer.highestOneBit(n)
     checkCapacity(if (highBit == n) n else highBit << 1)
+  }
+}
+
+abstract class StringKey(val s: UTF8String) {
+
+  override lazy val hashCode: Int = s.hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case o: StringKey => s == o.s
+    case _ => false
+  }
+}
+
+abstract class LongKey(val l: Long) {
+
+  override def hashCode(): Int = HashingUtil.hashLong(l)
+
+  override def equals(obj: Any): Boolean = obj match {
+    case o: LongKey => l == o.l
+    case _ => false
   }
 }

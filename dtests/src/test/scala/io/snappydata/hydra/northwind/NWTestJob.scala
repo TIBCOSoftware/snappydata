@@ -36,7 +36,6 @@ object NWTestJob extends SnappySQLJob {
       val dataLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataLocation)
       NWQueries.snc = snc
-      println(s"SS - dataLocation is : ${dataLocation}")
       NWQueries.dataFilesLocation = dataLocation
       regions = snc.read.format("com.databricks.spark.csv")
         .option("header", "true")
