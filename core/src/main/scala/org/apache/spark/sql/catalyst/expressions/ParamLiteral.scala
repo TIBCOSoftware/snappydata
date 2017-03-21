@@ -246,7 +246,7 @@ case class ParamConstantsValue(var value: Any, var position: Int)
   // TODO - Complete this function
   def setValue(dvd: DataValueDescriptor): Unit = {
     value = dvd match {
-      case SQLInteger => dvd.getInt
+      case i: SQLInteger => i.getInt
       case _ => dvd.getObject
     }
   }
