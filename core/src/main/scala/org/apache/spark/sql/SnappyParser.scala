@@ -46,10 +46,13 @@ class SnappyParser(session: SnappySession)
 
   private var paramcounter = 0
 
+  private var paramConstantsCounter = 0
+
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
     paramcounter = 0
+    paramConstantsCounter = 0
     tokenize = false
   }
 
@@ -173,8 +176,8 @@ class SnappyParser(session: SnappySession)
 
   protected final def paramConstants: Rule1[ParamConstants] = rule {
     questionMark ~> (() => {
-      paramcounter = paramcounter + 1
-      ParamConstants(null, NullType, paramcounter)
+      paramConstantsCounter = paramConstantsCounter + 1
+      ParamConstants(null, NullType, paramConstantsCounter)
     })
   }
 
