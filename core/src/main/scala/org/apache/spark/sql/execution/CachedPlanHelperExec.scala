@@ -17,13 +17,15 @@
 package org.apache.spark.sql.execution
 
 import org.apache.hadoop.hive.metastore.parser.ExpressionTree.TreeNode
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamConstantsValue, ParamLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-
 import scala.collection.mutable
+
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 
 case class CachedPlanHelperExec(childPlan: CodegenSupport)
   extends UnaryExecNode with CodegenSupport {
@@ -52,6 +54,12 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
       _.asInstanceOf[LiteralValue]).sortBy(_.position).toArray
   }
 
+  private lazy val allParamConstantsValue: Array[ParamConstantsValue] = {
+    ctxReferences.filter(
+      { p: Any => p.isInstanceOf[ParamConstantsValue] }).map(
+      _.asInstanceOf[ParamConstantsValue]).sortBy(_.position).toArray
+  }
+
   private lazy val hasParamLiteralNode = allLiterals.size > 0
 
   def collectParamLiteralNodes(lp: LogicalPlan): Unit = {
@@ -65,7 +73,20 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
     }
   }
 
+  def collectParamConstantsValueNodes(pvs: ParameterValueSet): Unit = {
+    assert(allParamConstantsValue.size == pvs.getParameterCount,
+      s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
+          s" param-count=${allParamConstantsValue.size}")
+    (0 until pvs.getParameterCount) foreach(i => {
+      allParamConstantsValue(i).value = pvs.getParameter(i)
+    })
+  }
+
   def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
     collectParamLiteralNodes(currLogicalPlan)
+  }
+
+  def replaceParamConstants(pvs: ParameterValueSet): Unit = {
+    collectParamConstantsValueNodes(pvs)
   }
 }

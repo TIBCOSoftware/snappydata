@@ -1710,7 +1710,7 @@ object SnappySession extends Logging {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
       }
       // replace the constants from this logical plan
-      cachedDF.replaceConstants(lp)
+      cachedDF.replaceConstants(lp, isPreparedStatement, isPreparedPhase, pvs)
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()

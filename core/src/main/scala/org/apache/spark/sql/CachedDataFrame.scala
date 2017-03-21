@@ -20,8 +20,11 @@ import java.nio.ByteBuffer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
@@ -115,11 +118,17 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
-  def replaceConstants(lp: LogicalPlan) = {
+  def replaceConstants(lp: LogicalPlan, isPreparedStatement: Boolean,
+      isPreparedPhase: Boolean, pvs: ParameterValueSet): Unit = {
     queryExecution.executedPlan match {
       case WholeStageCodegenExec(cachedPlan) => {
         cachedPlan match {
-          case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
+          case cp: CachedPlanHelperExec => {
+            cp.replaceConstants(lp)
+            if (isPreparedStatement && !isPreparedPhase) {
+              cp.replaceParamConstants(pvs)
+            }
+          }
           case _ => // do nothing
         }
       }

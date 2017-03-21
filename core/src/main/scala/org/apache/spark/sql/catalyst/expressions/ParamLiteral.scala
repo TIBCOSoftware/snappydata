@@ -27,9 +27,7 @@ import org.apache.spark.sql.types._
 
 case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
 
-  override def hashCode(): Int = {
-    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
-  }
+  override def hashCode(): Int = ParamLiteral.hashCode(dataType, pos)
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -40,7 +38,8 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    ParamLiteral.doGenCode(ctx, ev, l.value, dataType, pos)
+    ParamLiteral.doGenCode(ctx, ev, l.value, dataType, pos,
+      (v, p) => LiteralValue(v, p), true)
   }
 
   override def nullable: Boolean = l.nullable
@@ -54,26 +53,32 @@ case class LiteralValue(var value: Any, var position: Int)
   extends KryoSerializable {
 
   override def write(kryo: Kryo, output: Output): Unit = {
-    kryo.writeClassAndObject(output, value)
-    output.writeVarInt(position, true)
+    LiteralValue.write(kryo, output, value, position)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
-    value = kryo.readClassAndObject(input)
-    position = input.readVarInt(true)
+    val (v, p) = LiteralValue.read(kryo, input)
+    value = v
+    position = p
   }
 }
 
 object ParamLiteral {
+  def hashCode(dataType: DataType, pos: Int): Int = {
+    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
+  }
+
   def doGenCode(ctx: CodegenContext, ev: ExprCode, value: Any,
-      dataType: DataType, pos: Int): ExprCode = {
+      dataType: DataType, pos: Int, createValue: (Any, Int) => Any, doAssert: Boolean): ExprCode = {
     // change the isNull and primitive to consts, to inline them
     dataType match {
       case BooleanType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Boolean], s"unexpected type $dataType instead of BooleanType")
+        if (doAssert) {
+          assert(value.isInstanceOf[Boolean], s"unexpected type $dataType instead of BooleanType")
+        }
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val valueTerm = ctx.freshName("value")
         ev.copy(
           s"""
@@ -83,9 +88,11 @@ object ParamLiteral {
            """.stripMargin, isNull, valueTerm)
       case FloatType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Float], s"unexpected type $dataType instead of FloatType")
+        if (doAssert) {
+          assert(value.isInstanceOf[Float], s"unexpected type $dataType instead of FloatType")
+        }
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val valueTerm = ctx.freshName("value")
         ev.copy(
           s"""
@@ -95,9 +102,11 @@ object ParamLiteral {
            """.stripMargin, isNull, valueTerm)
       case DoubleType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Double], s"unexpected type $dataType instead of DoubleType")
+        if (doAssert) {
+          assert(value.isInstanceOf[Double], s"unexpected type $dataType instead of DoubleType")
+        }
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val valueTerm = ctx.freshName("value")
         ev.copy(
           s"""
@@ -107,9 +116,11 @@ object ParamLiteral {
            """.stripMargin, isNull, valueTerm)
       case ByteType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Byte], s"unexpected type $dataType instead of ByteType")
+        if (doAssert) {
+          assert(value.isInstanceOf[Byte], s"unexpected type $dataType instead of ByteType")
+        }
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val valueTerm = ctx.freshName("value")
         ev.copy(
           s"""
@@ -119,9 +130,11 @@ object ParamLiteral {
            """.stripMargin, isNull, valueTerm)
       case ShortType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Short], s"unexpected type $dataType instead of ShortType")
+        if (doAssert) {
+          assert(value.isInstanceOf[Short], s"unexpected type $dataType instead of ShortType")
+        }
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val valueTerm = ctx.freshName("value")
         ev.copy(
           s"""
@@ -131,10 +144,12 @@ object ParamLiteral {
            """.stripMargin, isNull, valueTerm)
       case IntegerType | DateType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Int],
-          s"unexpected type $dataType instead of DateType or IntegerType")
+        if (doAssert) {
+          assert(value.isInstanceOf[Int],
+            s"unexpected type $dataType instead of DateType or IntegerType")
+        }
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val valueTerm = ctx.freshName("value")
         ev.copy(
           s"""
@@ -144,10 +159,12 @@ object ParamLiteral {
            """.stripMargin, isNull, valueTerm)
       case TimestampType | LongType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Long],
-          s"unexpected type $dataType instead of TimestampType or LongType")
+        if (doAssert) {
+          assert(value.isInstanceOf[Long],
+            s"unexpected type $dataType instead of TimestampType or LongType")
+        }
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val valueTerm = ctx.freshName("value")
         ev.copy(
           s"""
@@ -160,7 +177,7 @@ object ParamLiteral {
         ev.copy(s"final Object $valueTerm = null")
       case other =>
         val valueRef = ctx.addReferenceObj("literal",
-          LiteralValue(value, pos))
+          createValue(value, pos))
         val isNull = ctx.freshName("isNull")
         val valueTerm = ctx.freshName("value")
         val objectTerm = ctx.freshName("obj")
@@ -175,11 +192,22 @@ object ParamLiteral {
   }
 }
 
-case class ParamConstants(value: Any, dataType: DataType, pos: Int) extends LeafExpression {
-
-  override def hashCode(): Int = {
-    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
+object LiteralValue {
+  def write(kryo: Kryo, output: Output, value: Any, position: Int): Unit = {
+    kryo.writeClassAndObject(output, value)
+    output.writeVarInt(position, true)
   }
+
+  def read(kryo: Kryo, input: Input): (Any, Int) = {
+    val value = kryo.readClassAndObject(input)
+    val position = input.readVarInt(true)
+    (value, position)
+  }
+}
+
+case class ParamConstants(dataType: DataType, pos: Int) extends LeafExpression {
+
+  override def hashCode(): Int = ParamLiteral.hashCode(dataType, pos)
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -190,10 +218,26 @@ case class ParamConstants(value: Any, dataType: DataType, pos: Int) extends Leaf
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    ParamLiteral.doGenCode(ctx, ev, value, dataType, pos)
+    ParamLiteral.doGenCode(ctx, ev, null, dataType, pos,
+      (v, p) => ParamConstantsValue(v, p), false)
   }
 
-  override def nullable: Boolean = value == nullable
+  override def nullable: Boolean = false
 
-  override def eval(input: InternalRow): Any = value
+  override def eval(input: InternalRow): Any =
+    throw new UnsupportedOperationException("eval not implemented")
+}
+
+case class ParamConstantsValue(var value: Any, var position: Int)
+    extends KryoSerializable {
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    LiteralValue.write(kryo, output, value, position)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    val (v, p) = LiteralValue.read(kryo, input)
+    value = v
+    position = p
+  }
 }
