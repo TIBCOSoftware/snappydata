@@ -21,6 +21,8 @@ import java.util.Objects
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger}
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
@@ -239,5 +241,13 @@ case class ParamConstantsValue(var value: Any, var position: Int)
     val (v, p) = LiteralValue.read(kryo, input)
     value = v
     position = p
+  }
+
+  // TODO - Complete this function
+  def setValue(dvd: DataValueDescriptor): Unit = {
+    value = dvd match {
+      case SQLInteger => dvd.getInt
+      case _ => dvd.getObject
+    }
   }
 }

@@ -78,7 +78,7 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
       s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
           s" param-count=${allParamConstantsValue.size}")
     (0 until pvs.getParameterCount) foreach(i => {
-      allParamConstantsValue(i).value = pvs.getParameter(i)
+      allParamConstantsValue(i).setValue(pvs.getParameter(i))
     })
   }
 
