@@ -54,8 +54,8 @@ object QueryExecutionJob extends SnappySQLJob {
 
     for (i <- 1 to 1) {
       for (query <- queries) {
-        QueryExecutor.execute(query, snc, isResultCollection, isSnappy, i, isDynamic,
-          warmUp, runsForAverage, avgPrintStream)
+        QueryExecutor.execute(query, "Snappy_" + query, snc, isResultCollection, isSnappy, i,
+          isDynamic, warmUp, runsForAverage, avgPrintStream)
       }
     }
     avgPrintStream.close()
