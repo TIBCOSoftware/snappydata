@@ -81,7 +81,7 @@ class LeadImpl extends ServerImpl with Lead
   }.toSet
 
   var _directApiInvoked: Boolean = false
-
+  var isTestSetup = false
   def directApiInvoked: Boolean = _directApiInvoked
 
   private var remoteInterpreterServerClass: Class[_] = _
@@ -92,6 +92,8 @@ class LeadImpl extends ServerImpl with Lead
 
     _directApiInvoked = true
 
+    isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
+    bootProperties.remove("isTest")
     try {
 
       val locator = {
@@ -339,7 +341,7 @@ class LeadImpl extends ServerImpl with Lead
 
     val jobServerEnabled = Property.JobServerEnabled.getProperty(
       bootProperties).toBoolean
-    if (_directApiInvoked) {
+    if (_directApiInvoked && !isTestSetup) {
       assert(jobServerEnabled,
         "JobServer must have been enabled with lead.start(..) invocation")
     }

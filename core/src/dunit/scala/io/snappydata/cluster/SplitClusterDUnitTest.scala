@@ -127,7 +127,7 @@ class SplitClusterDUnitTest(s: String)
     }
   }
 
-  override protected def startNetworkServers(num: Int): Unit = {
+  override protected def startNetworkServers(): Unit = {
     // no change to network servers at runtime in this mode
   }
 
@@ -633,6 +633,18 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
         s"Exception in parsing as JSON: $s", e)
     }
     throw new AssertionError(s"Failed in parsing as JSON: $s")
+  }
+
+  def startSparkCluster(productDir: String): Unit = {
+    logInfo(s"Starting spark cluster in $productDir/work")
+    (productDir + "/sbin/start-all.sh") !!
+  }
+
+  def stopSparkCluster(productDir: String): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    logInfo(s"Stopping spark cluster in $productDir/work")
+    if (sparkContext != null) sparkContext.stop()
+    (productDir + "/sbin/stop-all.sh") !!
   }
 }
 

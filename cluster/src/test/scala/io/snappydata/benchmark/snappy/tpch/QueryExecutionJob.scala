@@ -15,22 +15,23 @@
  * LICENSE file.
  */
 
-package io.snappydata.benchmark.snappy
+package io.snappydata.benchmark.snappy.tpch
 
 import java.io.{File, FileOutputStream, PrintStream}
 
 import scala.language.implicitConversions
 
 import com.typesafe.config.Config
+import io.snappydata.benchmark.snappy.TPCH_Snappy
 
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
 
-object TPCH_Snappy_Query extends SnappySQLJob {
+object QueryExecutionJob extends SnappySQLJob {
 
   var sqlSparkProperties: Array[String] = _
   var queries: Array[String] = _
-  var useIndex: Boolean = _
+  var isDynamic: Boolean = _
   var isResultCollection: Boolean = _
   var isSnappy: Boolean = true
   var warmUp: Integer = _
@@ -39,13 +40,6 @@ object TPCH_Snappy_Query extends SnappySQLJob {
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
-
-    //     jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql
-    // .")) {
-    //       val entryString = entry.getKey + "=" + jobConfig.getString(entry.getKey)
-    //       println("****************SparkSqlProp : " + entryString)
-    //       snc.sql("set " + entryString)
-    //     })
 
     val avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Snappy_Average.out"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
@@ -59,11 +53,10 @@ object TPCH_Snappy_Query extends SnappySQLJob {
     // scalastyle:on println
 
     for (i <- 1 to 1) {
-      for (query <- queries)
-        {
-          TPCH_Snappy.execute(query, snc, isResultCollection, isSnappy, i, useIndex,
-            warmUp, runsForAverage, avgPrintStream)
-        }
+      for (query <- queries) {
+        QueryExecutor.execute(query, "Snappy_" + query, snc, isResultCollection, isSnappy, i,
+          isDynamic, warmUp, runsForAverage, avgPrintStream)
+      }
     }
     avgPrintStream.close()
     avgFileStream.close()
@@ -72,16 +65,22 @@ object TPCH_Snappy_Query extends SnappySQLJob {
   }
 
   def main(args: Array[String]): Unit = {
-    val conf = new SparkConf().setAppName("TPCH")
-    queries = conf.get("spark.queries",
-      "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21").split("-")
-    warmUp = conf.getInt("spark.warmUp", 2)
-    runsForAverage = conf.getInt("spark.actualRuns", 3)
-    isResultCollection = conf.getBoolean("spark.resultCollection", false)
-    sqlSparkProperties = conf.get("spark.sparkSqlProps").split(",")
+    val isResultCollection = false
+    val isSnappy = true
+
+    val conf = new SparkConf()
+        .setAppName("TPCH")
+        // .setMaster("local[6]")
+        .setMaster("snappydata://localhost:10334")
+        .set("jobserver.enabled", "false")
     val sc = new SparkContext(conf)
-    val snc = new SnappySession(sc)
-    runSnappyJob(snc, null)
+    val snc =
+      SnappyContext(sc)
+
+
+    snc.sql("set spark.sql.shuffle.partitions=6")
+    queries = Array("16")
+    runJob(snc, null)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -103,10 +102,10 @@ object TPCH_Snappy_Query extends SnappySQLJob {
     println(s"tempqueries : $tempqueries")
     queries = tempqueries.split("-")
 
-    useIndex = if (config.hasPath("useIndex")) {
-      config.getBoolean("useIndex")
+    isDynamic = if (config.hasPath("isDynamic")) {
+      config.getBoolean("isDynamic")
     } else {
-      return SnappyJobInvalid("Specify whether to use Index")
+      return SnappyJobInvalid("Specify whether to use dynamic paramters")
     }
 
     isResultCollection = if (config.hasPath("resultCollection")) {

@@ -23,6 +23,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.types.StructType
 
 trait ExternalStore extends Serializable {
 
@@ -32,7 +33,7 @@ trait ExternalStore extends Serializable {
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
-      session: SparkSession): RDD[ColumnBatch]
+      session: SparkSession, schema: StructType): RDD[Any]
 
   def getConnectedExternalStore(tableName: String,
       onExecutor: Boolean): ConnectedExternalStore
