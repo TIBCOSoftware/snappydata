@@ -24,11 +24,12 @@ import scala.collection.mutable.ArrayBuffer
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.metastore.api.{FieldSchema, Table}
 
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
-import org.apache.spark.sql.catalyst.catalog.{CatalogColumn, CatalogStorageFormat, CatalogTable, CatalogTableType, FunctionResourceLoader}
+import org.apache.spark.sql.catalyst.catalog.{CatalogColumn, CatalogStorageFormat, CatalogTable, FunctionResourceLoader}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.client.HiveClient
@@ -36,7 +37,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.{DataType, StructType}
-import org.apache.spark.sql.{SaveMode, SmartConnectorHelper, SnappySession}
+import org.apache.spark.sql.{AnalysisException, SaveMode, SmartConnectorHelper, SnappySession}
 
 /**
  * Catalog used when SnappyData Connector mode is used over thin client JDBC connection.
@@ -163,10 +164,14 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
       CatalogTable(
         identifier = TableIdentifier(h.getTableName, Option(h.getDbName)),
         tableType = h.getTableType match {
-          case org.apache.hadoop.hive.metastore.TableType.EXTERNAL_TABLE => CatalogTableType.EXTERNAL
-          case org.apache.hadoop.hive.metastore.TableType.MANAGED_TABLE => CatalogTableType.MANAGED
-          case org.apache.hadoop.hive.metastore.TableType.INDEX_TABLE => CatalogTableType.INDEX
-          case org.apache.hadoop.hive.metastore.TableType.VIRTUAL_VIEW => CatalogTableType.VIEW
+          case org.apache.hadoop.hive.metastore.TableType.EXTERNAL_TABLE =>
+            org.apache.spark.sql.catalyst.catalog.CatalogTableType.EXTERNAL
+          case org.apache.hadoop.hive.metastore.TableType.MANAGED_TABLE =>
+            org.apache.spark.sql.catalyst.catalog.CatalogTableType.MANAGED
+          case org.apache.hadoop.hive.metastore.TableType.VIRTUAL_VIEW =>
+            org.apache.spark.sql.catalyst.catalog.CatalogTableType.VIEW
+          case org.apache.hadoop.hive.metastore.TableType.INDEX_TABLE =>
+            throw new AnalysisException("Hive index table is not supported.")
         },
         schema = schema,
         partitionColumnNames = partCols.map(_.name),
