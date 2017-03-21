@@ -40,8 +40,34 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    ParamLiteral.doGenCode(ctx, ev, l.value, dataType, pos)
+  }
+
+  override def nullable: Boolean = l.nullable
+
+  override def eval(input: InternalRow): Any = l.eval()
+
+  override def dataType: DataType = l.dataType
+}
+
+case class LiteralValue(var value: Any, var position: Int)
+  extends KryoSerializable {
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClassAndObject(output, value)
+    output.writeVarInt(position, true)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    value = kryo.readClassAndObject(input)
+    position = input.readVarInt(true)
+  }
+}
+
+object ParamLiteral {
+  def doGenCode(ctx: CodegenContext, ev: ExprCode, value: Any,
+      dataType: DataType, pos: Int): ExprCode = {
     // change the isNull and primitive to consts, to inline them
-    val value = l.value
     dataType match {
       case BooleanType =>
         val isNull = ctx.freshName("isNull")
@@ -105,7 +131,8 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case IntegerType | DateType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Int], s"unexpected type $dataType instead of DateType or IntegerType")
+        assert(value.isInstanceOf[Int],
+          s"unexpected type $dataType instead of DateType or IntegerType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -117,7 +144,8 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
            """.stripMargin, isNull, valueTerm)
       case TimestampType | LongType =>
         val isNull = ctx.freshName("isNull")
-        assert(value.isInstanceOf[Long], s"unexpected type $dataType instead of TimestampType or LongType")
+        assert(value.isInstanceOf[Long],
+          s"unexpected type $dataType instead of TimestampType or LongType")
         val valueRef = ctx.addReferenceObj("literal",
           LiteralValue(value, pos))
         val valueTerm = ctx.freshName("value")
@@ -137,32 +165,35 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
         val valueTerm = ctx.freshName("value")
         val objectTerm = ctx.freshName("obj")
         ev.copy(code =
-          s"""
+            s"""
           Object $objectTerm = $valueRef.value();
           final boolean $isNull = $objectTerm == null;
-          ${ctx.javaType(this.dataType)} $valueTerm = $objectTerm != null
-             ? (${ctx.boxedType(this.dataType)})$objectTerm : null;
+          ${ctx.javaType(dataType)} $valueTerm = $objectTerm != null
+             ? (${ctx.boxedType(dataType)})$objectTerm : null;
           """, isNull, valueTerm)
     }
   }
-
-  override def nullable: Boolean = l.nullable
-
-  override def eval(input: InternalRow): Any = l.eval()
-
-  override def dataType: DataType = l.dataType
 }
 
-case class LiteralValue(var value: Any, var position: Int)
-  extends KryoSerializable {
+case class ParamConstants(value: Any, dataType: DataType, pos: Int) extends LeafExpression {
 
-  override def write(kryo: Kryo, output: Output): Unit = {
-    kryo.writeClassAndObject(output, value)
-    output.writeVarInt(position, true)
+  override def hashCode(): Int = {
+    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
   }
 
-  override def read(kryo: Kryo, input: Input): Unit = {
-    value = kryo.readClassAndObject(input)
-    position = input.readVarInt(true)
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case pc: ParamConstants =>
+        pc.dataType == dataType && pc.pos == pos
+      case _ => false
+    }
   }
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    ParamLiteral.doGenCode(ctx, ev, value, dataType, pos)
+  }
+
+  override def nullable: Boolean = value == nullable
+
+  override def eval(input: InternalRow): Any = value
 }

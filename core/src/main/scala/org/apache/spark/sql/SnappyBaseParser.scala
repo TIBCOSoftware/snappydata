@@ -79,6 +79,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     ',' ~ ws
   }
 
+  protected final def questionMark: Rule0 = rule {
+    '?' ~ ws
+  }
+
   protected final def digits: Rule1[String] = rule {
     capture(CharPredicate.Digit. +) ~ ws
   }

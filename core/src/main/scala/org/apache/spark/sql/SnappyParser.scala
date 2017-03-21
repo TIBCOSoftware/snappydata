@@ -171,6 +171,13 @@ class SnappyParser(session: SnappySession)
     intervalLiteral
   }
 
+  protected final def paramConstants: Rule1[ParamConstants] = rule {
+    questionMark ~> (() => {
+      paramcounter = paramcounter + 1
+      ParamConstants(null, NullType, paramcounter)
+    })
+  }
+
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
@@ -642,7 +649,7 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
-    ( ( test(tokenize) ~ paramliteral ) | literal ) |
+    ( ( test(tokenize) ~ paramliteral ) | literal | paramConstants) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
