@@ -1,14 +1,17 @@
-package io.snappydata.hydra.cluster;
+package io.snappydata.hydra.snapshotIsolation;
 
 import java.util.Vector;
 
 import hydra.BasePrms;
 import hydra.HydraVector;
 import hydra.TestConfig;
+import io.snappydata.hydra.cluster.SnappyPrms;
 
-public class SnapshotIsolationPrms extends SnappyPrms{
+public class SnapshotIsolationPrms extends SnappyPrms {
 
   public static Long tablesList;
+
+  public static Long snappyDDLExtn;
 
   public static Long dmlOperations;
 
@@ -27,6 +30,8 @@ public class SnapshotIsolationPrms extends SnappyPrms{
   public static Long updateStmts;
 
   public static Long deleteStmts;
+
+  public static Long insertStmts;
 
   public static String[] getTableNames() {
     Long key = tablesList;
@@ -93,9 +98,29 @@ public class SnapshotIsolationPrms extends SnappyPrms{
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
+  public static String[] getInsertStmts(){
+    Long key = insertStmts;
+    Vector insertStmts = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[insertStmts.size()];
+    for (int i = 0; i < insertStmts.size(); i++) {
+      strArr[i] = (String)insertStmts.elementAt(i);
+    }
+    return strArr;
+  }
+
   public static String getDeleteStmts(){
     Long key = deleteStmts;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+  public static String[] getSnappyDDLExtn() {
+    Long key = snappyDDLExtn;
+    Vector ddlExtn = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
+    String[] strArr = new String[ddlExtn.size()];
+    for (int i = 0; i < ddlExtn.size(); i++) {
+      strArr[i] = (String)ddlExtn.elementAt(i);
+    }
+    return strArr;
   }
 
   static {
