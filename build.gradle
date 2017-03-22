@@ -106,6 +106,7 @@ allprojects {
     jettyVersion = '9.2.16.v20160414'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.0'
+    thriftVersion = '0.9.3'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.5.4'
@@ -639,6 +640,12 @@ task product(type: Zip) {
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
+        // exclude other test jars
+        exclude '**junit*.jar'
+        exclude '**mockito*.jar'
+        exclude '**hamcrest-core*.jar'
+        exclude '**test-interface*.jar'
+        exclude '**scalacheck*.jar'
         if (rootProject.hasProperty('hadoop-provided')) {
           exclude 'hadoop-*.jar'
         }
