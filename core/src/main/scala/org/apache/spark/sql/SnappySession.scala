@@ -1637,6 +1637,8 @@ object SnappySession extends Logging {
 
   def getPlanCache = planCache
 
+  var currCachedKey: CachedKey = _
+
   private[spark] def addBucketProfileListener(pr: PartitionedRegion): Unit = {
     val advisers = pr.getRegionAdvisor.getAllBucketAdvisorsHostedAndProxies
         .values().iterator()
@@ -1691,9 +1693,12 @@ object SnappySession extends Logging {
     try {
       val lp = session.onlyParseSQL(sqlText)
       val key = CachedKey(session, lp, sqlText)
+      SnappySession.currCachedKey = key
       val evaluation = planCache.getUnchecked(key)
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
+      logDebug(s"sqlText = ${sqlText} and cachedDataframe = " +
+          System.identityHashCode(cachedDF) + " key = " + CachedKey)
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
@@ -1710,7 +1715,10 @@ object SnappySession extends Logging {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
       }
       // replace the constants from this logical plan
-      cachedDF.replaceConstants(lp, isPreparedStatement, isPreparedPhase, pvs)
+      CachedPlanHelperExec.replaceConstants(key, lp)
+      if (isPreparedStatement && !isPreparedPhase) {
+        CachedPlanHelperExec.replaceParamConstants(key, pvs)
+      }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()

@@ -16,28 +16,36 @@
  */
 package org.apache.spark.sql.execution
 
-import org.apache.hadoop.hive.metastore.parser.ExpressionTree.TreeNode
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamConstantsValue, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, ParamConstantsValue, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
+import org.apache.spark.Logging
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.SnappySession.CachedKey
+import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 
 case class CachedPlanHelperExec(childPlan: CodegenSupport)
-  extends UnaryExecNode with CodegenSupport {
+    extends UnaryExecNode with CodegenSupport {
 
-  var ctxReferences: mutable.ArrayBuffer[Any] = _
+  override def output: Seq[Attribute] = child.output
+
+  override def outputPartitioning: Partitioning = child.outputPartitioning
+
+  override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 
   override def child: SparkPlan = childPlan
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = childPlan.inputRDDs()
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    ctxReferences = ctx.references
+    CachedPlanHelperExec.addReferencesToCurrentKey(ctx.references)
     childPlan.produce(ctx, this)
   }
 
@@ -45,48 +53,79 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
     parent.doConsume(ctx, input, row)
 
   override protected def doExecute(): RDD[InternalRow] = childPlan.execute()
+}
 
-  override def output: Seq[Attribute] = childPlan.output
+object CachedPlanHelperExec extends Logging {
+  var contextReferences: mutable.Map[CachedKey,
+      mutable.MutableList[mutable.ArrayBuffer[Any]]] = new
+          mutable.HashMap[CachedKey, mutable.MutableList[mutable.ArrayBuffer[Any]]]
 
-  private lazy val allLiterals: Array[LiteralValue] = {
-    ctxReferences.filter(
-      { p: Any => p.isInstanceOf[LiteralValue] }).map(
-      _.asInstanceOf[LiteralValue]).sortBy(_.position).toArray
+  def addReferencesToCurrentKey(references: mutable.ArrayBuffer[Any]): Unit = {
+    var x = contextReferences.getOrElse(SnappySession.currCachedKey, {
+      val l = new mutable.MutableList[ArrayBuffer[Any]]
+      logDebug(s"Putting new reference list = ${l} against key = ${SnappySession.currCachedKey}")
+      contextReferences.put(SnappySession.currCachedKey, l)
+      l
+    })
+    x += references
   }
 
-  private lazy val allParamConstantsValue: Array[ParamConstantsValue] = {
-    ctxReferences.filter(
-      { p: Any => p.isInstanceOf[ParamConstantsValue] }).map(
-      _.asInstanceOf[ParamConstantsValue]).sortBy(_.position).toArray
+  private def allLiterals(planKey: CachedKey): Array[LiteralValue] = {
+    var lls = new ArrayBuffer[LiteralValue]()
+    val refs = contextReferences.getOrElse(SnappySession.currCachedKey,
+      throw new IllegalStateException("Expected a cached reference object"))
+    refs.foreach(ctxrefs => {
+      ctxrefs.filter(
+        { p: Any => p.isInstanceOf[LiteralValue] }).map(lls +=
+          _.asInstanceOf[LiteralValue])
+    })
+    lls.sortBy(_.position).toArray
   }
 
-  private lazy val hasParamLiteralNode = allLiterals.size > 0
+  private def allParamConstants(planKey: CachedKey): Array[ParamConstantsValue] = {
+    var lls = new ArrayBuffer[ParamConstantsValue]()
+    val refs = contextReferences.getOrElse(SnappySession.currCachedKey,
+      throw new IllegalStateException("Expected a cached reference object"))
+    refs.foreach(ctxrefs => {
+      ctxrefs.filter(
+        { p: Any => p.isInstanceOf[ParamConstantsValue] }).map(lls +=
+          _.asInstanceOf[ParamConstantsValue])
+    })
+    lls.sortBy(_.position).toArray
+  }
 
-  def collectParamLiteralNodes(lp: LogicalPlan): Unit = {
-    if ( hasParamLiteralNode ) {
-      lp transformAllExpressions {
-        case p: ParamLiteral => {
-          allLiterals(p.pos - 1).value = p.l.value
-          p
-        }
+  def collectParamLiteralNodes(lp: LogicalPlan, literals: Array[LiteralValue]): Unit = {
+    lp transformAllExpressions {
+      case p: ParamLiteral => {
+        literals(p.pos - 1).value = p.l.value
+        p
       }
     }
   }
 
-  def collectParamConstantsValueNodes(pvs: ParameterValueSet): Unit = {
-    assert(allParamConstantsValue.size == pvs.getParameterCount,
-      s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
-          s" param-count=${allParamConstantsValue.size}")
+  def collectParamConstantsValueNodes(pvs: ParameterValueSet,
+      allParamConstantsValue: Array[ParamConstantsValue]): Unit = {
     (0 until pvs.getParameterCount) foreach(i => {
       allParamConstantsValue(i).setValue(pvs.getParameter(i))
     })
   }
 
-  def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
-    collectParamLiteralNodes(currLogicalPlan)
+  def replaceConstants(planKey: CachedKey, currLogicalPlan: LogicalPlan): Unit = {
+    val literals = allLiterals(planKey)
+    if (literals.size > 0) {
+      collectParamLiteralNodes(currLogicalPlan, literals)
+    }
   }
 
-  def replaceParamConstants(pvs: ParameterValueSet): Unit = {
-    collectParamConstantsValueNodes(pvs)
+  def replaceParamConstants(planKey: CachedKey, pvs: ParameterValueSet): Unit = {
+    val allParamConstantsValue = allParamConstants(planKey)
+    assert(allParamConstantsValue != null)
+    assert(pvs != null)
+    assert(allParamConstantsValue.size == pvs.getParameterCount,
+      s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
+          s" param-count=${allParamConstantsValue.size}")
+    if (allParamConstantsValue.size > 0) {
+      collectParamConstantsValueNodes(pvs, allParamConstantsValue)
+    }
   }
 }

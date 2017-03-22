@@ -118,24 +118,6 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
-  def replaceConstants(lp: LogicalPlan, isPreparedStatement: Boolean,
-      isPreparedPhase: Boolean, pvs: ParameterValueSet): Unit = {
-    queryExecution.executedPlan match {
-      case WholeStageCodegenExec(cachedPlan) => {
-        cachedPlan match {
-          case cp: CachedPlanHelperExec => {
-            cp.replaceConstants(lp)
-            if (isPreparedStatement && !isPreparedPhase) {
-              cp.replaceParamConstants(pvs)
-            }
-          }
-          case _ => // do nothing
-        }
-      }
-      case _ => // do nothing
-    }
-  }
-
   def collectWithHandler[U: ClassTag, R: ClassTag](
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
       resultHandler: (Int, U) => R,
