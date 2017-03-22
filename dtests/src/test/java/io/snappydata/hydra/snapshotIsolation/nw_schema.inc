@@ -86,7 +86,6 @@ io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-dmlTables =
 "app.customers"
 //"app.orders"
 "app.order_details"
-"app.products";
 
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-csvLocationforLargeData = "/export/shared/QA_DATA/northWind_11G";
 
@@ -95,7 +94,6 @@ io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-insertCsvFileNames =
 "customers.csv"
 //"orders.csv"
 "order-details.csv"
-"products.csv"
 ;
 
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-insertStmts =
@@ -103,22 +101,21 @@ io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-insertStmts =
 "insert into app.customers values (?,?,?,?,?,?,?,?,?,?,?,?)"
 //"insert into app.orders values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 "insert into app.order_details values (?,?,?,?,?,?)"
-"insert into app.products values (?,?,?,?,?,?,?,?,?,?,?)"
 ;
 
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-updateStmts = ONEOF
-"UPDATE app.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = 2 AND TID=? ORDER BY ProductID LIMIT 2"
-"UPDATE app.products SET UnitPrice = UnitPrice * 0.9 WHERE TID=? ORDER BY UnitPrice DESC LIMIT 5"
-"UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = 1 AND TID=?"
-"UPDATE app. products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = 1 AND TID=?"
-"UPDATE app.order_details SET ID = ID + 1 WHERE TID=? ORDER BY ID DESC"
+"UPDATE app.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = 2 AND TID = ?"
+"UPDATE app.products SET UnitPrice = UnitPrice * 0.9 WHERE TID = ?"
+"UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = 1 AND TID = ?"
+"UPDATE app. products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = 1 AND TID = ?"
+"UPDATE app.order_details SET ID = ID + 1 WHERE TID=?"
 //"update app.employees set FirstName='xyz' where EmployeeID=1 and tid=?"
 //"update app.employees set Title='Sales Representative' where EmployeeID=8 and tid=?"
 FOENO
 ;
 
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-deleteStmts = ONEOF
-"DELETE FROM Customers WHERE CustomerName='Alfreds Futterkiste' and tid=?"
+"DELETE FROM Customers WHERE CustomerName='Alfreds Futterkiste' and tid = ?"
 "delete from app.employees where EmployeeID=6 and tid=?"
 FOENO
 ;
