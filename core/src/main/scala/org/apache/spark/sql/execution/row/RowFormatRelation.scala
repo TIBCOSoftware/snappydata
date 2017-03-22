@@ -83,9 +83,10 @@ class RowFormatRelation(
   @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
+  lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
   private[this] def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
-    SnappyContext.getClusterMode(_context.sparkContext) match {
+    clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         cols ++= relInfo.indexCols
 
@@ -109,7 +110,7 @@ class RowFormatRelation(
       list
     }
 
-    SnappyContext.getClusterMode(_context.sparkContext) match {
+    clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         // TODO: [shirishd] Fix this for connector mode
         Array.empty[String]
@@ -171,10 +172,8 @@ class RowFormatRelation(
     (rdd, Nil)
   }
 
-//  lazy val relInfo: RelationInfo = {
   def relInfo: RelationInfo = {
-    val mode = SnappyContext.getClusterMode(_context.sparkContext)
-     mode match {
+    clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
@@ -184,7 +183,7 @@ class RowFormatRelation(
   }
 
   override lazy val (numBuckets, partitionColumns) = {
-    SnappyContext.getClusterMode(_context.sparkContext) match {
+    clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         (relInfo.numBuckets, relInfo.partitioningCols)
       case _ => region match {

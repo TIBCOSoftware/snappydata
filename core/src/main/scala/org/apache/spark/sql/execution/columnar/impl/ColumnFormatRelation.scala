@@ -91,9 +91,9 @@ class BaseColumnFormatRelation(
     new PartitionStatistics(schema)
   }
 
+  lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
   lazy val relInfo: RelationInfo = {
-    val mode = SnappyContext.getClusterMode(_context.sparkContext)
-    mode match {
+    clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
@@ -103,7 +103,7 @@ class BaseColumnFormatRelation(
   }
 
   override lazy val numBuckets: Int = {
-    SnappyContext.getClusterMode(_context.sparkContext) match {
+    clusterMode match {
       case ThinClientConnectorMode(_, _) => relInfo.numBuckets
       case _ => region.getTotalNumberOfBuckets
     }

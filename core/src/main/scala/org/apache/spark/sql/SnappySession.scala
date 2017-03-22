@@ -1026,9 +1026,8 @@ class SnappySession(@transient private val sc: SparkContext,
       }
     }
 
-    val clustserMode = SnappyContext.getClusterMode(sc)
-    var newMode = SaveMode.Append
-    val plan = clustserMode match {
+    val clusterMode = SnappyContext.getClusterMode(sc)
+    val plan = clusterMode match {
       // for smart connector mode create the table here and allow
       // further processing to load the data
       case ThinClientConnectorMode(_, _) =>
