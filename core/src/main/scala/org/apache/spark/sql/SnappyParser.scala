@@ -177,8 +177,7 @@ class SnappyParser(session: SnappySession)
   protected final def paramConstants: Rule1[ParamConstants] = rule {
     questionMark ~> (() => {
       paramConstantsCounter = paramConstantsCounter + 1
-      // TODO: replace with null type ParamConstants(NullType, paramConstantsCounter)
-      ParamConstants(NullType, paramConstantsCounter)
+      ParamConstants(paramConstantsCounter)
     })
   }
 

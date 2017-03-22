@@ -207,7 +207,11 @@ object LiteralValue {
   }
 }
 
-case class ParamConstants(dataType: DataType, pos: Int) extends LeafExpression {
+case class ParamConstants(pos: Int) extends LeafExpression {
+
+  var paramType: DataType = NullType
+
+  override def dataType: DataType = paramType
 
   override def hashCode(): Int = ParamLiteral.hashCode(dataType, pos)
 
