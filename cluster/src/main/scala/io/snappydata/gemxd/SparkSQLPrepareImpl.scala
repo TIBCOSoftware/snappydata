@@ -20,14 +20,14 @@ import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.SnappyResultHolder
-import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.execution.CachedPlanHelperExec
 
 
-class SparkSQLPreapreImpl(override val sql: String,
+class SparkSQLPrepareImpl(override val sql: String,
     override val schema: String,
     override val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecuteImpl(sql: String,
@@ -39,8 +39,22 @@ class SparkSQLPreapreImpl(override val sql: String,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
 
-    DataSerializer.writeIntArray(Array[Int](1, StoredFormatIds.SQL_INTEGER_ID, -1, -1), hdos)
-
+    val paramConstants = CachedPlanHelperExec.allParamConstants()
+    if (paramConstants != null) {
+      val paramCount = paramConstants.length
+      val types = new Array[Int](paramCount * 3 + 1)
+      types(0) = paramCount
+      (0 until paramCount) foreach (i => {
+        val index = i * 3 + 1
+        types(index) = StoredFormatIds.SQL_INTEGER_ID // paramConstants(i).value // TODO: type
+        types(index + 1) = -1
+        types(index + 2) = -1
+      })
+      DataSerializer.writeIntArray(types, hdos)
+    } else {
+      DataSerializer.writeIntArray(Array[Int](0), hdos)
+    }
+    
     msg.lastResult(srh)
   }
 

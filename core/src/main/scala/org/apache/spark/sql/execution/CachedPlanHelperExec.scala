@@ -70,7 +70,7 @@ object CachedPlanHelperExec extends Logging {
     x += references
   }
 
-  private def allLiterals(planKey: CachedKey): Array[LiteralValue] = {
+  private def allLiterals(): Array[LiteralValue] = {
     var lls = new ArrayBuffer[LiteralValue]()
     val refs = contextReferences.getOrElse(SnappySession.currCachedKey,
       throw new IllegalStateException("Expected a cached reference object"))
@@ -82,7 +82,7 @@ object CachedPlanHelperExec extends Logging {
     lls.sortBy(_.position).toArray
   }
 
-  private def allParamConstants(planKey: CachedKey): Array[ParamConstantsValue] = {
+  def allParamConstants(): Array[ParamConstantsValue] = {
     var lls = new ArrayBuffer[ParamConstantsValue]()
     val refs = contextReferences.getOrElse(SnappySession.currCachedKey,
       throw new IllegalStateException("Expected a cached reference object"))
@@ -110,25 +110,25 @@ object CachedPlanHelperExec extends Logging {
     })
   }
 
-  def replaceConstants(planKey: CachedKey, currLogicalPlan: LogicalPlan): Unit = {
-    val literals = allLiterals(planKey)
-    if (literals.size > 0) {
+  def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
+    val literals = allLiterals()
+    if (literals.length > 0) {
       collectParamLiteralNodes(currLogicalPlan, literals)
     }
   }
 
-  def replaceParamConstants(planKey: CachedKey, pvs: ParameterValueSet): Unit = {
-    val allParamConstantsValue = allParamConstants(planKey)
+  def replaceParamConstants(pvs: ParameterValueSet): Unit = {
+    val allParamConstantsValue = allParamConstants()
     assert(allParamConstantsValue != null)
     assert(pvs != null)
     // Note: Reason if allParamConstantsValue.size is zero
     // ParamLiteral.doGenCode will not generate ParamConstantsValue if
     // any ParamConstants has NullType, as set in SnappyParser.
     // DataType in ParamConstants needs to be updated.
-    assert(allParamConstantsValue.size == pvs.getParameterCount,
+    assert(allParamConstantsValue.length == pvs.getParameterCount,
       s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
-          s" param-count=${allParamConstantsValue.size}")
-    if (allParamConstantsValue.size > 0) {
+          s" param-count=${allParamConstantsValue.length}")
+    if (allParamConstantsValue.length > 0) {
       collectParamConstantsValueNodes(pvs, allParamConstantsValue)
     }
   }
