@@ -33,7 +33,7 @@ class SparkSQLPreapreImpl(override val sql: String,
     senderVersion: Version) extends SparkSQLExecuteImpl(sql: String,
       schema: String,
       ctx: LeadNodeExecutionContext,
-      senderVersion: Version, true, false, null) with Logging {
+      senderVersion: Version, true, true, null) with Logging {
 
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
