@@ -22,6 +22,7 @@ import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.storage.TestBlockId
 
 case class Data1(col1: Int, col2: Int, col3: Int)
 
@@ -40,6 +41,27 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
 
   val memoryMode = MemoryMode.ON_HEAP
+
+  test("Test UnRollMemory") {
+    val sparkSession = createSparkSession(1, 0)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+    val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_test")
+    SparkEnv.get.memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
+
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 500)
+    assert(SparkEnv.get.memoryManager.
+      asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject("_SPARK_CACHE_")
+      == 500)
+    SparkEnv.get.memoryManager.releaseUnrollMemory(500, memoryMode)
+
+    assert(SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].
+      getStoragePoolMemoryUsed() == 0)
+    assert(SparkEnv.get.memoryManager.
+      asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject("_SPARK_CACHE_") == 0)
+  }
+
 
   test("Test storage when storage can borrow from execution memory") {
     val sparkSession = createSparkSession(1, 0)
