@@ -356,9 +356,13 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
   val tx = TXManagerImpl.snapshotTxState.get()
 
   //TODO: Suranjan If tx is null then start a GemFire Snapshot tx.
-  protected final val itr = container.getEntrySetIteratorForBucketSet(
-    bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
-    false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  protected final val itr = if (container ne null) {
+    container.getEntrySetIteratorForBucketSet(
+      bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
+      false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  } else {
+    null
+  }
 
   protected def currentVal: T
 

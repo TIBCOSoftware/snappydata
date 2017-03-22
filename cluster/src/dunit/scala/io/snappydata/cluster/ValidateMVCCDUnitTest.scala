@@ -26,7 +26,7 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) with Logging {
 
   // set default batch size for this test
-  bootProps.setProperty(io.snappydata.Property.CachedBatchSize.name, "4")
+  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "4")
 
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 

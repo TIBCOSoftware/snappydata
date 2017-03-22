@@ -27,7 +27,7 @@ import com.gemstone.gemfire.management.internal.SystemManagementService
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import io.snappydata.test.dunit.SerializableRunnable
 
 import org.apache.spark.sql.collection.Utils
@@ -38,6 +38,10 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   val table = "TEST.TEST_TABLE"
 
+  override def afterClass(): Unit = {
+    ClusterManagerTestBase.stopSpark()
+    super.afterClass()
+  }
   def nodeShutDown(): Unit = {
     ClusterManagerTestBase.stopSpark()
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")

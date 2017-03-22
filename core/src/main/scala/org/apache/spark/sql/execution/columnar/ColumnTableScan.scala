@@ -196,17 +196,14 @@ private[sql] final case class ColumnTableScan(
     }
 
     val columnBatchStatsSchema = getColumnBatchStatSchema
-    val numStatFields = columnBatchStatsSchema.length
     val predicate = ExpressionCanonicalizer.execute(
       BindReferences.bindReference(columnBatchStatFilters
           .reduceOption(And).getOrElse(Literal(true)), columnBatchStatsSchema))
     val statsRow = ctx.freshName("statsRow")
-    val statsData = ctx.freshName("statsData")
     ctx.INPUT_ROW = statsRow
     ctx.currentVars = null
     val predicateEval = predicate.genCode(ctx)
 
-    val platformClass = classOf[Platform].getName
     val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
     // skip filtering if nothing is to be applied
     if (predicateEval.value == "true" && predicateEval.isNull == "false") {
@@ -215,10 +212,7 @@ private[sql] final case class ColumnTableScan(
     val filterFunction = ctx.freshName("columnBatchFilter")
     ctx.addNewFunction(filterFunction,
       s"""
-         |private boolean $filterFunction(byte[] $statsData) {
-         |  final UnsafeRow $statsRow = new UnsafeRow($numStatFields);
-         |  $statsRow.pointTo($statsData, $platformClass.BYTE_ARRAY_OFFSET,
-         |    $statsData.length);
+         |private boolean $filterFunction(UnsafeRow $statsRow) {
          |  // Skip the column batches based on the predicate
          |  ${predicateEval.code}
          |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
@@ -278,13 +272,19 @@ private[sql] final case class ColumnTableScan(
     val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
     else null
     val (weightVarName, weightAssignCode) = if (output.exists(_.name ==
-      Utils.WEIGHTAGE_COLUMN_NAME)) {
+        Utils.WEIGHTAGE_COLUMN_NAME)) {
       val varName = ctx.freshName("weightage")
       ctx.addMutableState("long", varName, s"$varName = 0;")
       (varName, s"$varName = $wrappedRow.weight();")
     } else ("", "")
 
     val iteratorClass = "scala.collection.Iterator"
+    val colIteratorClass = if (isEmbedded) {
+      "org.apache.spark.sql.execution.columnar.ColumnBatchIterator"
+    }
+    else {
+      "org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS"
+    }
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         ctx.addMutableState(iteratorClass, rowInputSRR,
@@ -295,8 +295,8 @@ private[sql] final case class ColumnTableScan(
       }
       ctx.addMutableState(iteratorClass, rowInput,
         s"$rowInput = ($iteratorClass)inputs[0].next();")
-      ctx.addMutableState(iteratorClass, colInput,
-        s"$colInput = ($iteratorClass)inputs[0].next();")
+      ctx.addMutableState(colIteratorClass, colInput,
+        s"$colInput = ($colIteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = (($rsIterClass)$rowInput).rs();")
     } else {
@@ -305,8 +305,8 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState(iteratorClass, rowInput,
         s"$rowInput = $inputIsOtherRDD ? inputs[0] " +
             s": ($iteratorClass)inputs[0].next();")
-      ctx.addMutableState(iteratorClass, colInput,
-        s"$colInput = $inputIsOtherRDD ? null : ($iteratorClass)inputs[0].next();")
+      ctx.addMutableState(colIteratorClass, colInput,
+        s"$colInput = $inputIsOtherRDD ? null : ($colIteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
         s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
       ctx.addMutableState(unsafeHolderClass, unsafeHolder,
@@ -318,7 +318,6 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
 
     ctx.currentVars = null
-    val columnBatchClass = classOf[ColumnBatch].getName
     val encodingClass = classOf[ColumnEncoding].getName
     val decoderClass = classOf[ColumnDecoder].getName
     val rsDecoderClass = classOf[ResultSetDecoder].getName
@@ -330,7 +329,7 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
 
-    ctx.addMutableState("java.nio.ByteBuffer[]", buffers, s"$buffers = null;")
+    ctx.addMutableState("byte[]", buffers, s"$buffers = null;")
     ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
     ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
 
@@ -394,8 +393,8 @@ private[sql] final case class ColumnTableScan(
       val bufferVar = s"buffer$index"
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = relationSchema.fieldIndex(attr.name)
-      val bufferPosition = if (isEmbedded) baseIndex else index
-      val rsPosition = bufferPosition + 1
+      val bufferPosition = if (isEmbedded) baseIndex + 1 else index + 1
+      val rsPosition = bufferPosition
 
       ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
 
@@ -422,7 +421,7 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState("long", cursor, s"$cursor = 0L;")
       columnBufferInitCode.append(
         s"""
-          $buffer = $buffers[$bufferPosition];
+          $buffer = $colInput.getColumnLob($bufferPosition);
           $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
             $planSchema.apply($index));
           // initialize the decoder and store the starting cursor position
@@ -447,8 +446,23 @@ private[sql] final case class ColumnTableScan(
 
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
-    val filterFunction = if (!isEmbedded) ""
-    else generateStatPredicate(ctx, numBatchRows)
+    val filterFunction = generateStatPredicate(ctx, numBatchRows)
+    val getUnsafeRow = ctx.freshName("getUnsafeRow")
+    val unsafeRow = ctx.freshName("unsafeRow")
+    val statBytes = ctx.freshName("statBytes")
+    val colNextBytes = ctx.freshName("colNextBytes")
+    val platformClass = classOf[Platform].getName
+    val numColumnsInStatBlob = relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN
+    ctx.addNewFunction(getUnsafeRow,
+      s"""
+         |
+         |private UnsafeRow $getUnsafeRow(byte[] $statBytes) {
+         |  final UnsafeRow unsafeRow = new UnsafeRow($numColumnsInStatBlob);
+         |  unsafeRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
+         |    $statBytes.length);
+         |  return unsafeRow;
+         |}
+       """.stripMargin)
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(numBatchRows)};"
@@ -461,18 +475,20 @@ private[sql] final case class ColumnTableScan(
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val incrementBatchCount = if (columnBatchesSeen eq null) ""
     else s"$columnBatchesSeen.${metricAdd("1")};"
+    val countIndexInSchema = ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA
     val batchAssign =
       s"""
-        final $columnBatchClass $batch = ($columnBatchClass)$colInput.next();
+        final byte[] $colNextBytes = (byte[])$colInput.next();
+        UnsafeRow $unsafeRow = $getUnsafeRow($colNextBytes);
+        $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
         $incrementBatchCount
-        $buffers = $batch.buffers();
-        $numBatchRows = $batch.numRows();
+        $buffers = $colNextBytes;
       """
     val batchInit = if (filterFunction.isEmpty) batchAssign else {
       s"""
         while (true) {
           $batchAssign
-          if ($filterFunction($batch.statsData())) {
+          if ($filterFunction($unsafeRow)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
@@ -665,9 +681,9 @@ private[sql] final case class ColumnTableScan(
           if (notNullVar != null) s"if ($notNullVar < 0) $nullVar = $col == null;\n"
           else ""
         assignCode =
-          s"($dictionary != null ? $dictionary[$dictIndex] " +
-              s": $decoder.readUTF8String($buffer, $cursorVar));\n" +
-              s"$nullCheckAddon"
+            s"($dictionary != null ? $dictionary[$dictIndex] " +
+                s": $decoder.readUTF8String($buffer, $cursorVar));\n" +
+                s"$nullCheckAddon"
 
         s"$dictionaryAssignCode\n$col = $assignCode;"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>

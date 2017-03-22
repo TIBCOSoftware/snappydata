@@ -51,7 +51,6 @@ import sql.SQLHelper;
 import sql.SQLPrms;
 import sql.sqlutil.GFXDStructImpl;
 import sql.sqlutil.ResultSetHelper;
-import sql.sqlutil.SnappyStructImpl;
 import util.TestException;
 import util.TestHelper;
 

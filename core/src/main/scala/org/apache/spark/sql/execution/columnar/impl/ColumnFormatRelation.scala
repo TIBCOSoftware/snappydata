@@ -92,11 +92,11 @@ class BaseColumnFormatRelation(
     partitioningColumns
   }
 
-  private[sql] lazy val externalColumnTableName: String =
+  override private[sql] lazy val externalColumnTableName: String =
       ColumnFormatRelation.columnBatchTableName(table)
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[ColumnBatch] = {
+      filters: Array[Filter]): RDD[Any] = {
     super.scanTable(externalColumnTableName, requiredColumns, filters)
   }
 
@@ -148,7 +148,7 @@ class BaseColumnFormatRelation(
           partitions
         )
       case _ =>
-        new SparkShellRowRDD(
+        new SmartConnectorRowRDD(
           session,
           resolvedName,
           isPartitioned,
@@ -278,6 +278,13 @@ class BaseColumnFormatRelation(
     createActualTable(table, externalStore)
   }
 
+  /**
+   * Table definition: create table columnTable (
+   *  id varchar(36) not null, partitionId integer, numRows integer not null, data blob)
+   * For a table with n columns, there will be n+1 region entries. A base entry and one entry
+   * each for a column. The data column for the base entry will contain the stats.
+   * id for the base entry would be the uuid while for column entries it would be uuid_colName.
+   */
   override def createExternalTableForColumnBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
@@ -288,7 +295,7 @@ class BaseColumnFormatRelation(
       // The driver if not a loner should be an accessor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
-            "primary key (uuid, partitionId) ",
+            "primary key (uuid, partitionId, columnIndex) ",
             d.getPartitionByClause("partitionId"),
             "  ENABLE CONCURRENCY CHECKS ")
       case _ => ("primary key (uuid)", "", "")
@@ -297,10 +304,8 @@ class BaseColumnFormatRelation(
 
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
-    createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, partitionId integer, numRows integer not null, stats blob, " +
-        schema.fields.map(structField => externalStore.columnPrefix +
-            structField.name + " blob").mkString(", ") +
+    createTable(externalStore, s"create table $tableName (uuid varchar(46) " +
+        "not null, partitionId integer, columnIndex integer, data blob " +
         s", $primaryKey) $partitionStrategy $colocationClause " +
         s" $concurrency $ddlExtensionForShadowTable",
       tableName, dropIfExists = false)
@@ -618,9 +623,10 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   }
 }
 
-final class DefaultSource extends ColumnarRelationProvider {
+final class DefaultSource extends SchemaRelationProvider
+    with CreatableRelationProvider {
 
-  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+  def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
@@ -697,13 +703,43 @@ final class DefaultSource extends ColumnarRelationProvider {
         catalog.registerDataSourceTable(
           catalog.newQualifiedTableName(tableName), Some(relation.schema),
           partitioningColumns.toArray,
-          classOf[execution.columnar.DefaultSource].getCanonicalName,
+          classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
           options, relation)
       }
       success = true
       relation
     } finally {
       if (!success && !relation.tableExists) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
+  }
+  override def createRelation(sqlContext: SQLContext,
+      options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
+
+    val allowExisting = options.get(JdbcExtendedUtils
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+
+    createRelation(sqlContext, mode, options, schema)
+  }
+
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], data: DataFrame): JDBCAppendableRelation = {
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    val relation = createRelation(sqlContext, mode, options,
+      catalog.normalizeSchema(data.schema))
+    var success = false
+    try {
+      relation.insert(data, mode == SaveMode.Overwrite)
+      success = true
+      relation
+    } finally {
+      if (!success && !relation.tableExists) {
+        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
+          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }

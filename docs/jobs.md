@@ -348,7 +348,7 @@ $ bin/snappy-job.sh status  \
   "classPath": "io.snappydata.examples.CreateAndLoadAirlineDataJob",
   "startTime": "2016-01-12T16:59:14.746+05:30",
   "context": "snappyContext1452598154529305363",
-  "result": "See /home/hemant/snappyhome/work/localhost-lead-1/CreateAndLoadAirlineDataJob.out",
+  "result": "See /home/user1/snappyhome/work/localhost-lead-1/CreateAndLoadAirlineDataJob.out",
   "status": "FINISHED",
   "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
 }
@@ -366,12 +366,11 @@ The status of this job can be queried in the same manner as shown above. The res
 Python users can also submit the python script using spark-submit in split cluster mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "spark.snappydata.store.locators" property denotes the locator url of the snappy cluster and it is used to connect to the snappy cluster.
 ```
 $ bin/spark-submit \
-  --master spark://pnq-nthanvi02:7077 \
+  --master spark://pnq-user02:7077 \
   --conf spark.snappydata.store.locators=localhost:10334 \
   --conf spark.ui.port=4042  
   python/examples/AirlineDataPythonApp.py
 ```
-
 
 ### Streaming Jobs
 
