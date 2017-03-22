@@ -178,7 +178,7 @@ class SnappyParser(session: SnappySession)
     questionMark ~> (() => {
       paramConstantsCounter = paramConstantsCounter + 1
       // TODO: replace with null type ParamConstants(NullType, paramConstantsCounter)
-      ParamConstants(IntegerType, paramConstantsCounter)
+      ParamConstants(NullType, paramConstantsCounter)
     })
   }
 

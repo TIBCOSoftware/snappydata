@@ -121,6 +121,10 @@ object CachedPlanHelperExec extends Logging {
     val allParamConstantsValue = allParamConstants(planKey)
     assert(allParamConstantsValue != null)
     assert(pvs != null)
+    // Note: Reason if allParamConstantsValue.size is zero
+    // ParamLiteral.doGenCode will not generate ParamConstantsValue if
+    // any ParamConstants has NullType, as set in SnappyParser.
+    // DataType in ParamConstants needs to be updated.
     assert(allParamConstantsValue.size == pvs.getParameterCount,
       s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
           s" param-count=${allParamConstantsValue.size}")
