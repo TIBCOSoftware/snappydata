@@ -17,11 +17,11 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
-import java.util.Objects
+import java.util.{Calendar, Objects}
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger}
+import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -247,6 +247,27 @@ case class ParamConstantsValue(var value: Any, var position: Int)
   def setValue(dvd: DataValueDescriptor): Unit = {
     value = dvd match {
       case i: SQLInteger => i.getInt
+      case si: SQLSmallint => si.getShort
+      case ti: SQLTinyint => ti.getByte
+      case d: SQLDouble => d.getDouble
+      case li: SQLLongint => li.getLong
+      case bid: BigIntegerDecimal => bid.getDouble
+      case de: SQLDecimal => de.getBigDecimal
+      case r: SQLReal => r.getFloat
+      case b: SQLBoolean => b.getBoolean
+      case c: SQLChar => c.getString
+      case vc: SQLVarchar => vc.getString
+      case lvc: SQLLongvarchar => lvc.getString
+      case cl: SQLClob =>
+        val charArray = cl.getCharArray()
+        if (charArray != null) {
+          String.valueOf(charArray)
+        } else null
+      case ts: SQLTimestamp => ts.getTimestamp(null)
+      case t: SQLTime => t.getTime(null)
+      case d: SQLDate =>
+        val c: Calendar = null
+        d.getDate(c)
       case _ => dvd.getObject
     }
   }
