@@ -23,11 +23,6 @@ class ThinConnectorSnappyDUnitTest(s: String)
 
   override protected val useThinClientConnector = true
 
-  override def tearDown2(): Unit = {
-    super.tearDown2()
-//    vm3.invoke(getClass, "stopSparkContext")
-  }
-
   override def testColumnTableStatsInSplitMode(): Unit = {
     val snc = new SnappySession(sc)
   }

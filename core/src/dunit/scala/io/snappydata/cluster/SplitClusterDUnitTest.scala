@@ -194,16 +194,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     logInfo("Successful")
   }
 
-//  override def createUDFInEmbeddedMode(): Unit = {
-//
-//  }
-//
-//  override def createUDFInSplitMode(locatorPort: Int,
-//      prop: Properties, locatorProp: String,
-//      useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
-//
-//  }
-
   override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
       props: Map[String, String]): Unit = {
     val conn = getConnection(locatorNetPort)

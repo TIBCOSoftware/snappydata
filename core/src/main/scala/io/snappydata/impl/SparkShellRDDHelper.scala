@@ -149,7 +149,7 @@ final class SparkShellRDDHelper {
   }
 }
 
-object SparkShellRDDHelper extends Logging {
+object SparkShellRDDHelper {
 
   def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
     val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
