@@ -69,7 +69,13 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       "queryValidationOnConnector", ClusterManagerTestBase.locPort)
   }
 
-  def testSnappy_Tokenization(): Unit = {
+  /*
+    TODO : Kishor
+     This test is disabled as of now. For dunit test we are using very small TPCH data i.e.5.5MB.
+      With so small data, its quite possible that for some queries result will be same with dynamic parameters
+      This needs to make fullproof.
+  */
+  def _testSnappy_Tokenization(): Unit = {
     startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
 

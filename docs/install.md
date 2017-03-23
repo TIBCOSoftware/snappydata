@@ -144,7 +144,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 	
 	* <note>The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. </note>
 
-	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. </note>
+	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/opt/snappydata/** and Java 8 is installed. </note>
 
 13. Follow the [steps described here](#install-on-premise) to continue. </br>
 
