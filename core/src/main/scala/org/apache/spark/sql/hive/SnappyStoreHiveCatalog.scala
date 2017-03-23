@@ -642,7 +642,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case he: HiveException if isDisconnectException(he) =>
         // stale JDBC connection
         Hive.closeCurrent()
-        client = externalCatalog.client.newSession()
+        SnappyStoreHiveCatalog.suspendActiveSession {
+          client = externalCatalog.client.newSession()
+        }
         function
     }
   }
@@ -1034,6 +1036,26 @@ object SnappyStoreHiveCatalog {
 
   def getSchemaStringFromHiveTable(table: Table): String =
     getSchemaString(table.getParameters.asScala).orNull
+
+  /**
+   * Suspend the active SparkSession in case "function" creates new threads
+   * that can end up inheriting it. Currently used during hive client creation
+   * otherwise the BoneCP background threads hold on to old sessions
+   * (even after a restart) due to the InheritableThreadLocal. Shows up as
+   * leaks in unit tests where lead JVM size keeps on increasing with new tests.
+   */
+  def suspendActiveSession[T](function: => T): T = {
+    SparkSession.getActiveSession match {
+      case Some(activeSession) =>
+        SparkSession.clearActiveSession()
+        try {
+          function
+        } finally {
+          SparkSession.setActiveSession(activeSession)
+        }
+      case None => function
+    }
+  }
 
   def closeCurrent(): Unit = {
     Hive.closeCurrent()
