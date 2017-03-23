@@ -106,6 +106,7 @@ allprojects {
     jettyVersion = '9.2.16.v20160414'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.0'
+    thriftVersion = '0.9.3'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.5.4'
@@ -627,11 +628,6 @@ task product(type: Zip) {
 
     // copy all runtime dependencies of snappy-cluster, itself and AQP
     def targets = targetProject.configurations.runtime
-    if (new File(rootDir, 'store/build.gradle').exists()) {
-      // exclude client jar and dependencies since client shadow jar is copied
-      targets = targetProject.configurations.runtime -
-          project(':snappy-store:gemfirexd-client').configurations.runtime
-    }
     copy {
       from(targets) {
         // exclude antlr4 explicitly (runtime is still included)
@@ -639,6 +635,12 @@ task product(type: Zip) {
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
+        // exclude other test jars
+        exclude '**junit*.jar'
+        exclude '**mockito*.jar'
+        exclude '**hamcrest-core*.jar'
+        exclude '**test-interface*.jar'
+        exclude '**scalacheck*.jar'
         if (rootProject.hasProperty('hadoop-provided')) {
           exclude 'hadoop-*.jar'
         }
@@ -716,14 +718,6 @@ task product(type: Zip) {
         into "${rootProject.buildDir}/distributions"
         include clientProject.shadowJar.archiveName
       }
-      // Copy the JDBC client jar to jars directory
-      // (its constituent jars are specifically excluded)
-      copy {
-        from clientProject.shadowJar.destinationDir
-        into "${snappyProductDir}/jars"
-        include clientProject.shadowJar.archiveName
-      }
-      delete "${snappyProductDir}/jars/${clientProject.jar.archiveName}"
     }
     // copy AQP jar from maven repo if project not present
     if (!hasAQPProject) {

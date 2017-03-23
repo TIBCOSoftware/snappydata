@@ -584,11 +584,6 @@ private[sql] final case class ColumnTableScan(
        |} catch (Exception e) {
        |  throw new RuntimeException(e);
        |} finally {
-       |  $numOutputRows.${metricAdd(metricValue(numRowsBuffer))};
-       |  //GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
-       |  //com.gemstone.gemfire.internal.cache.GemFireCacheImpl.getInstance()
-       |  //.getCacheTransactionManager.commit()
-       |
        |  $finallyCode
        |}
     """.stripMargin
