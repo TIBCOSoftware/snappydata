@@ -54,7 +54,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     try {
       var i = 1
       rows.foreach(d => {
-        stmt.addBatch(s"insert into $tableName values($i, '$i')")
+        stmt.addBatch(s"insert into $tableName values($i, $i, '$i')")
         i += 1
         if (i % 1000 == 0) {
           stmt.executeBatch()
@@ -77,14 +77,16 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
     try {
-      val qry = s"select ol_w_id, ol_d_id " +
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
-          s" where ol_w_id < ? " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id > ? " +
           s" limit 20" +
           s""
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
+      prepStatement.setInt(2, 10)
       val rs = prepStatement.executeQuery
 
       // val rs = stmt.executeQuery(qry)
@@ -92,8 +94,9 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       var index = 0
       while (rs.next()) {
         val i = rs.getInt(1)
-        val s = rs.getString(2)
-        println(s"row($index) $i $s ")
+        val j = rs.getInt(2)
+        val s = rs.getString(3)
+        println(s"row($index) $i $j $s ")
         index += 1
       }
       println("Number of rows read " + index)
@@ -123,8 +126,9 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     println(s"network server started at $serverHostPort")
 
     val snc = SnappyContext(sc)
-    snc.sql(s"create table $tableName (ol_w_id  integer,ol_d_id STRING) using column " +
-        "options( partition_by 'ol_w_id, ol_d_id', buckets '2')")
+    snc.sql(s"create table $tableName (ol_int_id  integer," +
+        s" ol_int2_id  integer, ol_str_id STRING) using column " +
+        "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
 
     insertRows(1000)
 

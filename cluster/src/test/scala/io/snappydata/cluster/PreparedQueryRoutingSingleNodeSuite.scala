@@ -18,12 +18,14 @@ package io.snappydata.cluster
 
 import java.sql.DriverManager
 
-import com.gemstone.gemfire.internal.cache.{PartitionedRegion, GemFireCacheImpl}
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
+
+import org.apache.spark.SparkConf
 
 class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -31,7 +33,23 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   var serverHostPort = ""
   val tableName = "order_line_col"
 
+  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+    /**
+      * Setting local[n] here actually supposed to affect number of reservoir created
+      * while sampling.
+      *
+      * Change of 'n' will influence results if they are dependent on weights - derived
+      * from hidden column in sample table.
+      */
+    new org.apache.spark.SparkConf().setAppName("PreparedQueryRoutingSingleNodeSuite")
+        .setMaster("local[6]")
+        .set("spark.logConf", "true")
+        .set("mcast-port", "4958")
+  }
+
   override def beforeAll(): Unit = {
+    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    System.setProperty("spark.testing", "true")
     super.beforeAll()
     // reducing DML chunk size size to force lead node to send
     // results in multiple batches
@@ -39,6 +57,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   override def afterAll(): Unit = {
+    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    System.clearProperty("spark.testing")
     setDMLMaxChunkSize(default_chunk_size)
     super.afterAll()
   }
@@ -57,7 +77,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     try {
       var i = 1
       rows.foreach(d => {
-        stmt.addBatch(s"insert into $tableName values($i, '$i')")
+        stmt.addBatch(s"insert into $tableName values($i, $i, '$i')")
         i += 1
         if (i % 1000 == 0) {
           stmt.executeBatch()
@@ -80,14 +100,16 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
       try {
-      val qry = s"select ol_w_id, ol_d_id " +
-          s" from $tableName " +
-          s" where ol_w_id < ? " +
-          s" limit 20" +
-          s""
+        val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+            s" from $tableName " +
+            s" where ol_int_id < ? " +
+            s" and ol_int2_id > ? " +
+            s" limit 20" +
+            s""
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
+      prepStatement.setInt(1, 10)
       val rs = prepStatement.executeQuery
 
       // val rs = stmt.executeQuery(qry)
@@ -95,8 +117,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       var index = 0
       while (rs.next()) {
         val i = rs.getInt(1)
-        val s = rs.getString(2)
-        println(s"row($index) $i $s ")
+        val j = rs.getInt(2)
+        val s = rs.getString(3)
+        println(s"row($index) $i $j $s ")
         index += 1
       }
       println("Number of rows read " + index)
@@ -122,13 +145,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
   test("test serialization with lesser dml chunk size") {
 
-    snc.sql("create table order_line_col (ol_w_id  integer,ol_d_id STRING) using column " +
-        "options( partition_by 'ol_w_id, ol_d_id', buckets '2')")
+    snc.sql(s"create table $tableName (ol_int_id  integer," +
+        s" ol_int2_id  integer, ol_str_id STRING) using column " +
+        "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
 
 
     serverHostPort = TestUtil.startNetServer()
     println("network server started")
-    insertRows(2)
+    insertRows(1000)
 
     val r = GemFireCacheImpl.getInstance().getPartitionedRegions
     println(r)
