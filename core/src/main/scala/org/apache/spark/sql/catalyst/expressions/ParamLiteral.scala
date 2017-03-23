@@ -177,7 +177,7 @@ object ParamLiteral {
            """.stripMargin, isNull, valueTerm)
       case NullType =>
         val valueTerm = ctx.freshName("value")
-        ev.copy(s"final Object $valueTerm = null")
+        ev.copy(s"final Object $valueTerm = null;")
       case other =>
         val valueRef = ctx.addReferenceObj("literal",
           createValue(value, pos))
@@ -199,6 +199,8 @@ case class ParamConstants(pos: Int) extends LeafExpression {
 
   var paramType: DataType = NullType
 
+  var nullableValue: Boolean = false
+
   override def dataType: DataType = paramType
 
   override def hashCode(): Int = ParamLiteral.hashCode(dataType, pos)
@@ -214,20 +216,20 @@ case class ParamConstants(pos: Int) extends LeafExpression {
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val doAssert = false
     val sqlType = ParamConstants.getSQLType(dataType)
-    // TODO: How to get nullable information from dataType?
-    // For now assume nullable to be true always
     ParamLiteral.doGenCode(ctx, ev, null, dataType, pos,
-      (v: Any, p: Int) => ParamConstantsValue(v, p, sqlType._1, sqlType._2, sqlType._3), doAssert)
+      (v: Any, p: Int) => {
+        ParamConstantsValue(v, p, sqlType._1, sqlType._2, sqlType._3,
+          nullable)}, doAssert)
   }
 
-  override def nullable: Boolean = false
+  override def nullable: Boolean = nullableValue
 
   override def eval(input: InternalRow): Any =
     throw new UnsupportedOperationException("eval not implemented")
 }
 
 case class ParamConstantsValue(var value: Any, var position: Int,
-    var dataType: Int, var precision: Int, var scale: Int)
+    var dataType: Int, var precision: Int, var scale: Int, var nullable: Boolean)
     extends KryoSerializable {
 
   override def write(kryo: Kryo, output: Output): Unit = {
@@ -236,6 +238,7 @@ case class ParamConstantsValue(var value: Any, var position: Int,
     output.writeVarInt(dataType, true)
     output.writeVarInt(precision, false)
     output.writeVarInt(scale, false)
+    output.writeBoolean(nullable)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -244,6 +247,7 @@ case class ParamConstantsValue(var value: Any, var position: Int,
     dataType = input.readVarInt(true)
     precision = input.readVarInt(false)
     scale = input.readVarInt(false)
+    nullable = input.readBoolean()
   }
 
   def setValue(dvd: DataValueDescriptor): Unit = {

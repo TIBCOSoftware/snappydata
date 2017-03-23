@@ -16,8 +16,6 @@
  */
 package io.snappydata.gemxd
 
-import java.util.Calendar
-
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
@@ -44,19 +42,23 @@ class SparkSQLPrepareImpl(override val sql: String,
     val paramConstants = CachedPlanHelperExec.allParamConstants()
     if (paramConstants != null) {
       val paramCount = paramConstants.length
-      val types = new Array[Int](paramCount * 3 + 1)
+      val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
       (0 until paramCount) foreach (i => {
-        val index = i * 3 + 1
+        val index = i * 4 + 1
         types(index) = paramConstants(i).dataType
         types(index + 1) = paramConstants(i).precision
         types(index + 2) = paramConstants(i).scale
+        types(index + 3) = if (paramConstants(i).nullable) 1 else 0
       })
       DataSerializer.writeIntArray(types, hdos)
     } else {
       DataSerializer.writeIntArray(Array[Int](0), hdos)
     }
-    
+
+    if (msg.isLocallyExecuted) {
+      handleLocalExecution(srh, hdos.size())
+    }
     msg.lastResult(srh)
   }
 

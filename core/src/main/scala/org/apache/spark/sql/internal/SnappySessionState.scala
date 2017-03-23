@@ -31,7 +31,7 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, Expression, ExpressionDescription, ParamConstants, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, Expression, ExpressionDescription, Literal, ParamConstants, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -186,65 +186,23 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   object ResolveParameters extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = plan find {
-      case _: org.apache.spark.sql.catalyst.plans.logical.Filter => true
-      case _ => false
-    } match {
-      case Some(_) =>
-        var isModified = false
-        val modifiedPlan = plan.transformDown {
-          case f: org.apache.spark.sql.catalyst.plans.logical.Filter =>
-            val gotModified = resolveParametersType(f.condition)
-            isModified = isModified || gotModified
-            f
+    def apply(plan: LogicalPlan): LogicalPlan = plan.transformDown {
+      case f: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+        f.condition foreach {
+          case BinaryOperator(left, right) =>
+            left match {
+              case AttributeReference(_, dataType, nullable, _) =>
+                right match {
+                  case Cast(pc@ParamConstants(_), _) => pc.paramType = dataType
+                  case pc@ParamConstants(_) => pc.paramType = dataType
+                  case _ =>
+                }
+              case _ =>
+            }
+          case _ =>
         }
-        if (isModified) modifiedPlan else plan
-      case None => plan
+        f
     }
-
-    private def resolveParametersType(aggExp:
-    org.apache.spark.sql.catalyst.expressions.Expression): Boolean = {
-      aggExp.collect {
-        case BinaryOperator(left, right) =>
-          left match {
-            case Cast(pc@ParamConstants(_), dataType) => pc.paramType = dataType
-            case _ =>
-          }
-          right match {
-            case Cast(pc@ParamConstants(_), dataType) => pc.paramType = dataType
-            case _ =>
-          }
-      }.nonEmpty
-    }
-
-//    private def resolveParametersType(aggExp:
-//    org.apache.spark.sql.catalyst.expressions.Expression): Boolean = {
-//      aggExp.collect {
-//        case bo@BinaryOperator(left, right) =>
-//          println(s"resolveParametersType 1 ${bo.getClass.getSimpleName} ${left.getClass.getSimpleName} ${right.getClass.getSimpleName}")
-//
-//          left match {
-//            case pc@ParamConstants(_) =>
-//              println(s"resolveParametersType 2")
-//              pc.paramType = IntegerType
-//            case c@Cast(_, _) =>
-//              println(s"resolveParametersType 21 ${c.child.getClass.getSimpleName} ${c.dataType}")
-//            case ar: AttributeReference =>
-//              println(s"resolveParametersType 22 ${ar.name} ${ar.dataType}")
-//            case _ =>
-//          }
-//          right match {
-//            case pc@ParamConstants(_) =>
-//              println(s"resolveParametersType 3")
-//              pc.paramType = IntegerType
-//            case c@Cast(_, _) =>
-//              println(s"resolveParametersType 31 ${c.child.getClass.getSimpleName} ${c.dataType}")
-//            case ar: AttributeReference =>
-//              println(s"resolveParametersType 32 ${ar.name} ${ar.dataType}")
-//            case _ =>
-//          }
-//      }.nonEmpty
-//    }
   }
 
   case class AnalyzeChildQuery(sparkSession: SparkSession) extends Rule[LogicalPlan] {

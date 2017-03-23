@@ -91,7 +91,7 @@ class SparkSQLExecuteImpl(val sql: String,
     case None => (false, Set.empty[String])
   }
 
-  private def handleLocalExecution(srh: SnappyResultHolder,
+  protected def handleLocalExecution(srh: SnappyResultHolder,
       size: Int): Unit = {
     // prepare SnappyResultHolder with all data and create new one
     if (size > 0) {
