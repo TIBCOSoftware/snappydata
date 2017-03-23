@@ -22,6 +22,7 @@ import java.util.{Calendar, Objects}
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -52,16 +53,16 @@ case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
 }
 
 case class LiteralValue(var value: Any, var position: Int)
-  extends KryoSerializable {
+    extends KryoSerializable {
 
   override def write(kryo: Kryo, output: Output): Unit = {
-    LiteralValue.write(kryo, output, value, position)
+    kryo.writeClassAndObject(output, value)
+    output.writeVarInt(position, true)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
-    val (v, p) = LiteralValue.read(kryo, input)
-    value = v
-    position = p
+    value = kryo.readClassAndObject(input)
+    position = input.readVarInt(true)
   }
 }
 
@@ -194,19 +195,6 @@ object ParamLiteral {
   }
 }
 
-object LiteralValue {
-  def write(kryo: Kryo, output: Output, value: Any, position: Int): Unit = {
-    kryo.writeClassAndObject(output, value)
-    output.writeVarInt(position, true)
-  }
-
-  def read(kryo: Kryo, input: Input): (Any, Int) = {
-    val value = kryo.readClassAndObject(input)
-    val position = input.readVarInt(true)
-    (value, position)
-  }
-}
-
 case class ParamConstants(pos: Int) extends LeafExpression {
 
   var paramType: DataType = NullType
@@ -224,8 +212,12 @@ case class ParamConstants(pos: Int) extends LeafExpression {
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val doAssert = false
+    val sqlType = ParamConstants.getSQLType(dataType)
+    // TODO: How to get nullable information from dataType?
+    // For now assume nullable to be true always
     ParamLiteral.doGenCode(ctx, ev, null, dataType, pos,
-      (v, p) => ParamConstantsValue(v, p), false)
+      (v: Any, p: Int) => ParamConstantsValue(v, p, sqlType._1, sqlType._2, sqlType._3), doAssert)
   }
 
   override def nullable: Boolean = false
@@ -234,43 +226,87 @@ case class ParamConstants(pos: Int) extends LeafExpression {
     throw new UnsupportedOperationException("eval not implemented")
 }
 
-case class ParamConstantsValue(var value: Any, var position: Int)
+case class ParamConstantsValue(var value: Any, var position: Int,
+    var dataType: Int, var precision: Int, var scale: Int)
     extends KryoSerializable {
 
   override def write(kryo: Kryo, output: Output): Unit = {
-    LiteralValue.write(kryo, output, value, position)
+    kryo.writeClassAndObject(output, value)
+    output.writeVarInt(position, true)
+    output.writeVarInt(dataType, true)
+    output.writeVarInt(precision, false)
+    output.writeVarInt(scale, false)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
-    val (v, p) = LiteralValue.read(kryo, input)
-    value = v
-    position = p
+    value = kryo.readClassAndObject(input)
+    position = input.readVarInt(true)
+    dataType = input.readVarInt(true)
+    precision = input.readVarInt(false)
+    scale = input.readVarInt(false)
   }
 
   def setValue(dvd: DataValueDescriptor): Unit = {
-    value = dvd match {
+    value = ParamConstants.setValue(dvd)
+  }
+}
+
+object ParamConstants {
+
+  // Also see SnappyResultHolder.getNewNullDVD(
+  def getSQLType(dataType: DataType): (Int, Int, Int) = {
+    dataType match {
+      case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
+      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+      case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
+      case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
+      case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)
+      case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
+      case t: DecimalType => (StoredFormatIds.SQL_DECIMAL_ID,
+          t.precision, t.scale)
+      case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
+      case BooleanType => (StoredFormatIds.SQL_BOOLEAN_ID, -1, -1)
+      case ShortType => (StoredFormatIds.SQL_SMALLINT_ID, -1, -1)
+      case ByteType => (StoredFormatIds.SQL_TINYINT_ID, -1, -1)
+      case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
+      case _: ArrayType | _: MapType | _: StructType =>
+        // indicates complex types serialized as json strings
+        (StoredFormatIds.REF_TYPE_ID, -1, -1)
+
+      // send across rest as objects that will be displayed as json strings
+      case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
+    }
+  }
+
+  def setValue(dvd: DataValueDescriptor): Any = {
+    dvd match {
       case i: SQLInteger => i.getInt
       case si: SQLSmallint => si.getShort
       case ti: SQLTinyint => ti.getByte
       case d: SQLDouble => d.getDouble
       case li: SQLLongint => li.getLong
+
       case bid: BigIntegerDecimal => bid.getDouble
       case de: SQLDecimal => de.getBigDecimal
       case r: SQLReal => r.getFloat
+
       case b: SQLBoolean => b.getBoolean
-      case c: SQLChar => c.getString
-      case vc: SQLVarchar => vc.getString
-      case lvc: SQLLongvarchar => lvc.getString
+
       case cl: SQLClob =>
         val charArray = cl.getCharArray()
         if (charArray != null) {
           String.valueOf(charArray)
         } else null
+      case lvc: SQLLongvarchar => lvc.getString
+      case vc: SQLVarchar => vc.getString
+      case c: SQLChar => c.getString
+
       case ts: SQLTimestamp => ts.getTimestamp(null)
       case t: SQLTime => t.getTime(null)
       case d: SQLDate =>
         val c: Calendar = null
         d.getDate(c)
+
       case _ => dvd.getObject
     }
   }

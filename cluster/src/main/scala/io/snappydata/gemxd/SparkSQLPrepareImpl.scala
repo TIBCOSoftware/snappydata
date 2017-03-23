@@ -16,11 +16,13 @@
  */
 package io.snappydata.gemxd
 
+import java.util.Calendar
+
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.SnappyResultHolder
-import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext
 
 import org.apache.spark.Logging
@@ -46,9 +48,9 @@ class SparkSQLPrepareImpl(override val sql: String,
       types(0) = paramCount
       (0 until paramCount) foreach (i => {
         val index = i * 3 + 1
-        types(index) = StoredFormatIds.SQL_INTEGER_ID // paramConstants(i).value // TODO: type
-        types(index + 1) = -1
-        types(index + 2) = -1
+        types(index) = paramConstants(i).dataType
+        types(index + 1) = paramConstants(i).precision
+        types(index + 2) = paramConstants(i).scale
       })
       DataSerializer.writeIntArray(types, hdos)
     } else {
