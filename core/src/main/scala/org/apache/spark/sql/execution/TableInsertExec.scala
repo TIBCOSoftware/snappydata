@@ -23,8 +23,11 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, UnspecifiedDistribution}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ExecutorMultiBucketLocalShellPartition, Utils}
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
+import org.apache.spark.sql.hive.SnappyConnectorCatalog
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
@@ -83,12 +86,12 @@ abstract class TableInsertExec(override val child: SparkPlan,
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     val inputRDDs = child.asInstanceOf[CodegenSupport].inputRDDs()
-    SnappyContext.getClusterMode(sqlContext.sparkContext) match {
-      case ThinClientConnectorMode(_, _) =>
-        inputRDDs
-      case _ =>
-        // wrap shuffle RDDs to set preferred locations as per target table
-        if (partitioned) {
+    if (partitioned) {
+      SnappyContext.getClusterMode(sqlContext.sparkContext) match {
+        case ThinClientConnectorMode(_, _) =>
+          getInputRDDsForConnector(inputRDDs)
+        case _ =>
+          // wrap shuffle RDDs to set preferred locations as per target table
           inputRDDs.map { rdd =>
             val region = relation.get.asInstanceOf[PartitionedDataSourceScan]
                 .region.asInstanceOf[PartitionedRegion]
@@ -97,8 +100,38 @@ abstract class TableInsertExec(override val child: SparkPlan,
               Array.tabulate(numBuckets)(
                 StoreUtils.getBucketPreferredLocations(region, _)))
           }
+      }
+    } else {
+      inputRDDs
+    }
+  }
+
+  private def getInputRDDsForConnector(
+      inputRDDs: Seq[RDD[InternalRow]]): Seq[RDD[InternalRow]] = {
+    def preferredLocations(table: String): Array[Seq[String]] = {
+      val catalog =
+        sqlContext.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
+      val relInfo =
+        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
+      val locations = new Array[Seq[String]](numBuckets)
+      var i = 0
+      relInfo.partitions.foreach(x => {
+          locations(i) = x.asInstanceOf[ExecutorMultiBucketLocalShellPartition].
+          hostList.map(_._1.asInstanceOf[String])
+          i = i + 1
+      })
+      locations
+    }
+    relation.get match {
+      case m: JDBCMutableRelation =>
+        inputRDDs.map { rdd =>
+          new DelegateRDD(sparkContext, rdd, preferredLocations(m.table))
         }
-        else inputRDDs
+      case JDBCAppendableRelation(table, _, _, _, _, _, _) =>
+        inputRDDs.map { rdd =>
+          new DelegateRDD(sparkContext, rdd, preferredLocations(table))
+        }
+      case _ => inputRDDs
     }
   }
 
