@@ -111,12 +111,13 @@ object QueryExecutor {
   }
 
 
-  def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
-      isSnappy: Boolean, itr: Int = 0, isDynamic: Boolean = false, warmup: Int = 0,
-      runsForAverage: Int = 1, avgPrintStream: PrintStream = null): Unit = {
+  def execute(queryNumber: String, fileName: String, sqlContext: SQLContext,
+      isResultCollection: Boolean, isSnappy: Boolean, itr: Int = 0,
+      isDynamic: Boolean = false, warmup: Int = 0, runsForAverage: Int = 1,
+      avgPrintStream: PrintStream = null): Unit = {
 
     val planFileName = if (isSnappy) "Plan_Snappy.out" else "Plan_Spark.out"
-    val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
+    val queryFileName = s"$fileName.out"
 
     if (planFileStream == null && planPrintStream == null) {
       planFileStream = new FileOutputStream(new File(planFileName))
@@ -132,6 +133,7 @@ object QueryExecutor {
 
       if (isResultCollection) {
         var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic)
+        // queryPrintStream.println(queryToBeExecuted)
         val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, true)
         println(s"$queryNumber : ${resultSet.length}")
 
@@ -147,6 +149,7 @@ object QueryExecutor {
         queryPrintStream.println(queryNumber)
         for (i <- 1 to (warmup + runsForAverage)) {
           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic)
+          // queryPrintStream.println(queryToBeExecuted)
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
           if (i == 1) {

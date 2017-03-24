@@ -24,6 +24,7 @@ import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
+
 import org.apache.spark.{Logging, SparkContext}
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
@@ -63,6 +64,35 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     }
     TPCHUtils.queryExecution(snc, isSnappy = true)
     TPCHUtils.validateResult(snc, isSnappy = true)
+
+    vm3.invoke(classOf[SmartConnectorFunctions],
+      "queryValidationOnConnector", ClusterManagerTestBase.locPort)
+  }
+
+  /*
+    TODO : Kishor
+     This test is disabled as of now. For dunit test we are using very small TPCH data i.e.5.5MB.
+      With so small data, its quite possible that for some queries result will be same with dynamic parameters
+      This needs to make fullproof.
+  */
+  def _testSnappy_Tokenization(): Unit = {
+    startNetworkServersOnAllVMs()
+    val snc = SnappyContext(sc)
+
+    // create table randomly either using smart connector or
+    // from embedded mode
+    if ((System.currentTimeMillis() % 2) == 0) {
+      logInfo("CREATING TABLE USING SMART CONNECTOR")
+      vm3.invoke(classOf[SmartConnectorFunctions],
+        "createTablesUsingConnector", ClusterManagerTestBase.locPort)
+    } else {
+      logInfo("CREATING TABLE IN EMBEDDED MODE")
+      TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+    }
+    TPCHUtils.queryExecution(snc, isSnappy = true, isDynamic = true, fileName = "_FirstRun")
+    TPCHUtils.queryExecution(snc, isSnappy = true, isDynamic = true, fileName = "_SecondRun")
+
+    TPCHUtils.validateResult(snc, isSnappy = true, isTokenization = true )
 
     vm3.invoke(classOf[SmartConnectorFunctions],
       "queryValidationOnConnector", ClusterManagerTestBase.locPort)
@@ -192,10 +222,14 @@ object TPCHUtils {
       isSnappy, buckets_Cust_Part_PartSupp, null)
   }
 
-  def validateResult(snc: SQLContext, isSnappy: Boolean): Unit = {
+  def validateResult(snc: SQLContext, isSnappy: Boolean, isTokenization: Boolean = false): Unit = {
     val sc: SparkContext = snc.sparkContext
 
-    val fineName = if (isSnappy) "Result_Snappy.out" else "Result_Spark.out"
+    val fineName = if (!isTokenization) {
+      if (isSnappy) "Result_Snappy.out" else "Result_Spark.out"
+    } else {
+      "Result_Snappy_Tokenization.out"
+    }
 
     val resultFileStream: FileOutputStream = new FileOutputStream(new File(fineName))
     val resultOutputStream: PrintStream = new PrintStream(resultFileStream)
@@ -204,29 +238,45 @@ object TPCHUtils {
     for (query <- queries) {
       println(s"For Query $query")
 
-      val expectedFile = sc.textFile(getClass.getResource(
-        s"/TPCH/RESULT/Snappy_$query.out").getPath)
+      if (!isTokenization) {
+        val expectedFile = sc.textFile(getClass.getResource(
+          s"/TPCH/RESULT/Snappy_$query.out").getPath)
 
-      val queryFileName = if (isSnappy) s"Snappy_$query.out" else s"Spark_$query.out"
-      val actualFile = sc.textFile(queryFileName)
+        val queryFileName = if (isSnappy) s"Snappy_$query.out" else s"Spark_$query.out"
+        val actualFile = sc.textFile(queryFileName)
 
-      val expectedLineSet = expectedFile.collect().toList.sorted
-      val actualLineSet = actualFile.collect().toList.sorted
+        val expectedLineSet = expectedFile.collect().toList.sorted
+        val actualLineSet = actualFile.collect().toList.sorted
 
-      if (!actualLineSet.equals(expectedLineSet)) {
-        if (!(expectedLineSet.size == actualLineSet.size)) {
-          resultOutputStream.println(s"For $query " +
-              s"result count mismatched observed with " +
-              s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
-        } else {
-          for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
-            if (!expectedLine.equals(actualLine)) {
-              resultOutputStream.println(s"For $query result mismatched observed")
-              resultOutputStream.println(s"Excpected : $expectedLine")
-              resultOutputStream.println(s"Found     : $actualLine")
-              resultOutputStream.println(s"-------------------------------------")
+        if (!actualLineSet.equals(expectedLineSet)) {
+          if (!(expectedLineSet.size == actualLineSet.size)) {
+            resultOutputStream.println(s"For $query " +
+                s"result count mismatched observed with " +
+                s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
+          } else {
+            for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
+              if (!expectedLine.equals(actualLine)) {
+                resultOutputStream.println(s"For $query result mismatched observed")
+                resultOutputStream.println(s"Excpected : $expectedLine")
+                resultOutputStream.println(s"Found     : $actualLine")
+                resultOutputStream.println(s"-------------------------------------")
+              }
             }
           }
+        }
+      } else {
+        val firstRunFileName = s"Snappy_${query}_FirstRun.out"
+        val firstRunFile = sc.textFile(firstRunFileName)
+
+        val secondRunFileName = s"Snappy_${query}_SecondRun.out"
+        val secondRunFile = sc.textFile(secondRunFileName)
+
+        val expectedLineSet = firstRunFile.collect().toList.sorted
+        val actualLineSet = secondRunFile.collect().toList.sorted
+
+        if (actualLineSet.equals(expectedLineSet)) {
+          resultOutputStream.println(s"For $query result matched observed")
+          resultOutputStream.println(s"-------------------------------------")
         }
       }
     }
@@ -235,23 +285,35 @@ object TPCHUtils {
     resultFileStream.close()
 
     val resultOutputFile = sc.textFile(fineName)
-    assert(resultOutputFile.count() == 0,
-      s"Query mismatch Observed. Look at Result_Snappy.out for detailed failure")
-    if (resultOutputFile.count() != 0) {
-      ClusterManagerTestBase.logger.warn(
-        s"QUERY MISMATCH OBSERVED. Look at Result_Snappy.out for detailed failure")
+
+    if(!isTokenization) {
+      assert(resultOutputFile.count() == 0,
+        s"Query result mismatch Observed. Look at Result_Snappy.out for detailed failure")
+      if (resultOutputFile.count() != 0) {
+        ClusterManagerTestBase.logger.warn(
+          s"QUERY RESULT MISMATCH OBSERVED. Look at Result_Snappy.out for detailed failure")
+      }
+    } else {
+      assert(resultOutputFile.count() == 0,
+        s"Query result match Observed. Look at Result_Snappy_Tokenization.out for detailed failure")
+      if (resultOutputFile.count() != 0) {
+        ClusterManagerTestBase.logger.warn(
+          s"QUERY RESYLT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
+              s" failure")
+      }
     }
   }
 
-  def queryExecution(snc: SQLContext, isSnappy: Boolean, warmup: Int = 0,
-      runsForAverage: Int = 1, isResultCollection: Boolean = true): Unit = {
+  def queryExecution(snc: SQLContext, isSnappy: Boolean, isDynamic: Boolean = false,
+      warmup: Int = 0, runsForAverage: Int = 1, isResultCollection: Boolean = true,
+      fileName: String = ""): Unit = {
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
 //    queries.foreach(query => TPCH_Snappy.execute(query, snc,
 //      isResultCollection, isSnappy, warmup = warmup,
 //      runsForAverage = runsForAverage, avgPrintStream = System.out))
-    queries.foreach(query => QueryExecutor.execute(query, snc,
-      isResultCollection, isSnappy, warmup = warmup,
+    queries.foreach(query => QueryExecutor.execute(query, "Snappy_" + query + fileName, snc,
+      isResultCollection, isSnappy, isDynamic = isDynamic, warmup = warmup,
       runsForAverage = runsForAverage, avgPrintStream = System.out))
   }
 }

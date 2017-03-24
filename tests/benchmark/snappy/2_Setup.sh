@@ -6,9 +6,11 @@ ssh $leads mkdir $leadDir
 echo "*****************Created dir for lead**********************"
 ssh $locator mkdir $locatorDir
 echo "*****************Created dir for locator**********************"
+COUNTER=1
 for element in "${servers[@]}";
   do
-        ssh $element mkdir $serverDir
+        ssh $element mkdir $serverDir$COUNTER
+        COUNTER=$[$COUNTER +1]
  done
 echo "*****************Created dir for server**********************"
 
@@ -22,9 +24,11 @@ $locator -client-bind-address=$locator -dir=$locatorDir
 EOF
 echo "******************Created conf/locators******************"
 
+COUNTER=1
 for element in "${servers[@]}";
   do
-        echo $element -locators=$locator:10334 $serverMemory -dir=$serverDir >> $SnappyData/conf/servers
+        echo $element -locators=$locator:10334 $serverMemory -dir=$serverDir$COUNTER >> $SnappyData/conf/servers
+        COUNTER=$[$COUNTER +1]
   done
 echo "******************Created conf/servers******************"
 
