@@ -401,6 +401,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     vm1.invoke(restartServer(props))
+    Thread.sleep(1000)
 
     val waitAssert = new WaitAssert(2, getClass)
     // The delete operation takes time to propagate

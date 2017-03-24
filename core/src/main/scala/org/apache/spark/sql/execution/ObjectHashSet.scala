@@ -36,8 +36,11 @@ package org.apache.spark.sql.execution
 
 import java.util.{Iterator => JIterator}
 
-import scala.reflect.ClassTag
+import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
+import org.apache.spark.TaskContext
+import org.apache.spark.memory.{MemoryConsumer, TaskMemoryManager}
 
+import scala.reflect.{ClassTag, classTag}
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
@@ -57,6 +60,10 @@ import org.apache.spark.unsafe.types.UTF8String
 final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     loadFactor: Double, numColumns: Int)
     extends java.lang.Iterable[T] with Serializable {
+
+  val clsT = classTag[T].runtimeClass
+  val consumer = new ObjectHashSetMemoryConsumer(TaskContext.get().taskMemoryManager())
+  val objectSize = ReflectionSingleObjectSizer.sizeof(clsT)
 
   private[this] var _capacity = nextPowerOf2(initialCapacity)
   private[this] var _size = 0
@@ -222,6 +229,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private def rehash(): Unit = {
     val capacity = _capacity
     val data = _data
+    // Probably overestimating as some of the array cell might be empty
+    acquireExecutionMemory(capacity * ReflectionSingleObjectSizer.REFERENCE_SIZE)
+    // Also add potential memory usage by objects
+    acquireExecutionMemory((capacity * objectSize))
 
     val newCapacity = checkCapacity(capacity << 1)
     val newData = newArray(newCapacity)
@@ -270,6 +281,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     val highBit = Integer.highestOneBit(n)
     checkCapacity(if (highBit == n) n else highBit << 1)
   }
+
+  private def acquireExecutionMemory(required : Long) = {
+    consumer.acquireMemory(required)
+  }
 }
 
 abstract class StringKey(val s: UTF8String) {
@@ -290,4 +305,9 @@ abstract class LongKey(val l: Long) {
     case o: LongKey => l == o.l
     case _ => false
   }
+}
+
+final class ObjectHashSetMemoryConsumer(taskMemoryManager: TaskMemoryManager)
+  extends MemoryConsumer(taskMemoryManager) {
+  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
 }
