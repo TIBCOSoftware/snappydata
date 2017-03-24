@@ -157,9 +157,14 @@ public class SnappyPrms extends BasePrms {
     public static Long useRowStore;
 
     /**
-     * (boolean) - whether split mode cluster needs to be started.
+     * (boolean) - whether thin client smart connector mode cluster needs to be started.
      */
-    public static Long useSplitMode;
+    public static Long useThinClientSmartConnectorMode;
+
+    /**
+     * (boolean) - whether smart connector mode cluster needs to be started.
+     */
+    public static Long useSmartConnectorMode;
 
     /**
      * (boolean) - whether stop mode needs to be checked before deleting the config data if already exists.
