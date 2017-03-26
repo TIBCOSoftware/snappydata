@@ -102,6 +102,7 @@ dependencies {
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testCompile group: 'it.unimi.dsi', name: 'fastutil', version: '7.1.0'
 
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
