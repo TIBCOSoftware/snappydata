@@ -21,8 +21,10 @@ import java.util.{Calendar, GregorianCalendar}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
+import org.scalatest.Assertions
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{Decimal, DecimalType, StringType, StructField, StructType}
@@ -156,7 +158,7 @@ case class Trade(sym: UTF8String, ex: UTF8String, price: Decimal,
     time: Timestamp, date: Date, size: Double, c1: Array[UTF8String],
     c2: Map[UTF8String, Double])
 
-object TAQTest extends Logging {
+object TAQTest extends Logging with Assertions {
 
   private[benchmark] var COLUMN_TABLE = true
 
@@ -245,34 +247,23 @@ object TAQTest extends Logging {
         s"on q.time=(select max(time) from q where time<=t.time and sym='$s') " +
         "where price<bid" */
   )
+  val expectedResultSizes = Array(
+    100,
+    900,
+    800
+  )
 
   object CreateOp extends Enumeration {
     type Type = Value
     val Read, Quote, Trade = Value
   }
 
-  private def collect(df: Dataset[Row]): Unit = {
+  private def collect(df: Dataset[Row], expectedNumResults: Int): Unit = {
     val result = df.collect()
+    assert(result.length === expectedNumResults)
     // scalastyle:off
     println(s"Count = ${result.length}")
     // scalastyle:on
-  }
-
-  def addCaseWithCleanup(
-      benchmark: Benchmark,
-      name: String,
-      numIters: Int = 0,
-      prepare: () => Unit,
-      cleanup: () => Unit,
-      testCleanup: () => Unit)(f: Int => Unit): Unit = {
-    val timedF = (timer: Benchmark.Timer) => {
-      timer.startTiming()
-      f(timer.iteration)
-      timer.stopTiming()
-      testCleanup()
-    }
-    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters,
-      prepare, cleanup)
   }
 
   private def doGC(): Unit = {
@@ -408,7 +399,7 @@ object TAQTest extends Logging {
      */
     def addBenchmark(name: String, cache: Boolean,
         params: Map[String, String] = Map(), query: String,
-        snappy: Boolean, init: Boolean): Unit = {
+        expectedNumResults: Int, snappy: Boolean, init: Boolean): Unit = {
       val defaults = params.keys.flatMap {
         k => session.conf.getOption(k).map((k, _))
       }
@@ -430,14 +421,15 @@ object TAQTest extends Logging {
             session.sql("drop table if exists quote")
             session.sql("drop table if exists trade")
             session.sql("drop table if exists S")
+            val partitioning = if (op == CreateOp.Read) {
+              " options (partition_by 'sym')"
+            } else ""
             if (COLUMN_TABLE) {
-              session.sql(s"$sqlQuote using column")
-              session.sql(s"$sqlTrade using column")
+              session.sql(s"$sqlQuote using column$partitioning")
+              session.sql(s"$sqlTrade using column$partitioning")
             } else {
-              session.sql(s"$sqlQuote using row options " +
-                  s"(partition_by 'sym', overflow 'true')")
-              session.sql(s"$sqlTrade using row options " +
-                  s"(partition_by 'sym', overflow 'true')")
+              session.sql(s"$sqlQuote using row$partitioning")
+              session.sql(s"$sqlTrade using row$partitioning")
             }
             session.sql(s"CREATE TABLE S (sym CHAR(4) NOT NULL)")
             qDF.write.insertInto("quote")
@@ -475,9 +467,9 @@ object TAQTest extends Logging {
         op match {
           case CreateOp.Read =>
             if (snappy) {
-              collect(session.sql(query))
+              collect(session.sql(query), expectedNumResults)
             } else {
-              collect(spark.sql(query))
+              collect(spark.sql(query), expectedNumResults)
             }
           case CreateOp.Quote if snappy =>
             qDF.write.insertInto("quote")
@@ -505,11 +497,15 @@ object TAQTest extends Logging {
 
     if (runSparkCaching) {
       addBenchmark(s"Q$queryNumber: cache = T", cache = true,
-        Map.empty, query = cacheQueries(queryNumber - 1), snappy = false, init)
+        Map.empty, query = cacheQueries(queryNumber - 1),
+        expectedNumResults = expectedResultSizes(queryNumber - 1),
+        snappy = false, init)
     }
 
     addBenchmark(s"Q$queryNumber: cache = F snappy = T", cache = false,
-      Map.empty, query = queries(queryNumber - 1), snappy = true, init)
+      Map.empty, query = queries(queryNumber - 1),
+      expectedNumResults = expectedResultSizes(queryNumber - 1),
+      snappy = true, init)
     init = false
 
     benchmark.run()
