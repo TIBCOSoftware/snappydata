@@ -18,6 +18,9 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, ClientSharedUtils}
+import com.gemstone.gemfire.internal.util.ArrayUtils
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -115,7 +118,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         (index, ctx.freshName("minValue"), ctx.freshName("maxValue"))
     }.unzip3
 
-  private[this] val hashingClass = classOf[HashingUtil].getName
+  private[this] val hashingClass = classOf[ClientResolverUtils].getName
   private[this] val nullsMaskPrefix = "nullsMask"
   /**
    * Indicator value for "nullIndex" of a non-primitive nullable that can be
@@ -1362,9 +1365,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def hashSingleInt(colVar: String, nullVar: String,
       hashVar: String): String = {
     if (nullVar.isEmpty || nullVar == "false") {
-      s"$hashVar = $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = $hashingClass.fastHashInt($colVar);\n"
     } else {
-      s"$hashVar = ($nullVar) ? -1 : $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = ($nullVar) ? -1 : $hashingClass.fastHashInt($colVar);\n"
     }
   }
 
@@ -1379,13 +1382,13 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     if (nullVar.isEmpty || nullVar == "false") {
       s"""
         final long $longVar = $colVar;
-        $hashVar = $hashingClass.hashInt(
+        $hashVar = $hashingClass.fastHashInt(
           (int)($longVar ^ ($longVar >>> 32)));
       """
     } else {
       s"""
         final long $longVar;
-        $hashVar = ($nullVar) ? -1 : $hashingClass.hashInt(
+        $hashVar = ($nullVar) ? -1 : $hashingClass.fastHashInt(
           (int)(($longVar = ($colVar)) ^ ($longVar >>> 32)));
       """
     }
