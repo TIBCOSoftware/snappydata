@@ -21,6 +21,7 @@ import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
+import scala.language.postfixOps
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
@@ -28,7 +29,7 @@ import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
 import io.snappydata.{Locator, Server, ServiceManager}
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
@@ -191,7 +192,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
  * snappy code gets added.
  */
 object ClusterManagerTestBase {
-  val logger = LoggerFactory.getLogger(getClass)
+  val logger: Logger = LoggerFactory.getLogger(getClass)
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   final lazy val locPort: Int = locatorPort
 
@@ -309,10 +310,9 @@ object ClusterManagerTestBase {
         check
       }
 
-      override def description() = desc
+      override def description(): String = desc
     }
     DistributedTestBase.waitForCriterion(criterion, ms, interval,
       throwOnTimeout)
   }
-
 }
