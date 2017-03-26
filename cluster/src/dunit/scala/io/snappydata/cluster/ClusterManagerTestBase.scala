@@ -29,6 +29,7 @@ import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host,
 import io.snappydata.util.TestUtils
 import io.snappydata.{Lead, Locator, Property, Server, ServiceManager}
 import org.slf4j.LoggerFactory
+import scala.language.postfixOps
 import scala.sys.process._
 
 import org.apache.spark.sql.SnappyContext
