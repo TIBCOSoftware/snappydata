@@ -5,6 +5,22 @@ The following installation options are available:
 * [Setting up Cluster on Amazon Web Services (AWS)](#setting-up-cluster-on-amazon-web-services-aws)
 * [Building from Source](#building-from-source)
 
+<note>Note:  Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
+</note>
+<note>
+```
+snappydata          hard    nofile      81920
+snappydata          soft    nofile      8192
+snappydata          hard    nproc       unlimited
+snappydata          soft    nproc       524288
+snappydata          hard    sigpending  unlimited
+snappydata          soft    sigpending  524288
+
+```
+</note>
+<note>
+Here `snappydata` is the user name under which the SnappyData processes are started. 
+</note>
 
 ## Install On-Premise
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
@@ -144,7 +160,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 	
 	* <note>The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. </note>
 
-	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/opt/snappydata/** and Java 8 is installed. </note>
+	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. </note>
 
 13. Follow the [steps described here](#install-on-premise) to continue. </br>
 

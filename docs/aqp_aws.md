@@ -26,12 +26,19 @@ This section provides a brief description of the key terms used in this document
 To understand the product follow these easy steps that can get you started quickly:
 
 1. [Setting up SnappyData Cloud Cluster](#SettingUp)
+
 	* [Deploying SnappyData Cloud Cluster with iSight CloudBuilder](#DeployingClusterCloudFormation)
+
 	* [Deploying SnappyData Cloud Cluster on AWS using Scripts](#DeployingClusterScript)
+
 2. [Using Apache Zeppelin](#LoggingZeppelin)	
+
 	* [Using Predefined Notebook](#predefinednotebook)
+
 	* [Creating your own Notebook](#Creatingnotebook)
+
 3. [Loading Data from AWS S3](#dataAWSS3)
+
 4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
 <a id="SettingUp"></a>
@@ -92,12 +99,19 @@ Refer to the Amazon documentation for more information on  [generating your own 
 	* <Note>  If you are not already logged into AWS, you are redirected to the AWS sign-in page. 	</Note>
 ![STEP](Images/aws_selectedregion.png)
 
-8. On the **Select Template page**, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
+8. On the **Select Template** page, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
 ![STEP](Images/aws_selecttemplate.png)
 
-9. You can change the stack name or click **Next** to use the provided default value.
+9. On the **Specify Details** page:
 
+	* **Stack name**: You can change the stack name.</br>
 	<Note> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.</Note>
+    
+    * **VPCID**: From the drop-down list, select the Virtual Private Cloud (VPC) ID that is set as default. Your instances will be launched within this VPC.
+
+    Click **Next** to continue.
+    
+    ![STEP](Images/aws_vpcid.png)
 
 10. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
 
@@ -318,23 +332,21 @@ In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
 
 <a id="Monitoring"></a>
 ##Monitoring the SnappyData Cloud Cluster ##
- You can monitor the SnappyData cluster using SnappyData Pulse Console and the Apache Spark Console. The monitoring tools enable you to observe and record the performance and the activities on the SnappyData cluster.
+ You can monitor the SnappyData cluster using the Apache Spark Console. This enables you to observe and record the performance and the activities on the SnappyData cluster.
 
-The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members, and tables. 
+<!--The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members, and tables. 
 It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.  
 It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.
-
+-->
 The Apache Spark Console displays useful information about SnappyData. This includes a list of scheduler stages and tasks, summary of tables and memory usage.
 
 ###Accessing the Console
-To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: 
+To access the Apache Spark console from the Apache Zeppelin notebook: 
 
-1. Click on the **Spark UI** or **Pulse** links provided in the paragraph. 
-![Launch Spark](Images/aws_pulsespark.png)
-
-2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the username and password.
-
-3. Once you have logged in, you can start monitoring SnappyData cluster. 
+1. Click on the **Spark UI** <!--or **Pulse** -->link provided in the paragraph.
+	![Launch Spark](Images/aws_pulsespark.png)
+<!--2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the username and password.-->
+3. Once you have logged in, you can start monitoring the SnappyData cluster. 
 
 ## The Technology Powering iSight Cloud
 
