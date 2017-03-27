@@ -83,7 +83,7 @@ class RowFormatRelation(
   @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
-  lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
+  @transient lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
   private[this] def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
     clusterMode match {
