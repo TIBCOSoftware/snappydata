@@ -18,7 +18,6 @@ io/snappydata/hydra/northwind/nwPartitionedRowTablesTest.conf
   fullResultSetValidation = true
   useThinClientSmartConnectorMode = true
 
-
 io/snappydata/hydra/northwind/nwColumnTablesTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -39,7 +38,7 @@ io/snappydata/hydra/northwind/nwColocatedTablesTest.conf
   fullResultSetValidation = true
   useThinClientSmartConnectorMode = true
 
-/*io/snappydata/hydra/northwind/nwReplicatedRowTablesTestWithServerHA.conf
+io/snappydata/hydra/northwind/nwReplicatedRowTablesTestWithServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -114,6 +113,7 @@ io/snappydata/hydra/northwind/nwColumnTablesTestWithLeadHA.conf
   tableType="Column"
   numVMsToStop=1
   fullResultSetValidation = true
+  useThinClientSmartConnectorMode = true
 
 io/snappydata/hydra/northwind/nwColocatedTablesTestWithLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -282,4 +282,4 @@ io/snappydata/hydra/northwind/nwPersistentPartitionedRowTablesWithEvictionOverfl
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="PartitionedRow"
   fullResultSetValidation = true
-  useThinClientSmartConnectorMode = true*/
+  useThinClientSmartConnectorMode = true
