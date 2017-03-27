@@ -1,6 +1,6 @@
 # INDEXES
 
-A RowStore virtual table that describes table indexes.
+A SnappyData virtual table that describes table indexes.
 
 See <a href="../language_ref/ref-create-index.html#create-index" class="xref" title="Creates an index on one or more columns of a table.">CREATE INDEX</a>.
 

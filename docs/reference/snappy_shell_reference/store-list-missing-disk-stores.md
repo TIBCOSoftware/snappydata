@@ -20,7 +20,7 @@ The table describes options for snappy-shell list-missing-disk-stores.
 |-mcast-address|Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default gfxd uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-prop-name|Any other RowStore distributed system property.|
+|-prop-name|Any other SnappyData distributed system property.|
 
 <a id="reference_FF886BB14E5949B79E47AC334D23EEE5__section_373A5D6CDE984CC49A03632C63252F2E"></a>
 ##Description

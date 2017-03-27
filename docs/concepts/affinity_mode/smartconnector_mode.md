@@ -4,7 +4,7 @@ In certain cases, Spark applications run as independent sets of processes on a c
 
 Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
 
-![Smart Connector Mode](../Images/SnappyConnectorMode.png)
+![Smart Connector Mode](../../Images/SnappyConnectorMode.png)
 
 **Key Points:**
 
@@ -56,7 +56,8 @@ $ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
 ```
 !!! Note
-	The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.
+	* The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.
+	* `snappydata.*` SQL conf properties need to be prefixed with `spark.` when used in the Smart Connector mode. For example, `spark.snappydata.column.batchSize`
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
 ```scala

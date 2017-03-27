@@ -1,13 +1,13 @@
 # java.sql.PreparedStatement Interface
 
 <a id="java-sql-preparedstatement__section_542B89D0CCAC4DA8B31D0D13D8CE33A2"></a>
-RowStore provides all required JDBC type conversions and additionally allows use of the individual `setXXX` methods for each type as if a `setObject(Value, JDBCTypeCode)` invocation were made. This means that `setString` can be used for any built-in target type. Cursors are not supported in RowStore; `setCursorName` method throws an unsupported feature exception.
+SnappyData provides all required JDBC type conversions and additionally allows use of the individual `setXXX` methods for each type as if a `setObject(Value, JDBCTypeCode)` invocation were made. This means that `setString` can be used for any built-in target type. Cursors are not supported in SnappyData; `setCursorName` method throws an unsupported feature exception.
 
 <a id="java-sql-preparedstatement__section_CC69B92DE5F947A685030EBC8609704A"></a>
 
 ##Prepared Statements and Streaming Columns
 
-`setXXXStream` requests stream data between the client and the server. JDBC allows an IN parameter to be set to a Java input stream for passing in large amounts of data in smaller chunks. When the statement is run, the JDBC driver makes repeated calls to this input stream. RowStore supports the three types of streams that the JDBC API provides:
+`setXXXStream` requests stream data between the client and the server. JDBC allows an IN parameter to be set to a Java input stream for passing in large amounts of data in smaller chunks. When the statement is run, the JDBC driver makes repeated calls to this input stream. SnappyData supports the three types of streams that the JDBC API provides:
 
 -   `setBinaryStream` Use for streams that contain uninterpreted bytes.
 

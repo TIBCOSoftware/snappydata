@@ -4,7 +4,7 @@ The UserAuthenticator interface provides operations to authenticate a user's cre
 
 User authentication schemes can be implemented with this interface and registered at start-up time.
 
-If an application requires its own authentication scheme, it can implement this interface and register as the authentication scheme that RowStore should call upon connection requests to the system.
+If an application requires its own authentication scheme, it can implement this interface and register as the authentication scheme that SnappyData should call upon connection requests to the system.
 
 A typical example is the implementation of user authentication with LDAP, Sun NIS+, or even Windows User Domain, using this interface.
 

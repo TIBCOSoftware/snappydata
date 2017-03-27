@@ -1,6 +1,6 @@
 # Core JDBC Classes, Interfaces, and Methods
 
-The following sections describe the RowStore implementation of selected JDBC classes, interfaces, and methods.
+The following sections describe the SnappyData implementation of selected JDBC classes, interfaces, and methods.
 
 -   **[java.sql.BatchUpdateException Class](../../reference/jdbc/java-sql-batchupdateexception.html)**
 -   **[java.sql.Connection Interface](../../reference/jdbc/java-sql-connection.html)**

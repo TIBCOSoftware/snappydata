@@ -78,7 +78,7 @@ The privileges revoked from PUBLIC and from individual users are independent pri
 Cascading Object Dependencies
 -----------------------------
 
-For views, triggers, and constraints, if the privilege on which the object depends on is revoked, the object is automatically dropped. RowStore does not try to determine if you have other privileges that can replace the privileges that are being revoked.
+For views, triggers, and constraints, if the privilege on which the object depends on is revoked, the object is automatically dropped. SnappyData does not try to determine if you have other privileges that can replace the privileges that are being revoked.
 
 <a id="reference_B3D0A85B7E704BCEA5E79A25394EA71C__section_8859D45244B149DAB9CBBA250D29CAFC"></a>
 

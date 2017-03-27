@@ -1,6 +1,6 @@
 # Keywords and Identifiers
 
-SQL statements are provided as strings to RowStore that must follow several rules.
+SQL statements are provided as strings to SnappyData that must follow several rules.
 
 -   Permitted character set is unicode
 -   Single quotation marks delimit character strings

@@ -1,6 +1,6 @@
 # java.sql.DatabaseMetaData Interface
 
-<a id="java-sql-databasemetadata__section_1B3CCBB2590346FAA2D4CF84BDA9A13D">The following sections describe <code class="ph tt">java.sql.DatabaseMetaData</code> functionality in RowStore.</a>
+<a id="java-sql-databasemetadata__section_1B3CCBB2590346FAA2D4CF84BDA9A13D">The following sections describe <code class="ph tt">java.sql.DatabaseMetaData</code> functionality in SnappyData.</a>
 -   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_C813D9A7C9044BB1A540B35CDA6F3517" class="xref">DatabaseMetaData Result Sets</a>
 -   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_51DDFA8B7026432788B8F76FE9AC6D06" class="xref">java.sql.DatabaseMetaData.getProcedureColumns Method</a>
 -   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_87386A01281B43469BC0012704BE1105" class="xref">Parameters to getProcedureColumns</a>
@@ -18,7 +18,7 @@
 
 ##java.sql.DatabaseMetaData.getProcedureColumns Method
 
-RowStore supports Java procedures and allows you to call Java procedures within SQL statements. RowStore returns information about the parameters in the *getProcedureColumns* call and returns information for all Java procedures defined by CREATE PROCEDURE.
+SnappyData supports Java procedures and allows you to call Java procedures within SQL statements. SnappyData returns information about the parameters in the *getProcedureColumns* call and returns information for all Java procedures defined by CREATE PROCEDURE.
 
 *getProcedureColumns* returns a ResultSet. Each row describes a single parameter or return value.
 
@@ -29,7 +29,7 @@ RowStore supports Java procedures and allows you to call Java procedures within 
 The JDBC API defines the following parameters for the getProcedureColumns method call.
 
 **catalog**   
-Always use *null* for this parameter in RowStore.
+Always use *null* for this parameter in SnappyData.
 
 **schemaPattern**   
 Java procedures have a schema.
@@ -47,7 +47,7 @@ A String object representing the name pattern of the parameter names or return v
 Columns in the *ResultSet* returned by *getProcedureColumns* are as described by the API. Further details for some specific columns:
 
 **PROCEDURE\_CAT   **
-Always "null" in RowStore.
+Always "null" in SnappyData.
 
 **PROCEDURE\_SCHEM   **
 Schema for a Java procedure.
@@ -62,7 +62,7 @@ Name of the parameter. See column-Name-Pattern under <a href="java-sql-databasem
 Short indicating what the row describes. It is always *DatabaseMetaData.procedureColumnIn* for method parameters, unless the parameter is an array. If so, it is *DatabaseMetaData.procedureColumnInOut*. It always returns *DatabaseMetaData.procedureColumnReturn* for return values.
 
 **TYPE\_NAME   **
-RowStore-specific name for the type.
+SnappyData-specific name for the type.
 
 **NULLABLE**   
 Always returns *DatabaseMetaData.procedureNoNulls* for primitive parameters and *DatabaseMetaData.procedureNullable* for object parameters
@@ -92,10 +92,10 @@ String describing the parameter's nullability (YES means parameter can include N
 Name that uniquely identifies this procedure within its schema.
 
 **METHOD\_ID   **
-RowStore-specific column.
+SnappyData-specific column.
 
 **PARAMETER\_ID   **
-RowStore-specific column.
+SnappyData-specific column.
 
 <a id="java-sql-databasemetadata__section_F9F0D4197E944136B1996DEC342CCD21"></a>
 

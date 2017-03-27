@@ -1,6 +1,6 @@
 # DROP DISKSTORE
 
-Remove a disk store configuration from the RowStore cluster.
+Remove a disk store configuration from the SnappyData cluster.
 
 ##Syntax
 
@@ -9,10 +9,10 @@ DROP DISKSTORE [ IF EXISTS ] store-name
 ```
 
 **IF EXISTS   **
-Include the `IF EXISTS` clause to execute the statement only if the specified disk store exists in RowStore.
+Include the `IF EXISTS` clause to execute the statement only if the specified disk store exists in SnappyData.
 
 **store-name   **
-User-defined name of the disk store configuration that you want to remove. The available names are stored in the <a href="../system_tables/sysdiskstores.html#reference_36E65EC061C34FB696529ECA8ABC5BFC" class="xref noPageCitation" title="Contains information about all disk stores created in the RowStore distributed system.">SYSDISKSTORES</a> system table.
+User-defined name of the disk store configuration that you want to remove. The available names are stored in the <a href="../system_tables/sysdiskstores.html#reference_36E65EC061C34FB696529ECA8ABC5BFC" class="xref noPageCitation" title="Contains information about all disk stores created in the SnappyData distributed system.">SYSDISKSTORES</a> system table.
 
 ##Example
 

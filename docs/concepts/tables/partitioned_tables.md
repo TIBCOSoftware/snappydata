@@ -19,21 +19,21 @@ SnappyData uses a table’s partitioning column values and the partitioning stra
 
 Each bucket is then assigned to a server, or to multiple servers if the partitioned table is configured to have redundancy. The buckets are not assigned when the table is started up, but occurs lazily when the data is actually put into a bucket. This allows you to start a number of members before populating the table.
 
-If you set the redundant-copies for the table to be greater than zero, RowStore designates one of the copies of each bucket as the primary copy. All writes to the bucket go through the primary copy. This ensures that all copies of the bucket are consistent.
+If you set the redundant-copies for the table to be greater than zero, SnappyData designates one of the copies of each bucket as the primary copy. All writes to the bucket go through the primary copy. This ensures that all copies of the bucket are consistent.
 
 The Group Membership Service (GMS) and distributed locking service ensure that all distributed members have a consistent view of primaries and secondaries at any moment in time across the distributed system, regardless of membership changes initiated by the administrator or by failures.
 
 ###Failure and Redundancy 
 If you have redundant copies of a partitioned table, you can lose servers without loss of data or interruption of service. When a server fails, SnappyData automatically re-routes any operations that were trying to write to the failed member to the surviving members.
 
-RowStore also attempts to re-route failed read operations to another server if possible. If a read operation returns only a single row, then transparent failover is always possible. However, if an operation returns multiple rows and the application has consumed one or more rows, then RowStore cannot fail over if a server involved in the query happens goes offline before all the results have been consumed; in this case the application receives a SQLException with SQLState X0Z01. All applications should account for the possibility of receiving such an exception, and should manually retry the query if such a failure occurs..
+SnappyData also attempts to re-route failed read operations to another server if possible. If a read operation returns only a single row, then transparent failover is always possible. However, if an operation returns multiple rows and the application has consumed one or more rows, then SnappyData cannot fail over if a server involved in the query happens goes offline before all the results have been consumed; in this case the application receives a SQLException with SQLState X0Z01. All applications should account for the possibility of receiving such an exception, and should manually retry the query if such a failure occurs..
 
 Read operations are also retried if a server is unavailable when a query is performed. In this figure, M1 is reading table values W and Y. It reads W directly from its local copy and attempts to read Y from M3, which is currently offline. In this case, the read is automatically retried in another available member that holds a redundant copy of the table data.
 
 ###Rebalancing Partitioned Data on SnappyData Members 
 You can use rebalancing to dynamically increase or decrease your SnappyData cluster capacity, or to improve the balance of data across the distributed system.
 
-Rebalancing is a RowStore member operation that affects partitioned tables created in the cluster. Rebalancing performs two tasks:
+Rebalancing is a SnappyData member operation that affects partitioned tables created in the cluster. Rebalancing performs two tasks:
 
 * If the a partitioned table’s redundancy setting is not satisfied, rebalancing does what it can to recover redundancy. See Making a Partitioned Table Highly Available.
 
@@ -43,18 +43,18 @@ For efficiency, when starting multiple members, trigger the rebalance a single t
 
 Start a rebalance operation using one of the following options:
 
-* At the command line when you boot a RowStore server:
+* At the command line when you boot a SnappyData server:
 
-        snappy-shell rowstore server start -rebalance 
+        snappy-shell SnappyData server start -rebalance 
 <mark> Command - To be modified</mark>
         
 
-* Executing a system procedure in a running RowStore member:
+* Executing a system procedure in a running SnappyData member:
 
         call sys.rebalance_all_buckets();
 <mark> Command - To be modified</mark>
 
-This procedure initiates rebalancing of buckets across the entire RowStore cluster for all partitioned tables.
+This procedure initiates rebalancing of buckets across the entire SnappyData cluster for all partitioned tables.
 
 ###Managing Replication Failures 
 SnappyData uses multiple failure detection algorithms to detect replication problems quickly. SnappyData replication design focuses on consistency, and does not allow suspect members or network-partitioned members to operate in isolation.

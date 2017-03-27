@@ -1,6 +1,6 @@
 # SYSCOLUMNS
 
-Describes the columns within all tables in the RowStore distributed system.
+Describes the columns within all tables in the SnappyData distributed system.
 
 <a id="rrefsistabs22441__section_F2D50CAD34484E52A1F77E0339DEC051"></a><a id="rrefsistabs22441__table_3C4F29A966624276988076D6AAFC8DC5"></a>
 

@@ -19,10 +19,10 @@ Code tables are often good candidates for replication.
 
 Application data is frequently normalized to maintain “code” fields in “fact” tables, and to maintain the details associated with each “code” in an associated “dimension” table. Code tables are often small and change infrequently, but they are frequently joined with their parent “fact” table in queries. Code tables of this sort are good candidates for using replicated tables.
 
-Also note that this version of RowStore supports joins only on co-located data. Instead of using partitioning in all cases, you should consider having applications replicate smaller tables that are joined with other partitioned tables.
+Also note that this version of SnappyData supports joins only on co-located data. Instead of using partitioning in all cases, you should consider having applications replicate smaller tables that are joined with other partitioned tables.
 
 !!!Note
-If multiple applications update the same row of a replicated table at the same time outside of a transaction, the table data can become out of sync when RowStore replicates those updates. Keep this limitation in mind when using replicated tables.
+If multiple applications update the same row of a replicated table at the same time outside of a transaction, the table data can become out of sync when SnappyData replicates those updates. Keep this limitation in mind when using replicated tables.
 
 ###Creating Replicated Tables 
 You can [create replicated tables](/programming_guide#markdown_link_row_and_column_tables) explicitly or by default, using CREATE TABLE statement. <mark>Add link </mark>

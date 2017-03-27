@@ -1,6 +1,6 @@
 #snappy-shell Interactive Commands
 
-`snappy-shell` implements an interactive command-line tool that is based on the Apache Derby `ij` tool. Use `snappy-shell` to run scripts or interactive queries against a RowStore cluster.
+`snappy-shell` implements an interactive command-line tool that is based on the Apache Derby `ij` tool. Use `snappy-shell` to run scripts or interactive queries against a SnappyData cluster.
 
 Start the interactive `snappy-shell` command prompt by using the <span class="ph filepath">snappy-shell</span> script without supplying any other options:
 
@@ -42,9 +42,9 @@ Commands can span multiple lines without using any special escape character for 
 -   **[connect](../../reference/store_commands/connect.html)**
     Connects to the database indicated by the *ConnectionURLString*.
 -   **[connect client](../../reference/store_commands/connect_client.html)**
-    Using the JDBC RowStore thin client driver, connects to a RowStore member indicated by the *host:port* values.
+    Using the JDBC SnappyData thin client driver, connects to a SnappyData member indicated by the *host:port* values.
 -   **[connect peer](../../reference/store_commands/connect_peer.html)**
-    Using the JDBC RowStore peer client driver, connects to a RowStore member with specified boot and connection property values.
+    Using the JDBC SnappyData peer client driver, connects to a SnappyData member with specified boot and connection property values.
 -   **[describe](../../reference/store_commands/describe.html)**
     Provides a description of the specified table or view.
 -   **[disconnect](../../reference/store_commands/disconnect.html)**

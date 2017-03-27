@@ -1,12 +1,12 @@
 #Statements
-Learn about the supported statements provided in this release of RowStore.
+Learn about the supported statements provided in this release of SnappyData.
 
 Each reference page provides the statement syntax, describes custom extensions, and shows examples of using the statement.
 
 -   **[ALTER TABLE](../../reference/language_ref/ref-alter-table.html)**
     Use the ALTER TABLE statement to add columns and constraints to an existing table, remove them from a table, or modify other table features such as AsyncEventListener implementations and gateway sender configurations.
 -   **[CALL](../../reference/language_ref/ref-call-procedure.html)**
-    RowStore extends the CALL statement to enable execution of Data-Aware Procedures (DAP). These procedures can be routed to RowStore members that host the required data.
+    SnappyData extends the CALL statement to enable execution of Data-Aware Procedures (DAP). These procedures can be routed to SnappyData members that host the required data.
 -   **[CREATE Statements](../../reference/language_ref/ref-create-statements.html)**
     Use Create statements to create functions, indexes, procedures, schemas, synonyms, tables, triggers, and views.
 -   **[DECLARE GLOBAL TEMPORARY TABLE](../../reference/language_ref/ref-declare-global-temporary-table.html)**
@@ -32,7 +32,7 @@ Each reference page provides the statement syntax, describes custom extensions, 
 -   **[SET SCHEMA](../../reference/language_ref/ref-set-schema.html)**
     Set or change the default schema for a connection's session.
 -   **[TRUNCATE TABLE](../../reference/language_ref/ref-truncate-table.html)**
-    Remove all content from a table and return it to its initial, empty state. TRUNCATE TABLE clears all in-memory data for the specified table as well as any data that was persisted to RowStore disk stores. For HDFS read-write tables, TRUNCATE TABLE also marks the table's HDFS persistence files for expiiry. For HDFS write-only tables, TRUNCATE TABLE leaves all table data that is stored in HDFS log files available for later processing using MapReduce or HAWQ.
+    Remove all content from a table and return it to its initial, empty state. TRUNCATE TABLE clears all in-memory data for the specified table as well as any data that was persisted to SnappyData disk stores. For HDFS read-write tables, TRUNCATE TABLE also marks the table's HDFS persistence files for expiiry. For HDFS write-only tables, TRUNCATE TABLE leaves all table data that is stored in HDFS log files available for later processing using MapReduce or HAWQ.
 -   **[UPDATE](../../reference/language_ref/ref-update.html)**
     Update the value of one or more columns.
 

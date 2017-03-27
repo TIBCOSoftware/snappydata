@@ -33,7 +33,7 @@ The following types of permissions can be granted:
 -   Run a specified function or procedure.
 
 !!!Note:
-	This release of RowStore does not support Loader/Writer/Listener privileges, Data Aware Procedure privileges, where clause read privileges, or Write Behind Listeners privileges.
+	This release of SnappyData does not support Loader/Writer/Listener privileges, Data Aware Procedure privileges, where clause read privileges, or Write Behind Listeners privileges.
 
 You cannot grant privileges to gateway senders or gateway senders when using WAN replication.
 

@@ -39,7 +39,7 @@ pages:
         #- Disable SYN Cookies on Linux Platforms: 'sys_requirement/disable_cookies.md'
         #- Filesystem Type for Linux Platforms: 'sys_requirement/filesystem_type.md'
         #- SnappyData Dashboard Requirements: 'sys_requirement/snappydata_dashboard.md'
-    - 'Download and Install': 'empty.md'
+    - 'Download and Install': 'install/download_install.md'
     - 'Download and Install':
         - 'On Premise': 'install/on_premise.md'   
         - 'Building from Source': 'install/from_source.md'   
@@ -138,6 +138,7 @@ pages:
     - 'How to Use Stream Processing with SnappyData': 'how_to/use_stream_processing.md'
     - 'How to Use Synopsis Data Engine to Run Approximate Queries': 'how_to/use_synopsis_data_engine.md'
     - 'How to Use Python to Create Tables and Run Queries': 'how_to/use_python_to_create_tables_and_run_queries.md'
+    - 'How to Use Apache Zeppelin with SnappyData': 'how_to/zeppelin_with_snappydata.md'    
 # -- Topic - Configuration - Cluster and Others
 - 'Configuration': 'configuration.md'
 - 'Configuration': 

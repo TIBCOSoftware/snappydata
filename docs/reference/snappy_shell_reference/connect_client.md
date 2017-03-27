@@ -1,6 +1,6 @@
 # connect client
 
-Using the JDBC RowStore thin client driver, connects to a RowStore member indicated by the *host:port* values.
+Using the JDBC SnappyData S thin client driver, connects to a SnappyData member indicated by the *host:port* values.
 
 ##Syntax
 
@@ -11,7 +11,7 @@ CONNECT CLIENT 'host:port[;property=value]*' [ AS connectionName ]
 <a id="reference_85E77D6BF8C949D6BBAABE485FA02FF2__section_A5670CE37F4B40F8ADAC0FC8CA77B9E0"></a>
 ##Description
 
-Uses the JDBC RowStore thin client driver to connect to a RowStore member indicated by the *host:port* values. You can specify an optional name for your connection. Use the <a href="set_connection.html#rtoolsijcomref39198" class="xref" title="Specifies which connection to make current when more than one connection is open.">set connection</a> to switch between multiple connections. If you do not name a connection, the system generates a name automatically.
+Uses the JDBC SnappyData thin client driver to connect to a SnappyData member indicated by the *host:port* values. You can specify an optional name for your connection. Use the <a href="set_connection.html#rtoolsijcomref39198" class="xref" title="Specifies which connection to make current when more than one connection is open.">set connection</a> to switch between multiple connections. If you do not name a connection, the system generates a name automatically.
 
 If the connection requires a user name and password, supply those with the optional properties.
 

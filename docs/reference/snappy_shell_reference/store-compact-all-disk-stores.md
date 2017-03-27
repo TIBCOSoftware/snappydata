@@ -1,6 +1,6 @@
 # compact-all-disk-stores
 
-Perform online compaction of RowStore disk stores.
+Perform online compaction of SnappyData disk stores.
 
 ##Syntax
 
@@ -18,13 +18,13 @@ The table describes options for snappy-shell compact-all-disk-stores. If no mult
 |-mcast-address|</br>Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|</br>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default <code class="ph codeph">gfxd</code> uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-&lt;prop-name&gt;=&lt;prop-value&gt;|</br>Any other RowStore distributed system property.|
+|-&lt;prop-name&gt;=&lt;prop-value&gt;|</br>Any other SnappyData distributed system property.|
 
 
 <a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_050663B03C0A4C42B07B4C5F69EAC95D"></a>
 ##Description
 
-When a CRUD operation is performed on a persistent/overflow table, the data is written to the log files. Any pre-existing operation record for the same row becomes obsolete, and RowStore marks it as garbage. It compacts an old operation log by copying all non-garbage records into the current log and discarding the old files.
+When a CRUD operation is performed on a persistent/overflow table, the data is written to the log files. Any pre-existing operation record for the same row becomes obsolete, and SnappyData marks it as garbage. It compacts an old operation log by copying all non-garbage records into the current log and discarding the old files.
 
 Manual compaction can be done for online and offline disk stores. For the online disk store, the current operation log is not available for compaction, no matter how much garbage it contains.
 

@@ -1,6 +1,6 @@
 # version
 
-Prints information about the RowStore product version.
+Prints information about the SnappyData product version.
 
 #Syntax
 

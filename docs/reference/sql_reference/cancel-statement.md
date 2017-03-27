@@ -5,7 +5,7 @@ Attempt to cancel a SQL statement that is taking too long to complete or that is
 ##Syntax
 
 !!!Note:
-	See <a href="../../manage_guide/Topics/cancelling-queries.html#concept_wjv_mq1_rn" class="xref" title="When managing a RowStore deployment, it may become necessary to cancel statements that are taking too long to complete, or that are causing bottlenecks in your system. RowStore supports canceling queries using either a system procedure or the JDBC Statement.cancel() API.">Cancelling Long-Running Statements</a> for information about what statements are eligible for cancellation. A running statement that is cancelled manually throws a SQLState error XCL56.S: The statement has been cancelled due to a user request.</p>
+	See <a href="../../manage_guide/Topics/cancelling-queries.html#concept_wjv_mq1_rn" class="xref" title="When managing a SnappyData deployment, it may become necessary to cancel statements that are taking too long to complete, or that are causing bottlenecks in your system. SnappyData supports canceling queries using either a system procedure or the JDBC Statement.cancel() API.">Cancelling Long-Running Statements</a> for information about what statements are eligible for cancellation. A running statement that is cancelled manually throws a SQLState error XCL56.S: The statement has been cancelled due to a user request.</p>
 ``` pre
 SYS.CANCEL_STATEMENT( 
     IN CURRENT_STATEMENT_UUID VARCHAR(1024) NOT NULL)
@@ -38,6 +38,6 @@ Statement executed.
 ```
 
 !!! Note: 
-	A successful return from `SYS.CANCEL_STATEMENT()` does not necessarily mean that RowStore canceled the statement. It is possible that the statement completed successfully before the cancellation request was received, or that RowStore was not be able to cancel the statement due to the current state of the operation. 
+	A successful return from `SYS.CANCEL_STATEMENT()` does not necessarily mean that SnappyData canceled the statement. It is possible that the statement completed successfully before the cancellation request was received, or that SnappyData was not be able to cancel the statement due to the current state of the operation. 
 
 
