@@ -37,7 +37,7 @@ import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUti
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
-import org.apache.spark.sql.hive.{RelationInfo, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ConnectorCatalog, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -175,7 +175,7 @@ class RowFormatRelation(
   def relInfo: RelationInfo = {
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
-        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
+        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
          new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition], -1)

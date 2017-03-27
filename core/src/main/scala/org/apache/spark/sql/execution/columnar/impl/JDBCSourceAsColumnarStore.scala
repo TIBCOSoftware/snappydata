@@ -37,8 +37,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
-import org.apache.spark.sql.hive.SnappyConnectorCatalog
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
+import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -193,7 +193,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         val (parts, embdClusterRelDestroyVersion) =
           SnappyContext.getClusterMode(session.sparkContext) match {
           case ThinClientConnectorMode(_, _) =>
-            val catalog = snappySession.sessionCatalog.asInstanceOf[SnappyConnectorCatalog]
+            val catalog = snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
             val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
             (relInfo.partitions, relInfo.embdClusterRelDestroyVersion)
           case _ =>

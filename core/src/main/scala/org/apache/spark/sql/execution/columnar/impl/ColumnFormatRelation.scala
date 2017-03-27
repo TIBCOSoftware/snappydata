@@ -31,11 +31,8 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.hive.{RelationInfo, QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, columnar}
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -95,7 +92,7 @@ class BaseColumnFormatRelation(
   lazy val relInfo: RelationInfo = {
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
-        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
+        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
         new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition], -1)

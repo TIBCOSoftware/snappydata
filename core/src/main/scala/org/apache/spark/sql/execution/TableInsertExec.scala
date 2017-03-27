@@ -26,12 +26,12 @@ import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Dist
 import org.apache.spark.sql.collection.{ExecutorMultiBucketLocalShellPartition, Utils}
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.hive.SnappyConnectorCatalog
+import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext, DelegateRDD, SnappySession}
+import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
 
 /**
  * Common methods for bulk inserts into column and row tables.
@@ -110,7 +110,7 @@ abstract class TableInsertExec(override val child: SparkPlan,
       inputRDDs: Seq[RDD[InternalRow]]): Seq[RDD[InternalRow]] = {
     def preferredLocations(table: String): Array[Seq[String]] = {
       val catalog =
-        sqlContext.sparkSession.sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
+        sqlContext.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
       val relInfo =
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       val locations = new Array[Seq[String]](numBuckets)

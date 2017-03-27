@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
-import java.util.Objects
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
@@ -43,10 +42,7 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, In, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias, Union}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -57,7 +53,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTabl
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -122,7 +118,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @transient
   lazy val sessionCatalog: SnappyStoreHiveCatalog = {
     SnappyContext.getClusterMode(sc) match {
-      case ThinClientConnectorMode(_, _) => sessionState.catalog.asInstanceOf[SnappyConnectorCatalog]
+      case ThinClientConnectorMode(_, _) => sessionState.catalog.asInstanceOf[ConnectorCatalog]
       case _ => sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     }
   }
@@ -948,7 +944,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.createTable(tableIdent,
+        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
           provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
       case _ =>
     }
@@ -1032,7 +1028,7 @@ class SnappySession(@transient private val sc: SparkContext,
       // further processing to load the data
       case ThinClientConnectorMode(_, _) =>
         val userSchema = userSpecifiedSchema.getOrElse(Dataset.ofRows(sqlContext.sparkSession, query).schema)
-        val rel = sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.createTable(tableIdent,
+        sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
           provider, Option(userSchema), schemaDDL, mode, options, isBuiltIn)
         createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
           partitionColumns, SaveMode.Append, options, query, isBuiltIn)
@@ -1191,7 +1187,7 @@ class SnappySession(@transient private val sc: SparkContext,
       case ThinClientConnectorMode(_, _) =>
         val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
         if (!isTempTable) {
-          sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.dropTable(tableIdent, ifExists)
+          sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropTable(tableIdent, ifExists)
           return
         }
       case _ =>
@@ -1314,7 +1310,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.
+        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.
             createIndex(indexIdent, tableIdent, indexColumns, options)
       case _ =>
     }
@@ -1371,7 +1367,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return sessionCatalog.asInstanceOf[SnappyConnectorCatalog].connectorHelper.dropIndex(indexName, ifExists)
+        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropIndex(indexName, ifExists)
       case _ =>
     }
 
