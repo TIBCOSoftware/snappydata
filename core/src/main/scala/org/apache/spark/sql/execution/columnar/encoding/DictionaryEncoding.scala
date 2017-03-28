@@ -19,7 +19,6 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.nio.ByteBuffer
 
 import com.gemstone.gnu.trove.TLongArrayList
-import io.snappydata.util.StringUtils
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.{LongKey, ObjectHashSet, StringKey}
@@ -190,11 +189,11 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override def sizeInBytes(cursor: Long): Long = {
     if (dictionarySize > 0 || (stringMap ne null)) {
-      cursor - columnData.baseOffset + dictionarySize
+      cursor - columnBeginPosition + dictionarySize
     } else if (isIntMap) {
-      cursor - columnData.baseOffset + (longArray.size() << 2)
+      cursor - columnBeginPosition + (longArray.size() << 2)
     } else {
-      cursor - columnData.baseOffset + (longArray.size() << 4)
+      cursor - columnBeginPosition + (longArray.size() << 4)
     }
   }
 
@@ -207,18 +206,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   protected def initializeIndexBytes(initSize: Int, minSize: Int): Unit = {
     // 2 byte indexes for short dictionary while 4 bytes for big dictionary
     val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
-    if ((reuseColumnData eq null) || reuseColumnData.sizeInBytes < minSize) {
-      columnData = allocator.allocate(numBytes)
-      columnBytes = columnData.bytes
-      columnEndPosition = columnData.endPosition
+    if ((reuseColumnData eq null) || reuseColumnData.remaining() < minSize) {
+      setSource(allocator.allocate(numBytes))
       if (reuseColumnData ne null) {
         allocator.release(reuseColumnData)
         reuseColumnData = null
       }
     } else {
-      columnData = reuseColumnData
-      columnBytes = reuseColumnData.bytes
-      columnEndPosition = columnData.endPosition
+      setSource(reuseColumnData)
       reuseColumnData = null
     }
   }
@@ -231,7 +226,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       case StringType =>
         // re-use the previous map if not too large
         // previous index values in the map would have been reset to -1
-        if ((stringMap eq null) || stringMap.size > Short.MaxValue) {
+        if ((stringMap eq null) || stringMap.size > 512) {
           stringMap = new ObjectHashSet[StringIndexKey](128, 0.6, 1)
         }
       case t =>
@@ -247,7 +242,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     isShortDictionary = true
     initializeIndexBytes(initSize, 0)
     // return the cursor for index bytes
-    columnData.baseOffset
+    columnBeginPosition
   }
 
   protected final def switchToBigDictionary(numUsedIndexes: Int,
@@ -256,10 +251,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     isShortDictionary = false
     val oldIndexData = columnData
     val oldIndexBytes = columnBytes
-    var oldCursor = columnData.baseOffset
+    var oldCursor = columnBeginPosition
     // initialize new index array having at least the current dictionary size
     initializeIndexBytes(newNumIndexes, newNumIndexes << 2)
-    var cursor = columnData.baseOffset
+    var cursor = columnBeginPosition
     // copy over short indexes from previous index bytes
     var i = 0
     while (i < numUsedIndexes) {
@@ -299,14 +294,13 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // update stats only if new key was added
     var index = key.index
     if (index == -1) {
-      val s = key.s
-      dictionarySize += 4 + s.numBytes
-      updateStringStats(s)
+      dictionarySize += 4 + key.numBytes
+      updateStringStats(key)
       index = numStrings
       numStrings += 1
       key.index = index
       if (index == Short.MaxValue && isShortDictionary) {
-        val numUsedIndexes = ((position - columnData.baseOffset) >> 1).toInt
+        val numUsedIndexes = ((position - columnBeginPosition) >> 1).toInt
         // allocate with increased size
         position = switchToBigDictionary(numUsedIndexes,
           (numUsedIndexes << 2) / 3)
@@ -340,7 +334,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       index = longArray.size()
       key.index = index
       if (index == Short.MaxValue && isShortDictionary) {
-        val numUsedIndexes = ((position - columnData.baseOffset) >> 1).toInt
+        val numUsedIndexes = ((position - columnBeginPosition) >> 1).toInt
         // allocate with increased size
         position = switchToBigDictionary(numUsedIndexes,
           (numUsedIndexes << 2) / 3)
@@ -353,7 +347,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 
   override def finish(indexCursor: Long): ByteBuffer = {
-    val numIndexBytes = indexCursor - this.columnData.baseOffset
+    val numIndexBytes = (indexCursor - this.columnBeginPosition).toInt
     var numElements = this.numStrings
     if (stringMap eq null) {
       numElements = longArray.size
@@ -366,10 +360,11 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // create the final data array of exact size that is known at this point
     val numNullWords = getNumNullWords
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
-    val columnData = allocator.allocate(8L /* typeId + number of nulls */ +
-        (numNullWords.toLong << 3L) + dataSize)
-    val columnBytes = columnData.bytes
-    var cursor = columnData.baseOffset
+    val columnData = finalAllocator.allocate(ColumnEncoding.checkBufferSize(
+      8L /* typeId + number of nulls */ + (numNullWords << 3L) + dataSize))
+    val columnBytes = if (columnData.hasArray) columnData.array() else null
+    val baseOffset = getBaseOffset(columnData)
+    var cursor = baseOffset
     // typeId
     ColumnEncoding.writeInt(columnBytes, cursor, typeId)
     cursor += 4
@@ -390,11 +385,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         stringTail.next = null
         var current = stringHead
         do {
-          val s = current.s
           // reset index for re-use in next batch
           current.index = -1
           cursor = ColumnEncoding.writeUTF8String(columnBytes, cursor,
-            s, s.numBytes)
+            current.base, current.offset, current.numBytes)
           current = current.next
         } while (current ne null)
         this.stringHead = null
@@ -419,22 +413,42 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       }
     }
     // lastly copy the index bytes
-    allocator.copy(this.columnBytes, this.columnData.baseOffset, columnBytes,
-      cursor, numIndexBytes)
+    val position = columnData.position()
+    columnData.position((cursor - baseOffset).toInt)
+    copyTo(columnData, 0, numIndexBytes)
+    columnData.position(position)
 
     // reuse this index data in next round if possible
     releaseForReuse(this.columnData, numIndexBytes)
+    clearSource()
 
-    allocator.toBuffer(columnData)
+    columnData
   }
 }
 
-private final class StringIndexKey(_s: UTF8String, var index: Int,
-    var next: StringIndexKey) extends StringKey(_s)
+private final class StringIndexKey(_base: AnyRef, _offset: Long,
+    _numBytes: Int, var index: Int, var next: StringIndexKey)
+    extends StringKey(_base, _offset, _numBytes) {
+
+  def this(s: UTF8String) = {
+    this(s.getBaseObject, s.getBaseOffset, s.numBytes(), -1, null)
+  }
+}
 
 private object StringInit extends (UTF8String => StringIndexKey) {
   override def apply(s: UTF8String): StringIndexKey = {
-    new StringIndexKey(StringUtils.cloneIfRequired(s), -1, null)
+    if (s.getBaseOffset == Platform.BYTE_ARRAY_OFFSET &&
+        s.getBaseObject.asInstanceOf[Array[Byte]].length == s.numBytes()) {
+      // no clone required
+      new StringIndexKey(s)
+    } else {
+      // clone into StringIndexKey
+      val numBytes = s.numBytes()
+      val bytes = new Array[Byte](numBytes)
+      Platform.copyMemory(s.getBaseObject, s.getBaseOffset,
+        bytes, Platform.BYTE_ARRAY_OFFSET, numBytes)
+      new StringIndexKey(bytes, Platform.BYTE_ARRAY_OFFSET, numBytes, -1, null)
+    }
   }
 }
 

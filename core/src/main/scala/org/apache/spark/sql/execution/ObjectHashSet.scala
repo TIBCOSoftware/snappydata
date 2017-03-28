@@ -34,12 +34,16 @@
  */
 package org.apache.spark.sql.execution
 
+import java.nio.charset.StandardCharsets
 import java.util.{Iterator => JIterator}
 
 import scala.reflect.ClassTag
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 
+import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.array.ByteArrayMethods
+import org.apache.spark.unsafe.hash.Murmur3_x86_32
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
@@ -91,7 +95,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
       val mapKey = data(pos)
       if (mapKey ne null) {
         val stringKey = mapKey.asInstanceOf[StringKey]
-        if (stringKey.s.equals(key)) {
+        if (stringKey.equals(key)) {
           // update
           return stringKey.asInstanceOf[T]
         } else {
@@ -289,16 +293,71 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   }
 }
 
-abstract class StringKey(val s: UTF8String) {
+abstract class StringKey(val base: AnyRef, val offset: Long, val numBytes: Int) {
 
-  override lazy val hashCode: Int = s.hashCode()
+  private var hash: Int = 0
+
+  def this(s: UTF8String) = {
+    this(s.getBaseObject, s.getBaseOffset, s.numBytes())
+  }
+
+  // noinspection HashCodeUsesVar
+  override def hashCode: Int = {
+    val h = hash
+    if (h != 0) h
+    else {
+      hash = Murmur3_x86_32.hashUnsafeBytes(base, offset, numBytes, 42)
+      hash
+    }
+  }
+
+  def getByte(i: Int): Byte = Platform.getByte(base, offset + i)
+
+  def getByte(str: UTF8String, i: Int): Byte =
+    Platform.getByte(str.getBaseObject, str.getBaseOffset + i)
 
   override def equals(obj: Any): Boolean = obj match {
-    case o: StringKey => s == o.s
+    case o: StringKey =>
+      if (numBytes != o.numBytes) false
+      else ByteArrayMethods.arrayEquals(base, offset, o.base, o.offset, numBytes)
     case _ => false
   }
 
-  override def toString: String = String.valueOf(s)
+  def equals(str: UTF8String): Boolean = {
+    if (numBytes != str.numBytes()) false
+    else ByteArrayMethods.arrayEquals(base, offset,
+      str.getBaseObject, str.getBaseOffset, numBytes)
+  }
+
+  def compare(str: UTF8String): Int = {
+    val len = Math.min(numBytes, str.numBytes())
+    // TODO: compare 8 bytes as unsigned long
+    var i = 0
+    while (i < len) {
+      // In UTF-8, the byte should be unsigned,
+      // so we should compare them as unsigned int.
+      val res = (getByte(i) & 0xFF) - (getByte(str, i) & 0xFF)
+      if (res != 0) return res
+      i += 1
+    }
+    numBytes - str.numBytes
+  }
+
+  private def copyBytes(): Array[Byte] = {
+    val b = new Array[Byte](numBytes)
+    Platform.copyMemory(base, offset, b, Platform.BYTE_ARRAY_OFFSET, numBytes)
+    b
+  }
+
+  def toUTF8String: UTF8String = UTF8String.fromAddress(base, offset, numBytes)
+
+  override def toString: String = {
+    val bytes = if (offset == Platform.BYTE_ARRAY_OFFSET) base match {
+      case b: Array[Byte] if b.length == numBytes => b
+      case None => copyBytes()
+    } else copyBytes()
+    new String(bytes, StandardCharsets.UTF_8)
+  }
 }
 
 abstract class LongKey(val l: Long) {

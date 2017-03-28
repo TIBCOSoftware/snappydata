@@ -354,7 +354,8 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
       position = expand(position, size + 4)
     }
     updateStringStatsClone(value)
-    ColumnEncoding.writeUTF8String(columnBytes, position, value, size)
+    ColumnEncoding.writeUTF8String(columnBytes, position,
+      value.getBaseObject, value.getBaseOffset, size)
   }
 
   override def writeBinary(cursor: Long, value: Array[Byte]): Long = {
