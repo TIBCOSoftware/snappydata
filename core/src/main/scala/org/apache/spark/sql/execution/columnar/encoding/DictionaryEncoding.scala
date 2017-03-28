@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gnu.trove.TLongArrayList
 
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{LongKey, ObjectHashSet, StringKey}
+import org.apache.spark.sql.execution.{DictionaryData, LongKey, ObjectHashSet, StringKey}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -430,16 +430,18 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 }
 
-private final class StringIndexKey(_offset: Long, _numBytes: Int,
-    var index: Int) extends StringKey(_offset, _numBytes)
+private final class StringIndexKey(_dictionaryData: DictionaryData,
+    _relativeOffset: Int, _numBytes: Int, var index: Int)
+    extends StringKey(_dictionaryData, _relativeOffset, _numBytes)
 
 /**
  * Holds current dictionary data, position etc.
  * Always assume a direct ByteBuffer for dictionary data.
  */
-private final class StringInit(var dictionaryData: ByteBuffer,
-    var baseOffset: Long, var position: Long, var endPosition: Long)
-    extends (UTF8String => StringIndexKey) {
+private final class StringInit(_dictionaryData: ByteBuffer,
+    _baseOffset: Long, _position: Long, _endPosition: Long)
+    extends DictionaryData(_dictionaryData, _baseOffset,
+      _position, _endPosition) with (UTF8String => StringIndexKey) {
   override def apply(s: UTF8String): StringIndexKey = {
     // write into the stringData ByteBuffer growing it if required
     val numBytes = s.numBytes()
@@ -462,7 +464,7 @@ private final class StringInit(var dictionaryData: ByteBuffer,
     val oldPosition = position
     position = ColumnEncoding.writeUTF8String(null, oldPosition,
       s.getBaseObject, s.getBaseOffset, numBytes)
-    new StringIndexKey(oldPosition + 4, numBytes, -1)
+    new StringIndexKey(this, (oldPosition - baseOffset + 4).toInt, numBytes, -1)
   }
 
   def size: Long = position - baseOffset

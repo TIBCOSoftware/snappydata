@@ -34,6 +34,7 @@
  */
 package org.apache.spark.sql.execution
 
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.{Iterator => JIterator}
 
@@ -293,10 +294,17 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   }
 }
 
+abstract class DictionaryData(final var dictionaryData: ByteBuffer,
+    final var baseOffset: Long, final var position: Long,
+    final var endPosition: Long)
+
 // assume a direct buffer as the target so baseObject is always null
-abstract class StringKey(val offset: Long, val numBytes: Int) {
+abstract class StringKey(dictionaryData: DictionaryData,
+    val relativeOffset: Int, val numBytes: Int) {
 
   private var hash: Int = 0
+
+  final def offset: Long = dictionaryData.baseOffset + relativeOffset
 
   // noinspection HashCodeUsesVar
   override def hashCode: Int = {
