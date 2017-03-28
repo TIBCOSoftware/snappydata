@@ -293,25 +293,22 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   }
 }
 
-abstract class StringKey(val base: AnyRef, val offset: Long, val numBytes: Int) {
+// assume a direct buffer as the target so baseObject is always null
+abstract class StringKey(val offset: Long, val numBytes: Int) {
 
   private var hash: Int = 0
-
-  def this(s: UTF8String) = {
-    this(s.getBaseObject, s.getBaseOffset, s.numBytes())
-  }
 
   // noinspection HashCodeUsesVar
   override def hashCode: Int = {
     val h = hash
     if (h != 0) h
     else {
-      hash = Murmur3_x86_32.hashUnsafeBytes(base, offset, numBytes, 42)
+      hash = Murmur3_x86_32.hashUnsafeBytes(null, offset, numBytes, 42)
       hash
     }
   }
 
-  def getByte(i: Int): Byte = Platform.getByte(base, offset + i)
+  def getByte(i: Int): Byte = Platform.getByte(null, offset + i)
 
   def getByte(str: UTF8String, i: Int): Byte =
     Platform.getByte(str.getBaseObject, str.getBaseOffset + i)
@@ -319,13 +316,13 @@ abstract class StringKey(val base: AnyRef, val offset: Long, val numBytes: Int) 
   override def equals(obj: Any): Boolean = obj match {
     case o: StringKey =>
       if (numBytes != o.numBytes) false
-      else ByteArrayMethods.arrayEquals(base, offset, o.base, o.offset, numBytes)
+      else ByteArrayMethods.arrayEquals(null, offset, null, o.offset, numBytes)
     case _ => false
   }
 
   def equals(str: UTF8String): Boolean = {
     if (numBytes != str.numBytes()) false
-    else ByteArrayMethods.arrayEquals(base, offset,
+    else ByteArrayMethods.arrayEquals(null, offset,
       str.getBaseObject, str.getBaseOffset, numBytes)
   }
 
@@ -345,18 +342,14 @@ abstract class StringKey(val base: AnyRef, val offset: Long, val numBytes: Int) 
 
   private def copyBytes(): Array[Byte] = {
     val b = new Array[Byte](numBytes)
-    Platform.copyMemory(base, offset, b, Platform.BYTE_ARRAY_OFFSET, numBytes)
+    Platform.copyMemory(null, offset, b, Platform.BYTE_ARRAY_OFFSET, numBytes)
     b
   }
 
-  def toUTF8String: UTF8String = UTF8String.fromAddress(base, offset, numBytes)
+  def toUTF8String: UTF8String = UTF8String.fromAddress(null, offset, numBytes)
 
   override def toString: String = {
-    val bytes = if (offset == Platform.BYTE_ARRAY_OFFSET) base match {
-      case b: Array[Byte] if b.length == numBytes => b
-      case None => copyBytes()
-    } else copyBytes()
-    new String(bytes, StandardCharsets.UTF_8)
+    new String(copyBytes(), StandardCharsets.UTF_8)
   }
 }
 

@@ -210,9 +210,9 @@ trait ColumnEncoder extends ColumnEncoding {
 
   protected final var allocator: ColumnAllocator = _
   protected final var columnData: ByteBuffer = _
-  protected final var columnBytes: AnyRef = _
   protected final var columnBeginPosition: Long = _
   protected final var columnEndPosition: Long = _
+  protected final var columnBytes: AnyRef = _
   protected final var reuseColumnData: ByteBuffer = _
   protected final var reuseUsedSize: Int = _
   protected final var forComplexType: Boolean = _
@@ -641,7 +641,26 @@ trait ColumnEncoder extends ColumnEncoding {
     position + 8
   }
 
+  /**
+   * Finish encoding the current column and return the data as a ByteBuffer.
+   * The encoder can be reused for new column data of same type again.
+   */
   def finish(cursor: Long): ByteBuffer
+
+  /**
+   * Close and relinquish all resources of this encoder.
+   * The encoder may no longer be usable after this call.
+   */
+  def close(): Unit = {
+    if (reuseColumnData ne null) {
+      allocator.release(reuseColumnData)
+      reuseColumnData = null
+    }
+    if (columnData ne null) {
+      allocator.release(columnData)
+      columnData = null
+    }
+  }
 
   protected def getNumNullWords: Int
 

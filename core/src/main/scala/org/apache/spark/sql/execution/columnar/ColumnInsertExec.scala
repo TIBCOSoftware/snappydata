@@ -116,6 +116,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       case _ =>
     }
 
+    val closeEncoders = new StringBuilder
     val (declarations, cursorDeclarations) = encoderCursorTerms.indices.map { i =>
       val (encoder, cursor) = encoderCursorTerms(i)
       ctx.addMutableState(encoderClass, encoder,
@@ -132,6 +133,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
            |final $encoderClass $encoder = this.$encoder;
            |$defaultRowSize += $encoder.defaultSize($schemaTerm.fields()[$i].dataType());
         """.stripMargin
+      closeEncoders.append(s"$encoder.close();\n")
       (declaration, cursorDeclaration)
     }.unzip
     val checkEnd = if (useMemberVariables) {
@@ -145,6 +147,13 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |@Override
          |protected final boolean shouldStop() {
          |  return false;
+         |}
+      """.stripMargin)
+    val closeEncodersFunction = ctx.freshName("closeEncoders")
+    ctx.addNewFunction("closeEncoders",
+      s"""
+         |private void $closeEncodersFunction() {
+         |  $closeEncoders
          |}
       """.stripMargin)
     s"""
@@ -169,6 +178,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
+       |$closeEncodersFunction();
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
