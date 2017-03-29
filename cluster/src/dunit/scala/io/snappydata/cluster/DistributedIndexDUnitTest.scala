@@ -88,7 +88,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createBaseTable(snContext, tableName)
-    ClusterManagerTestBase.logger.info("Creating indexes")
+    getLogWriter.info("Creating indexes")
     val indexOne = s"${tableName}_IdxOne"
     val indexTwo = s"${tableName}_IdxTwo"
     val indexThree = s"${tableName}_IdxThree"
@@ -134,7 +134,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createBaseTable(snContext, tableName)
-    ClusterManagerTestBase.logger.info("Creating indexes")
+    getLogWriter.info("Creating indexes")
     val indexOne = s"${tableName}_IdxOne"
     val indexTwo = s"${tableName}_IdxTwo"
     val indexThree = s"${tableName}_IdxThree"
@@ -194,7 +194,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     s.executeUpdate(s"insert into $tableName values (555, 33, 91)")
     s.executeUpdate(s"insert into $tableName values (666, 33, 91)")
 
-    ClusterManagerTestBase.logger.info("Creating indexes")
+    getLogWriter.info("Creating indexes")
     val indexOne = s"${tableName}_IdxOne"
     val indexTwo = s"${tableName}_IdxTwo"
     val indexThree = s"${tableName}_IdxThree"

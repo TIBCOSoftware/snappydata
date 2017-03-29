@@ -69,7 +69,13 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       "queryValidationOnConnector", ClusterManagerTestBase.locPort)
   }
 
-  def testSnappy_Tokenization(): Unit = {
+  /*
+    TODO : Kishor
+     This test is disabled as of now. For dunit test we are using very small TPCH data i.e.5.5MB.
+      With so small data, its quite possible that for some queries result will be same with dynamic parameters
+      This needs to make fullproof.
+  */
+  def _testSnappy_Tokenization(): Unit = {
     startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
 
@@ -181,7 +187,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
 }
 
-object TPCHUtils {
+object TPCHUtils extends Logging {
 
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
@@ -284,14 +290,14 @@ object TPCHUtils {
       assert(resultOutputFile.count() == 0,
         s"Query result mismatch Observed. Look at Result_Snappy.out for detailed failure")
       if (resultOutputFile.count() != 0) {
-        ClusterManagerTestBase.logger.warn(
+        logWarning(
           s"QUERY RESULT MISMATCH OBSERVED. Look at Result_Snappy.out for detailed failure")
       }
     } else {
       assert(resultOutputFile.count() == 0,
         s"Query result match Observed. Look at Result_Snappy_Tokenization.out for detailed failure")
       if (resultOutputFile.count() != 0) {
-        ClusterManagerTestBase.logger.warn(
+        logWarning(
           s"QUERY RESYLT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
               s" failure")
       }

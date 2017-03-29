@@ -20,11 +20,11 @@ import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
-
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.util.SnappyUtils
+import spark.jobserver.util.ContextURLClassLoader
 
 abstract class SnappyStreamingJob extends SparkJobBase {
   override type C = SnappyStreamingContext
@@ -71,6 +71,13 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
         } catch {
           case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
         }
+      }
+
+      // Callback added to provide our classloader to load job classes.
+      // If Job class directly refers to any jars which has been provided
+      // by install_jars, this can help.
+      override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
+        SnappyUtils.getSnappyContextURLClassLoader(parent)
       }
     }
   }
