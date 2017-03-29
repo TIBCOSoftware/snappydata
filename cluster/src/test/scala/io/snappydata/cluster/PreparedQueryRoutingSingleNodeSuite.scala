@@ -23,11 +23,14 @@ import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{Property, SnappyFunSuite}
+import org.apache.log4j.{Level, Logger}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
 
 class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
+
+  // Logger.getLogger("org").setLevel(Level.DEBUG)
 
   val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
   var serverHostPort = ""
@@ -93,6 +96,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   def query(): Unit = {
+    // sc.setLogLevel("TRACE")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
@@ -104,12 +108,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
             s" from $tableName " +
             s" where ol_int_id < ? " +
             s" and ol_int2_id > ? " +
+            s" and ol_str_id > ? " +
             s" limit 20" +
             s""
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
-      prepStatement.setInt(1, 10)
+      prepStatement.setInt(2, 10)
+      prepStatement.setString(3, "100")
       val rs = prepStatement.executeQuery
 
       // val rs = stmt.executeQuery(qry)
