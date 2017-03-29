@@ -202,7 +202,6 @@ class ClusterManagerTestBase(s: String)
  * snappy code gets added.
  */
 object ClusterManagerTestBase extends Logging {
-  val logger = LoggerFactory.getLogger(getClass)
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   final lazy val locPort: Int = locatorPort
 
@@ -249,7 +248,7 @@ object ClusterManagerTestBase extends Logging {
       TestUtils.dropAllTables(snc)
     }
     if (testName != null) {
-      logger.info("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
+      logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
     }
   }
 
@@ -292,7 +291,7 @@ object ClusterManagerTestBase extends Logging {
         check
       }
 
-      override def description() = desc
+      override def description(): String = desc
     }
     DistributedTestBase.waitForCriterion(criterion, ms, interval,
       throwOnTimeout)
@@ -309,5 +308,4 @@ object ClusterManagerTestBase extends Logging {
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
   }
-
 }

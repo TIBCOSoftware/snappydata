@@ -39,6 +39,9 @@ import java.util.{Iterator => JIterator}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.storage.TaskResultBlockId
+
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{SparkEnv, TaskContext}
 
@@ -102,9 +105,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     while (true) {
       val mapKey = data(pos)
       if (mapKey ne null) {
-        if (mapKey.asInstanceOf[StringKey].s.equals(key)) {
+        val stringKey = mapKey.asInstanceOf[StringKey]
+        if (stringKey.s.equals(key)) {
           // update
-          return mapKey
+          return stringKey.asInstanceOf[T]
         } else {
           // quadratic probing with position increase by 1, 2, 3, ...
           pos = (pos + delta) & mask
@@ -122,7 +126,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   }
 
   def addLong(key: Long, default: Long => T): T = {
-    val hash = HashingUtil.hashLong(key)
+    val hash = ClientResolverUtils.fastHashLong(key)
     val data = _data
     val mask = _mask
     var pos = hash & mask
@@ -130,9 +134,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     while (true) {
       val mapKey = data(pos)
       if (mapKey ne null) {
-        if (mapKey.asInstanceOf[LongKey].l == key) {
+        val longKey = mapKey.asInstanceOf[LongKey]
+        if (longKey.l == key) {
           // update
-          return mapKey
+          return longKey.asInstanceOf[T]
         } else {
           // quadratic probing with position increase by 1, 2, 3, ...
           pos = (pos + delta) & mask
@@ -189,6 +194,19 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   def getMaxValue(ordinal: Int): Long = _maxValues match {
     case null => Long.MinValue // no value in map so skip everything
     case maxValues => maxValues(ordinal)
+  }
+
+  def toArray: Array[AnyRef] = {
+    val result = new Array[AnyRef](size)
+    val iter = iterator
+    var i = 0
+    var next: AnyRef = iter.next()
+    while (next ne null) {
+      result(i) = next
+      next = iter.next()
+      i += 1
+    }
+    result
   }
 
   override def iterator: JIterator[T] = new JIterator[T] {
@@ -332,16 +350,20 @@ abstract class StringKey(val s: UTF8String) {
     case o: StringKey => s == o.s
     case _ => false
   }
+
+  override def toString: String = String.valueOf(s)
 }
 
 abstract class LongKey(val l: Long) {
 
-  override def hashCode(): Int = HashingUtil.hashLong(l)
+  override def hashCode(): Int = ClientResolverUtils.fastHashLong(l)
 
   override def equals(obj: Any): Boolean = obj match {
     case o: LongKey => l == o.l
     case _ => false
   }
+
+  override def toString: String = String.valueOf(l)
 }
 
 final class ObjectHashSetMemoryConsumer(taskMemoryManager: TaskMemoryManager)
