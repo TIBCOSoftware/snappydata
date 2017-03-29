@@ -81,12 +81,14 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" from $tableName " +
           s" where ol_int_id < ? " +
           s" and ol_int2_id > ? " +
+          s" and ol_str_id > ? " +
           s" limit 20" +
           s""
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
       prepStatement.setInt(2, 10)
+      prepStatement.setString(3, "100")
       val rs = prepStatement.executeQuery
 
       // val rs = stmt.executeQuery(qry)
