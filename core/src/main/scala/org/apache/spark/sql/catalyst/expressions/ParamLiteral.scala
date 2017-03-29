@@ -226,6 +226,8 @@ case class ParamConstants(pos: Int) extends LeafExpression {
 
   override def eval(input: InternalRow): Any =
     throw new UnsupportedOperationException("eval not implemented")
+
+  override def childrenResolved: Boolean = paramType != NullType
 }
 
 case class ParamConstantsValue(var value: Any, var position: Int,
