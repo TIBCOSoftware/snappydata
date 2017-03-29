@@ -1,4 +1,4 @@
-#Overview
+# Overview
 In this section, we discuss the various modes available for collocation of related data and computation.
 
 You can run the SnappyData store in the following modes:
@@ -10,7 +10,7 @@ You can run the SnappyData store in the following modes:
 * [SnappyData Smart Connector Mode](#connectormode): Allows you to work with the SnappyData store cluster from any compatible Spark distribution
  
 <a id="localmode"></a>
-##Local Mode
+## Local Mode
 
 In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.
 
