@@ -1140,7 +1140,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
  When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
 
 <a id="howto-zeppelin"></a>
-##How to Use Apache Zeppelin with SnappyData
+## How to Use Apache Zeppelin with SnappyData
 
 ### Step 1: Download, Install and Configure SnappyData
 1. [Download and Install SnappyData](install.md#download-snappydata) </br>
@@ -1162,7 +1162,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 6. Extract the contents of the Zeppelin Intrepreter file. </br> 
 
 7. Install the SnappyData interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
-	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<zeppelin_installer_version>`. </br>
+	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<zeppelin_installer_version_number>`. </br>
     Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
 
 7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
@@ -1177,8 +1177,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 1. Log on to Zeppelin from your web browser and select **Interpretor** from the **Settings** option.
 
-2. Click **Create** to add an interpreter.
-	 ![Create](Images/create_interpreter.png)
+2. Click **Create** ![Create](Images/create_interpreter.png) to add an interpreter.	 
 
 3. From the **Interpreter group** drop-down select **snappydata**.
 	 ![Configure Interpreter](Images/snappydata_interpreter_properties.png)
