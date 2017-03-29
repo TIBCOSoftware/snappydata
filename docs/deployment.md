@@ -159,7 +159,11 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
-<Note>Note: The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</Note>
+<Note>Note: </Note>
+
+ * <note> The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</note>
+ 
+ * <note> In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`</note>
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
 ```scala

@@ -16,11 +16,11 @@
  */
 package io.snappydata.cluster
 
-import java.io.File
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
-import scala.collection.JavaConverters._
+import scala.language.postfixOps
+import scala.sys.process._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
@@ -29,11 +29,10 @@ import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host,
 import io.snappydata.util.TestUtils
 import io.snappydata.{Lead, Locator, Property, Server, ServiceManager}
 import org.slf4j.LoggerFactory
-import scala.sys.process._
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Base class for tests using Snappy ClusterManager. New utility methods
@@ -202,7 +201,6 @@ class ClusterManagerTestBase(s: String)
  * snappy code gets added.
  */
 object ClusterManagerTestBase extends Logging {
-  val logger = LoggerFactory.getLogger(getClass)
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   final lazy val locPort: Int = locatorPort
 
@@ -249,7 +247,7 @@ object ClusterManagerTestBase extends Logging {
       TestUtils.dropAllTables(snc)
     }
     if (testName != null) {
-      logger.info("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
+      logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
     }
   }
 
@@ -292,7 +290,7 @@ object ClusterManagerTestBase extends Logging {
         check
       }
 
-      override def description() = desc
+      override def description(): String = desc
     }
     DistributedTestBase.waitForCriterion(criterion, ms, interval,
       throwOnTimeout)
@@ -309,5 +307,4 @@ object ClusterManagerTestBase extends Logging {
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
   }
-
 }

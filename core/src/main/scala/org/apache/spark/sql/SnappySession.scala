@@ -30,7 +30,7 @@ import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-import com.gemstone.gemfire.internal.shared.{FinalizeHolder, FinalizeObject}
+import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
@@ -1811,6 +1811,6 @@ private final class Expr(val name: String, val e: Expression) {
     case _ => false
   }
 
-  override def hashCode: Int =
-    HashingUtil.finalMix(name.hashCode, e.semanticHash())
+  override def hashCode: Int = ClientResolverUtils.fastHashLong(
+    name.hashCode.toLong << 32 | e.semanticHash().toLong)
 }
