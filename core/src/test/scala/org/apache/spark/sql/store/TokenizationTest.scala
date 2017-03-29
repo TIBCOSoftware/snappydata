@@ -19,9 +19,11 @@ package org.apache.spark.sql.store
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.CachedPlanHelperExec
 
 /**
   * Tests for column tables in GFXD.
@@ -42,6 +44,38 @@ class TokenizationTest
     snc.dropTable(s"$all_typetable", ifExists = true)
   }
 
+  test("same session from different thread") {
+    val numRows = 2
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    try {
+      val q = (0 until numRows) map { x =>
+        s"select * from $table where a = $x"
+      }
+      var result = snc.sql(q(0)).collect()
+      assert(result.length === 1)
+      result.foreach( r => {
+        assert(r.get(0) == r.get(1) && r.get(0) == 0)
+      })
+
+      val runnable = new Runnable {
+        override def run() = {
+          var result = snc.sql(q(1)).collect()
+          assert(result.length === 1)
+          result.foreach( r => {
+            assert(r.get(0) == r.get(1) && r.get(0) == 1)
+          })
+        }
+      }
+      val newthread = new Thread(runnable)
+      newthread.start()
+      newthread.join()
+
+      val cacheMap = SnappySession.getPlanCache.asMap()
+      assert( cacheMap.size() == 1)
+    }
+  }
+
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
@@ -51,11 +85,12 @@ class TokenizationTest
         s"select * from $table where a = $x"
       }
       val start = System.currentTimeMillis()
-      q.zipWithIndex.map  { case (x, i) =>
+      q.zipWithIndex.foreach  { case (x, i) =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
         result.foreach( r => {
-          assert(r.get(0) == r.get(1) && r.get(0) == i)
+          println(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, ${i}")
+          assert(r.get(0) == r.get(1) && r.get(2) == i)
         })
       }
       val end = System.currentTimeMillis()
@@ -66,7 +101,7 @@ class TokenizationTest
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
       val x = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].sqlText
-      assert(x.equals(q(0)))
+      assert(x === q.head)
 
       // Now test query hints -- arbitrary hint given
       val hintQuery = s"select * from $table /*+ XXXX( ) */ where a = 0"
@@ -152,7 +187,7 @@ class TokenizationTest
     logInfo("Successful")
   }
 
-  test("Test tokenize for all data types") {
+  ignore("Test tokenize for all data types") {
     val numRows = 10
     createAllTypeTableAndPoupulateData(numRows, s"$all_typetable")
 
@@ -161,7 +196,7 @@ class TokenizationTest
         s"select * from $all_typetable where s = 'abc$i'"
       }
       val start = System.currentTimeMillis()
-      q.zipWithIndex.map  { case (x, i) =>
+      q.zipWithIndex.foreach  { case (x, i) =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
         result.foreach( r => {
@@ -186,7 +221,7 @@ class TokenizationTest
     logInfo("Successful")
   }
 
-  test("Test tokenize for joins and sub-queries") {
+  test("Test tokenize for sub-queries") {
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     createSimpleTableAndPoupulateData(numRows, s"$table2")
@@ -201,6 +236,29 @@ class TokenizationTest
     query = s"select * from $table t1, $table2 t2 where t1.a in " +
       s"( select a from $table2 where b = 100 )"
     snc.sql(query).collect()
+    assert( cacheMap.size() == 1)
+    logInfo("Successful")
+  }
+
+  test("Test tokenize for joins and sub-queries") {
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table2")
+    var query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 5 limit 2"
+    snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+    var result = snc.sql(query).collect()
+    result.foreach( r => {
+      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
+    })
+    val cacheMap = SnappySession.getPlanCache.asMap()
+
+    assert( cacheMap.size() == 1)
+
+    query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 7 limit 2"
+    result = snc.sql(query).collect()
+    result.foreach( r => {
+      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
+    })
     assert( cacheMap.size() == 1)
     logInfo("Successful")
   }

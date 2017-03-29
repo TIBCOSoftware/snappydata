@@ -217,8 +217,8 @@ class SnappySessionState(snappySession: SnappySession)
     PlanSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
     CollapseCollocatedPlans(snappySession),
-    InsertCachedPlanHelper(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
+    InsertCachedPlanHelper(snappySession),
     ReuseExchange(snappySession.sessionState.conf))
 
   override def executePlan(plan: LogicalPlan): QueryExecution = {

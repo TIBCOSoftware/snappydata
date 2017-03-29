@@ -14,14 +14,14 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql
+  package org.apache.spark.sql
 
 import java.sql.SQLException
-import java.util.Objects
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
@@ -43,10 +43,7 @@ import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, In, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias, Union}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -1577,7 +1574,7 @@ object SnappySession extends Logging {
   private def evaluatePlan(df: DataFrame,
       session: SnappySession): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
-      case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
+      case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
       case plan => plan
     }
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
@@ -1601,13 +1598,17 @@ object SnappySession extends Logging {
         }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
     }
+
+    val allLiterals: Array[LiteralValue] = CachedPlanHelperExec.allLiterals(
+      session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
+        CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty))
     val queryHints = session.synchronized {
       val hints = session.queryHints.toMap
       session.clearQueryData()
       hints
     }
     (new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
-      localCollect), queryHints)
+      localCollect, allLiterals), queryHints)
   }
 
   private[this] val planCache = {
@@ -1615,6 +1616,7 @@ object SnappySession extends Logging {
         (CachedDataFrame, Map[String, String])] {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
+        logDebug(s"")
         val session = key.session
         val df = session.executeSQL(key.sqlText)
         val plan = df.queryExecution.executedPlan
@@ -1650,9 +1652,8 @@ object SnappySession extends Logging {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case x: CachedKey => {
+        case x: CachedKey =>
           (x.session, x.lp, x.hintHashcode).equals(session, lp, hintHashcode)
-        }
         case _ => false
       }
     }
@@ -1688,6 +1689,13 @@ object SnappySession extends Logging {
       val evaluation = planCache.getUnchecked(key)
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
+      logDebug(s"sqlText = ${sqlText} and cachedDataframe = " +
+          System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
+      println(s"sqlText = ${sqlText} and cachedDataframe = " +
+          System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
+      println(s"lp = ${lp}")
+      val pcache = getPlanCache.asMap()
+
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
@@ -1703,8 +1711,9 @@ object SnappySession extends Logging {
       } else {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
       }
+      println(s"Executed plan = ${cachedDF.queryExecution.executedPlan}")
       // replace the constants from this logical plan
-      cachedDF.replaceConstants(lp)
+      CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp)
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()
@@ -1732,7 +1741,8 @@ object SnappySession extends Logging {
     val iter = planCache.asMap().keySet().iterator()
     while (iter.hasNext) {
       val item = iter.next()
-      if (item.asInstanceOf[CachedKey].session.id == sessionId) {
+      val session = item.asInstanceOf[CachedKey].session
+      if (session.id == sessionId) {
         iter.remove()
       }
     }
