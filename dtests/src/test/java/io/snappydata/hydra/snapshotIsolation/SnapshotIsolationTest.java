@@ -151,9 +151,10 @@ public class SnapshotIsolationTest extends SnappyTest {
         SnappyBB.getBB().getSharedMap().put("tableMetaData_" + table, sType);
       }
     } catch (SQLException se) {
-
+      throw new TestException("Got exception while saving table metadata to BB. Exception is : " ,
+          se);
     } catch (ClassNotFoundException ce) {
-
+      throw new TestException("Got exception while saving table metadata to BB.. Exception is : " ,ce);
     }
   }
 
@@ -228,6 +229,7 @@ public class SnapshotIsolationTest extends SnappyTest {
         StructTypeImpl sti = ResultSetHelper.getStructType(derbyRS);
         derbyList[i] = ResultSetHelper.asList(derbyRS, sti, true);
         derbyRS.close();
+        Thread.sleep(1000);
       }
       for(int i = 0 ; i< 5; i++) {
         StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS[i]);
@@ -243,6 +245,8 @@ public class SnapshotIsolationTest extends SnappyTest {
       closeConnection(conn);
     } catch (SQLException se) {
       throw new TestException("Got exception while executing select query.", se);
+    } catch (InterruptedException ie){
+      throw new TestException("Got exception while executing select query.", ie);
     }
   }
 
@@ -303,6 +307,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     int n = new Random().nextInt(dmlTable.length);
     String tableName = dmlTable[n];
     String row = getRowFromCSV(tableName, n);
+    row = row + "," + getMyTid();
     Log.getLogWriter().info("Selected row is : " + row);
     PreparedStatement snappyPS, derbyPS;
     String insertStmt = SnapshotIsolationPrms.getInsertStmts()[n];
@@ -311,7 +316,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     SnappyBB.getBB().getSharedCounters().increment(SnappyBB.DMLExecuting);
     snappyPS = getPreparedStatement(conn, tableName, insertStmt, row);
     Log.getLogWriter().info("Inserting in snappy with statement : " + insertStmt + " with values("
-        + row + "," + getMyTid() + ")");
+        + row + ")");
     int rowCount = snappyPS.executeUpdate();
     Log.getLogWriter().info("Inserted " + rowCount + " row in snappy.");
     snappyPS.close();
@@ -442,37 +447,29 @@ public class SnapshotIsolationTest extends SnappyTest {
       String[] fieldNames = sType.getFieldNames();
       for (int i = 0; i < oTypes.length; i++) {
         String clazz = oTypes[i].getSimpleClassName();
-        String columnValue = null;
-        if(i < (oTypes.length -1)) {// csv doesnot contain value for tid
-          columnValue = columnValues[i];
-        }
+        String columnValue = columnValues[i];
         switch (clazz) {
           case "String":
-            ps.setString(i+1, columnValue);
+            ps.setString(i + 1, columnValue);
             break;
           case "Timestamp":
             Timestamp ts = Timestamp.valueOf(columnValue);
-            ps.setTimestamp(i+1, ts);
+            ps.setTimestamp(i + 1, ts);
             break;
           case "Integer":
-            if (i == oTypes.length - 1) {//last column is tid
-              ps.setInt(i+1, getMyTid());
-            } else {
-              if(columnValue.equalsIgnoreCase("NULL"))
-                ps.setNull(i + 1, Types.INTEGER);
-              else
+            if (columnValue.equalsIgnoreCase("NULL"))
+              ps.setNull(i + 1, Types.INTEGER);
+            else
               ps.setInt(i + 1, Integer.parseInt(columnValue));
-            }
             break;
           case "Double":
-            ps.setDouble(i+1, Double.parseDouble(columnValue));
+            ps.setDouble(i + 1, Double.parseDouble(columnValue));
             break;
 
         }
       }
-
     } catch (SQLException se) {
-      Log.getLogWriter().info("Exception while creating PreparedStatement.", se);
+      throw new TestException("Exception while creating PreparedStatement.", se);
     }
     return ps;
   }
@@ -936,10 +933,13 @@ public class SnapshotIsolationTest extends SnappyTest {
           String tableName = operation.get(0);
           String row = operation.get(2);
            ps = getPreparedStatement(dConn, tableName, stmt, row);
+          Log.getLogWriter().info("Performing operation from BB in derby:" + stmt + " with values" +
+              "(" + row +")");
         } else {
           ps = dConn.prepareStatement(stmt);
+          Log.getLogWriter().info("Performing operation from BB in derby:" + stmt);
         }
-        Log.getLogWriter().info("Performing operation from BB in derby:" + operation);
+
         int rowCount = ps.executeUpdate();
         Log.getLogWriter().info("Inserted/Updated/Deleted " + rowCount + " from BB operation in " +
             "derby");
