@@ -294,7 +294,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   }
 }
 
-abstract class DictionaryData(final var dictionaryData: ByteBuffer,
+abstract class DictionaryData(final var data: ByteBuffer,
     final var baseOffset: Long, final var position: Long,
     final var endPosition: Long)
 
@@ -304,10 +304,10 @@ abstract class StringKey(dictionaryData: DictionaryData,
 
   private var hash: Int = 0
 
-  final def offset: Long = dictionaryData.baseOffset + relativeOffset
+  protected final def offset: Long = dictionaryData.baseOffset + relativeOffset
 
   // noinspection HashCodeUsesVar
-  override def hashCode: Int = {
+  override final def hashCode: Int = {
     val h = hash
     if (h != 0) h
     else {
@@ -316,48 +316,45 @@ abstract class StringKey(dictionaryData: DictionaryData,
     }
   }
 
-  def getByte(i: Int): Byte = Platform.getByte(null, offset + i)
+  final def getByte(i: Int): Byte = Platform.getByte(null, offset + i)
 
-  def getByte(str: UTF8String, i: Int): Byte =
-    Platform.getByte(str.getBaseObject, str.getBaseOffset + i)
-
-  override def equals(obj: Any): Boolean = obj match {
+  override final def equals(obj: Any): Boolean = obj match {
     case o: StringKey =>
       if (numBytes != o.numBytes) false
       else ByteArrayMethods.arrayEquals(null, offset, null, o.offset, numBytes)
     case _ => false
   }
 
-  def equals(str: UTF8String): Boolean = {
+  final def equals(str: UTF8String): Boolean = {
     if (numBytes != str.numBytes()) false
     else ByteArrayMethods.arrayEquals(null, offset,
       str.getBaseObject, str.getBaseOffset, numBytes)
   }
 
-  def compare(str: UTF8String): Int = {
-    val len = Math.min(numBytes, str.numBytes())
+  final def compare(other: StringKey): Int = {
+    val len = Math.min(numBytes, other.numBytes)
     // TODO: compare 8 bytes as unsigned long
     var i = 0
     while (i < len) {
       // In UTF-8, the byte should be unsigned,
       // so we should compare them as unsigned int.
-      val res = (getByte(i) & 0xFF) - (getByte(str, i) & 0xFF)
+      val res = (getByte(i) & 0xFF) - (other.getByte(i) & 0xFF)
       if (res != 0) return res
       i += 1
     }
-    numBytes - str.numBytes
+    numBytes - other.numBytes
   }
 
-  private def copyBytes(): Array[Byte] = {
+  final def toUTF8String: UTF8String = UTF8String.fromBytes(toBytes)
+
+  private def toBytes: Array[Byte] = {
     val b = new Array[Byte](numBytes)
     Platform.copyMemory(null, offset, b, Platform.BYTE_ARRAY_OFFSET, numBytes)
     b
   }
 
-  def toUTF8String: UTF8String = UTF8String.fromAddress(null, offset, numBytes)
-
   override def toString: String = {
-    new String(copyBytes(), StandardCharsets.UTF_8)
+    new String(toBytes, StandardCharsets.UTF_8)
   }
 }
 

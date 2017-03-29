@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.math.{BigDecimal, BigInteger}
 
+import io.snappydata.util.StringUtils
+
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.littleEndian
@@ -231,6 +233,25 @@ abstract class UncompressedDecoderBase
 
 trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
+  protected final def updateStringStats(value: UTF8String): Unit = {
+    if (value ne null) {
+      val lower = _lowerStr
+      // check for first write case
+      if (lower eq null) {
+        if (!forComplexType) {
+          val valueClone = StringUtils.cloneIfRequired(value)
+          _lowerStr = valueClone
+          _upperStr = valueClone
+        }
+      } else if (value.compare(lower) < 0) {
+        _lowerStr = StringUtils.cloneIfRequired(value)
+      } else if (value.compare(_upperStr) > 0) {
+        _upperStr = StringUtils.cloneIfRequired(value)
+      }
+    }
+    updateCount()
+  }
+
   override def writeBoolean(cursor: Long, value: Boolean): Long = {
     var position = cursor
     val b: Byte = if (value) 1 else 0
@@ -353,7 +374,7 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
     if (position + size + 4 > columnEndPosition) {
       position = expand(position, size + 4)
     }
-    updateStringStatsClone(value)
+    updateStringStats(value)
     ColumnEncoding.writeUTF8String(columnBytes, position,
       value.getBaseObject, value.getBaseOffset, size)
   }

@@ -20,7 +20,6 @@ import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import io.snappydata.util.StringUtils
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
@@ -392,13 +391,13 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def upperDouble: Double = _upperDouble
 
+  def lowerString: UTF8String = _lowerStr
+
+  def upperString: UTF8String = _upperStr
+
   final def lowerDecimal: Decimal = _lowerDecimal
 
   final def upperDecimal: Decimal = _upperDecimal
-
-  final def lowerString: UTF8String = _lowerStr
-
-  final def upperString: UTF8String = _upperStr
 
   final def count: Int = _count
 
@@ -426,44 +425,8 @@ trait ColumnEncoder extends ColumnEncoding {
     updateCount()
   }
 
-  @inline protected final def updateStringStats(value: StringIndexKey): Unit = {
-    if (value ne null) {
-      val lower = _lowerStr
-      // check for first write case
-      if (lower eq null) {
-        if (!forComplexType) {
-          _lowerStr = value.toUTF8String
-          _upperStr = value.toUTF8String
-        }
-      } else if (value.compare(lower) < 0) {
-        _lowerStr = value.toUTF8String
-      } else if (value.compare(_upperStr) > 0) {
-        _upperStr = value.toUTF8String
-      }
-    }
-  }
-
   final def updateCount(): Unit = {
     _count += 1
-  }
-
-  @inline protected final def updateStringStatsClone(value: UTF8String): Unit = {
-    if (value ne null) {
-      val lower = _lowerStr
-      // check for first write case
-      if (lower eq null) {
-        if (!forComplexType) {
-          val valueClone = StringUtils.cloneIfRequired(value)
-          _lowerStr = valueClone
-          _upperStr = valueClone
-        }
-      } else if (value.compare(lower) < 0) {
-        _lowerStr = StringUtils.cloneIfRequired(value)
-      } else if (value.compare(_upperStr) > 0) {
-        _upperStr = StringUtils.cloneIfRequired(value)
-      }
-    }
-    updateCount()
   }
 
   @inline protected final def updateDecimalStats(value: Decimal): Unit = {

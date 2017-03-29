@@ -180,6 +180,33 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   @transient private[this] final var isShortDictionary: Boolean = _
 
+  private final var _lowerStrKey: StringIndexKey = _
+  private final var _upperStrKey: StringIndexKey = _
+
+  override final protected def initializeLimits(): Unit = {
+    super.initializeLimits()
+    _lowerStrKey = null
+    _upperStrKey = null
+  }
+
+  override final def lowerString: UTF8String = {
+    val str = _lowerStr
+    if (str ne null) str
+    else if (_lowerStrKey ne null) {
+      _lowerStr = _lowerStrKey.toUTF8String
+      _lowerStr
+    } else null
+  }
+
+  override final lazy val upperString: UTF8String = {
+    val str = _upperStr
+    if (str ne null) str
+    else if (_upperStrKey ne null) {
+      _upperStr = _upperStrKey.toUTF8String
+      _upperStr
+    } else null
+  }
+
   override def typeId: Int = if (isShortDictionary) 2 else BIG_DICTIONARY_TYPE_ID
 
   override def sizeInBytes(cursor: Long): Long = {
@@ -233,7 +260,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
             baseOffset + dictionarySize)
         } else {
           // reuse the previous dictionary ByteBuffer
-          stringInit.dictionaryData.clear()
+          stringInit.data.clear()
           stringInit.position = stringInit.baseOffset
         }
       case t =>
@@ -293,6 +320,23 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       }
       ColumnEncoding.writeInt(columnBytes, position, index)
       position + 4
+    }
+  }
+
+  protected final def updateStringStats(value: StringIndexKey): Unit = {
+    if (value ne null) {
+      val lower = _lowerStrKey
+      // check for first write case
+      if (lower eq null) {
+        if (!forComplexType) {
+          _lowerStrKey = value
+          _upperStrKey = value
+        }
+      } else if (value.compare(lower) < 0) {
+        _lowerStrKey = value
+      } else if (value.compare(_upperStrKey) > 0) {
+        _upperStrKey = value
+      }
     }
   }
 
@@ -421,8 +465,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     super.close()
     stringMap = null
     if (stringInit ne null) {
-      allocator.release(stringInit.dictionaryData)
-      stringInit.dictionaryData = null
+      allocator.release(stringInit.data)
+      stringInit.data = null
       stringInit = null
     }
     longMap = null
@@ -442,26 +486,26 @@ private final class StringInit(_dictionaryData: ByteBuffer,
     _baseOffset: Long, _position: Long, _endPosition: Long)
     extends DictionaryData(_dictionaryData, _baseOffset,
       _position, _endPosition) with (UTF8String => StringIndexKey) {
+
   override def apply(s: UTF8String): StringIndexKey = {
     // write into the stringData ByteBuffer growing it if required
     val numBytes = s.numBytes()
     if (position + numBytes + 4 > endPosition) {
       // grow by 3/2 or numBytes+extra whichever is larger
-      val size = position - baseOffset
-      if (size + numBytes + 4 > Int.MaxValue) {
+      val oldSize = this.size
+      if (oldSize + numBytes + 4 > Int.MaxValue) {
         throw new IndexOutOfBoundsException("Requested size exceeds " +
-            s"Int.MaxValue. Current size = $size, string size = $numBytes")
+            s"Int.MaxValue. Current size = $oldSize, string size = $numBytes")
       }
-      val newSize = math.min(math.max((size * 3) >>> 1,
-        size + (numBytes << 1) + 8), Int.MaxValue).toInt
-      dictionaryData = UnsafeHolder.reallocateDirectBuffer(
-        dictionaryData, newSize)
-      baseOffset = UnsafeHolder.getDirectBufferAddress(dictionaryData)
-      position = baseOffset + size
-      endPosition = baseOffset + newSize
+      val newSize = math.min(math.max((oldSize * 3) >>> 1,
+        oldSize + (numBytes << 1) + 8), Int.MaxValue).toInt
+      data = UnsafeHolder.reallocateDirectBuffer(data, newSize)
+      baseOffset = UnsafeHolder.getDirectBufferAddress(data)
+      position = baseOffset + oldSize
+      endPosition = baseOffset + data.limit()
     }
     // dictionary data is always a direct ByteBuffer
-    val oldPosition = position
+    val oldPosition = this.position
     position = ColumnEncoding.writeUTF8String(null, oldPosition,
       s.getBaseObject, s.getBaseOffset, numBytes)
     new StringIndexKey(this, (oldPosition - baseOffset + 4).toInt, numBytes, -1)
