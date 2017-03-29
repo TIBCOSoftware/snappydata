@@ -369,7 +369,7 @@ class LeadImpl extends ServerImpl with Lead
 
   def getConfig(args: Array[String]): Config = {
 
-    System.setProperty("config.trace", "loads")
+    System.setProperty("config.trace", "substitutions")
     val notConfigurable = ConfigFactory.parseProperties(getDynamicOverrides).
         withFallback(ConfigFactory.parseResources("jobserver-overrides.conf"))
 
@@ -382,7 +382,7 @@ class LeadImpl extends ServerImpl with Lead
 
     val finalConf = snappyDefaults.withFallback(builtIn).resolve()
 
-    logInfo("Passing JobServer with config " + finalConf.root.render())
+    logDebug("Passing JobServer with config " + finalConf.root.render())
 
     finalConf
   }
