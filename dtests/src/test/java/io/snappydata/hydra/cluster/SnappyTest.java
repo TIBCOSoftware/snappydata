@@ -1264,9 +1264,9 @@ public class SnappyTest implements Serializable {
                     dataLocationList.add(" ");
             }
             if (persistenceModeList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \"async\" parameter in the persistenceModeList for the scripts for which no persistence mode is specified.");
+                Log.getLogWriter().info("Adding \"sync\" parameter in the persistenceModeList for the scripts for which no persistence mode is specified.");
                 while (persistenceModeList.size() != scriptNames.size())
-                    persistenceModeList.add("async");
+                    persistenceModeList.add("sync");
             }
             if (colocateWithOptionList.size() != scriptNames.size()) {
                 Log.getLogWriter().info("Adding \"none\" parameter in the colocateWithOptionList for the scripts for which no COLOCATE_WITH Option is specified.");
