@@ -112,28 +112,27 @@ class SnappySessionState(snappySession: SnappySession)
     object ResolveParameters extends Rule[LogicalPlan] {
       def apply(plan: LogicalPlan): LogicalPlan = plan.transformDown {
         case f: org.apache.spark.sql.catalyst.plans.logical.Filter =>
-          def updateParamConstants(left: Expression, right: Expression) = {
-            right match {
-              case pc@ParamConstants(_) =>
-                left match {
-                  case u@UnresolvedAttribute(nameParts) =>
-                    val result =
-                      withPosition(u) {
-                        f.resolveChildren(nameParts, resolver).getOrElse(u)
-                      }
-                    pc.paramType = result.dataType
-                    pc.nullableValue = result.nullable
-                  case _ =>
-                }
-              case _ =>
+          def updateParamConstants(attribute: Expression, pc: ParamConstants) = {
+            attribute match {
+              case u@UnresolvedAttribute(nameParts) =>
+                val result =
+                  withPosition(u) {
+                    f.resolveChildren(nameParts, resolver).getOrElse(u)
+                  }
+                pc.paramType = result.dataType
+                pc.nullableValue = result.nullable
+              case _ => // TODO : Issue warning
             }
           }
 
           f.condition foreach {
-            case BinaryComparison(l, r) => updateParamConstants(l, r)
-            case BinaryComparison(r, l) => updateParamConstants(r, l)
-            case Like(l, r) => updateParamConstants(l, r)
-            case Like(r, l) => updateParamConstants(r, l)
+            case BinaryComparison(l, pc@ParamConstants(_)) => updateParamConstants(l, pc)
+            case BinaryComparison(pc@ParamConstants(_), r) => updateParamConstants(r, pc)
+            case Like(l, pc@ParamConstants(_)) => updateParamConstants(l, pc)
+            case Like(pc@ParamConstants(_), r) => updateParamConstants(r, pc)
+            case org.apache.spark.sql.catalyst.expressions.In(value, list) => list.foreach {
+              case pc@ParamConstants(_) => updateParamConstants(value, pc)
+            }
             case _ =>
           }
           f
