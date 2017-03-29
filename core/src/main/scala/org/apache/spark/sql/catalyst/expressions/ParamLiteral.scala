@@ -27,6 +27,7 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
 
 case class ParamLiteral(l: Literal, pos: Int) extends LeafExpression {
 
@@ -301,11 +302,12 @@ object ParamConstants {
       case cl: SQLClob =>
         val charArray = cl.getCharArray()
         if (charArray != null) {
-          String.valueOf(charArray)
+          val str = String.valueOf(charArray)
+          UTF8String.fromString(str)
         } else null
-      case lvc: SQLLongvarchar => lvc.getString
-      case vc: SQLVarchar => vc.getString
-      case c: SQLChar => c.getString
+      case lvc: SQLLongvarchar => UTF8String.fromString(lvc.getString)
+      case vc: SQLVarchar => UTF8String.fromString(vc.getString)
+      case c: SQLChar => UTF8String.fromString(c.getString)
 
       case ts: SQLTimestamp => ts.getTimestamp(null)
       case t: SQLTime => t.getTime(null)

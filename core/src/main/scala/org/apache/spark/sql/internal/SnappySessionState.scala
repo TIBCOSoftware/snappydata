@@ -29,9 +29,9 @@ import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfig
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, withPosition}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryOperator, Cast, ParamConstants, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, ParamConstants, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -108,6 +108,29 @@ class SnappySessionState(snappySession: SnappySession)
     override val extendedCheckRules = Seq(
       datasources.PreWriteCheck(conf, catalog),
       PrePutCheck)
+
+    object ResolveParameters extends Rule[LogicalPlan] {
+      def apply(plan: LogicalPlan): LogicalPlan = plan.transformDown {
+        case f: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+          f.condition foreach {
+            case BinaryComparison(left, right) =>
+              right match {
+                case pc@ParamConstants(_) =>
+                  left match {
+                    case u @ UnresolvedAttribute(nameParts) =>
+                      val result =
+                        withPosition(u) { f.resolveChildren(nameParts, resolver).getOrElse(u) }
+                      pc.paramType = result.dataType
+                      pc.nullableValue = result.nullable
+                    case _ =>
+                  }
+                case _ =>
+              }
+            case _ =>
+          }
+          f
+      }
+    }
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -208,26 +231,6 @@ class SnappySessionState(snappySession: SnappySession)
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
-    }
-  }
-
-  object ResolveParameters extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = plan.transformDown {
-      case f: org.apache.spark.sql.catalyst.plans.logical.Filter =>
-        f.condition foreach {
-          case BinaryOperator(left, right) =>
-            left match {
-              case AttributeReference(_, dataType, nullable, _) =>
-                right match {
-                  case Cast(pc@ParamConstants(_), _) => pc.paramType = dataType
-                  case pc@ParamConstants(_) => pc.paramType = dataType
-                  case _ =>
-                }
-              case _ =>
-            }
-          case _ =>
-        }
-        f
     }
   }
 
