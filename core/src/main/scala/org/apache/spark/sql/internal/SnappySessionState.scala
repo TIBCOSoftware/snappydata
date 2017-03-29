@@ -31,7 +31,7 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, withPosition}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, ParamConstants, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, Expression, Like, ParamConstants, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -112,20 +112,28 @@ class SnappySessionState(snappySession: SnappySession)
     object ResolveParameters extends Rule[LogicalPlan] {
       def apply(plan: LogicalPlan): LogicalPlan = plan.transformDown {
         case f: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+          def updateParamConstants(left: Expression, right: Expression) = {
+            right match {
+              case pc@ParamConstants(_) =>
+                left match {
+                  case u@UnresolvedAttribute(nameParts) =>
+                    val result =
+                      withPosition(u) {
+                        f.resolveChildren(nameParts, resolver).getOrElse(u)
+                      }
+                    pc.paramType = result.dataType
+                    pc.nullableValue = result.nullable
+                  case _ =>
+                }
+              case _ =>
+            }
+          }
+
           f.condition foreach {
-            case BinaryComparison(left, right) =>
-              right match {
-                case pc@ParamConstants(_) =>
-                  left match {
-                    case u @ UnresolvedAttribute(nameParts) =>
-                      val result =
-                        withPosition(u) { f.resolveChildren(nameParts, resolver).getOrElse(u) }
-                      pc.paramType = result.dataType
-                      pc.nullableValue = result.nullable
-                    case _ =>
-                  }
-                case _ =>
-              }
+            case BinaryComparison(l, r) => updateParamConstants(l, r)
+            case BinaryComparison(r, l) => updateParamConstants(r, l)
+            case Like(l, r) => updateParamConstants(l, r)
+            case Like(r, l) => updateParamConstants(r, l)
             case _ =>
           }
           f
