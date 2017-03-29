@@ -323,9 +323,9 @@ public class SnapshotIsolationTest extends SnappyTest {
     if (hasDerbyServer) {
       if (SnappyBB.getBB().getSharedCounters().read(SnappyBB.PauseDerby) == 0) {
         //no need to write op in BB, execute stmt in derby, but write previous ops first.
+        replayOpsInDerby();
         dConn = getDerbyConnection();
         derbyPS = getPreparedStatement(dConn, tableName, insertStmt, row);
-        replayOpsInDerby();
         Log.getLogWriter().info("Inserting in derby with statement : " + insertStmt + " with " +
             "values(" + row + "," + getMyTid() + ")");
         rowCount = derbyPS.executeUpdate();
@@ -353,17 +353,17 @@ public class SnapshotIsolationTest extends SnappyTest {
     SnappyBB.getBB().getSharedCounters().increment(SnappyBB.DMLExecuting);
     PreparedStatement snappyPS = conn.prepareStatement(updateStmt);
     Log.getLogWriter().info("Update statement is : " + updateStmt);
-    snappyPS.setInt(1,getMyTid());
+    //snappyPS.setInt(1,getMyTid());
     Log.getLogWriter().info("Updating in snappy with statement : " + updateStmt);
     int rowCount = snappyPS.executeUpdate();
     Log.getLogWriter().info("Updated " + rowCount + " rows in snappy.");
     if (hasDerbyServer) {
-      dConn = getDerbyConnection();
-      PreparedStatement derbyPS = dConn.prepareStatement(updateStmt);
-      derbyPS.setInt(1,getMyTid());
       if (SnappyBB.getBB().getSharedCounters().read(SnappyBB.PauseDerby) == 0) {
         //no need to write op in BB, execute stmt in derby, but write previous ops first.
         replayOpsInDerby();
+        dConn = getDerbyConnection();
+        PreparedStatement derbyPS = dConn.prepareStatement(updateStmt);
+        //derbyPS.setInt(1,getMyTid());
         Log.getLogWriter().info("Updating in derby with statement : " + updateStmt);
         rowCount = derbyPS.executeUpdate();
         Log.getLogWriter().info("Updated " + rowCount + " rows in derby.");
@@ -389,17 +389,17 @@ public class SnapshotIsolationTest extends SnappyTest {
     SnappyBB.getBB().getSharedCounters().increment(SnappyBB.DMLExecuting);
     PreparedStatement snappyPS = conn.prepareStatement(deleteStmt);
     Log.getLogWriter().info("Delete statement is : " + deleteStmt);
-    snappyPS.setInt(1,getMyTid());
+    //snappyPS.setInt(1,getMyTid());
     Log.getLogWriter().info("Deleting in snappy with statement : " + deleteStmt);
     int rowCount = snappyPS.executeUpdate();
     Log.getLogWriter().info("Deleted " + rowCount + " rows in snappy.");
     if (hasDerbyServer) {
-      dConn = getDerbyConnection();
-      PreparedStatement derbyPS = dConn.prepareStatement(deleteStmt);
-      derbyPS.setInt(1,getMyTid());
       if (SnappyBB.getBB().getSharedCounters().read(SnappyBB.PauseDerby) == 0) {
         //no need to write op in BB, execute stmt in derby, but write previous ops first.
         replayOpsInDerby();
+        dConn = getDerbyConnection();
+        PreparedStatement derbyPS = dConn.prepareStatement(deleteStmt);
+        //derbyPS.setInt(1,getMyTid());
         Log.getLogWriter().info("Deleting in derby with statement : " + deleteStmt);
         rowCount = derbyPS.executeUpdate();
         Log.getLogWriter().info("Deleted " + rowCount + " rows  in derby.");
@@ -939,7 +939,6 @@ public class SnapshotIsolationTest extends SnappyTest {
           ps = dConn.prepareStatement(stmt);
           Log.getLogWriter().info("Performing operation from BB in derby:" + stmt);
         }
-
         int rowCount = ps.executeUpdate();
         Log.getLogWriter().info("Inserted/Updated/Deleted " + rowCount + " from BB operation in " +
             "derby");
