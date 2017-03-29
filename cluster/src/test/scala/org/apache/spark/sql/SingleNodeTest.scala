@@ -30,6 +30,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
 
   override def beforeAll(): Unit = {
     System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
     FabricDatabase.SKIP_SPS_PRECOMPILE = true
@@ -64,7 +65,11 @@ object SingleNodeTest {
 
       val partitions = scanRDD.map(_.partitions).getOrElse(
         throw new AssertionError("Expecting ColumnTable Scan"))
-      assert(partitions.length == 1)
+      assert(partitions.length == 1, {
+        val sb = new StringBuilder()
+        partitions.foreach(p => sb.append(p.index).append(","))
+        sb.toString
+      })
       val bstr = partitions(0) match {
         case zp: ZippedPartitionsPartition => zp.partitionValues.map {
           case mb: MultiBucketExecutorPartition => mb.bucketsString
@@ -112,6 +117,29 @@ object SingleNodeTest {
     df = snc.sql("select * from orders where o_orderkey = 801 ")
     validateSinglePartition(df, 4)
     assert(df.collect()(0).getInt(0) == 801)
+
+    df = snc.sql("select * from orders where o_orderkey = '1' ")
+    //    validateSinglePartition(df, 3) // complex operator doesn't support pruning.
+    assert(df.collect()(0).getInt(0) == 1)
+
+    df = snc.sql("select * from orders where o_orderkey = '32' ")
+    //    validateSinglePartition(df, 0) // complex operator doesn't support pruning.
+    assert(df.collect()(0).getInt(0) == 32)
+
+    // lets check nested function (implicit cast generated)
+    df = snc.sql("select * from orders where o_orderkey = substring('d1xxd2', 2, 1) ")
+    assert(df.collect()(0).getInt(0) == 1)
+
+    df = snc.sql("select * from orders where o_orderkey = substring('acbc801xx', 5, 3) ")
+    assert(df.collect()(0).getInt(0) == 801)
+
+    df = snc.sql("select * from orders where o_orderkey = trim(" +
+        "substring(' acbc801xx', length(' 12345'), length('801'))) ")
+    assert(df.collect()(0).getInt(0) == 801)
+
+    df = snc.sql("select * from orders where o_orderkey = trim(" +
+        "substring(' acbc1410xx', length(' 12345'), length('1410'))) ")
+    assert(df.collect()(0).getInt(0) == 1410)
     // scalastyle:on println
   }
 }

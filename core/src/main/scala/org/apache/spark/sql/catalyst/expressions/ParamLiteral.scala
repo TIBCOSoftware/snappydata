@@ -28,8 +28,11 @@ import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 
-class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
+class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int,
+    e: Option[Expression] = None)
     extends Literal(_value, _dataType) {
+
+  private[this] var _foldable = false
 
   private[this] var literalValueRef: String = _
 
@@ -172,7 +175,9 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
 
   def convertedLiteral: Any = literalValue.converter(literalValue.value)
 
-  override def foldable: Boolean = false
+  override def foldable: Boolean = _foldable
+
+  def markFoldable(param: Boolean): Unit = _foldable = param
 }
 
 object ParamLiteral {
