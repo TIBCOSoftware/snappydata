@@ -6,7 +6,7 @@ Depending on your preference you can try any of the following options:
 
 * [Option 1: Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
 * [Option 2: Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
-* [Option 3: 20X Faster than Spark 2.0.2 Caching](#Start Benchmark)
+* [Option 3: 20X Faster than Spark 2.0.2 Caching](#start_benchmark)
 * [Option 4: Getting Started using SQL](#getting-started-using-sql)
 * [Option 5: Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
 * [Option 6: Getting Started on AWS](#getting-started-on-aws)
@@ -134,8 +134,8 @@ scala>  snappy.delete(tableName = "rowTable", filterExpr = "CUSTKEY=1")
 scala>  snappy.dropTable("rowTable", ifExists = true)
 scala>  snappy.dropTable("colTable", ifExists = true)
 ```
-
 <a id="Start Benchmark"></a>
+<a id="start_benchmark"></a>
 ## Option 3: 20X Faster than Spark 2.0.2
 Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
 We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
@@ -297,7 +297,7 @@ scala>  snappy.sql("drop table if exists colTable ")
 scala> :q //Quit the Spark Shell
 ```
 
-Now that we have seen the basic working of SnappyData tables, let us run the [benchmark](#Start Benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
+Now that we have seen the basic working of SnappyData tables, let us run the [benchmark](#start_benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
 
 <a id="getting-started-by-installing-snappydata-on-premise"></a>
 ## Option 5: Getting Started by Installing SnappyData On-Premise
@@ -318,7 +318,7 @@ It opens a Spark Shell. All SnappyData metadata as well as persistent data is st
 You can quickly create a single host SnappyData cluster (i.e. one lead node, one data node and a locator in a single EC2 instance) through the AWS CloudFormation.
 
 
-### Prerequisites###
+### Prerequisites
 
 Before you begin:
 

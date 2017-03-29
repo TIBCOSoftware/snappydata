@@ -10,7 +10,7 @@ In this document, we describe the features provided by SnappyData for analyzing 
 
 Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
-### Key Components###
+### Key Components
 This section provides a brief description of the key terms used in this document. 
 
 * **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
@@ -21,7 +21,7 @@ This section provides a brief description of the key terms used in this document
 
 * **Interpreters**: A software module which is loaded into Apache Zeppelin upon startup. Interpreters allow various third party products including SnappyData to interact with Apache Zeppelin. The SnappyData interpreter gives users the ability to execute SQL queries or use the data frame API to visualize data.
 
-## Quick Start Steps##
+## Quick Start Steps
 
 To understand the product follow these easy steps that can get you started quickly:
 
@@ -42,7 +42,7 @@ To understand the product follow these easy steps that can get you started quick
 4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
 <a id="SettingUp"></a>
-## Setting Up SnappyData Cloud Cluster##
+## Setting Up SnappyData Cloud Cluster
 This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the iSight CloudBuilder and using a script.
 
 <a id="DeployingClusterCloudFormation"></a>
@@ -196,7 +196,7 @@ To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedd
 For a comprehensive list of command options, simply run `./snappy-ec2` in the command prompt.
 
 <a id="dataAWSS3"></a>
-## Loading Data from AWS S3##
+## Loading Data from AWS S3
 SnappyData provides you with predefined buckets which contain datasets. When data is loaded, the table reads from the files available at the specified external location (AWS S3). 
 
 
@@ -248,7 +248,7 @@ Connecting the SnappyData Interpreter to the SnappyData cluster is represented i
 
 ![Example](Images/isightconnect.png)
 
-## Using the Interpreter##
+## Using the Interpreter
 SnappyData Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
 
@@ -261,9 +261,10 @@ To use an interpreter, add the associated interpreter directive with the format,
 * <Note> Each paragraph has its own SnappyData context. When you set a property on one paragraph, the property is applicable only to that paragraph and not to other paragraphs in the notebook.</Note>
 
 
-### SQL Interpreter###
+### SQL Interpreter
 The `%snappydata.sql` code specifies the default SQL interpreter. This interpreter is used to execute SQL queries on SnappyData cluster.
-#### Multi-Line Statements####
+
+#### Multi-Line Statements
 Multi-line statements ,as well as multiple statements on the same line, are also supported as long as they are separated by a semicolon. However, only the result of the last query is displayed.
 
 SnappyData provides a list of connection-specific SQL properties that can be applied to the paragraph that is executed. 
@@ -275,7 +276,7 @@ In the following example, `spark.sql.shuffle.partitions` allows you to specify t
 set spark.sql.shuffle.partitions=6; 
 select medallion,avg(trip_distance) as avgTripDist from nyctaxi group by medallion order by medallion desc limit 100 with error
 ```
-#### SnappyData Directives in Apache Zeppelin####
+#### SnappyData Directives in Apache Zeppelin
 You can execute approximate queries on SnappyData cluster by using the `%sql show-instant-results-first` directive. 
 In this case, the query is first executed on the sample table and the approximate result is displayed, after which the query is run on the base table. Once the query is complete, the approximate result is replaced with the actual result.
 
@@ -295,7 +296,7 @@ SnappyContext is injected in this interpreter and can be accessed using variable
 
 <a id="predefinednotebook"></a>
 
-## Using Predefined Notebooks##
+## Using Predefined Notebooks
 SnappyData provides you predefined notebooks **NYCTAXI Analytics** and **Airline Data Analytics** which contains definitions that are stored in a single file. 
 
 When you launch Apache Zeppelin in the browser, the welcome page displays the existing notebooks. Open a notebook and run any of the paragraphs to analyze data and view the result. 
@@ -331,7 +332,7 @@ In this example, the input forms are, ` ${taxiin=60} or taxiout > ${taxiout=60}`
 ![Dynamic Form](Images/aqp_dynamicform.png)
 
 <a id="Monitoring"></a>
-## Monitoring the SnappyData Cloud Cluster ##
+## Monitoring the SnappyData Cloud Cluster
  You can monitor the SnappyData cluster using the Apache Spark Console. This enables you to observe and record the performance and the activities on the SnappyData cluster.
 
 <!--The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members, and tables. 
