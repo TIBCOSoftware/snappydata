@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.InetAddress
 
 import io.snappydata.test.util.TestException
@@ -70,6 +71,31 @@ object SmartConnectorFunctions {
       throw new TestException(s"Environment variable $env is not defined")
     }
     value
+  }
+  def nwQueryValidationOnConnector(locatorPort: Int, tableType: String): Unit = {
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty("snappydata.store.locators", s"localhost:$locatorPort")
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.extraClassPath",
+          SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+        .set("snappydata.store.locators", s"localhost:$locatorPort")
+
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
+    val sqlContext = new SparkSession(sc).sqlContext
+    val pw = new PrintWriter(new FileOutputStream(
+      new File(s"ValidateNWQueries_$tableType.out"), true))
+    try {
+      NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
+      // validateReplicatedTableQueries(snc)
+      NorthWindDUnitTest.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+    } finally {
+      pw.close()
+    }
   }
 
 }
