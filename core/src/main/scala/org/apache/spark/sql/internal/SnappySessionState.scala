@@ -31,7 +31,7 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, Expression, ExpressionDescription, Literal, ParamConstants, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryOperator, Cast, ParamConstants, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -46,7 +46,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.{DataType, DecimalType, IntegerType}
+import org.apache.spark.sql.types.DecimalType
 import org.apache.spark.streaming.Duration
 import org.apache.spark.{Partition, SparkConf}
 
@@ -67,17 +67,43 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
-
+  object analyzerRules extends Analyzer(catalog, conf){
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       new PreprocessTableInsertOrPut(conf) ::
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
-          ResolveParameters ::
           AnalyzeChildQuery(snappySession) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+  }
+
+  /* * Important:
+    * All Analyzer rules changes should be done in object analyzerRules
+    * Do not override extendedResolutionRules here.
+    * */
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+    override lazy val batches: Seq[Batch] = analyzerRules.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
+        var index: Int = -1
+        def setIndex: Unit = {
+          var i: Int = 0
+          batch.rules.foreach(rule => {
+            if (rule.ruleName.equals("" +
+                "org.apache.spark.sql.catalyst.analysis.Analyzer$ResolveRelations")) {
+              index = i
+              return
+            }
+            i += 1
+          })
+        }
+        setIndex
+        val (left, right) = batch.rules.splitAt(index + 1)
+        Batch(batch.name, batch.strategy.asInstanceOf[this.Strategy],
+          left ++ Some(ResolveParameters) ++ right: _*)
+      case otherBatch => Batch(otherBatch.name, otherBatch.strategy.asInstanceOf[this.Strategy],
+        otherBatch.rules: _*)
+    }
 
     override val extendedCheckRules = Seq(
       datasources.PreWriteCheck(conf, catalog),
