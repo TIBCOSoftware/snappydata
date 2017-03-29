@@ -315,7 +315,7 @@ Refer to the [Row and column tables](programming_guide#ddl) documentation for co
 Full source code, for example, to create and perform operations on replicated and partitioned row table can be found in [CreateReplicatedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateReplicatedRowTable.scala) and [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala)
 
 
-###Create a Row Table using DataFrame API:
+### Create a Row Table using DataFrame API:
 
 The code snippet below shows how to create a replicated row table using API.
 
@@ -421,7 +421,7 @@ Refer to the [Row and column tables](programming_guide#tables-in-snappydata) doc
 
 Full source code, for example, to create and perform operations on column table can be found in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala)
 
-###Create a Column Table using DataFrame API
+### Create a Column Table using DataFrame API
 
 The code snippet below shows how to create a column table using DataFrame API.
 
@@ -465,7 +465,7 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     customerDF.write.insertInto("CUSTOMER")
 ```
 
-###Create a Column Table using SQL
+### Create a Column Table using SQL
 
 The same table can be created using SQL as shown below:
 ```
