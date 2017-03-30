@@ -31,6 +31,7 @@ import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -1090,6 +1091,7 @@ object SnappyContext extends Logging {
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
+      MemoryManagerCallback.resetMemoryManager
     }
     _clusterMode = null
     _anySNContext = null

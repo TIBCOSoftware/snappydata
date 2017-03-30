@@ -281,7 +281,7 @@ object SnappyTableStatsProviderDUnitTest {
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
       isReplicatedTable, isColumnTable)
     def actual = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand(table)
+        getAggregatedStatsOnDemand._1(table)
 
     assert(actual.getRegionName == expected.getRegionName)
     assert(actual.isColumnTable == expected.isColumnTable)
