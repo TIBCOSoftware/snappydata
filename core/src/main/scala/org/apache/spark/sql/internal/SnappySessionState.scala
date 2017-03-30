@@ -29,9 +29,9 @@ import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfig
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, withPosition}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, BinaryOperator, Cast, Expression, Like, ParamConstants, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, Expression, Like, ParamConstants, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -85,59 +85,16 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
     override lazy val batches: Seq[Batch] = analyzerRules.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        var index: Int = -1
-        def setIndex: Unit = {
-          var i: Int = 0
-          batch.rules.foreach(rule => {
-            if (rule.ruleName.equals("" +
-                "org.apache.spark.sql.catalyst.analysis.Analyzer$ResolveRelations")) {
-              index = i
-              return
-            }
-            i += 1
-          })
-        }
-        setIndex
-        val (left, right) = batch.rules.splitAt(index + 1)
+        // ResolveParameters must come before TypeCoercion rules
+        val splitIndex = batch.rules.indexWhere(_.ruleName.contains("TypeCoercion"))
+        val (left, right) = batch.rules.splitAt(splitIndex)
         Batch(batch.name, batch.strategy.asInstanceOf[this.Strategy],
           left ++ Some(ResolveParameters) ++ right: _*)
       case otherBatch => Batch(otherBatch.name, otherBatch.strategy.asInstanceOf[this.Strategy],
         otherBatch.rules: _*)
     }
 
-    override val extendedCheckRules = Seq(
-      datasources.PreWriteCheck(conf, catalog),
-      PrePutCheck)
-
-    object ResolveParameters extends Rule[LogicalPlan] {
-      def apply(plan: LogicalPlan): LogicalPlan = plan.transformDown {
-        case f: org.apache.spark.sql.catalyst.plans.logical.Filter =>
-          def updateParamConstants(attribute: Expression, pc: ParamConstants) = {
-            attribute match {
-              case u@UnresolvedAttribute(nameParts) =>
-                val result =
-                  withPosition(u) {
-                    f.resolveChildren(nameParts, resolver).getOrElse(u)
-                  }
-                pc.paramType = result.dataType
-                pc.nullableValue = result.nullable
-              case _ => // TODO : Issue warning
-            }
-          }
-
-          f.condition foreach {
-            case BinaryComparison(l, pc@ParamConstants(_)) => updateParamConstants(l, pc)
-            case BinaryComparison(pc@ParamConstants(_), r) => updateParamConstants(r, pc)
-            case Like(l, pc@ParamConstants(_)) => updateParamConstants(l, pc)
-            case Like(pc@ParamConstants(_), r) => updateParamConstants(r, pc)
-            case org.apache.spark.sql.catalyst.expressions.In(value, list) => list.foreach {
-              case pc@ParamConstants(_) => updateParamConstants(value, pc)
-            }
-            case _ =>
-          }
-          f
-      }
-    }
+    override val extendedCheckRules = Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -756,6 +713,31 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         throw Utils.analysisException(s"$table does not allow puts.")
 
       case _ => // OK
+    }
+  }
+}
+
+object ResolveParameters extends Rule[LogicalPlan] {
+  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+    case q: LogicalPlan => q transformExpressionsUp {
+      case b@BinaryComparison(left: AttributeReference, right: ParamConstants) =>
+        b.makeCopy(Array(left, right.copy(paramType = left.dataType,
+          nullableValue = left.nullable)))
+      case b@BinaryComparison(left: ParamConstants, right: AttributeReference) =>
+        b.makeCopy(Array(left.copy(paramType = right.dataType,
+          nullableValue = right.nullable), right))
+      case l@Like(left: AttributeReference, right: ParamConstants) =>
+        l.makeCopy(Array(left, right.copy(paramType = left.dataType,
+          nullableValue = left.nullable)))
+      case l@Like(left: ParamConstants, right: AttributeReference) =>
+        l.makeCopy(Array(left.copy(paramType = right.dataType,
+          nullableValue = right.nullable), right))
+      case i@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
+      list: Seq[Expression]) => i.makeCopy(Array(value, list.map{
+        case pc: ParamConstants => pc.copy(paramType = value.dataType,
+          nullableValue = value.nullable)
+        case x => x
+      }))
     }
   }
 }
