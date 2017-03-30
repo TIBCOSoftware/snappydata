@@ -1082,7 +1082,7 @@ trait NullableEncoder extends NotNullEncoder {
       if (math.abs(initialNumWords - numWords) < maxWastedWords) {
         releaseForReuse(columnData, newSize)
       }
-      clearSource()
+      setSource(newColumnData)
 
       // now write the header including nulls
       newColumnData.position(newOffset)
