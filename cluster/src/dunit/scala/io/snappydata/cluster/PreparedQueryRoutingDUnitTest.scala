@@ -77,18 +77,21 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
     try {
+      println("Prepared Statement: ")
       val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < ? " +
-          s" and ol_int2_id > ? " +
+          s" and ol_int2_id in (?, ?, ?) " +
           s" and ol_str_id like ? " +
           s" limit 20" +
           s""
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
-      prepStatement.setInt(2, 10)
-      prepStatement.setString(3, "%0")
+      prepStatement.setInt(2, 60)
+      prepStatement.setInt(3, 170)
+      prepStatement.setInt(4, 150)
+      prepStatement.setString(5, "%0")
       val rs = prepStatement.executeQuery
 
       // val rs = stmt.executeQuery(qry)
@@ -102,6 +105,27 @@ class PreparedQueryRoutingDUnitTest(val s: String)
         index += 1
       }
       println("Number of rows read " + index)
+
+
+      println("Statement: ")
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 500 " +
+          s" and ol_int2_id in  (60, 170, 150) " +
+          s" and ol_str_id LIKE '%0' " +
+          s" limit 20" +
+          s""
+      val rs2 = stmt.executeQuery(qry2)
+      var index2 = 0
+      while (rs2.next()) {
+        val i = rs2.getInt(1)
+        val j = rs2.getInt(2)
+        val s = rs2.getString(3)
+        println(s"row($index2) $i $j $s ")
+        index2 += 1
+      }
+      println("Number of rows read " + index2)
 //      val reg = Misc.getRegionByPath("/APP/ORDER_LINE_COL", false).asInstanceOf[PartitionedRegion]
 //      println("reg " + reg)
 //      val itr = reg.getDataStore.getAllLocalBucketRegions.iterator()
