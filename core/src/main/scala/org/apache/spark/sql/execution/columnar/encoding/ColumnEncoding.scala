@@ -354,14 +354,14 @@ trait ColumnEncoder extends ColumnEncoding {
   }
 
   protected final def copyTo(dest: ByteBuffer, srcOffset: Int,
-      numBytes: Int): Unit = {
+      endOffset: Int): Unit = {
     val src = columnData
     // buffer to buffer copy after position reset for source
     val position = src.position()
     val limit = src.limit()
 
     if (position != srcOffset) src.position(srcOffset)
-    if (limit > numBytes) src.limit(numBytes)
+    if (limit > endOffset) src.limit(endOffset)
 
     dest.put(src)
 
@@ -1069,23 +1069,22 @@ trait NullableEncoder extends NotNullEncoder {
       val newSize = math.min(Int.MaxValue - 1,
         oldSize + numNullBytes - initialNullBytes).toInt
       val newColumnData = finalAllocator.allocate(newSize)
-      val newOffset = newColumnData.position()
 
       // first copy the rest of the bytes skipping header and nulls
       val srcOffset = 8 + initialNullBytes
       val destOffset = 8 + numNullBytes
-      newColumnData.position(newOffset + destOffset)
-      copyTo(newColumnData, srcOffset, (oldSize - srcOffset).toInt)
+      newColumnData.position(destOffset)
+      copyTo(newColumnData, srcOffset, oldSize.toInt)
+      newColumnData.rewind()
 
       // reuse this columnData in next round if possible but
       // skip if there was a large wastage in this round
       if (math.abs(initialNumWords - numWords) < maxWastedWords) {
         releaseForReuse(columnData, newSize)
       }
-      setSource(newColumnData)
 
       // now write the header including nulls
-      newColumnData.position(newOffset)
+      setSource(newColumnData)
       var position = columnBeginPosition
       val newColumnBytes = columnBytes
       ColumnEncoding.writeInt(newColumnBytes, position, typeId)
