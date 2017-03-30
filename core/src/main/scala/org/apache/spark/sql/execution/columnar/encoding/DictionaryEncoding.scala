@@ -267,7 +267,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         // assume some level of compression with dictionary encoding
         val mapSize = if (longMap ne null) longMap.size
         else math.max(initSize >>> 1, 128)
-        longMap = new ObjectHashSet[LongIndexKey](mapSize, 0.6, 1)
+        longMap = new ObjectHashSet[LongIndexKey](mapSize, 0.6, 1, false)
         longArray = new TLongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
     }

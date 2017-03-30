@@ -38,7 +38,9 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.{Iterator => JIterator}
 
-import scala.reflect.ClassTag
+import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
+import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
+import org.apache.spark.storage.TaskResultBlockId
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 
@@ -46,6 +48,9 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.hash.Murmur3_x86_32
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.{SparkEnv, TaskContext}
+
+import scala.reflect.ClassTag
 
 /**
  * A fast hash set implementation for non-null data. This hash set supports
@@ -62,8 +67,18 @@ import org.apache.spark.unsafe.types.UTF8String
  * java interfaces to keep byte code overheads minimal.
  */
 final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
-    loadFactor: Double, numColumns: Int)
+    loadFactor: Double, numColumns: Int, longLived: Boolean = false)
     extends java.lang.Iterable[T] with Serializable {
+
+  private[this] val consumer =
+    new ObjectHashSetMemoryConsumer(TaskContext.get().taskMemoryManager())
+
+  if(!longLived){
+    freeMemoryOnTaskCompletion
+  }
+
+  private[this] var objectSize = -1L
+  private[this] var totalSize = 0L
 
   private[this] var _capacity = nextPowerOf2(initialCapacity)
   private[this] var _size = 0
@@ -108,7 +123,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
         val entry = default(key)
         // insert into the map and rehash if required
         data(pos) = entry
-        handleNewInsert()
+        handleNewInsert(pos)
         return entry
       }
     }
@@ -137,7 +152,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
         val entry = default(key)
         // insert into the map and rehash if required
         data(pos) = entry.asInstanceOf[T]
-        handleNewInsert()
+        handleNewInsert(pos)
         return entry
       }
     }
@@ -226,7 +241,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     }
   }
 
-  def handleNewInsert(): Boolean = {
+  def handleNewInsert(pos: Int): Boolean = {
+    if (objectSize == -1) {
+      entrySize(pos)
+    }
     _size += 1
     // check and trigger a rehash if load factor exceeded
     if (_size <= _growThreshold) {
@@ -237,6 +255,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     }
   }
 
+  private def entrySize(pos : Int): Unit = {
+    objectSize = ReflectionSingleObjectSizer.INSTANCE.sizeof(data(pos))
+  }
+
   /**
    * Double the table's size and re-hash everything.
    * Caller must check for overloaded set before triggering a rehash.
@@ -244,6 +266,16 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private def rehash(): Unit = {
     val capacity = _capacity
     val data = _data
+
+    // Probably overestimating as some of the array cell might be empty
+    val refSize = capacity * ReflectionSingleObjectSizer.REFERENCE_SIZE
+    acquireMemory(refSize)
+    totalSize += refSize
+
+    // Also add potential memory usage by objects
+    val valSize = capacity * objectSize
+    acquireMemory(valSize)
+    totalSize += valSize
 
     val newCapacity = checkCapacity(capacity << 1)
     val newData = newArray(newCapacity)
@@ -291,6 +323,27 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private def nextPowerOf2(n: Int): Int = {
     val highBit = Integer.highestOneBit(n)
     checkCapacity(if (highBit == n) n else highBit << 1)
+  }
+
+  private def acquireMemory(required: Long) = {
+    if (longLived) {
+      val blockId = TaskResultBlockId(TaskContext.get().taskAttemptId())
+      SparkEnv.get.memoryManager
+        .acquireStorageMemory(blockId, required, MemoryMode.ON_HEAP)
+    } else {
+      consumer.acquireMemory(required)
+    }
+  }
+
+  private def freeMemoryOnTaskCompletion(): Unit = {
+    TaskContext.get().addTaskCompletionListener { _ =>
+      consumer.freeMemory(totalSize)
+    }
+  }
+
+  def freeStorageMemory(): Unit = {
+    assert(longLived, "Method valid for only long lived hashsets")
+    SparkEnv.get.memoryManager.releaseStorageMemory(totalSize, MemoryMode.ON_HEAP)
   }
 }
 
@@ -368,4 +421,9 @@ abstract class LongKey(val l: Long) {
   }
 
   override def toString: String = String.valueOf(l)
+}
+
+final class ObjectHashSetMemoryConsumer(taskMemoryManager: TaskMemoryManager)
+  extends MemoryConsumer(taskMemoryManager) {
+  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
 }
