@@ -178,14 +178,14 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
 
     Assert.assertEquals(10000100, stats.getRowCount)
     vm0.invoke(restartServer)
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats1 = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000100, stats1.getRowCount)
     vm1.invoke(restartServer)
 
@@ -194,13 +194,12 @@ class SplitSnappyClusterDUnitTest(s: String)
         "5")
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats2 = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000100, stats2.getRowCount)
     val snc = SnappyContext(sc)
     snc.sql("insert into snappyTable values(1,'Test')")
     var stats3 = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
-    Assert.assertEquals(10000101, stats3.getRowCount)
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     vm0.invoke(restartServer)
   }
 }
@@ -455,13 +454,13 @@ object SplitSnappyClusterDUnitTest
         "(10))) as sym")
     testDF.write.insertInto("snappyTable")
     val stats = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000000, stats.getRowCount)
     for (i <- 1 to 100) {
       snc.sql(s"insert into snappyTable values($i,'Test$i')")
     }
     val stats1 = SnappyTableStatsProviderService.
-        getAggregatedTableStatsOnDemand("APP.SNAPPYTABLE")
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000100, stats1.getRowCount)
     logInfo("Successful")
   }
