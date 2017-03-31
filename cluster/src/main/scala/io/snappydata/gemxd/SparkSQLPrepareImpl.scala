@@ -78,6 +78,7 @@ class SparkSQLPrepareImpl(val sql: String,
       val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
       (0 until paramCount) foreach (i => {
+        assert(paramConstantsArr(i).pos == i + 1)
         val index = i * 4 + 1
         val dType = paramConstantsArr(i).dataType
         val sqlType = ParamConstants.getSQLType(dType)
