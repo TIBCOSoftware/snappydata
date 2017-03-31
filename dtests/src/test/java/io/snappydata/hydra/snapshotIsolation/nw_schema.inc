@@ -86,6 +86,7 @@ io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-dmlTables =
 "app.customers"
 //"app.orders"
 "app.order_details"
+;
 
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-csvLocationforLargeData = "/export/shared/QA_DATA/northWind_11G";
 
