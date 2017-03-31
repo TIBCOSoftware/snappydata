@@ -131,11 +131,11 @@ class QueryRoutingDUnitTest(val s: String)
     while (rs.next()) {
       cnt += 1
       cnt match {
-        case 1 => assert(9 == rs.getInt(1))
-        case 2 => assert(7 == rs.getInt(1))
-        case 3 => assert(5 == rs.getInt(1))
-        case 4 => assert(4 == rs.getInt(1))
-        case 5 => assert(1 == rs.getInt(1))
+        case 1 => assert(9 == rs.getInt(1), s"Expected 9 but found ${rs.getInt(1)}")
+        case 2 => assert(7 == rs.getInt(1),s"Expected 7 but found ${rs.getInt(1)}")
+        case 3 => assert(5 == rs.getInt(1),s"Expected 5 but found ${rs.getInt(1)}")
+        case 4 => assert(4 == rs.getInt(1),s"Expected 4 but found ${rs.getInt(1)}")
+        case 5 => assert(1 == rs.getInt(1),s"Expected 1 but found ${rs.getInt(1)}")
       }
     }
     assert(cnt == 5)

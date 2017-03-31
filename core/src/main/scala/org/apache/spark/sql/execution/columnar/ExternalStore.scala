@@ -52,11 +52,13 @@ trait ExternalStore extends Serializable {
       f(conn)
     } catch {
       case t: Throwable =>
+        conn.rollback()
         conn.close()
         isClosed = true
         throw t
     } finally {
       if (closeOnSuccess && !isClosed) {
+        conn.commit()
         conn.close()
       }
     }

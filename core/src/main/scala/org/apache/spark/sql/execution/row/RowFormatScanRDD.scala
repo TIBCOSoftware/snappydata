@@ -53,7 +53,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
-    @transient protected val parts: Array[Partition] = Array.empty[Partition])
+    @transient protected val parts: Array[Partition] = Array.empty[Partition],
+    var commitTx: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -211,6 +212,19 @@ class RowFormatScanRDD(@transient val session: SnappySession,
    */
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
+
+    if (commitTx) {
+      logInfo(" task context is : " + TaskContext.get())
+      Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+        val tx = TXManagerImpl.snapshotTxState.get()
+        if (tx != null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/) {
+          GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+          GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+        }
+      }
+      ))
+    }
+
     if (pushProjections || useResultSet) {
       // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
@@ -261,13 +275,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         case dr => session.sessionState.getTablePartitions(dr)
       }
     } finally {
+      conn.commit()
       conn.close()
     }
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
-
+    output.writeBoolean(commitTx)
     output.writeString(tableName)
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
@@ -295,7 +310,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
-
+    commitTx = input.readBoolean()
     tableName = input.readString()
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()

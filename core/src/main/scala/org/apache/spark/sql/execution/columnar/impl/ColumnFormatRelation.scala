@@ -145,7 +145,8 @@ class BaseColumnFormatRelation(
           connProperties,
           Array.empty[Filter],
           // use same partitions as the column store (SNAP-1083)
-          partitions
+          partitions,
+          commitTx = false
         )
       case _ =>
         new SmartConnectorRowRDD(
@@ -200,6 +201,7 @@ class BaseColumnFormatRelation(
         stmt.close()
         result
       } finally {
+        connection.commit()
         connection.close()
       }
     }
@@ -238,6 +240,7 @@ class BaseColumnFormatRelation(
             ifExists)
         }
       } finally {
+        conn.commit()
         conn.close()
       }
     }
@@ -273,6 +276,7 @@ class BaseColumnFormatRelation(
         }
       }
     } finally {
+      conn.commit()
       conn.close()
     }
     createActualTable(table, externalStore)
@@ -346,6 +350,7 @@ class BaseColumnFormatRelation(
         }
     } finally {
       if (conn != null) {
+        conn.commit()
         conn.close()
       }
     }
@@ -364,6 +369,7 @@ class BaseColumnFormatRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }

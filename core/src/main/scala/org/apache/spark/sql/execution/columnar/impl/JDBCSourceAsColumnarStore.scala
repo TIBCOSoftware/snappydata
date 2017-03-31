@@ -25,7 +25,7 @@ import scala.util.Random
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, AbstractRegion, LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{TXStateProxy, TXManagerImpl, GemFireCacheImpl, AbstractRegion, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -302,6 +302,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
       }
     } finally {
+      connection.commit();
       connection.close()
     }
   }
@@ -315,6 +316,16 @@ final class ColumnarStorePartitionedRDD(
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
+
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+      val tx = TXManagerImpl.snapshotTxState.get()
+      if (tx != null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/) {
+        GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+        GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+      }
+    }
+    ))
+
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
     // TODO: maybe we can start tx here
     // We can start different tx in each executor for first phase, till global snapshot is available.
@@ -418,7 +429,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _parts: Array[Partition] = Array.empty[Partition])
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-      _filters, _parts) {
+      _filters, _parts, false) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
@@ -468,6 +479,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     try {
       SparkShellRDDHelper.getPartitions(tableName, conn)
     } finally {
+      conn.commit()
       conn.close()
     }
   }

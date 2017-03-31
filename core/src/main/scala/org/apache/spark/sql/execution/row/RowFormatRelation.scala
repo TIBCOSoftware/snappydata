@@ -160,7 +160,8 @@ class RowFormatRelation(
           pushProjections = false,
           useResultSet = false,
           connProperties,
-          handledFilters
+          handledFilters,
+          commitTx = true
         )
 
       case _ =>
@@ -245,6 +246,7 @@ class RowFormatRelation(
         stmt.close()
         result
       } finally {
+        connection.commit()
         connection.close()
       }
     }
