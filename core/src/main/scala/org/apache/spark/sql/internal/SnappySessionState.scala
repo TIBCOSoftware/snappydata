@@ -116,7 +116,7 @@ class SnappySessionState(snappySession: SnappySession)
         p
     } transform {
       case q: LogicalPlan => q transformExpressionsDown {
-        // ignore leaf ParamLiteral and Literal
+        // ignore leaf ParamLiteral & Literal
         case p: ParamLiteral => p
         case l: Literal => l
         // Wrap expressions that are foldable.

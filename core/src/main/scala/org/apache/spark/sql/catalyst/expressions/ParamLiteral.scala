@@ -223,7 +223,7 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
  *
  * @param expr minimal expression tree that can be evaluated only once and turn into a constant.
  */
-case class DynamicFoldableExpression(val expr: Expression) extends Expression {
+case class DynamicFoldableExpression(expr: Expression) extends Expression {
   override def nullable: Boolean = expr.nullable
 
   override def eval(input: InternalRow): Any = expr.eval(input)
@@ -242,11 +242,7 @@ case class DynamicFoldableExpression(val expr: Expression) extends Expression {
 
   override def dataType: DataType = expr.dataType
 
-  override def children: Seq[Expression] = expr.children
-
-  override def productElement(n: Int): Any = expr.productElement(n)
-
-  override def productArity: Int = expr.productArity
+  override def children: Seq[Expression] = Seq(expr)
 
   override def canEqual(that: Any): Boolean = that match {
     case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)

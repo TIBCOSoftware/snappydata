@@ -65,9 +65,17 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   override lazy val metrics: Map[String, SQLMetric] = getMetrics
 
-  private lazy val extraInformation = relation.toString
+  private lazy val extraInformation = if (relation != null) {
+    relation.toString
+  } else {
+    "<extraInformation:NULL>"
+  }
 
-  protected lazy val numPartitions: Int = dataRDD.getNumPartitions
+  protected lazy val numPartitions: Int = if (dataRDD != null) {
+    dataRDD.getNumPartitions
+  } else {
+    -1
+  }
 
   @transient val (metricAdd, metricValue): (String => String, String => String) =
     Utils.metricMethods

@@ -39,6 +39,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
 
   override def afterAll(): Unit = {
     System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
     FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile
     super.afterAll()
