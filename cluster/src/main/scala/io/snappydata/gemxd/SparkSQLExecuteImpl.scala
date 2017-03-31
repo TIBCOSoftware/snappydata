@@ -74,7 +74,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
-  protected[this] val hdos = new GfxdHeapDataOutputStream(
+  private[this] val hdos = new GfxdHeapDataOutputStream(
     thresholdListener, sql, true, senderVersion)
 
   private[this] val querySchema = df.schema
