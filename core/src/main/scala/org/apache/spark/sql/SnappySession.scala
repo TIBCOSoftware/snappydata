@@ -162,10 +162,8 @@ class SnappySession(@transient private val sc: SparkContext,
     new SnappySession(sparkContext, Some(sharedState))
   }
 
-  override def sql(sqlText: String): CachedDataFrame = sql(sqlText, false, null)
-
-  def sql(sqlText: String, isPreparedStatement: Boolean, pvs: ParameterValueSet): CachedDataFrame =
-    snappyContextFunctions.sql(SnappySession.getPlan(this, sqlText, isPreparedStatement, pvs))
+  override def sql(sqlText: String): CachedDataFrame =
+    snappyContextFunctions.sql(SnappySession.getPlan(this, sqlText))
 
   def sqlUncached(sqlText: String): DataFrame =
     snappyContextFunctions.sql(super.sql(sqlText))
@@ -1525,6 +1523,9 @@ class SnappySession(@transient private val sc: SparkContext,
   def queryApproxTSTopK(topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame =
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
+
+  def setPreparedQuery(preparePhase: Boolean, paramSet: ParameterValueSet): Unit =
+    sessionState.setPreparedQuery(preparePhase, paramSet)
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -1686,8 +1687,7 @@ object SnappySession extends Logging {
     }
   }
 
-  def getPlan(session: SnappySession, sqlText: String, isPreparedStatement: Boolean,
-      pvs: ParameterValueSet): CachedDataFrame = {
+  def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     try {
       val lp = session.onlyParseSQL(sqlText)
       val key = CachedKey(session, lp, sqlText)
@@ -1714,9 +1714,6 @@ object SnappySession extends Logging {
       }
       // replace the constants from this logical plan
       CachedPlanHelperExec.replaceConstants(lp)
-      if (isPreparedStatement) {
-        CachedPlanHelperExec.replaceParamConstants(pvs)
-      }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()

@@ -52,7 +52,6 @@ class SparkSQLExecuteImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version,
-    isPreparedStatement: Boolean,
     pvs: ParameterValueSet) extends SparkSQLExecute with Logging {
 
   // spark context will be constructed by now as this will be invoked when
@@ -69,7 +68,9 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setSchema(schema)
 
-  private[this] val df = session.sql(sql, isPreparedStatement, pvs)
+  session.setPreparedQuery(false, pvs)
+
+  private[this] val df = session.sql(sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 

@@ -26,11 +26,14 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.Logging
+import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.expressions.ParamConstants
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
 
@@ -49,6 +52,8 @@ class SparkSQLPrepareImpl(val sql: String,
       .getSnappySessionForConnection(ctx.getConnId)
 
   session.setSchema(schema)
+
+  session.setPreparedQuery(true, null)
 
   private[this] val df = session.sqlUncached(sql)
 
@@ -81,7 +86,7 @@ class SparkSQLPrepareImpl(val sql: String,
         assert(paramConstantsArr(i).pos == i + 1)
         val index = i * 4 + 1
         val dType = paramConstantsArr(i).dataType
-        val sqlType = ParamConstants.getSQLType(dType)
+        val sqlType = getSQLType(dType)
         types(index) = sqlType._1
         types(index + 1) = sqlType._2
         types(index + 2) = sqlType._3
@@ -100,4 +105,29 @@ class SparkSQLPrepareImpl(val sql: String,
 
   override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =
     SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
+
+  // Also see SnappyResultHolder.getNewNullDVD(
+  def getSQLType(dataType: DataType): (Int, Int, Int) = {
+    dataType match {
+      case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
+      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+      case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
+      case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
+      case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)
+      case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
+      case t: DecimalType => (StoredFormatIds.SQL_DECIMAL_ID,
+          t.precision, t.scale)
+      case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
+      case BooleanType => (StoredFormatIds.SQL_BOOLEAN_ID, -1, -1)
+      case ShortType => (StoredFormatIds.SQL_SMALLINT_ID, -1, -1)
+      case ByteType => (StoredFormatIds.SQL_TINYINT_ID, -1, -1)
+      case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
+      case _: ArrayType | _: MapType | _: StructType =>
+        // indicates complex types serialized as json strings
+        (StoredFormatIds.REF_TYPE_ID, -1, -1)
+
+      // send across rest as objects that will be displayed as json strings
+      case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
+    }
+  }
 }

@@ -17,12 +17,15 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.Properties
+import java.util.{Calendar, Properties}
+import javassist.bytecode.stackmap.TypeData.NullType
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+import com.pivotal.gemfirexd.internal.iapi.types._
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -31,7 +34,7 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, Expression, Like, ParamConstants, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, Expression, Like, Literal, ParamConstants, ParamLiteral, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -48,6 +51,7 @@ import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.types.DecimalType
 import org.apache.spark.streaming.Duration
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
 
@@ -271,6 +275,121 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+
+  var isPreparePhase: Boolean = false
+
+  var pvs: ParameterValueSet = null
+
+  def setPreparedQuery(preparePhase: Boolean, paramSet: ParameterValueSet): Unit = {
+    isPreparePhase = preparePhase
+    pvs = paramSet
+  }
+
+  object ResolveParameters extends Rule[LogicalPlan] {
+    def getDataTypeResolvedPlan(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case b@BinaryComparison(left: AttributeReference, right: ParamConstants) =>
+        b.makeCopy(Array(left, right.copy(paramType = left.dataType,
+          nullableValue = left.nullable)))
+      case b@BinaryComparison(left: ParamConstants, right: AttributeReference) =>
+        b.makeCopy(Array(left.copy(paramType = right.dataType,
+          nullableValue = right.nullable), right))
+      case l@Like(left: AttributeReference, right: ParamConstants) =>
+        l.makeCopy(Array(left, right.copy(paramType = left.dataType,
+          nullableValue = left.nullable)))
+      case l@Like(left: ParamConstants, right: AttributeReference) =>
+        l.makeCopy(Array(left.copy(paramType = right.dataType,
+          nullableValue = right.nullable), right))
+      case i@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
+      list: Seq[Expression]) => i.makeCopy(Array(value, list.map {
+        case pc: ParamConstants => pc.copy(paramType = value.dataType,
+          nullableValue = value.nullable)
+        case x => x
+      }))
+    }
+
+    def assertAllDataTypeResolved(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case pc@ParamConstants(_, paramType, _) =>
+        assert(paramType != org.apache.spark.sql.types.NullType)
+        pc
+    }
+
+    def assertAllParametersResolved(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case pc@ParamConstants(_, _, _) =>
+        assert(false, "Not all parameters value could be replaced")
+        pc
+    }
+
+    def countLiterals(plan: LogicalPlan): (Int, Int) = {
+      var countParams = 0
+      var maxParamLiteral = 0
+      plan transformAllExpressions {
+        case pc: ParamConstants =>
+          countParams = countParams + 1
+          pc
+        case pl: ParamLiteral =>
+          if (pl.pos > maxParamLiteral) maxParamLiteral = pl.pos
+          pl
+      }
+      (countParams, maxParamLiteral)
+    }
+
+    def setValue(dvd: DataValueDescriptor): Any = {
+      dvd match {
+        case i: SQLInteger => i.getInt
+        case si: SQLSmallint => si.getShort
+        case ti: SQLTinyint => ti.getByte
+        case d: SQLDouble => d.getDouble
+        case li: SQLLongint => li.getLong
+
+        case bid: BigIntegerDecimal => bid.getDouble
+        case de: SQLDecimal => de.getBigDecimal
+        case r: SQLReal => r.getFloat
+
+        case b: SQLBoolean => b.getBoolean
+
+        case cl: SQLClob =>
+          val charArray = cl.getCharArray()
+          if (charArray != null) {
+            val str = String.valueOf(charArray)
+            UTF8String.fromString(str)
+          } else null
+        case lvc: SQLLongvarchar => UTF8String.fromString(lvc.getString)
+        case vc: SQLVarchar => UTF8String.fromString(vc.getString)
+        case c: SQLChar => UTF8String.fromString(c.getString)
+
+        case ts: SQLTimestamp => ts.getTimestamp(null)
+        case t: SQLTime => t.getTime(null)
+        case d: SQLDate =>
+          val c: Calendar = null
+          d.getDate(c)
+
+        case _ => dvd.getObject
+      }
+    }
+
+    def apply(plan: LogicalPlan): LogicalPlan = if (isPreparePhase) {
+      val preparedPlan = getDataTypeResolvedPlan(plan)
+      assertAllDataTypeResolved(preparedPlan)
+    } else if (pvs != null) {
+      val (countParams, maxParamLiteral) = countLiterals(plan)
+      if (countParams > 0) {
+        assert(pvs.getParameterCount == countParams,
+          s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
+              s" param-count=$countParams")
+        val preparedPlan = getDataTypeResolvedPlan(plan)
+        assertAllDataTypeResolved(preparedPlan)
+        var paramLiteralCount = maxParamLiteral
+        val parameterResolvedPlan = preparedPlan transformAllExpressions {
+          case pc@ParamConstants(pos, paramType, _) =>
+            val dvd = pvs.getParameter(pos - 1)
+            val l = Literal.create(setValue(dvd), paramType)
+            paramLiteralCount = paramLiteralCount + 1
+            ParamLiteral(l, paramLiteralCount)
+        }
+        assertAllParametersResolved(parameterResolvedPlan)
+      } else plan // means already done
+    } else plan
+  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
@@ -713,31 +832,6 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         throw Utils.analysisException(s"$table does not allow puts.")
 
       case _ => // OK
-    }
-  }
-}
-
-object ResolveParameters extends Rule[LogicalPlan] {
-  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-    case q: LogicalPlan => q transformExpressionsUp {
-      case b@BinaryComparison(left: AttributeReference, right: ParamConstants) =>
-        b.makeCopy(Array(left, right.copy(paramType = left.dataType,
-          nullableValue = left.nullable)))
-      case b@BinaryComparison(left: ParamConstants, right: AttributeReference) =>
-        b.makeCopy(Array(left.copy(paramType = right.dataType,
-          nullableValue = right.nullable), right))
-      case l@Like(left: AttributeReference, right: ParamConstants) =>
-        l.makeCopy(Array(left, right.copy(paramType = left.dataType,
-          nullableValue = left.nullable)))
-      case l@Like(left: ParamConstants, right: AttributeReference) =>
-        l.makeCopy(Array(left.copy(paramType = right.dataType,
-          nullableValue = right.nullable), right))
-      case i@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
-      list: Seq[Expression]) => i.makeCopy(Array(value, list.map{
-        case pc: ParamConstants => pc.copy(paramType = value.dataType,
-          nullableValue = value.nullable)
-        case x => x
-      }))
     }
   }
 }

@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, ParamConstantsValue, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -28,8 +28,6 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
-
-import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 
 case class CachedPlanHelperExec(childPlan: CodegenSupport)
     extends UnaryExecNode with CodegenSupport {
@@ -82,18 +80,6 @@ object CachedPlanHelperExec extends Logging {
     lls.sortBy(_.position).toArray
   }
 
-  def allParamConstants(): Array[ParamConstantsValue] = {
-    var lls = new ArrayBuffer[ParamConstantsValue]()
-    val refs = contextReferences.getOrElse(SnappySession.currCachedKey,
-      throw new IllegalStateException("Expected a cached reference object"))
-    refs.foreach(ctxrefs => {
-      ctxrefs.filter(
-        { p: Any => p.isInstanceOf[ParamConstantsValue] }).map(lls +=
-          _.asInstanceOf[ParamConstantsValue])
-    })
-    lls.sortBy(_.position).toArray
-  }
-
   def collectParamLiteralNodes(lp: LogicalPlan, literals: Array[LiteralValue]): Unit = {
     lp transformAllExpressions {
       case p: ParamLiteral => {
@@ -103,33 +89,10 @@ object CachedPlanHelperExec extends Logging {
     }
   }
 
-  def collectParamConstantsValueNodes(pvs: ParameterValueSet,
-      allParamConstantsValue: Array[ParamConstantsValue]): Unit = {
-    (0 until pvs.getParameterCount) foreach(i => {
-      allParamConstantsValue(i).setValue(pvs.getParameter(i))
-    })
-  }
-
   def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
     val literals = allLiterals()
     if (literals.length > 0) {
       collectParamLiteralNodes(currLogicalPlan, literals)
-    }
-  }
-
-  def replaceParamConstants(pvs: ParameterValueSet): Unit = {
-    val allParamConstantsValue = allParamConstants()
-    assert(allParamConstantsValue != null)
-    assert(pvs != null)
-    // Note: Reason if allParamConstantsValue.size is zero
-    // ParamLiteral.doGenCode will not generate ParamConstantsValue if
-    // any ParamConstants has NullType, as set in SnappyParser.
-    // DataType in ParamConstants needs to be updated.
-    assert(allParamConstantsValue.length == pvs.getParameterCount,
-      s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
-          s" param-count=${allParamConstantsValue.length}")
-    if (allParamConstantsValue.length > 0) {
-      collectParamConstantsValueNodes(pvs, allParamConstantsValue)
     }
   }
 }
