@@ -1798,5 +1798,5 @@ private final class Expr(val name: String, val e: Expression) {
   }
 
   override def hashCode: Int = ClientResolverUtils.fastHashLong(
-    name.hashCode.toLong << 32 | e.semanticHash().toLong)
+    name.hashCode.toLong << 32L | (e.semanticHash() & 0xffffffffL))
 }

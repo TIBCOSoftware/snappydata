@@ -55,7 +55,8 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     keySize: Int, private val valueSize: Int,
     private val allocator: ColumnAllocator,
     var keyData: ByteBufferData = null,
-    var valueData: ByteBufferData = null) {
+    var valueData: ByteBufferData = null,
+    var valueDataPosition: Long = 0L) {
 
   // round to word size adding 8 bytes for header (offset + hashcode)
   private val fixedKeySize = ((keySize + 15) >>> 3) << 3
@@ -75,9 +76,12 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   if (valueData eq null) {
     valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize),
       allocator)
+    valueDataPosition = valueData.baseOffset
   }
 
   def size: Int = _size
+
+  def valueDataSize: Long = valueDataPosition - valueData.baseOffset
 
   def addDictionaryString(key: UTF8String): Int = {
     val hash = key.hashCode()
@@ -120,13 +124,14 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   def duplicate(): ByteBufferHashMap = {
     new ByteBufferHashMap(_capacity - 1, loadFactor, keySize, valueSize,
-      allocator, keyData.duplicate(), valueData.duplicate())
+      allocator, keyData.duplicate(), valueData.duplicate(), valueDataPosition)
   }
 
   def reset(): Unit = {
     keyData.reset(clearMemory = true)
     // no need to clear valueData since it will be overwritten completely
     valueData.reset(clearMemory = false)
+    valueDataPosition = valueData.baseOffset
     _size = 0
   }
 
@@ -138,17 +143,16 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   private def newInsert(s: UTF8String): Int = {
     // write into the valueData ByteBuffer growing it if required
     val numBytes = s.numBytes()
-    var valueData = this.valueData
-    var position = valueData.position
+    var position = valueDataPosition
+    val dataSize = position - valueData.baseOffset
     if (position + numBytes + 4 > valueData.endPosition) {
-      valueData = valueData.resize(numBytes + 4, allocator)
-      this.valueData = valueData
-      position = valueData.position
+      valueData = valueData.resize(position, numBytes + 4, allocator)
+      position = valueData.baseOffset + dataSize
     }
-    valueData.position = ColumnEncoding.writeUTF8String(valueData.baseObject,
+    valueDataPosition = ColumnEncoding.writeUTF8String(valueData.baseObject,
       position, s.getBaseObject, s.getBaseOffset, numBytes)
     // return the relative offset to the start excluding numBytes
-    (position - valueData.baseOffset + 4).toInt
+    (dataSize + 4).toInt
   }
 
   /**
@@ -208,19 +212,34 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   }
 }
 
-final class ByteBufferData private(buffer: ByteBuffer, val baseObject: AnyRef,
-    val baseOffset: Long, var position: Long, val endPosition: Long) {
+final class ByteBufferData private(val buffer: ByteBuffer,
+    val baseObject: AnyRef, val baseOffset: Long, val endPosition: Long) {
 
   def this(buffer: ByteBuffer, baseObject: AnyRef, baseOffset: Long) = {
-    this(buffer, baseObject, baseOffset, baseOffset + buffer.position(),
-      baseOffset + buffer.capacity())
+    this(buffer, baseObject, baseOffset, baseOffset + buffer.capacity())
   }
 
   def this(buffer: ByteBuffer, allocator: ColumnAllocator) = {
     this(buffer, allocator.baseObject(buffer), allocator.baseOffset(buffer))
   }
 
-  def size: Long = position - baseOffset
+  def capacity: Int = (endPosition - baseOffset).toInt
+
+  def copyTo(dest: ByteBuffer, srcOffset: Int, endOffset: Int): Unit = {
+    val src = buffer
+    // buffer to buffer copy after position reset for source
+    val position = src.position()
+    val limit = src.limit()
+
+    if (position != srcOffset) src.position(srcOffset)
+    if (limit > endOffset) src.limit(endOffset)
+
+    dest.put(src)
+
+    // move back position and limit to original values
+    src.position(position)
+    src.limit(limit)
+  }
 
   def equals(srcOffset: Int, oBase: AnyRef, oBaseOffset: Long,
       size: Int): Boolean = {
@@ -237,18 +256,17 @@ final class ByteBufferData private(buffer: ByteBuffer, val baseObject: AnyRef,
         .arrayEquals(baseObject, offset + 4, oBase, oBaseOffset, size)
   }
 
-  def resize(required: Int, allocator: ColumnAllocator): ByteBufferData = {
-    val oldSize = this.size
-    val buffer = allocator.expand(this.buffer, position, this.baseOffset,
+  def resize(cursor: Long, required: Int,
+      allocator: ColumnAllocator): ByteBufferData = {
+    val buffer = allocator.expand(this.buffer, cursor, this.baseOffset,
       required)
     val baseOffset = allocator.baseOffset(buffer)
     new ByteBufferData(buffer, allocator.baseObject(buffer), baseOffset,
-      baseOffset + oldSize, baseOffset + buffer.limit())
+      baseOffset + buffer.limit())
   }
 
   def duplicate(): ByteBufferData = {
-    new ByteBufferData(buffer.duplicate(), baseObject, baseOffset,
-      position, endPosition)
+    new ByteBufferData(buffer, baseObject, baseOffset, endPosition)
   }
 
   def reset(clearMemory: Boolean): Unit = {
@@ -259,7 +277,6 @@ final class ByteBufferData private(buffer: ByteBuffer, val baseObject: AnyRef,
         buffer.capacity(), 0)
     }
     buffer.clear()
-    position = baseOffset
   }
 
   def release(allocator: ColumnAllocator): Unit = {
