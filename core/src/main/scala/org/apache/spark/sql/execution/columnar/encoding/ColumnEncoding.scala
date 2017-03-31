@@ -20,6 +20,7 @@ import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import io.snappydata.util.StringUtils
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
@@ -73,7 +74,8 @@ abstract class ColumnDecoder extends ColumnEncoding {
 
   def initialize(buffer: ByteBuffer, field: StructField): Long = {
     if (buffer.isDirect) {
-      initialize(null, UnsafeHolder.getDirectBufferAddress(buffer), field)
+      initialize(null, UnsafeHolder.getDirectBufferAddress(buffer) +
+          buffer.position(), field)
     } else {
       initialize(buffer.array(), buffer.arrayOffset() +
           buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
@@ -333,16 +335,10 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def isDirect: Boolean = allocator.isDirect
 
-  protected final def getBaseOffset(buffer: ByteBuffer): Long = {
-    if (buffer.hasArray) Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset()
-    else UnsafeHolder.getDirectBufferAddress(buffer)
-  }
-
   protected final def setSource(buffer: ByteBuffer): Unit = {
     columnData = buffer
-    if (buffer.hasArray) columnBytes = buffer.array()
-    else columnBytes = null
-    columnBeginPosition = getBaseOffset(buffer)
+    columnBytes = allocator.baseObject(buffer)
+    columnBeginPosition = allocator.baseOffset(buffer)
     columnEndPosition = columnBeginPosition + buffer.limit()
   }
 
@@ -391,9 +387,9 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def upperDouble: Double = _upperDouble
 
-  def lowerString: UTF8String = _lowerStr
+  final def lowerString: UTF8String = _lowerStr
 
-  def upperString: UTF8String = _upperStr
+  final def upperString: UTF8String = _upperStr
 
   final def lowerDecimal: Decimal = _lowerDecimal
 
@@ -401,7 +397,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def count: Int = _count
 
-  @inline protected final def updateLongStats(value: Long): Unit = {
+  protected final def updateLongStats(value: Long): Unit = {
     val lower = _lowerLong
     if (value < lower) {
       _lowerLong = value
@@ -413,7 +409,7 @@ trait ColumnEncoder extends ColumnEncoding {
     updateCount()
   }
 
-  @inline protected final def updateDoubleStats(value: Double): Unit = {
+  protected final def updateDoubleStats(value: Double): Unit = {
     val lower = _lowerDouble
     if (value < lower) {
       // check for first write case
@@ -425,11 +421,25 @@ trait ColumnEncoder extends ColumnEncoding {
     updateCount()
   }
 
-  final def updateCount(): Unit = {
-    _count += 1
+  protected final def updateStringStats(value: UTF8String): Unit = {
+    if (value ne null) {
+      val lower = _lowerStr
+      // check for first write case
+      if (lower eq null) {
+        if (!forComplexType) {
+          val valueClone = StringUtils.cloneIfRequired(value)
+          _lowerStr = valueClone
+          _upperStr = valueClone
+        }
+      } else if (value.compare(lower) < 0) {
+        _lowerStr = StringUtils.cloneIfRequired(value)
+      } else if (value.compare(_upperStr) > 0) {
+        _upperStr = StringUtils.cloneIfRequired(value)
+      }
+    }
   }
 
-  @inline protected final def updateDecimalStats(value: Decimal): Unit = {
+  protected final def updateDecimalStats(value: Decimal): Unit = {
     if (value ne null) {
       val lower = _lowerDecimal
       // check for first write case
@@ -445,6 +455,10 @@ trait ColumnEncoder extends ColumnEncoding {
       }
     }
     updateCount()
+  }
+
+  @inline final def updateCount(): Unit = {
+    _count += 1
   }
 
   def nullCount: Int
@@ -636,7 +650,8 @@ trait ColumnEncoder extends ColumnEncoding {
       allocator.release(reuseColumnData)
     }
     columnData.clear()
-    reuseColumnData = columnData
+    // release old ByteBuffer wrapper
+    reuseColumnData = columnData.duplicate()
     reuseUsedSize = newSize
   }
 }
@@ -955,8 +970,15 @@ trait NotNullEncoder extends ColumnEncoder {
 
   override def finish(cursor: Long): ByteBuffer = {
     // check if need to shrink byte array since it is stored as is in region
-    if (cursor == columnEndPosition) columnData
-    else {
+    val finalAllocator = this.finalAllocator
+    // avoid copying only if final shape of object in region is same
+    // else copy is required in any case and columnData can be reused
+    if (cursor == columnEndPosition &&
+        allocator.getClass == finalAllocator.getClass) {
+      val columnData = this.columnData
+      clearSource()
+      columnData
+    } else {
       // copy to exact size
       val newSize = checkBufferSize(cursor - columnBeginPosition)
       val newColumnData = finalAllocator.allocate(newSize)
@@ -1060,7 +1082,7 @@ trait NullableEncoder extends NotNullEncoder {
       // write till initialNumWords and not just numWords to clear any
       // trailing empty bytes (required since ColumnData can be reused)
       writeNulls(columnBytes, baseOffset + 8, initialNumWords)
-      columnData
+      super.finish(cursor)
     } else {
       // make space (or shrink) for writing nulls at the start
       val numNullBytes = numWords << 3

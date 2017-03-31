@@ -20,12 +20,24 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 
+import org.apache.spark.unsafe.Platform
+
 /**
  * Allocate, release and expand ByteBuffers (in-place if possible).
  */
 trait ColumnAllocator {
 
+  /** Allocate a new ByteBuffer of given size. */
   def allocate(size: Int): ByteBuffer
+
+  /** Clears the memory to be zeros immediately after allocation. */
+  def clearPostAllocate(buffer: ByteBuffer): Unit
+
+  /** Get the base object of the ByteBuffer for raw reads by Unsafe API. */
+  def baseObject(buffer: ByteBuffer): AnyRef
+
+  /** Get the base offset of the ByteBuffer for raw reads by Unsafe API. */
+  def baseOffset(buffer: ByteBuffer): Long
 
   /**
    * Expand given ByteBuffer to new capacity.
@@ -49,7 +61,7 @@ trait ColumnAllocator {
   protected def expandedSize(currentUsed: Int, required: Int): Int = {
     val minRequired = currentUsed.toLong + required
     // double the size
-    val newLength = math.min(math.max(currentUsed << 1L, minRequired),
+    val newLength = math.min(math.max((currentUsed * 3) >>> 1L, minRequired),
       Int.MaxValue - 1).toInt
     if (newLength < minRequired) {
       throw new IndexOutOfBoundsException(
@@ -62,6 +74,13 @@ trait ColumnAllocator {
 object HeapBufferAllocator extends ColumnAllocator {
 
   override def allocate(size: Int): ByteBuffer = ByteBuffer.allocate(size)
+
+  override def clearPostAllocate(buffer: ByteBuffer): Unit = {}
+
+  override def baseObject(buffer: ByteBuffer): AnyRef = buffer.array()
+
+  override def baseOffset(buffer: ByteBuffer): Long =
+    Platform.BYTE_ARRAY_OFFSET + buffer.arrayOffset()
 
   override def expand(columnData: ByteBuffer, cursor: Long,
       startPosition: Long, required: Int): ByteBuffer = {
@@ -87,6 +106,18 @@ object DirectBufferAllocator extends ColumnAllocator {
 
   override def allocate(size: Int): ByteBuffer =
     UnsafeHolder.allocateDirectBuffer(size)
+
+  override def clearPostAllocate(buffer: ByteBuffer): Unit = {
+    UnsafeHolder.getUnsafe.setMemory(null, baseOffset(buffer),
+      // use capacity which will be a factor of 8 where setMemory
+      // will be more efficient
+      buffer.capacity(), 0)
+  }
+
+  override def baseObject(buffer: ByteBuffer): AnyRef = null
+
+  override def baseOffset(buffer: ByteBuffer): Long =
+    UnsafeHolder.getDirectBufferAddress(buffer)
 
   override def expand(columnData: ByteBuffer, cursor: Long,
       startPosition: Long, required: Int): ByteBuffer = {

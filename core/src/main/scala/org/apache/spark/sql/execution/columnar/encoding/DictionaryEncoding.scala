@@ -18,11 +18,10 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gnu.trove.TLongArrayList
 
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{DictionaryData, LongKey, ObjectHashSet, StringKey}
+import org.apache.spark.sql.execution.{ByteBufferHashMap, LongKey, ObjectHashSet}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -170,9 +169,7 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
 
 trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
-  private[this] final var stringMap: ObjectHashSet[StringIndexKey] = _
-  private[this] final var stringInit: StringInit = _
-  private[this] final var numStrings: Int = _
+  private[this] final var stringMap: ByteBufferHashMap = _
 
   private[this] final var longMap: ObjectHashSet[LongIndexKey] = _
   private[this] final var longArray: TLongArrayList = _
@@ -180,38 +177,11 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   @transient private[this] final var isShortDictionary: Boolean = _
 
-  private final var _lowerStrKey: StringIndexKey = _
-  private final var _upperStrKey: StringIndexKey = _
-
-  override final protected def initializeLimits(): Unit = {
-    super.initializeLimits()
-    _lowerStrKey = null
-    _upperStrKey = null
-  }
-
-  override final def lowerString: UTF8String = {
-    val str = _lowerStr
-    if (str ne null) str
-    else if (_lowerStrKey ne null) {
-      _lowerStr = _lowerStrKey.toUTF8String
-      _lowerStr
-    } else null
-  }
-
-  override final lazy val upperString: UTF8String = {
-    val str = _upperStr
-    if (str ne null) str
-    else if (_upperStrKey ne null) {
-      _upperStr = _upperStrKey.toUTF8String
-      _upperStr
-    } else null
-  }
-
   override def typeId: Int = if (isShortDictionary) 2 else BIG_DICTIONARY_TYPE_ID
 
   override def sizeInBytes(cursor: Long): Long = {
     if (stringMap ne null) {
-      cursor - columnBeginPosition + stringInit.size
+      cursor - columnBeginPosition + stringMap.valueData.size
     } else if (isIntMap) {
       cursor - columnBeginPosition + (longArray.size() << 2)
     } else {
@@ -246,22 +216,16 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
     Utils.getSQLDataType(field.dataType) match {
       case StringType =>
-        // assume some level of compression with dictionary encoding
-        val mapSize = if (stringMap ne null) stringMap.size
-        else math.max(initSize >>> 1, 128)
-        // deliberately not reusing stringMap to avoid holding objects
-        // for too long
-        stringMap = new ObjectHashSet[StringIndexKey](mapSize, 0.6, 1)
-        if (stringInit eq null) {
-          val dictionarySize = (initSize * StringType.defaultSize) >>> 1
-          val dictionaryData = UnsafeHolder.allocateDirectBuffer(dictionarySize)
-          val baseOffset = UnsafeHolder.getDirectBufferAddress(dictionaryData)
-          stringInit = new StringInit(dictionaryData, baseOffset, baseOffset,
-            baseOffset + dictionarySize)
+        if (stringMap eq null) {
+          // assume some level of compression with dictionary encoding
+          val mapSize = math.max(initSize >>> 1, 128)
+          // keySize is 4 since need to store dictionary index
+          stringMap = new ByteBufferHashMap(mapSize, 0.6, 4,
+            StringType.defaultSize, allocator)
         } else {
-          // reuse the previous dictionary ByteBuffer
-          stringInit.data.clear()
-          stringInit.position = stringInit.baseOffset
+          // reuse the previous dictionary data but release the shell objects
+          stringMap = stringMap.duplicate()
+          stringMap.reset()
         }
       case t =>
         // assume some level of compression with dictionary encoding
@@ -323,34 +287,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     }
   }
 
-  protected final def updateStringStats(value: StringIndexKey): Unit = {
-    if (value ne null) {
-      val lower = _lowerStrKey
-      // check for first write case
-      if (lower eq null) {
-        if (!forComplexType) {
-          _lowerStrKey = value
-          _upperStrKey = value
-        }
-      } else if (value.compare(lower) < 0) {
-        _lowerStrKey = value
-      } else if (value.compare(_upperStrKey) > 0) {
-        _upperStrKey = value
-      }
-    }
-  }
-
   override final def writeUTF8String(cursor: Long, value: UTF8String): Long = {
     var position = cursor
     // add or get from dictionary
-    val key = stringMap.addString(value, stringInit)
+    var index = stringMap.addDictionaryString(value)
     // update stats only if new key was added
-    var index = key.index
-    if (index == -1) {
-      updateStringStats(key)
-      index = numStrings
-      numStrings += 1
-      key.index = index
+    if (index < 0) {
+      updateStringStats(value)
+      index = -index - 1
       if (index == Short.MaxValue && isShortDictionary) {
         val numUsedIndexes = ((position - columnBeginPosition) >> 1).toInt
         // allocate with increased size
@@ -392,9 +336,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override def finish(indexCursor: Long): ByteBuffer = {
     val numIndexBytes = (indexCursor - this.columnBeginPosition).toInt
-    var numElements = this.numStrings
+    var numElements: Int = 0
     val dictionarySize = if (stringMap ne null) {
-      stringInit.size
+      numElements = stringMap.size
+      stringMap.valueData.size
     } else {
       numElements = longArray.size
       if (isIntMap) numElements << 2
@@ -406,7 +351,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val columnData = finalAllocator.allocate(ColumnEncoding.checkBufferSize(
       8L /* typeId + number of nulls */ + (numNullWords << 3L) + dataSize))
     val columnBytes = if (columnData.hasArray) columnData.array() else null
-    val baseOffset = getBaseOffset(columnData)
+    val baseOffset = finalAllocator.baseOffset(columnData)
     var cursor = baseOffset
     // typeId
     ColumnEncoding.writeInt(columnBytes, cursor, typeId)
@@ -426,10 +371,9 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     if (stringMap ne null) {
       // dictionary is already in serialized form
       if (numElements > 0) {
-        Platform.copyMemory(null, stringInit.baseOffset,
-          columnBytes, cursor, dictionarySize)
+        Platform.copyMemory(stringMap.valueData.baseObject,
+          stringMap.valueData.baseOffset, columnBytes, cursor, dictionarySize)
         cursor += dictionarySize
-        this.numStrings = 0
       }
     } else if (isIntMap) {
       var index = 0
@@ -464,54 +408,13 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   override def close(): Unit = {
     super.close()
     stringMap = null
-    if (stringInit ne null) {
-      allocator.release(stringInit.data)
-      stringInit.data = null
-      stringInit = null
+    if ((stringMap ne null) && (stringMap.keyData ne null)) {
+      stringMap.release()
+      stringMap = null
     }
     longMap = null
     longArray = null
   }
-}
-
-private final class StringIndexKey(_dictionaryData: DictionaryData,
-    _relativeOffset: Int, _numBytes: Int, var index: Int)
-    extends StringKey(_dictionaryData, _relativeOffset, _numBytes)
-
-/**
- * Holds current dictionary data, position etc.
- * Always assume a direct ByteBuffer for dictionary data.
- */
-private final class StringInit(_dictionaryData: ByteBuffer,
-    _baseOffset: Long, _position: Long, _endPosition: Long)
-    extends DictionaryData(_dictionaryData, _baseOffset,
-      _position, _endPosition) with (UTF8String => StringIndexKey) {
-
-  override def apply(s: UTF8String): StringIndexKey = {
-    // write into the stringData ByteBuffer growing it if required
-    val numBytes = s.numBytes()
-    if (position + numBytes + 4 > endPosition) {
-      // grow by 3/2 or numBytes+extra whichever is larger
-      val oldSize = this.size
-      if (oldSize + numBytes + 4 > Int.MaxValue) {
-        throw new IndexOutOfBoundsException("Requested size exceeds " +
-            s"Int.MaxValue. Current size = $oldSize, string size = $numBytes")
-      }
-      val newSize = math.min(math.max((oldSize * 3) >>> 1,
-        oldSize + (numBytes << 1) + 8), Int.MaxValue).toInt
-      data = UnsafeHolder.reallocateDirectBuffer(data, newSize)
-      baseOffset = UnsafeHolder.getDirectBufferAddress(data)
-      position = baseOffset + oldSize
-      endPosition = baseOffset + data.limit()
-    }
-    // dictionary data is always a direct ByteBuffer
-    val oldPosition = this.position
-    position = ColumnEncoding.writeUTF8String(null, oldPosition,
-      s.getBaseObject, s.getBaseOffset, numBytes)
-    new StringIndexKey(this, (oldPosition - baseOffset + 4).toInt, numBytes, -1)
-  }
-
-  def size: Long = position - baseOffset
 }
 
 private final class LongIndexKey(_l: Long, var index: Int)
