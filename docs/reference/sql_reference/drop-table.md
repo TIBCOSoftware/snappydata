@@ -13,5 +13,8 @@ DROP TABLE [ IF EXISTS ] [schema-name.]table-name
 
 Removes the specified table. Include the `IF EXISTS` clause to execute the statement only if the specified table exists in SnappyData. The *schema-name.* prefix is optional if you are currently using the schema that contains the table.
 
-!!!Note:
-	Triggers, constraints (primary, unique, check and references from the table being dropped) and indexes on the table are silently dropped. Dropping a table invalidates statements that depend on the table. </p>
+## Example
+
+``` pre
+DROP TABLE IF EXISTS app.customer
+```

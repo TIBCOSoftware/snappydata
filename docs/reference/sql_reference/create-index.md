@@ -1,5 +1,8 @@
 # CREATE INDEX
 
+!!!Tip:
+	This is only supported for row tables. Support for column tables will be provided in future releases.
+
 Creates an index on one or more columns of a table.
 
 ##Syntax
@@ -11,7 +14,6 @@ column-name [ ASC | DESC ]
 [ , column-name [ ASC | DESC ] ] * ) [ -- GEMFIREXD-PROPERTIES caseSensitive = { false | true} ]
 ```
 
-<a id="create-index__section_80D0EB31C1BD46869BFABB902FB1F227"></a>
 ##Description
 
 The `CREATE INDEX` statement creates an index on one or more columns of a table. Indexes can speed up queries that use those columns for filtering data, or can also enforce a unique constraint on the indexed columns.
@@ -21,8 +23,6 @@ The `CREATE INDEX` statement creates an index on one or more columns of a table.
 The maximum number of columns for an index key in SnappyData is 16. An index name cannot exceed 128 characters. A column must not be named more than once in a single CREATE INDEX statement. Different indexes can name the same column, however.
 
 SnappyData does not support creating an index on a column of datatype BLOB, CLOB, or LONG VARCHAR FOR BIT DATA. Indexes are supported for LONG VARCHAR columns.
-
-For HDFS-persistent tables, SnappyData creates and maintains indexes only for the in-memory, operational data set of the table. Because queries that access HDFS data do not use in-memory indexes, these queries should reference a primary key for performance reasons. Non primary key-based queries require a full table scan, which can lead to poor performance when accessing HDFS data.
 
 SnappyData can use indexes to improve the performance of data manipulation statements. In addition, UNIQUE indexes provide a form of data integrity checking. However, the UNIQUE constraint only applies to the local member's data and not globally in the whole table. To enforce a unique index globally for a partitioned table, use the <a href="ref-create-global-hash-index.html#reference_B5512145CAC34AB08B245970E29E02FA" class="xref" title="Creates an index that contains unique values across all of the members that host a partitioned table&#39;s data.">CREATE GLOBAL HASH INDEX</a> statement.
 

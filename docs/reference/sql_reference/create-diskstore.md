@@ -1,6 +1,6 @@
 # CREATE DISKSTORE
 
-Disk stores provide disk storage for tables and queues that need to overflow or persist (for instance when using an asynchronous write-behind listener).
+Disk stores provide disk storage for tables that need to overflow or persist.
 
 ##Syntax
 
@@ -20,27 +20,26 @@ CREATE DISKSTORE diskstore_name
 <a id="create-diskstore__section_CEFE3C3073E342A6B431737BC51FC781"></a>
 ##Description
 
-SnappyData attempts to preallocate oplog files when you execute the CREATE DISKSTORE command. See <a href="../../troubleshooting.html#concept_83A53C7C767442578F2A4CF50E4A224E__section_a11_lxt_hl" class="xref">Preventing Disk Full Errors</a> for more information.
+SnappyData attempts to preallocate oplog files when you execute the CREATE DISKSTORE command. See [Preventing Disk Full Errors](../../troubleshooting/prevent_disk_full_errors.md) for more information.
 
 All tables that target the same disk store share that disk store's persistence attributes. A table that does not target a named disk store uses the default disk store for overflow or persistence. By default, SnappyData uses the working directory of the member as the default disk store.
 
-See also <a href="../../disk_storage/chapter_overview.html#disk_storage" class="xref" title="By default, a SnappyData distributed system persists only the data dictionary for the tables and indexes you create. These persistence files are stored in the datadictionary subdirectory of each locator and data store that joins the distributed system. In-memory table data, however, is not persisted by default; if you shut down all SnappyData members, non-persistent tables are empty on the next startup. You have the option to persist all table data to disk as a backup of the in-memory copy, or to overflow table data to disk when it is evicted from memory.">Persisting Table Data to SnappyData Disk Stores</a>.
 
 **MAXLOGSIZE**
 
-SnappyData records DML statements in an operation log (oplog) files. This option sets the maximum size in megabytes that the oplog can become before SnappyData automatically rolls to a new file. This size is the combined sizes of the <span class="ph filepath">.crf</span> and <span class="ph filepath">.drf</span> oplog files. When SnappyData creates an oplog file, it immediately reserves this amount of file space. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy-shell rowstore server stop` or `snappy-shell shut-down-all`).
+SnappyData records DML statements in an operation log (oplog) files. This option sets the maximum size in megabytes that the oplog can become before SnappyData automatically rolls to a new file. This size is the combined sizes of the <span class="ph filepath">.crf</span> and <span class="ph filepath">.drf</span> oplog files. When SnappyData creates an oplog file, it immediately reserves this amount of file space. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy server stop` or `./sbin/snappy-stop-all`).
 
 The default value is 1 GB.
 
 **AUTOCOMPACT**
 
-Set this option to "true" (the default) to automatically compact disk files. Set the option to "false" if compaction is not needed or if you intend to manually compact disk files using the `snappy-shell` utility.
+Set this option to "true" (the default) to automatically compact disk files. Set the option to "false" if compaction is not needed or if you intend to manually compact disk files using the `snappy` utility.
 
 SnappyData performs compaction by removing "garbage" data that DML statements generate in the oplog file.
 
 **ALLOWFORCECOMPACTION**
 
-Set this option to "true" to enable online compaction of oplog files using the `snappy-shell` utility. By default, this option is set to "false" (disabled).
+Set this option to "true" to enable online compaction of oplog files using the `snappy` utility. By default, this option is set to "false" (disabled).
 
 **COMPACTIONTHRESHOLD**
 
@@ -48,7 +47,7 @@ Sets the threshold for the amount of "garbage" data that can exist in the oplog 
 
 **TIMEINTERVAL**
 
-Sets the number of milliseconds that can elapse before SnappyData asynchronously flushes data to disk. TIMEINTERVAL is only used for tables that were created using the `asynchronous` option in the persistence clause of the CREATE TABLE statement. See <a href="ref-create-table.html#create-table" class="xref" title="Creates a new table using SnappyData features.">CREATE TABLE</a>. The default value is 1000 milliseconds (1 second).
+Sets the number of milliseconds that can elapse before SnappyData asynchronously flushes data to disk. TIMEINTERVAL is only used for tables that were created using the `asynchronous` option in the persistence clause of the CREATE TABLE statement. See [CREATE TABLE](create-table.md). The default value is 1000 milliseconds (1 second).
 
 **WRITEBUFFERSIZE**
 
@@ -68,7 +67,11 @@ The optional `dir-name` entry defines a specific host system directory to use fo
 
 In each entry:
 
-*   `dir-name` specifies the name of a directory to use for the disk store. The disk store directory is created on each member if necessary. If you do not specify an absolute path, then SnappyData creates or uses the named directory in each member's working directory (or in the value specified by the <a href="../configuration/ConnectionAttributes.html#jdbc_connection_attributes__section_86AA2AD28CEB4C4E945434AC6564A4CC" class="xref noPageCitation">sys-disk-dir</a> boot property, if defined). If you specify an absolute path, then all parent directories in the path must exist at the time you execute the command.</br> !!! Note: SnappyData uses a "shared nothing" disk store design, and you cannot use a single disk store directory to store oplog files from multiple SnappyData members. </p>
+* `dir-name` specifies the name of a directory to use for the disk store. The disk store directory is created on each member if necessary. If you do not specify an absolute path, then SnappyData creates or uses the named directory in each member's working directory (or in the value specified by the <a href="../configuration/ConnectionAttributes.html#jdbc_connection_attributes__section_86AA2AD28CEB4C4E945434AC6564A4CC" class="xref noPageCitation">sys-disk-dir</a> boot property, if defined). If you specify an absolute path, then all parent directories in the path must exist at the time you execute the command.
+
+	!!! Note 
+    	SnappyData uses a "shared nothing" disk store design, and you cannot use a single disk store directory to store oplog files from multiple SnappyData members. 
+
 *   *integer-constant* optionally specifies the maximum amount of space, in megabytes, to use for the disk store in that directory. The space used is calculated as the combined sizes of all oplog files in the directory.
 
     If you do not specify an *integer-constant* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings (see <a href="../configuration/ConnectionAttributes.html#jdbc_connection_attributes__diskspace-warning-interval" class="xref">gemfire.DISKSPACE\_WARNING\_INTERVAL</a>). If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.

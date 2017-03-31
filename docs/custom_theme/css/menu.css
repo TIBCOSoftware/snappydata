@@ -30,7 +30,7 @@ ul.subnav > ul.subnav > li {
 }
 ul.subnav > ul.subnav > li > a,
 ul.subnav > ul.subnav > li.current > a {
-  padding-left: 4.4em !important;
+  padding-left: 3.0em !important;
 }
 ul.subnav > ul.subnav > li.current > ul > li > a {
   padding-left: 5.4em !important;	

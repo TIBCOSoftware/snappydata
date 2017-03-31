@@ -26,9 +26,6 @@ Single-row and multiple-row lists can include the keyword DEFAULT. Specifying DE
 
 <a id="reference_2A553C72CF7346D890FC904D8654E062__section_33D88974B03A45EC91226B0D46C14549"></a>
 
-##Statement dependency system
-
-The INSERT statement depends on the table being inserted into, all of the conglomerates (units of storage such as heaps or indexes) for that table, and any other table named in the statement. Any statement that creates or drops an index or a constraint for the target table of a prepared INSERT statement invalidates the prepared INSERT statement.
 
 ##Example
 
