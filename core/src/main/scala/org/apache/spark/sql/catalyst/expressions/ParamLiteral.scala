@@ -205,3 +205,51 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
     converter = createToScalaConverter(dataType)
   }
 }
+
+
+/**
+ * Wrap any ParamLiteral expression with this so that we can generate literal initialization code
+ * within the <code>.init()</code> method of the generated class.
+ * <br><br>
+ *
+ * We try to locate first foldable expression in a query tree such that all its child is foldable
+ * but parent isn't. That way we locate the exact point where an expression is safe to evalute
+ * once instead of evaluating every row.
+ * <br><br>
+ *
+ * Expressions like <code> select c from tab where
+ *  case col2 when 1 then col3 else 'y' end = 22 </code>
+ * like queries doesn't converts literal evaluation into init method.
+ *
+ * @param expr minimal expression tree that can be evaluated only once and turn into a constant.
+ */
+case class DynamicFoldableExpression(val expr: Expression) extends Expression {
+  override def nullable: Boolean = expr.nullable
+
+  override def eval(input: InternalRow): Any = expr.eval(input)
+
+  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val eval = expr.genCode(ctx)
+    val newVar = ctx.freshName("paramLiteralExpr")
+    val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
+    val comment = ctx.registerComment(expr.toString)
+    ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
+      s"$comment\n${eval.code}\n$newVar = ${eval.value};")
+    ctx.addMutableState("boolean", newVarIsNull, s"$newVarIsNull = ${eval.isNull};")
+
+    ev.copy(code = "", value = newVar, isNull = newVarIsNull)
+  }
+
+  override def dataType: DataType = expr.dataType
+
+  override def children: Seq[Expression] = expr.children
+
+  override def productElement(n: Int): Any = expr.productElement(n)
+
+  override def productArity: Int = expr.productArity
+
+  override def canEqual(that: Any): Boolean = that match {
+    case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)
+    case other => expr.canEqual(other)
+  }
+}

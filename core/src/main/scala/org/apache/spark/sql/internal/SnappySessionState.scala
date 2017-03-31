@@ -22,20 +22,17 @@ import java.util.Properties
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
-import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper,
-PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.{CatalystConf, InternalRow}
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases,
-NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, EmptyRow, Expression,
-Literal, ParamLiteral, PredicateHelper, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, EmptyRow, Expression, Literal, ParamLiteral, PredicateHelper, UnaryExpression}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -43,8 +40,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable,
-HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
@@ -120,7 +116,9 @@ class SnappySessionState(snappySession: SnappySession)
         p
     } transform {
       case q: LogicalPlan => q transformExpressionsDown {
+        // ignore leaf ParamLiteral and Literal
         case p: ParamLiteral => p
+        case l: Literal => l
         // Wrap expressions that are foldable.
         case e if e.foldable =>
           // lets mark child params foldable false so that nested expression doesn't
@@ -131,41 +129,6 @@ class SnappySessionState(snappySession: SnappySession)
           }
           DynamicFoldableExpression(e)
       }
-    }
-  }
-
-  case class DynamicFoldableExpression(expr: Expression) extends Expression {
-    override def nullable: Boolean = expr.nullable
-
-    override def eval(input: InternalRow): Any = expr.eval(input)
-
-    override def genCode(ctx: CodegenContext): ExprCode = {
-      super.genCode(ctx)
-    }
-
-    override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-      val eval = expr.genCode(ctx)
-      val newVar = ctx.freshName("paramLiteralExpr")
-      val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
-      val comment = ctx.registerComment(expr.toString)
-      ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
-        s"$comment\n${eval.code}\n$newVar = ${eval.value};")
-      ctx.addMutableState("boolean", newVarIsNull, s"$newVarIsNull = ${eval.isNull};")
-
-      ev.copy(code = "", value = newVar, isNull = newVarIsNull)
-    }
-
-    override def dataType: DataType = expr.dataType
-
-    override def children: Seq[Expression] = expr.children
-
-    override def productElement(n: Int): Any = expr.productElement(n)
-
-    override def productArity: Int = expr.productArity
-
-    override def canEqual(that: Any): Boolean = that match {
-      case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)
-      case other => expr.canEqual(other)
     }
   }
 
