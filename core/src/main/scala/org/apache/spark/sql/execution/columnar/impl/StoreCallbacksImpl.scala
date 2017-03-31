@@ -21,8 +21,8 @@ import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData}
-import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
+import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
@@ -30,9 +30,10 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
+import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
 import io.snappydata.Constant
 
-import org.apache.spark.sql._
+import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql.catalyst.FunctionIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -43,11 +44,16 @@ import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode, _}
-import org.apache.spark.{Logging, SparkContext, SparkException}
+import org.apache.spark.storage.TestBlockId
+import org.apache.spark.{Logging, SparkContext, SparkEnv, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   private val partitioner = new StoreHashFunction
+
+  val sizer: GemFireXDInstrumentation = GemFireXDInstrumentation.getInstance
+
+
 
   override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
@@ -270,6 +276,46 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       -1
     }
   }
+
+  override def acquireStorageMemory(objectName: String, numBytes: Long,
+      buffer: UMMMemoryTracker, shouldEvict: Boolean): Boolean = {
+    val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_$objectName")
+    MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
+      blockId, numBytes, MemoryMode.ON_HEAP, buffer, shouldEvict)
+  }
+
+  override def releaseStorageMemory(objectName: String, numBytes: Long): Unit = {
+    MemoryManagerCallback.memoryManager.
+      releaseStorageMemoryForObject(objectName, numBytes, MemoryMode.ON_HEAP)
+  }
+
+  override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
+    MemoryManagerCallback.memoryManager.
+      dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
+
+  override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
+
+  override def isSnappyStore: Boolean = true
+
+  override def getRegionOverhead(region: LocalRegion): Long = {
+    region.estimateMemoryOverhead(sizer)
+  }
+
+  override def getNumBytesForEviction: Long = {
+    SparkEnv.get.memoryManager.maxOnHeapStorageMemory
+  }
+
+  override def getStoragePoolUsedMemory: Long =
+    MemoryManagerCallback.memoryManager.getStoragePoolMemoryUsed()
+
+  override def getStoragePoolSize: Long =
+    MemoryManagerCallback.memoryManager.getStoragePoolSize
+
+  override def getExecutionPoolUsedMemory: Long
+  = MemoryManagerCallback.memoryManager.getExecutionPoolUsedMemory
+
+  override def getExecutionPoolSize: Long =
+    MemoryManagerCallback.memoryManager.getExecutionPoolSize
 }
 
 trait StoreCallback extends Serializable {

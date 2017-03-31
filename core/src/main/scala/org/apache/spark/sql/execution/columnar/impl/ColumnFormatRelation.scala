@@ -97,7 +97,8 @@ class BaseColumnFormatRelation(
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-        new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition], -1)
+        new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+          Array.empty[String], Array.empty[Partition], -1)
     }
   }
 

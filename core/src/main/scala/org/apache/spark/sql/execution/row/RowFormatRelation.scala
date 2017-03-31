@@ -110,28 +110,23 @@ class RowFormatRelation(
       list
     }
 
+    // all columns of primary key have to be present in filter to be usable
+    val equalToColumns = getEqualToColumns(filters)
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
-        // TODO: [shirishd] Fix this for connector mode
-        Array.empty[String]
+        if (relInfo.pkCols.forall(equalToColumns.contains)) return relInfo.pkCols
       case _ =>
-        val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
-        val td = container.getTableDescriptor
-        if (td ne null) {
-          val primaryKey = td.getPrimaryKey
-          if (primaryKey ne null) {
-            // all columns of primary key have to be present in filter to be usable
-            val equalToColumns = getEqualToColumns(filters)
-            val cols = primaryKey.getKeyColumns
-            val baseColumns = td.getColumnNamesArray
-            val pkCols = cols.map(c => baseColumns(c - 1))
-            if (pkCols.forall(equalToColumns.contains)) return pkCols
-          }
+        val cols = new Array[String](1)
+        GfxdSystemProcedures.getPKColumns(cols, region)
+        var pkCols = Array.empty[String]
+        if (cols(0) != null) {
+          pkCols = cols(0).split(":")
         }
-        Array.empty[String]
+        if (pkCols.forall(equalToColumns.contains)) return pkCols
     }
-
+    Array.empty[String]
   }
+
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
     filters.filter(ExternalStoreUtils.unhandledFilter(_,
@@ -178,7 +173,8 @@ class RowFormatRelation(
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-         new RelationInfo(numBuckets, partitionColumns, Array.empty[String], Array.empty[Partition], -1)
+         new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+           Array.empty[String], Array.empty[Partition], -1)
     }
   }
 

@@ -191,7 +191,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation), table, new RelationInfo(0, Seq.empty, Array.empty, Array.empty, -1))
+        (LogicalRelation(relation), table, new RelationInfo(0, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
       }
     }
 

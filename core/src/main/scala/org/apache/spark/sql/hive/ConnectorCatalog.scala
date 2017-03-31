@@ -205,6 +205,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
 case class RelationInfo(numBuckets: Int = 1,
     partitioningCols: Seq[String] = Seq.empty,
     indexCols: Array[String] = Array.empty,
+    pkCols: Array[String] = Array.empty,
     partitions: Array[org.apache.spark.Partition] = Array.empty,
     embdClusterRelDestroyVersion: Int = -1) {
 }

@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletRequest
 import scala.collection.mutable
 import scala.xml.Node
 
-import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
@@ -68,9 +68,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       }
     })
 
-    val tablesBuf = SnappyTableStatsProviderService.getAggregatedTableStatsOnDemand
+    val (tableBuff,indexBuff) =  SnappyTableStatsProviderService.getAggregatedStatsOnDemand
 
-    updateClusterStats(clusterStatsMap, clusterMembers, tablesBuf)
+    updateClusterStats(clusterStatsMap, clusterMembers, tableBuff)
 
     // Generate Pages HTML
     val pageTitleNode = createPageTitleNode(pageHeaderText)
@@ -98,12 +98,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     }
 
     val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle, SnappyDashboardPage.tablesStatsTitleTooltip)
+    val indexStatsTitle = createTitleNode(SnappyDashboardPage.indexStatsTitle, SnappyDashboardPage.indexStatsTitleTooltip)
 
-    val tablesStatsTable = tableStats(tablesBuf)
+    val tablesStatsTable = tableStats(tableBuff)
+    val indexStatsTable = indexStats(indexBuff)
 
     val tablesStatsDetails = tablesStatsTitle ++ tablesStatsTable
+    val indexStatsDetails = indexStatsTitle ++ indexStatsTable
 
-    val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++ sparkConnectorsStatsDetails ++ tablesStatsDetails
+    val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++ sparkConnectorsStatsDetails ++ tablesStatsDetails ++ indexStatsDetails
 
     UIUtils.simpleSparkPageWithTabs(pageHeaderText, pageContent, parent, Some(500))
 
@@ -291,6 +294,26 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
               </span>
             </th>
             <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemoryToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("storageMemoryUsed")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemorySizeToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("storageMemoryPoolSize")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemoryToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("executionMemoryUsed")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 150px;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemorySizeToolTip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("executionMemoryPoolSize")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("usedMemory")}
               </span>
@@ -398,6 +421,36 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
+  private def indexStats(indexBuf: Map[String, SnappyIndexStats]): Seq[Node] = {
+    <div>
+      <table class="table table-bordered table-condensed table-striped">
+        <thead>
+          <tr>
+            <th style="text-align:center;">
+              <span data-toggle="tooltip" title=" " data-original-title={SnappyDashboardPage.indexStatsColumn("nameTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.indexStatsColumn("name")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title=" " data-original-title={SnappyDashboardPage.indexStatsColumn("rowCountTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.indexStatsColumn("rowCount")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 250px;">
+              <span data-toggle="tooltip" title=" " data-original-title={SnappyDashboardPage.indexStatsColumn("totalSizeTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.indexStatsColumn("totalSize")}
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {indexBuf.map(t => indexRow(t._2)).toArray}
+        </tbody>
+      </table>
+    </div>
+  }
+
+
   private def memberRow(memberDetails:mutable.Map[String, Any]): Seq[Node] = {
 
     val status = memberDetails.getOrElse("status","")
@@ -434,6 +487,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val totalMemory = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
     val usedMemory = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
     val memoryUsage: Double = (usedMemory * 100) / totalMemory
+    val storagePoolUsed = memberDetails.getOrElse("storagePoolUsed", 0).asInstanceOf[Long]
+    val storagePoolSize = memberDetails.getOrElse("storagePoolSize", 0).asInstanceOf[Long]
+    val executionPoolSize = memberDetails.getOrElse("executionPoolSize", 0).asInstanceOf[Long]
+    val executionPoolUsed = memberDetails.getOrElse("executionPoolUsed", 0).asInstanceOf[Long]
 
     <tr>
       <td>
@@ -455,6 +512,18 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         {makeProgressBar(memoryUsage)}
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(storagePoolUsed)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(storagePoolSize)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(executionPoolUsed)}</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(executionPoolSize)}</div>
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(usedMemory)}</div>
@@ -543,6 +612,28 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   }
 
+  private def indexRow(indexDetails: SnappyIndexStats): Seq[Node] = {
+
+    val numFormatter = java.text.NumberFormat.getIntegerInstance
+    <tr>
+      <td>
+        <div style="width:100%; padding-left:10px;">
+          {indexDetails.getIndexName}
+        </div>
+      </td>
+      <td>
+        <div style="padding-right:10px; text-align:right;">
+          {numFormatter.format(indexDetails.getRowCount)}
+        </div>
+      </td>
+      <td>
+        <div style="padding-right:10px; text-align:right;">
+          {Utils.bytesToString(indexDetails.getSizeInMemory)}
+        </div>
+      </td>
+    </tr>
+  }
+
 
   def makeProgressBar(completed: Double): Seq[Node] = {
     val completeWidth = "width: %s%%".format(completed)
@@ -611,6 +702,14 @@ object SnappyDashboardPage{
   memberStatsColumn += ("locatorTooltip" -> "Member is Locator")
   memberStatsColumn += ("server" -> "Server")
   memberStatsColumn += ("serverTooltip" -> "Member is Server")
+  memberStatsColumn += ("storageMemoryUsed" -> "StorageUsed")
+  memberStatsColumn += ("storageMemoryToolTip" -> "Total storage pool memory used")
+  memberStatsColumn += ("storageMemoryPoolSize" -> "StoragePoolSize")
+  memberStatsColumn += ("storageMemorySizeToolTip" -> "Max storage pool memory size")
+  memberStatsColumn += ("executionMemoryUsed" -> "ExecutionUsed")
+  memberStatsColumn += ("executionMemoryToolTip" -> "Total execution pool memory used")
+  memberStatsColumn += ("executionMemoryPoolSize" -> "ExecutionPoolSize")
+  memberStatsColumn += ("executionMemorySizeToolTip" -> "Max execution pool memory size")
 
   val sparkConnectorsStatsTitle = "Spark Connectors"
   val sparkConnectorsStatsTitleTooltip = "Spark Connectors Summary"
@@ -650,5 +749,16 @@ object SnappyDashboardPage{
   tableStatsColumn += ("totalSize" -> "Total Size")
   tableStatsColumn += ("totalSizeTooltip" -> "Total Size of Tables")
 
+  val indexStatsTitle = "Indexes"
+  val indexStatsTitleTooltip = "SnappyData Index Summary"
+  val indexStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
+  indexStatsColumn += ("id" -> "Id")
+  indexStatsColumn += ("idTooltip" -> "Index unique Identifier")
+  indexStatsColumn += ("name" -> "Name")
+  indexStatsColumn += ("nameTooltip" -> "Index Name")
+  indexStatsColumn += ("rowCount" -> "Row Count")
+  indexStatsColumn += ("rowCountTooltip" -> "Total Rows in Index")
+  indexStatsColumn += ("totalSize" -> "Total Size")
+  indexStatsColumn += ("totalSizeTooltip" -> "Total Size of Index")
 
 }
