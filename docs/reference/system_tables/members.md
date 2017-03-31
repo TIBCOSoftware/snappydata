@@ -2,10 +2,10 @@
 
 A SnappyData virtual table that contains information about each distributed system member.
 
-See <a href="../../manage_guide/Topics/distributed-sysadmin/member-info.html#concept_2FFD239F66BD4A0099E401F1FC250574" class="xref" title="The SYS.MEMBERS table provides information about all peers and servers that make up a SnappyData distributed system. You can use different queries to obtain details about individual members and their role in the cluster.">Distributed System Membership Information</a>. <p 
+See <a href="../../manage_guide/Topics/distributed-sysadmin/member-info.html#concept_2FFD239F66BD4A0099E401F1FC250574" class="xref" title="The SYS.MEMBERS table provides information about all peers and servers that make up a SnappyData distributed system. You can use different queries to obtain details about individual members and their role in the cluster.">Distributed System Membership Information</a>. 
 
-	!!! Note
-		SnappyData converts server group names to all-uppercase letters before storing the values in the SYS.MEMBERS table. DDL statements and procedures automatically convert any supplied server group values to all-uppercase letters. However, you must specify uppercase values for server groups when you directly query the SYS.MEMBERS table.
+!!! Note
+	SnappyData converts server group names to all-uppercase letters before storing the values in the SYS.MEMBERS table. DDL statements and procedures automatically convert any supplied server group values to all-uppercase letters. However, you must specify uppercase values for server groups when you directly query the SYS.MEMBERS table.
 
 <a id="reference_21873F7CB0454C4DBFDC7B4EDADB6E1F__table_F5B916925318472FB3BB0B850DBBA41F"></a>
 

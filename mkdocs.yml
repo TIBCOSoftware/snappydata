@@ -66,7 +66,7 @@ pages:
         - 'Managing Tables in Memory': 'concepts/tables/managing_table_in_memory.md' 
         - 'Overview of Disk Stores': 'concepts/tables/disk_stores.md'
         - 'Additional Topics': 'concepts/tables/estimating_heap_overhead.md'
-    - 'Working with heterogenous data': 'empty.md'
+    - 'Working with heterogenous data': 'concepts/heterogenous_data/working_with_heterogenous_data.md'
     - 'Backup and Recovery': 'backup.md'
     - 'Backup and Recovery':
         - 'Online and offline backup and recovery': 'concepts/backup/online_offline_backup.md'
@@ -81,7 +81,7 @@ pages:
         - 'Connecting Java Clients and Peers': 'concepts/developing_applications/connecting_java_clients_and_peers.md'
         - 'Using Result Sets and Cursors': 'concepts/developing_applications/using_result_sets_and_cursors.md'
         - 'Storing and Loading JAR Files': 'concepts/developing_applications/storing_and_loading_jar_files.md'
-        - 'Import Export': 'empty.md'
+        - 'Import Export': 'concepts/developing_applications/import_export.md'
     - 'Synopsis Data Engine (SDE)': aqp.md
     - 'Synopsis Data Engine (SDE)':
         - 'Key Concepts': 'concepts/sde/key_concepts.md'
@@ -170,7 +170,7 @@ pages:
 # -- Topic - Montioring Dashboard
 - 'Managing and Monitoring': 'monitoring.md'
 - 'Managing and Monitoring': 
-    - 'Topics to Decide': 'empty.md'
+    - 'Topics to Decide': 'monitoring/monitor.md'
 # -- Topic - Troubleshooting
 - 'Troubleshooting and Analysis': 'troubleshooting.md'
 - 'Troubleshooting and Analysis': 
@@ -211,15 +211,17 @@ pages:
     - 'Inbuilt System Procedures': 
         - 'DISKSTORE\_FSYNC': 'reference/inbuilt/diskstore-fsync.md'
         - 'DUMP\_STACKS': 'reference/inbuilt/dump-stacks.md'
-        - 'JARS': 'reference/inbuilt/jars.md'
-        - 'MEMBERS': 'reference/inbuilt/members.md'
-        - 'MEMORYANALYTICS': 'reference/inbuilt/memoryanalytics.md'
         - 'REBALANCE\_ALL\_BUCKETS': 'reference/inbuilt/rebalance-all-buckets.md'
         - 'SET\_CRITICAL\_HEAP\_PERCENTAGE': 'reference/inbuilt/set_critical_heap_percentage.md'
         - 'SET\_EVICTION\_HEAP\_PERCENTAGE': 'reference/inbuilt/set_eviction_heap_percentage.md'
         - 'SET\_STATISTICS\_TIMING': 'reference/inbuilt/setstatstimingproc.md'
         - 'SET\_TRACE\_FLAG': 'reference/inbuilt/set-trace-flag.md'
-        - 'SYSDISKSTORES': 'reference/inbuilt/sysdiskstores.md'
+    - 'System Tables': 'reference/system_tables/system_tables.md'
+    - 'System Tables': 
+        - 'JARS': 'reference/system_tables/jars.md'
+        - 'MEMBERS': 'reference/system_tables/members.md'
+        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
+        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
     - 'Command Line Utilities': 'reference/snappy_shell_reference/store-launcher.md'
     - 'Command Line Utilities':
         - 'backup': 'reference/snappy_shell_reference/store-backup.md'
@@ -311,7 +313,7 @@ pages:
 # -- Topic - Glossary
 - 'Glossary': 'glossary/glossary.md'
 # -- Topic - About and Contact
-- 'About': 'empty.md'
+- 'About': 'about.md'
 - 'About': 
     - 'Contact and Support': 'techsupport.md'
     - 'License': 'LICENSE.md'
