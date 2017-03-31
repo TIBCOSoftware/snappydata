@@ -196,8 +196,8 @@ object ParamLiteral {
   }
 }
 
-case class ParamConstants(pos: Int, paramType: DataType,
-    nullableValue: Boolean) extends LeafExpression {
+case class ParamConstants(pos: Int, private val paramType: DataType,
+    private val nullableValue: Boolean) extends LeafExpression {
 
   override def dataType: DataType = paramType
 
