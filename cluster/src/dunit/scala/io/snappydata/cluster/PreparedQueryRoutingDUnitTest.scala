@@ -81,17 +81,14 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < ? " +
-          s" and ol_int2_id in (?, ?, ?) " +
+          s" and ol_int2_id > 100 " +
           s" and ol_str_id like ? " +
           s" limit 20" +
           s""
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
-      prepStatement.setInt(2, 60)
-      prepStatement.setInt(3, 170)
-      prepStatement.setInt(4, 150)
-      prepStatement.setString(5, "%0")
+      prepStatement.setString(2, "%0")
       val rs = prepStatement.executeQuery
 
       // val rs = stmt.executeQuery(qry)
@@ -112,7 +109,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < 500 " +
-          s" and ol_int2_id in  (60, 170, 150) " +
+          s" and ol_int2_id > 100 " +
           s" and ol_str_id LIKE '%0' " +
           s" limit 20" +
           s""
