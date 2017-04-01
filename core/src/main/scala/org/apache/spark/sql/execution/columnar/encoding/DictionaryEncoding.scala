@@ -181,11 +181,11 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override def sizeInBytes(cursor: Long): Long = {
     if (stringMap ne null) {
-      cursor - columnData.baseOffset + stringMap.valueDataSize
+      cursor - columnBeginPosition + stringMap.valueDataSize
     } else if (isIntMap) {
-      cursor - columnData.baseOffset + (longArray.size() << 2)
+      cursor - columnBeginPosition + (longArray.size() << 2)
     } else {
-      cursor - columnData.baseOffset + (longArray.size() << 4)
+      cursor - columnBeginPosition + (longArray.size() << 4)
     }
   }
 
@@ -198,11 +198,15 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   protected def initializeIndexBytes(initSize: Int, minSize: Int): Unit = {
     // 2 byte indexes for short dictionary while 4 bytes for big dictionary
     val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
-    if (columnData eq null) {
-      columnData = allocate(numBytes)
-    } else if (columnData.capacity < minSize) {
-      columnData.release(allocator)
-      columnData = allocate(numBytes)
+    if ((reuseColumnData eq null) || reuseColumnData.remaining() < minSize) {
+      setSource(allocator.allocate(numBytes))
+      if (reuseColumnData ne null) {
+        allocator.release(reuseColumnData)
+        reuseColumnData = null
+      }
+    } else {
+      setSource(reuseColumnData)
+      reuseColumnData = null
     }
   }
 
@@ -231,14 +235,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         longArray = new TLongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
     }
-    this.allocator = allocator
+    setAllocator(allocator)
     initializeLimits()
     initializeNulls(initSize)
     // start with the short dictionary having 2 byte indexes
     isShortDictionary = true
     initializeIndexBytes(initSize, 0)
     // return the cursor for index bytes
-    columnData.baseOffset
+    columnBeginPosition
   }
 
   protected final def switchToBigDictionary(numUsedIndexes: Int,
@@ -246,21 +250,21 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // mark as a big dictionary
     isShortDictionary = false
     val oldIndexData = columnData
-    val oldIndexBytes = oldIndexData.baseObject
-    var oldCursor = oldIndexData.baseOffset
+    val oldIndexBytes = columnBytes
+    var oldCursor = columnBeginPosition
     // initialize new index array having at least the current dictionary size
     initializeIndexBytes(newNumIndexes, newNumIndexes << 2)
-    var cursor = columnData.baseOffset
+    var cursor = columnBeginPosition
     // copy over short indexes from previous index bytes
     var i = 0
     while (i < numUsedIndexes) {
-      ColumnEncoding.writeInt(columnData.baseObject, cursor,
+      ColumnEncoding.writeInt(columnBytes, cursor,
         ColumnEncoding.readShort(oldIndexBytes, oldCursor))
       oldCursor += 2
       cursor += 4
       i += 1
     }
-    oldIndexData.release(allocator)
+    allocator.release(oldIndexData)
     cursor
   }
 
@@ -268,17 +272,17 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // expand the index array if required
     if (isShortDictionary) {
       var position = cursor
-      if (position + 2 > columnData.endPosition) {
+      if (position + 2 > columnEndPosition) {
         position = expand(position, 2)
       }
-      ColumnEncoding.writeShort(columnData.baseObject, position, index.toShort)
+      ColumnEncoding.writeShort(columnBytes, position, index.toShort)
       position + 2
     } else {
       var position = cursor
-      if (position + 4 > columnData.endPosition) {
+      if (position + 4 > columnEndPosition) {
         position = expand(position, 4)
       }
-      ColumnEncoding.writeInt(columnData.baseObject, position, index)
+      ColumnEncoding.writeInt(columnBytes, position, index)
       position + 4
     }
   }
@@ -292,7 +296,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       updateStringStats(value)
       index = -index - 1
       if (index == Short.MaxValue && isShortDictionary) {
-        val numUsedIndexes = ((position - columnData.baseOffset) >> 1).toInt
+        val numUsedIndexes = ((position - columnBeginPosition) >> 1).toInt
         // allocate with increased size
         position = switchToBigDictionary(numUsedIndexes,
           (numUsedIndexes << 2) / 3)
@@ -318,7 +322,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       index = longArray.size()
       key.index = index
       if (index == Short.MaxValue && isShortDictionary) {
-        val numUsedIndexes = ((position - columnData.baseOffset) >> 1).toInt
+        val numUsedIndexes = ((position - columnBeginPosition) >> 1).toInt
         // allocate with increased size
         position = switchToBigDictionary(numUsedIndexes,
           (numUsedIndexes << 2) / 3)
@@ -331,7 +335,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 
   override def finish(indexCursor: Long): ByteBuffer = {
-    val numIndexBytes = (indexCursor - this.columnData.baseOffset).toInt
+    val numIndexBytes = (indexCursor - this.columnBeginPosition).toInt
     var numElements: Int = 0
     val dictionarySize = if (stringMap ne null) {
       numElements = stringMap.size
@@ -344,11 +348,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // create the final data array of exact size that is known at this point
     val numNullWords = getNumNullWords
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
-    val finalAllocator = this.finalAllocator
-    val columnData = finalAllocator.allocate(ColumnEncoding.checkBufferSize(
+    val columnData = storageAllocator.allocate(ColumnEncoding.checkBufferSize(
       8L /* typeId + number of nulls */ + (numNullWords << 3L) + dataSize))
-    val columnBytes = finalAllocator.baseObject(columnData)
-    val baseOffset = finalAllocator.baseOffset(columnData)
+    val columnBytes = if (columnData.hasArray) columnData.array() else null
+    val baseOffset = storageAllocator.baseOffset(columnData)
     var cursor = baseOffset
     // typeId
     ColumnEncoding.writeInt(columnBytes, cursor, typeId)
@@ -390,12 +393,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       }
     }
     // lastly copy the index bytes
+    val position = columnData.position()
     columnData.position((cursor - baseOffset).toInt)
-    this.columnData.copyTo(columnData, 0, numIndexBytes)
-    columnData.rewind()
+    copyTo(columnData, 0, numIndexBytes)
+    columnData.position(position)
 
     // reuse this index data in next round if possible
     releaseForReuse(this.columnData, numIndexBytes)
+    clearSource()
 
     columnData
   }

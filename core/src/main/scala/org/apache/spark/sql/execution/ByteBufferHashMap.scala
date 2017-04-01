@@ -225,22 +225,6 @@ final class ByteBufferData private(val buffer: ByteBuffer,
 
   def capacity: Int = (endPosition - baseOffset).toInt
 
-  def copyTo(dest: ByteBuffer, srcOffset: Int, endOffset: Int): Unit = {
-    val src = buffer
-    // buffer to buffer copy after position reset for source
-    val position = src.position()
-    val limit = src.limit()
-
-    if (position != srcOffset) src.position(srcOffset)
-    if (limit > endOffset) src.limit(endOffset)
-
-    dest.put(src)
-
-    // move back position and limit to original values
-    src.position(position)
-    src.limit(limit)
-  }
-
   def equals(srcOffset: Int, oBase: AnyRef, oBaseOffset: Long,
       size: Int): Boolean = {
     ByteArrayMethods.arrayEquals(baseObject, baseOffset + srcOffset,
