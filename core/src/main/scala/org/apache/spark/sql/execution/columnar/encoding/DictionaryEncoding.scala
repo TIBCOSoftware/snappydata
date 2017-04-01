@@ -195,18 +195,12 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     case _ => dataType.defaultSize // accommodate values without expansion
   }
 
-  protected def initializeIndexBytes(initSize: Int, minSize: Int): Unit = {
-    // 2 byte indexes for short dictionary while 4 bytes for big dictionary
-    val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
-    if ((reuseColumnData eq null) || reuseColumnData.remaining() < minSize) {
-      setSource(allocator.allocate(numBytes))
-      if (reuseColumnData ne null) {
-        allocator.release(reuseColumnData)
-        reuseColumnData = null
-      }
-    } else {
-      setSource(reuseColumnData)
-      reuseColumnData = null
+  protected def initializeIndexBytes(initSize: Int,
+      releaseOld: Boolean): Unit = {
+    if (!releaseOld || (columnData eq null)) {
+      // 2 byte indexes for short dictionary while 4 bytes for big dictionary
+      val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
+      setSource(allocator.allocate(numBytes), releaseOld)
     }
   }
 
@@ -240,7 +234,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     initializeNulls(initSize)
     // start with the short dictionary having 2 byte indexes
     isShortDictionary = true
-    initializeIndexBytes(initSize, 0)
+    initializeIndexBytes(initSize, releaseOld = true)
     // return the cursor for index bytes
     columnBeginPosition
   }
@@ -252,8 +246,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val oldIndexData = columnData
     val oldIndexBytes = columnBytes
     var oldCursor = columnBeginPosition
-    // initialize new index array having at least the current dictionary size
-    initializeIndexBytes(newNumIndexes, newNumIndexes << 2)
+    // force new columnData creation since need to copy in different format
+    initializeIndexBytes(newNumIndexes, releaseOld = false)
     var cursor = columnBeginPosition
     // copy over short indexes from previous index bytes
     var i = 0
@@ -399,8 +393,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     columnData.position(position)
 
     // reuse this index data in next round if possible
-    releaseForReuse(this.columnData, numIndexBytes)
-    clearSource()
+    releaseForReuse(numIndexBytes)
 
     columnData
   }

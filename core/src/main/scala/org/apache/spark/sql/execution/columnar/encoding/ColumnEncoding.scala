@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import io.snappydata.util.StringUtils
 
@@ -29,7 +30,6 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{LocalMode, SnappyContext, SnappyEmbeddedMode}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.bitset.BitSetMethods
@@ -215,7 +215,6 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final var columnBeginPosition: Long = _
   protected final var columnEndPosition: Long = _
   protected final var columnBytes: AnyRef = _
-  protected final var reuseColumnData: ByteBuffer = _
   protected final var reuseUsedSize: Int = _
   protected final var forComplexType: Boolean = _
 
@@ -239,11 +238,9 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def storageAllocator: ColumnAllocator = {
     if (finalAllocator ne null) finalAllocator
     else {
-      finalAllocator = SnappyContext.getClusterMode(
-        SnappyContext.globalSparkContext) match {
-        case SnappyEmbeddedMode(_, _) | LocalMode(_, _) => HeapBufferAllocator
-        case _ => allocator
-      }
+      finalAllocator =
+          if (GemFireCacheImpl.getInstance ne null) HeapBufferAllocator
+          else allocator
       finalAllocator
     }
   }
@@ -313,7 +310,7 @@ trait ColumnEncoder extends ColumnEncoding {
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
-    if (reuseColumnData eq null) {
+    if (columnData eq null) {
       var initByteSize: Long = 0L
       if (reuseUsedSize > 0) {
         initByteSize = reuseUsedSize
@@ -323,22 +320,21 @@ trait ColumnEncoder extends ColumnEncoding {
           initByteSize += 8L /* typeId + nullsSize */
         }
       }
-      setSource(allocator.allocate(checkBufferSize(initByteSize)))
+      setSource(allocator.allocate(checkBufferSize(initByteSize)),
+        releaseOld = true)
     } else {
       // for primitive types optimistically trim to exact size
       dataType match {
         case BooleanType | ByteType | ShortType | IntegerType | LongType |
              DateType | TimestampType | FloatType | DoubleType
           if reuseUsedSize > 0 && isAllocatorFinal &&
-              reuseUsedSize != reuseColumnData.limit() =>
-          setSource(allocator.allocate(reuseUsedSize))
-          allocator.release(reuseColumnData)
+              reuseUsedSize != columnData.limit() =>
+          setSource(allocator.allocate(reuseUsedSize), releaseOld = true)
 
-        case _ => setSource(reuseColumnData)
+        case _ => // continue to use the previous columnData
       }
-      reuseColumnData = null
-      reuseUsedSize = 0
     }
+    reuseUsedSize = 0
     if (withHeader) {
       var cursor = columnBeginPosition
       // typeId followed by nulls bitset size and space for values
@@ -357,7 +353,7 @@ trait ColumnEncoder extends ColumnEncoding {
   final def buffer: AnyRef = columnBytes
 
   protected final def setSource(buffer: ByteBuffer,
-      releaseOld: Boolean = true): Unit = {
+      releaseOld: Boolean): Unit = {
     if (buffer ne columnData) {
       if ((columnData ne null) && releaseOld) {
         allocator.release(columnData)
@@ -369,11 +365,17 @@ trait ColumnEncoder extends ColumnEncoding {
     }
   }
 
-  protected final def clearSource(): Unit = {
-    columnData = null
-    columnBytes = null
-    columnBeginPosition = 0
-    columnEndPosition = 0
+  protected final def clearSource(newSize: Int, releaseData: Boolean): Unit = {
+    if (columnData ne null) {
+      if (releaseData) {
+        allocator.release(columnData)
+      }
+      columnData = null
+      columnBytes = null
+      columnBeginPosition = 0
+      columnEndPosition = 0
+    }
+    reuseUsedSize = newSize
   }
 
   protected final def copyTo(dest: ByteBuffer, srcOffset: Int,
@@ -656,14 +658,7 @@ trait ColumnEncoder extends ColumnEncoding {
    * The encoder may no longer be usable after this call.
    */
   def close(): Unit = {
-    if (reuseColumnData ne null) {
-      allocator.release(reuseColumnData)
-      reuseColumnData = null
-    }
-    if (columnData ne null) {
-      allocator.release(columnData)
-      columnData = null
-    }
+    clearSource(newSize = 0, releaseData = true)
   }
 
   protected def getNumNullWords: Int
@@ -671,13 +666,8 @@ trait ColumnEncoder extends ColumnEncoding {
   protected def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long
 
-  protected final def releaseForReuse(columnData: ByteBuffer,
-      newSize: Int): Unit = {
-    if (reuseColumnData ne null) {
-      allocator.release(reuseColumnData)
-    }
+  protected final def releaseForReuse(newSize: Int): Unit = {
     columnData.clear()
-    reuseColumnData = columnData
     reuseUsedSize = newSize
   }
 }
@@ -1001,8 +991,7 @@ trait NotNullEncoder extends ColumnEncoder {
     // else copy is required in any case and columnData can be reused
     if (cursor == columnEndPosition && isAllocatorFinal) {
       val columnData = this.columnData
-      reuseUsedSize = newSize
-      clearSource()
+      clearSource(newSize, releaseData = false)
       columnData
     } else {
       // copy to exact size
@@ -1010,8 +999,7 @@ trait NotNullEncoder extends ColumnEncoder {
       copyTo(newColumnData, srcOffset = 0, newSize)
       newColumnData.rewind()
       // reuse this columnData in next round if possible
-      releaseForReuse(columnData, newSize)
-      clearSource()
+      releaseForReuse(newSize)
       newColumnData
     }
   }
@@ -1127,9 +1115,9 @@ trait NullableEncoder extends NotNullEncoder {
       // reuse this columnData in next round if possible but
       // skip if there was a large wastage in this round
       if (math.abs(initialNumWords - numWords) < maxWastedWords) {
-        releaseForReuse(columnData, newSize)
+        releaseForReuse(newSize)
       } else {
-        reuseUsedSize = newSize
+        clearSource(newSize, releaseData = true)
       }
 
       // now write the header including nulls
