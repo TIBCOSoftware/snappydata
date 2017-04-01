@@ -210,7 +210,7 @@ abstract class ColumnDecoder extends ColumnEncoding {
 trait ColumnEncoder extends ColumnEncoding {
 
   protected final var allocator: ColumnAllocator = _
-  protected final var finalAllocator: ColumnAllocator = _
+  private final var finalAllocator: ColumnAllocator = _
   protected final var columnData: ByteBuffer = _
   protected final var columnBeginPosition: Long = _
   protected final var columnEndPosition: Long = _
@@ -247,6 +247,9 @@ trait ColumnEncoder extends ColumnEncoding {
       finalAllocator
     }
   }
+
+  protected final def isAllocatorFinal: Boolean =
+    allocator.getClass eq storageAllocator.getClass
 
   protected def setAllocator(allocator: ColumnAllocator): Unit = {
     if (this.allocator ne allocator) {
@@ -305,14 +308,20 @@ trait ColumnEncoder extends ColumnEncoding {
     if (withHeader) initializeLimits()
 
     val numNullWords = initializeNulls(initSize)
+    val numNullBytes = numNullWords.toLong << 3L
     if (withHeader) initializeLimits()
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
     if (reuseColumnData eq null) {
-      var initByteSize = defSize.toLong * initSize
-      if (withHeader) {
-        initByteSize += 8L /* typeId + nullsSize */
+      var initByteSize: Long = 0L
+      if (reuseUsedSize > 0) {
+        initByteSize = reuseUsedSize
+      } else {
+        initByteSize = defSize.toLong * initSize + numNullBytes
+        if (withHeader) {
+          initByteSize += 8L /* typeId + nullsSize */
+        }
       }
       setSource(allocator.allocate(checkBufferSize(initByteSize)))
     } else {
@@ -320,7 +329,8 @@ trait ColumnEncoder extends ColumnEncoding {
       dataType match {
         case BooleanType | ByteType | ShortType | IntegerType | LongType |
              DateType | TimestampType | FloatType | DoubleType
-          if reuseUsedSize != reuseColumnData.limit() =>
+          if reuseUsedSize > 0 && isAllocatorFinal &&
+              reuseUsedSize != reuseColumnData.limit() =>
           setSource(allocator.allocate(reuseUsedSize))
           allocator.release(reuseColumnData)
 
@@ -336,7 +346,7 @@ trait ColumnEncoder extends ColumnEncoding {
       cursor += 4
       // write the number of null words
       ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
-      cursor + 4L + (numNullWords.toLong << 3L)
+      cursor + 4L + numNullBytes
     } else columnBeginPosition
   }
 
@@ -346,13 +356,17 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def buffer: AnyRef = columnBytes
 
-  final def isDirect: Boolean = allocator.isDirect
-
-  protected final def setSource(buffer: ByteBuffer): Unit = {
-    columnData = buffer
-    columnBytes = allocator.baseObject(buffer)
-    columnBeginPosition = allocator.baseOffset(buffer)
-    columnEndPosition = columnBeginPosition + buffer.limit()
+  protected final def setSource(buffer: ByteBuffer,
+      releaseOld: Boolean = true): Unit = {
+    if (buffer ne columnData) {
+      if ((columnData ne null) && releaseOld) {
+        allocator.release(columnData)
+      }
+      columnData = buffer
+      columnBytes = allocator.baseObject(buffer)
+      columnBeginPosition = allocator.baseOffset(buffer)
+      columnEndPosition = columnBeginPosition + buffer.limit()
+    }
   }
 
   protected final def clearSource(): Unit = {
@@ -383,7 +397,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def expand(cursor: Long, required: Int): Long = {
     val numWritten = cursor - columnBeginPosition
     setSource(allocator.expand(columnData, cursor,
-      columnBeginPosition, required))
+      columnBeginPosition, required), releaseOld = false)
     columnBeginPosition + numWritten
   }
 
@@ -571,11 +585,11 @@ trait ColumnEncoder extends ColumnEncoding {
     if (position + fixedWidth > columnEndPosition) {
       position = expand(position, fixedWidth)
     }
-    // zero out the null bytes for off-heap bytes
-    if (isDirect) {
+    // explicitly zero out the null bytes for off-heap allocator
+    if (allocator.isDirect) {
       var i = 0
       while (i < numNullBytes) {
-        writeLongUnchecked(position + i, 0L)
+        Platform.putLong(null, position + i, 0L)
         i += 8
       }
     }
@@ -663,8 +677,7 @@ trait ColumnEncoder extends ColumnEncoding {
       allocator.release(reuseColumnData)
     }
     columnData.clear()
-    // release old ByteBuffer wrapper
-    reuseColumnData = columnData.duplicate()
+    reuseColumnData = columnData
     reuseUsedSize = newSize
   }
 }
@@ -982,17 +995,17 @@ trait NotNullEncoder extends ColumnEncoder {
       numWords: Int): Long = cursor
 
   override def finish(cursor: Long): ByteBuffer = {
+    val newSize = checkBufferSize(cursor - columnBeginPosition)
     // check if need to shrink byte array since it is stored as is in region
     // avoid copying only if final shape of object in region is same
     // else copy is required in any case and columnData can be reused
-    if (cursor == columnEndPosition &&
-        allocator.getClass == storageAllocator.getClass) {
+    if (cursor == columnEndPosition && isAllocatorFinal) {
       val columnData = this.columnData
+      reuseUsedSize = newSize
       clearSource()
       columnData
     } else {
       // copy to exact size
-      val newSize = checkBufferSize(cursor - columnBeginPosition)
       val newColumnData = storageAllocator.allocate(newSize)
       copyTo(newColumnData, srcOffset = 0, newSize)
       newColumnData.rewind()
@@ -1115,12 +1128,13 @@ trait NullableEncoder extends NotNullEncoder {
       // skip if there was a large wastage in this round
       if (math.abs(initialNumWords - numWords) < maxWastedWords) {
         releaseForReuse(columnData, newSize)
+      } else {
+        reuseUsedSize = newSize
       }
 
       // now write the header including nulls
-      setSource(newColumnData)
-      var position = columnBeginPosition
-      val newColumnBytes = columnBytes
+      val newColumnBytes = allocator.baseObject(newColumnData)
+      var position = allocator.baseOffset(newColumnData)
       ColumnEncoding.writeInt(newColumnBytes, position, typeId)
       position += 4
       ColumnEncoding.writeInt(newColumnBytes, position, numWords)

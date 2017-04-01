@@ -350,7 +350,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
     val columnData = storageAllocator.allocate(ColumnEncoding.checkBufferSize(
       8L /* typeId + number of nulls */ + (numNullWords << 3L) + dataSize))
-    val columnBytes = if (columnData.hasArray) columnData.array() else null
+    val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
     var cursor = baseOffset
     // typeId
