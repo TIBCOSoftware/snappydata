@@ -114,13 +114,24 @@ object StoreUtils {
   }
 
   private[sql] def getBucketPreferredLocations(region: PartitionedRegion,
-      bucketId: Int): Seq[String] = {
-    val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
-    distMembers.collect {
-      case m if SnappyContext.containsBlockId(m.toString) =>
-        Utils.getHostExecutorId(SnappyContext.getBlockId(
-          m.toString).get.blockId)
-    }.toSeq
+      bucketId: Int, forWrite: Boolean): Seq[String] = {
+    if (forWrite) {
+      val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).toString
+      SnappyContext.getBlockId(primary) match {
+        case Some(b) => Seq(Utils.getHostExecutorId(b.blockId))
+        case None => Seq.empty
+      }
+    } else {
+      val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+      val members = new mutable.ArrayBuffer[String](2)
+      distMembers.foreach { m =>
+        SnappyContext.getBlockId(m.toString) match {
+          case Some(b) => members += Utils.getHostExecutorId(b.blockId)
+          case None =>
+        }
+      }
+      members
+    }
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
@@ -134,7 +145,7 @@ object StoreUtils {
       val numPartitions = region.getTotalNumberOfBuckets
 
       (0 until numPartitions).map { p =>
-        val prefNodes = getBucketPreferredLocations(region, p)
+        val prefNodes = getBucketPreferredLocations(region, p, forWrite = false)
         val buckets = new mutable.ArrayBuffer[Int](1)
         buckets += p
         new MultiBucketExecutorPartition(p, buckets, numPartitions, prefNodes)
