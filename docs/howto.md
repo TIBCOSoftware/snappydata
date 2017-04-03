@@ -1218,7 +1218,8 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 `-zeppelin.interpreter.port=<port_number>` in [lead node configuration](configuration.md#configuring-leads). </note>
 
 ### Known Issue
-If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8, approximate result does not work when you run the query `%sql show-instant-results-first` on the sample table.
+
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
 ### More Information
 Refer to these sections for information:
