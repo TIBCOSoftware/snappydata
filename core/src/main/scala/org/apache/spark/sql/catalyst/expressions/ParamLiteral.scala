@@ -28,8 +28,7 @@ import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 
-class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int,
-    e: Option[Expression] = None)
+class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     extends Literal(_value, _dataType) {
 
   private[this] var _foldable = false
