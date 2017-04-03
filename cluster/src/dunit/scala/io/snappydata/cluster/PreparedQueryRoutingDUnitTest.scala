@@ -257,9 +257,9 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
-      prepStatement.setInt(2, 200)
-      prepStatement.setInt(3, 300)
-      prepStatement.setInt(4, 400)
+      prepStatement.setInt(2, 100)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 300)
       prepStatement.setString(5, "%0")
       val rs = prepStatement.executeQuery
 
@@ -303,9 +303,9 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
-      prepStatement.setInt(2, 200)
-      prepStatement.setInt(3, 300)
-      prepStatement.setInt(4, 400)
+      prepStatement.setInt(2, 100)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 300)
       prepStatement.setString(5, "%0")
       val rs = prepStatement.executeQuery
 
