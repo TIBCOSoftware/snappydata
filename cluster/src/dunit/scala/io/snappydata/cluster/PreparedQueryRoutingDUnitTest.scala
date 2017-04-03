@@ -17,9 +17,11 @@
 
 package io.snappydata.cluster
 
-import java.sql.DriverManager
+import java.sql.{Connection, DriverManager, ResultSet}
+
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.test.dunit.AvailablePortHelper
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 
@@ -69,80 +71,6 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
   }
 
-  def query(): Unit = {
-    val conn = DriverManager.getConnection(
-      "jdbc:snappydata://localhost:" + serverHostPort)
-
-    println(s"Connected to $serverHostPort")
-    val stmt = conn.createStatement()
-    var prepStatement: java.sql.PreparedStatement = null
-    try {
-      println("Prepared Statement: ")
-      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < ? " +
-          s" and ol_int2_id > 100 " +
-          s" and ol_str_id like ? " +
-          s" limit 20" +
-          s""
-
-      val prepStatement = conn.prepareStatement(qry)
-      prepStatement.setInt(1, 500)
-      prepStatement.setString(2, "%0")
-      val rs = prepStatement.executeQuery
-
-      // val rs = stmt.executeQuery(qry)
-
-      var index = 0
-      while (rs.next()) {
-        val i = rs.getInt(1)
-        val j = rs.getInt(2)
-        val s = rs.getString(3)
-        println(s"row($index) $i $j $s ")
-        index += 1
-      }
-      println("Number of rows read " + index)
-
-
-      println("Statement: ")
-
-      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < 500 " +
-          s" and ol_int2_id > 100 " +
-          s" and ol_str_id LIKE '%0' " +
-          s" limit 20" +
-          s""
-      val rs2 = stmt.executeQuery(qry2)
-      var index2 = 0
-      while (rs2.next()) {
-        val i = rs2.getInt(1)
-        val j = rs2.getInt(2)
-        val s = rs2.getString(3)
-        println(s"row($index2) $i $j $s ")
-        index2 += 1
-      }
-      println("Number of rows read " + index2)
-//      val reg = Misc.getRegionByPath("/APP/ORDER_LINE_COL", false).asInstanceOf[PartitionedRegion]
-//      println("reg " + reg)
-//      val itr = reg.getDataStore.getAllLocalBucketRegions.iterator()
-//      val b1 = itr.next()
-//      println("b = " + b1.getName + " and size = " + b1.size());
-//
-//      itr.next()
-//      val b2 = itr.next()
-//      println("b = " + b2.getName + " and size = " + b2.size());
-      rs.close()
-
-      //Thread.sleep(1000000)
-
-    } finally {
-      stmt.close()
-      if (prepStatement != null) prepStatement.close()
-      conn.close()
-    }
-  }
-
   def testPrepStatementRouting(): Unit = {
     serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
@@ -157,5 +85,255 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
     // (1 to 5).foreach(d => query())
     query()
+  }
+
+  def verifyQuery(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet): Unit = {
+    val builder = StringBuilder.newBuilder
+    var index = 0
+    var assertionFailed = false
+    while (prep_rs.next() && stmt_rs.next()) {
+      val prep_i = prep_rs.getInt(1)
+      val prep_j = prep_rs.getInt(2)
+      val prep_s = prep_rs.getString(3)
+
+      val stmt_i = stmt_rs.getInt(1)
+      val stmt_j = stmt_rs.getInt(2)
+      val stmt_s = stmt_rs.getString(3)
+
+      builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+      builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+
+      if (prep_i != stmt_i && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_i stmt=$stmt_i").append("\n")
+        assertionFailed = true
+      }
+
+      if (prep_j != stmt_j && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_j stmt=$stmt_j").append("\n")
+        assertionFailed = true
+      }
+
+      if (prep_s != stmt_s && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_s stmt=$stmt_s").append("\n")
+        assertionFailed = true
+      }
+
+      index += 1
+    }
+
+    while (prep_rs.next()) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed at index=$index").append("\n")
+        assertionFailed = true
+      }
+
+      val prep_i = prep_rs.getInt(1)
+      val prep_j = prep_rs.getInt(2)
+      val prep_s = prep_rs.getString(3)
+      builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+    }
+
+    while (stmt_rs.next()) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed at index=$index").append("\n")
+        assertionFailed = true
+      }
+
+      val stmt_i = stmt_rs.getInt(1)
+      val stmt_j = stmt_rs.getInt(2)
+      val stmt_s = stmt_rs.getString(3)
+      builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+    }
+
+    if (assertionFailed) {
+      println(builder.toString())
+    }
+
+    assert(!assertionFailed)
+  }
+
+  def query1(): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    println(s"Connected to $serverHostPort")
+
+    val stmt = conn.createStatement()
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id > 100 " +
+          s" and ol_str_id like ? " +
+          s" limit 20" +
+          s""
+
+      val prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setString(2, "%0")
+      val rs = prepStatement.executeQuery
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 500 " +
+          s" and ol_int2_id > 100 " +
+          s" and ol_str_id LIKE '%0' " +
+          s" limit 20" +
+          s""
+      val rs2 = stmt.executeQuery(qry2)
+
+      verifyQuery("query1", rs, rs2)
+      rs.close()
+      rs2.close()
+
+      // Thread.sleep(1000000)
+
+    } finally {
+      stmt.close()
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query2(): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    println(s"Connected to $serverHostPort")
+
+    val stmt = conn.createStatement()
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id > 100 " +
+          s" and ol_str_id like ? " +
+          s""
+
+      val prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setString(2, "%0")
+      val rs = prepStatement.executeQuery
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 500 " +
+          s" and ol_int2_id > 100 " +
+          s" and ol_str_id LIKE '%0' " +
+          s""
+      val rs2 = stmt.executeQuery(qry2)
+
+      verifyQuery("query2", rs, rs2)
+      rs.close()
+      rs2.close()
+
+      // Thread.sleep(1000000)
+
+    } finally {
+      stmt.close()
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query3(): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    println(s"Connected to $serverHostPort")
+
+    val stmt = conn.createStatement()
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id in (?, ?, ?) " +
+          s" and ol_str_id like ? " +
+          s" limit 20" +
+          s""
+
+      val prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setInt(2, 200)
+      prepStatement.setInt(3, 300)
+      prepStatement.setInt(4, 400)
+      prepStatement.setString(5, "%0")
+      val rs = prepStatement.executeQuery
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 500 " +
+          s" and ol_int2_id in (100, 200, 300) " +
+          s" and ol_str_id LIKE '%0' " +
+          s" limit 20" +
+          s""
+      val rs2 = stmt.executeQuery(qry2)
+
+      verifyQuery("query3", rs, rs2)
+      rs.close()
+      rs2.close()
+
+      // Thread.sleep(1000000)
+
+    } finally {
+      stmt.close()
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query4(): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    println(s"Connected to $serverHostPort")
+
+    val stmt = conn.createStatement()
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id in (?, ?, ?) " +
+          s" and ol_str_id like ? " +
+          s""
+
+      val prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setInt(2, 200)
+      prepStatement.setInt(3, 300)
+      prepStatement.setInt(4, 400)
+      prepStatement.setString(5, "%0")
+      val rs = prepStatement.executeQuery
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 500 " +
+          s" and ol_int2_id in (100, 200, 300) " +
+          s" and ol_str_id LIKE '%0' " +
+          s""
+      val rs2 = stmt.executeQuery(qry2)
+
+      verifyQuery("query4", rs, rs2)
+      rs.close()
+      rs2.close()
+
+      // Thread.sleep(1000000)
+
+    } finally {
+      stmt.close()
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query(): Unit = {
+    query1()
+    query2()
+    query3()
+    query4()
   }
 }
