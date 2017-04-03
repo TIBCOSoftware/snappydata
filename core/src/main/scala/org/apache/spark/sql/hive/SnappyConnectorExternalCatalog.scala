@@ -32,13 +32,10 @@ private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
       funcDefinition: CatalogFunction): Unit = {
     val functionName = funcDefinition.identifier.funcName
     val className = funcDefinition.className
-    val funcResourcesArray: Array[(String, String)] = new Array(funcDefinition.resources.length)
-    funcDefinition.resources.zipWithIndex.foreach {
-      case (fr: FunctionResource, index: Int) =>
-        funcResourcesArray(index) = (fr.resourceType.resourceType, fr.uri)
-    }
+    // contains only one URI
+    val jarURI = funcDefinition.resources.head.uri
     val sessionCatalog = SnappyContext(null: SparkContext).snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
-    sessionCatalog.connectorHelper.executeCreateUDFStatement(db, functionName, className, funcResourcesArray)
+    sessionCatalog.connectorHelper.executeCreateUDFStatement(db, functionName, className, jarURI)
     SnappySession.clearAllCache()
   }
 

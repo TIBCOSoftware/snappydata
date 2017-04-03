@@ -121,19 +121,6 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     createSnappyTblStmt.execute()
   }
 
-  def createTable(
-      tableIdent: QualifiedTableName,
-      provider: String,
-      userSpecifiedSchema: Option[StructType],
-      schemaDDL: Option[String],
-      partitionColumns: Array[String],
-      mode: SaveMode,
-      options: Map[String, String],
-      query: LogicalPlan,
-      isBuiltIn: Boolean): LogicalPlan = {
-    throw new AnalysisException("Not yet implemented")
-  }
-
   def dropTable(tableIdent: QualifiedTableName, ifExists: Boolean = false): Unit = {
     snappySession.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
@@ -241,11 +228,11 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def executeCreateUDFStatement(db: String, functionName: String,
-      className: String, funcResources: Array[(String, String)]): Unit = {
+      className: String, jarURI: String): Unit = {
     createUDFStmt.setString(1, db)
     createUDFStmt.setString(2, functionName)
     createUDFStmt.setString(3, className)
-    createUDFStmt.setBlob(4, SmartConnectorHelper.getBlob(funcResources, conn))
+    createUDFStmt.setString(4, jarURI)
     createUDFStmt.execute
   }
 

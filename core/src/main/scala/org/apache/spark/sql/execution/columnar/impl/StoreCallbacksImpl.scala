@@ -35,7 +35,7 @@ import io.snappydata.Constant
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql.catalyst.FunctionIdentifier
-import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, FunctionResourceType}
+import org.apache.spark.sql.catalyst.catalog.{JarResource, CatalogFunction, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
@@ -242,10 +242,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val db = context.getDb
         val className= context.getClassName
         val functionName = context.getFunctionName
-        val functionResources = SmartConnectorHelper.
-            deserialize(context.getFuncResources).asInstanceOf[Array[(String, String)]]
-        var resources: Seq[FunctionResource] = Seq()
-        functionResources.foreach( f => resources :+= new FunctionResource(FunctionResourceType.fromString(f._1), f._2))
+        val jarURI = context.getjarURI()
+        val resources: Seq[FunctionResource] = Seq(new FunctionResource(JarResource, jarURI))
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating udf $functionName")
         val snappySharedState = session.sharedState.asInstanceOf[SnappySharedState]
