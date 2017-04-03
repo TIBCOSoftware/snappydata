@@ -18,13 +18,11 @@
 package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
-
 import scala.util.{Failure, Success, Try}
-
 import com.typesafe.config.Config
 import util.TestException
 
-import org.apache.spark.sql.{SnappySession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 class CreateAndLoadCTTablesJob extends SnappySQLJob {
 
@@ -40,7 +38,6 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
       pw.println(s"Data files are at : ${dataFilesLocation}")
       snc.setConf("dataFilesLocation",dataFilesLocation)
       CTQueries.snc = snc
-      CTQueries.dataFilesLocation = dataFilesLocation
       CTTestUtil.dropTables(snc)
       pw.println(s"Create and load for ${tableType} tables has started...")
 

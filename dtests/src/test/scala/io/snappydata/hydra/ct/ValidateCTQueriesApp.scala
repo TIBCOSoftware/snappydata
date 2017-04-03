@@ -19,8 +19,6 @@ package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import util.TestException
-
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkContext, SparkConf}
 
@@ -39,10 +37,13 @@ object ValidateCTQueriesApp {
     snc.setConf("dataFilesLocation", dataFilesLocation)
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     CTQueries.snc = snc
-    CTQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
     pw.println(s"Validation for queries with ${tableType} tables started")
+    if (fullResultSetValidation)
+      pw.println(s"Test will perform fullResultSetValidation")
+    else
+      pw.println(s"Test will not perform fullResultSetValidation")
     val startTime = System.currentTimeMillis
     val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation, sqlContext)
     val endTime = System.currentTimeMillis

@@ -24,7 +24,7 @@ import com.typesafe.config.Config
 import util.TestException
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SnappySession, SQLContext, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 class ValidateCTQueriesJob extends SnappySQLJob {
 
@@ -42,7 +42,7 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       snc.setConf("dataFilesLocation", dataFilesLocation)
       CTQueries.snc = snc
       pw.println(s"Validation for $tableType tables started in snappy Job")
-      val fullResultSetValidation: Boolean = jobConfig.getString("fullResultSetValidation").toBoolean
+      val fullResultSetValidation: Boolean = jobConfig.getBoolean("fullResultSetValidation")
       val sc = SparkContext.getOrCreate()
       val sqlContext = SQLContext.getOrCreate(sc)
       if (fullResultSetValidation)
@@ -50,7 +50,8 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       else
         pw.println(s"Test will not perform fullResultSetValidation")
       val startTime = System.currentTimeMillis
-      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation, sqlContext)
+      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
+        sqlContext)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")

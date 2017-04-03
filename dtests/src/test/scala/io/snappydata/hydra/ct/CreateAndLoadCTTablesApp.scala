@@ -32,7 +32,6 @@ object CreateAndLoadCTTablesApp {
     val dataFilesLocation = args(0)
     snc.setConf("dataFilesLocation", dataFilesLocation)
     CTQueries.snc = snc
-    CTQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
     val redundancy = args(2)
     val persistenceMode = args(3)
