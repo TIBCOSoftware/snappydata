@@ -42,4 +42,4 @@ cp -R build-artifacts/scala-2.11/docs/* site/apidocs/
 
 # remove extra files added to docs
 #rm ./docs/index.md
-mkdocs serve
+mkdocs serve --dev-addr=0.0.0.0:8002

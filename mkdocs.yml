@@ -43,11 +43,13 @@ pages:
     - 'Download and Install':
         - 'On Premise': 'install/on_premise.md'   
         - 'Building from Source': 'install/from_source.md'   
-        - 'Cloud Installation': 'install/on_aws.md'   
 # -- Topic - Cloud Services
 - 'Snappy Cloud Services': 'cloud/cloud_services.md'
 - 'Snappy Cloud Services':
-    - 'Sub-Heading': 'empty.md'
+    - 'Setting up Cluster on Amazon Web Services (AWS)': 'install/on_aws.md'   
+    - 'Setting up Cluster with SnappyData Docker Image': 'cloud/setting_up_cluster_docker_image.md'
+    - 'Using Multiple Containers with Docker Compose': 'cloud/using_multiple_containers_with_docker_compose.md'
+    - 'SnappyData on Docker Cloud': 'cloud/snappydata_on_docker_cloud.md'
 # -- Topic - Concepts and Theories
 - 'Concepts': 'concepts.md'
 - 'Concepts':
@@ -209,13 +211,13 @@ pages:
         - 'UPDATE': 'reference/sql_reference/update.md'
     - 'Inbuilt System Procedures': 'reference/inbuilt/SystemProcedures.md'
     - 'Inbuilt System Procedures': 
-        - 'DISKSTORE\_FSYNC': 'reference/inbuilt/diskstore-fsync.md'
-        - 'DUMP\_STACKS': 'reference/inbuilt/dump-stacks.md'
-        - 'REBALANCE\_ALL\_BUCKETS': 'reference/inbuilt/rebalance-all-buckets.md'
-        - 'SET\_CRITICAL\_HEAP\_PERCENTAGE': 'reference/inbuilt/set_critical_heap_percentage.md'
-        - 'SET\_EVICTION\_HEAP\_PERCENTAGE': 'reference/inbuilt/set_eviction_heap_percentage.md'
-        - 'SET\_STATISTICS\_TIMING': 'reference/inbuilt/setstatstimingproc.md'
-        - 'SET\_TRACE\_FLAG': 'reference/inbuilt/set-trace-flag.md'
+        - 'DISKSTORE_FSYNC': 'reference/inbuilt/diskstore-fsync.md'
+        - 'DUMP_STACKS': 'reference/inbuilt/dump-stacks.md'
+        - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt/rebalance-all-buckets.md'
+        - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt/set_critical_heap_percentage.md'
+        - 'SET_EVICTION_HEAP_PERCENTAGE': 'reference/inbuilt/set_eviction_heap_percentage.md'
+        - 'SET_STATISTICS_TIMING': 'reference/inbuilt/setstatstimingproc.md'
+        - 'SET_TRACE_FLAG': 'reference/inbuilt/set-trace-flag.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'JARS': 'reference/system_tables/jars.md'
@@ -291,17 +293,17 @@ pages:
 #        - 'SYSCOLUMNS': 'reference/sql_reference/rrefsistabs22441.md'
 #        - 'SYSSCHEMAS': 'reference/sql_reference/rrefsistabs12085.md'
 #        - 'SYSSTATISTICS': 'reference/sql_reference/rrefsistabslilanguageitemsysstatistics.md'
-#	 - 'CANCEL\_STATEMENT': 'reference/sql_reference/cancel-statement.md'
-#        - 'CREATE\_ALL\_BUCKETS': 'reference/sql_reference/create-all-buckets.md'
-#        - 'CHANGE\_PASSWORD': 'reference/sql_reference/change_password.md'
-#        - 'CREATE\_USER': 'reference/sql_reference/create_user.md'
-#        - 'SET\_CRITICAL\_HEAP\_PERCENTAGE\_SG': 'reference/sql_reference/set_critical_heap_percentage_sg.md'
-#        - 'SET\_CRITICAL\_OFFHEAP\_PERCENTAGE': 'reference/sql_reference/set_critical_offheap_percentage.md'
-#        - 'SET\_CRITICAL\_OFFHEAP\_PERCENTAGE\_SG': 'reference/sql_reference/set_critical_offheap_percentage_sg.md'
-#        - 'SET\_EVICTION\_HEAP\_PERCENTAGE\_SG': 'reference/sql_reference/set_eviction_heap_percentage_sg.md'
-#        - 'SET\_EVICTION\_OFFHEAP\_PERCENTAGE': 'reference/sql_reference/set_eviction_offheap_percentage.md'
-#        - 'SET\_EVICTION\_OFFHEAP\_PERCENTAGE\_SG': 'reference/sql_reference/set_eviction_offheap_percentage_sg.md'
-#        - 'SHOW\_USERS': 'reference/sql_reference/show_users.md'
+#	 - 'CANCEL_STATEMENT': 'reference/sql_reference/cancel-statement.md'
+#        - 'CREATE_ALL_BUCKETS': 'reference/sql_reference/create-all-buckets.md'
+#        - 'CHANGE_PASSWORD': 'reference/sql_reference/change_password.md'
+#        - 'CREATE_USER': 'reference/sql_reference/create_user.md'
+#        - 'SET_CRITICAL_HEAP_PERCENTAGE_SG': 'reference/sql_reference/set_critical_heap_percentage_sg.md'
+#        - 'SET_CRITICAL_OFFHEAP_PERCENTAGE': 'reference/sql_reference/set_critical_offheap_percentage.md'
+#        - 'SET_CRITICAL_OFFHEAP_PERCENTAGE_SG': 'reference/sql_reference/set_critical_offheap_percentage_sg.md'
+#        - 'SET_EVICTION_HEAP_PERCENTAGE_SG': 'reference/sql_reference/set_eviction_heap_percentage_sg.md'
+#        - 'SET_EVICTION_OFFHEAP_PERCENTAGE': 'reference/sql_reference/set_eviction_offheap_percentage.md'
+#        - 'SET_EVICTION_OFFHEAP_PERCENTAGE_SG': 'reference/sql_reference/set_eviction_offheap_percentage_sg.md'
+#        - 'SHOW_USERS': 'reference/sql_reference/show_users.md'
 #    - 'SnappyData SQL Guide':
 #        - 'Keywords and Identifiers': 'reference/sql_reference/keywords_identifiers.md'
 #        - 'Statements': 'reference/sql_reference/SQLFabricLanguageReference.md' 
@@ -313,7 +315,7 @@ pages:
 # -- Topic - Glossary
 - 'Glossary': 'glossary/glossary.md'
 # -- Topic - About and Contact
-- 'About': 'about.md'
+- 'About': 'about_us.md'
 - 'About': 
     - 'Contact and Support': 'techsupport.md'
     - 'License': 'LICENSE.md'
