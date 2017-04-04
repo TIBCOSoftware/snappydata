@@ -19,7 +19,7 @@ class StringLengthUDF extends UDF1[String, Int] {
 ```
 <a id= create_udf> </a>
 #### **Create the UDF Function**
-After defining an UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-shell` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
+After defining an UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
 
 ```
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'

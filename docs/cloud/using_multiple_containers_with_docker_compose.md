@@ -67,11 +67,11 @@ Download and install the latest version of Docker compose. Refer to the [Docker 
 
 5. **Connect SnappyData with the Command Line Client**
 
-	The following example illustrates how to connect with snappy-shell. 
+	The following example illustrates how to connect with snappy. 
  
- 	[Download](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz) the binary files from the SnappyData repository. Go the location of the **bin** directory in the SnappyData home directory, and then start the snappy-shell.
+ 	[Download](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz) the binary files from the SnappyData repository. Go the location of the **bin** directory in the SnappyData home directory, and then start the snappy.
 
-		bin$ ./snappy-shell
+		bin$ ./snappy
  		SnappyData version 0.8
  		snappy>
  		

@@ -11,7 +11,7 @@ ELAPSEDTIME { ON | OFF }
 <a id="rtoolsijcomref18077__section_9228BC68FAAF4CDB941A6D9AF666C98D"></a>
 ##Description
 
-When `elapsedtime` is turned on, `snappy-shell` displays the total time elapsed during statement execution. The default value is OFF.
+When `elapsedtime` is turned on, `snappy` displays the total time elapsed during statement execution. The default value is OFF.
 
 ##Example
 

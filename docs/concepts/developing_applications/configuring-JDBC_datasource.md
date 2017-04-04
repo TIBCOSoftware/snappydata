@@ -9,7 +9,7 @@ Follow this general procedure when setting up SnappyData as a datasource in a th
 
 3. Specify “snappydata” as the database name. This represents a single SnappyData distributed system. (SnappyData does not contain multiple databases as in Apache Derby or other relational database systems.)
 
-4. For the hostname and port, specify the hostname and port combination of a SnappyData locator or a SnappyData server. This is the same hostname and port combination you would use to connect as a client from the `snappy-shell` prompt.
+4. For the hostname and port, specify the hostname and port combination of a SnappyData locator or a SnappyData server. This is the same hostname and port combination you would use to connect as a client from the `snappy` prompt.
 
 5. For the database username and password, enter a valid username and password combination if you have enabled authentication in your system (using the `-auth-provider` property).
 If you have not configured authentication in SnappyData, specify “app” as both the username and password values, or any other temporary value.

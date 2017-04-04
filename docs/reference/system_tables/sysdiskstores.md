@@ -12,7 +12,7 @@ See <a href="../language_ref/ref-create-diskstore.html#create-diskstore" class="
 | NAME                 | VARCHAR | 128    | No       | The unique identifier of the disk store.                                                                                             |
 | MAXLOGSIZE           | BIGINT  | 10     | No       | The maximum size, in megabytes, of a single oplog file in the disk store.                                                            |
 | AUTOCOMPACT          | CHAR    | 6      | No       | Specifies whether SnappyData automatically compacts log files in this disk store.                                                    |
-| ALLOWFORCECOMPACTION | CHAR    | 6      | No       | Specifies whether the disk store permits online compaction of log files using the `snappy-shell` utility. |
+| ALLOWFORCECOMPACTION | CHAR    | 6      | No       | Specifies whether the disk store permits online compaction of log files using the `snappy` utility. |
 | COMPACTIONTHRESHOLD  | INTEGER | 10     | No       | The threshold after which an oplog file is eligible for compaction. Specified as a percentage value from 0–100.                      |
 | TIMEINTERVAL         | BIGINT  | 10     | No       | The maximum number of milliseconds that can elapse before SnappyData asynchronously flushes data to disk.                            |
 | WRITEBUFFERSIZE      | INTEGER | 10     | No       | The size of the buffer SnappyData uses to store operations when writing to the disk store.                                           |

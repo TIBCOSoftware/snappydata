@@ -19,8 +19,8 @@ You can prevent disk file errors using the following techniques:
 
 * Monitor SnappyData logs for low disk space warnings. SnappyData logs disk space warnings in the following situations:
 
-    -   **Log file directory**: Logs a warning if the available space is less than 100 MB.
-    -   **Disk store directory**â: Logs a warning if the usable space is less than 1.15 times the space required to create a new oplog file.
+    -   **Log file directory**: Logs a warning if the available space is less than 100 MB.
+    -   **Disk store directory**: Logs a warning if the usable space is less than 1.15 times the space required to create a new oplog file.
     -   **Data dictionary**: Logs a warning if the remaining space is less than 50 MB.
 
     You can configure the log message frequency with the <a href="reference/configuration/ConnectionAttributes.html#jdbc_connection_attributes__diskspace-warning-interval" class="xref">gemfire.DISKSPACE\_WARNING\_INTERVAL</a> system property.

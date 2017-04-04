@@ -5,19 +5,19 @@ Perform online compaction of SnappyData disk stores.
 ##Syntax
 
 ``` pre
-snappy-shell compact-all-disk-stores
+snappy compact-all-disk-stores
  [-mcast-port=<port>] [-mcast-address=<address>]
  [-locators=<addresses>] [-bind-address=<address>] [-<prop-name>=<prop-value>]*
 ```
 
-The table describes options for snappy-shell compact-all-disk-stores. If no multicast or locator options are specified on the command-line, then the command uses the <span class="ph filepath">gemfirexd.properties</span> file (if available) to determine the distributed system to which it should connect.
+The table describes options for snappy compact-all-disk-stores. If no multicast or locator options are specified on the command-line, then the command uses the <span class="ph filepath">gemfirexd.properties</span> file (if available) to determine the distributed system to which it should connect.
 
 |Option|Description|
 |-|-|
 |-mcast-port|</br>Multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead).</br>Valid values are in the range 0–65535, with a default value of 10334.|
 |-mcast-address|</br>Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|</br>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
-|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default <code class="ph codeph">gfxd</code> uses the hostname, or localhost if the hostname points to a local loopback address.|
+|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default `gfxd` uses the hostname, or localhost if the hostname points to a local loopback address.|
 |-&lt;prop-name&gt;=&lt;prop-value&gt;|</br>Any other SnappyData distributed system property.|
 
 

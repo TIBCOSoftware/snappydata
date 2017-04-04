@@ -1,8 +1,3 @@
-.wy-nav-side {
-/*Left navigation colour */
-  background: #e3e3e3;
-}
-
 /* Hide the duplicate page title entry. */
 li.toctree-l3 > a,
 ul.subnav > li > span {
@@ -15,15 +10,15 @@ li > a[href*="techsupport.md"] {
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
-/* Indent 2nd-level menus.*/
+/* Indent 2nd-level menus. Not in use
 ul.subnav > li.toctree-l1 > a.current {
   padding-left: 2.4em !important;	
 	}
 ul.subnav > li.toctree-l1.current > ul > li > a {
   padding-left: 3.4em !important;
 }
-
-/* Indent 3rd-level menus.*/
+*/
+/* Indent 3rd-level menus.Not in use
 ul.subnav > ul.subnav,
 ul.subnav > ul.subnav > li {
   margin-left: -1em;
@@ -35,8 +30,8 @@ ul.subnav > ul.subnav > li.current > a {
 ul.subnav > ul.subnav > li.current > ul > li > a {
   padding-left: 5.4em !important;	
 }
-
-/* Indent 4th-level menus.*/
+*/
+/* Indent 4th-level menus.Not in use
 ul.subnav > ul.subnav > ul.subnav,
 ul.subnav > ul.subnav > ul.subnav > li {
   margin-left: -1.5em;
@@ -48,7 +43,7 @@ ul.subnav > ul.subnav > ul.subnav > li.current > a {
 ul.subnav > ul.subnav > ul.subnav > li.current > ul > li > a {
   padding-left: 7.4em !important;
 }
-
+*/
 /* Add collapsible markers */
 .current a.expander.top-level,
 a.expander.top-level,
@@ -74,6 +69,15 @@ a.expander.top-level,
 {
     padding-top: 8px;
     padding-bottom: 8px;
+}
+
+
+/*left navigation settings*/
+
+/*Left navigation colour */
+.wy-nav-side {
+  background: #e3e3e3;
+/*  width: 100px; 	*/
 }
 
 /*heading level-1 in left nav*/

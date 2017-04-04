@@ -45,13 +45,13 @@ Using Docker Cloud, connect to a cloud hosting provider of your choice. Currentl
 
 	 ![Node](../Images/verify_containers.png) 
 
-4. **Verify connection with snappy-shell ** 
+4. **Verify connection with snappy ** 
 		
 	a. Download the binary files from the [SnappyData repository](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz) and go to the location of the **bin** directory in the SnappyData home directory.
 
-	b. Using the command line client, connect to SnappyData and then start the snappy-shell.
+	b. Using the command line client, connect to SnappyData and then start the snappy.
 
- 		bin$ ./snappy-shell
+ 		bin$ ./snappy
  		SnappyData version 0.8
  		snappy>
  		  	

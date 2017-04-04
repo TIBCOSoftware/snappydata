@@ -78,9 +78,9 @@ If SSH is not supported then follow the instructions in the Machines without a S
 The example below starts a locator and server.
 
 ```bash 
-$ bin/snappy-shell locator start  -dir=/node-a/locator1 
-$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+$ bin/snappy locator start  -dir=/node-a/locator1 
+$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
-$ bin/snappy-shell locator stop
-$ bin/snappy-shell server stop
+$ bin/snappy locator stop
+$ bin/snappy server stop
 ``` 

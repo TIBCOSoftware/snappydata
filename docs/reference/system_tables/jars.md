@@ -9,7 +9,7 @@ See <a href="../../deploy_guide/Topics/cdevdeploy30736.html#cdevdeploy30736" cla
 | Column Name | Type    | Length | Nullable | Contents                                                                                                         |
 |-------------|---------|--------|----------|------------------------------------------------------------------------------------------------------------------|
 | SCHEMA      | VARCHAR | 256    | No       | The schema in which the JAR was installed.                                                                       |
-| ALIAS       | VARCHAR | 256    | No       | The name used to refer to this JAR file in commands such as `snappy-shell install-jar`, `remove-jar`, and `replace-jar`. |
+| ALIAS       | VARCHAR | 256    | No       | The name used to refer to this JAR file in commands such as `snappy install-jar`, `remove-jar`, and `replace-jar`. |
 | ID          | BIGINT  | 10     | No       | The internal ID of the JAR file installation.                                                                    |
 
 : <span class="tablecap">Table 1. JARS system table</span>

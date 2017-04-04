@@ -1,5 +1,7 @@
 # CREATE INDEX
 
+<mark> SOUBHIK TO CONFIRM/PROVIDE COLUMN TABLE INFO</mark>
+
 !!!Tip:
 	This is only supported for row tables. Support for column tables will be provided in future releases.
 

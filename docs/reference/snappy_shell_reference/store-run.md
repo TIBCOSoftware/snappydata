@@ -4,7 +4,7 @@ Connects to a SnappyData distributed system and executes the contents of a SQL c
 ##Syntax
 
 ``` pre
-snappy-shell run -file=<path or URL>
+snappy run -file=<path or URL>
      [-auth-provider=<name>]
      [-bind-address=<address>]
      [-client-bind-address=<address>]
@@ -22,7 +22,7 @@ snappy-shell run -file=<path or URL>
      [-user=<username>]
 ```
 
-This table describes options for the `snappy-shell run` command. Default values are used if you do not specify an option.
+This table describes options for the `snappy run` command. Default values are used if you do not specify an option.
 
 |Option||Description|
 |-|-|
@@ -33,14 +33,14 @@ This table describes options for the `snappy-shell run` command. Default values 
 |-client-port|</br>The port on which a SnappyData locator listens for client connections. The default is 1527.</br>Use this option with `-client-bind-address` to attach to a SnappyData cluster as a thin client and perform the command.|
 |-encoding|The character set encoding of the SQL script file (`-file` argument). The default is UTF-8. Other possible values are: US-ASCII, ISO-8859-1, UTF-8, UTF-16BE, UTF-16LE, UTF-16. See the <a href="http://docs.oracle.com/javase/7/docs/api/java/nio/charset/Charset.html" class="xref">java.nio.charset.Charset</a> reference for more information.|
 |-extra-conn-props|</br>A semicolon-separated list of properties to use when connecting to the SnappyData distributed system.|
-|-help, --help|</br>Display the help message for this snappy-shell command.|
+|-help, --help|</br>Display the help message for this snappy command.|
 |-ignore-errors|Include this option to ignore any errors that may occur while executing statements in the file, and continue executing the remaining statements. If you omit this option, then gfxd immediately terminates the script's execution if an exception occurs.|
 |-J-D&lt;property=value&gt;|Sets Java system property to the specified value.|
-|-locators|</br>The list of locators as comma-separated host[port] values, used to discover other members of the distributed system.</br>Using `-locators` creates a peer client member to execute the snappy-shell command.|
+|-locators|</br>The list of locators as comma-separated host[port] values, used to discover other members of the distributed system.</br>Using `-locators` creates a peer client member to execute the snappy command.|
 |-mcast-address|</br>The multicast address used to discover other members of the distributed system. This value is used only when the `-locators` option is not specified. The default multicast address is 239.192.81.1. </br>Use this option with `-mcast-port` to attach to a SnappyData cluster as a peer client and perform the command.|
 |-mcast-port|</br>The multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead). This value is used only if the `-locators` option is not specified.</br>Valid values are in the range 0–65535, with a default value of 10334.</br>Use this option with `-mcast-address` to attach to a SnappyData cluster as a peer client and perform the command.|
 |-password|</br>If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, gfxd prompts you to enter a password from the console.|
-|-path|Configures the working directory for any other SQL command files executed from within the script. The <code class="ph codeph">-path</code> entry is prepended to any SQL script file name executed that the script executes in a <a href="run.html#rtoolsijcomref28886" class="xref noPageCitation" title="Treats the value of the string as a valid file name, and redirects gfxd processing to read from that file until it ends or an exit command is executed.">run</a> command.|
+|-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a <a href="run.html#rtoolsijcomref28886" class="xref noPageCitation" title="Treats the value of the string as a valid file name, and redirects gfxd processing to read from that file until it ends or an exit command is executed.">run</a> command.|
 |-user||If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|
 
 <a id="reference_9518856325F74F79B13674B8E060E6C5__section_F763D37B83E54D828B8572FF3192C67F"></a>
@@ -59,14 +59,14 @@ The `-file` argument specifies the location of the SQL script file to execute. I
 This command connects to a SnappyData network server running on myserver:1234 and executes commands in the <span class="ph filepath">ToursDB\_schema.sql</span> file:
 
 ``` pre
-snappy-shell run -file=c:\gemfirexd\quickstart\ToursDB_schema.sql
+snappy run -file=c:\gemfirexd\quickstart\ToursDB_schema.sql
      -client-bind-address=myserver -client-port=1234
 ```
 
 This command executes the <span class="ph filepath">loadTables.sql</span> script, which calls dependent scripts such as <span class="ph filepath">loadCOUNTRIES.sql</span>, <span class="ph filepath">loadCITIES.sql</span>, and so forth. If you execute this command outside of the directory in which the dependent scripts are located, you must specify the working directory using the `-path` option. For example:
 
 ``` pre
-snappy-shell run -file=c:\gemfirexd\quickstart\loadTables.sql
+snappy run -file=c:\gemfirexd\quickstart\loadTables.sql
      -path=c:\gemfirexd\quickstart
      -client-bind-address=myserver -client-port=1234
 ```

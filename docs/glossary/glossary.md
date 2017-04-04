@@ -147,7 +147,7 @@ Server
 </glossaryterm>
 
 <glossarytext>
-A JVM started with the `snappy-shell server` command, or any JVM that calls the `FabricServer.start` method. A SnappyData server may or may not also be a data store, and may or may not also be a network server.
+A JVM started with the `snappy server` command, or any JVM that calls the `FabricServer.start` method. A SnappyData server may or may not also be a data store, and may or may not also be a network server.
 </glossarytext>
 
 <glossaryterm>server group

@@ -11,4 +11,4 @@ SnappyData automatically loads installed JAR file classes into the class loader 
 
 * **Class Loading Overview**: You store application classes, resources, and procedure implementations in SnappyData by installing one or more JAR files. After installing the JAR file, an application can then access the classes without having to be coded in a particular way. <mark>To discuss with Rishi </mark>
 
-* **Alternate Methods for Managing JAR Files**: SnappyData also provides system procedures that you can use to interactively install and manage JAR files from a client connection. Keep in mind that the procedures have certain limitations compared to using snappy-shell commands to manage JAR files.
+* **Alternate Methods for Managing JAR Files**: SnappyData also provides system procedures that you can use to interactively install and manage JAR files from a client connection. Keep in mind that the procedures have certain limitations compared to using `snappy` commands to manage JAR files.

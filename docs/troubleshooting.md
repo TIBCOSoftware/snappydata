@@ -44,7 +44,7 @@ Each line in the conf/server represents conf for that server.
 For more on configurations, please follow the link http://snappydatainc.github.io/snappydata/configuration/
 </solution>
 
-###<question>**Can I read orc files from snappy-shell ?**
+###<question>**Can I read orc files from snappy ?**
 </question>
 
 <solution> 
@@ -80,7 +80,7 @@ node-l -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=9090 -locators=nod
 </solution>
 
 <question>
-**Snappy shell cannot connect to server when starting snappy-shell, and an error is reported, when executing the command to connect to the client**
+**Snappy shell cannot connect to server when starting snappy, and an error is reported, when executing the command to connect to the client**
 </question>
 
 <solution> 

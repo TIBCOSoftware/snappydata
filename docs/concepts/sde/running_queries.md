@@ -55,7 +55,7 @@ snContext.sql(s"set spark.sql.aqp.behavior=$behavior")
 These settings will apply to all queries executed via this SQLContext. Application can override this by also using the SQL extensions specified above.
 
 Applications or tools using JDBC/ODBC can set the following properties. 
-For example, when using Apache Zeppelin JDBC interpreter or the snappy-shell you can set the values as below:
+For example, when using Apache Zeppelin JDBC interpreter or the snappy you can set the values as below:
 
 ```
 set spark.sql.aqp.error=$error;

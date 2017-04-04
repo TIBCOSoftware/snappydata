@@ -1,6 +1,6 @@
 # java.sql.DatabaseMetaData Interface
 
-<a id="java-sql-databasemetadata__section_1B3CCBB2590346FAA2D4CF84BDA9A13D">The following sections describe <code class="ph tt">java.sql.DatabaseMetaData</code> functionality in SnappyData.</a>
+<a id="java-sql-databasemetadata__section_1B3CCBB2590346FAA2D4CF84BDA9A13D">The following sections describe `java.sql.DatabaseMetaData` functionality in SnappyData.</a>
 -   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_C813D9A7C9044BB1A540B35CDA6F3517" class="xref">DatabaseMetaData Result Sets</a>
 -   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_51DDFA8B7026432788B8F76FE9AC6D06" class="xref">java.sql.DatabaseMetaData.getProcedureColumns Method</a>
 -   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_87386A01281B43469BC0012704BE1105" class="xref">Parameters to getProcedureColumns</a>

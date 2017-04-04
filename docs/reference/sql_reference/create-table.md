@@ -1,6 +1,9 @@
 # CREATE TABLE
 
 ## SYNTAX
+
+**To Create Row/Column Table:**
+
 ```
 CREATE TABLE [IF NOT EXISTS] table_name {
     ( { column-definition | table-constraint }
@@ -11,7 +14,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     WITH NO DATA
 }
 
-USING row | column
+USING row | column | column_sample
 OPTIONS (
 COLOCATE_WITH 'string-constant',  // Default none
 PARTITION_BY 'PRIMARY KEY | string-constant', // If not specified it will be a replicated table.
@@ -23,6 +26,10 @@ DISKSTORE 'string-constant', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
 COLUMN_BATCH_SIZE 'string-constant', // Must be an integer
 COLUMN_MAX_DELTA_ROWS 'string-constant', // Must be an integer
+QCS 'string-constant', // column-name [, column-name ] *
+FRACTION 'string-constant',  //Must be a double 
+STRATARESERVOIRSIZE 'string-constant',  // Default 50 Must be an integer.
+BASETABLE 'string-constant', //base table name
 )
 [AS select_statement];
 ```
@@ -33,7 +40,26 @@ Tables contain columns and constraints, rules to which data must conform. Table-
 
 The CREATE TABLE statement has two variants depending on whether you are specifying the column definitions and constraints (CREATE TABLE), or whether you are modeling the columns after the results of a query expression (CREATE TABLE…AS…).
 
-## Example Column Table
+<a id="ddl"></a>
+#### DDL extensions to SnappyStore Tables
+The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
+
+   1. COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
+
+   2. PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.
+
+   3. BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
+
+   4. REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
+
+   5. EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
+
+   6. PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+
+   7. EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+   
+
+## Example: Column Table
 ```
  snappy>CREATE TABLE CUSTOMER ( 
         C_CUSTKEY     INTEGER NOT NULL,
@@ -47,7 +73,7 @@ The CREATE TABLE statement has two variants depending on whether you are specify
         USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
         ```
         
-## Example Row Table
+## Example: Row Table
 ```
     snappy>CREATE TABLE SUPPLIER ( 
           S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
@@ -61,6 +87,9 @@ The CREATE TABLE statement has two variants depending on whether you are specify
           
           ```
           
+## Example: Sample Table          
+
+
 ## CREATE TABLE … AS …
 With the alternate form of the CREATE TABLE statement, you specify the column names and/or the column data types with a query. The columns in the query result are used as a model for creating the columns in the new table.
 

@@ -19,7 +19,7 @@ RowStore manages data in a flexible way that enables you to expand or contract y
 
 2. When you add a new server to the cluster, you can specify the -rebalance option to move partitioned table data buckets between host members as needed to establish the best balance of data across the distributed system. (See Rebalancing Partitioned Data on RowStore Members for more information.) Start the new server to see rebalancing in action:
 
-        $ snappy-shell rowstore server start -dir=$HOME/server3 -locators=localhost[10101] -client-port=1530 -enable-network-partition-detection=true -rebalance
+        $ snappy rowstore server start -dir=$HOME/server3 -locators=localhost[10101] -client-port=1530 -enable-network-partition-detection=true -rebalance
         Starting RowStore Server using locators for peer discovery: localhost[10101]
         Starting network server for RowStore Server at address localhost/127.0.0.1[1530]
         Logs generated in /home/gpadmin/server3/snappyserver.log
@@ -35,7 +35,7 @@ RowStore manages data in a flexible way that enables you to expand or contract y
         BACKUPGFXD-DEFAULT-DISKSTORE.if     start_snappyserver.log
         datadictionary
 
-4. You can view all members of the distributed system using `snappy-shell.` Return to the `snappy-shell` session window and execute the query:
+4. You can view all members of the distributed system using `snappy.` Return to the `snappy` session window and execute the query:
 
         snappy> select id from sys.members;
         ID                                                                             
@@ -69,17 +69,17 @@ RowStore manages data in a flexible way that enables you to expand or contract y
         
         3 rows selected
 
-7. Exit the snappy-shell session:
+7. Exit the snappy session:
 
         snappy> exit;
 
-8. You can stop an individual RowStore server by using the `snappy-shell rowstore server stop` command and specifying the server directory. To shut down all data stores at once, use the `snappy-shell shut-down-all` command:
+8. You can stop an individual RowStore server by using the `snappy rowstore server stop` command and specifying the server directory. To shut down all data stores at once, use the `snappy shut-down-all` command:
 
-        $ snappy-shell shut-down-all -locators=localhost[10101]
+        $ snappy shut-down-all -locators=localhost[10101]
         Connecting to distributed system: locators=localhost[10101]
         Successfully shut down 3 members
 
 9. After all data stores have stopped, shut down the locator as well:
 
-        $ snappy-shell locator stop -dir=$HOME/locator
+        $ snappy locator stop -dir=$HOME/locator
         The RowStore Locator has stopped.

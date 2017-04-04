@@ -1,4 +1,4 @@
-###<question>**Can I read orc files from snappy-shell ?**
+###<question>**Can I read orc files from `snappy` ?**
 </question>
 
 <solution> 

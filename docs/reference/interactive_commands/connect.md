@@ -17,7 +17,7 @@ Connects to the database indicated by the *ConnectionURLString*. You have the op
 You also have the option of specifying a named protocol previously created with the <a href="protocol.html#rtoolsijcomref27997" class="xref" title="Specifies the protocol, as a String, for establishing connections and automatically loads the appropriate driver.">Protocol</a> command.
 
 <p class="note"><strong>Note:</strong> If the connection requires a user name and password, supply those in the connection URL string, as shown in the example. </p>
-If the connect succeeds, the connection becomes the current one and `snappy-shell` displays a new prompt for the next command to be entered. If you have more than one open connection, the name of the connection appears in the prompt.
+If the connect succeeds, the connection becomes the current one and `snappy` displays a new prompt for the next command to be entered. If you have more than one open connection, the name of the connection appears in the prompt.
 
 All further commands are processed against the new, current connection.
 

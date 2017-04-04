@@ -75,7 +75,7 @@ Before you begin, ensure that:
 5. **Connect SnappyData with the Command Line Client**
 
 	```
-	$ docker exec -it snappydata ./bin/snappy-shell
+	$ docker exec -it snappydata ./bin/snappy
 	```
  
 6. **Connect Client on port “1527”**

@@ -45,7 +45,7 @@ Start a rebalance operation using one of the following options:
 
 * At the command line when you boot a SnappyData server:
 
-        snappy-shell SnappyData server start -rebalance 
+        snappy SnappyData server start -rebalance 
 <mark> Command - To be modified</mark>
         
 

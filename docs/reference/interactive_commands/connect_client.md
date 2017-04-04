@@ -15,14 +15,14 @@ Uses the JDBC SnappyData thin client driver to connect to a SnappyData member in
 
 If the connection requires a user name and password, supply those with the optional properties.
 
-If the connect succeeds, the connection becomes the current one and `snappy-shell` displays a new prompt for the next command to be entered. If you have more than one open connection, the name of the connection appears in the prompt.
+If the connect succeeds, the connection becomes the current one and `snappy` displays a new prompt for the next command to be entered. If you have more than one open connection, the name of the connection appears in the prompt.
 
 All further commands are processed against the new, current connection.
 
 ##Example
 
 ``` pre
-snappy-shell version 1.4.0
+snappy version <mark>1.4.0 To Be Confirmed </mark>
 snappy> connect client 'localhost:1527' as clientConnection;
 snappy> show connections;
 CLIENTCONNECTION* -     jdbc:snappydata://localhost:1527/

@@ -1,4 +1,4 @@
-# snappy-shell Launcher Commands
+# snappy Launcher Commands
 
 Use the *gfxd* command-line utility to launch SnappyData utilities.
 
@@ -10,36 +10,36 @@ Use the *gfxd* command-line utility to launch SnappyData utilities.
 ##Syntax
 
 !!! Note:
-	Although SnappyData introduces the `snappy-shell` utility to replace the earlier `sqlf` utility, "sqlf" is still provided and supported as an optional syntax in this release for convenience.</p>
-To display a full list of snappy-shell commands and options:
+	Although SnappyData introduces the `snappy` utility to replace the earlier `sqlf` utility, "sqlf" is still provided and supported as an optional syntax in this release for convenience.</p>
+To display a full list of snappy commands and options:
 
 ``` pre
-snappy-shell --help
+snappy --help
 ```
 
 The command form to display a particular utility's usage is:
 
 ``` pre
-snappy-shell <utility> --help
+snappy <utility> --help
 ```
 
-With no arguments, `snappy-shell` starts an <a href="store_command_reference.html#concept_15619CF8E8494962BE296C1BC976D2B3" class="xref noPageCitation" title="gfxd implements an interactive command-line tool that is based on the Apache Derby ij tool. Use gfxd to run scripts or interactive queries against a SnappyData cluster.">interactive SQL command shell</a>:
+With no arguments, `snappy` starts an <a href="store_command_reference.html#concept_15619CF8E8494962BE296C1BC976D2B3" class="xref noPageCitation" title="gfxd implements an interactive command-line tool that is based on the Apache Derby ij tool. Use gfxd to run scripts or interactive queries against a SnappyData cluster.">interactive SQL command shell</a>:
 
 ``` pre
-snappy-shell
+snappy
 ```
 
-To specify a system property for an interactive `snappy-shell` session, you must define the JAVA\_ARGS environment variable before starting `snappy-shell`. For example, `snappy-shell` uses the `snappy-shell.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA\_ARGS variable:
+To specify a system property for an interactive `snappy` session, you must define the JAVA\_ARGS environment variable before starting `snappy`. For example, `snappy` uses the `snappy.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA\_ARGS variable:
 
 ``` pre
 $ export JAVA_ARGS="-Dgfxd.history=/Users/yozie/snappystore-history.sql"
 $ snappy
 ```
 
-To launch and exit a `snappy-shell` utility (rather than start an interactive `snappy-shell` shell) use the syntax:
+To launch and exit a `snappy` utility (rather than start an interactive `snappy` shell) use the syntax:
 
 ``` pre
-snappy-shell <utility> <arguments for specified utility>
+snappy <utility> <arguments for specified utility>
 ```
 
 In this command form, *&lt;utility&gt;* is one of the following.
@@ -47,17 +47,17 @@ In this command form, *&lt;utility&gt;* is one of the following.
 
 
 
-To specify a system property when launching a `snappy-shell` utility, use -J-D*property\_name*=*property\_value* argument.
+To specify a system property when launching a `snappy` utility, use -J-D*property\_name*=*property\_value* argument.
 
 <a id="reference_9518856325F74F79B13674B8E060E6C5__section_E9CEB9D7B99D4621A1A8ADA28A49670A"></a>
 
 ##Description
 
-In addition to launching various utilities provided with SnappyData, when launched without any arguments, `snappy-shell` starts an interactive command shell that you can use to connect to a SnappyData system and execute various commands, including SQL statements.
+In addition to launching various utilities provided with SnappyData, when launched without any arguments, `snappy` starts an interactive command shell that you can use to connect to a SnappyData system and execute various commands, including SQL statements.
 
 The launcher honors the current CLASSPATH environment variable and adds it to the CLASSPATH of the utility or command shell being launched. To pass additional arguments to the JVM, set the `JAVA\_ARGS` environment variable when invoking the *gfxd* script.
 
-<p class="note"><strong>Note:</strong> The `JAVA\_ARGS` environment variable does not apply to the `snappy-shell SnappyData server` and `snappy-shell SnappyData locator` tools that launch a separate background process. To pass Java properties to those tools, use the `-J` option as described in the help for those tools. </p>
+<p class="note"><strong>Note:</strong> The `JAVA\_ARGS` environment variable does not apply to the `snappy SnappyData server` and `snappy SnappyData locator` tools that launch a separate background process. To pass Java properties to those tools, use the `-J` option as described in the help for those tools. </p>
 
 The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the `GFXD\_JAVA` environment variable to point to the desired Java executable. (note the supported JRE versions in <a href="../../getting_started/topics/system_requirements.html#concept_system-requirements" class="xref" title="This topic describes the supported configurations and system requirements for SnappyData.">Supported Configurations and System Requirements</a>).
 
@@ -76,7 +76,7 @@ The launcher uses the `java` executable that is found in the PATH. To override t
 -   **[locator](../../reference/store_commands/store-locator.html)**
     Allows peers (including other locators) in a distributed system to discover each other without the need to hard-code anything about other peers.
 -   **[Logging Support](../../reference/store_commands/store-logging.html)**
-    You can specify JDBC boot properties with `snappy-shell SnappyData server` and `snappy-shell SnappyData locator` commands to configure the log file location and log severity level for SnappyData servers and locators, respectively.
+    You can specify JDBC boot properties with `snappy SnappyData server` and `snappy SnappyData locator` commands to configure the log file location and log severity level for SnappyData servers and locators, respectively.
 -   **[merge-logs](../../reference/store_commands/store-merge-logs.html)**
     Merges multiple log files into a single log.
 -   **[print-stacks](../../reference/store_commands/store-print-stacks.html)**
@@ -104,13 +104,13 @@ The launcher uses the `java` executable that is found in the PATH. To override t
 -   **[version](../../reference/store_commands/store-version.html)**
     Prints information about the SnappyData product version.
 -   **[write-data-dtd-to-file](../../reference/store_commands/store-write-data-dtd-to-file.html)**
-    Creates a Document Type Definition (DTD) file that specifies the layout of an XML data file created using `snappy-shell write-data-to-xml`.
+    Creates a Document Type Definition (DTD) file that specifies the layout of an XML data file created using `snappy write-data-to-xml`.
 -   **[write-data-to-db](../../reference/store_commands/store-write-data-to-db.html)**
-    Inserts data into a database using one or more data XML files (created with snappy-shell write-data-to-xml), and having the database schema defined in one or more schema XML files (created with snappy-shell write-schema-to-xml). This command is generally used with a SnappyData cluster to export table data, but it can also be used with other JDBC datasources.
+    Inserts data into a database using one or more data XML files (created with snappy write-data-to-xml), and having the database schema defined in one or more schema XML files (created with snappy write-schema-to-xml). This command is generally used with a SnappyData cluster to export table data, but it can also be used with other JDBC datasources.
 -   **[write-data-to-xml](../../reference/store_commands/store-write-data-to-xml.html)**
-    Writes the data of all of the tables in a database to an XML file. (You can use the snappy-shell write-data-dtd-to-file command to create a Document Type Definition (DTD) file that describes the layout of data in the XML file.) The resulting XML file can be used to re-load the data into the tables, either in SnappyData or in another database management system. This command is generally used with a SnappyData cluster to export table data, but it can also be used with other JDBC datasources.
+    Writes the data of all of the tables in a database to an XML file. (You can use the snappy write-data-dtd-to-file command to create a Document Type Definition (DTD) file that describes the layout of data in the XML file.) The resulting XML file can be used to re-load the data into the tables, either in SnappyData or in another database management system. This command is generally used with a SnappyData cluster to export table data, but it can also be used with other JDBC datasources.
 -   **[write-schema-to-db](../../reference/store_commands/store-write-schema-to-db.html)**
-    Creates a schema in a database by using the contents of a one or more schema XML files (see snappy-shell write-schema-to-xml). This command is generally used with a SnappyData cluster to export the schema, but it can also be used with other JDBC datasources.
+    Creates a schema in a database by using the contents of a one or more schema XML files (see snappy write-schema-to-xml). This command is generally used with a SnappyData cluster to export the schema, but it can also be used with other JDBC datasources.
 -   **[write-schema-to-sql](../../reference/store_commands/store-write-schema-to-sql.html)**
     Writes the schema of a database to a file as SQL commands. You can use the resulting file to recreate the schema in SnappyData, or in another database management system. This command is generally used with a SnappyData cluster to export the schema, but it can also be used with other JDBC datasources.
 -   **[write-schema-to-xml](../../reference/store_commands/store-write-schema-to-xml.html)**

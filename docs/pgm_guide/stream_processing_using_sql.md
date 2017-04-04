@@ -92,10 +92,10 @@ For example to create a stream table using kafka source :
  // You can also save the DataFrames to an external table
  dStream.foreachDataFrame(_.write.insertInto(tableName))
 ```
-The streamTable created in the above example can be accessed from snappy-shell and can be queried using ad-hoc SQL queries.
+The streamTable created in the above example can be accessed from snappy and can be queried using ad-hoc SQL queries.
 
-### Stream SQL through Snappy-Shell
-Start a SnappyData cluster and connect through snappy-shell : 
+### Stream SQL through snappy
+Start a SnappyData cluster and connect through `snappy`: 
 
 ```bash
 //create a connection
