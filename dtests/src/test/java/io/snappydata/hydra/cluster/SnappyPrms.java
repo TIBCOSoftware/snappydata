@@ -18,7 +18,6 @@ package io.snappydata.hydra.cluster;
 
 import hydra.BasePrms;
 import hydra.HydraVector;
-import hydra.Log;
 
 import java.util.Vector;
 
