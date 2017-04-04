@@ -17,7 +17,6 @@
 package io.snappydata.impl;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
@@ -40,6 +40,7 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
@@ -59,8 +60,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   private final ThreadLocal<HMSQuery> queries = new ThreadLocal<>();
 
   private final ExecutorService hmsQueriesExecutorService;
-
-  private final ArrayList<HiveMetaStoreClient> allHMclients = new ArrayList<>();
 
   public SnappyHiveCatalog() {
     final ThreadGroup hmsThreadGroup = LogWriterImpl.createThreadGroup(
@@ -87,6 +86,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public Table getTable(String schema, String tableName, boolean skipLocks) {
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.GET_TABLE, tableName, schema, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (Table)handleFutureResult(f);
   }
 
   public boolean isColumnTable(String schema, String tableName, boolean skipLocks) {
@@ -141,12 +147,17 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   @Override
   public void stop() {
-    for (HiveMetaStoreClient cl : this.allHMclients) {
-      cl.close();
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.CLOSE_HMC, null, null, true);
+    try {
+      this.hmsQueriesExecutorService.submit(q).get();
+    } catch (Exception ignored) {
     }
-    this.hmClients = null;
-    this.allHMclients.clear();
     this.hmsQueriesExecutorService.shutdown();
+    try {
+      this.hmsQueriesExecutorService.awaitTermination(5, TimeUnit.SECONDS);
+    } catch (InterruptedException ignored) {
+    }
   }
 
   private HMSQuery getHMSQuery() {
@@ -182,7 +193,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private static final int GET_ALL_TABLES_MANAGED_IN_DD = 4;
     private static final int REMOVE_TABLE = 5;
     private static final int GET_COL_TABLE = 6;
-    // private static final int CLOSE_HMC = 4;
+    private static final int CLOSE_HMC = 7;
+    private static final int GET_TABLE = 8;
 
     // More to be added later
 
@@ -221,6 +233,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         case COLUMNTABLE_SCHEMA:
           hmc = SnappyHiveCatalog.this.hmClients.get();
           return getSchema(hmc);
+
+        case GET_TABLE:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          return getTable(hmc, this.dbName, this.tableName);
 
         case GET_ALL_TABLES_MANAGED_IN_DD:
           hmc = SnappyHiveCatalog.this.hmClients.get();
@@ -281,6 +297,12 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               dmls,
               dependentRelations);
 
+        case CLOSE_HMC:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          hmc.close();
+          SnappyHiveCatalog.this.hmClients.remove();
+          return true;
+
         default:
           throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
       }
@@ -309,7 +331,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       try {
         HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
         SnappyHiveCatalog.this.hmClients.set(hmc);
-        SnappyHiveCatalog.this.allHMclients.add(hmc);
       } catch (MetaException me) {
         throw new IllegalStateException(me);
       }

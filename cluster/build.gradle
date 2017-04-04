@@ -67,6 +67,7 @@ dependencies {
                 version: snappySparkVersion, classifier: 'tests'
   }
   compile (project(':snappy-core_' + scalaBinaryVersion)) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
@@ -90,6 +91,7 @@ dependencies {
 
   testCompile project(':dunit')
   testCompile (project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
@@ -100,6 +102,7 @@ dependencies {
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testCompile group: 'it.unimi.dsi', name: 'fastutil', version: '7.1.0'
 
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
