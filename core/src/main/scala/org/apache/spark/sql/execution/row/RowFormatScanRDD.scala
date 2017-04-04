@@ -172,7 +172,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
     if (isPartitioned) {
       val ps = conn.prepareStatement(
-        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
+        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
       try {
         ps.setString(1, tableName)
         val bucketString = thePart match {
@@ -180,6 +180,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
+        ps.setInt(3, -1)
         ps.executeUpdate()
       } finally {
         ps.close()
