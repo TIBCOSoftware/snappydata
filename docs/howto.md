@@ -1,4 +1,4 @@
-#Overview
+# Overview
 This section introduces you to several common operations such as, starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.
 
 **Running the Examples:**
@@ -315,7 +315,7 @@ Refer to the [Row and column tables](programming_guide#ddl) documentation for co
 Full source code, for example, to create and perform operations on replicated and partitioned row table can be found in [CreateReplicatedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateReplicatedRowTable.scala) and [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala)
 
 
-###Create a Row Table using DataFrame API:
+### Create a Row Table using DataFrame API:
 
 The code snippet below shows how to create a replicated row table using API.
 
@@ -421,7 +421,7 @@ Refer to the [Row and column tables](programming_guide#tables-in-snappydata) doc
 
 Full source code, for example, to create and perform operations on column table can be found in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala)
 
-###Create a Column Table using DataFrame API
+### Create a Column Table using DataFrame API
 
 The code snippet below shows how to create a column table using DataFrame API.
 
@@ -465,7 +465,7 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     customerDF.write.insertInto("CUSTOMER")
 ```
 
-###Create a Column Table using SQL
+### Create a Column Table using SQL
 
 The same table can be created using SQL as shown below:
 ```
@@ -1140,16 +1140,16 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
  When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
 
 <a id="howto-zeppelin"></a>
-##How to Use Apache Zeppelin with SnappyData
+## How to Use Apache Zeppelin with SnappyData
 
 ### Step 1: Download, Install and Configure SnappyData
 1. [Download and Install SnappyData](install.md#download-snappydata) </br>
- The table below lists the version of the Apache Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Release.
+ The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Release.
 	
-    | Apache Zeppelin Interpreter | Apache Zeppelin Installer | SnappyData Release|
+    | SnappyData Zeppelin Interpreter | Apache Zeppelin Installer | SnappyData Release|
 	|--------|--------|--------|
 	|[Version 0.61](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) and [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) |
-    |[Version 0.7](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.0) |[0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) |
+    |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) |
 
 2. [Configure the SnappyData Cluster](configuration.md#configuration-files).
 
@@ -1161,9 +1161,11 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 6. Extract the contents of the Zeppelin Intrepreter file. </br> 
 
-7. Install the SnappyData interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
-	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<zeppelin_installer_version>`. </br>
+7. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
+	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<zeppelin_installer_version_number>`. </br>
     Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
+
+	<note>Note: If the installation fails, delete the **interpreter.json** file located in the zeppelin-<_version_number_>-bin-all/conf directory, and repeat this step.</note>
 
 7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
 
@@ -1177,8 +1179,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 1. Log on to Zeppelin from your web browser and select **Interpretor** from the **Settings** option.
 
-2. Click **Create** to add an interpreter.
-	 ![Create](Images/create_interpreter.png)
+2. Click **Create** ![Create](Images/create_interpreter.png) to add an interpreter.	 
 
 3. From the **Interpreter group** drop-down select **snappydata**.
 	 ![Configure Interpreter](Images/snappydata_interpreter_properties.png)
@@ -1213,12 +1214,12 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 8. Click **Save** to apply your changes.
 
-<note >Note:</note> 
+<note >Note: You can modify the default port number of the Zeppelin intrepreter by setting the property:</br> 
+`-zeppelin.interpreter.port=<port_number>` in [lead node configuration](configuration.md#configuring-leads). </note>
 
-* <note>If you are using Zeppelin Interpreter/Installer 0.7 and SnappyData 0.8, approximate result is not supported when you run the query `%sql show-instant-results-first` on the sample table.</note>
+### Known Issue
 
-* <note> You can modify the default port number of the Zeppelin intrepreter by setting the property:</br> 
-`-zeppelin.interpreter.port=<port_number>` in [lead node configuration](configuration.md#configuring-leads).
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
 ### More Information
 Refer to these sections for information:

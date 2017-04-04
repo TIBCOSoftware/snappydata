@@ -232,10 +232,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         // re-use the previous map if not too large
         // previous index values in the map would have been reset to -1
         if ((stringMap eq null) || stringMap.size > Short.MaxValue) {
-          stringMap = new ObjectHashSet[StringIndexKey](128, 0.6, 1)
+          stringMap = new ObjectHashSet[StringIndexKey](128, 0.6, 1, false)
         }
       case t =>
-        longMap = new ObjectHashSet[LongIndexKey](128, 0.6, 1)
+        longMap = new ObjectHashSet[LongIndexKey](128, 0.6, 1, false)
         longArray = new TLongArrayList(128)
         isIntMap = t.isInstanceOf[IntegerType]
     }
