@@ -558,6 +558,43 @@ public class SnapshotIsolationTest extends SnappyTest {
     bstmt.executeBatch();
   }
 
+  /* Verify results at the end of the test*/
+  public static void HydraTask_verifyResults() {
+    testInstance.verifyResults();
+  }
+
+  public void verifyResults() {
+    StringBuffer mismatchString = new StringBuffer();
+    String tableName="";
+    try {
+      String[] tables = SnapshotIsolationPrms.getTableNames();
+      String stmt = "select * from ";
+      Connection conn = getLocatorConnection();
+      Connection dConn = getDerbyConnection();
+      for (String table : tables) {
+        tableName = table;
+        ResultSet snappyRS = conn.createStatement().executeQuery(stmt + table);
+        List<Struct> snappyList = convertToList(snappyRS,false);
+        ResultSet derbyRS = dConn.createStatement().executeQuery(stmt + table);
+        List<Struct> derbyList = convertToList(derbyRS,true);
+        compareResultSets(snappyList,derbyList);
+      }
+    }catch(SQLException se){
+      throw new TestException("Got Exception while verifying the table data.",se);
+    }catch(TestException te){
+      mismatchString = mismatchString.append("Result mismatch in " + tableName + " :\n");
+      mismatchString = mismatchString.append(te.getMessage()).append("\n");
+    }
+    if(mismatchString.length()>0)
+      throw new TestException(mismatchString.toString());
+  }
+
+  public List<Struct> convertToList(ResultSet rs, boolean isDerby){
+    StructTypeImpl sti = ResultSetHelper.getStructType(rs);
+    List<Struct> rsList = ResultSetHelper.asList(rs, sti, isDerby);
+    return rsList;
+  }
+
   public static void compareResultSets(List<Struct> derbyResultSet,
       List<Struct> snappyResultSet) {
     compareResultSets(derbyResultSet, snappyResultSet, "derby", "snappy");

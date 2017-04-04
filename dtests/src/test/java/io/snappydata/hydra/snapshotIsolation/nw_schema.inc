@@ -108,14 +108,18 @@ io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-updateStmts = ONEOF
 "UPDATE app.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = 2"
 "UPDATE app.products SET UnitPrice = UnitPrice * 0.9"
 "UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = 1"
-"UPDATE app. products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = 1"
-"UPDATE app.order_details SET ID = ID + 1"
+"UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1"
+"UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1 WHERE ORDER_ID < 10450"
+"UPDATE app.employees SET TitleOfCourtesy='Mr.' WHERE NAME LIKE '%31'"
+"UPDATE app.orders SET ShipVia = ShipVia + 1 WHERE OrderID = 10290"
+"UPDATE app.orders SET Freight = Freight * 1.1 WHERE Freight >= 500"
 FOENO
 ;
 
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-deleteStmts = ONEOF
-"DELETE FROM Customers WHERE CustomerName='Alfreds Futterkiste'"
-"delete from app.employees where EmployeeID=6"
+"delete from app.employees where EmployeeID = 6"
+"delete from app.employees where EmployeeID < 5"
+"delete from app.emplooyees where FIRSTNAME LIKE '%2'"
 FOENO
 ;
 
