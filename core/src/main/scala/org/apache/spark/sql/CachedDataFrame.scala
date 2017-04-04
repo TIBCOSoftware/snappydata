@@ -20,20 +20,21 @@ import java.nio.ByteBuffer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
+import org.apache.spark.sql.execution.{CachedPlanHelperExec, _}
 import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
@@ -114,6 +115,18 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
+  def replaceConstants(lp: LogicalPlan) = {
+    queryExecution.executedPlan match {
+      case WholeStageCodegenExec(cachedPlan) => {
+        cachedPlan match {
+          case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
+          case _ => // do nothing
+        }
+      }
+      case _ => // do nothing
+    }
+  }
+
   def collectWithHandler[U: ClassTag, R: ClassTag](
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
       resultHandler: (Int, U) => R,
@@ -129,7 +142,7 @@ class CachedDataFrame(df: Dataset[Row],
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
       sparkSession, callSite, queryExecutionString, queryPlanInfo) {
       val executedPlan = queryExecution.executedPlan match {
-        case WholeStageCodegenExec(plan) => plan
+        case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
         case plan => plan
       }
       val results = executedPlan match {
@@ -159,7 +172,8 @@ class CachedDataFrame(df: Dataset[Row],
               plan.executeCollect().iterator.map(converter))._1))
           }
 
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutedCommand) =>
+        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec
+                   | _: ExecutedCommand | _: ExecutePlan) =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             plan.executeCollect().iterator.asInstanceOf[Iterator[R]]

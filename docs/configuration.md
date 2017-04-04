@@ -1,4 +1,4 @@
-#Overview
+# Overview
 SnappyData, a database server cluster, has three main components - Locator, Server, and Lead.
 
 The Lead node embeds a Spark driver and the Server node embeds a Spark Executor. The server node also embeds a SnappyData store.
@@ -82,7 +82,7 @@ Let's say you want to:
 
 * Start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l).
 
-* Change the Spark UI port from 4040 to 9090. 
+* Change the Spark UI port from 5050 to 9090. 
 
 * Set spark.executor.cores as 10 on all servers. 
 
@@ -127,16 +127,16 @@ SERVER_STARTUP_OPTIONS="-heap-size=4096m"
 LEAD_STARTUP_OPTIONS="-heap-size=2048m"
 ```
 
-## snappy-shell Command Line Utility
+## Snappy Command Line Utility
 
 Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using the command line. 
 
 ```bash 
-$ bin/snappy-shell locator start  -dir=/node-a/locator1 
-$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+$ bin/snappy locator start  -dir=/node-a/locator1 
+$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
-$ bin/snappy-shell locator stop
-$ bin/snappy-shell server stop
+$ bin/snappy locator stop
+$ bin/snappy server stop
 ```
   
 ## Logging 

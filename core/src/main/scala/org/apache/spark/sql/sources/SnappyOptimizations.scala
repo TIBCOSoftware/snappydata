@@ -24,8 +24,9 @@ import io.snappydata.Constant
 import io.snappydata.QueryHint._
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression,
-PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, AttributeSet, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
+import org.apache.spark.sql.catalyst.{expressions, plans}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
@@ -111,6 +112,18 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
       conditions: Seq[Expression],
       visited: mutable.HashSet[LogicalPlan]): CompletePlan = {
 
+    if (input.size == 1) {
+      val table = input.head
+      val pTabOrIndex = RuleUtils.chooseIndexForFilter(table, conditions)
+      val replacement = if (conditions.nonEmpty) {
+        plans.logical.Filter(conditions.reduceLeft(expressions.And),
+          pTabOrIndex.map(_.index).getOrElse(table))
+      } else {
+        pTabOrIndex.map(_.index).getOrElse(table)
+      }
+      return CompletePlan(replacement, pTabOrIndex.toSeq)
+    }
+
     val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
 
     type TableList = ArrayBuffer[LogicalPlan]
@@ -152,30 +165,75 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
       joinPossibilities
     }
 
-    val colocationGroups = (ArrayBuffer.empty[ColocatedReplacements] /: colocationTrials) {
+    val colocationGroups = (ArrayBuffer.empty[ReplacementSet] /: colocationTrials) {
       case (mergedList, current) =>
-        mergedList.find(_ == current) match {
+        mergedList.find(_ equals current) match {
           case Some(existing) => existing.merge(current)
-          case None => mergedList += current
+          case None => mergedList += current.copy(conditions = conditions)
         }
         mergedList
-    }.sorted
+    }.sorted.toList
 
-    var curSubPlan: SubPlan = PartialPlan(null, Seq.empty, AttributeSet.empty, input,
-      conditions,
-      colocationGroups, partitioned, replicates, others)
-    for (rule <- joinOrderHints) {
-      val newPlan = rule(curSubPlan, true)
-      curSubPlan = newPlan
+    val (ncf, nonColocated) = partitioned.filterNot {
+      case _ if colocationGroups.isEmpty => false
+      case p => colocationGroups.head.chain.exists(_.table equals p)
+    }.partition(t => conditions.exists(canEvaluate(_, t)))
+
+
+    val nonColocatedWithFilters = ncf.map(r => RuleUtils.chooseIndexForFilter(r, conditions)
+        .getOrElse(Replacement(r, r)))
+
+    val replicatesWithColocated = ReplacementSet(replicates.map(r => Replacement(r, r, false)) ++
+        (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Seq.empty), conditions)
+
+    val replicatesWithNonColocatedHavingFilters = nonColocatedWithFilters.map(nc =>
+      ReplacementSet(replicates.map(r => Replacement(r, r)) ++ Some(nc), conditions)).sorted
+
+    val smallerNC = replicatesWithNonColocatedHavingFilters.indexWhere(
+      _.bestPlanEstimatedSize < replicatesWithColocated.bestPlanEstimatedSize)
+
+    val finalJoinOrder = ArrayBuffer.empty[Replacement]
+    var newJoinConditions: Seq[Expression] = conditions
+
+    def mapReferences(conditions: Seq[Expression], r: Replacement): Seq[Expression] = {
+      r.mappedConditions(conditions)
     }
 
-    assert(curSubPlan.isInstanceOf[CompletePlan])
+    var curPlan = CompletePlan(null, Seq.empty)
+
+    // there are no Non-Colocated tables of lesser cost than colocation chain in consideration.
+    if (smallerNC == -1) {
+
+      finalJoinOrder ++= replicatesWithColocated.bestJoinOrder
+      curPlan = curPlan.copy(replaced = curPlan.replaced ++
+          replicatesWithColocated.bestJoinOrder.filter(_.isReplacable))
+      newJoinConditions = replicatesWithColocated.bestJoinOrder.
+          foldLeft(newJoinConditions)(mapReferences)
+
+      finalJoinOrder ++= nonColocatedWithFilters
+      curPlan = curPlan.copy(replaced = curPlan.replaced ++
+          nonColocatedWithFilters.filter(_.isReplacable))
+      newJoinConditions = nonColocatedWithFilters.foldLeft(newJoinConditions)(mapReferences)
+
+      finalJoinOrder ++= nonColocated.map(r => Replacement(r, r))
+    } else {
+      for (i <- 0 to smallerNC) {
+        // pack NC tables first.
+      }
+    }
+
+    val newInput = finalJoinOrder.map(_.index) ++
+        input.filterNot(i => finalJoinOrder.exists(_.table == i))
+
+    curPlan = curPlan.copy(plan = ReorderJoin.createOrderedJoin(newInput, newJoinConditions))
+
+
     // add to the visited list, as plan.flatMap is transformDown which results into child join
     // nodes coming in after outer join node is serviced by flattening. LogicalPlan is unique
     // objects and hence multiple aliasing to the same table shouldn't interfere with each other
     // in this lookup.
     input.foreach(visited += _)
-    curSubPlan.asInstanceOf[CompletePlan]
+    curPlan
   }
 
   /** Generating combinations of PRs 2 at a time and then evaluate colocation. if p1 -> p2 -> p3
@@ -426,10 +484,9 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     val visited = new mutable.HashSet[LogicalPlan]
 
     def notVisited(input: Seq[LogicalPlan]) = !input.exists(p => {
-      val rel = Entity.unwrapBaseColumnRelation(p)
       // already resolved to some index. lets not try anything here.
       // this is just for speed, where this rule gets executed so many times.
-      rel.isDefined && visited(p)
+      visited(p)
     })
 
     val newPlan = plan.transformDown {
@@ -465,45 +522,6 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
       newPlan
     }
 
-  }
-
-  private def replaceWithIndex(plan: LogicalPlan)(
-      findReplacementCandidates: PartialFunction[LogicalPlan, CompletePlan]): LogicalPlan = {
-
-    val joinOrderHints = JoinOrderStrategy.getJoinOrderHints
-
-    if (snappySession.queryHints.exists {
-      case (hint, _) => hint.startsWith(Index) &&
-          !joinOrderHints.contains(ContinueOptimizations)
-    } || Entity.hasUnresolvedReferences(plan)) {
-      return plan
-    }
-
-    val newAttributesMap = new mutable.HashMap[AttributeReference, AttributeReference]()
-    val newPlan = plan.transformUp { case subPlan: LogicalPlan =>
-      val completePlan = findReplacementCandidates.apply(subPlan)
-      completePlan.replaced.foreach { r =>
-        val newAttributes = r.index.schema.toAttributes
-        r.table.output.foreach {
-          case f: AttributeReference =>
-            newAttributesMap(f) = newAttributes.find(_.name.equalsIgnoreCase(f.name)).
-                getOrElse(throw new IllegalStateException(
-                  s"Field $f not found in ${newAttributes}"))
-        }
-      }
-      completePlan.plan
-    }
-
-    if (newAttributesMap.nonEmpty) {
-      newPlan transformUp {
-        case q: LogicalPlan =>
-          q transformExpressionsUp {
-            case a: AttributeReference => newAttributesMap.getOrElse(a, a)
-          }
-      }
-    } else {
-      newPlan
-    }
   }
 
 }

@@ -31,6 +31,7 @@ import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -130,18 +131,23 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableName full table name to be truncated
+   * @param ifExists  attempt truncate only if the table exists
    */
-  def truncateTable(tableName: String): Unit = snappySession.truncateTable(tableName)
-
+  def truncateTable(tableName: String, ifExists: Boolean = false): Unit = {
+    snappySession.truncateTable(tableName, ifExists)
+  }
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
+   *
    * @param tableIdent qualified name of table to be truncated
+   * @param ifExists   attempt truncate only if the table exists
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
-      ignoreIfUnsupported: Boolean = false): Unit = {
-    snappySession.truncateTable(tableIdent, ignoreIfUnsupported)
+      ifExists: Boolean, ignoreIfUnsupported: Boolean): Unit = {
+    snappySession.truncateTable(tableIdent, ifExists, ignoreIfUnsupported)
   }
 
 
@@ -791,10 +797,14 @@ object SnappyContext extends Logging {
   val TOPK_SOURCE = "approx_topk"
 
   val DEFAULT_SOURCE = ROW_SOURCE
-
+  val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
+    classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
+    classOf[execution.row.DefaultSource].getCanonicalName,
+    "org.apache.spark.sql.sampling.DefaultSource"
+  )
   private val builtinSources = new CaseInsensitiveMap(Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[execution.columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
@@ -838,11 +848,20 @@ object SnappyContext extends Logging {
 
   private[spark] def addBlockId(executorId: String,
       id: BlockAndExecutorId): Unit = {
-    storeToBlockMap.put(executorId, id)
-    if (id.blockId == null || !id.blockId.isDriver) {
-      totalCoreCount.addAndGet(id.numProcessors)
+    storeToBlockMap.put(executorId, id) match {
+      case None =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
+        }
+      case Some(oldId) =>
+        if (id.blockId == null || !id.blockId.isDriver) {
+          totalCoreCount.addAndGet(id.numProcessors)
+        }
+        if (oldId.blockId == null || !oldId.blockId.isDriver) {
+          totalCoreCount.addAndGet(-oldId.numProcessors)
+        }
     }
-    SnappySession.clearAllCache()
+    SnappySession.clearAllCache(onlyQueryPlanCache = true)
   }
 
   private[spark] def removeBlockId(
@@ -852,7 +871,7 @@ object SnappyContext extends Logging {
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(-id.numProcessors)
         }
-        SnappySession.clearAllCache()
+        SnappySession.clearAllCache(onlyQueryPlanCache = true)
         s
       case None => None
     }
@@ -892,8 +911,8 @@ object SnappyContext extends Logging {
         SparkEnv.get.blockManager.blockManagerId,
         numCores, numCores)
       storeToBlockMap(cache.getMyId.toString) = blockId
-      totalCoreCount.addAndGet(blockId.numProcessors)
-      SnappySession.clearAllCache()
+      totalCoreCount.set(blockId.numProcessors)
+      SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
   }
 
@@ -1048,7 +1067,7 @@ object SnappyContext extends Logging {
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
         SnappyTableStatsProviderService.start(sc)
-        if(ToolsCallbackInit.toolsCallback != null){
+        if (ToolsCallbackInit.toolsCallback != null) {
           ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
         }
       case _ => // ignore
@@ -1058,7 +1077,7 @@ object SnappyContext extends Logging {
   private def stopSnappyContext(): Unit = {
     val sc = globalSparkContext
     if (_globalSNContextInitialized) {
-      // then on the driver
+      // clear static objects on the driver
       clearStaticArtifacts()
 
       if (_globalClear ne null) {
@@ -1072,6 +1091,7 @@ object SnappyContext extends Logging {
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
+      MemoryManagerCallback.resetMemoryManager
     }
     _clusterMode = null
     _anySNContext = null
@@ -1081,10 +1101,11 @@ object SnappyContext extends Logging {
   /** Cleanup static artifacts on this lead/executor. */
   def clearStaticArtifacts(): Unit = {
     ConnectionPool.clear()
-    CodeGeneration.clearCache()
+    CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
+    SparkSession.sqlListener.set(null)
     _clusterMode match {
-      case m: ExternalClusterMode =>
+      case _: ExternalClusterMode =>
       case _ => ServiceUtils.clearStaticArtifacts()
     }
   }
@@ -1099,21 +1120,26 @@ object SnappyContext extends Logging {
   def getProvider(providerName: String, onlyBuiltIn: Boolean): String = {
     builtinSources.getOrElse(providerName,
       if (onlyBuiltIn) throw new AnalysisException(
-        s"Failed to find a builtin provider $providerName") else providerName)
+        s"Failed to find a builtin provider $providerName")
+      else providerName)
   }
 
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.
-      getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
-    val clazz = org.apache.spark.util.Utils.classForName(
-      "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
-    val method: Method = clazz.getDeclaredMethod("flushReservior")
-    for (s <- sampleRelations) {
-      method.setAccessible(true)
-      method.invoke(s)
+        getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
+    try {
+      val clazz = org.apache.spark.util.Utils.classForName(
+        "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
+      val method: Method = clazz.getDeclaredMethod("flushReservior")
+      for (s <- sampleRelations) {
+        method.setAccessible(true)
+        method.invoke(s)
+      }
+    } catch {
+      case _: ClassNotFoundException =>
+      // do nothing. This situation arises in tests
     }
-
   }
 }
 

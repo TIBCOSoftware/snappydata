@@ -17,6 +17,7 @@
 package io.snappydata.impl
 
 import java.sql.{Connection, ResultSet, SQLException, Statement}
+import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -31,8 +32,9 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
+import io.snappydata.thrift.internal.ClientStatement
 
-import org.apache.spark.Partition
+import org.apache.spark.{Logging, Partition}
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -40,16 +42,33 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.types.StructType
 
 final class SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
   def getSQLStatement(resolvedTableName: String,
-      requiredColumns: Array[String], partitionId: Int): String = {
-    val whereClause = if (useLocatorURL) s" where bucketId = $partitionId" else ""
-    "select " + requiredColumns.mkString(", ") +
-        ", numRows, stats from " + resolvedTableName + whereClause
+      partitionId: Int, requiredColumns: Array[String],
+      schema: StructType): (String, String) = {
+
+    val schemaWithIndex = schema.zipWithIndex
+    // to fetch columns create a union all string
+    // (select data, columnIndex from table where
+    //  partitionId = 1 and uuid = ? and columnIndex = 1)
+    // union all
+    // (select data, columnIndex from table where
+    //  partitionId = 1 and uuid = ? and columnIndex = 7)
+    // An OR query like the following results in a bulk table scan
+    // select data, columnIndex from table where partitionId = 1 and
+    //  (columnIndex = 1 or columnIndex = 7)
+    val fetchColString = requiredColumns.map(col => {
+      schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
+    }).map(i => s"(select data, columnIndex from $resolvedTableName where " +
+        s"partitionId = $partitionId and uuid = ? and columnIndex = $i)").mkString(" union all ")
+    // fetch stats query and fetch columns query
+    (s"select data, uuid from $resolvedTableName where columnIndex = -1",
+        fetchColString)
   }
 
   def executeQuery(conn: Connection, tableName: String,
@@ -58,11 +77,30 @@ final class SparkShellRDDHelper {
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
     val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
-    val buckets = partition.buckets.mkString(",")
     val statement = conn.createStatement()
     if (!useLocatorURL) {
+      val buckets = partition.buckets.mkString(",")
       statement.execute(
         s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+      // TODO: currently clientStmt.setLocalExecutionBucketIds is not taking effect probably
+      // due to a bug. Need to be looked into before enabling the code below.
+
+//      statement match {
+//        case clientStmt: ClientStatement =>
+//          val numBuckets = partition.buckets.size
+//          val bucketSet = if (numBuckets == 1) {
+//            Collections.singleton[Integer](partition.buckets.head)
+//          } else {
+//            val buckets = new java.util.HashSet[Integer](numBuckets)
+//            partition.buckets.foreach(buckets.add(_))
+//            buckets
+//          }
+//          clientStmt.setLocalExecutionBucketIds(bucketSet, resolvedName)
+//        case _ =>
+//          val buckets = partition.buckets.mkString(",")
+//          statement.execute(
+//            s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+//      }
     }
 
     val rs = statement.executeQuery(query)
@@ -90,13 +128,16 @@ final class SparkShellRDDHelper {
       hostList(index)._2
     }
 
+    // enable direct ByteBuffers for best performance
+    val executorProps = connProperties.executorConnProps
+    executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
     // setup pool properties
     val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
-      ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect,
-        props, connProperties.executorConnProps, connProperties.hikariCP)
+      ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect, props,
+        executorProps, connProperties.hikariCP)
     } catch {
       case sqle: SQLException => if (hostList.size == 1 || useLocatorURL) {
         throw sqle

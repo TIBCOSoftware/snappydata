@@ -20,11 +20,17 @@ If you are already using Spark, experience 20x speed up for your query performan
 We provide multiple options to get going with SnappyData. The easiest option is, if you are already using Spark 2.0+. 
 You can simply get started by adding SnappyData as a package dependency. You can find more information on options for running SnappyData [here](docs/quickstart.md).
 
+## Downloading and Installing SnappyData
+You can download and install the latest version of SnappyData from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases/). 
+Refer to the [documentation](http://snappydatainc.github.io/snappydata/install/#install-on-premise) for installation steps.
+
+If you would like to build SnappyData from source, refer to the [documentation on building from source](http://snappydatainc.github.io/snappydata/install/#building-from-source.).
+
 ## SnappyData in 5 Minutes!
 Refer to the [5 minutes guide](docs/quickstart.md) which is intended for both first time and experienced SnappyData users. It provides you with references and common examples to help you get started quickly!
 
 ## Documentation
-To understand SnappyData and its features refer to the [documentation](http://snappydatainc.github.io/snappydata/)
+To understand SnappyData and its features refer to the [documentation](http://snappydatainc.github.io/snappydata/).
 
 ## Community Support
 
@@ -39,20 +45,20 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappydata-core_2.11
-version: 0.7
+version: 0.8
 
 groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
-version: 0.7
+version: 0.8
 ```
 **Using sbt**
 If you are using sbt, add this line to your **build.sbt** for core SnappyData artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "0.7"`
+`libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "0.8"`
 
 For additions related to SnappyData cluster, use:
 
-`libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"`
+`libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"`
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)
 
@@ -61,5 +67,5 @@ Here is a stream + Transactions + Analytics use case example to illustrate the S
 
 ## Contributing to SnappyData
 
-If you are interested in contributing, please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
+If you are interested in contributing, please visit the [community page](http://www.snappydata.io/community) for ways in which you can help.
 

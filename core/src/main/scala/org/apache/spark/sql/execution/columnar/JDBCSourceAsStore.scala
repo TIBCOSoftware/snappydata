@@ -16,130 +16,23 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, ResultSet, Statement}
+import java.nio.ByteBuffer
+import java.sql.{Blob, Connection, ResultSet, Statement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
-import scala.collection.mutable
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
-import scala.util.Random
 
-import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, OffHeapRegionEntry}
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, OffHeapCompactExecRowWithLobs, RegionEntryUtils, RowFormatter}
-import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry}
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, CompactCompositeKey,
+CompactCompositeRegionKey, GemFireContainer, RegionEntryUtils}
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
+import io.snappydata.thrift.common.BufferedBlob
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.row.PRValuesIterator
-import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.{Logging, Partition, TaskContext}
-
-/*
-Generic class to query column table from SnappyData execution.
- */
-class JDBCSourceAsStore (override val connProperties: ConnectionProperties,
-    numPartitions: Int) extends ExternalStore {
-  self =>
-
-  @transient
-  protected lazy val rand = new Random
-
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(
-    connProperties.dialect)
-
-  def getConnectedExternalStore(tableName: String,
-    onExecutor: Boolean): ConnectedExternalStore = new JDBCSourceAsStore(
-    this.connProperties,
-    this.numPartitions) with ConnectedExternalStore {
-    protected[this] override val connectedInstance: Connection =
-      self.getConnection(tableName, onExecutor)
-  }
-
-  override def getCachedBatchRDD(tableName: String,
-      requiredColumns: Array[String],
-      session: SparkSession): RDD[CachedBatch] = {
-    new ExternalStorePartitionedRDD(session, tableName, requiredColumns,
-        numPartitions, this)
-  }
-
-  override def storeCachedBatch(tableName: String, batch: CachedBatch,
-      partitionId: Int = -1, batchId: Option[UUID] = None): Unit = {
-    storeCurrentBatch(tableName, batch, batchId.getOrElse(UUID.randomUUID()),
-      getPartitionID(tableName, partitionId))
-  }
-
-  protected def getPartitionID(tableName: String,
-      partitionId: Int = -1): Int = {
-    rand.nextInt(numPartitions)
-  }
-
-  protected def doInsert(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): (Connection => Any) = {
-    {
-      (connection: Connection) => {
-        val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
-        val stmt = connection.prepareStatement(rowInsertStr)
-        stmt.setString(1, batchId.toString)
-        stmt.setInt(2, partitionId)
-        stmt.setInt(3, batch.numRows)
-        // Use UnsafeRow for efficient serialization else shows perf impact.
-        stmt.setBytes(4, batch.stats.asInstanceOf[UnsafeRow].getBytes)
-        var columnIndex = 5
-        batch.buffers.foreach(buffer => {
-          stmt.setBytes(columnIndex, buffer)
-          columnIndex += 1
-        })
-        stmt.executeUpdate()
-        stmt.close()
-      }
-    }
-  }
-
-  def storeCurrentBatch(tableName: String, batch: CachedBatch,
-      batchId: UUID, partitionId: Int): Unit = {
-    tryExecute(tableName, doInsert(tableName, batch, batchId, partitionId),
-      closeOnSuccess = true, onExecutor = true)
-  }
-
-  override def getConnection(id: String, onExecutor: Boolean): Connection = {
-    val connProps = if (onExecutor) connProperties.executorConnProps
-    else connProperties.connProps
-    ConnectionPool.getPoolConnection(id, connProperties.dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP)
-  }
-
-  protected val insertStrings: mutable.HashMap[String, String] =
-    new mutable.HashMap[String, String]()
-
-  protected def getRowInsertStr(tableName: String, numOfColumns: Int): String = {
-    val istr = insertStrings.getOrElse(tableName, {
-      lock(makeInsertStmnt(tableName, numOfColumns))
-    })
-    istr
-  }
-
-  protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
-    if (!insertStrings.contains(tableName)) {
-      val s = insertStrings.getOrElse(tableName,
-        s"insert into $tableName values(?,?,?,?${",?" * numOfColumns})")
-      insertStrings.put(tableName, s)
-    }
-    insertStrings(tableName)
-  }
-
-  protected val insertStmntLock = new ReentrantLock()
-
-  /** Acquires a read lock on the cache for the duration of `f`. */
-  protected[sql] def lock[A](f: => A): A = {
-    insertStmntLock.lock()
-    try f finally {
-      insertStmntLock.unlock()
-    }
-  }
-}
+import org.apache.spark.sql.execution.{PartitionedPhysicalScan}
+import org.apache.spark.{Logging, TaskContext}
 
 abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext)
@@ -147,9 +40,11 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected[this] final var doMove = true
 
-  protected[this] final var hasNextValue = true
+  protected[this] final var hasNextValue: Boolean = rs ne null
 
-  context.addTaskCompletionListener { _ => close() }
+  if (context ne null) {
+    context.addTaskCompletionListener { _ => close() }
+  }
 
   override final def hasNext: Boolean = {
     var success = false
@@ -182,7 +77,7 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected def getCurrentValue: A
 
-  final def close() {
+  def close() {
     if (!hasNextValue) return
     try {
       // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
@@ -206,112 +101,156 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 }
 
-final class CachedBatchIteratorOnRS(conn: Connection,
+case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
+    statsData: Array[Byte])
+
+object ColumnBatchIterator {
+
+  def apply(container: GemFireContainer,
+      bucketIds: java.util.Set[Integer]): ColumnBatchIterator = {
+    new ColumnBatchIterator(container, bucketIds, null)
+
+  }
+
+  def apply(batch: ColumnBatch): ColumnBatchIterator = {
+    new ColumnBatchIterator(null, null, batch)
+  }
+}
+
+final class ColumnBatchIterator(container: GemFireContainer,
+    bucketIds: java.util.Set[Integer], val batch: ColumnBatch)
+    extends PRValuesIterator[Array[Byte]](container, bucketIds) {
+
+  if (container ne null){
+    assert(!container.isOffHeap,
+      s"Unexpected byte[][] iterator call for off-heap $container")
+  }
+
+  protected var currentVal: Array[Byte] = _
+  var currentKeyUUID: DataValueDescriptor = _
+  var currentKeyPartitionId: DataValueDescriptor = _
+  var currentBucketRegion: BucketRegion = _
+  val baseRegion: LocalRegion = if (container ne null) container.getRegion else null
+  var batchProcessed = false
+
+  def getColumnLob(bufferPosition: Int): ByteBuffer = {
+    if (container ne null) {
+      val key = new CompactCompositeRegionKey(Array(
+        currentKeyUUID, currentKeyPartitionId, new SQLInteger(bufferPosition)),
+        container.getExtraTableInfo());
+      val rl = if (currentBucketRegion != null) currentBucketRegion.get(key)
+      else baseRegion.get(key)
+      val value = rl.asInstanceOf[Array[Array[Byte]]]
+      val rf = container.getRowFormatter(value(0))
+      ByteBuffer.wrap(rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION))
+    } else {
+      batch.buffers(bufferPosition - 1)
+    }
+  }
+
+  override protected def moveNext(): Unit = {
+    while ((container ne null) && itr.hasNext) {
+      val rl = itr.next().asInstanceOf[RowLocation]
+      currentBucketRegion = itr.getHostedBucketRegion
+      // get the stat row region entries only. region entries for individual columns
+      // will be fetched on demand
+      if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
+        val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
+        if (key.getKeyColumn(2).getInt ==
+            JDBCSourceAsStore.STATROW_COL_INDEX) {
+          val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
+          else baseRegion.get(key)
+          if (v ne null) {
+            val value = v.asInstanceOf[Array[Array[Byte]]]
+            currentKeyUUID = key.getKeyColumn(0)
+            currentKeyPartitionId = key.getKeyColumn(1)
+            val rowFormatter = container.getRowFormatter(value(0))
+            currentVal = rowFormatter.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION);
+            return
+          }
+        }
+      }
+    }
+    if ((container eq null) && !batchProcessed) {
+      currentVal = batch.statsData
+      batchProcessed = true
+      return
+    }
+    hasNextValue = false
+  }
+}
+
+final class ColumnBatchIteratorOnRS(conn: Connection,
     requiredColumns: Array[String],
-    stmt: Statement, rs: ResultSet, context: TaskContext)
-    extends ResultSetIterator[CachedBatch](conn, stmt, rs, context) {
+    stmt: Statement, rs: ResultSet,
+    context: TaskContext,
+    fetchColQuery: String)
+    extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
+  var currentUUID: String = _
+  val ps = conn.prepareStatement(fetchColQuery)
+  var colBuffers: Option[scala.collection.mutable.HashMap[Int, (ByteBuffer, Blob)]] = None
+  def getColumnLob(bufferPosition: Int): ByteBuffer = {
+    colBuffers match {
+      case Some(map) => map(bufferPosition)._1
+      case None =>
+        for (i <- requiredColumns.indices) {
+          ps.setString(i + 1, currentUUID)
+        }
+        val colIter = ps.executeQuery()
+        val bufferMap = new scala.collection.mutable.HashMap[Int, (ByteBuffer, Blob)]
+        var index = 1;
+        while (colIter.next()) {
 
-  private val numCols = requiredColumns.length
-  private val colBuffers = new Array[Array[Byte]](numCols)
+          val colBlob = colIter.getBlob(1)
+          val colBuffer = colBlob match {
+            case blob: BufferedBlob => blob.getAsBuffer
+            case blob => ByteBuffer.wrap(blob.getBytes(
+              1, blob.length().asInstanceOf[Int]))
+          }
+          bufferMap.put(index, (colBuffer, colBlob))
+          index = index + 1
+        }
+        colBuffers = Some(bufferMap)
 
-  override protected def getCurrentValue: CachedBatch = {
-    var i = 0
-    while (i < numCols) {
-      colBuffers(i) = rs.getBytes(i + 1)
-      i += 1
+        bufferMap(bufferPosition)._1
     }
-    // val statsBytes = rs.getBytes("stats")
-    val stats: UnsafeRow = null
-    val numRows = rs.getInt("numRows")
-    CachedBatch(numRows, colBuffers, stats)
+  }
+
+  override protected def getCurrentValue: Array[Byte] = {
+    currentUUID = rs.getString(2)
+    colBuffers match {
+      case Some(buffers) =>
+        buffers.values.foreach(b => {
+          b._2.free()
+          // release previous set of buffers immediately
+          UnsafeHolder.releaseIfDirectBuffer(b._1)
+        })
+      case None =>
+    }
+    colBuffers = None
+    val statsData = rs.getBlob(1)
+    val statsBytes = statsData.getBytes(1, statsData.length().asInstanceOf[Int])
+    statsData.free()
+    statsBytes
+  }
+
+  override def close(): Unit = {
+    colBuffers match {
+      case Some(buffers) =>
+        buffers.values.foreach(b => {
+          try {
+            b._2.free()
+          } catch {
+            case e: Exception => logWarning("Exception clearing Blob", e)
+          }
+          // release lastset of buffers immediately
+          UnsafeHolder.releaseIfDirectBuffer(b._1)
+        })
+      case None =>
+    }
+    super.close
   }
 }
-
-final class ByteArraysIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[Array[Array[Byte]]](container, bucketIds) {
-
-  assert(!container.isOffHeap,
-    s"Unexpected byte[][] iterator call for off-heap $container")
-
-  protected var currentVal: Array[Array[Byte]] = _
-  var rowFormatter: RowFormatter = _
-
-  override protected def moveNext(): Unit = {
-    while (itr.hasNext) {
-      val rl = itr.next().asInstanceOf[RowLocation]
-      val owner = itr.getHostedBucketRegion
-      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-        val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
-        if (v ne null) {
-          currentVal = v.asInstanceOf[Array[Array[Byte]]]
-          rowFormatter = container.getRowFormatter(currentVal(0))
-          return
-        }
-      }
-    }
-    hasNextValue = false
-  }
-}
-
-final class OffHeapLobsIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[OffHeapCompactExecRowWithLobs](container,
-      bucketIds) {
-
-  assert(container.isOffHeap,
-    s"Unexpected off-heap iterator call for on-heap $container")
-
-  override protected val currentVal: OffHeapCompactExecRowWithLobs = container
-      .newTemplateRow().asInstanceOf[OffHeapCompactExecRowWithLobs]
-
-  override protected def moveNext(): Unit = {
-    while (itr.hasNext) {
-      val rl = itr.next().asInstanceOf[RowLocation]
-      val owner = itr.getHostedBucketRegion
-      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-        val v = RegionEntryUtils.getValueWithoutFaultInOrOffHeapEntry(owner, rl)
-        if ((v ne null) && (RegionEntryUtils.fillRowUsingAddress(container, owner,
-          v.asInstanceOf[OffHeapRegionEntry], currentVal, false) ne null)) {
-          return
-        }
-      }
-    }
-    hasNextValue = false
-  }
-}
-
-class ExternalStorePartitionedRDD[T: ClassTag](
-    @transient val session: SparkSession,
-    tableName: String, requiredColumns: Array[String],
-    numPartitions: Int, store: JDBCSourceAsStore)
-    extends RDD[CachedBatch](session.sparkContext, Nil) {
-
-  override def compute(split: Partition,
-      context: TaskContext): Iterator[CachedBatch] = {
-    store.tryExecute(tableName, {
-      conn =>
-        val resolvedName = {
-          if (tableName.indexOf(".") <= 0) {
-            conn.getSchema + "." + tableName
-          } else tableName
-        }
-
-        val par = split.index
-        val stmt = conn.createStatement()
-        val query = "select " + requiredColumns.mkString(", ") +
-            s", numRows, stats from $resolvedName where bucketid = $par"
-        val rs = stmt.executeQuery(query)
-        new CachedBatchIteratorOnRS(conn, requiredColumns, stmt, rs, context)
-    }, closeOnSuccess = false, onExecutor = true)
-  }
-
-  override protected def getPartitions: Array[Partition] = {
-    for (p <- 0 until numPartitions) {
-      partitions(p) = new Partition {
-        override def index: Int = p
-      }
-    }
-    partitions
-  }
+object JDBCSourceAsStore {
+  val STATROW_COL_INDEX = -1
 }

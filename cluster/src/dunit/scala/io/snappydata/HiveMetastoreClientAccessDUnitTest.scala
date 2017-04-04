@@ -38,9 +38,6 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
 
   import HiveMetastoreClientAccessDUnitTest._
 
-  // set default batch size for this test
-  bootProps.setProperty("spark.sql.inMemoryColumnarStorage.batchSize", "10000")
-
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
   def testHelloWorld(): Unit = {

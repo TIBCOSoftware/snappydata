@@ -354,9 +354,13 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
   protected final var hasNextValue = true
   protected final var doMove = true
 
-  protected final val itr = container.getEntrySetIteratorForBucketSet(
-    bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
-    false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  protected final val itr = if (container ne null) {
+    container.getEntrySetIteratorForBucketSet(
+      bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+      false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  } else {
+    null
+  }
 
   protected def currentVal: T
 
@@ -387,12 +391,13 @@ final class CompactExecRowIteratorOnScan(container: GemFireContainer,
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
 
   override protected def moveNext(): Unit = {
+    val itr = this.itr
     while (itr.hasNext) {
-      val rl = itr.next().asInstanceOf[RowLocation]
+      val rl = itr.next()
       val owner = itr.getHostedBucketRegion
       if (((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) &&
-          (RegionEntryUtils.fillRowWithoutFaultIn(container, owner,
-            rl.getRegionEntry, currentVal) ne null)) {
+          RegionEntryUtils.fillRowWithoutFaultInOptimized(container, owner,
+            rl.asInstanceOf[RowLocation], currentVal)) {
         return
       }
     }

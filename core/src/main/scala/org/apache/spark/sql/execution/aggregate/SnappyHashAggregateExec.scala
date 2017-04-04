@@ -86,7 +86,7 @@ case class SnappyHashAggregateExec(
             .inputAggBufferAttributes)
 
   @transient val (metricAdd, _): (String => String, String => String) =
-    collection.Utils.metricMethods(sparkContext)
+    collection.Utils.metricMethods
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
@@ -504,7 +504,7 @@ case class SnappyHashAggregateExec(
     ctx.addNewFunction(doAgg,
       s"""
         private void $doAgg() throws java.io.IOException {
-          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
+          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns, false,
             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
           $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
           int $maskTerm = $hashMapTerm.mask();

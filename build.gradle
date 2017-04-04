@@ -34,7 +34,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'io.snappydata:gradle-scalatest:0.13-1'
+    classpath 'io.snappydata:gradle-scalatest:0.13.1'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
     classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
   }
@@ -62,7 +62,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '0.7'
+  version = '0.8'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -96,7 +96,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.0.0'
-    snappySparkVersion = '2.0.3-2'
+    snappySparkVersion = '2.0.2.3'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -106,9 +106,10 @@ allprojects {
     jettyVersion = '9.2.16.v20160414'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.0'
+    thriftVersion = '0.9.3'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.3'
+    snappyStoreVersion = '1.5.4'
     pulseVersion = '1.5.1'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -118,6 +119,7 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
+    sparkJobServerVersion = '0.6.2.3'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -289,13 +291,20 @@ subprojects {
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
+
+    doFirst {
+      String eol = System.getProperty('line.separator')
+      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      def progress = new File(workingDir, 'progress.txt')
+      progress << "${eol}${now} ========== STARTING JUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
+    }
   }
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
     maxParallelForks = 1
-    minHeapSize '1g'
-    maxHeapSize '1g'
+    minHeapSize '2g'
+    maxHeapSize '2g'
 
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
@@ -333,6 +342,13 @@ subprojects {
 
     systemProperties 'java.net.preferIPv4Stack': 'true',
                      'SNAPPY_HOME': snappyProductDir
+
+    doFirst {
+      String eol = System.getProperty('line.separator')
+      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      def progress = new File(workingDir, 'progress.txt')
+      progress << "${eol}${now} ========== STARTING DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
+    }
   }
 
   gradle.taskGraph.whenReady({ graph ->
@@ -612,11 +628,6 @@ task product(type: Zip) {
 
     // copy all runtime dependencies of snappy-cluster, itself and AQP
     def targets = targetProject.configurations.runtime
-    if (new File(rootDir, 'store/build.gradle').exists()) {
-      // exclude client jar and dependencies since client shadow jar is copied
-      targets = targetProject.configurations.runtime -
-          project(':snappy-store:gemfirexd-client').configurations.runtime
-    }
     copy {
       from(targets) {
         // exclude antlr4 explicitly (runtime is still included)
@@ -624,6 +635,12 @@ task product(type: Zip) {
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
+        // exclude other test jars
+        exclude '**junit*.jar'
+        exclude '**mockito*.jar'
+        exclude '**hamcrest-core*.jar'
+        exclude '**test-interface*.jar'
+        exclude '**scalacheck*.jar'
         if (rootProject.hasProperty('hadoop-provided')) {
           exclude 'hadoop-*.jar'
         }
@@ -701,14 +718,6 @@ task product(type: Zip) {
         into "${rootProject.buildDir}/distributions"
         include clientProject.shadowJar.archiveName
       }
-      // Copy the JDBC client jar to jars directory
-      // (its constituent jars are specifically excluded)
-      copy {
-        from clientProject.shadowJar.destinationDir
-        into "${snappyProductDir}/jars"
-        include clientProject.shadowJar.archiveName
-      }
-      delete "${snappyProductDir}/jars/${clientProject.jar.archiveName}"
     }
     // copy AQP jar from maven repo if project not present
     if (!hasAQPProject) {
@@ -773,8 +782,8 @@ distributions {
 }
 distTar {
   dependsOn product
-  // also package pulse and VSD
-  dependsOn ':packagePulse', ':packageVSD'
+  // also package VSD
+  dependsOn ':packageVSD'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
@@ -783,8 +792,8 @@ distTar {
 
 distZip {
   dependsOn product
-  // also package pulse and VSD
-  dependsOn ':packagePulse', ':packageVSD'
+  // also package VSD
+  dependsOn ':packageVSD'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
@@ -818,159 +827,6 @@ def runScript(def execName, def workDir, def param, env = null) {
   return "${stdout}"
 }
 
-def runSQLScript(def fileName, def workDir) {
-  println("Executing ${fileName}")
-  String queryoutput = runScript("${snappyProductDir}/bin/snappy-shell", workDir,
-          ['run', "-file=${snappyProductDir}/quickstart/scripts/${fileName}"])
-  println queryoutput
-  if (queryoutput.contains('ERROR') || queryoutput.contains('Failed')) {
-    throw new GradleException("Failed to run ${fileName}")
-  }
-}
-def writeToFile(def fileName) {
-  new File("$fileName").withWriter { out ->
-    out.println 'localhost'
-    out.println 'localhost'
-  }
-}
-
-def runSubmitQuery(def jobName, def appName, def workDir) {
-  println "Running job ${jobName}"
-  String exampleArchiveName = "quickstart.jar"
-  String submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh", workDir,
-      ['submit', '--lead', 'localhost:8090', '--app-name', appName + System.currentTimeMillis(),
-       '--class', jobName, '--app-jar',
-       "${snappyProductDir}/examples/jars/${exampleArchiveName}"])
-
-  println submitjobairline
-
-  String jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
-      submitjobairline.substring(4)
-  def json = new JsonSlurper().parseText(jsonStr)
-  String jobid = ''
-  json.each {
-    k, v ->
-      if (k == 'result') {
-        if (v instanceof groovy.json.internal.LazyMap) {
-          jobid = v.get('jobId')
-        }
-      }
-  }
-
-  String status = 'RUNNING'
-  while (status == 'RUNNING') {
-    Thread.sleep(3000)
-    String statusjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
-        workDir, ['status', '--lead', 'localhost:8090', '--job-id', jobid])
-    println statusjobairline
-
-    def statusjson = new JsonSlurper().parseText(statusjobairline)
-    statusjson.each {
-      k, v ->
-        if (k == 'status') {
-          println('Current status of job: ' + v)
-          status = v
-        }
-    }
-  }
-  if (status == 'ERROR') {
-    throw new GradleException('Failed to submit queries')
-  }
-}
-
-task runQuickstart {
-  dependsOn cleanQuickstart
-  dependsOn product
-  mustRunAfter 'buildAll'
-  def exampleArchiveName = "quickstart.jar"
-  String workingDir = "${testResultsBase}/quickstart"
-  doLast {
-    try {
-      writeToFile("${snappyProductDir}/conf/servers")
-      String startoutput = runScript("${snappyProductDir}/sbin/snappy-start-all.sh",
-          workingDir, [])
-      println startoutput
-      if (!startoutput.contains('Distributed system now has 4 members')) {
-        throw new GradleException('Failed to start Snappy cluster')
-      }
-      runSQLScript('create_and_load_column_table.sql', workingDir)
-
-      runSQLScript('create_and_load_row_table.sql', workingDir)
-
-      runSQLScript('create_and_load_sample_table.sql', workingDir)
-
-      runSQLScript('status_queries.sql', workingDir)
-
-      runSQLScript('olap_queries.sql', workingDir)
-
-      runSQLScript('oltp_queries.sql', workingDir)
-
-      runSQLScript('olap_queries.sql', workingDir)
-
-      runSQLScript('olap_approx_queries.sql', workingDir)
-
-      runSubmitQuery('io.snappydata.examples.CreateAndLoadAirlineDataJob',
-          'createJob', workingDir)
-
-      runSubmitQuery('io.snappydata.examples.AirlineDataJob',
-          'processjob', workingDir)
-
-      String startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh",
-          workingDir, [])
-      println startSparkResult
-
-      String hostname = 'hostname'.execute().text.trim()
-      String airlineappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
-              ['--class', 'io.snappydata.examples.AirlineDataSparkApp', '--master', "spark://${hostname}:7077",
-               '--conf', 'snappydata.store.locators=localhost:10334', '--conf', 'spark.ui.port=4041',
-               "${snappyProductDir}/examples/jars/${exampleArchiveName}"])
-
-      println airlineappresult
-      if (airlineappresult.toLowerCase().contains('exception')) {
-        throw new GradleException('Failed to submit AirlineDataSparkApp')
-      }
-
-      def examplesdir = project(":snappy-examples_${scalaBinaryVersion}")
-
-      String airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
-          ['--master', "spark://${hostname}:7077", '--conf', 'snappydata.store.locators=localhost:10334',
-           '--conf', 'spark.ui.port=4042', "${snappyProductDir}/quickstart/python/AirlineDataPythonApp.py"])
-
-      println airlinepythonappresult
-      if (airlinepythonappresult.toLowerCase().contains('exception')) {
-        throw new GradleException('Failed to submit airlinepythonappresult')
-      }
-
-    } finally {
-      println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", workingDir, [])
-      println runScript("${snappyProductDir}/sbin/stop-all.sh", workingDir, [])
-      def conffile = new File("${snappyProductDir}/conf/servers")
-      if (conffile.exists())
-        conffile.delete()
-    }
-    //Setting _JAVA_OPTIONS to avoid using gradle settings which is 256m which was causing rdd to
-    // overflow on disk
-    Map<String,Object> env = new HashMap<String,Object>()
-    env.put("_JAVA_OPTIONS","-Xms256m -Xmx4g")
-    String extraArgs = '-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g '
-    if(project.hasProperty('snappy.perf')){
-      extraArgs = extraArgs.concat("-Dsnappy_benchmark_perf=true")
-    }
-    String quickStartResult = runScript("${snappyProductDir}/bin/spark-shell", workingDir,
-        ['--driver-memory=4g',"--driver-java-options=$extraArgs", '-i',
-         "${snappyProductDir}/quickstart/scripts/Quickstart.scala"], env)
-
-    if (quickStartResult.toLowerCase().
-        contains('cannot meet the required performance')) {
-      println(quickStartResult)
-      throw new GradleException('Failed to assert required performance in Quickstart')
-    } else {
-      println(quickStartResult)
-    }
-
-  }
-}
-
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
@@ -978,7 +834,6 @@ task copyResourcesAll << {
     copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
 }
-
 
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
@@ -998,6 +853,7 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
@@ -1149,7 +1005,7 @@ task publishDocs(type:Exec) {
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports
   dependsOn ':snappy-spark:scalaStyle', docs
 }
 

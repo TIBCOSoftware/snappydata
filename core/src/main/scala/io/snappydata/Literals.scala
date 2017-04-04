@@ -18,6 +18,7 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
 /**
@@ -52,13 +53,19 @@ object Constant {
 
   val DEFAULT_SCHEMA = "APP"
 
-  val DEFAULT_CONFIDENCE: Double = 0.95
+  val DEFAULT_CONFIDENCE: Double = 0.95d
 
-  val DEFAULT_ERROR: Double = 0.2
+  val DEFAULT_ERROR: Double = 0.2d
 
   val DEFAULT_BEHAVIOR: String = "DEFAULT_BEHAVIOR"
+  val BEHAVIOR_RUN_ON_FULL_TABLE = "RUN_ON_FULL_TABLE"
+  val BEHAVIOR_DO_NOTHING = "DO_NOTHING"
+  val BEHAVIOR_LOCAL_OMIT = "LOCAL_OMIT"
+  val BEHAVIOR_STRICT = "STRICT"
+  val BEHAVIOR_PARTIAL_RUN_ON_BASE_TABLE = "PARTIAL_RUN_ON_BASE_TABLE"
 
-  val COLUMN_MIN_BATCH_SIZE: Int = 200
+  val keyBypassSampleOperator = "aqp.debug.byPassSampleOperator"
+  val defaultBehaviorAsDO_NOTHING = "spark.sql.aqp.defaultBehaviorAsDO_NOTHING"
 
   val DEFAULT_USE_HIKARICP = false
 
@@ -100,7 +107,7 @@ object Constant {
   // should be considered as clob or not
   val STRING_AS_CLOB_PROP = "spark-string-as-clob"
 
-  val JOB_SERVER_JAR_NAME = "SNAPPY_JOB_SERVER_JAR_NAME"
+  val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 }
@@ -158,7 +165,7 @@ object Property extends Enumeration {
     "The list of locators as comma-separated host:port values that have been " +
         "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
 
-  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcastPort",
     "[Deprecated] The multicast port configured in the SnappyData cluster " +
         "when locators are not being used. This mode is no longer supported.",
     None, Constant.SPARK_PREFIX)
@@ -171,22 +178,39 @@ object Property extends Enumeration {
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetaStoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+  val MetaStoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbUrl",
     "An explicit JDBC URL to use for external meta-data storage. " +
         "Normally this is set to use the SnappyData store by default and " +
         "should not be touched unless there are special requirements. " +
         "Use with caution since an incorrect configuration can result in " +
         "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
-  val MetaStoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+  val MetaStoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbDriver",
     s"Explicit JDBC driver class for ${MetaStoreDBURL.name} setting.",
     None, Constant.SPARK_PREFIX)
 
-  val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}columnBatchSize",
+  val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
         "the unit (in bytes) that will be used to split the data into chunks " +
-        "for efficient storage and retrieval.", Some(32 * 1024 * 1024))
+        "for efficient storage and retrieval. It can also be set for each table " +
+        s"using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
+        "create table DDL.", Some(24 * 1024 * 1024))
+
+  val ColumnMaxDeltaRows = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
+    "The maximum number of rows that can be in the delta buffer of a column table. " +
+        s"The size of delta buffer is already limited by $ColumnBatchSize but " +
+        "this allows a lower limit on number of rows for better scan performance. " +
+        "So the delta buffer will be rolled into the column store whichever of " +
+        s"$ColumnBatchSize and this property is hit first. It can also be set for " +
+        s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
+        s"create table DDL else this setting is used for the create table.", Some(10000))
+
+  val CompressionCodec = SQLVal[String](s"${Constant.PROPERTY_PREFIX}compression.codec",
+    "The compression codec to use when creating column batches for binary and " +
+        "complex type columns. Possible values: none, snappy, gzip, lzo. It can " +
+        s"also be set as ${ExternalStoreUtils.COMPRESSION_CODEC} option in " +
+        s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less" +
@@ -197,6 +221,53 @@ object Property extends Enumeration {
     "SQLConf property that enables snappydata experimental features like distributed index " +
         "optimizer choice during query planning. Default is turned off.",
     Some(false), Constant.SPARK_PREFIX)
+
+  val FlushReservoirThreshold = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
+    "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +
+        " on baset table of size more than flushReservoirThreshold." +
+        " Default value is 10,000.", Some(10000))
+
+  val NumBootStrapTrials = SQLVal[Int](s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
+    "Number of bootstrap trials to do for calculating error bounds. Default value is 100.",
+    Some(100))
+
+  // TODO: check with suyog  Why are we having two different error defaults one as 1 & other as .2?
+
+  val MaxErrorAllowed = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.maxErrorAllowed",
+    "Maximum relative error tolerable in the approximate value calculation. It should be a " +
+      "fractional value not exceeding 1. Default value is 1.0", Some(1.0d), null, false)
+
+  val Error = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.error",
+    "Maximum relative error tolerable in the approximate value calculation. It should be a " +
+      s"fractional value not exceeding 1. Default value is ${Constant.DEFAULT_ERROR}",
+    Some(Constant.DEFAULT_ERROR))
+
+  val Confidence = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.confidence",
+    "Confidence with which the error bounds are calculated for the approximate value. It should " +
+    s"be a fractional value not exceeding 1. Default value is ${Constant.DEFAULT_CONFIDENCE}",
+    None)
+
+  val Behavior = SQLVal[String](s"${Constant.SPARK_PREFIX}sql.aqp.behavior",
+    s" The action to be taken if the error computed goes oustide the error tolerance limit. " +
+      s"Default value is ${Constant.BEHAVIOR_DO_NOTHING}", None)
+
+  val AqpDebug = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.debug",
+    s" Boolean if true tells engine to do  bootstrap analysis in debug mode returning an array of" +
+      s" values for the iterations. Default is false", Some(false), null, false)
+
+  val AqpDebugFixedSeed = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.debug.fixedSeed",
+    s" Boolean if true tells engine to initialize the seed for poisson value calculation with a " +
+      s"fixed  number 123456789L. Default is false.", Some(false), null, false)
+
+  val AQPDebugPoissonType = SQLVal[String](s"${Constant.SPARK_PREFIX}sql.aqp.debug.poissonType",
+    s" If aqp debugging is enbaled, this property can be used to set different types of algorithm" +
+      s" to generate bootstrap multiplicity numbers. Default is Real", None, null, false)
+
+  val ClosedFormEstimates = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.closedFormEstimates",
+    s"Boolean if false tells engine to use bootstrap analysis for error calculation for all cases" +
+      s". Default is true.", Some(true), null, false)
+
+
 }
 
 // extractors for properties
@@ -238,7 +309,7 @@ object QueryHint extends Enumeration {
 
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+   * as CLOBs in JSON format for routed JDBC/ODBC queries rather
    * than as serialized blobs to display better in external tools.
    *
    * Possible values are 'true/1' or 'false/0'
@@ -318,17 +389,7 @@ object JOS extends Enumeration {
   val IncludeGeneratedPaths = Value("includeGeneratedPaths")
 
   /**
-   * Applies replicated table with filter conditions in the given order of preference in
-   * 'joinOrder' query hint comma separated values.
-   *
-   * for e.g. select * from tab --+ joinOrder(CWF, RWF, LCC, NCWF)
-   * will apply the rule in the mentioned order and rest of the rules will be skipped.
+   * Don't alter the join order provided by the user.
    */
-  val ReplicateWithFilters = Value("RWF")
-
-  val ColocatedWithFilters = Value("CWF")
-
-  val LargestColocationChain = Value("LCC")
-
-  val NonColocatedWithFilters = Value("NCWF")
+  val Fixed = Value("fixed")
 }

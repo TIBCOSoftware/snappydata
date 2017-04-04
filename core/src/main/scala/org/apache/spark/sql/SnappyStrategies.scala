@@ -21,14 +21,14 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
-import org.apache.spark.sql.catalyst.plans.physical.ClusteredDistribution
+import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange}
+import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
@@ -228,7 +228,7 @@ private[sql] trait SnappyStrategies {
         joinType: JoinType,
         side: joins.BuildSide,
         replicatedTableJoin: Boolean): Seq[SparkPlan] = {
-      joins.LocalJoin(leftKeys, rightKeys, side, condition,
+      joins.HashJoinExec(leftKeys, rightKeys, side, condition,
         joinType, planLater(left), planLater(right),
         left.statistics.sizeInBytes, right.statistics.sizeInBytes,
         replicatedTableJoin) :: Nil
@@ -303,8 +303,6 @@ private[sql] object JoinStrategy {
  */
 object SnappyAggregation extends Strategy {
 
-  var enableOptimizedAggregation = true
-
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
     case _ => applyAggregation(plan, isRootPlan = false)
@@ -313,7 +311,7 @@ object SnappyAggregation extends Strategy {
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
-    resultExpressions, child) if enableOptimizedAggregation =>
+    resultExpressions, child) =>
 
       val (functionsWithDistinct, functionsWithoutDistinct) =
         aggregateExpressions.partition(_.isDistinct)
@@ -586,7 +584,8 @@ object SnappyAggregation extends Strategy {
 
 /**
  * Rule to collapse the partial and final aggregates if the grouping keys
- * match or are superset of the child distribution.
+ * match or are superset of the child distribution. Also introduces exchange
+ * when inserting into a partitioned table if number of partitions don't match.
  */
 case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
@@ -633,5 +632,27 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
 
         case _ => agg
       }
+
+    case t: TableInsertExec =>
+      if (t.partitioned &&
+          t.child.outputPartitioning.numPartitions != t.numBuckets) {
+        // force shuffle when inserting into a table with different partitions
+        t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
+          t.requiredChildDistribution.head.asInstanceOf[ClusteredDistribution]
+              .clustering, t.numBuckets), t.child)))
+      } else t
+  }
+}
+
+/**
+  * Rule to collapse the partial and final aggregates if the grouping keys
+  * match or are superset of the child distribution.
+  */
+case class InsertCachedPlanHelper(session: SparkSession) extends Rule[SparkPlan] {
+  override def apply(plan: SparkPlan): SparkPlan = {
+    plan match {
+      case codegen: CodegenSupport => CachedPlanHelperExec(codegen)
+      case _ => plan
+    }
   }
 }

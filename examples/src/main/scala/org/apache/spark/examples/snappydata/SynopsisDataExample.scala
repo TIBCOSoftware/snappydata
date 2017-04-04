@@ -66,6 +66,7 @@ object SynopsisDataExample extends SnappySQLJob {
   def runSynopsisDataExample(snSession: SnappySession, pw: PrintWriter): Unit = {
     pw.println("****Synopsis Data Example****")
     snSession.sql("DROP TABLE IF EXISTS STAGING_AIRLINE")
+    snSession.sql("DROP TABLE IF EXISTS AIRLINE_SAMPLE")
     snSession.sql("DROP TABLE IF EXISTS AIRLINE")
 
     // create temporary staging table to load parquet data
@@ -83,7 +84,7 @@ object SynopsisDataExample extends SnappySQLJob {
 
     // sampling is used to run approaximate queries
     pw.println("Creating a sample table from AIRLINE table")
-    snSession.sql("DROP TABLE IF EXISTS AIRLINE_SAMPLE")
+
     // Attribute 'qcs' in the statement below specifies the columns used for
     // stratification and attribute 'fraction' specifies how big the sample needs to be
     // (3% of the base table AIRLINE in this case).

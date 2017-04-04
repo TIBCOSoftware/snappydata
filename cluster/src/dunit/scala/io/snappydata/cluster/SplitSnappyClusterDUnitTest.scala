@@ -21,12 +21,16 @@ import java.util.Properties
 
 import scala.language.postfixOps
 
-import io.snappydata.core.TestData2
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
-import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import junit.framework.Assert
 
-import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.{Encoders, SaveMode, SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -38,7 +42,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     with Serializable {
 
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
+  val currenyLocatorPort = ClusterManagerTestBase.locPort
   override protected val productDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
@@ -46,48 +50,157 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override def beforeClass(): Unit = {
     super.beforeClass()
-    vm3.invoke(getClass, "startSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
-    vm3.invoke(getClass, "stopSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
 
-  override protected def startNetworkServers(num: Int): Unit = {
-    if (num > 3 || num < 1) {
-      throw new IllegalArgumentException(
-        s"unexpected number of network servers to start: $num")
-    }
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
-    if (num > 1) {
-      vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-        AvailablePortHelper.getRandomAvailableTCPPort)
-    }
-    if (num > 2) {
-      vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-        AvailablePortHelper.getRandomAvailableTCPPort)
-    }
+  override protected def startNetworkServers(): Unit = {
+    startNetworkServersOnAllVMs()
   }
 
   override protected def testObject = SplitSnappyClusterDUnitTest
 
-  // skip the non-skewed tests since it is already run in Spark+Snappy mode
-  override protected def skewNetworkServers: Boolean = true
-
   def testCollocatedJoinInSplitModeRowTable(): Unit = {
-    startNetworkServers(3)
+    startNetworkServers()
     testObject.createRowTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE1" :+ "PR_TABLE2")
   }
 
   def testCollocatedJoinInSplitModeColumnTable(): Unit = {
-    startNetworkServers(3)
+    startNetworkServers()
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4")
+  }
+  def testColumnTableStatsInSplitMode(): Unit = {
+    startNetworkServers()
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "1")
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "5")
+  }
+
+  def testBatchSize(): Unit = {
+    doTestBatchSize()
+  }
+
+  def doTestBatchSize(): Unit = {
+    startNetworkServers()
+    val snc = SnappyContext(sc)
+    val tblBatchSizeSmall = "APP.tblBatchSizeSmall_embedded"
+    val tblSizeBig = "APP.tblBatchSizeBig_embedded"
+    val tblBatchSizeBig_split = "APP.tblBatchSizeBig_split"
+    val tblBatchSizeSmall_split = "APP.tblBatchSizeSmall_split"
+
+    snc.sql(s"drop table if exists $tblBatchSizeSmall")
+    snc.sql(s"drop table if exists $tblSizeBig")
+    snc.sql(s"drop table if exists $tblBatchSizeBig_split")
+    snc.sql(s"drop table if exists $tblBatchSizeSmall_split")
+
+    snc.sql(s"CREATE TABLE $tblBatchSizeSmall(Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '200')")
+
+    snc.sql(s"CREATE TABLE $tblSizeBig (Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '200000')")
+
+    val rdd = sc.parallelize(
+      (1 to 100000).map(i => TestData(i, i.toString)))
+
+    implicit val encoder = Encoders.product[TestData]
+    val dataDF = snc.createDataset(rdd)
+
+    dataDF.write.insertInto(tblBatchSizeSmall)
+    dataDF.write.insertInto(tblSizeBig)
+
+    // StandAlone Spark Cluster Operations
+    vm3.invoke(getClass, "splitModeTableCreate",
+      startArgs :+ locatorProperty)
+
+    assert(getShadowRegionSize(tblBatchSizeSmall) > 10,
+      s"Expected batches should be greater than " +
+        s"10 but are ${getShadowRegionSize(tblBatchSizeSmall)}")
+    assert(getShadowRegionSize(tblSizeBig) > 0, s"Expected batches should be greater than " +
+        s"0 but are ${getShadowRegionSize(tblSizeBig)}")
+    assert(getShadowRegionSize(tblSizeBig) < 10, s"Expected batches should be less than " +
+        s"10 but are ${getShadowRegionSize(tblSizeBig)}")
+
+    assert(getShadowRegionSize(tblBatchSizeSmall_split) > 10,
+      s"Expected batches should be greater than " +
+        s"10 but are ${getShadowRegionSize(tblBatchSizeSmall_split)}")
+
+    assert(getShadowRegionSize(tblBatchSizeBig_split) > 0,
+      s"Expected batches should be greater than " +
+        s"0 but are ${getShadowRegionSize(tblBatchSizeBig_split)}")
+
+    assert(getShadowRegionSize(tblBatchSizeBig_split) < 10,
+      s"Expected batches should be less than " +
+          s"10 but are ${getShadowRegionSize(tblBatchSizeBig_split)}")
+
+    logInfo("Test Completed Successfully")
+  }
+
+  def getRegionSize(tbl: String) : Long = {
+    Misc.getRegionForTable(tbl.toUpperCase,
+      true).asInstanceOf[PartitionedRegion].size()
+
+  }
+
+  def getShadowRegionSize(tbl: String) : Long = {
+    // divide by three as 2 entries are for column and one is a base entry
+    Misc.getRegionForTable(ColumnFormatRelation.
+        columnBatchTableName(tbl).toUpperCase,
+      true).asInstanceOf[PartitionedRegion].size() /3
+  }
+
+  def testColumnTableStatsInSplitModeWithHA(): Unit = {
+    startNetworkServers()
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+        "1")
+    val props = bootProps
+    val port = currenyLocatorPort
+
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+    }
+
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats = SnappyTableStatsProviderService.
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
+
+    Assert.assertEquals(10000100, stats.getRowCount)
+    vm0.invoke(restartServer)
+
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats1 = SnappyTableStatsProviderService.
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
+    Assert.assertEquals(10000100, stats1.getRowCount)
+    vm1.invoke(restartServer)
+
+    // Test using using 5 buckets
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ port.toString :+
+        "5")
+    vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    var stats2 = SnappyTableStatsProviderService.
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
+    Assert.assertEquals(10000100, stats2.getRowCount)
+    val snc = SnappyContext(sc)
+    snc.sql("insert into snappyTable values(1,'Test')")
+    var stats3 = SnappyTableStatsProviderService.
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
+    vm0.invoke(restartServer)
   }
 }
 
@@ -96,7 +209,6 @@ object SplitSnappyClusterDUnitTest
 
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc
-    context.getConf.set(SQLConf.COLUMN_BATCH_SIZE.key, batchSize.toString)
     context
   }
 
@@ -270,6 +382,86 @@ object SplitSnappyClusterDUnitTest
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
 
+    logInfo("Successful")
+  }
+
+  def splitModeTableCreate(locatorPort: Int,
+      prop: Properties, locatorProp: String): Unit = {
+    val tblBatchSize200K = "tblBatchSizeBig_split"
+
+    val tblBatchSize200 = "tblBatchSizeSmall_split"
+
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty(locatorProp, s"localhost:$locatorPort")
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+
+
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = new SnappySession(sc)
+    snc.sql(s"CREATE TABLE $tblBatchSize200(Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '200')")
+
+    snc.sql(s"CREATE TABLE $tblBatchSize200K (Key1 INT ,Value STRING) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '3', COLUMN_BATCH_SIZE '200000')")
+
+    val rdd = sc.parallelize(
+      (1 to 100000).map(i => TestData(i, i.toString)))
+
+    implicit val encoder = Encoders.product[TestData]
+    val dataDF = snc.createDataset(rdd)
+
+    dataDF.write.insertInto(tblBatchSize200)
+    dataDF.write.insertInto(tblBatchSize200K)
+  }
+
+  def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
+      locatorProp: String, buckets: String): Unit = {
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty(locatorProp, s"localhost:$locatorPort")
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+        .set("spark.testing.reservedMemory", "0")
+        .set("spark.sql.autoBroadcastJoinThreshold", "-1")
+
+
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = new SnappySession(sc)
+
+
+    snc.sql("drop table if exists snappyTable")
+    snc.sql(s"create table snappyTable (id bigint not null, sym varchar(10) not null) using " +
+        s"column options(redundancy '1', buckets '$buckets')")
+    val testDF = snc.range(10000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar" +
+        "(10))) as sym")
+    testDF.write.insertInto("snappyTable")
+    val stats = SnappyTableStatsProviderService.
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
+    Assert.assertEquals(10000000, stats.getRowCount)
+    for (i <- 1 to 100) {
+      snc.sql(s"insert into snappyTable values($i,'Test$i')")
+    }
+    val stats1 = SnappyTableStatsProviderService.
+        getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
+    Assert.assertEquals(10000100, stats1.getRowCount)
     logInfo("Successful")
   }
 }

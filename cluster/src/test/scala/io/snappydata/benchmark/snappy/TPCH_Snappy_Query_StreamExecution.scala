@@ -56,11 +56,11 @@ object TPCH_Snappy_Query_StreamExecution extends SnappySQLJob {
 
     // scalastyle:off println
     println(s"****************queries : $queries")
-    // scalastyle:on println
-    var avgTime: Map[String, Long]= Map()
+    var avgTime: Map[String, Long] = Map()
     for (i <- 1 to (warmUp + runsForAverage)) {
       for (query <- queries) {
-        val executionTime : Long = TPCH_Snappy_StreamExecution.execute(query, snc, isResultCollection, isSnappy, i, useIndex)
+        val executionTime : Long = TPCH_Snappy_StreamExecution.execute(query, snc,
+          isResultCollection, isSnappy, i, useIndex)
         if (!isResultCollection) {
           var out: BufferedWriter = new BufferedWriter(new FileWriter(s"Snappy_$query.out", true));
           out.write( executionTime + "\n")

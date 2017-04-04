@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.benchmark.snappy
 
 import java.io.{PrintStream, File, FileOutputStream}
@@ -13,7 +30,9 @@ import org.apache.spark.{SparkConf, SparkContext}
 object TPCH_Spark {
 
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("TPCH_Spark") /*.set("snappydata.store.locators","localhost:10334")*/
+    val conf = new SparkConf().setAppName("TPCH_Spark")
+
+    /* .set("snappydata.store.locators","localhost:10334") */
 
     val usingOptionString = null
     val props = null
@@ -31,57 +50,43 @@ object TPCH_Spark {
     var sqlSparkProperties = args(5).split(",")
 
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(new File(s"Spark_LoadPerf.out"))
-    var loadPerfPrintStream:PrintStream = new PrintStream(loadPerfFileStream)
+    var loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
 
     var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Spark_Average.out"))
-    var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
+    var avgPrintStream: PrintStream = new PrintStream(avgFileStream)
 
 
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulatePartTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createAndPopulateOrderTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateRegionTable(
+      usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateNationTable(
+      usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateSupplierTable(
+      usingOptionString, snc, path, isSnappy, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulateCustomerTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
+    TPCHColumnPartitionedTable.createPopulatePartSuppTable(
+      snc, path, isSnappy, buckets, loadPerfPrintStream)
 
 //    snc.sql(s"set spark.sql.shuffle.partitions=83")
 //    snc.sql(s"set spark.sql.inMemoryColumnarStorage.compressed=false")
 //    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=41943040")
-    //snc.sql(s"set spark.sql.crossJoin.enabled = true")
+    // snc.sql(s"set spark.sql.crossJoin.enabled = true")
     for(prop <- sqlSparkProperties) {
+      // scalastyle:off println
       println(prop)
       snc.sql(s"set $prop")
     }
 
     for (i <- 1 to 1) {
       for (query <- queries) {
-        query match {
-          case "1" => TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "2" => TPCH_Snappy.execute("q2", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "3" => TPCH_Snappy.execute("q3", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "4" => TPCH_Snappy.execute("q4", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "5" => TPCH_Snappy.execute("q5", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "6" => TPCH_Snappy.execute("q6", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "7" => TPCH_Snappy.execute("q7", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "8" => TPCH_Snappy.execute("q8", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "9" => TPCH_Snappy.execute("q9", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "10" => TPCH_Snappy.execute("q10", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "11" => TPCH_Snappy.execute("q11", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "12" => TPCH_Snappy.execute("q12", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "13" => TPCH_Snappy.execute("q13", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "14" => TPCH_Snappy.execute("q14", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "15" => TPCH_Snappy.execute("q15", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "16" => TPCH_Snappy.execute("q16", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "17" => TPCH_Snappy.execute("q17", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "18" => TPCH_Snappy.execute("q18", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "19" => TPCH_Snappy.execute("q19", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "20" => TPCH_Snappy.execute("q20", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "21" => TPCH_Snappy.execute("q21", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-          case "22" => TPCH_Snappy.execute("q22", snc, isResultCollection, isSnappy, i, useIndex, warmup, runsForAverage,avgPrintStream)
-            println("---------------------------------------------------------------------------------")
-        }
+          TPCH_Snappy.execute(query, snc, isResultCollection, isSnappy, i, useIndex, warmup,
+            runsForAverage, avgPrintStream)
       }
     }
     TPCH_Snappy.close

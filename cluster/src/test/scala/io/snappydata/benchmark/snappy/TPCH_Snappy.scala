@@ -20,6 +20,7 @@ package io.snappydata.benchmark.snappy
 import java.io.{File, FileOutputStream, PrintStream}
 
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import java.sql.{DriverManager, PreparedStatement, ResultSet, Statement}
 
 /**
  * Created by kishor on 27/10/15.
@@ -34,6 +35,107 @@ object TPCH_Snappy {
     planFileStream.close()
   }
 
+  def execute_statement(queryNumber: String, isResultCollection: Boolean, stmt: PreparedStatement,
+      warmup: Integer, runsForAverage: Integer, avgPrintStream: PrintStream = null): Unit = {
+
+    var queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
+    var queryPrintStream = new PrintStream(queryFileStream)
+
+    var resultFormat = queryNumber match {
+      case "1" => getResultString1
+      case "2" => getResultString2
+      case "3" => getResultString3
+      case "4" => getResultString4
+      case "5" => getResultString5
+      case "6" => getResultString6
+      case "7" => getResultString7
+      case "8" => getResultString8
+      case "9" => getResultString9
+      case "10" => getResultString10
+      case "11" => getResultString11
+      case "12" => getResultString12
+      case "13" => getResultString13
+      case "14" => getResultString14
+      case "15" => getResultString15
+      case "16" => getResultString16
+      case "17" => getResultString17
+      case "18" => getResultString18
+      case "19" => getResultString19
+      case "20" => getResultString20
+      case "21" => getResultString21
+      case "22" => getResultString22
+    }
+
+    var rs: ResultSet = null
+    try {
+      // scalastyle:off println
+      println(s"Started executing $queryNumber")
+      if (isResultCollection) {
+        rs = queryExecution(queryNumber, stmt)
+        // queryPrintStream.println(s"$resultFormat")
+        val rsmd = rs.getMetaData()
+        val columnsNumber = rsmd.getColumnCount();
+        var count: Int = 0
+        while (rs.next()) {
+          count += 1
+          for (i <- 1 to columnsNumber) {
+            if (i > 1) queryPrintStream.print(",")
+            queryPrintStream.print(rs.getString(i))
+          }
+          queryPrintStream.println()
+        }
+        println(s"NUmber of results : $count")
+        println(s"$queryNumber Result Collected in file $queryNumber.out")
+        if (queryNumber.equals("q13")) {
+          stmt.execute("drop view ViewQ13")
+        }
+        if (queryNumber.equals("q15")) {
+          stmt.execute("drop view revenue")
+        }
+      } else {
+        var totalTime: Long = 0
+        for (i <- 1 to (warmup + runsForAverage)) {
+          val startTime = System.currentTimeMillis()
+          rs = queryExecution(queryNumber, stmt)
+          // rs = stmt.executeQuery(query)
+          while (rs.next()) {
+            // just iterating over result
+          }
+          val endTime = System.currentTimeMillis()
+          val iterationTime = endTime - startTime
+          queryPrintStream.println(s"$iterationTime")
+          if (i > warmup) {
+            totalTime += iterationTime
+          }
+          if (queryNumber.equals("q13")) {
+            stmt.execute("drop view ViewQ13")
+          }
+          if (queryNumber.equals("q15")) {
+            stmt.execute("drop view revenue")
+          }
+        }
+        queryPrintStream.println(s"${totalTime / runsForAverage}")
+        avgPrintStream.println(s"$queryNumber,${totalTime / runsForAverage}")
+      }
+      println(s"Finished executing $queryNumber")
+    } catch {
+      case e: Exception => {
+        e.printStackTrace()
+        e.printStackTrace(queryPrintStream)
+        e.printStackTrace(avgPrintStream)
+        println(s" Exception while executing $queryNumber in written to file $queryNumber.txt")
+      }
+    } finally {
+      if (isResultCollection) {
+        queryPrintStream.close()
+        queryFileStream.close()
+      }
+
+    }
+    rs.close()
+  }
+
+
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
       isSnappy: Boolean, itr: Int = 0, useIndex: Boolean = false, warmup: Int = 0,
       runsForAverage: Int = 1, avgPrintStream: PrintStream = null): Unit = {
@@ -41,7 +143,7 @@ object TPCH_Snappy {
     val planFileName = if (isSnappy) "Plan_Snappy.out" else "Plan_Spark.out"
     val queryFileName = if (isSnappy) s"Snappy_${queryNumber}.out" else s"Spark_${queryNumber}.out"
 
-    if (planFileStream == null) {
+    if (planFileStream == null && planPrintStream == null) {
       planFileStream = new FileOutputStream(new File(planFileName))
       planPrintStream = new PrintStream(planFileStream)
     }
@@ -51,40 +153,40 @@ object TPCH_Snappy {
 
     val resultFormat = queryNumber match {
       case "q" => getResultString
-      case "q1" => getResultString1
-      case "q2" => getResultString2
-      case "q3" => getResultString3
-      case "q4" => getResultString4
-      case "q5" => getResultString5
-      case "q6" => getResultString6
-      case "q7" => getResultString7
-      case "q8" => getResultString8
-      case "q9" => getResultString9
-      case "q10" => getResultString10
-      case "q11" => getResultString11
-      case "q12" => getResultString12
-      case "q13" => getResultString13
-      case "q14" => getResultString14
-      case "q15" => getResultString15
-      case "q16" => getResultString16
-      case "q17" => getResultString17
-      case "q18" => getResultString18
-      case "q19" => getResultString19
-      case "q20" => getResultString20
-      case "q21" => getResultString21
-      case "q22" => getResultString22
-      case "q1s" => getResultString1s
-      case "q3s" => getResultString3
-      case "q5s" => getResultString5s
-      case "q6s" => getResultString6
-      case "q10s" => getResultString10
+      case "1" => getResultString1
+      case "2" => getResultString2
+      case "3" => getResultString3
+      case "4" => getResultString4
+      case "5" => getResultString5
+      case "6" => getResultString6
+      case "7" => getResultString7
+      case "8" => getResultString8
+      case "9" => getResultString9
+      case "10" => getResultString10
+      case "11" => getResultString11
+      case "12" => getResultString12
+      case "13" => getResultString13
+      case "14" => getResultString14
+      case "15" => getResultString15
+      case "16" => getResultString16
+      case "17" => getResultString17
+      case "18" => getResultString18
+      case "19" => getResultString19
+      case "20" => getResultString20
+      case "21" => getResultString21
+      case "22" => getResultString22
+      case "1s" => getResultString1s
+      case "3s" => getResultString3
+      case "5s" => getResultString5s
+      case "6s" => getResultString6
+      case "10s" => getResultString10
     }
 
     // scalastyle:off println
     try {
       println(s"Started executing $queryNumber")
       if (isResultCollection) {
-        val resultSet = queryExecution(queryNumber, sqlContext, useIndex, true)
+        val (resultSet, _) = queryExecution(queryNumber, sqlContext, useIndex, true)
         println(s"$queryNumber : ${resultSet.length}")
 
         for (row <- resultSet) {
@@ -101,9 +203,9 @@ object TPCH_Snappy {
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
           if (i == 1) {
-            cnts = queryExecution(queryNumber, sqlContext, useIndex, true)
+            cnts = queryExecution(queryNumber, sqlContext, useIndex, true)._1
           } else {
-            cnts = queryExecution(queryNumber, sqlContext, useIndex)
+            cnts = queryExecution(queryNumber, sqlContext, useIndex)._1
           }
           for (s <- cnts) {
             // just iterating over result
@@ -135,109 +237,189 @@ object TPCH_Snappy {
 
   def printPlan(df: DataFrame, query: String): Unit = {
     // scalastyle:off println
-    planPrintStream.println(query)
-    planPrintStream.println(df.queryExecution.executedPlan)
+    if (planPrintStream != null) {
+      planPrintStream.println(query)
+      planPrintStream.println(df.queryExecution.executedPlan)
+    } else {
+      df.explain(true)
+    }
     // scalastyle:on println
   }
 
-  def queryExecution(queryNumber: String, sqlContext: SQLContext, useIndex: Boolean, genPlan:
-  Boolean = false):
-  scala.Array[org.apache.spark.sql.Row] = {
-    val cnts: scala.Array[org.apache.spark.sql.Row] = queryNumber match {
-      case "q1s" =>
-        val df = sqlContext.sql(getSampledQuery1)
-        df.collect()
-      case "q3s" =>
-        val df = sqlContext.sql(getSampledQuery3)
-        val cnt = df.collect()
-        cnt
-      case "q5s" =>
-        sqlContext.sql(getSampledQuery5).collect()
-      case "q6s" =>
-        sqlContext.sql(getSampledQuery6).collect()
-      case "q10s" =>
-        sqlContext.sql(getSampledQuery10).collect()
-      case "q1" =>
+  def queryExecution(queryNumber: String, prepStatement: PreparedStatement): ResultSet = {
+
+    val rs: ResultSet = queryNumber match {
+      case "1" => {
+        prepStatement.executeQuery()
+      }
+      case "2" => {
+        prepStatement.executeQuery()
+      }
+      case "3" => {
+        prepStatement.executeQuery()
+      }
+      case "4" => {
+        prepStatement.executeQuery()
+      }
+      case "5" => {
+        prepStatement.executeQuery()
+      }
+      case "6" => {
+        prepStatement.executeQuery()
+      }
+      case "7" => {
+        prepStatement.executeQuery()
+      }
+      case "8" => {
+        prepStatement.executeQuery()
+      }
+      case "9" => {
+        prepStatement.executeQuery()
+      }
+      case "10" => {
+        prepStatement.executeQuery()
+      }
+      case "11" => {
+        prepStatement.executeQuery()
+      }
+      case "12" => {
+        prepStatement.executeQuery()
+      }
+      case "13" => {
+        prepStatement.executeQuery()
+      }
+      case "14" => {
+        prepStatement.executeQuery()
+      }
+      case "15" => {
+        prepStatement.execute(getTempQuery15_Original())
+        prepStatement.executeQuery(getQuery15_Original())
+      }
+      case "16" => {
+        prepStatement.executeQuery()
+      }
+      case "17" => {
+        prepStatement.executeQuery()
+      }
+      case "18" => {
+        prepStatement.executeQuery()
+      }
+      case "19" => {
+        prepStatement.executeQuery()
+      }
+      case "20" => {
+        prepStatement.executeQuery()
+      }
+      case "21" => {
+        prepStatement.executeQuery()
+      }
+      case "22" => {
+        prepStatement.executeQuery()
+      }
+    }
+    rs
+
+  }
+
+
+  def queryExecution(queryNumber: String, sqlContext: SQLContext, useIndex: Boolean,
+      genPlan: Boolean = false): (scala.Array[org.apache.spark.sql.Row], DataFrame) = {
+    val df = queryNumber match {
+      case "1s" =>
+        sqlContext.sql(getSampledQuery1)
+      case "3s" =>
+        sqlContext.sql(getSampledQuery3)
+      case "5s" =>
+        sqlContext.sql(getSampledQuery5)
+      case "6s" =>
+        sqlContext.sql(getSampledQuery6)
+      case "10s" =>
+        sqlContext.sql(getSampledQuery10)
+      case "1" =>
         val df = sqlContext.sql(getQuery1)
         if (genPlan) {
           printPlan(df, "Q1")
         }
-        df.collect()
-      case "q2" =>
-        /*val result = sqlContext.sql(getTempQuery2())
+        df
+      case "2" =>
+        /*
+        val result = sqlContext.sql(getTempQuery2())
         result.createOrReplaceTempView("ViewQ2")
-        val df = sqlContext.sql(getQuery2())*/
+        val df = sqlContext.sql(getQuery2())
+        */
         val df = sqlContext.sql(getQuery2_Original)
         if (genPlan) {
           printPlan(df, "Q2")
         }
-        df.collect()
-      case "q3" =>
+        df
+      case "3" =>
         val df = sqlContext.sql(getQuery3)
         if (genPlan) {
           printPlan(df, "Q3")
         }
-        df.collect()
-      case "q4" =>
+        df
+      case "4" =>
         val df = sqlContext.sql(getQuery4)
         if (genPlan) {
           printPlan(df, "Q4")
         }
-        df.collect()
-      case "q5" =>
+        df
+      case "5" =>
         val df = sqlContext.sql(getQuery5)
         if (genPlan) {
           printPlan(df, "Q5")
         }
-        df.collect()
-      case "q6" =>
+        df
+      case "6" =>
         val df = sqlContext.sql(getQuery6)
         if (genPlan) {
           printPlan(df, "Q6")
         }
-        df.collect()
-      case "q7" =>
+        df
+      case "7" =>
         val df = sqlContext.sql(getQuery7)
         if (genPlan) {
           printPlan(df, "Q7")
         }
-        df.collect()
-      case "q8" =>
+        df
+      case "8" =>
         val df = sqlContext.sql(getQuery8(useIndex))
         if (genPlan) {
           printPlan(df, "Q8")
         }
-        df.collect()
-      case "q9" =>
+        df
+      case "9" =>
         val df = sqlContext.sql(getQuery9(useIndex))
         if (genPlan) {
           printPlan(df, "Q9")
         }
-        df.collect()
-      case "q10" =>
+        df
+      case "10" =>
         val df = sqlContext.sql(getQuery10)
         if (genPlan) {
           printPlan(df, "Q10")
         }
-        df.collect()
-      case "q11" =>
-       /*val result = sqlContext.sql(getTempQuery11)
-        val res: Array[Row] = result.collect()
-        var df: DataFrame = null
-        var res1: Array[Row] = null
-        df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))*/
+        df
+      case "11" =>
+        /*
+         val result = sqlContext.sql(getTempQuery11)
+         val res: Array[Row] = result.collect()
+         var df: DataFrame = null
+         var res1: Array[Row] = null
+         df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0))))
+         */
         val df = sqlContext.sql(getQuery11_Original)
         if (genPlan) {
           printPlan(df, "Q11")
         }
-        df.collect()
-      case "q12" =>
+        df
+      case "12" =>
         val df = sqlContext.sql(getQuery12)
         if (genPlan) {
           printPlan(df, "Q12")
         }
-        df.collect()
-      case "q13" =>
+        df
+      case "13" =>
         /*
         val result = sqlContext.sql(getTempQuery13(useIndex))
         result.createOrReplaceTempView("ViewQ13")
@@ -247,14 +429,14 @@ object TPCH_Snappy {
         if (genPlan) {
           printPlan(df, "Q13")
         }
-        df.collect()
-      case "q14" =>
+        df
+      case "14" =>
         val df = sqlContext.sql(getQuery14(useIndex))
         if (genPlan) {
           printPlan(df, "Q14")
         }
-        df.collect()
-      case "q15" =>
+        df
+      case "15" =>
         val result = sqlContext.sql(getTempQuery15_1)
         result.createOrReplaceTempView("revenue")
 
@@ -262,56 +444,59 @@ object TPCH_Snappy {
         if (genPlan) {
           printPlan(df, "Q15")
         }
-        df.collect()
-      case "q16" =>
+        df
+      case "16" =>
         val df = sqlContext.sql(getQuery16)
         if (genPlan) {
           printPlan(df, "Q16")
         }
-        df.collect()
-      case "q17" =>
-/*        val result = sqlContext.sql(getTempQuery17(useIndex))
+        df
+      case "17" =>
+        /*
+        val result = sqlContext.sql(getTempQuery17(useIndex))
         result.createOrReplaceTempView("ViewQ17")
-        val df = sqlContext.sql(getQuery17(useIndex))*/
+        val df = sqlContext.sql(getQuery17(useIndex))
+        */
         val df = sqlContext.sql(getQuery17_Original)
         if (genPlan) {
           printPlan(df, "Q17")
         }
-        df.collect()
-      case "q18" =>
+        df
+      case "18" =>
         val df = sqlContext.sql(getQuery18)
         if (genPlan) {
           printPlan(df, "Q18")
         }
-        df.collect()
-      case "q19" =>
+        df
+      case "19" =>
         val df = sqlContext.sql(getQuery19(useIndex))
         if (genPlan) {
           printPlan(df, "Q19")
         }
-        df.collect()
-      case "q20" =>
+        df
+      case "20" =>
 //        val result = sqlContext.sql(getTempQuery20(useIndex))
 //        result.createOrReplaceTempView("ViewQ20")
         val df = sqlContext.sql(getQuery20_Original)
         if (genPlan) {
           printPlan(df, "Q20")
         }
-        df.collect()
-      case "q21" =>
+        df
+      case "21" =>
         val df = sqlContext.sql(getQuery21)
         if (genPlan) {
           printPlan(df, "Q21")
         }
-        df.collect()
-      case "q22" =>
+        df
+      case "22" =>
         val df = sqlContext.sql(getQuery22_Original)
         if (genPlan) {
           printPlan(df, "Q22")
         }
-        df.collect()
+        df
     }
-    cnts
+
+    (df.collect(), df)
   }
 
 
@@ -657,7 +842,7 @@ object TPCH_Snappy {
       " limit 100"
   }
 
-  def getResultString2():String = {
+  def getResultString2(): String = {
     "S_ACCTBAL|S_NAME|N_NAME|P_PARTKEY|P_MFGR|S_ADDRESS|S_PHONE|S_COMMENT"
   }
 
@@ -720,8 +905,8 @@ object TPCH_Snappy {
   }
 
   def getQuery5: String = {
-    //1. REGION = ASIA;
-    //2. DATE = 1994-01-01.
+    // 1. REGION = ASIA;
+    // 2. DATE = 1994-01-01.
       " select" +
           "        n_name," +
           "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
@@ -983,7 +1168,7 @@ object TPCH_Snappy {
   }
 
   def getQuery10: String = {
-    //1.    DATE = 1993-10-01.
+    // 1.DATE = 1993-10-01.
       "select" +
           "         C_CUSTKEY," +
           "         C_NAME," +
@@ -1090,7 +1275,7 @@ object TPCH_Snappy {
       "         value desc"
   }
 
-  def getResultString11():String = {
+  def getResultString11(): String = {
     "PS_PARTKEY|VALUE"
   }
 
@@ -1198,12 +1383,12 @@ object TPCH_Snappy {
           "         c_count desc"
   }
 
-  def getResultString13():String = {
+  def getResultString13(): String = {
     "C_COUNT|CUSTDIST"
   }
 
   def getQuery14(useIndex: Boolean): String = {
-    //1.DATE = 1995-09-01.
+    // 1.DATE = 1995-09-01.
       if (!useIndex) {
         "select" +
             "         100.00 * sum(case" +
@@ -1219,7 +1404,7 @@ object TPCH_Snappy {
             "         l_partkey = p_partkey" +
             "         and l_shipdate >= '1995-09-01'" +
             "         and l_shipdate < add_months ('1995-09-01', 1)"
-      }else{
+      } else {
         "select" +
             "         100.00 * sum(case" +
             "                 when p_type like 'PROMO%'" +
@@ -1240,6 +1425,44 @@ object TPCH_Snappy {
   def getResultString14: String = {
     "PROMO_REVENUE"
   }
+
+  def getTempQuery15_Original(): String = {
+    "create view " +
+        "        revenue as" +
+        " select" +
+        "      l_suppkey as supplier_no ," +
+        "      sum(l_extendedprice * (1 - l_discount)) as total_revenue" +
+        " from" +
+        "      LINEITEM" +
+        " where" +
+        "      l_shipdate >= '1996-01-01'" +
+        "      and l_shipdate < '1996-01-01' + interval '3' month" +
+        " group by" +
+        "      l_suppkey"
+  }
+
+  def getQuery15_Original(): String = {
+    "select" +
+        "        s_suppkey," +
+        "        s_name," +
+        "        s_address," +
+        "        s_phone," +
+        "        total_revenue" +
+        " from" +
+        "        SUPPLIER," +
+        "        revenue" +
+        " where" +
+        "        s_suppkey = supplier_no" +
+        "        and total_revenue = (" +
+        "                select" +
+        "                        max(total_revenue)" +
+        "                from" +
+        "                        revenue" +
+        "        )" +
+        " order by" +
+        "        s_suppkey;"
+  }
+
 
   def getTempQuery15_1: String = {
     "select" +
@@ -1323,7 +1546,7 @@ object TPCH_Snappy {
       "         p_size"
   }
 
-  def getQuery16Original: String = {
+  def getQuery16_Original: String = {
     //    1. BRAND = Brand#45.
     //    2. TYPE = MEDIUM POLISHED .
     //    3. SIZE1 = 49
@@ -1404,11 +1627,11 @@ object TPCH_Snappy {
             " where" +
             "         p_partkey = l_partkey" +
             "         and p_brand = 'Brand#23'" +
-            //"         and p_container = 'MED BOX'" +
+            // "         and p_container = 'MED BOX'" +
             "         and p_container = 'SM PACK'" +
             "         and l_quantity < v_quantity" +
             "         and v_partkey = p_partkey"
-      }else{
+      } else {
         "select" +
             "         sum(l_extendedprice) / 7.0 as avg_yearly" +
             " from" +
@@ -1843,9 +2066,8 @@ object TPCH_Snappy {
   }
 
 
-  def getResultString22():String = {
+  def getResultString22(): String = {
     "CNTRYCODE|NUMCUST|TOTACCTBAL"
   }
 
 }
-

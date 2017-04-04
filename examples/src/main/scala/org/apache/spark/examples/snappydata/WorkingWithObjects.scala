@@ -87,27 +87,16 @@ object WorkingWithObjects extends SnappySQLJob {
 
 
     // Append more people to the column table
-    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio"), Map.empty[String,String]),
-      Person("Rob Stark", Address("San Diego", "California"), Map.empty[String,String]),
-      Person("Michael", Address("Null", "California"), Map.empty[String,String])).toDS()
+    val morePeople = Seq(Person("Jon Snow", Address("Columbus", "Ohio"), Map.empty[String, String]),
+      Person("Rob Stark", Address("San Diego", "California"), Map.empty[String, String]),
+      Person("Michael", Address("Null", "California"), Map.empty[String, String])).toDS()
 
     morePeople.write.insertInto("Persons")
 
     // Query it like any other table
     val nameAndAddress = snSession.sql("SELECT name, address, emergencyContacts FROM Persons")
-
-
-    //Reconstruct the objects from obtained Row
-    val allPersons = nameAndAddress.collect.map(row => {
-      Person(row(0).asInstanceOf[String],
-        Address(
-          row(1).asInstanceOf[Row](0).asInstanceOf[String],
-          row(1).asInstanceOf[Row](1).asInstanceOf[String]
-        ),
-        row(2).asInstanceOf[Map[String, String]]
-      )
-    })
-    allPersons
+    val allPersons = nameAndAddress.as[Person]
+    allPersons.show()
   }
 
   def main(args: Array[String]) {
@@ -128,9 +117,7 @@ object WorkingWithObjects extends SnappySQLJob {
 
     val snSession = new SnappySession(spark.sparkContext)
     val config = ConfigFactory.parseString("")
-    val results = runSnappyJob(snSession, config)
-    println("Printing All Persons \n################## \n")
-    results.asInstanceOf[Array[Person]].foreach(println)
+    runSnappyJob(snSession, config)
   }
 
   def createAndGetDataDir: String = {
