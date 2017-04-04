@@ -49,7 +49,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-//import util.*;
 
 public class SnappyTest implements Serializable {
 
@@ -301,13 +300,17 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorsList = getLocatorsList("locators");
-                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" + dirPath + clientPort + port +
-                        " -heap-size=" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
-                        " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
-                        SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() + SnappyPrms.getEvictionHeapPercentage() +
-                        " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" + SnappyPrms.getFlightRecorderOptions(dirPath) +
+                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" +
+                        dirPath + clientPort + port + " -heap-size=" + SnappyPrms.getServerMemory()
+                        + SnappyPrms.getConserveSockets() +
+                        " -J-Dgemfirexd.table-default-partitioned=" +
+                        SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
+                        SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() +
+                        SnappyPrms.getEvictionHeapPercentage() +
+                        " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
+                        SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -J-XX:+DisableExplicitGC" +
-                        " -classpath=" /*+ getSnappyTestsJar() + ":"*/ + getStoreTestsJar();// + ":" + getClusterTestsJar();
+                        " -classpath=" + getStoreTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
@@ -318,26 +321,31 @@ public class SnappyTest implements Serializable {
                 int leadPort = PortHelper.getRandomPort();
                 /*do leadPort = PortHelper.getRandomPort();
                 while (leadPort < 8091 || leadPort > 8099);*/
-                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() +
-                        " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port +
-                        " -heap-size=" + SnappyPrms.getLeadMemory() + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() +
-                        " -spark.jobserver.port=" + leadPort +
-                        " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() +
-                        " -spark.sql.inMemoryColumnarStorage.batchSize=" + SnappyPrms.getInMemoryColumnarStorageBatchSize() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() +
+                nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList +
+                        SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
+                        " -dir=" + dirPath + clientPort + port + " -heap-size=" +
+                        SnappyPrms.getLeadMemory() + SnappyPrms.getSparkSqlBroadcastJoinThreshold()
+                        + " -spark.jobserver.port=" + leadPort + SnappyPrms.getSparkSchedulerMode()
+                        + /*" -spark.sql.inMemoryColumnarStorage.compressed="
+                        + SnappyPrms.getCompressedInMemoryColumnarStorage() +*/
+                        SnappyPrms.getColumnBatchSize() + SnappyPrms.getConserveSockets() +
                         " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() +
-                        " -J-XX:+DisableExplicitGC" + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
-                        " -spark.sql.aqp.numBootStrapTrials=" + SnappyPrms.getNumBootStrapTrials() + SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
-                        " -classpath=" /*+ getSnappyTestsJar() + ":"*/ + getStoreTestsJar() /*+ ":" + getClusterTestsJar()*/ + " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
+                        " -J-XX:+DisableExplicitGC" + SnappyPrms.getTimeStatistics() +
+                        SnappyPrms.getLogLevel() + SnappyPrms.getNumBootStrapTrials() +
+                        SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
+                        " -classpath=" + getStoreTestsJar() +
+                        " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
                         SnappyPrms.getFlightRecorderOptions(dirPath) +
-                        " -spark.driver.extraClassPath=" /*+ getSnappyTestsJar() + ":"*/ + getStoreTestsJar() + " -spark.executor.extraClassPath=" +
-                        /*getSnappyTestsJar() + ":" +*/ getStoreTestsJar();
+                        " -spark.driver.extraClassPath=" + getStoreTestsJar()
+                        + " -spark.executor.extraClassPath=" + getStoreTestsJar();
                 try {
                     leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
                 } catch (UnknownHostException e) {
                     String s = "Lead host not found...";
                     throw new HydraRuntimeException(s, e);
                 }
-                SnappyBB.getBB().getSharedMap().put("leadHost_" + RemoteTestModule.getMyClientName() + "_" + RemoteTestModule.getMyVmid(), leadHost);
+                SnappyBB.getBB().getSharedMap().put("leadHost_" + RemoteTestModule.getMyClientName()
+                        + "_" + RemoteTestModule.getMyVmid(), leadHost);
                 SnappyBB.getBB().getSharedMap().put("leadPort_" + RemoteTestModule
                         .getMyClientName() + "_" + RemoteTestModule.getMyVmid(), Integer.toString(leadPort));
                 break;
@@ -1255,9 +1263,9 @@ public class SnappyTest implements Serializable {
                     dataLocationList.add(" ");
             }
             if (persistenceModeList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \"async\" parameter in the persistenceModeList for the scripts for which no persistence mode is specified.");
+                Log.getLogWriter().info("Adding \"sync\" parameter in the persistenceModeList for the scripts for which no persistence mode is specified.");
                 while (persistenceModeList.size() != scriptNames.size())
-                    persistenceModeList.add("async");
+                    persistenceModeList.add("sync");
             }
             if (colocateWithOptionList.size() != scriptNames.size()) {
                 Log.getLogWriter().info("Adding \"none\" parameter in the colocateWithOptionList for the scripts for which no COLOCATE_WITH Option is specified.");
