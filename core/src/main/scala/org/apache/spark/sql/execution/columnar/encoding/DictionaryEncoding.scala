@@ -342,6 +342,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // create the final data array of exact size that is known at this point
     val numNullWords = getNumNullWords
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
+    val storageAllocator = this.storageAllocator
     val columnData = storageAllocator.allocate(ColumnEncoding.checkBufferSize(
       8L /* typeId + number of nulls */ + (numNullWords << 3L) + dataSize))
     val columnBytes = storageAllocator.baseObject(columnData)

@@ -1103,6 +1103,7 @@ trait NullableEncoder extends NotNullEncoder {
       val oldSize = cursor - baseOffset
       val newSize = math.min(Int.MaxValue - 1,
         oldSize + numNullBytes - initialNullBytes).toInt
+      val storageAllocator = this.storageAllocator
       val newColumnData = storageAllocator.allocate(newSize)
 
       // first copy the rest of the bytes skipping header and nulls
@@ -1121,8 +1122,8 @@ trait NullableEncoder extends NotNullEncoder {
       }
 
       // now write the header including nulls
-      val newColumnBytes = allocator.baseObject(newColumnData)
-      var position = allocator.baseOffset(newColumnData)
+      val newColumnBytes = storageAllocator.baseObject(newColumnData)
+      var position = storageAllocator.baseOffset(newColumnData)
       ColumnEncoding.writeInt(newColumnBytes, position, typeId)
       position += 4
       ColumnEncoding.writeInt(newColumnBytes, position, numWords)
