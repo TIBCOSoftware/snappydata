@@ -283,7 +283,7 @@ pages:
         - 'backup': 'reference/snappy_shell_reference/store-backup.md'
         - 'compact-all-disk-stores': 'reference/snappy_shell_reference/store-compact-all-disk-stores.md'
         - 'compact-disk-store': 'reference/snappy_shell_reference/store-compact-disk-store.md'
-        -  'java.sql.DatabaseMetaData Interface': 'reference/snappy_shell_reference/java-sql-databasemetadata.md'
+#        -  'java.sql.DatabaseMetaData Interface': 'reference/snappy_shell_reference/java-sql-databasemetadata.md'
         - 'list-missing-disk-stores': 'reference/snappy_shell_reference/store-list-missing-disk-stores.md'
         - 'locator': 'reference/snappy_shell_reference/store-locator.md'
         - 'print-stacks': 'reference/snappy_shell_reference/store-print-stacks.md'

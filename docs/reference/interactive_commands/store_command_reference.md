@@ -1,4 +1,4 @@
-#snappy Interactive Commands
+# Snappy-SQL Shell Interactive Commands
 
 `snappy` implements an interactive command-line tool that is based on the Apache Derby `ij` tool. Use `snappy` to run scripts or interactive queries against a SnappyData cluster.
 
@@ -25,73 +25,43 @@ Commands can span multiple lines without using any special escape character for 
 
 `snappy` treats any command that it does not recognize as a SQL command that is passed to the underlying connection. This means that any syntactic errors in `snappy` commands are handed to the SQL engine and generally result in SQL parsing errors.
 
--   **[absolute](../../reference/store_commands/absolute.html)**
-    Moves the cursor to the row specified by the *int*, and then fetches the row.
--   **[after last](../../reference/store_commands/after_last.html)**
-    Moves the cursor to after the last row, then fetches the row.
--   **[async](../../reference/store_commands/async.html)**
-    Execute an SQL statement in a separate thread.
--   **[autocommit](../../reference/store_commands/autocommit.html)**
+-   **[autocommit](../../reference/interactive_commands/autocommit.md)**
     Turns the connection's auto-commit mode on or off.
--   **[before first](../../reference/store_commands/before_first.html)**
-    Moves the cursor before the first row, then fetches the row.
--   **[close](../../reference/store_commands/close.html)**
-    Closes the named cursor.
--   **[commit](../../reference/store_commands/commit.html)**
+
+-   **[commit](../../reference/interactive_commands/commit.md)**
     Issues a *java.sql.Connection.commit* request.
--   **[connect](../../reference/store_commands/connect.html)**
-    Connects to the database indicated by the *ConnectionURLString*.
--   **[connect client](../../reference/store_commands/connect_client.html)**
+
+-   **[connect client](../../reference/interactive_commands/connect_client.md)**
     Using the JDBC SnappyData thin client driver, connects to a SnappyData member indicated by the *host:port* values.
--   **[connect peer](../../reference/store_commands/connect_peer.html)**
-    Using the JDBC SnappyData peer client driver, connects to a SnappyData member with specified boot and connection property values.
--   **[describe](../../reference/store_commands/describe.html)**
+
+-   **[describe](../../reference/interactive_commands/describe.md)**
     Provides a description of the specified table or view.
--   **[disconnect](../../reference/store_commands/disconnect.html)**
+
+-   **[disconnect](../../reference/interactive_commands/disconnect.md)**
     Disconnects from the database.
--   **[driver](../../reference/store_commands/driver.html)**
-    Issues a *Class.forName* request to load the named class.
--   **[elapsedtime](../../reference/store_commands/elapsedtime.html)**
+
+-   **[elapsedtime](../../reference/interactive_commands/elapsedtime.md)**
     Displays the total time elapsed during statement execution.
--   **[execute](../../reference/store_commands/execute.html)**
-    Executes a prepared statement or a SQL command with dynamic parameters.
--   **[exit](../../reference/store_commands/exit.html)**
+
+-   **[exit](../../reference/interactive_commands/exit.md)**
     Completes the `snappy` application and halts processing.
--   **[first](../../reference/store_commands/first.html)**
-    Moves the cursor to the first row in the *ResultSet*, then fetches the row.
--   **[get scroll insensitive cursor](../../reference/store_commands/get_scroll_insensitive_cursor.html)**
-    Creates a scrollable insensitive cursor with the name of the *Identifier*.
--   **[GetCurrentRowNumber](../../reference/store_commands/getcurrentrownumber.html)**
-    Returns the row number for the current position of the named scroll cursor.
--   **[help](../../reference/store_commands/help.html)**
-    Prints a list of the `snappy` commands.
--   **[last](../../reference/store_commands/last.html)**
-    Moves the cursor to the last row in the *ResultSet*, then fetches the row.
--   **[LocalizedDisplay](../../reference/store_commands/localized_display.html)**
-    Specifies whether to display locale-sensitive data (such as dates) in the native format for the `snappy` locale.
--   **[MaximumDisplayWidth](../../reference/store_commands/maximumdisplaywidth.html)**
+
+-   **[MaximumDisplayWidth](../../reference/interactive_commands/maximumdisplaywidth.md)**
     Sets the largest display width for columns to the specified value.
--   **[next](../../reference/store_commands/next.html)**
-    Fetches the next row from the named cursor created with the get scroll insensitive cursor command.
--   **[prepare](../../reference/store_commands/prepare.html)**
-    Creates a *java.sql.PreparedStatement* using the value of the String, accessible in `snappy` by the *Identifier* given to it.
--   **[previous](../../reference/store_commands/previous.html)**
-    Moves the cursor to the row previous to the current one, then fetches the row.
--   **[protocol](../../reference/store_commands/protocol.html)**
-    Specifies the protocol, as a String, for establishing connections and automatically loads the appropriate driver.
--   **[relative](../../reference/store_commands/relative.html)**
-    Moves the cursor to the row that is *int* number of rows relative to the current row, then fetches the row.
--   **[remove](../../reference/store_commands/remove.html)**
-    Removes a previously prepared statement from gfxd.
--   **[rollback](../../reference/store_commands/rollback.html)**
+
+-   **[rollback](../../reference/interactive_commands/rollback.md)**
     Issues a *java.sql.Connection.rollback* request.
--   **[run](../../reference/store_commands/run.html)**
+
+-   **[run](../../reference/interactive_commands/run.md)**
     Treats the value of the string as a valid file name, and redirects `snappy` processing to read from that file until it ends or an exit command is executed.
--   **[set connection](../../reference/store_commands/set_connection.html)**
+
+-   **[set connection](../../reference/interactive_commands/set_connection.md)**
     Specifies which connection to make current when more than one connection is open.
--   **[show](../../reference/store_commands/show.html)**
+
+-   **[show](../../reference/interactive_commands/show.md)**
     Displays information about active connections and database objects.
--   **[wait for](../../reference/store_commands/wait_for.html)**
+
+-   **[wait for](../../reference/interactive_commands/wait_for.md)**
     Displays the results of a previously started asynchronous command.
 
 

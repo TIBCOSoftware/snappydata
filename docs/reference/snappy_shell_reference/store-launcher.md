@@ -1,13 +1,7 @@
-# snappy Launcher Commands
+# Command Line Utitilites
 
 Use the *gfxd* command-line utility to launch SnappyData utilities.
 
--   <a href="store-launcher.html#reference_9518856325F74F79B13674B8E060E6C5__section_7C703C6F85BE4B3B95BC9059DF885BED" class="xref">Syntax</a>
--   <a href="store-launcher.html#reference_9518856325F74F79B13674B8E060E6C5__section_E9CEB9D7B99D4621A1A8ADA28A49670A" class="xref">Description</a>
-
-<a id="reference_9518856325F74F79B13674B8E060E6C5__section_7C703C6F85BE4B3B95BC9059DF885BED"></a>
-
-##Syntax
 
 !!! Note:
 	Although SnappyData introduces the `snappy` utility to replace the earlier `sqlf` utility, "sqlf" is still provided and supported as an optional syntax in this release for convenience.</p>
@@ -23,7 +17,7 @@ The command form to display a particular utility's usage is:
 snappy <utility> --help
 ```
 
-With no arguments, `snappy` starts an <a href="store_command_reference.html#concept_15619CF8E8494962BE296C1BC976D2B3" class="xref noPageCitation" title="gfxd implements an interactive command-line tool that is based on the Apache Derby ij tool. Use gfxd to run scripts or interactive queries against a SnappyData cluster.">interactive SQL command shell</a>:
+With no arguments, `snappy` starts an <a href="store_command_reference.md#concept_15619CF8E8494962BE296C1BC976D2B3" class="xref noPageCitation" title="gfxd implements an interactive command-line tool that is based on the Apache Derby ij tool. Use gfxd to run scripts or interactive queries against a SnappyData cluster.">interactive SQL command shell</a>:
 
 ``` pre
 snappy
@@ -42,78 +36,46 @@ To launch and exit a `snappy` utility (rather than start an interactive `snappy`
 snappy <utility> <arguments for specified utility>
 ```
 
-In this command form, *&lt;utility&gt;* is one of the following.
-
-
-
-
 To specify a system property when launching a `snappy` utility, use -J-D*property\_name*=*property\_value* argument.
-
-<a id="reference_9518856325F74F79B13674B8E060E6C5__section_E9CEB9D7B99D4621A1A8ADA28A49670A"></a>
-
-##Description
 
 In addition to launching various utilities provided with SnappyData, when launched without any arguments, `snappy` starts an interactive command shell that you can use to connect to a SnappyData system and execute various commands, including SQL statements.
 
 The launcher honors the current CLASSPATH environment variable and adds it to the CLASSPATH of the utility or command shell being launched. To pass additional arguments to the JVM, set the `JAVA\_ARGS` environment variable when invoking the *gfxd* script.
 
-<p class="note"><strong>Note:</strong> The `JAVA\_ARGS` environment variable does not apply to the `snappy SnappyData server` and `snappy SnappyData locator` tools that launch a separate background process. To pass Java properties to those tools, use the `-J` option as described in the help for those tools. </p>
+!!!Note:
+	The `JAVA\_ARGS` environment variable does not apply to the `snappy SnappyData server` and `snappy SnappyData locator` tools that launch a separate background process. To pass Java properties to those tools, use the `-J` option as described in the help for those tools. </p>
 
-The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the `GFXD\_JAVA` environment variable to point to the desired Java executable. (note the supported JRE versions in <a href="../../getting_started/topics/system_requirements.html#concept_system-requirements" class="xref" title="This topic describes the supported configurations and system requirements for SnappyData.">Supported Configurations and System Requirements</a>).
+The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the `GFXD\_JAVA` environment variable to point to the desired Java executable. (note the supported JRE versions in [Supported Configurations and System Requirements](../../../sys_requirement.md).
 
--   **[backup](../../reference/store_commands/store-backup.html)**
+-   **[backup](../../reference/snappy_shell_reference/store-backup.md)**
     Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
--   **[compact-all-disk-stores](../../reference/store_commands/store-compact-all-disk-stores.html)**
+
+-   **[compact-all-disk-stores](../../reference/snappy_shell_reference/store-compact-all-disk-stores.md)**
     Perform online compaction of SnappyData disk stores.
--   **[compact-disk-store](../../reference/store_commands/store-compact-disk-store.html)**
+
+-   **[compact-disk-store](../../reference/snappy_shell_reference/store-compact-disk-store.md)**
     Perform offline compaction of a single SnappyData disk store.
--   **[encrypt-password](../../reference/store_commands/store-encrypt-password.html)**
-    Generates an encrypted password string for use in the <span class="ph filepath">gemfirexd.properties</span> file when configuring BUILTIN authentication, or when accessing an external data source with an AsyncEventListener implementation or DBsynchronizer configuration.
--   **[install-jar](../../reference/store_commands/store-install-jar.html)**
-    Installs a JAR file and automatically loads the JAR file classes into the SnappyData class loader. This makes the JAR classes available to all members of the distributed system (including members that join the system at a later time).
--   **[list-missing-disk-stores](../../reference/store_commands/store-list-missing-disk-stores.html)**
+
+-   **[list-missing-disk-stores](../../reference/snappy_shell_reference/store-list-missing-disk-stores.md)**
     Lists all disk stores with the most recent data for which other members are waiting.
--   **[locator](../../reference/store_commands/store-locator.html)**
+
+-   **[locator](../../reference/snappy_shell_reference/store-locator.md)**
     Allows peers (including other locators) in a distributed system to discover each other without the need to hard-code anything about other peers.
--   **[Logging Support](../../reference/store_commands/store-logging.html)**
-    You can specify JDBC boot properties with `snappy SnappyData server` and `snappy SnappyData locator` commands to configure the log file location and log severity level for SnappyData servers and locators, respectively.
--   **[merge-logs](../../reference/store_commands/store-merge-logs.html)**
-    Merges multiple log files into a single log.
--   **[print-stacks](../../reference/store_commands/store-print-stacks.html)**
+
+-   **[print-stacks](../../reference/snappy_shell_reference/store-print-stacks.md)**
     Prints a stack dump of SnappyData member processes.
--   **[remove-jar](../../reference/store_commands/store-remove-jar.html)**
-    Removes a JAR file installation, unloaded all classes associated with the JAR.
--   **[replace-jar](../../reference/store_commands/store-replace-jar.html)**
-    Replaces an installed JAR file with the contents of a new JAR file. The classes in the new JAR file are automatically loaded into the SnappyData class loader and they replace any classes that were previously installed for the same JAR identifier. SnappyData also recompiles objects that depend on the JAR file, such as installed listener implementations.
--   **[revoke-missing-disk-store](../../reference/store_commands/store-revoke-missing-disk-stores.html)**
+
+-   **[revoke-missing-disk-store](../../reference/snappy_shell_reference/store-revoke-missing-disk-stores.md)**
     Instruct SnappyData members to stop waiting for a disk store to become available.
--   **[run](../../reference/store_commands/store-run.html)**
+
+-   **[run](../../reference/snappy_shell_reference/store-run.md)**
     Connects to a SnappyData distributed system and executes the contents of a SQL command file. All commands in the specified file must be compatible with the interactive gfxd shell.
--   **[server](../../reference/store_commands/store-server.html)**
+
+-   **[server](../../reference/snappy_shell_reference/store-server.md)**
     A SnappyData server is the main server side component in a SnappyData system that provides connectivity to other servers, peers, and clients in the cluster. It can host data. A server is started using the *server* utility of the *gfxd* launcher.
--   **[show-disk-store-metadata](../../reference/store_commands/store-show-disk-store-metadata.html)**
+
+-   **[show-disk-store-metadata](../../reference/snappy_shell_reference/store-show-disk-store-metadata.md)**
     Display the disk store metadata for a specified disk store directory.
--   **[shut-down-all](../../reference/store_commands/store-shut-down-all.html)**
-    Instructs all SnappyData accessor and data store members to disconnect from the distributed system and shut down.
--   **[stats](../../reference/store_commands/store-stats.html)**
-    Displays statistics values from the statistics archive.
--   **[upgrade-disk-store](../../reference/store_commands/store-upgrade-disk-store.html)**
-    (Not supported in this release.) Upgrades disk stores to the current version of SnappyData.
--   **[validate-disk-store](../../reference/store_commands/store-validate-disk-store.html)**
-    Verifies the health of an offline disk store and provides information about the tables using that disk store.
--   **[version](../../reference/store_commands/store-version.html)**
+
+-   **[version](../../reference/snappy_shell_reference/store-version.md)**
     Prints information about the SnappyData product version.
--   **[write-data-dtd-to-file](../../reference/store_commands/store-write-data-dtd-to-file.html)**
-    Creates a Document Type Definition (DTD) file that specifies the layout of an XML data file created using `snappy write-data-to-xml`.
--   **[write-data-to-db](../../reference/store_commands/store-write-data-to-db.html)**
-    Inserts data into a database using one or more data XML files (created with snappy write-data-to-xml), and having the database schema defined in one or more schema XML files (created with snappy write-schema-to-xml). This command is generally used with a SnappyData cluster to export table data, but it can also be used with other JDBC datasources.
--   **[write-data-to-xml](../../reference/store_commands/store-write-data-to-xml.html)**
-    Writes the data of all of the tables in a database to an XML file. (You can use the snappy write-data-dtd-to-file command to create a Document Type Definition (DTD) file that describes the layout of data in the XML file.) The resulting XML file can be used to re-load the data into the tables, either in SnappyData or in another database management system. This command is generally used with a SnappyData cluster to export table data, but it can also be used with other JDBC datasources.
--   **[write-schema-to-db](../../reference/store_commands/store-write-schema-to-db.html)**
-    Creates a schema in a database by using the contents of a one or more schema XML files (see snappy write-schema-to-xml). This command is generally used with a SnappyData cluster to export the schema, but it can also be used with other JDBC datasources.
--   **[write-schema-to-sql](../../reference/store_commands/store-write-schema-to-sql.html)**
-    Writes the schema of a database to a file as SQL commands. You can use the resulting file to recreate the schema in SnappyData, or in another database management system. This command is generally used with a SnappyData cluster to export the schema, but it can also be used with other JDBC datasources.
--   **[write-schema-to-xml](../../reference/store_commands/store-write-schema-to-xml.html)**
-    Writes the schema of a database to an XML file. You can use the resulting XML file to recreate the schema in SnappyData, or in another database management system. This command is generally used with a SnappyData cluster to export the schema, but it can also be used with other JDBC datasources.
-
-
