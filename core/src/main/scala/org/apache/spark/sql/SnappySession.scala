@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
-import java.util.Objects
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
@@ -30,7 +29,7 @@ import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-import com.gemstone.gemfire.internal.shared.{FinalizeHolder, FinalizeObject}
+import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.Constant
@@ -39,14 +38,11 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.encoders._
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, In, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias, Union}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -57,7 +53,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTabl
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -120,8 +116,12 @@ class SnappySession(@transient private val sc: SparkContext,
   }
 
   @transient
-  lazy val sessionCatalog: SnappyStoreHiveCatalog =
-    sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+  lazy val sessionCatalog: SnappyStoreHiveCatalog = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => sessionState.catalog.asInstanceOf[ConnectorCatalog]
+      case _ => sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+    }
+  }
 
   @transient
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
@@ -167,8 +167,29 @@ class SnappySession(@transient private val sc: SparkContext,
   def sqlUncached(sqlText: String): DataFrame =
     snappyContextFunctions.sql(super.sql(sqlText))
 
-  private[sql] final def executeSQL(sqlText: String): DataFrame =
-    super.sql(sqlText)
+  private[sql] final def executeSQL(sqlText: String): DataFrame = {
+    try {
+      super.sql(sqlText)
+    } catch {
+      case e: AnalysisException =>
+        // in case of connector mode, exception can be thrown if
+        // table form is changed (altered) and we have old table
+        // object in SnappyStoreHiveCatalog.cachedDataSourceTables
+        SnappyContext.getClusterMode(sparkContext) match {
+          case ThinClientConnectorMode(_, _) =>
+            val plan = sessionState.sqlParser.parsePlan(sqlText)
+            var tables: Seq[TableIdentifier] = Seq()
+            plan.foreach {
+              case UnresolvedRelation(table, _) => tables = tables.+:(table)
+              case _ =>
+            }
+            tables.foreach(sessionCatalog.refreshTable)
+            Dataset.ofRows(snappyContext.sparkSession, plan)
+          case _ =>
+            throw e
+        }
+    }
+  }
 
   def onlyParseSQL(sqLText: String): LogicalPlan = {
     sessionState.sqlParser.parsePlan(sqLText)
@@ -921,6 +942,13 @@ class SnappySession(@transient private val sc: SparkContext,
       options: Map[String, String],
       isBuiltIn: Boolean): LogicalPlan = {
 
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
+          provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
+      case _ =>
+    }
+
     if (sessionCatalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
@@ -971,10 +999,51 @@ class SnappySession(@transient private val sc: SparkContext,
     plan
   }
 
+  private[sql] def createTable(
+      tableIdent: QualifiedTableName,
+      provider: String,
+      userSpecifiedSchema: Option[StructType],
+      schemaDDL: Option[String],
+      partitionColumns: Array[String],
+      mode: SaveMode,
+      options: Map[String, String],
+      query: LogicalPlan,
+      isBuiltIn: Boolean): LogicalPlan = {
+
+    if (sessionCatalog.tableExists(tableIdent)) {
+      mode match {
+        case SaveMode.ErrorIfExists =>
+          throw new AnalysisException(s"Table $tableIdent already exists. " +
+              "If using SQL CREATE TABLE, you need to use the " +
+              s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
+        case SaveMode.Ignore =>
+          return sessionCatalog.lookupRelation(tableIdent, None)
+        case _ =>
+      }
+    }
+
+    val clusterMode = SnappyContext.getClusterMode(sc)
+    val plan = clusterMode match {
+      // for smart connector mode create the table here and allow
+      // further processing to load the data
+      case ThinClientConnectorMode(_, _) =>
+        val userSchema = userSpecifiedSchema.getOrElse(Dataset.ofRows(sqlContext.sparkSession, query).schema)
+        sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
+          provider, Option(userSchema), schemaDDL, mode, options, isBuiltIn)
+        createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
+          partitionColumns, SaveMode.Append, options, query, isBuiltIn)
+      case _ =>
+        createTableAsSelect(tableIdent, provider, userSpecifiedSchema, schemaDDL,
+          partitionColumns, mode, options, query, isBuiltIn)
+    }
+
+    plan
+  }
+
   /**
    * Create an external table with given options.
    */
-  private[sql] def createTable(
+  private[sql] def createTableAsSelect(
       tableIdent: QualifiedTableName,
       provider: String,
       userSpecifiedSchema: Option[StructType],
@@ -1113,6 +1182,17 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   private[sql] def dropTable(tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
+
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
+        if (!isTempTable) {
+          sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropTable(tableIdent, ifExists)
+          return
+        }
+      case _ =>
+    }
+
     val plan = try {
       sessionCatalog.lookupRelation(tableIdent)
     } catch {
@@ -1228,6 +1308,13 @@ class SnappySession(@transient private val sc: SparkContext,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
 
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.
+            createIndex(indexIdent, tableIdent, indexColumns, options)
+      case _ =>
+    }
+
     if (indexIdent.database != tableIdent.database) {
       throw new AnalysisException(
         s"Index and table have different databases " +
@@ -1277,6 +1364,12 @@ class SnappySession(@transient private val sc: SparkContext,
    * Drops an index on a table
    */
   def dropIndex(indexName: QualifiedTableName, ifExists: Boolean): Unit = {
+
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropIndex(indexName, ifExists)
+      case _ =>
+    }
 
     val indexIdent = getIndexTable(indexName)
 
@@ -1593,11 +1686,19 @@ object SnappySession extends Logging {
           case plan: CollectLimitExec => plan.child.execute()
           case _ => df.queryExecution.executedPlan.execute()
         }
-        // add profile listener for all regions that are using cached
-        // partitions of their "leader" region
-        if (rdd.getNumPartitions > 0) {
-          session.sessionState.leaderPartitions.keysIterator.foreach(
-            addBucketProfileListener)
+
+        // TODO: Skipping the adding of profile listener in case of
+        // ThinClientConnectorMode, confirm with Sumedh whether something
+        // more needs to be done
+        SnappyContext.getClusterMode(session.sparkContext) match {
+          case ThinClientConnectorMode(_, _) =>
+          case _ =>
+            // add profile listener for all regions that are using cached
+            // partitions of their "leader" region
+            if (rdd.getNumPartitions > 0) {
+              session.sessionState.leaderPartitions.keysIterator.foreach(
+                addBucketProfileListener)
+            }
         }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
     }
@@ -1797,6 +1898,6 @@ private final class Expr(val name: String, val e: Expression) {
     case _ => false
   }
 
-  override def hashCode: Int =
-    HashingUtil.finalMix(name.hashCode, e.semanticHash())
+  override def hashCode: Int = ClientResolverUtils.fastHashLong(
+    name.hashCode.toLong << 32 | e.semanticHash().toLong)
 }

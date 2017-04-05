@@ -16,8 +16,7 @@
  */
 package io.snappydata.hydra.northwind
 
-import java.io.{File, IOException, PrintWriter}
-
+import java.io.{File, PrintWriter}
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SnappyContext}
@@ -249,6 +248,10 @@ object NWTestUtil {
         case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, "Q54", tableType, pw)
         case "Q55" => assertJoin(snc, NWQueries.Q55, 21, "Q55", tableType, pw)
         case "Q56" => assertJoin(snc, NWQueries.Q56, 8, "Q56", tableType, pw)
+        case "Q57" => assertJoin(snc, NWQueries.Q57, 120, "Q57", tableType, pw)
+        case "Q58" => assertJoin(snc, NWQueries.Q58, 1, "Q58", tableType, pw)
+        case "Q59" => assertJoin(snc, NWQueries.Q59, 1, "Q59", tableType, pw)
+        //case "Q60" => assertJoin(snc, NWQueries.Q60, 947, "Q60", tableType, pw)
         case _ => println("OK")
       }
     }
@@ -313,6 +316,10 @@ object NWTestUtil {
         case "Q54" => assertJoinFullResultSet(snc, NWQueries.Q54, 2155, "Q54", tableType, pw, sqlContext)
         case "Q55" => assertJoinFullResultSet(snc, NWQueries.Q55, 21, "Q55", tableType, pw, sqlContext)
         case "Q56" => assertJoinFullResultSet(snc, NWQueries.Q56, 8, "Q56", tableType, pw, sqlContext)
+        case "Q57" => assertQueryFullResultSet(snc, NWQueries.Q57, 120, "Q57", tableType, pw, sqlContext)
+        case "Q58" => assertQueryFullResultSet(snc, NWQueries.Q58, 1, "Q58", tableType, pw, sqlContext)
+        case "Q59" => assertQueryFullResultSet(snc, NWQueries.Q59, 1, "Q59", tableType, pw, sqlContext)
+        //case "Q60" => assertQueryFullResultSet(snc, NWQueries.Q60, 947, "Q60", tableType, pw, sqlContext)
         case _ => println("OK")
       }
     }
