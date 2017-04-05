@@ -374,10 +374,10 @@ pages:
 # -- Topic - Glossary
 - 'Glossary': 'glossary/glossary.md'
 # -- Topic - About and Contact
-- 'About': 'about_us.md'
-- 'About': 
-    - 'Contact and Support': 'techsupport.md'
-    - 'License': 'LICENSE.md'
+- 'Contact and Support': 'techsupport.md'
+#- 'Contact and Support': 
+#    - 'Contact and Support': ''
+- 'License': 'LICENSE.md'
 theme: readthedocs
 theme_dir: 'docs/custom_theme'
 

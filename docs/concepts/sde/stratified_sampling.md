@@ -1,6 +1,6 @@
 ## Working with Stratified Samples
 
-###Create Sample Tables###
+### Create Sample Tables
 
 You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. 
 
@@ -44,7 +44,7 @@ strataReservoirSize '50', baseTable 'baseTableName')
 ```
 
 
-###QCS (Query Column Set) and Sample Selection###
+### QCS (Query Column Set) and Sample Selection
 For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). 
 
 QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like `hour (pickup_datetime)`.
@@ -66,6 +66,5 @@ Here are some general guidelines to use when creating samples:
 
 * When the accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 
-!!!Note:
-	The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.</Note>
-
+!!! Note
+	The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.

@@ -7,17 +7,17 @@ Sampling is quite intuitive and commonly used by data scientists and explorers. 
 Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
 This is depicted in the following figure:
 
-![Uniform Random Sampling](../Images/aqp_stratifiedsampling1.png)
+![Uniform Random Sampling](../../Images/aqp_stratifiedsampling1.png)
 
 If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. 
 
-![Uniform Random Sampling](../Images/aqp_stratifiedsampling2.png)
+![Uniform Random Sampling](../../Images/aqp_stratifiedsampling2.png)
 
 But, if the data distribution along this 'GEO' dimension is skewed, you could still keep picking any records or have too few records to produce a good answer to queries. 
 
 Stratified sampling, on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata have enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. 
 
-![Stratified Sampling](../Images/aqp_stratifiedsampling3.png)
+![Stratified Sampling](../../Images/aqp_stratifiedsampling3.png)
 
 To understand these concepts in further detail, refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.
 
@@ -28,4 +28,3 @@ There is also explicit support for time series. For instance, if AdImpressions a
 ### Sketching
 While stratified sampling ensures that data dimensions with low representation are captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that it captures how often we see an element in a stream for the top-N such elements. 
 While a [Count-min-sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) is well described, SDE extends this with support for providing top-K estimates over time series data. 
-

@@ -1,10 +1,11 @@
-# MAIL US
+# Mail Us
 You can contact the SnappyData support team using:
 
 - [chomp@snappydata.io](mailto:chomp@snappydata.io)
+
 - [suppport@snappydata.io](mailto:suppport@snappydata.io) 
 
-# COMMUNITY
+# Community
 We monitor the following channels for comments/questions:
 
 * [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata)![Stackoverflow](http://i.imgur.com/LPIdp12.png)
@@ -18,3 +19,6 @@ We monitor the following channels for comments/questions:
 * [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)
 
 * [JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
+
+# SnappyData Resources
+You can view videos, presentations, slideshows and refer to important resources about SnappyData at [http://www.snappydata.io/resources](http://www.snappydata.io/resources).

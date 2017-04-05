@@ -1,12 +1,11 @@
-
 ## Running Queries
 
 Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. 
 
 Here is the syntax:
 
-> > SELECT ... FROM .. WHERE .. GROUP BY ...<br>
-> > WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
+	SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+	WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
     
 * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
 * **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
@@ -55,7 +54,7 @@ snContext.sql(s"set spark.sql.aqp.behavior=$behavior")
 These settings will apply to all queries executed via this SQLContext. Application can override this by also using the SQL extensions specified above.
 
 Applications or tools using JDBC/ODBC can set the following properties. 
-For example, when using Apache Zeppelin JDBC interpreter or the snappy you can set the values as below:
+For example, when using Apache Zeppelin JDBC interpreter or the snappy-sql you can set the values as below:
 
 ```
 set spark.sql.aqp.error=$error;

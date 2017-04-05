@@ -1,6 +1,7 @@
-
 ## More Examples
-####Example 1
+Example 1
+------------
+
 Create a sample table with qcs 'medallion' 
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
@@ -24,7 +25,8 @@ snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTr
   upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
 ```
 
-####Example 2
+Example 2
+------------
 Create additional sample table with qcs 'hack_license' 
 
 ```
@@ -43,7 +45,8 @@ select  hack_license, count(*) count from NYCTAXI group by hack_license order by
 snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
 ```
 
-####Example 3
+Example 3
+------------
 Create a sample table using function "hour(pickup_datetime) as QCS
 
 ```
@@ -60,7 +63,8 @@ select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) f
 snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in_secs" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
 ```
 
-####Example 4
+Example 4
+------------
 If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
 
 ```

@@ -10,7 +10,9 @@ In this document, we describe the features provided by SnappyData for analyzing 
 
 Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
-###Key Components###
+Key Components
+------------
+
 This section provides a brief description of the key terms used in this document. 
 
 * **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
@@ -21,7 +23,9 @@ This section provides a brief description of the key terms used in this document
 
 * **Interpreters**: A software module which is loaded into Apache Zeppelin upon startup. Interpreters allow various third party products including SnappyData to interact with Apache Zeppelin. The SnappyData interpreter gives users the ability to execute SQL queries or use the data frame API to visualize data.
 
-##Quick Start Steps##
+Quick Start Steps
+-------------
+
 
 To understand the product follow these easy steps that can get you started quickly:
 

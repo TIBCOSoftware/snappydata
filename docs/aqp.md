@@ -9,7 +9,9 @@ While in-memory analytics can be fast, it is still expensive and cumbersome to p
 
 Unlike existing optimization techniques based on OLAP cubes or in-memory extracts that can consume a lot of resources and work for a priori known queries, the SnappyData Synopses data structures are designed to work for any ad-hoc query.
 
-### How does it work?
+**How does it work?**
+---------------
+
 The following diagram provides a simplified view of how the SDE works. The SDE is deeply integrated with the SnappyData store and its general purpose SQL query engine. Incoming rows (could come from static or streaming sources) are continuously sampled into one or more "sample" tables. These samples can be considered much like how a database utilizes indexes - for optimization. There can, however, be one difference, that is, the "exact" table may or may not be managed by SnappyData (for instance, this may be a set of folders in S3 or Hadoop). When queries are executed, the user can optionally specify their tolerance for error through simple SQL extensions. SDE transparently goes through a sample selection process to evaluate if the query can be satisfied within the error constraint. If so, the response is generated directly from the sample. 
 
 ![SDE Architecture](Images/sde_architecture.png)

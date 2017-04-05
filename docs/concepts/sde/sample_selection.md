@@ -1,4 +1,4 @@
-##Sample Selection
+## Sample Selection
 
 Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:
 
@@ -11,4 +11,3 @@ Sample selection logic selects most appropriate sample, based on this relatively
 * If superset of sample QCS is not available, a sample where the sample QCS is a subset of query QCS is used
 
 * When multiple stratified samples with a subset of QCSs match, a sample with most matching columns is used. The largest size of the sample gets selected if multiple such samples are available. 
-
