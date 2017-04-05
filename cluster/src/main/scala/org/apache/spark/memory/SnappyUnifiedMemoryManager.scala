@@ -313,8 +313,14 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
-    memoryForObject(SPARK_CACHE) -= numBytes
-    super.releaseStorageMemory(numBytes, memoryMode)
+    memTrace(s"releasing [SNAP] memory for $SPARK_CACHE $numBytes")
+    memoryForObject.get(SPARK_CACHE) match {
+      case Some(x) => {
+        memoryForObject(SPARK_CACHE) -= numBytes
+        super.releaseStorageMemory(numBytes, memoryMode)
+      }
+      case None => // Do nothing
+    }
   }
 
   override def dropStorageMemoryForObject(name: String,
@@ -349,12 +355,11 @@ class SnappyUnifiedMemoryManager private[memory](
     memoryForObject.clear()
   }
 
-  private def memTrace(msg : String) : Unit = {
-    if(java.lang.Boolean.getBoolean("snappydata.umm.memtrace")){
+  private def memTrace(msg: String): Unit = {
+    if (java.lang.Boolean.getBoolean("snappydata.umm.memtrace")) {
       logInfo(msg)
     }
   }
-
 }
 
 private object SnappyUnifiedMemoryManager extends Logging{

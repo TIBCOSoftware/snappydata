@@ -28,6 +28,8 @@ import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionConfBuilder, ConnectionUtil}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 import SnappyUnifiedMemoryManagerDUnitTest._
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import io.snappydata.Constant
 
 case class DummyData(col1: Int, col2: Int, col3: Int)
@@ -110,6 +112,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     }
 
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    Thread.sleep(1000 * 5) // give some time for executor thread shutdown
     vm2.invoke(restartServer(props))
   }
 
@@ -119,7 +122,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     if (Math.abs(value1 - value2) > ((value2 * error) / 100)) {
       // Error target should be 1
       throw new java.lang.AssertionError(s"assertion " +
-          s"failed $value1 & $value2 are not within permissable limit")
+        s"failed $value1 & $value2 are not within permissable limit")
     }
   }
 
@@ -139,7 +142,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(rr_table)
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
-    println(s"vm1_memoryUsed $vm1_memoryUsed vm2_memoryUsed $vm2_memoryUsed")
     assertApproximate(vm1_memoryUsed, vm2_memoryUsed)
   }
 
@@ -151,14 +153,13 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
-        options
+      options
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
 
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
-    println(s"vm1_memoryUsed $vm1_memoryUsed vm2_memoryUsed $vm2_memoryUsed")
     assertApproximate(vm1_memoryUsed, vm2_memoryUsed)
   }
 
@@ -170,14 +171,13 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val dataDF = snc.createDataFrame(rdd)
     val options = "OPTIONS (BUCKETS '113', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options
+      options
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
 
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
-    println(s"vm1_memoryUsed $vm1_memoryUsed vm2_memoryUsed $vm2_memoryUsed")
     assertApproximate(vm1_memoryUsed, vm2_memoryUsed)
   }
 
@@ -206,7 +206,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
     val options = "OPTIONS (BUCKETS '1', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options
+      options
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
@@ -279,7 +279,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
     val options = "OPTIONS (BUCKETS '1', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
-        options
+      options
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
@@ -315,7 +315,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
     val options = "OPTIONS (BUCKETS '1', PARTITION_BY 'Col1', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
-        options
+      options
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
@@ -357,7 +357,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
       " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options
+      options
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
@@ -394,17 +394,15 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
       " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + rr_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
-        options
+      options
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(rr_table)
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     vm1.invoke(restartServer(props))
-    Thread.sleep(1000)
 
     val waitAssert = new WaitAssert(2, getClass)
-    // The delete operation takes time to propagate
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
       30000, 5000, true)
@@ -417,6 +415,8 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
+
+    cleanRefServer(props)
 
     def rebalance(conf: ConnectionConf): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = {
@@ -438,16 +438,17 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
       " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '1')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options
+      options
     )
 
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
 
     vm1.invoke(restartServer(props))
+    Thread.sleep(5 * 1000) // For executor clean up
     vm1.invoke(rebalance(conf))
 
-    val waitAssert = new WaitAssert(2, getClass)
+    val waitAssert = new WaitAssert(5, getClass)
     // The delete operation takes time to propagate
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
@@ -467,7 +468,12 @@ object SnappyUnifiedMemoryManagerDUnitTest {
   }
 
   def getStorageMemory(): Long = {
-    SparkEnv.get.memoryManager.storageMemoryUsed
+    if (SparkEnv.get != null) {
+      SparkEnv.get.memoryManager.storageMemoryUsed
+    } else {
+      -1L
+    }
+
   }
 
   def failTheExecutors: Unit = {

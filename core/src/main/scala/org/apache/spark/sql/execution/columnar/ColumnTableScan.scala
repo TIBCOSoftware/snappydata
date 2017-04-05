@@ -232,6 +232,7 @@ private[sql] final case class ColumnTableScan(
 
   private lazy val otherRDDsPartitionIndex = rdd.getNumPartitions
 
+
   @transient private val session =
     Option(sqlContext).map(_.sparkSession.asInstanceOf[SnappySession])
 
