@@ -82,7 +82,8 @@ public class SnappyTest implements Serializable {
     public static boolean isLongRunningTest = TestConfig.tab().booleanAt(SnappyPrms.isLongRunningTest, false);  //default to false
     public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
     public static boolean isRestarted = false;
-    public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
+    public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
+    public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);  //default to false
     public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
     private static String primaryLocator = null;
     public static String leadHost = null;
@@ -141,7 +142,7 @@ public class SnappyTest implements Serializable {
                 snappyTest.generateConfig("locators");
                 snappyTest.generateConfig("servers");
                 snappyTest.generateConfig("leads");
-                if (useSplitMode) {
+                if (useSmartConnectorMode) {
                     snappyTest.generateConfig("slaves");
                     snappyTest.generateConfig("spark-env.sh");
                 }
@@ -310,6 +311,7 @@ public class SnappyTest implements Serializable {
                         " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
                         SnappyPrms.getFlightRecorderOptions(dirPath) +
                         " -J-XX:+DisableExplicitGC" +
+                        SnappyPrms.getGCOptions(dirPath) +
                         " -classpath=" + getStoreTestsJar();
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
@@ -336,8 +338,9 @@ public class SnappyTest implements Serializable {
                         " -classpath=" + getStoreTestsJar() +
                         " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
                         SnappyPrms.getFlightRecorderOptions(dirPath) +
-                        " -spark.driver.extraClassPath=" + getStoreTestsJar()
-                        + " -spark.executor.extraClassPath=" + getStoreTestsJar();
+                        SnappyPrms.getGCOptions(dirPath) +
+                        " -spark.driver.extraClassPath=" + getStoreTestsJar() +
+                        " -spark.executor.extraClassPath=" + getStoreTestsJar();
                 try {
                     leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
                 } catch (UnknownHostException e) {
@@ -1316,7 +1319,7 @@ public class SnappyTest implements Serializable {
                 String dataLocation = snappyTest.getDataLocation(location);
                 String filePath = snappyTest.getScriptLocation(userScript);
                 log = new File(".");
-                String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult.log";
+                String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
                 logFile = new File(dest);
                 String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
                 String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
@@ -1663,10 +1666,20 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 String masterHost = getSparkMasterHost();
                 String locatorsList = getLocatorsList("locators");
-                String command = snappyJobScript + " --class " + userJob +
-                        " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
-                        " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-                        " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs();
+                String command = null;
+                if (useThinClientSmartConnectorMode) {
+                    String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
+                    String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
+                    command = snappyJobScript + " --class " + userJob +
+                            " --master spark://" + masterHost + ":" + MASTER_PORT + " " +
+                            " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
+                            " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs() + " " + primaryLocatorHost + ":" + primaryLocatorPort;
+                } else {
+                    command = snappyJobScript + " --class " + userJob +
+                            " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
+                            " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
+                            " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs();
+                }
                 Log.getLogWriter().info("spark-submit command is : " + command);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -1944,7 +1957,7 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("servers file deleted");
         Files.delete(Paths.get(leadConf));
         Log.getLogWriter().info("leads file deleted");
-        if (useSplitMode) {
+        if (useSmartConnectorMode) {
             String slaveConf = productConfDirPath + sep + "slaves";
             String sparkEnvConf = productConfDirPath + sep + "spark-env.sh";
             Files.delete(Paths.get(slaveConf));
