@@ -107,14 +107,17 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
             s" from $tableName " +
             s" where ol_int_id < ? " +
-            s" and ol_int2_id > 100 " +
+            s" and ol_int2_id in (?, ?, ?) " +
             s" and ol_str_id LIKE ? " +
             s" limit 20" +
             s""
 
       val prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
-      prepStatement.setString(2, "%0")
+        prepStatement.setInt(2, 100)
+        prepStatement.setInt(3, 200)
+        prepStatement.setInt(4, 300)
+      prepStatement.setString(5, "%0")
       val rs = prepStatement.executeQuery
 
       // val rs = stmt.executeQuery(qry)
