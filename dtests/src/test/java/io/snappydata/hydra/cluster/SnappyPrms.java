@@ -157,9 +157,14 @@ public class SnappyPrms extends BasePrms {
     public static Long useRowStore;
 
     /**
-     * (boolean) - whether split mode cluster needs to be started.
+     * (boolean) - whether thin client smart connector mode cluster needs to be started.
      */
-    public static Long useSplitMode;
+    public static Long useThinClientSmartConnectorMode;
+
+    /**
+     * (boolean) - whether smart connector mode cluster needs to be started.
+     */
+    public static Long useSmartConnectorMode;
 
     /**
      * (boolean) - whether stop mode needs to be checked before deleting the config data if already exists.
@@ -197,6 +202,11 @@ public class SnappyPrms extends BasePrms {
      * (boolean) - whether to enable Java Flight Recorder (JFR) for collecting diagnostic and profiling data while launching server and lead members in cluster. Defaults to false if not provided.
      */
     public static Long enableFlightRecorder;
+
+    /**
+     * (boolean) - whether to enable GC options while launching server and lead members in cluster. Defaults to false if not provided.
+     */
+    public static Long enableGCFlags;
 
     /**
      * (String) log level to be applied while generating logs for snappy members. Defaults to config if not provided.
@@ -460,6 +470,14 @@ public class SnappyPrms extends BasePrms {
             String flightRecorderOptions = " -J-XX:+UnlockCommercialFeatures -J-XX:+FlightRecorder -J-XX:FlightRecorderOptions=defaultrecording=true,disk=true,repository=" +
                     dirPath + ",maxage=6h,dumponexit=true,dumponexitpath=flightRecorder.jfr";
             return flightRecorderOptions;
+        } else return "";
+    }
+
+    public static String getGCOptions(String dirPath) {
+        boolean gcFlags = tasktab().booleanAt(enableGCFlags, tab().booleanAt(enableGCFlags, false));
+        if (gcFlags) {
+            String gcOptions = " -J-verbose:gc -J-Xloggc:" + dirPath + "/gc.out -J-XX:+PrintGCDetails -J-XX:+PrintGCTimeStamps  -J-XX:+PrintGCDateStamps";
+            return gcOptions;
         } else return "";
     }
 
