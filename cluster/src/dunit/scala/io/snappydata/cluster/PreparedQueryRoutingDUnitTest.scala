@@ -51,9 +51,9 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     val tableName = "order_line_col_test1"
     serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    // scalastyle: off
+    // scalastyle:off println
     println(s"test1: network server started at $serverHostPort")
-    // scalastyle: on
+    // scalastyle:on println
 
     val snc = SnappyContext(sc)
     snc.sql(s"create table $tableName (ol_int_id  integer," +
@@ -84,16 +84,17 @@ class PreparedQueryRoutingDUnitTest(val s: String)
         }
       })
       stmt.executeBatch()
-      // scalastyle: off
+      // scalastyle:off println
       println(s"committed $numRows rows")
-      // scalastyle: on
+      // scalastyle:on println
     } finally {
       stmt.close()
       conn.close()
     }
   }
 
-  def verifyQuery_test1(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet): Unit = {
+  def verifyQuery_test1(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet,
+      expectedNoRows: Int): Unit = {
     val builder = StringBuilder.newBuilder
     var index = 0
     var assertionFailed = false
@@ -137,6 +138,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       val prep_j = prep_rs.getInt(2)
       val prep_s = prep_rs.getString(3)
       builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+      index += 1
     }
 
     while (stmt_rs.next()) {
@@ -149,24 +151,34 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       val stmt_j = stmt_rs.getInt(2)
       val stmt_s = stmt_rs.getString(3)
       builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+      index += 1
+    }
+
+    if (index != expectedNoRows) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed: got number of rows=$index "
+            + s"expected=$expectedNoRows").append("\n")
+        assertionFailed = true
+      }
     }
 
     if (assertionFailed) {
-      // scalastyle: off
+      // scalastyle:off println
       println(builder.toString())
-      // scalastyle: on
+      // scalastyle:on println
     }
 
     assert(!assertionFailed)
   }
 
-  def query1_like_clause_test1(limitClause: String, tableName: String): Unit = {
+  def query1_like_clause_test1(limitClause: String, tableName: String,
+      expectedNoRows: Int): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
-    // scalastyle: off
+    // scalastyle:off println
     println(s"query1_like_clause: Connected to $serverHostPort")
-    // scalastyle: on
+    // scalastyle:on println
 
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
@@ -193,7 +205,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s""
       val rs2 = stmt.executeQuery(qry2)
 
-      verifyQuery_test1("query1", rs, rs2)
+      verifyQuery_test1("query1", rs, rs2, expectedNoRows)
       rs.close()
       rs2.close()
 
@@ -206,13 +218,14 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
   }
 
-  def query2_in_clause_test1(limitClause: String, tableName: String): Unit = {
+  def query2_in_clause_test1(limitClause: String, tableName: String,
+      expectedNoRows: Int): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
-    // scalastyle: off
+    // scalastyle:off println
     println(s"query2_in_clause: Connected to $serverHostPort")
-    // scalastyle: on
+    // scalastyle:on println
 
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
@@ -243,7 +256,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s""
       val rs2 = stmt.executeQuery(qry2)
 
-      verifyQuery_test1("query3", rs, rs2)
+      verifyQuery_test1("query3", rs, rs2, expectedNoRows)
       rs.close()
       rs2.close()
 
@@ -257,10 +270,10 @@ class PreparedQueryRoutingDUnitTest(val s: String)
   }
 
   def query_test1(tableName: String): Unit = {
-    query1_like_clause_test1("limit 20", tableName)
-    query1_like_clause_test1("", tableName)
-    query2_in_clause_test1("limit 20", tableName)
-    query2_in_clause_test1("", tableName)
+    query1_like_clause_test1("limit 20", tableName, 20)
+    query1_like_clause_test1("", tableName, 39)
+    query2_in_clause_test1("limit 20", tableName, 3)
+    query2_in_clause_test1("", tableName, 3)
   }
 
   def insertRows_test2(numRows: Int, tableName: String): Unit = {
@@ -283,16 +296,17 @@ class PreparedQueryRoutingDUnitTest(val s: String)
         }
       })
       stmt.executeBatch()
-      // scalastyle: off
+      // scalastyle:off println
       println(s"committed $numRows rows")
-      // scalastyle: on
+      // scalastyle:on println
     } finally {
       stmt.close()
       conn.close()
     }
   }
 
-  def verifyQuery_test2(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet): Unit = {
+  def verifyQuery_test2(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet,
+      expectedNoRows: Int): Unit = {
     val builder = StringBuilder.newBuilder
     var index = 0
     var assertionFailed = false
@@ -336,6 +350,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       val prep_j = prep_rs.getDate(2)
       val prep_s = prep_rs.getString(3)
       builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+      index += 1
     }
 
     while (stmt_rs.next()) {
@@ -348,24 +363,33 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       val stmt_j = stmt_rs.getDate(2)
       val stmt_s = stmt_rs.getString(3)
       builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+      index += 1
+    }
+
+    if (index != expectedNoRows) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed: got number of rows=$index "
+            + s"expected=$expectedNoRows").append("\n")
+        assertionFailed = true
+      }
     }
 
     if (assertionFailed) {
-      // scalastyle: off
+      // scalastyle:off println
       println(builder.toString())
-      // scalastyle: on
+      // scalastyle:on println
     }
 
     assert(!assertionFailed)
   }
 
-  def query1_test2(limitClause: String, tableName: String): Unit = {
+  def query1_test2(limitClause: String, tableName: String, expectedNoRows: Int): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
-    // scalastyle: off
+    // scalastyle:off println
     println(s"query1_test2: Connected to $serverHostPort")
-    // scalastyle: on
+    // scalastyle:on println
 
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
@@ -395,7 +419,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s""
       val rs2 = stmt.executeQuery(qry2)
 
-      verifyQuery_test2("query3", rs, rs2)
+      verifyQuery_test2("query3", rs, rs2, expectedNoRows)
       rs.close()
       rs2.close()
 
@@ -409,17 +433,17 @@ class PreparedQueryRoutingDUnitTest(val s: String)
   }
 
   def query_test2(tableName: String): Unit = {
-    query1_test2("limit 20", tableName: String)
-    query1_test2("", tableName: String)
+    query1_test2("limit 20", tableName: String, 14)
+    query1_test2("", tableName: String, 14)
   }
 
   def test2_date(): Unit = {
     val tableName = "order_line_col_test2"
     serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    // scalastyle: off
+    // scalastyle:off println
     println(s"test2: network server started at $serverHostPort")
-    // scalastyle: on
+    // scalastyle:on println
 
     val snc = SnappyContext(sc)
     snc.sql(s"create table $tableName (ol_int_id  date," +
