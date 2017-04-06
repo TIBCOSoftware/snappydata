@@ -313,7 +313,9 @@ pages:
         - 'dataextractor': 'reference/disk_store_utilities/dataextractor.md'
         - 'dataextractloader': 'reference/disk_store_utilities/dataextractloader.md'
     - 'API Reference Guide': 'reference/api_reference/api_reference.md'
-#    - 'API Reference Guide':
+    - 'API Reference Guide':
+        - 'SnappySession': 'reference/api_reference/snappysession.md'
+        - 'SnappyStreamingContext': 'reference/api_reference/snappystreamingcontext.md'
     - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
 #------ Not in the current release
 #    - 'Configuration Parameters':   
