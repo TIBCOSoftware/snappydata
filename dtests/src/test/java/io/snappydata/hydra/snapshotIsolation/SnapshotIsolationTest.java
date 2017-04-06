@@ -202,9 +202,9 @@ public class SnapshotIsolationTest extends SnappyTest {
     try {
       Connection conn = getLocatorConnection();
       Connection dConn = null;
-      ResultSet[] snappyRS = null;
+      ResultSet[] snappyRS = new ResultSet[5];
       ResultSet derbyRS = null;
-      List<Struct>[] snappyList = null, derbyList = null;
+      List<Struct>[] snappyList = new List[5], derbyList = new List[5];
       if (hasDerbyServer)
         dConn = getDerbyConnection();
       String query = SnapshotIsolationPrms.getSelectStmts();
@@ -261,8 +261,6 @@ public class SnapshotIsolationTest extends SnappyTest {
     try {
       Connection conn = getLocatorConnection();
       Connection dConn = null;
-      if(hasDerbyServer)
-        dConn = getDerbyConnection();
       String query = SnapshotIsolationPrms.getSelectStmts();
       Log.getLogWriter().info("Blocking snappy Ops.");
       getLock();
@@ -274,6 +272,8 @@ public class SnapshotIsolationTest extends SnappyTest {
       ResultSet snappyRS = conn.createStatement().executeQuery(query);
       Log.getLogWriter().info("Executed query on snappy.");
       replayOpsInDerby();
+      if(hasDerbyServer)
+        dConn = getDerbyConnection();
       //run select query in derby
       Log.getLogWriter().info("Executing " + query + " on derby.");
       ResultSet derbyRS = dConn.createStatement().executeQuery(query);
