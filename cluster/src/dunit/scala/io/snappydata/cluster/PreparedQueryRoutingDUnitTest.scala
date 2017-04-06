@@ -46,7 +46,23 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
   }
 
-  def insertRows(numRows: Int): Unit = {
+  def test1_PrepStatementRouting(): Unit = {
+    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    println(s"test1: network server started at $serverHostPort")
+
+    val snc = SnappyContext(sc)
+    snc.sql(s"create table $tableName (ol_int_id  integer," +
+        s" ol_int2_id  integer, ol_str_id STRING) using column " +
+        "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
+
+    insertRows_test1(1000)
+
+    // (1 to 5).foreach(d => query())
+    query_test1()
+  }
+
+  def insertRows_test1(numRows: Int): Unit = {
 
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
@@ -69,22 +85,6 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       stmt.close()
       conn.close()
     }
-  }
-
-  def testPrepStatementRouting(): Unit = {
-    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    println(s"network server started at $serverHostPort")
-
-    val snc = SnappyContext(sc)
-    snc.sql(s"create table $tableName (ol_int_id  integer," +
-        s" ol_int2_id  integer, ol_str_id STRING) using column " +
-        "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
-
-    insertRows(1000)
-
-    // (1 to 5).foreach(d => query())
-    query()
   }
 
   def verifyQuery(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet): Unit = {
@@ -156,7 +156,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
-    println(s"Connected to $serverHostPort")
+    println(s"query1_like_clause: Connected to $serverHostPort")
 
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
@@ -200,7 +200,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
-    println(s"Connected to $serverHostPort")
+    println(s"query2_in_clause: Connected to $serverHostPort")
 
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
@@ -243,7 +243,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
   }
 
-  def query(): Unit = {
+  def query_test1(): Unit = {
     query1_like_clause("limit 20")
     query1_like_clause("")
     query2_in_clause("limit 20")
