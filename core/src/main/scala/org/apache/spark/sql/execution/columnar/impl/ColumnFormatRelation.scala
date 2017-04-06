@@ -568,7 +568,11 @@ class ColumnFormatRelation(
       df.write.insertInto(snappySession.getIndexTable(indexIdent).toString())
     } catch {
       case e: Throwable =>
-        snappySession.dropTable(indexIdent, ifExists = false)
+        try {
+          snappySession.dropTable(indexIdent, ifExists = false)
+        } catch {
+          case _: Throwable =>
+        }
         throw e
     }
   }

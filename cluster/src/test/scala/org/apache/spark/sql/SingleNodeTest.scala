@@ -127,20 +127,26 @@ object SingleNodeTest {
     //    validateSinglePartition(df, 0) // complex operator doesn't support pruning.
     assert(df.collect()(0).getInt(0) == 32)
 
-    // lets check nested function (implicit cast generated)
-    df = snc.sql("select * from orders where o_orderkey = substring('d1xxd2', 2, 1) ")
+    df = snc.sql("select * from orders where o_orderkey = {fn substring('d1xxd2', 2, 1)} ")
     assert(df.collect()(0).getInt(0) == 1)
 
     df = snc.sql("select * from orders where o_orderkey = substring('acbc801xx', 5, 3) ")
     assert(df.collect()(0).getInt(0) == 801)
 
-    df = snc.sql("select * from orders where o_orderkey = trim(" +
-        "substring(' acbc801xx', length(' 12345'), length('801'))) ")
+    df = snc.sql("select * from orders where o_orderkey = {fn trim(" +
+        "substring(' acbc801xx', length(' 12345'), length('801'))) }")
     assert(df.collect()(0).getInt(0) == 801)
 
     df = snc.sql("select * from orders where o_orderkey = trim(" +
         "substring(' acbc1410xx', length(' 12345'), length('1410'))) ")
     assert(df.collect()(0).getInt(0) == 1410)
+
+    df = snc.sql("select O_ORDERDATE, {fn TIMESTAMPADD(SQL_TSI_DAY," +
+        " {fn FLOOR((-1 * {fn DAYOFYEAR(O_ORDERDATE)} - 1))}, O_ORDERDATE)}" +
+        " from orders")
+    val r = df.collect()(0)
+    assert(r.getDate(0).toString.equals("1995-07-16"))
+    assert(r.getDate(1).toString.equals("1994-12-30"))
     // scalastyle:on println
   }
 }

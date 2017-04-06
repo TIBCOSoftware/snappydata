@@ -45,6 +45,18 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     literalValueRef
   }
 
+  override def nullable: Boolean = super.nullable
+
+  override def eval(input: InternalRow): Any = literalValue.value
+
+  def convertedLiteral: Any = literalValue.converter(literalValue.value)
+
+  override def foldable: Boolean = _foldable
+
+  def markFoldable(param: Boolean): Unit = _foldable = param
+
+  override def toString: String = s"pl[${super.toString}]"
+
   override def hashCode(): Int = {
     31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
   }
@@ -168,15 +180,6 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     }
   }
 
-  override def nullable: Boolean = super.nullable
-
-  override def eval(input: InternalRow): Any = literalValue.value
-
-  def convertedLiteral: Any = literalValue.converter(literalValue.value)
-
-  override def foldable: Boolean = _foldable
-
-  def markFoldable(param: Boolean): Unit = _foldable = param
 }
 
 object ParamLiteral {

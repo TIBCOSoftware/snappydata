@@ -330,16 +330,22 @@ final class ColumnarStorePartitionedRDD(
             region.asInstanceOf[PartitionedRegion])
           allPartitions
         case bucketId: Int =>
-          val pr = region.asInstanceOf[PartitionedRegion]
-          import scala.collection.JavaConverters._
-          val distMembers = pr.getRegionAdvisor.getBucketOwners(bucketId).asScala
-          val prefNodes = distMembers.collect {
-            case m if SnappyContext.containsBlockId(m.toString) =>
-              Utils.getHostExecutorId(SnappyContext.getBlockId(
-                m.toString).get.blockId)
+          if (java.lang.Boolean.getBoolean("DISABLE_PARTITION_PRUNING")) {
+            allPartitions = session.sessionState.getTablePartitions(
+              region.asInstanceOf[PartitionedRegion])
+            allPartitions
+          } else {
+            val pr = region.asInstanceOf[PartitionedRegion]
+            import scala.collection.JavaConverters._
+            val distMembers = pr.getRegionAdvisor.getBucketOwners(bucketId).asScala
+            val prefNodes = distMembers.collect {
+              case m if SnappyContext.containsBlockId(m.toString) =>
+                Utils.getHostExecutorId(SnappyContext.getBlockId(
+                  m.toString).get.blockId)
+            }
+            Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
+              pr.getTotalNumberOfBuckets, prefNodes.toSeq))
           }
-          Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
-            pr.getTotalNumberOfBuckets, prefNodes.toSeq))
       }
     })
   }
