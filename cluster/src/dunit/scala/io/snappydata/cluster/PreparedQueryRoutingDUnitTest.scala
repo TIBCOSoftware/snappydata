@@ -152,7 +152,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     assert(!assertionFailed)
   }
 
-  def query1(): Unit = {
+  def query1_like_clause(limitClause: String): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
@@ -166,7 +166,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" where ol_int_id < ? " +
           s" and ol_int2_id > 100 " +
           s" and ol_str_id like ? " +
-          s" limit 20" +
+          s" $limitClause" +
           s""
 
       val prepStatement = conn.prepareStatement(qry)
@@ -179,7 +179,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" where ol_int_id < 500 " +
           s" and ol_int2_id > 100 " +
           s" and ol_str_id LIKE '%0' " +
-          s" limit 20" +
+          s" $limitClause" +
           s""
       val rs2 = stmt.executeQuery(qry2)
 
@@ -196,49 +196,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
   }
 
-  def query2(): Unit = {
-    val conn = DriverManager.getConnection(
-      "jdbc:snappydata://localhost:" + serverHostPort)
-
-    println(s"Connected to $serverHostPort")
-
-    val stmt = conn.createStatement()
-    var prepStatement: java.sql.PreparedStatement = null
-    try {
-      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < ? " +
-          s" and ol_int2_id > 100 " +
-          s" and ol_str_id like ? " +
-          s""
-
-      val prepStatement = conn.prepareStatement(qry)
-      prepStatement.setInt(1, 500)
-      prepStatement.setString(2, "%0")
-      val rs = prepStatement.executeQuery
-
-      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < 500 " +
-          s" and ol_int2_id > 100 " +
-          s" and ol_str_id LIKE '%0' " +
-          s""
-      val rs2 = stmt.executeQuery(qry2)
-
-      verifyQuery("query2", rs, rs2)
-      rs.close()
-      rs2.close()
-
-      // Thread.sleep(1000000)
-
-    } finally {
-      stmt.close()
-      if (prepStatement != null) prepStatement.close()
-      conn.close()
-    }
-  }
-
-  def query3(): Unit = {
+  def query2_in_clause(limitClause: String): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
@@ -252,7 +210,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" where ol_int_id < ? " +
           s" and ol_int2_id in (?, ?, ?) " +
           s" and ol_str_id like ? " +
-          s" limit 20" +
+          s" $limitClause" +
           s""
 
       val prepStatement = conn.prepareStatement(qry)
@@ -268,7 +226,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" where ol_int_id < 500 " +
           s" and ol_int2_id in (100, 200, 300) " +
           s" and ol_str_id LIKE '%0' " +
-          s" limit 20" +
+          s" $limitClause" +
           s""
       val rs2 = stmt.executeQuery(qry2)
 
@@ -285,55 +243,10 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
   }
 
-  def query4(): Unit = {
-    val conn = DriverManager.getConnection(
-      "jdbc:snappydata://localhost:" + serverHostPort)
-
-    println(s"Connected to $serverHostPort")
-
-    val stmt = conn.createStatement()
-    var prepStatement: java.sql.PreparedStatement = null
-    try {
-      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < ? " +
-          s" and ol_int2_id in (?, ?, ?) " +
-          s" and ol_str_id like ? " +
-          s""
-
-      val prepStatement = conn.prepareStatement(qry)
-      prepStatement.setInt(1, 500)
-      prepStatement.setInt(2, 100)
-      prepStatement.setInt(3, 200)
-      prepStatement.setInt(4, 300)
-      prepStatement.setString(5, "%0")
-      val rs = prepStatement.executeQuery
-
-      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < 500 " +
-          s" and ol_int2_id in (100, 200, 300) " +
-          s" and ol_str_id LIKE '%0' " +
-          s""
-      val rs2 = stmt.executeQuery(qry2)
-
-      verifyQuery("query4", rs, rs2)
-      rs.close()
-      rs2.close()
-
-      // Thread.sleep(1000000)
-
-    } finally {
-      stmt.close()
-      if (prepStatement != null) prepStatement.close()
-      conn.close()
-    }
-  }
-
   def query(): Unit = {
-    query1()
-    query2()
-    query3()
-    query4()
+    query1_like_clause("limit 20")
+    query1_like_clause("")
+    query2_in_clause("limit 20")
+    query2_in_clause("")
   }
 }
