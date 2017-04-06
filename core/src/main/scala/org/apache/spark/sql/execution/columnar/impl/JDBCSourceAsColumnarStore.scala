@@ -41,10 +41,11 @@ import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
+import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
+import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -179,9 +180,12 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         self.getConnection(table, onExecutor)
     }
 
-
-  override def getColumnBatchRDD(tableName: String, requiredColumns: Array[String],
-  prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any] = {
+  override def getColumnBatchRDD(tableName: String,
+      rowBuffer: String,
+      requiredColumns: Array[String],
+      prunePartitions: => Int,
+      session: SparkSession,
+      schema: StructType): RDD[Any] = {
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -192,11 +196,22 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         // partition-specific
         val poolProps = connProperties.poolProps -
             (if (connProperties.hikariCP) "jdbcUrl" else "url")
+
+        val (parts, embdClusterRelDestroyVersion) =
+          SnappyContext.getClusterMode(session.sparkContext) match {
+          case ThinClientConnectorMode(_, _) =>
+            val catalog = snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
+            val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
+            (relInfo.partitions, relInfo.embdClusterRelDestroyVersion)
+          case _ =>
+            (Array.empty[Partition], -1)
+        }
+
         new SmartConnectorColumnRDD(snappySession,
           tableName, requiredColumns, ConnectionProperties(connProperties.url,
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
-            connProperties.hikariCP), schema, this)
+            connProperties.hikariCP), schema, this, parts, embdClusterRelDestroyVersion)
     }
   }
 
@@ -386,7 +401,9 @@ final class ColumnarStorePartitionedRDD(
     private var requiredColumns: Array[String],
     private var connProperties: ConnectionProperties,
     private val schema: StructType,
-    @transient private val store: ExternalStore)
+    @transient private val store: ExternalStore,
+    val parts: Array[Partition],
+    val relDestroyVersion: Int = -1)
     extends RDDKryo[Any](session.sparkContext, Nil)
         with KryoSerializable {
 
@@ -398,9 +415,8 @@ final class ColumnarStorePartitionedRDD(
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(resolvedTableName,
       split.index, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
     // fetch the stats
-    val (statement, rs) = helper.executeQuery(conn, tableName, split, fetchStatsQuery)
-    new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs,
-      context, fetchColQuery)
+    val (statement, rs) = helper.executeQuery(conn, tableName, split, fetchStatsQuery, relDestroyVersion)
+    new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs, context, fetchColQuery)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -409,6 +425,9 @@ final class ColumnarStorePartitionedRDD(
   }
 
   override def getPartitions: Array[Partition] = {
+    if (parts != null && parts.length > 0) {
+      return parts
+    }
     store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _))
   }
 
@@ -439,7 +458,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _columns: Array[String],
     _connProperties: ConnectionProperties,
     _filters: Array[Filter] = Array.empty[Filter],
-    _partEval: () => Array[Partition] = () => Array.empty[Partition])
+    _partEval: () => Array[Partition] = () => Array.empty[Partition],
+    _relDestroyVersion: Int = -1)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
       _filters, _partEval) {
@@ -453,7 +473,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
     if (isPartitioned) {
       val ps = conn.prepareStatement(
-        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
+        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ${_relDestroyVersion})")
       ps.setString(1, resolvedName)
       val partition = thePart.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
       val bucketString = partition.buckets.mkString(",")

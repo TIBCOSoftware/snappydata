@@ -30,13 +30,14 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Cast, Literal, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -88,8 +89,30 @@ abstract class BaseColumnFormatRelation(
   @transient override lazy val region: PartitionedRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
 
+  def getColumnBatchStatistics(schema: Seq[AttributeReference]): PartitionStatistics = {
+    new PartitionStatistics(schema)
+  }
+
+  @transient
+  lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
+  @transient
+  lazy val relInfo: RelationInfo = {
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
+        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
+      case _ =>
+        new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+          Array.empty[String], Array.empty[Partition], -1)
+    }
+  }
+
+  @transient
   override lazy val numBuckets: Int = {
-    region.getTotalNumberOfBuckets
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) => relInfo.numBuckets
+      case _ => region.getTotalNumberOfBuckets
+    }
   }
 
   override def partitionColumns: Seq[String] = {
@@ -174,7 +197,7 @@ abstract class BaseColumnFormatRelation(
     // finally skipping any IDs greater than the noted ones.
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
-    val isPartitioned = region.getPartitionAttributes != null
+    val isPartitioned = (numBuckets != 1)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -199,7 +222,8 @@ abstract class BaseColumnFormatRelation(
           connProperties,
           filters,
           // use same partitions as the column store (SNAP-1083)
-          partitionEvaluator
+          partitionEvaluator,
+          relInfo.embdClusterRelDestroyVersion
         )
     }
   }
@@ -298,7 +322,7 @@ abstract class BaseColumnFormatRelation(
             // TODO: Suranjan for split mode when driver acts as client
             // we will need to change this code and add a flag to
             // CREATE_ALL_BUCKETS to create only when no buckets created
-            if (region.getRegionAdvisor.getCreatedBucketsCount == 0) {
+//            if (region.getRegionAdvisor().getCreatedBucketsCount == 0) {
               dialect match {
                 case GemFireXDDialect =>
                   GemFireXDDialect.initializeTable(table,
@@ -307,7 +331,7 @@ abstract class BaseColumnFormatRelation(
                     sqlContext.conf.caseSensitiveAnalysis, conn)
                 case _ => // Do nothing
               }
-            }
+//            }
             return
           case SaveMode.ErrorIfExists =>
             // sys.error(s"Table $table already exists.") TODO: Why so?

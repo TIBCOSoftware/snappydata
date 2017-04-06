@@ -29,6 +29,9 @@ import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -99,7 +102,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val defaultDbDefinition =
       CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
     // Initialize default database if it doesn't already exist
-    client.createDatabase(defaultDbDefinition, ignoreIfExists = true)
+    externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
     client.setCurrentDatabase(defaultName)
     formatDatabaseName(defaultName)
   }
@@ -151,10 +154,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
-      (LogicalRelation, CatalogTable)] = {
+      (LogicalRelation, CatalogTable, RelationInfo)] = {
     val cacheLoader = new CacheLoader[QualifiedTableName,
-        (LogicalRelation, CatalogTable)]() {
-      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable) = {
+        (LogicalRelation, CatalogTable, RelationInfo)]() {
+      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
         logDebug(s"Creating new cached data source for $in")
         val table = in.getTable(client)
         val schemaString = getSchemaString(table.properties)
@@ -188,7 +191,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation), table)
+        (LogicalRelation(relation), table, new RelationInfo(0, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
       }
     }
 
@@ -203,7 +206,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     SnappyStoreHiveCatalog.cachedSampleTables
   }
 
-  private var relationDestroyVersion = 0
+  var relationDestroyVersion = 0
 
   def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
@@ -287,7 +290,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  private def registerRelationDestroy(): Unit = {
+  protected def registerRelationDestroy(): Unit = {
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
@@ -392,6 +395,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def invalidateTable(tableIdent: QualifiedTableName): Unit = {
     tableIdent.invalidate()
     cachedDataSourceTables.invalidate(tableIdent)
+  }
+
+  def invalidateAll(): Unit = {
+    cachedDataSourceTables.invalidateAll()
   }
 
   def unregisterAllTables(): Unit = synchronized {
@@ -1001,7 +1008,7 @@ object SnappyStoreHiveCatalog {
   }
 
   private[this] var relationDestroyVersion = 0
-  private val relationDestroyLock = new ReentrantReadWriteLock()
+  val relationDestroyLock = new ReentrantReadWriteLock()
   private val alterTableLock = new Object
 
   private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
@@ -1012,13 +1019,31 @@ object SnappyStoreHiveCatalog {
     try {
       val globalVersion = relationDestroyVersion
       relationDestroyVersion += 1
+      setRelationDestroyVersionOnAllMembers
       globalVersion
     } finally {
       sync.unlock()
     }
   }
 
-  private def getSchemaString(
+  def setRelationDestroyVersionOnAllMembers: Unit = {
+    SparkSession.getDefaultSession.foreach(session =>
+      SnappyContext.getClusterMode(session.sparkContext) match {
+        case SnappyEmbeddedMode(_, _) =>
+          val version = getRelationDestroyVersion
+          Utils.mapExecutors(session.sqlContext,
+            () => {
+              val profile: GfxdProfile =
+                GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
+              Option(profile).foreach(gp => gp.setRelationDestroyVersion(version))
+              Iterator.empty
+            }).count()
+        case _ =>
+      }
+    )
+  }
+
+  def getSchemaString(
       tableProps: scala.collection.Map[String, String]): Option[String] = {
     tableProps.get(HIVE_SCHEMA_NUMPARTS).map { numParts =>
       (0 until numParts.toInt).map { index =>
@@ -1100,4 +1125,15 @@ object ExternalTableType {
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
+
+  def isTableBackedByRegion(t: org.apache.hadoop.hive.metastore.api.Table): Boolean = {
+    val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
+    tableType match {
+      case snappy_table if tableType == ExternalTableType.Row.toString ||
+          tableType == ExternalTableType.Column.toString ||
+          tableType == ExternalTableType.Sample.toString ||
+          tableType == ExternalTableType.Index.toString => true
+      case _ => false
+    }
+  }
 }

@@ -386,7 +386,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           ${generateUpdate(entryVar, Nil, valueVars, forKey = false, doCopy)}
           // insert into the map and rehash if required
           $dataTerm[$posVar] = $entryVar;
-          if ($hashMapTerm.handleNewInsert()) {
+          if ($hashMapTerm.handleNewInsert($posVar)) {
             // map was rehashed
             $maskTerm = $hashMapTerm.mask();
             $dataTerm = ($className[])$hashMapTerm.data();
@@ -636,7 +636,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |  ${generateUpdate(objVar, Nil, newKeyVars, forKey = true)}
              |  // insert into the map and rehash if required
              |  $dataTerm[$pos] = $objVar;
-             |  if ($hashMapTerm.handleNewInsert()) {
+             |  if ($hashMapTerm.handleNewInsert($pos)) {
              |    // return null to indicate map was rehashed
              |    return null;
              |  } else {

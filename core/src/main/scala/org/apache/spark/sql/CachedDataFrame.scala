@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
+import java.sql.SQLException
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
@@ -24,11 +25,11 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.concurrent.unsafe.UnsafeAtomicReferenceUpdater
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
@@ -38,18 +39,17 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
-import org.apache.spark.sql.execution.{CachedPlanHelperExec, _}
-import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{CachedPlanHelperExec, CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec, _}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, NarrowDependency, Partition, ShuffleDependency, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, NarrowDependency, ShuffleDependency, SparkContext, SparkEnv, SparkException, TaskContext}
 
 class CachedDataFrame(df: Dataset[Row],
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean)
-    extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) {
+    extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
    * Return true if [[collectWithHandler]] supports partition-wise separate
@@ -126,10 +126,37 @@ class CachedDataFrame(df: Dataset[Row],
         end - start)
       result
     } catch {
+      case se: SparkException =>
+        val (isCatalogStale, sqlexception) = staleCatalogError(se)
+        if (isCatalogStale) {
+          val snSession = SparkSession.getActiveSession.get.asInstanceOf[SnappySession]
+          snSession.sessionCatalog.invalidateAll()
+          SnappySession.clearAllCache()
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          logInfo("Operation needs to be retried ", se)
+          throw sqlexception
+        } else {
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          throw se
+        }
       case e: Exception =>
         sparkSession.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
+  }
+
+  private def staleCatalogError(se: SparkException): (Boolean, SQLException) = {
+    var cause = se.getCause
+    while (cause != null) {
+      cause match {
+        case sqle: SQLException
+          if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+          return (true, sqle)
+        case _ =>
+          cause = cause.getCause
+      }
+    }
+    (false, null)
   }
 
   override def collect(): Array[Row] = {

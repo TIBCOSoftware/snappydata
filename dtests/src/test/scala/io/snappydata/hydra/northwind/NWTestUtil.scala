@@ -89,12 +89,12 @@ object NWTestUtil {
     df.map(dataTypeConverter)(RowEncoder(df.schema))
         .map(row => {
           val sb = new StringBuilder
-          row.toSeq.foreach(e => {
-            if (e != null)
-              sb.append(e.toString).append(",")
-            else
+          row.toSeq.foreach {
+            case e if e == null =>
               sb.append("NULL").append(",")
-          })
+            case e =>
+              sb.append(e.toString).append(",")
+          }
           sb.toString()
         }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
       "header", false).save(dest)
@@ -121,6 +121,7 @@ object NWTestUtil {
 
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum:
   String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+    // scalastyle:off println
     var snappyDF = snc.sql(sqlString)
     var sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
@@ -154,10 +155,11 @@ object NWTestUtil {
         pw.println(s"\nExpected Result:\n $expectedLine")
         pw.println(s"\nActual Result:\n $actualLine")
         pw.println(s"\nQuery =" + sqlString + " Table Type : " + tableType)
-        /*assert(assertion = false, s"\n** For $queryNum result mismatch observed** \n" +
+        /* assert(assertion = false, s"\n** For $queryNum result mismatch observed** \n" +
             s"Expected Result \n: $expectedLine \n" +
             s"Actual Result   \n: $actualLine \n" +
-            s"Query =" + sqlString + " Table Type : " + tableType)*/
+            s"Query =" + sqlString + " Table Type : " + tableType)
+         */
         // Commented due to Q37 failure by just the difference of 0.1 in actual and expected value
       }
       numLines += 1
@@ -168,8 +170,8 @@ object NWTestUtil {
     }
     assert(numLines == numRows, s"\nFor $queryNum result count mismatch " +
         s"observed: Expected=$numRows, Got=$numLines")
-    // scalastyle:on println
     pw.flush()
+    // scalastyle:on println
   }
 
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
@@ -267,7 +269,13 @@ object NWTestUtil {
         case "Q54" => assertJoin(snc, NWQueries.Q54, 2155, "Q54", tableType, pw)
         case "Q55" => assertJoin(snc, NWQueries.Q55, 21, "Q55", tableType, pw)
         case "Q56" => assertJoin(snc, NWQueries.Q56, 8, "Q56", tableType, pw)
+        case "Q57" => assertJoin(snc, NWQueries.Q57, 120, "Q57", tableType, pw)
+        case "Q58" => assertJoin(snc, NWQueries.Q58, 1, "Q58", tableType, pw)
+        case "Q59" => assertJoin(snc, NWQueries.Q59, 1, "Q59", tableType, pw)
+        // case "Q60" => assertJoin(snc, NWQueries.Q60, 947, "Q60", tableType, pw)
+        // scalastyle:off println
         case _ => println("OK")
+        // scalastyle:on println
       }
     }
   }
@@ -356,7 +364,7 @@ object NWTestUtil {
         case "Q43" => assertJoinFullResultSet(snc, NWQueries.Q43, 830, "Q43", tableType, pw,
           sqlContext)
         case "Q44" => assertJoinFullResultSet(snc, NWQueries.Q44, 830, "Q44", tableType, pw,
-          sqlContext) //LeftSemiJoinHash
+          sqlContext) // LeftSemiJoinHash
         case "Q45" => assertJoinFullResultSet(snc, NWQueries.Q45, 1788650, "Q45", tableType, pw,
           sqlContext)
         case "Q46" => assertJoinFullResultSet(snc, NWQueries.Q46, 1788650, "Q46", tableType, pw,
@@ -381,7 +389,17 @@ object NWTestUtil {
           sqlContext)
         case "Q56" => assertJoinFullResultSet(snc, NWQueries.Q56, 8, "Q56", tableType, pw,
           sqlContext)
+        case "Q57" => assertQueryFullResultSet(snc, NWQueries.Q57, 120, "Q57", tableType, pw,
+          sqlContext)
+        case "Q58" => assertQueryFullResultSet(snc, NWQueries.Q58, 1, "Q58", tableType, pw,
+          sqlContext)
+        case "Q59" => assertQueryFullResultSet(snc, NWQueries.Q59, 1, "Q59", tableType, pw,
+          sqlContext)
+          // case "Q60" => assertQueryFullResultSet(snc, NWQueries.Q60, 947, "Q60", tableType, pw,
+          // sqlContext)
+        // scalastyle:off println
         case _ => println("OK")
+        // scalastyle:on println
       }
     }
   }
@@ -524,6 +542,7 @@ object NWTestUtil {
   }
 
   def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
+    // scalastyle:off println
     NWQueries.regions(sqlContext).registerTempTable("regions")
     println(s"regions Table created successfully in spark")
     NWQueries.categories(sqlContext).registerTempTable("categories")
@@ -546,9 +565,11 @@ object NWTestUtil {
     println(s"territories Table created successfully in spark")
     NWQueries.employee_territories(sqlContext).registerTempTable("employee_territories")
     println(s"employee_territories Table created successfully in spark")
+    // scalastyle:on println
   }
 
   def dropTables(snc: SnappyContext): Unit = {
+    // scalastyle:off println
     snc.sql("drop table if exists regions")
     println("regions table dropped successfully.");
     snc.sql("drop table if exists categories")
@@ -571,6 +592,7 @@ object NWTestUtil {
     println("suppliers table dropped successfully.");
     snc.sql("drop table if exists territories")
     println("territories table dropped successfully.");
+    // scalastyle:on println
   }
 
 }

@@ -120,7 +120,7 @@ abstract case class JDBCAppendableRelation(
     }
 
     readLock {
-      externalStore.getColumnBatchRDD(tableName,
+      externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
         requestedColumns.map(column => externalStore.columnPrefix + column),
         prunePartitions,
         sqlContext.sparkSession, schema)
