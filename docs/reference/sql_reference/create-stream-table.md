@@ -27,11 +27,18 @@ OPTIONS (
 
 ## Description
 
-<mark>
-TO BE DONE
-</mark>
+Create a stream table using a steam data source. If a table with the same name already exists in the database, an exception will be thrown.
 
-## Example: 
+**STREAM**
+    Indicates that a stream table will be created
+
+**IF NOT EXISTS**
+    If a table with the same name already exists in the database, nothing will happen.
+
+**USING <data source>**
+    Specify the streaming source to be used for this table. 
+
+## Example
 
 ```
 //create a connection
