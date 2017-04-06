@@ -453,4 +453,184 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     insertRows_test2(1000, tableName)
     query_test2(tableName)
   }
+
+  def insertRows_test3(numRows: Int, tableName: String): Unit = {
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    val rows = (1 to numRows)
+    val stmt = conn.createStatement()
+    try {
+      var i = 1
+      import java.time.format.DateTimeFormatter
+      val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+      val newTimestamp = java.time.LocalDateTime.parse("2017-01-01 10:00:00", formatter)
+      rows.foreach(d => {
+        val e = newTimestamp.plusDays(i).format(formatter)
+        stmt.addBatch(s"insert into $tableName values('$e', '$e', '$e')")
+        i += 1
+        if (i % 1000 == 0) {
+          stmt.executeBatch()
+          i = 0
+        }
+      })
+      stmt.executeBatch()
+      // scalastyle:off println
+      println(s"committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  def verifyQuery_test3(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet,
+      expectedNoRows: Int): Unit = {
+    val builder = StringBuilder.newBuilder
+    var index = 0
+    var assertionFailed = false
+    while (prep_rs.next() && stmt_rs.next()) {
+      val prep_i = prep_rs.getTimestamp(1)
+      val prep_j = prep_rs.getTimestamp(2)
+      val prep_s = prep_rs.getString(3)
+
+      val stmt_i = stmt_rs.getTimestamp(1)
+      val stmt_j = stmt_rs.getTimestamp(2)
+      val stmt_s = stmt_rs.getString(3)
+
+      builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+      builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+
+      if (prep_i != stmt_i && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_i stmt=$stmt_i").append("\n")
+        assertionFailed = true
+      }
+
+      if (prep_j != stmt_j && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_j stmt=$stmt_j").append("\n")
+        assertionFailed = true
+      }
+
+      if (prep_s != stmt_s && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_s stmt=$stmt_s").append("\n")
+        assertionFailed = true
+      }
+
+      index += 1
+    }
+
+    while (prep_rs.next()) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed at index=$index").append("\n")
+        assertionFailed = true
+      }
+
+      val prep_i = prep_rs.getTimestamp(1)
+      val prep_j = prep_rs.getTimestamp(2)
+      val prep_s = prep_rs.getString(3)
+      builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+      index += 1
+    }
+
+    while (stmt_rs.next()) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed at index=$index").append("\n")
+        assertionFailed = true
+      }
+
+      val stmt_i = stmt_rs.getTimestamp(1)
+      val stmt_j = stmt_rs.getTimestamp(2)
+      val stmt_s = stmt_rs.getString(3)
+      builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+      index += 1
+    }
+
+    if (index != expectedNoRows) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed: got number of rows=$index "
+            + s"expected=$expectedNoRows").append("\n")
+        assertionFailed = true
+      }
+    }
+
+    if (assertionFailed) {
+      // scalastyle:off println
+      println(builder.toString())
+      // scalastyle:on println
+    }
+
+    assert(!assertionFailed)
+  }
+
+  def query1_test3(limitClause: String, tableName: String, expectedNoRows: Int): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"query1_test2: Connected to $serverHostPort")
+    // scalastyle:on println
+
+    val stmt = conn.createStatement()
+    var prepStatement: java.sql.PreparedStatement = null
+    val oneTs = java.sql.Timestamp.valueOf("2017-03-15 12:02:03")
+    val twoTs = java.sql.Timestamp.valueOf("2017-02-28 12:02:04")
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id > ? " +
+          s" and ol_str_id like ? " +
+          s" $limitClause" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setString(1, oneTs.toString)
+      prepStatement.setTimestamp(2, twoTs)
+      prepStatement.setString(3, "%-%")
+      val rs = prepStatement.executeQuery
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < '${oneTs.toString}' " +
+          s" and ol_int2_id > '${twoTs.toString}' " +
+          s" and ol_str_id LIKE '%-%' " +
+          s" $limitClause" +
+          s""
+      val rs2 = stmt.executeQuery(qry2)
+
+      verifyQuery_test3("query3", rs, rs2, expectedNoRows)
+      rs.close()
+      rs2.close()
+
+      // Thread.sleep(1000000)
+
+    } finally {
+      stmt.close()
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query_test3(tableName: String): Unit = {
+    query1_test3("limit 20", tableName: String, 15)
+    query1_test3("", tableName: String, 15)
+  }
+
+  def test3_date(): Unit = {
+    val tableName = "order_line_col_test3"
+    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"test3: network server started at $serverHostPort")
+    // scalastyle:on println
+
+    val snc = SnappyContext(sc)
+    snc.sql(s"create table $tableName (ol_int_id  timestamp," +
+        s" ol_int2_id  timestamp, ol_str_id STRING) using column " +
+        "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
+
+    insertRows_test3(1000, tableName)
+    query_test3(tableName)
+  }
 }
