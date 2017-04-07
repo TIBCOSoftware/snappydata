@@ -143,7 +143,7 @@ object SingleNodeTest {
 
     df = snc.sql("select O_ORDERDATE, {fn TIMESTAMPADD(SQL_TSI_DAY," +
         " {fn FLOOR((-1 * {fn DAYOFYEAR(O_ORDERDATE)} - 1))}, O_ORDERDATE)}" +
-        " from orders")
+        " from orders where O_ORDERKEY = 32")
     val r = df.collect()(0)
     assert(r.getDate(0).toString.equals("1995-07-16"))
     assert(r.getDate(1).toString.equals("1994-12-30"))

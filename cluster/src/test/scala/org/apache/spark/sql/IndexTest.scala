@@ -45,9 +45,11 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
+    System.clearProperty("DISABLE_PARTITION_PRUNING")
     FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile
     super.afterAll()
   }
+
 /*
 
   test("dd") {
@@ -122,7 +124,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 
   }
 
-  test("Benchmark tpch") {
+  ignore("Benchmark tpch") {
 
     try {
       val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",

@@ -55,7 +55,7 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
 
   def markFoldable(param: Boolean): Unit = _foldable = param
 
-  override def toString: String = s"pl[${super.toString}]"
+//  override def toString: String = s"pl[${super.toString}]"
 
   override def hashCode(): Int = {
     31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
