@@ -127,6 +127,10 @@ object NWSparkTablesAndQueriesApp {
         case "Q54" => assertJoin(snc, NWQueries.Q54, "ReplicatedTable", "Q54", pw)
         case "Q55" => assertJoin(snc, NWQueries.Q55, "ReplicatedTable", "Q55", pw)
         case "Q56" => assertJoin(snc, NWQueries.Q56, "ReplicatedTable", "Q56", pw)
+        case "Q57" => assertJoin(snc, NWQueries.Q57, "ReplicatedTable", "Q57", pw)
+        case "Q58" => assertJoin(snc, NWQueries.Q58, "ReplicatedTable", "Q58", pw)
+        case "Q59" => assertJoin(snc, NWQueries.Q59, "ReplicatedTable", "Q59", pw)
+        case "Q60" => assertJoin(snc, NWQueries.Q60, "ReplicatedTable", "Q60", pw)
       }
     }
   }
