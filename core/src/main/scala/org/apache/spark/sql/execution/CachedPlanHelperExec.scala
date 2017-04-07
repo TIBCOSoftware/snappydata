@@ -58,7 +58,7 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
     if ( hasParamLiteralNode ) {
       lp transformAllExpressions {
         case p: ParamLiteral => {
-          allLiterals(p.pos - 1).value = p.l.value
+          allLiterals(p.pos - 1).value = p.value
           p
         }
       }

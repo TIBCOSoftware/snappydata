@@ -19,14 +19,17 @@ package org.apache.spark.sql.execution.datasources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToScala
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, Literal, NamedExpression, ParamLiteral}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.{InternalRow, expressions}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, expressions}
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
 import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
-import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
-import org.apache.spark.sql.{AnalysisException, Strategy, execution}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.{AnalysisException, Strategy, execution, sources}
+import org.apache.spark.unsafe.types.UTF8String
 
 /**
   * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
@@ -201,5 +204,138 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       execution.ProjectExec(projects,
         filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
     }
+  }
+
+  /**
+   * Tries to translate a Catalyst [[Expression]] into data source [[Filter]].
+   *
+   * @return a `Some[Filter]` if the input [[Expression]] is convertible, otherwise a `None`.
+   */
+  protected[sql] def translateFilter(predicate: Expression): Option[Filter] = {
+    predicate match {
+      case expressions.EqualTo(a: Attribute, l@Literal(v, t)) =>
+        Some(sources.EqualTo(a.name, l))
+      case expressions.EqualTo(l@Literal(v, t), a: Attribute) =>
+        Some(sources.EqualTo(a.name, l))
+
+      case expressions.EqualNullSafe(a: Attribute, l@Literal(v, t)) =>
+        Some(sources.EqualNullSafe(a.name, l))
+      case expressions.EqualNullSafe(l@Literal(v, t), a: Attribute) =>
+        Some(sources.EqualNullSafe(a.name, l))
+
+      case expressions.GreaterThan(a: Attribute, Literal(v, t)) =>
+        Some(sources.GreaterThan(a.name, convertToScala(v, t)))
+      case expressions.GreaterThan(Literal(v, t), a: Attribute) =>
+        Some(sources.LessThan(a.name, convertToScala(v, t)))
+
+      case expressions.LessThan(a: Attribute, Literal(v, t)) =>
+        Some(sources.LessThan(a.name, convertToScala(v, t)))
+      case expressions.LessThan(Literal(v, t), a: Attribute) =>
+        Some(sources.GreaterThan(a.name, convertToScala(v, t)))
+
+      case expressions.GreaterThanOrEqual(a: Attribute, Literal(v, t)) =>
+        Some(sources.GreaterThanOrEqual(a.name, convertToScala(v, t)))
+      case expressions.GreaterThanOrEqual(Literal(v, t), a: Attribute) =>
+        Some(sources.LessThanOrEqual(a.name, convertToScala(v, t)))
+
+      case expressions.LessThanOrEqual(a: Attribute, Literal(v, t)) =>
+        Some(sources.LessThanOrEqual(a.name, convertToScala(v, t)))
+      case expressions.LessThanOrEqual(Literal(v, t), a: Attribute) =>
+        Some(sources.GreaterThanOrEqual(a.name, convertToScala(v, t)))
+
+      case expressions.InSet(a: Attribute, set) =>
+        val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
+        Some(sources.In(a.name, set.toArray.map(toScala)))
+
+      // Because we only convert In to InSet in Optimizer when there are more than certain
+      // items. So it is possible we still get an In expression here that needs to be pushed
+      // down.
+      case expressions.In(a: Attribute, list) if !list.exists(!_.isInstanceOf[Literal]) =>
+        val hSet = list.map(e => e.eval(EmptyRow))
+        val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
+        Some(sources.In(a.name, hSet.toArray.map(toScala)))
+
+      case expressions.IsNull(a: Attribute) =>
+        Some(sources.IsNull(a.name))
+      case expressions.IsNotNull(a: Attribute) =>
+        Some(sources.IsNotNull(a.name))
+
+      case expressions.And(left, right) =>
+        (translateFilter(left) ++ translateFilter(right)).reduceOption(sources.And)
+
+      case expressions.Or(left, right) =>
+        for {
+          leftFilter <- translateFilter(left)
+          rightFilter <- translateFilter(right)
+        } yield sources.Or(leftFilter, rightFilter)
+
+      case expressions.Not(child) =>
+        translateFilter(child).map(sources.Not)
+
+      case expressions.StartsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
+        Some(sources.StringStartsWith(a.name, v.toString))
+
+      case expressions.EndsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
+        Some(sources.StringEndsWith(a.name, v.toString))
+
+      case expressions.Contains(a: Attribute, Literal(v: UTF8String, StringType)) =>
+        Some(sources.StringContains(a.name, v.toString))
+
+      case _ => None
+    }
+  }
+
+  /**
+   * Selects Catalyst predicate [[Expression]]s which are convertible into data source [[Filter]]s
+   * and can be handled by `relation`.
+   *
+   * @return A pair of `Seq[Expression]` and `Seq[Filter]`. The first element contains all Catalyst
+   *         predicate [[Expression]]s that are either not convertible or cannot be handled by
+   *         `relation`. The second element contains all converted data source [[Filter]]s that
+   *         will be pushed down to the data source.
+   */
+  protected[sql] def selectFilters(
+      relation: BaseRelation,
+      predicates: Seq[Expression]): (Seq[Expression], Seq[Filter]) = {
+
+    // For conciseness, all Catalyst filter expressions of type `expressions.Expression` below are
+    // called `predicate`s, while all data source filters of type `sources.Filter` are simply called
+    // `filter`s.
+
+    val translated: Seq[(Expression, Filter)] =
+      for {
+        predicate <- predicates
+        filter <- translateFilter(predicate)
+      } yield predicate -> filter
+
+    // A map from original Catalyst expressions to corresponding translated data source filters.
+    val translatedMap: Map[Expression, Filter] = translated.toMap
+
+    // Catalyst predicate expressions that cannot be translated to data source filters.
+    val unrecognizedPredicates = predicates.filterNot(translatedMap.contains)
+
+    // Data source filters that cannot be handled by `relation`. The semantic of a unhandled filter
+    // at here is that a data source may not be able to apply this filter to every row
+    // of the underlying dataset.
+    val unhandledFilters = relation.unhandledFilters(translatedMap.values.toArray).toSet
+
+    val (unhandled, handled) = translated.partition {
+      case (predicate, filter) =>
+        unhandledFilters.contains(filter)
+    }
+
+    // Catalyst predicate expressions that can be translated to data source filters, but cannot be
+    // handled by `relation`.
+    val (unhandledPredicates, _) = unhandled.unzip
+
+    // Translated data source filters that can be handled by `relation`
+    val (_, handledFilters) = handled.unzip
+
+    // translated contains all filters that have been converted to the public Filter interface.
+    // We should always push them to the data source no matter whether the data source can apply
+    // a filter to every row or not.
+    val (_, translatedFilters) = translated.unzip
+
+    (unrecognizedPredicates ++ unhandledPredicates, translatedFilters)
   }
 }

@@ -17,37 +17,53 @@
 package io.snappydata.hydra.northwind
 
 import java.io.{File, PrintWriter}
-
 import io.snappydata.hydra.SnappyTestUtils
+import scala.io.Source
+
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql._
 
-import scala.io.Source
-
 object NWTestUtil {
 
-  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
+  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
+      tableType: String, pw: PrintWriter): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
-    pw.println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
-    println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
+    // scalastyle:off println
+    println(s"Query $queryNum")
+    df.explain(true)
+    pw.println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected " +
+        s"numRows : ${numRows} \n Table Type : ${tableType}")
+    println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows :" +
+        s" ${numRows} \n Table Type : ${tableType}")
+    // scalastyle:on println
     assert(df.count() == numRows,
-      s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
-        + " for query =" + sqlString + " Table Type : " + tableType)
+      s"Mismatch got for query ${queryNum} : df.count -> ${df.count()} but expected numRows " +
+          s"-> $numRows " +
+          s" for query = $sqlString Table Type : $tableType\n" +
+          s"plan : ${df.explain(true)} ")
     pw.flush()
   }
 
-  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter): Any = {
+  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
+      tableType: String, pw: PrintWriter): Any = {
     val df = snc.sql(sqlString)
-    pw.println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
-    println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n Table Type : ${tableType}")
+    // scalastyle:off println
+    println(s"Query $queryNum")
+    df.explain(true)
+    pw.println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} " +
+        s"\n Table Type : ${tableType}")
+    println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n " +
+        s"Table Type : ${tableType}")
+    // scalastyle:on println
     assert(df.count() == numRows,
-      s"Mismatch got for query ${queryNum} : df.count ->" + df.count() + " but expected numRows ->" + numRows
-        + " for query =" + sqlString + " Table Type : " + tableType)
+      s"Mismatch got for query ${queryNum} : df.count -> ${df.count()} but expected numRows " +
+          s"-> $numRows for query = $sqlString Table Type : $tableType")
     pw.flush()
   }
 
-  def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+  def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum:
+  String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     sqlContext.sql("set spark.sql.crossJoin.enabled = true")
     assertQueryFullResultSet(snc, sqlString, numRows, queryNum, tableType, pw, sqlContext)
@@ -55,7 +71,7 @@ object NWTestUtil {
 
   def dataTypeConverter(row: Row): Row = {
     val md = row.toSeq.map {
-      //case d: Double => "%18.1f".format(d).trim().toDouble
+      // case d: Double => "%18.1f".format(d).trim().toDouble
       case d: Double => math.floor(d * 10.0 + 0.5) / 10.0
       case de: BigDecimal => {
         de.setScale(2, BigDecimal.RoundingMode.HALF_UP)
@@ -71,16 +87,16 @@ object NWTestUtil {
   def writeToFile(df: DataFrame, dest: String, snc: SnappyContext): Unit = {
     import snc.implicits._
     df.map(dataTypeConverter)(RowEncoder(df.schema))
-      .map(row => {
-        val sb = new StringBuilder
-        row.toSeq.foreach(e => {
-          if (e != null)
-            sb.append(e.toString).append(",")
-          else
-            sb.append("NULL").append(",")
-        })
-        sb.toString()
-      }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
+        .map(row => {
+          val sb = new StringBuilder
+          row.toSeq.foreach {
+            case e if e == null =>
+              sb.append("NULL").append(",")
+            case e =>
+              sb.append(e.toString).append(",")
+          }
+          sb.toString()
+        }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
       "header", false).save(dest)
   }
 
@@ -92,7 +108,8 @@ object NWTestUtil {
       val logDir = log.listFiles.filter(_.getName.equals("snappyleader.log"))
       if (!logDir.isEmpty) {
         val leaderLogFile: File = logDir.iterator.next()
-        if (leaderLogFile.exists()) dest = dirString + File.separator + ".." + File.separator + ".." + File.separator + dirName
+        if (leaderLogFile.exists()) dest = dirString + File.separator + ".." + File.separator + "" +
+            ".." + File.separator + dirName
       }
       else dest = dirString + File.separator + ".." + File.separator + dirName
     }
@@ -102,7 +119,9 @@ object NWTestUtil {
     return tempDir.getAbsolutePath
   }
 
-  def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+  def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int, queryNum:
+  String, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+    // scalastyle:off println
     var snappyDF = snc.sql(sqlString)
     var sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
@@ -136,10 +155,11 @@ object NWTestUtil {
         pw.println(s"\nExpected Result:\n $expectedLine")
         pw.println(s"\nActual Result:\n $actualLine")
         pw.println(s"\nQuery =" + sqlString + " Table Type : " + tableType)
-        /*assert(assertion = false, s"\n** For $queryNum result mismatch observed** \n" +
+        /* assert(assertion = false, s"\n** For $queryNum result mismatch observed** \n" +
             s"Expected Result \n: $expectedLine \n" +
             s"Actual Result   \n: $actualLine \n" +
-            s"Query =" + sqlString + " Table Type : " + tableType)*/
+            s"Query =" + sqlString + " Table Type : " + tableType)
+         */
         // Commented due to Q37 failure by just the difference of 0.1 in actual and expected value
       }
       numLines += 1
@@ -149,9 +169,9 @@ object NWTestUtil {
       assert(assertion = false, s"\nFor $queryNum result count mismatch observed")
     }
     assert(numLines == numRows, s"\nFor $queryNum result count mismatch " +
-      s"observed: Expected=$numRows, Got=$numLines")
-    // scalastyle:on println
+        s"observed: Expected=$numRows, Got=$numLines")
     pw.flush()
+    // scalastyle:on println
   }
 
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
@@ -252,13 +272,16 @@ object NWTestUtil {
         case "Q57" => assertJoin(snc, NWQueries.Q57, 120, "Q57", tableType, pw)
         case "Q58" => assertJoin(snc, NWQueries.Q58, 1, "Q58", tableType, pw)
         case "Q59" => assertJoin(snc, NWQueries.Q59, 1, "Q59", tableType, pw)
-        //case "Q60" => assertJoin(snc, NWQueries.Q60, 947, "Q60", tableType, pw)
+        // case "Q60" => assertJoin(snc, NWQueries.Q60, 947, "Q60", tableType, pw)
+        // scalastyle:off println
         case _ => println("OK")
+        // scalastyle:on println
       }
     }
   }
 
-  def validateQueriesFullResultSet(snc: SnappyContext, tableType: String, pw: PrintWriter, sqlContext: SQLContext): Unit = {
+  def validateQueriesFullResultSet(snc: SnappyContext, tableType: String, pw: PrintWriter,
+      sqlContext: SQLContext): Unit = {
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q1, "Q1", tableType, pw, sqlContext)
@@ -390,6 +413,7 @@ object NWTestUtil {
         case "Q59" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q59, "Q59", tableType, pw, sqlContext)
         //case "Q60" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q60,"Q60", tableType, pw, sqlContext)
         case _ => println("OK")
+        // scalastyle:on println
       }
     }
   }
@@ -405,34 +429,38 @@ object NWTestUtil {
     snc.sql(NWQueries.shippers_table)
     NWQueries.shippers(snc).write.insertInto("shippers")
 
-    snc.sql(NWQueries.employees_table + " using row options(partition_by 'PostalCode,Region', buckets '19', redundancy '1')")
+    snc.sql(NWQueries.employees_table + " using row options(partition_by 'PostalCode,Region', " +
+        "buckets '19', redundancy '1')")
     NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
-      " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with 'employees', redundancy '1')")
+        " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with " +
+        "'employees', redundancy '1')")
     NWQueries.customers(snc).write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13', redundancy '1')")
+    snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13', " +
+        "redundancy '1')")
     NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
-      " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', redundancy '1')")
+        " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+        "redundancy '1')")
     NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
-      " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
+        " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
     NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
-      " USING row options (PARTITION_BY 'SupplierID', buckets '123',redundancy '1')")
+        " USING row options (PARTITION_BY 'SupplierID', buckets '123',redundancy '1')")
     NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
-      " using row options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
+        " using row options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
     NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
-      " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
+        " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
     NWQueries.employee_territories(snc).write.insertInto("employee_territories")
 
   }
@@ -447,33 +475,37 @@ object NWTestUtil {
     snc.sql(NWQueries.shippers_table)
     NWQueries.shippers(snc).write.insertInto("shippers")
 
-    snc.sql(NWQueries.employees_table + " using row options(partition_by 'City,Country', redundancy '1')")
+    snc.sql(NWQueries.employees_table + " using row options(partition_by 'City,Country', " +
+        "redundancy '1')")
     NWQueries.employees(snc).write.insertInto("employees")
 
-    snc.sql(NWQueries.customers_table + " using column options(partition_by 'City,Country', COLOCATE_WITH 'employees', redundancy '1')")
+    snc.sql(NWQueries.customers_table + " using column options(partition_by 'City,Country', " +
+        "COLOCATE_WITH 'employees', redundancy '1')")
     NWQueries.customers(snc).write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets '13', redundancy '1')")
+    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets " +
+        "'13', redundancy '1')")
     NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
-      " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', redundancy '1')")
+        " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+        "redundancy '1')")
     NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
-      " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
+        " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
     NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
-      " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
+        " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
     NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
-      " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
+        " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
     NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
-      " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
+        " using row options(partition_by 'EmployeeID', buckets '1', redundancy '1')")
     NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
@@ -488,40 +520,43 @@ object NWTestUtil {
     NWQueries.shippers(snc).write.insertInto("shippers")
 
     snc.sql(NWQueries.employees_table +
-      " using row options( partition_by 'PostalCode,Region', buckets '19', redundancy '1')")
+        " using row options( partition_by 'PostalCode,Region', buckets '19', redundancy '1')")
     NWQueries.employees(snc).write.insertInto("employees")
 
     snc.sql(NWQueries.customers_table +
-      " using column options( partition_by 'PostalCode,Region', buckets '19', colocate_with 'employees', redundancy '1')")
+        " using column options( partition_by 'PostalCode,Region', buckets '19', colocate_with " +
+        "'employees', redundancy '1')")
     NWQueries.customers(snc).write.insertInto("customers")
 
     snc.sql(NWQueries.orders_table +
-      " using row options (partition_by 'CustomerID, OrderID', buckets '19', redundancy '1')")
+        " using row options (partition_by 'CustomerID, OrderID', buckets '19', redundancy '1')")
     NWQueries.orders(snc).write.insertInto("orders")
 
     snc.sql(NWQueries.order_details_table +
-      " using row options ( partition_by 'ProductID', buckets '329', redundancy '1')")
+        " using row options ( partition_by 'ProductID', buckets '329', redundancy '1')")
     NWQueries.order_details(snc).write.insertInto("order_details")
 
     snc.sql(NWQueries.products_table +
-      " USING column options ( partition_by 'ProductID', buckets '329'," +
-      " colocate_with 'order_details', redundancy '1')")
+        " USING column options ( partition_by 'ProductID', buckets '329'," +
+        " colocate_with 'order_details', redundancy '1')")
     NWQueries.products(snc).write.insertInto("products")
 
     snc.sql(NWQueries.suppliers_table +
-      " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
+        " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
     NWQueries.suppliers(snc).write.insertInto("suppliers")
 
     snc.sql(NWQueries.territories_table +
-      " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
+        " using column options (partition_by 'TerritoryID', buckets '3', redundancy '1')")
     NWQueries.territories(snc).write.insertInto("territories")
 
     snc.sql(NWQueries.employee_territories_table +
-      " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories', redundancy '1') ")
+        " using row options(partition_by 'TerritoryID', buckets '3', colocate_with 'territories'," +
+        " redundancy '1') ")
     NWQueries.employee_territories(snc).write.insertInto("employee_territories")
   }
 
   def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
+    // scalastyle:off println
     NWQueries.regions(sqlContext).registerTempTable("regions")
     println(s"regions Table created successfully in spark")
     NWQueries.categories(sqlContext).registerTempTable("categories")
@@ -544,9 +579,11 @@ object NWTestUtil {
     println(s"territories Table created successfully in spark")
     NWQueries.employee_territories(sqlContext).registerTempTable("employee_territories")
     println(s"employee_territories Table created successfully in spark")
+    // scalastyle:on println
   }
 
   def dropTables(snc: SnappyContext): Unit = {
+    // scalastyle:off println
     snc.sql("drop table if exists regions")
     println("regions table dropped successfully.");
     snc.sql("drop table if exists categories")
@@ -569,6 +606,7 @@ object NWTestUtil {
     println("suppliers table dropped successfully.");
     snc.sql("drop table if exists territories")
     println("territories table dropped successfully.");
+    // scalastyle:on println
   }
 
 }
