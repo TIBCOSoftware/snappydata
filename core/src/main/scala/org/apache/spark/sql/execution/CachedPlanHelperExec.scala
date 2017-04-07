@@ -20,6 +20,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.Logging
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.SnappySession.CachedKey
@@ -29,6 +30,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, Param
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 
 case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: SnappySession)
     extends UnaryExecNode with CodegenSupport {
@@ -41,7 +43,10 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
 
   override def child: SparkPlan = childPlan
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = childPlan.inputRDDs()
+  override def inputRDDs(): Seq[RDD[InternalRow]] = {
+    val childRDDs = childPlan.inputRDDs()
+    childRDDs
+  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
     // cannot flatten out the references buffer here since the values may not
@@ -50,6 +55,40 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
       case Some(references) => references += ctx.references
       case None => session.addContextObject(REFERENCES_KEY,
         ArrayBuffer[ArrayBuffer[Any]](ctx.references))
+    }
+    // keep a map of the first broadcasthashjoinexec plan and the corresponding ref array
+    // collect the broadcasthashjoins in this wholestage and the references array
+    var nextStageStarted = false
+    var alreadyGotBroadcastNode = false
+    childPlan transformDown {
+      case bchj: BroadcastHashJoinExec => {
+        if (!nextStageStarted) {
+          // The below assertion was kept thinking that there will be just one
+          // broadcasthashjoin in one stage but there can be more than one and so
+          // removing the assertion and instead adding this information in the context
+          // indicating the above layer not to cache this plan.
+          // assert(!alreadyGotBroadcastNode, "only one broadcast plans expected per wholestage")
+          if (alreadyGotBroadcastNode) {
+            session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+              CachedPlanHelperExec.NOCACHING_KEY) match {
+              case Some(flag) => true
+              case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+            }
+          }
+          session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+            CachedPlanHelperExec.BROADCASTS_KEY) match {
+            case Some(map) => map += bchj -> ctx.references
+            case None => session.addContextObject(CachedPlanHelperExec.BROADCASTS_KEY,
+              mutable.Map(bchj -> ctx.references))
+          }
+          alreadyGotBroadcastNode = true
+        }
+        bchj
+      }
+      case cp: CachedPlanHelperExec => {
+        nextStageStarted = true
+      }
+      cp
     }
     childPlan.produce(ctx, this)
   }
@@ -62,7 +101,12 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
 
 object CachedPlanHelperExec extends Logging {
 
-  val REFERENCES_KEY = "TokenizationReferences"
+  val REFERENCES_KEY    = "TokenizationReferences"
+  val BROADCASTS_KEY    = "TokenizationBroadcasts"
+  val WRAPPED_CONSTANTS = "TokenizedConstants"
+  val NOCACHING_KEY    =  "TokenizationNoCaching"
+
+  //val broadcastReferences: Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = _
 
   private[sql] def allLiterals(allReferences: Seq[Seq[Any]]): Array[LiteralValue] = {
     allReferences.flatMap(_.collect {
@@ -70,21 +114,22 @@ object CachedPlanHelperExec extends Logging {
     }).toSet[LiteralValue].toArray.sortBy(_.position)
   }
 
-  def collectParamLiteralNodes(lp: LogicalPlan, literals: Array[LiteralValue]): Unit = {
-    lp transformAllExpressions {
-      case p: ParamLiteral => {
-        if (p.pos <= literals.length) {
-        assert(p.pos == literals(p.pos - 1).position)
-          literals(p.pos - 1).value = p.l.value
-        }
-        p
-      }
+  def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
+      newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
+    literals.foreach { case lv @ LiteralValue(_, p) =>
+      lv.value = newpls.find(_.pos == p).get.l.value
     }
   }
 
-  def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan): Unit = {
-    if (literals.length > 0) {
-      collectParamLiteralNodes(currLogicalPlan, literals)
-    }
+  def findAllParamLiterals(from: Product, result: ArrayBuffer[ParamLiteral]): Unit = {
+    from.productIterator.foreach(x => {
+      x match {
+        case pl @ ParamLiteral(_, _) => {
+          result += pl.asInstanceOf[ParamLiteral]
+        }
+        case p: Product => findAllParamLiterals(p, result)
+        case _ =>
+      }
+    })
   }
 }

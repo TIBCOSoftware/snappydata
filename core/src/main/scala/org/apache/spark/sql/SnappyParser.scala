@@ -16,11 +16,15 @@
  */
 package org.apache.spark.sql
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
+
 import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
+
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis._
@@ -36,6 +40,9 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.datanucleus.store.rdbms.sql.expression.ParameterLiteral
+
+import org.apache.spark.sql.execution.CachedPlanHelperExec
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 
 class SnappyParser(session: SnappySession)
     extends SnappyDDLParser(session) {
@@ -174,7 +181,14 @@ class SnappyParser(session: SnappySession)
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
-      ParamLiteral(l, paramcounter)
+      val p = ParamLiteral(l, paramcounter)
+      session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
+        CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+        case Some(list) => list += p
+        case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
+          mutable.ArrayBuffer(p))
+      }
+      p
     })
   }
 
