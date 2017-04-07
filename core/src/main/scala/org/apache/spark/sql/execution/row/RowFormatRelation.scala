@@ -160,7 +160,7 @@ class RowFormatRelation(
           requiredColumns,
           connProperties,
           handledFilters,
-          _parts = relInfo.partitions,
+          _partEval = () => relInfo.partitions,
           relInfo.embdClusterRelDestroyVersion
         )
     }

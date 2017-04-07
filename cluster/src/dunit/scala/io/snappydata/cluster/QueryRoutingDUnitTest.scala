@@ -29,8 +29,13 @@ import org.apache.commons.io.FileUtils
 import org.junit.Assert
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, TPCHUtils}
+import org.apache.spark.util.Benchmark
 
 /**
  * Tests for query routing from JDBC client driver.
@@ -482,7 +487,7 @@ class QueryRoutingDUnitTest(val s: String)
       val md = rs.getMetaData
       assert(md.getColumnCount == 1)
       assert(md.getColumnName(1).equalsIgnoreCase("col1"))
-//      assert(md.getSchemaName(1).equalsIgnoreCase("test"))
+      //      assert(md.getSchemaName(1).equalsIgnoreCase("test"))
       assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
 
       // Test zero parameter
@@ -599,6 +604,57 @@ class QueryRoutingDUnitTest(val s: String)
         if ("42X01" != sqe.getSQLState) {
           throw sqe
         }
+    }
+
+  }
+
+  def testNodesPruning(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val snc = SnappyContext(sc)
+    SingleNodeTest.testNodesPruning(snc)
+  }
+
+  def testTPCHNodesPruning(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val snc = SnappyContext(sc)
+
+    try {
+      val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
+        "12", "13", "14", "15", "16", "17", "18", "19",
+        "20", "21", "22")
+
+      TPCHUtils.createAndLoadTables(snc, true)
+
+      snc.sql(
+        s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
+             options (COLOCATE_WITH 'customer')
+          """)
+
+      snc.sql(
+        s"""CREATE INDEX idx_lineitem_part ON lineitem(l_partkey)
+             options (COLOCATE_WITH 'part')
+          """)
+
+      val tables = Seq("nation", "region", "supplier", "customer", "orders", "lineitem", "part",
+        "partsupp")
+
+      val tableSizes = tables.map { tableName =>
+        (tableName, snc.table(tableName).count())
+      }.toMap
+
+      tableSizes.foreach(println)
+
+      val i = new IndexTest
+      i.runBenchmark("select o_orderkey from orders where o_orderkey = 1", tableSizes, 2)
+      i.runBenchmark("select o_orderkey from orders where o_orderkey = 32", tableSizes)
+      i.runBenchmark("select o_orderkey from orders where o_orderkey = 801", tableSizes)
+      i.runBenchmark("select o_orderkey from orders where o_orderkey = 1409", tableSizes)
+      // queries.foreach(q => i.benchmark(q, tableSizes))
+    } finally {
+      snc.sql(s"DROP INDEX idx_orders_cust")
+      snc.sql(s"DROP INDEX idx_lineitem_part")
     }
 
   }
