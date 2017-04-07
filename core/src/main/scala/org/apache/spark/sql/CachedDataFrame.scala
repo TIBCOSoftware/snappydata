@@ -520,7 +520,7 @@ object CachedDataFrame
         totalParts).toInt)
       val sc = session.sparkContext
       sc.runJob(rdd, processPartition, p, (index: Int, r: (U, Int)) => {
-        results(index) = (resultHandler(index, r._1), r._2)
+        results(partsScanned + index) = (resultHandler(index, r._1), r._2)
         numResults += r._2
       })
 
