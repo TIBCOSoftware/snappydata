@@ -43,6 +43,7 @@ object ValidateNWQueriesApp {
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
+    val isSmokeRun: Boolean = args(4).toBoolean
     val threadID = Thread.currentThread().getId
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
@@ -56,7 +57,12 @@ object ValidateNWQueriesApp {
       println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
       pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
       pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at : " + System.currentTimeMillis)
-      NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+      if (isSmokeRun) {
+        NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
+      }
+      else {
+        NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+      }
       pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully at : " + System.currentTimeMillis)
     }
     pw.close()

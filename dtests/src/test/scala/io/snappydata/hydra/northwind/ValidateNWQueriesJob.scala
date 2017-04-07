@@ -32,6 +32,7 @@ class ValidateNWQueriesJob extends SnappySQLJob {
     val outputFile = "ValidateNWQueries_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
+    val isSmokeRun: Boolean = jobConfig.getString("isSmokeRun").toBoolean
     val fullResultSetValidation: Boolean = jobConfig.getString("fullResultSetValidation").toBoolean
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
@@ -50,7 +51,12 @@ class ValidateNWQueriesJob extends SnappySQLJob {
         println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
         pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
         pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at : " + System.currentTimeMillis)
-        NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+        if (isSmokeRun) {
+          NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
+        }
+        else {
+          NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+        }
         pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully at : " + System.currentTimeMillis)
       }
       pw.close()

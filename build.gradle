@@ -844,6 +844,10 @@ task buildAll {
   dependsOn distTar, distZip
   mustRunAfter cleanAll
 }
+task buildDtests {
+  delete "${snappyProductDir}/dtests/build-artifacts/scala-2.11/"
+  dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
+}
 task checkAll {
   if (project.hasProperty('store')) {
     dependsOn ':snappy-store:check'
@@ -856,6 +860,10 @@ task checkAll {
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
+  }
+  if (project.hasProperty('smoke')) {
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:check"
+    dependsOn buildDtests
   }
   mustRunAfter buildAll
 }
