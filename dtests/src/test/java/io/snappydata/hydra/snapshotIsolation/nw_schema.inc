@@ -14,8 +14,19 @@ sql.SQLPrms-createTablesStatements =
 "create table app.employee_territories(EmployeeID int,TerritoryID varchar(100),tid int)"
 ;
 
-io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-tablesList = "app.regions" "app.categories" "app.shippers" "app.employees" "app.customers"
-                 "app.orders" "app.order_details" "app.products" "app.suppliers" "app.territories" "app.employee_territories";
+io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-tablesList =
+"app.regions"
+"app.categories"
+"app.shippers"
+"app.employees"
+"app.customers"
+"app.orders"
+"app.order_details"
+"app.products"
+"app.suppliers"
+"app.territories"
+"app.employee_territories"
+;
 
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-dataFileLocation = ${derbyDataLocation};
 
@@ -109,8 +120,8 @@ io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-updateStmts = ONEOF
 "UPDATE app.products SET UnitPrice = UnitPrice * 0.9"
 "UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = 1"
 "UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1"
-"UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1 WHERE ORDER_ID < 10450"
-"UPDATE app.employees SET TitleOfCourtesy='Mr.' WHERE NAME LIKE '%31'"
+"UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1 WHERE ORDERID < 10450"
+"UPDATE app.employees SET TitleOfCourtesy='Mr.' WHERE FIRSTNAME LIKE '%31'"
 "UPDATE app.orders SET ShipVia = ShipVia + 1 WHERE OrderID = 10290"
 "UPDATE app.orders SET Freight = Freight * 1.1 WHERE Freight >= 500"
 FOENO
@@ -119,7 +130,7 @@ FOENO
 io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms-deleteStmts = ONEOF
 "delete from app.employees where EmployeeID = 6"
 "delete from app.employees where EmployeeID < 5"
-"delete from app.emplooyees where FIRSTNAME LIKE '%2'"
+"delete from app.employees where FIRSTNAME LIKE '%2'"
 FOENO
 ;
 

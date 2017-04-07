@@ -119,7 +119,7 @@ io/snappydata/hydra/snapshotIsolation/testUpdateWithSelectJDBCClient_ReplicatedR
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind"
   derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
-io/snappydata/hydra/snapshotIsolation/testDeleteWithSelectJDBCClient_PartitionedRow.conf
+io/snappydata/hydra/snapshotIsolation/testUpdateWithSelectJDBCClient_PartitionedRow.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=3
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -158,6 +158,44 @@ io/snappydata/hydra/snapshotIsolation/testDMLWithSelectJDBCClient_ReplicatedRow.
   derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
 io/snappydata/hydra/snapshotIsolation/testDMLWithSelectJDBCClient_PartitionedRow.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=3
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  //redundantCopies=0  persistenceMode="null"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind"
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+
+io/snappydata/hydra/snapshotIsolation/testMultipleSnapshotJDBCClient_ColocatedTables.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=3
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  //redundantCopies=0  persistenceMode="null"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind"
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/snapshotIsolation/testMultipleSnapshotJDBCClient_ColumnTable.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=3
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  //redundantCopies=0  persistenceMode="null"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind"
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+//test for selects executing at same time, with update/insert happening in parallel.
+io/snappydata/hydra/snapshotIsolation/testMultipleSnapshotJDBCClient_ReplicatedRow.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=3
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  //redundantCopies=0  persistenceMode="null"
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind"
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/snapshotIsolation/testMultipleSnapshotJDBCClient_PartitionedRow.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=3
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
