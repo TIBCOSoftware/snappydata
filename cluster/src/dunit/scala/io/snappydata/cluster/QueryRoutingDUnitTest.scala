@@ -18,7 +18,7 @@
 package io.snappydata.cluster
 
 import java.io.File
-import java.sql.{Connection, DatabaseMetaData, SQLException, Statement}
+import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -601,5 +601,150 @@ class QueryRoutingDUnitTest(val s: String)
         }
     }
 
+  }
+
+  def testLimitStatementRouting(): Unit = {
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    println(s"network server started at $serverHostPort")
+
+    val tableName = "order_line_col"
+    val snc = SnappyContext(sc)
+    snc.sql(s"create table $tableName (ol_int_id  integer," +
+        s" ol_int2_id  integer, ol_str_id STRING) using column " +
+        "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
+
+    limitInsertRows(1000, serverHostPort, tableName)
+
+    // (1 to 5).foreach(d => query())
+    limitQuery(serverHostPort, tableName)
+  }
+
+  def limitInsertRows(numRows: Int, serverHostPort: Int, tableName: String): Unit = {
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    val rows = (1 to numRows).toSeq
+    val stmt = conn.createStatement()
+    try {
+      var i = 1
+      rows.foreach(d => {
+        stmt.addBatch(s"insert into $tableName values($i, $i, '$i')")
+        i += 1
+        if (i % 1000 == 0) {
+          stmt.executeBatch()
+          i = 0
+        }
+      })
+      stmt.executeBatch()
+      println(s"committed $numRows rows")
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  def verifyQuery(qryTest: String, prep_rs: ResultSet, stmt_rs: ResultSet): Unit = {
+    val builder = StringBuilder.newBuilder
+    var index = 0
+    var assertionFailed = false
+    while (prep_rs.next() && stmt_rs.next()) {
+      val prep_i = prep_rs.getInt(1)
+      val prep_j = prep_rs.getInt(2)
+      val prep_s = prep_rs.getString(3)
+
+      val stmt_i = stmt_rs.getInt(1)
+      val stmt_j = stmt_rs.getInt(2)
+      val stmt_s = stmt_rs.getString(3)
+
+      builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+      builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+
+      if (prep_i != stmt_i && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_i stmt=$stmt_i").append("\n")
+        assertionFailed = true
+      }
+
+      if (prep_j != stmt_j && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_j stmt=$stmt_j").append("\n")
+        assertionFailed = true
+      }
+
+      if (prep_s != stmt_s && !assertionFailed) {
+        builder.append(s"Assertion failed at index=$index prep=$prep_s stmt=$stmt_s").append("\n")
+        assertionFailed = true
+      }
+
+      index += 1
+    }
+
+    while (prep_rs.next()) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed at index=$index").append("\n")
+        assertionFailed = true
+      }
+
+      val prep_i = prep_rs.getInt(1)
+      val prep_j = prep_rs.getInt(2)
+      val prep_s = prep_rs.getString(3)
+      builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
+    }
+
+    while (stmt_rs.next()) {
+      if (!assertionFailed) {
+        builder.append(s"Assertion failed at index=$index").append("\n")
+        assertionFailed = true
+      }
+
+      val stmt_i = stmt_rs.getInt(1)
+      val stmt_j = stmt_rs.getInt(2)
+      val stmt_s = stmt_rs.getString(3)
+      builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+    }
+
+    if (assertionFailed) {
+      println(builder.toString())
+    }
+
+    assert(!assertionFailed)
+  }
+
+  def limitQuery(serverHostPort: Int, tableName: String): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    println(s"Connected to $serverHostPort")
+
+    val stmt1 = conn.createStatement()
+    val stmt2 = conn.createStatement()
+    try {
+      val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 500 " +
+          s" and ol_int2_id in (100, 200, 300) " +
+          " and ol_str_id LIKE '%0' " +
+          s" limit 20" +
+          s""
+      val rs1 = stmt1.executeQuery(qry1)
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 500 " +
+          s" and ol_int2_id in (100, 200, 300) " +
+          s" and ol_str_id LIKE '%0' " +
+          s""
+      val rs2 = stmt2.executeQuery(qry2)
+      verifyQuery("query", rs1 , rs2)
+      rs1.close()
+      rs2.close()
+
+      // Thread.sleep(1000000)
+
+    } finally {
+      stmt1.close()
+      stmt2.close()
+      conn.close()
+    }
   }
 }
