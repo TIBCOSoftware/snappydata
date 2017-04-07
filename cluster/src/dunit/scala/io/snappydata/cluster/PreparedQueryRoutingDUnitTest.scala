@@ -56,7 +56,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     // scalastyle:on println
 
     val snc = SnappyContext(sc)
-    snc.sql(s"create table $tableName (ol_int_id  integer," +
+    snc.sql(s"create table $tableName (ol_int_id  decimal(6,2)," +
         s" ol_int2_id  integer, ol_str_id STRING) using column " +
         "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
 
@@ -76,7 +76,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     try {
       var i = 1
       rows.foreach(d => {
-        stmt.addBatch(s"insert into $tableName values($i, $i, '$i')")
+        stmt.addBatch(s"insert into $tableName values($i.11, $i, '$i')")
         i += 1
         if (i % 1000 == 0) {
           stmt.executeBatch()
@@ -99,11 +99,11 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     var index = 0
     var assertionFailed = false
     while (prep_rs.next() && stmt_rs.next()) {
-      val prep_i = prep_rs.getInt(1)
+      val prep_i = prep_rs.getBigDecimal(1)
       val prep_j = prep_rs.getInt(2)
       val prep_s = prep_rs.getString(3)
 
-      val stmt_i = stmt_rs.getInt(1)
+      val stmt_i = stmt_rs.getBigDecimal(1)
       val stmt_j = stmt_rs.getInt(2)
       val stmt_s = stmt_rs.getString(3)
 
@@ -134,7 +134,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
         assertionFailed = true
       }
 
-      val prep_i = prep_rs.getInt(1)
+      val prep_i = prep_rs.getBigDecimal(1)
       val prep_j = prep_rs.getInt(2)
       val prep_s = prep_rs.getString(3)
       builder.append(s"$qryTest Prep: row($index) $prep_i $prep_j $prep_s ").append("\n")
@@ -147,7 +147,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
         assertionFailed = true
       }
 
-      val stmt_i = stmt_rs.getInt(1)
+      val stmt_i = stmt_rs.getBigDecimal(1)
       val stmt_j = stmt_rs.getInt(2)
       val stmt_s = stmt_rs.getString(3)
       builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
@@ -192,13 +192,13 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s""
 
       prepStatement = conn.prepareStatement(qry)
-      prepStatement.setInt(1, 500)
+      prepStatement.setBigDecimal(1, new java.math.BigDecimal("500.11"))
       prepStatement.setString(2, "%0")
       val rs = prepStatement.executeQuery
 
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
-          s" where ol_int_id < 500 " +
+          s" where ol_int_id < 500.11 " +
           s" and ol_int2_id > 100 " +
           s" and ol_str_id LIKE '%0' " +
           s" $limitClause" +
@@ -240,7 +240,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
 
       prepStatement = conn.prepareStatement(qry)
-      prepStatement.setInt(1, 500)
+      prepStatement.setBigDecimal(1, new java.math.BigDecimal("500.11"))
       prepStatement.setInt(2, 100)
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 300)
@@ -249,7 +249,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
-          s" where ol_int_id < 500 " +
+          s" where ol_int_id < 500.11 " +
           s" and ol_int2_id in (100, 200, 300) " +
           s" and ol_str_id LIKE '%0' " +
           s" $limitClause" +
