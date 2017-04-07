@@ -617,7 +617,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     query1_test3("", tableName: String, 15)
   }
 
-  def test3_date(): Unit = {
+  def test3_timestamp(): Unit = {
     val tableName = "order_line_col_test3"
     serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
