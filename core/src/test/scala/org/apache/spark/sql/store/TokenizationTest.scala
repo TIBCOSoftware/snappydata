@@ -16,14 +16,13 @@
  */
 package org.apache.spark.sql.store
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql._
-import org.apache.spark.sql.execution.CachedPlanHelperExec
 
 /**
   * Tests for column tables in GFXD.
@@ -39,12 +38,15 @@ class TokenizationTest
   val all_typetable = "my_table3"
 
   after {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    SnappySession.clearAllCache()
     snc.dropTable(s"$table", ifExists = true)
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
   }
 
   test("same session from different thread") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 2
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -74,9 +76,11 @@ class TokenizationTest
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
     }
+    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -185,6 +189,7 @@ class TokenizationTest
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
     logInfo("Successful")
   }
@@ -194,6 +199,7 @@ class TokenizationTest
     createAllTypeTableAndPoupulateData(numRows, s"$all_typetable")
 
     try {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = true
       val q = (0 until numRows).zipWithIndex.map { case (_, i) =>
         s"select * from $all_typetable where s = 'abc$i'"
       }
@@ -218,12 +224,14 @@ class TokenizationTest
     } finally {
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
 
     logInfo("Successful")
   }
 
   test("Test tokenize for sub-queries") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     createSimpleTableAndPoupulateData(numRows, s"$table2")
@@ -240,9 +248,11 @@ class TokenizationTest
     snc.sql(query).collect()
     assert( cacheMap.size() == 1)
     logInfo("Successful")
+    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("Test tokenize for joins and sub-queries") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     createSimpleTableAndPoupulateData(numRows, s"$table2")
@@ -262,6 +272,7 @@ class TokenizationTest
       println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
     })
     assert( cacheMap.size() == 1)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = false
     logInfo("Successful")
   }
 
@@ -322,7 +333,7 @@ class TokenizationTest
   }
 
   test("Test broadcast hash joins and scalar sub-queries") {
-
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val ddlStr = "(YearI INT," + // NOT NULL
         "MonthI INT," + // NOT NULL
         "DayOfMonth INT," + // NOT NULL
@@ -400,5 +411,6 @@ class TokenizationTest
     //rows11.foreach(println)
     assert(!(rows1.deep == rows11.deep))
     assert( cacheMap.size() == 1)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 }

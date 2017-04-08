@@ -33,7 +33,7 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import io.snappydata.Constant
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
@@ -56,7 +56,6 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTabl
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
@@ -1936,15 +1935,17 @@ object SnappySession extends Logging {
   }
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
-    planCache.invalidateAll()
-    if (!onlyQueryPlanCache) {
-      CodeGeneration.clearAllCache()
-      val sc = SnappyContext.globalSparkContext
-      if (sc ne null) {
-        Utils.mapExecutors(sc, (_, _) => {
-          CodeGeneration.clearAllCache()
-          Iterator.empty
-        })
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation) {
+      planCache.invalidateAll()
+      if (!onlyQueryPlanCache) {
+        CodeGeneration.clearAllCache()
+        val sc = SnappyContext.globalSparkContext
+        if (sc ne null) {
+          Utils.mapExecutors(sc, (_, _) => {
+            CodeGeneration.clearAllCache()
+            Iterator.empty
+          })
+        }
       }
     }
   }
