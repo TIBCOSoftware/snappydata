@@ -213,7 +213,7 @@ object Property extends Enumeration {
         s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
-    "The join would be converted into a hash join if the table is of size less" +
+    "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
