@@ -21,6 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
@@ -36,7 +37,7 @@ import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUti
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{ConnectorCatalog, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -82,32 +83,19 @@ class RowFormatRelation(
   @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
+  @transient lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
   private[this] def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
-    val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
-    val td = container.getTableDescriptor
-    if (td ne null) {
-      val baseColumns = td.getColumnNamesArray
-      val im = container.getIndexManager
-      if ((im ne null) && (im.getIndexConglomerateDescriptors ne null)) {
-        val itr = im.getIndexConglomerateDescriptors.iterator()
-        while (itr.hasNext) {
-          // first column of index has to be present in filter to be usable
-          val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
-          cols += baseColumns(indexCols(0) - 1)
-        }
-      }
-      // also add primary key
-      val primaryKey = td.getPrimaryKey
-      if (primaryKey ne null) {
-        // first column of primary key has to be present in filter to be usable
-        val pkCols = primaryKey.getKeyColumns
-        if (pkCols.nonEmpty) {
-          cols += baseColumns(pkCols(0) - 1)
-        }
-      }
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        cols ++= relInfo.indexCols
+
+      case _ =>
+        val indexCols = new Array[String](1)
+        GfxdSystemProcedures.getIndexColumns(indexCols, region)
+        Option(indexCols(0)).foreach(icols => cols ++= icols.split(":"))
+        cols
     }
-    cols
   }
 
   private[this] def pushdownPKColumns(filters: Array[Filter]): Array[String] = {
@@ -122,21 +110,23 @@ class RowFormatRelation(
       list
     }
 
-    val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
-    val td = container.getTableDescriptor
-    if (td ne null) {
-      val primaryKey = td.getPrimaryKey
-      if (primaryKey ne null) {
-        // all columns of primary key have to be present in filter to be usable
-        val equalToColumns = getEqualToColumns(filters)
-        val cols = primaryKey.getKeyColumns
-        val baseColumns = td.getColumnNamesArray
-        val pkCols = cols.map(c => baseColumns(c - 1))
+    // all columns of primary key have to be present in filter to be usable
+    val equalToColumns = getEqualToColumns(filters)
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        if (relInfo.pkCols.forall(equalToColumns.contains)) return relInfo.pkCols
+      case _ =>
+        val cols = new Array[String](1)
+        GfxdSystemProcedures.getPKColumns(cols, region)
+        var pkCols = Array.empty[String]
+        if (cols(0) != null) {
+          pkCols = cols(0).split(":")
+        }
         if (pkCols.forall(equalToColumns.contains)) return pkCols
-      }
     }
     Array.empty[String]
   }
+
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
     filters.filter(ExternalStoreUtils.unhandledFilter(_,
@@ -146,9 +136,8 @@ class RowFormatRelation(
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
-        .handledFilter(_, indexedColumns ++ pushdownPKColumns(filters))
-        eq ExternalStoreUtils.SOME_TRUE)
-    val isPartitioned = region.getPartitionAttributes != null
+        .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
+    val isPartitioned = (numBuckets != 1)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
@@ -170,27 +159,37 @@ class RowFormatRelation(
           isPartitioned,
           requiredColumns,
           connProperties,
-          handledFilters
+          handledFilters,
+          _partEval = () => relInfo.partitions,
+          relInfo.embdClusterRelDestroyVersion
         )
     }
     (rdd, Nil)
   }
 
-  override lazy val numBuckets: Int = {
-    region match {
-      case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
-      case _ => 1
+  def relInfo: RelationInfo = {
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
+        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
+      case _ =>
+         new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+           Array.empty[String], Array.empty[Partition], -1)
     }
   }
 
-  override def partitionColumns: Seq[String] = {
-    region match {
-      case pr: PartitionedRegion =>
-        val resolver = pr.getPartitionResolver
-            .asInstanceOf[GfxdPartitionByExpressionResolver]
-        val parColumn = resolver.getColumnNames
-        parColumn.toSeq
-      case _ => Seq.empty[String]
+  override lazy val (numBuckets, partitionColumns) = {
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        (relInfo.numBuckets, relInfo.partitioningCols)
+      case _ => region match {
+        case pr: PartitionedRegion =>
+          val resolver = pr.getPartitionResolver
+              .asInstanceOf[GfxdPartitionByExpressionResolver]
+          val parColumn = resolver.getColumnNames
+          (pr.getTotalNumberOfBuckets, parColumn.toSeq)
+        case _ => (1, Seq.empty[String])
+      }
     }
   }
 

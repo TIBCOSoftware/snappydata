@@ -17,12 +17,16 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
+import java.sql.SQLException
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
@@ -40,12 +44,12 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, NarrowDependency, ShuffleDependency, SparkContext, SparkEnv, SparkException, TaskContext}
 
 class CachedDataFrame(df: Dataset[Row],
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean)
-    extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) {
+    extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
    * Return true if [[collectWithHandler]] supports partition-wise separate
@@ -76,6 +80,37 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
+  private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
+
+  private lazy val unsafe = UnsafeHolder.getUnsafe
+  private lazy val rdd_partitions_ = {
+    val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
+    _f.setAccessible(true)
+    unsafe.objectFieldOffset(_f)
+  }
+
+  @tailrec
+  private def clearPartitions(rdd: Seq[RDD[_]]): Unit = {
+    val children = rdd.flatMap(r => if (r != null) {
+      r.dependencies.map {
+        case d: NarrowDependency[_] => d.rdd
+        case s: ShuffleDependency[_, _, _] => s.rdd
+      }
+    } else None)
+
+    rdd.foreach {
+      case null =>
+      case r: RDD[_] =>
+        // f.set(r, null)
+        unsafe.putObject(r, rdd_partitions_, null)
+    }
+    if (children.isEmpty) {
+      return
+    }
+    clearPartitions(children)
+  }
+
+
   /**
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
@@ -92,10 +127,37 @@ class CachedDataFrame(df: Dataset[Row],
         end - start)
       result
     } catch {
+      case se: SparkException =>
+        val (isCatalogStale, sqlexception) = staleCatalogError(se)
+        if (isCatalogStale) {
+          val snSession = SparkSession.getActiveSession.get.asInstanceOf[SnappySession]
+          snSession.sessionCatalog.invalidateAll()
+          SnappySession.clearAllCache()
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          logInfo("Operation needs to be retried ", se)
+          throw sqlexception
+        } else {
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          throw se
+        }
       case e: Exception =>
         sparkSession.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
+  }
+
+  private def staleCatalogError(se: SparkException): (Boolean, SQLException) = {
+    var cause = se.getCause
+    while (cause != null) {
+      cause match {
+        case sqle: SQLException
+          if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+          return (true, sqle)
+        case _ =>
+          cause = cause.getCause
+      }
+    }
+    (false, null)
   }
 
   override def collect(): Array[Row] = {
@@ -115,15 +177,13 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
-  def replaceConstants(lp: LogicalPlan): Unit = {
-    queryExecution.executedPlan match {
-      case WholeStageCodegenExec(cachedPlan) =>
-        cachedPlan match {
-          case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
-          case _ => // do nothing
-        }
-      case _ => // do nothing
-    }
+  private[sql] def replaceConstants(lp: LogicalPlan) = queryExecution.executedPlan match {
+    case WholeStageCodegenExec(cachedPlan) =>
+      cachedPlan match {
+        case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
+        case _ => // do nothing
+      }
+    case _ => // do nothing
   }
 
   def collectWithHandler[U: ClassTag, R: ClassTag](
@@ -138,6 +198,7 @@ class CachedDataFrame(df: Dataset[Row],
     if (!hasLocalCallSite) {
       sc.setCallSite(callSite)
     }
+
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
       sparkSession, callSite, queryExecutionString, queryPlanInfo) {
       val executedPlan = queryExecution.executedPlan match {
@@ -460,7 +521,7 @@ object CachedDataFrame
         totalParts).toInt)
       val sc = session.sparkContext
       sc.runJob(rdd, processPartition, p, (index: Int, r: (U, Int)) => {
-        results(index) = (resultHandler(index, r._1), r._2)
+        results(partsScanned + index) = (resultHandler(index, r._1), r._2)
         numResults += r._2
       })
 
