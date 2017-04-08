@@ -16,17 +16,16 @@
  */
 package org.apache.spark.sql.execution
 
-import org.apache.hadoop.hive.metastore.parser.ExpressionTree.TreeNode
+import scala.collection.mutable
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
-import scala.collection.mutable
-
 case class CachedPlanHelperExec(childPlan: CodegenSupport)
-  extends UnaryExecNode with CodegenSupport {
+    extends UnaryExecNode with CodegenSupport {
 
   var ctxReferences: mutable.ArrayBuffer[Any] = _
 
@@ -52,15 +51,14 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
       _.asInstanceOf[LiteralValue]).sortBy(_.position).toArray
   }
 
-  private lazy val hasParamLiteralNode = allLiterals.size > 0
+  private lazy val hasParamLiteralNode = allLiterals.length > 0
 
   def collectParamLiteralNodes(lp: LogicalPlan): Unit = {
-    if ( hasParamLiteralNode ) {
+    if (hasParamLiteralNode) {
       lp transformAllExpressions {
-        case p: ParamLiteral => {
+        case p: ParamLiteral =>
           allLiterals(p.pos - 1).value = p.value
           p
-        }
       }
     }
   }

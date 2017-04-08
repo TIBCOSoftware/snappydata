@@ -38,7 +38,7 @@ import scala.sys.process._
  *
  * @author hemant
  */
-class ClusterManagerTestBase(s: String)
+abstract class ClusterManagerTestBase(s: String)
     extends DistributedTestBase(s) with Serializable {
 
   import ClusterManagerTestBase._
