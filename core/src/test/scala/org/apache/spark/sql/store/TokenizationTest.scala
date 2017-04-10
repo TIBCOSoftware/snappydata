@@ -228,7 +228,9 @@ class TokenizationTest
     if (dosleep) Thread.sleep(5000)
   }
 
-  private def createAllTypeTableAndPoupulateData(numRows: Int, name: String, dosleep: Boolean = false) = {
+  private def createAllTypeTableAndPoupulateData(numRows: Int,
+      name: String,
+      dosleep: Boolean = false) = {
     val ints = (0 to numRows).zipWithIndex.map {case (_, i) =>
       i
     }
