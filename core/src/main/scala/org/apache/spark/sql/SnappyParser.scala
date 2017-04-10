@@ -191,7 +191,7 @@ class SnappyParser(session: SnappySession)
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
-      val p = ParamLiteral(l.value, l.dataType, paramcounter)
+      val p = ParamLiteral(l.value, l.dataType, paramcounter, false)
       session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
         CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
         case Some(list) => list += p

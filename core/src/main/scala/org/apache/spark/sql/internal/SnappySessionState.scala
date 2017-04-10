@@ -426,7 +426,7 @@ class SnappySessionState(snappySession: SnappySession)
             paramLiteralCount = paramLiteralCount + 1
             val scalaTypeVal = setValue(dvd)
             val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-            ParamLiteral(catalystTypeVal, paramType, paramLiteralCount)
+            ParamLiteral(catalystTypeVal, paramType, paramLiteralCount, true)
         }
         assertAllParametersResolved(parameterResolvedPlan)
       } else plan // means already done

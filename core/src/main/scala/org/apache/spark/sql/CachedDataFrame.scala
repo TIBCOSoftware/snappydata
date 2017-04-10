@@ -274,9 +274,9 @@ class CachedDataFrame(df: Dataset[Row],
       allbcplans.foreach { case (bchj, refs) =>
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
-          case pl @ ParamLiteral(v, dt, p) => {
-            val np = newpls.find(_.pos == p).getOrElse(pl)
-            ParamLiteral(np.value, np.dataType, p)
+          case pl @ ParamLiteral(v, dt, p, isParameter) => {
+            val np = newpls.find(isParameter && _.pos == p).getOrElse(pl)
+            ParamLiteral(np.value, np.dataType, p, isParameter)
           }
         }
         val tmpCtx = new CodegenContext
