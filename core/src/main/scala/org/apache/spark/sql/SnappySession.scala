@@ -1875,9 +1875,6 @@ object SnappySession extends Logging {
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
       logDebug(s"sqlText = ${sqlText} and cachedDataframe = " +
-<<<<<<< HEAD
-          System.identityHashCode(cachedDF) + " key = " + CachedKey)
-=======
           System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
       //println(s"sqlText = ${sqlText} and cachedDataframe = " +
         //  System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
@@ -1886,7 +1883,6 @@ object SnappySession extends Logging {
       }
       val pcache = getPlanCache.asMap()
 
->>>>>>> SNAP-1346_bugfix
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
@@ -1906,15 +1902,12 @@ object SnappySession extends Logging {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
         cachedDF.reset()
       }
-<<<<<<< HEAD
-=======
       // println(s"Executed plan = ${cachedDF.queryExecution.executedPlan}")
       // println(s"broadcasthashjoins = ${cachedDF.allbcplans}")
       // re-prepare the broadcast if required
       cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
       // replace the constants from this logical plan
       CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
->>>>>>> SNAP-1346_bugfix
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()
