@@ -31,7 +31,7 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.{CatalystConf, InternalRow}
+import org.apache.spark.sql.catalyst.{CatalystConf, CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, Expression, Like, Literal, ParamConstants, ParamLiteral, PredicateHelper}
@@ -424,7 +424,9 @@ class SnappySessionState(snappySession: SnappySession)
           case pc@ParamConstants(pos, paramType, _) =>
             val dvd = pvs.getParameter(pos - 1)
             paramLiteralCount = paramLiteralCount + 1
-            ParamLiteral(setValue(dvd), paramType, paramLiteralCount)
+            val scalaTypeVal = setValue(dvd)
+            val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
+            ParamLiteral(catalystTypeVal, paramType, paramLiteralCount)
         }
         assertAllParametersResolved(parameterResolvedPlan)
       } else plan // means already done
