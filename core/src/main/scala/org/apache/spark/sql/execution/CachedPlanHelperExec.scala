@@ -80,11 +80,13 @@ object CachedPlanHelperExec extends Logging {
     lls.sortBy(_.position).toArray
   }
 
-  def collectParamLiteralNodes(lp: LogicalPlan, literals: Array[LiteralValue]): Unit = {
-    lp transformAllExpressions {
-      case p: ParamLiteral => {
-        literals(p.pos - 1).value = p.l.value
-        p
+  def collectParamLiteralNodes(lp: LogicalPlan): Unit = {
+    if ( hasParamLiteralNode ) {
+      lp transformAllExpressions {
+        case p: ParamLiteral => {
+          allLiterals(p.pos - 1).value = p.value
+          p
+        }
       }
     }
   }

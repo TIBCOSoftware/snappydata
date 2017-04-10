@@ -184,7 +184,7 @@ class SnappyParser(session: SnappySession)
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
-      ParamLiteral(l, paramcounter)
+      ParamLiteral(l.value, l.dataType, paramcounter)
     })
   }
 
@@ -652,6 +652,19 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
+    '{' ~ FN ~ ws ~ identifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
+      (f: Any, e: Any) =>
+        f.asInstanceOf[String] match {
+          case f if f.equalsIgnoreCase("TIMESTAMPADD") =>
+            val exprs = e.asInstanceOf[Seq[Expression]].toList
+            assert(exprs.length == 3)
+            assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
+                exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
+            DateAdd(exprs(2), exprs(1))
+          case f =>
+            UnresolvedFunction(f, e.asInstanceOf[Seq[Expression]], false)
+        }
+    } |
     ( ( test(tokenize) ~ paramliteral ) | literal | paramConstants) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (

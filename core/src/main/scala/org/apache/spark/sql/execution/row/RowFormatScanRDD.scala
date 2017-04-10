@@ -35,6 +35,7 @@ import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
@@ -53,7 +54,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
-    @transient protected val parts: Array[Partition] = Array.empty[Partition])
+    @transient protected val partitionEvaluator: () => Array[Partition] = () =>
+      Array.empty[Partition])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -191,7 +193,10 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args)
+      ExternalStoreUtils.setStatementParameters(stmt, args.map {
+        case pl: ParamLiteral => pl.value
+        case v => v
+      })
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
@@ -247,6 +252,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
+    val parts = partitionEvaluator()
     if (parts != null && parts.length > 0) {
       return parts
     }

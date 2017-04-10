@@ -31,10 +31,12 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.CatalystConf
+import org.apache.spark.sql.catalyst.{CatalystConf, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, Expression, Like, Literal, ParamConstants, ParamLiteral, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, EmptyRow, Expression, Literal, ParamLiteral, PredicateHelper, UnaryExpression}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -49,7 +51,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.DecimalType
+import org.apache.spark.sql.types.{DataType, DecimalType}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
@@ -120,7 +122,32 @@ class SnappySessionState(snappySession: SnappySession)
 
       modified :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
-          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets)
+          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets) :+
+          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
+    }
+  }
+
+  // copy of ConstantFolding that will turn a constant up/down cast into
+  // a static value.
+  object ParamLiteralFolding extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case p: ParamLiteral => p.markFoldable(true)
+        p
+    } transform {
+      case q: LogicalPlan => q transformExpressionsDown {
+        // ignore leaf ParamLiteral & Literal
+        case p: ParamLiteral => p
+        case l: Literal => l
+        // Wrap expressions that are foldable.
+        case e if e.foldable =>
+          // lets mark child params foldable false so that nested expression doesn't
+          // attempt to wrap.
+          e.foreach {
+            case p: ParamLiteral => p.markFoldable(false)
+            case _ =>
+          }
+          DynamicFoldableExpression(e)
+      }
     }
   }
 
@@ -806,7 +833,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           actual.dataType match {
             case _: DecimalType
               if expected.dataType.isInstanceOf[DecimalType] &&
-                 relation.isInstanceOf[PlanInsertableRelation] => actual
+                  relation.isInstanceOf[PlanInsertableRelation] => actual
             case _ => Alias(Cast(actual, expected.dataType), expected.name)()
           }
         }
