@@ -181,6 +181,9 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
 }
 
 object ParamLiteral {
+  def hashCode(dataType: DataType, pos: Int): Int =
+    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
+  
   def apply(_value: Any, _dataType: DataType, pos: Int): ParamLiteral =
     new ParamLiteral(_value, _dataType, pos)
 
@@ -247,12 +250,6 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression {
   override def canEqual(that: Any): Boolean = that match {
     case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)
     case other => expr.canEqual(other)
-  }
-}
-
-object ParamLiteral {
-  def hashCode(dataType: DataType, pos: Int): Int = {
-    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
   }
 }
 

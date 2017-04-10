@@ -178,16 +178,6 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
-  private[sql] def replaceConstants(lp: LogicalPlan) = queryExecution.executedPlan match {
-    case WholeStageCodegenExec(cachedPlan) => {
-      cachedPlan match {
-        case cp: CachedPlanHelperExec => cp.replaceConstants(lp)
-        case _ => // do nothing
-      }
-    }
-    case _ => // do nothing
-  }
-
   def collectWithHandler[U: ClassTag, R: ClassTag](
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
       resultHandler: (Int, U) => R,

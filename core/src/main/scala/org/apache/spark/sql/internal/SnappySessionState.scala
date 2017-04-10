@@ -423,9 +423,8 @@ class SnappySessionState(snappySession: SnappySession)
         val parameterResolvedPlan = preparedPlan transformAllExpressions {
           case pc@ParamConstants(pos, paramType, _) =>
             val dvd = pvs.getParameter(pos - 1)
-            val l = Literal.create(setValue(dvd), paramType)
             paramLiteralCount = paramLiteralCount + 1
-            ParamLiteral(l, paramLiteralCount)
+            ParamLiteral(setValue(dvd), paramType, paramLiteralCount)
         }
         assertAllParametersResolved(parameterResolvedPlan)
       } else plan // means already done

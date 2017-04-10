@@ -79,22 +79,4 @@ object CachedPlanHelperExec extends Logging {
     })
     lls.sortBy(_.position).toArray
   }
-
-  def collectParamLiteralNodes(lp: LogicalPlan): Unit = {
-    if ( hasParamLiteralNode ) {
-      lp transformAllExpressions {
-        case p: ParamLiteral => {
-          allLiterals(p.pos - 1).value = p.value
-          p
-        }
-      }
-    }
-  }
-
-  def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
-    val literals = allLiterals()
-    if (literals.length > 0) {
-      collectParamLiteralNodes(currLogicalPlan, literals)
-    }
-  }
 }
