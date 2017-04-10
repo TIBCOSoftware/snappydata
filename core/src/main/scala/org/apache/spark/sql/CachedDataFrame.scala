@@ -21,14 +21,13 @@ import java.sql.SQLException
 
 import scala.collection.mutable
 import scala.annotation.tailrec
-
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+
 import org.apache.spark.broadcast.Broadcast
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
@@ -36,19 +35,18 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.CachedPlanHelperExec.setValue
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, HashedRelation}
 import org.apache.spark.sql.execution.{CachedPlanHelperExec, CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec, _}
-
-
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
@@ -269,14 +267,22 @@ class CachedDataFrame(df: Dataset[Row],
 
   var firstAccess = true
 
-  def reprepareBroadcast(lp: LogicalPlan, newpls: mutable.ArrayBuffer[ParamLiteral]) = {
+  def reprepareBroadcast(newpls: mutable.ArrayBuffer[ParamLiteral], pvs: ParameterValueSet) = {
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
-          case pl @ ParamLiteral(v, dt, p, isParameter) => {
-            val np = newpls.find(isParameter && _.pos == p).getOrElse(pl)
-            ParamLiteral(np.value, np.dataType, p, isParameter)
+          case pl @ ParamLiteral(v, dt, p, false) => {
+            val np = newpls.find(_.pos == p).getOrElse(pl)
+            ParamLiteral(np.value, np.dataType, p, false)
+          }
+          case pl @ ParamLiteral(v, dt, p, true) => {
+            assert (pvs != null)
+            assert (p < pvs.getParameterCount)
+            val dvd = pvs.getParameter(p - 1)
+            val scalaTypeVal = setValue(dvd)
+            val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
+            ParamLiteral(catalystTypeVal, dt, p, true)
           }
         }
         val tmpCtx = new CodegenContext

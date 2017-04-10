@@ -1905,9 +1905,11 @@ object SnappySession extends Logging {
       // println(s"Executed plan = ${cachedDF.queryExecution.executedPlan}")
       // println(s"broadcasthashjoins = ${cachedDF.allbcplans}")
       // re-prepare the broadcast if required
-      cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+      // TODO: move after replace constants?
+      cachedDF.reprepareBroadcast(currentWrappedConstants, session.sessionState.pvs)
       // replace the constants from this logical plan
-      CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
+      CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants,
+        session.sessionState.pvs)
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()
