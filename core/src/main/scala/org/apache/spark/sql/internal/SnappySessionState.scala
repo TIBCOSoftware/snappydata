@@ -360,18 +360,14 @@ class SnappySessionState(snappySession: SnappySession)
         pc
     }
 
-    def countLiterals(plan: LogicalPlan): (Int, Int) = {
+    def countParameters(plan: LogicalPlan): Int = {
       var countParams = 0
-      var maxParamLiteral = 0
       plan transformAllExpressions {
         case pc: ParamConstants =>
           countParams = countParams + 1
           pc
-        case pl: ParamLiteral =>
-          if (pl.pos > maxParamLiteral) maxParamLiteral = pl.pos
-          pl
       }
-      (countParams, maxParamLiteral)
+      countParams
     }
 
     def setValue(dvd: DataValueDescriptor): Any = {
@@ -412,21 +408,19 @@ class SnappySessionState(snappySession: SnappySession)
       val preparedPlan = getDataTypeResolvedPlan(plan)
       assertAllDataTypeResolved(preparedPlan)
     } else if (pvs != null) {
-      val (countParams, maxParamLiteral) = countLiterals(plan)
+      val countParams = countParameters(plan)
       if (countParams > 0) {
         assert(pvs.getParameterCount == countParams,
           s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
               s" param-count=$countParams")
         val preparedPlan = getDataTypeResolvedPlan(plan)
         assertAllDataTypeResolved(preparedPlan)
-        var paramLiteralCount = maxParamLiteral
         val parameterResolvedPlan = preparedPlan transformAllExpressions {
           case pc@ParamConstants(pos, paramType, _) =>
             val dvd = pvs.getParameter(pos - 1)
-            paramLiteralCount = paramLiteralCount + 1
             val scalaTypeVal = setValue(dvd)
             val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-            ParamLiteral(catalystTypeVal, paramType, paramLiteralCount, true)
+            ParamLiteral(catalystTypeVal, paramType, pos, true)
         }
         assertAllParametersResolved(parameterResolvedPlan)
       } else plan // means already done
