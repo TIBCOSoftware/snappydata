@@ -861,7 +861,7 @@ task checkAll {
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (project.hasProperty('smoke')) {
+  if (!project.hasProperty('smoke.skip')) {
     dependsOn ":snappy-dtests_${scalaBinaryVersion}:check"
     dependsOn buildDtests
   }
