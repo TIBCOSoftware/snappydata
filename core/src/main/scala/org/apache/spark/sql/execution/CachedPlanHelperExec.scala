@@ -16,20 +16,23 @@
  */
 package org.apache.spark.sql.execution
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, SortOrder}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.Logging
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.SnappySession.CachedKey
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, SortOrder}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 
-case class CachedPlanHelperExec(childPlan: CodegenSupport)
+case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: SnappySession)
     extends UnaryExecNode with CodegenSupport {
 
   override def output: Seq[Attribute] = child.output
@@ -40,10 +43,53 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
 
   override def child: SparkPlan = childPlan
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = childPlan.inputRDDs()
+  override def inputRDDs(): Seq[RDD[InternalRow]] = {
+    val childRDDs = childPlan.inputRDDs()
+    childRDDs
+  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    CachedPlanHelperExec.addReferencesToCurrentKey(ctx.references)
+    // cannot flatten out the references buffer here since the values may not
+    // have been populated yet
+    session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](REFERENCES_KEY) match {
+      case Some(references) => references += ctx.references
+      case None => session.addContextObject(REFERENCES_KEY,
+        ArrayBuffer[ArrayBuffer[Any]](ctx.references))
+    }
+    // keep a map of the first broadcasthashjoinexec plan and the corresponding ref array
+    // collect the broadcasthashjoins in this wholestage and the references array
+    var nextStageStarted = false
+    var alreadyGotBroadcastNode = false
+    childPlan transformDown {
+      case bchj: BroadcastHashJoinExec => {
+        if (!nextStageStarted) {
+          // The below assertion was kept thinking that there will be just one
+          // broadcasthashjoin in one stage but there can be more than one and so
+          // removing the assertion and instead adding this information in the context
+          // indicating the above layer not to cache this plan.
+          // assert(!alreadyGotBroadcastNode, "only one broadcast plans expected per wholestage")
+          if (alreadyGotBroadcastNode) {
+            session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+              CachedPlanHelperExec.NOCACHING_KEY) match {
+              case Some(flag) => true
+              case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+            }
+          }
+          session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+            CachedPlanHelperExec.BROADCASTS_KEY) match {
+            case Some(map) => map += bchj -> ctx.references
+            case None => session.addContextObject(CachedPlanHelperExec.BROADCASTS_KEY,
+              mutable.Map(bchj -> ctx.references))
+          }
+          alreadyGotBroadcastNode = true
+        }
+        bchj
+      }
+      case cp: CachedPlanHelperExec => {
+        nextStageStarted = true
+      }
+      cp
+    }
     childPlan.produce(ctx, this)
   }
 
@@ -54,29 +100,24 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
 }
 
 object CachedPlanHelperExec extends Logging {
-  var contextReferences: mutable.Map[CachedKey,
-      mutable.MutableList[mutable.ArrayBuffer[Any]]] = new
-          mutable.HashMap[CachedKey, mutable.MutableList[mutable.ArrayBuffer[Any]]]
+  val REFERENCES_KEY    = "TokenizationReferences"
+  val BROADCASTS_KEY    = "TokenizationBroadcasts"
+  val WRAPPED_CONSTANTS = "TokenizedConstants"
+  val NOCACHING_KEY    =  "TokenizationNoCaching"
 
-  def addReferencesToCurrentKey(references: mutable.ArrayBuffer[Any]): Unit = {
-    var x = contextReferences.getOrElse(SnappySession.currCachedKey, {
-      val l = new mutable.MutableList[ArrayBuffer[Any]]
-      logDebug(s"Putting new reference list = ${l} against key = ${SnappySession.currCachedKey}")
-      contextReferences.put(SnappySession.currCachedKey, l)
-      l
-    })
-    x += references
+  //val broadcastReferences: Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = _
+  private[sql] def allLiterals(allReferences: Seq[Seq[Any]]): Array[LiteralValue] = {
+    allReferences.flatMap(_.collect {
+      case l: LiteralValue => l
+    }).toSet[LiteralValue].toArray.sortBy(_.position)
   }
 
-  private def allLiterals(): Array[LiteralValue] = {
-    var lls = new ArrayBuffer[LiteralValue]()
-    val refs = contextReferences.getOrElse(SnappySession.currCachedKey,
-      throw new IllegalStateException("Expected a cached reference object"))
-    refs.foreach(ctxrefs => {
-      ctxrefs.filter(
-        { p: Any => p.isInstanceOf[LiteralValue] }).map(lls +=
-          _.asInstanceOf[LiteralValue])
-    })
-    lls.sortBy(_.position).toArray
+  def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
+      newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
+    literals.foreach { case lv @ LiteralValue(_, _, p) =>
+      lv.value = newpls.find(_.pos == p).get.value
+      val y = newpls.find(_.pos == p).get.value
+        println(y)
+    }
   }
 }

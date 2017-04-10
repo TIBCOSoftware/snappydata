@@ -14,13 +14,14 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql
+  package org.apache.spark.sql
 
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
@@ -34,6 +35,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Constant
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
@@ -43,8 +45,10 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, PredicateSubquery, ScalarSubquery, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId}
+import org.apache.spark.sql.catalyst.expressions.{Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.{PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -54,6 +58,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTabl
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -1693,9 +1698,21 @@ object SnappySession extends Logging {
   private def evaluatePlan(df: DataFrame,
       session: SnappySession): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
-      case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
+      case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
       case plan => plan
     }
+
+
+    val nocaching = session.getContextObject[Boolean](
+      CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
+    if (nocaching) {
+      throw new EntryExistsException("uncached plan", df) // don't cache
+    }
+    // keep the broadcast hash join plans and their references as well
+    val allbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
+        ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
+      mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
+
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
         throw new EntryExistsException("uncached plan", df) // don't cache
@@ -1703,6 +1720,8 @@ object SnappySession extends Logging {
         (null, findShuffleDependencies(plan.childRDD).toArray,
             plan.childRDD.id, true)
       case _: LocalTableScanExec =>
+        (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
+      case _ if allbroadcastplans.nonEmpty =>
         (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
         val rdd = executedPlan match {
@@ -1725,13 +1744,24 @@ object SnappySession extends Logging {
         }
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
     }
+
+    // keep references as well
+    val allLiterals: Array[LiteralValue] = CachedPlanHelperExec.allLiterals(
+      session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
+        CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty))
+
+    val cdf = new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
+      localCollect, allLiterals, allbroadcastplans)
+
+    if (allbroadcastplans.nonEmpty) {
+      println(s"broadcast hash joins in the plans are: ${allbroadcastplans}")
+    }
     val queryHints = session.synchronized {
       val hints = session.queryHints.toMap
       session.clearQueryData()
       hints
     }
-    (new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
-      localCollect), queryHints)
+    (cdf, queryHints)
   }
 
   private[this] val planCache = {
@@ -1739,6 +1769,7 @@ object SnappySession extends Logging {
         (CachedDataFrame, Map[String, String])] {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
+        //println(s"KN: new load for query=${key.sqlText} plan=${key.lp}")
         val session = key.session
         val df = session.executeSQL(key.sqlText)
         val plan = df.queryExecution.executedPlan
@@ -1777,9 +1808,8 @@ object SnappySession extends Logging {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case x: CachedKey => {
+        case x: CachedKey =>
           (x.session, x.lp, x.hintHashcode).equals(session, lp, hintHashcode)
-        }
         case _ => false
       }
     }
@@ -1787,37 +1817,76 @@ object SnappySession extends Logging {
 
   object CachedKey {
     def apply(session: SnappySession, lp: LogicalPlan, sqlText: String): CachedKey = {
-      // normalize lp so that two queries can be determined to be equal
-      val tlp = lp transformAllExpressions {
+
+      def normalizeExprIds: PartialFunction[Expression, Expression] = {
         case s: ScalarSubquery =>
           s.copy(exprId = ExprId(0))
         case e: Exists =>
           e.copy(exprId = ExprId(0))
-        case l: ListQuery =>
-          l.copy(exprId = ExprId(0))
         case p: PredicateSubquery =>
           p.copy(exprId = ExprId(0))
         case a: AttributeReference =>
           AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
         case a: Alias =>
           Alias(a.child, a.name)(exprId = ExprId(0))
+        case l@ListQuery(query, _) =>
+          val xx = l.copy(query =
+              query.transform(transformExprID),
+            exprId = ExprId(0))
+          xx
         case ae: AggregateExpression =>
-          ae.copy(resultId = ExprId(0))
+          val eee = ae.copy(resultId = ExprId(0))
+          eee
       }
+
+      def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
+        case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
+        case f@Filter(condition, child) => f.copy(condition = condition.transform(normalizeExprIds),
+          child = child.transformAllExpressions(normalizeExprIds))
+      }
+
+      // normalize lp so that two queries can be determined to be equal
+      val tlp = lp.transform(transformExprID)
       new CachedKey(session, tlp, sqlText, session.queryHints.hashCode())
+    }
+  }
+
+  def printhashcode(lp: LogicalPlan, sqlt: String) = {
+    println(s"sqltext = ${sqlt}")
+    lp transformAllExpressions {
+      case x: Any => {
+        println(s"$x = ${x.hashCode()} xclass = ${x.getClass}")
+        x
+      }
     }
   }
 
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     try {
       val lp = session.onlyParseSQL(sqlText)
+      val currentWrappedConstants = session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
+        CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+        case Some(list) => list
+        case None => mutable.ArrayBuffer.empty[ParamLiteral]
+      }
       val key = CachedKey(session, lp, sqlText)
       SnappySession.currCachedKey = key
       val evaluation = planCache.getUnchecked(key)
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
       logDebug(s"sqlText = ${sqlText} and cachedDataframe = " +
+<<<<<<< HEAD
           System.identityHashCode(cachedDF) + " key = " + CachedKey)
+=======
+          System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
+      //println(s"sqlText = ${sqlText} and cachedDataframe = " +
+        //  System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
+      if ( cachedDF != null ) {
+        //println(s"lp = ${lp} and executed plan = ${cachedDF.queryExecution.executedPlan}")
+      }
+      val pcache = getPlanCache.asMap()
+
+>>>>>>> SNAP-1346_bugfix
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
@@ -1837,6 +1906,15 @@ object SnappySession extends Logging {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
         cachedDF.reset()
       }
+<<<<<<< HEAD
+=======
+      // println(s"Executed plan = ${cachedDF.queryExecution.executedPlan}")
+      // println(s"broadcasthashjoins = ${cachedDF.allbcplans}")
+      // re-prepare the broadcast if required
+      cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+      // replace the constants from this logical plan
+      CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
+>>>>>>> SNAP-1346_bugfix
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()
@@ -1864,22 +1942,25 @@ object SnappySession extends Logging {
     val iter = planCache.asMap().keySet().iterator()
     while (iter.hasNext) {
       val item = iter.next()
-      if (item.asInstanceOf[CachedKey].session.id == sessionId) {
+      val session = item.asInstanceOf[CachedKey].session
+      if (session.id == sessionId) {
         iter.remove()
       }
     }
   }
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
-    planCache.invalidateAll()
-    if (!onlyQueryPlanCache) {
-      CodeGeneration.clearAllCache()
-      val sc = SnappyContext.globalSparkContext
-      if (sc ne null) {
-        Utils.mapExecutors(sc, (_, _) => {
-          CodeGeneration.clearAllCache()
-          Iterator.empty
-        })
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation) {
+      planCache.invalidateAll()
+      if (!onlyQueryPlanCache) {
+        CodeGeneration.clearAllCache()
+        val sc = SnappyContext.globalSparkContext
+        if (sc ne null) {
+          Utils.mapExecutors(sc, (_, _) => {
+            CodeGeneration.clearAllCache()
+            Iterator.empty
+          })
+        }
       }
     }
   }
