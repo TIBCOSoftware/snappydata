@@ -45,6 +45,22 @@ class TokenizationTest
     snc.dropTable(s"$all_typetable", ifExists = true)
   }
 
+  test("like queries") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val numRows = 100
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    try {
+      val q = s"select * from $table where a like '10%'"
+      var result = snc.sql(q).collect()
+
+      val q2 = s"select * from $table where a like '20%'"
+      var result2 = snc.sql(q2).collect()
+      assert(!(result.deep == result2.deep))
+    }
+    SnappyTableStatsProviderService.suspendCacheInvalidation = false
+  }
+
   test("same session from different thread") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 2
