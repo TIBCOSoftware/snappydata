@@ -604,16 +604,10 @@ class SnappyParser(session: SnappySession)
           (altPart, elsePart).asInstanceOf[WhenElseType])
   }
 
-  protected final def optionalIdentifier: Rule1[Option[String]] = rule {
-    ('.' ~ identifier) ~> ((x: String) => Some(x)) |
-    MATCH ~> (() => None)
-  }
-
   protected final def primary: Rule1[Expression] = rule {
     identifier ~ (
-      optionalIdentifier ~ '(' ~ ws ~ (
+      ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
-          //assert(n2.equals(None), s"Builtin functions $n1 cannot have fully qualified name ")
           if (n1.equalsIgnoreCase("COUNT")) {
             AggregateExpression(Count(Literal(1, IntegerType)),
               mode = Complete, isDistinct = false)
