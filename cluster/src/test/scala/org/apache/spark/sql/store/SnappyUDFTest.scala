@@ -92,6 +92,45 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     dropUdf("byteudf")
   }
 
+  test("Test Nested UDF with schema") {
+    var udfText: String = "public class NestedUDF implements" +
+      " org.apache.spark.sql.api.java.UDF1<java.lang.String, java.lang.String> {" +
+      " @Override public java.lang.String call(String s){ " +
+      "               return s; " +
+      "}" +
+      "}"
+    var file = createUDFClass("NestedUDF", udfText)
+    var jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.nestedudf AS NestedUDF " +
+      s"RETURNS STRING USING JAR " +
+      s"'$jar'")
+
+    udfText = "public class SubUDF implements" +
+      " org.apache.spark.sql.api.java.UDF1<java.lang.String, java.lang.String> {" +
+      " @Override public java.lang.String call(String s){ " +
+      "               return s; " +
+      "}" +
+      "}"
+    file = createUDFClass("SubUDF", udfText)
+    jar = createJarFile(Seq(file))
+    snc.sql(s"CREATE FUNCTION APP.subudf AS SubUDF " +
+      s"RETURNS STRING USING JAR " +
+      s"'$jar'")
+
+    snc.sql(s"""select app.SubUDF(nvl(description,'some')) from col_table""").collect()
+    snc.sql("select    app.SubUDF(nvl(description,'some')) from rr_table").collect()
+    snc.sql(s"""select app.SubUDF(app.nestedudf(description)) from col_table""").collect()
+    snc.sql("select    app.SubUDF(app.nestedudf(description)) from rr_table").collect()
+
+    snc.sql("select {FN app.SubUDF(nvl(description,'some')) } from col_table a").collect()
+    snc.sql("select {FN app.SubUDF(nvl(description,'some')) } from rr_table").collect()
+    snc.sql("select {FN app.SubUDF(app.nestedudf(description)) } from col_table a").collect()
+    snc.sql("select {FN app.SubUDF(app.nestedudf(description)) } from rr_table").collect()
+
+    dropUdf("nestedudf")
+    dropUdf("subudf")
+  }
+
   test("Test Count(*) ") {
     snc.sql("select count(*) from col_table a").collect()
     snc.sql("select count(*) from rr_table").collect()
