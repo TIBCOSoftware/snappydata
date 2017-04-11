@@ -46,6 +46,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId}
 import org.apache.spark.sql.catalyst.expressions.{Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral}
 import org.apache.spark.sql.catalyst.expressions.{PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -1690,6 +1691,31 @@ object SnappySession extends Logging {
     }
   }
 
+  private def checkPlanCaching(df: DataFrame, executedPlan: SparkPlan,
+      session: SnappySession) = {
+    val nocaching = session.getContextObject[Boolean](
+      CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
+    if (nocaching) {
+      throw new EntryExistsException("uncached plan", df) // don't cache
+    }
+  }
+
+  private def getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
+    def collectFromProduct(p: Product, result: ArrayBuffer[ParamLiteral]): Unit = {
+      (0 until p.productArity).foreach { i =>
+        val elem = p.productElement(i)
+        elem match {
+          case p: ParamLiteral => result += p
+          case pc: Product => collectFromProduct(pc, result)
+          case _ => // do nothing
+        }
+      }
+    }
+    val res = new ArrayBuffer[ParamLiteral]()
+    collectFromProduct(queryplan, res)
+    res.toSet.toArray
+  }
+
   private def evaluatePlan(df: DataFrame,
       session: SnappySession): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
@@ -1697,10 +1723,11 @@ object SnappySession extends Logging {
       case plan => plan
     }
 
+    val params1 = getAllParamLiterals(executedPlan)
+    val params2 = getAllParamLiterals(df.queryExecution.logical)
 
-    val nocaching = session.getContextObject[Boolean](
-      CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
-    if (nocaching) {
+    println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
+    if (!(params1.deep == params2.deep)) {
       throw new EntryExistsException("uncached plan", df) // don't cache
     }
     // keep the broadcast hash join plans and their references as well
@@ -1753,9 +1780,7 @@ object SnappySession extends Logging {
     val cdf = new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
       localCollect, allLiterals, allbroadcastplans)
 
-    if (allbroadcastplans.nonEmpty) {
-      println(s"broadcast hash joins in the plans are: ${allbroadcastplans}")
-    }
+    // Now check if optimization plans have been applied such that
     val queryHints = session.synchronized {
       val hints = session.queryHints.toMap
       session.clearQueryData()
