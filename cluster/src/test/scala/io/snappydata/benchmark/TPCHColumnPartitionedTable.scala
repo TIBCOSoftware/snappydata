@@ -117,10 +117,11 @@ object TPCHColumnPartitionedTable {
     println("Created Table LINEITEM")
   }
 
-  var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
+  var CREATE_PARQUET: Boolean = true // java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
 
   def createAndPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      persistence: Boolean = false, persistence_type: String = ""): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var orderDF: DataFrame = null
@@ -141,7 +142,11 @@ object TPCHColumnPartitionedTable {
     }
     val newSchema = TPCHTableSchema.newOrderSchema(orderDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY" -> "o_orderkey"), ("BUCKETS" -> buckets))
+      var p1 = Map(("PARTITION_BY" -> "o_orderkey"), ("BUCKETS" -> buckets),
+        ("REDUNDANCY" -> redundancy))
+      if(persistence){
+        p1 += "PERSISTENT" -> s"$persistence_type"
+      }
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("ORDERS", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS")
@@ -181,7 +186,8 @@ object TPCHColumnPartitionedTable {
 
 
   def createAndPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      persistence: Boolean = false, persistence_type: String = ""): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var lineItemDF: DataFrame = null
@@ -202,9 +208,11 @@ object TPCHColumnPartitionedTable {
     }
     val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY" -> "l_orderkey"), ("COLOCATE_WITH" -> "ORDERS"), ("BUCKETS" ->
-          buckets))
-
+      var p1 = Map(("PARTITION_BY" -> "l_orderkey"), ("COLOCATE_WITH" -> "ORDERS"),
+        ("BUCKETS" -> buckets), ("REDUNDANCY" -> redundancy))
+      if(persistence){
+        p1 += "PERSISTENT" -> s"$persistence_type"
+      }
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("LINEITEM", "column", newSchema, p1)
       lineItemDF.write.insertInto("LINEITEM")
@@ -245,7 +253,8 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      persistence: Boolean = false, persistence_type: String = ""): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var customerDF: DataFrame = null
@@ -266,7 +275,12 @@ object TPCHColumnPartitionedTable {
     }
     val newSchema = TPCHTableSchema.newCustomerSchema(customerDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY" -> "c_custkey"), ("BUCKETS" -> buckets))
+      var p1 = Map(("PARTITION_BY" -> "c_custkey"), ("BUCKETS" -> buckets),
+        ("REDUNDANCY" -> redundancy))
+      if(persistence){
+        p1 += "PERSISTENT" -> s"$persistence_type"
+      }
+
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("CUSTOMER", "column", newSchema, p1)
       customerDF.write.insertInto("CUSTOMER")
@@ -283,7 +297,8 @@ object TPCHColumnPartitionedTable {
 
 
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      persistence: Boolean = false, persistence_type: String = ""): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partDF: DataFrame = null
@@ -303,7 +318,11 @@ object TPCHColumnPartitionedTable {
     }
     val newSchema = TPCHTableSchema.newPartSchema(partDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY" -> "p_partkey"), ("BUCKETS" -> buckets))
+      var p1 = Map(("PARTITION_BY" -> "p_partkey"), ("BUCKETS" -> buckets),
+        ("REDUNDANCY" -> redundancy))
+      if(persistence){
+        p1 += "PERSISTENT" -> s"$persistence_type"
+      }
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("PART", "column", newSchema, p1)
@@ -320,7 +339,8 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
+      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      persistence: Boolean = false, persistence_type: String = ""): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partSuppDF: DataFrame = null
@@ -341,8 +361,11 @@ object TPCHColumnPartitionedTable {
     }
     val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF.schema)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY" -> "ps_partkey"), ("BUCKETS" -> buckets), ("COLOCATE_WITH" ->
-          "PART"))
+      var p1 = Map(("PARTITION_BY" -> "ps_partkey"), ("BUCKETS" -> buckets),
+        ("COLOCATE_WITH" -> "PART"), ("REDUNDANCY" -> redundancy))
+      if(persistence){
+        p1 += "PERSISTENT" -> s"$persistence_type"
+      }
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("PARTSUPP", "column", newSchema, p1)
       partSuppDF.write.insertInto("PARTSUPP")

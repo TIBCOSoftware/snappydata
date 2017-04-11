@@ -30,6 +30,9 @@ object TableCreationJob extends SnappySQLJob {
   var buckets_Cust_Part_PartSupp: String = _
   var buckets_Nation_Region_Supp: String = _
   var nation_Region_Supp_col: Boolean = _
+  var redundancy: String = _
+  var persistence: Boolean = _
+  var persistence_type: String = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
@@ -38,11 +41,10 @@ object TableCreationJob extends SnappySQLJob {
     val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
     val loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
 
-    val usingOptionString =
-      s"""
-           USING row
-           OPTIONS ()"""
-
+    var usingOptionString = " USING row OPTIONS ()"
+    if(persistence){
+      usingOptionString = s" USING row OPTIONS (PERSISTENT '${persistence_type}')"
+    }
 
     snc.dropTable("NATION", ifExists = true)
     snc.dropTable("REGION", ifExists = true)
@@ -73,15 +75,15 @@ object TableCreationJob extends SnappySQLJob {
     }
 
     TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
-      buckets_Order_Lineitem, loadPerfPrintStream)
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type)
     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
-      buckets_Order_Lineitem, loadPerfPrintStream)
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -115,6 +117,24 @@ object TableCreationJob extends SnappySQLJob {
       config.getBoolean("Nation_Region_Supp_col")
     } else {
       false
+    }
+
+    redundancy = if (config.hasPath("Redundancy")) {
+      config.getString("Redundancy")
+    } else {
+      "0"
+    }
+
+    persistence = if (config.hasPath("Persistence")) {
+      config.getBoolean("Persistence")
+    } else {
+      false
+    }
+
+    persistence_type = if (config.hasPath("Persistence_Type")) {
+      config.getString("Persistence_Type")
+    } else {
+      "false"
     }
 
     if (!new File(tpchDataPath).exists()) {
