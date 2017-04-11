@@ -120,33 +120,25 @@ object CachedPlanHelperExec extends Logging {
 
   def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral], pvs: ParameterValueSet): Unit = {
-    // TODO - enable this code
-//    if (pvs != null) {
-//      var countParams = 0
-//      literals.foreach { case lv@LiteralValue(_, _, p, true) =>
-//        countParams += 1
-//        assert (p < pvs.getParameterCount)
-//      }
-//      assert(pvs.getParameterCount == countParams,
-//        s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
-//            s" param-count=$countParams")
-//    }
+    if (pvs != null) {
+      var countParams = 0
+      literals.foreach { case lv@LiteralValue(_, _, p, true) =>
+        countParams += 1
+        assert (p - 1 < pvs.getParameterCount)
+      }
+      assert(pvs.getParameterCount == countParams,
+        s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
+            s" param-count=$countParams")
+    }
     literals.foreach { case lv @ LiteralValue(_, _, p, isParameter) =>
       if (!isParameter) {
-        //if (newpls.length == literals.length) {
         lv.value = newpls.find(_.pos == p).get.value
         val y = newpls.find(_.pos == p).get.value
-        // println(y)
-        //}
       } else {
-        assert (pvs != null)
-        assert (p - 1 < pvs.getParameterCount)
         val dvd = pvs.getParameter(p - 1)
         val scalaTypeVal = setValue(dvd)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
         lv.value = catalystTypeVal
-        // TODO - remove this
-        println(s"Param Value at pos=$p = " + catalystTypeVal)
       }
     }
   }

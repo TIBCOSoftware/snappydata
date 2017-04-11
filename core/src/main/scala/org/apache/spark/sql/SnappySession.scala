@@ -45,11 +45,10 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId}
-import org.apache.spark.sql.catalyst.expressions.{Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral}
-import org.apache.spark.sql.catalyst.expressions.{PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, InSet, ListQuery, LiteralValue, ParamConstants, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.trees.TreeNode
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -1710,7 +1709,7 @@ object SnappySession extends Logging {
       (0 until p.productArity).foreach { i =>
         val elem = p.productElement(i)
         elem match {
-          case p: ParamLiteral => result += p
+          case p@ParamLiteral(_, _, _, false) => result += p
           case pc: Product => collectFromProduct(pc, result)
           case _ => // do nothing
         }
@@ -1719,6 +1718,26 @@ object SnappySession extends Logging {
     val res = new ArrayBuffer[ParamLiteral]()
     collectFromProduct(queryplan, res)
     res.toSet.toArray
+  }
+
+  // TODO - Try to use getAllParamLiterals
+  def countParamLiterals(plan: SparkPlan): Int = {
+    val paramSet = new mutable.HashSet[ParamLiteral]()
+    plan transformAllExpressions {
+      case p@ParamLiteral(_, _, _, true) => paramSet.add(p)
+        p
+    }
+    paramSet.size
+  }
+
+  def countParameters(plan: LogicalPlan): Int = {
+    var countParams = 0
+    plan transformAllExpressions {
+      case pc: ParamConstants =>
+        countParams = countParams + 1
+        pc
+    }
+    countParams
   }
 
   private def evaluatePlan(df: DataFrame,
@@ -1732,9 +1751,16 @@ object SnappySession extends Logging {
     val params2 = getAllParamLiterals(df.queryExecution.logical)
 
     // println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
-    if (!(params1.deep == params2.deep)) {
+    if ((params1.nonEmpty || params2.nonEmpty) && !(params1.deep == params2.deep)) {
       key.invalidatePlan
     }
+
+    val paramsCount1 = countParamLiterals(executedPlan)
+    val paramsCount2 = countParameters(df.queryExecution.logical)
+    if (!(paramsCount1 == paramsCount2)) {
+      key.invalidatePlan
+    }
+
     // keep the broadcast hash join plans and their references as well
     val allbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
@@ -1912,8 +1938,8 @@ object SnappySession extends Logging {
       logDebug(s"sqlText = ${sqlText} and cachedDataframe = " +
           System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
       //println(s"sqlText = ${sqlText} and cachedDataframe = " +
-        //  System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
-      if ( cachedDF != null ) {
+      //  System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
+      if (cachedDF != null) {
         //println(s"lp = ${lp} and executed plan = ${cachedDF.queryExecution.executedPlan}")
       }
       val pcache = getPlanCache.asMap()
@@ -1941,9 +1967,11 @@ object SnappySession extends Logging {
       // println(s"broadcasthashjoins = ${cachedDF.allbcplans}")
       // re-prepare the broadcast if required
       // replace the constants from this logical plan
-      CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants,
-        session.sessionState.pvs)
-      cachedDF.reprepareBroadcast(currentWrappedConstants, session.sessionState.pvs)
+      if (key.valid) {
+        CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants,
+          session.sessionState.pvs)
+        cachedDF.reprepareBroadcast(currentWrappedConstants, session.sessionState.pvs)
+      }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()

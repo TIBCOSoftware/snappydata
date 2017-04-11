@@ -360,21 +360,11 @@ class SnappySessionState(snappySession: SnappySession)
         pc
     }
 
-    def countParameters(plan: LogicalPlan): Int = {
-      var countParams = 0
-      plan transformAllExpressions {
-        case pc: ParamConstants =>
-          countParams = countParams + 1
-          pc
-      }
-      countParams
-    }
-
     def apply(plan: LogicalPlan): LogicalPlan = if (isPreparePhase) {
       val preparedPlan = getDataTypeResolvedPlan(plan)
       assertAllDataTypeResolved(preparedPlan)
     } else if (pvs != null) {
-      val countParams = countParameters(plan)
+      val countParams = SnappySession.countParameters(plan)
       if (countParams > 0) {
         assert(pvs.getParameterCount == countParams,
           s"Unequal param count: pvs-count=${pvs.getParameterCount}" +

@@ -277,8 +277,6 @@ class CachedDataFrame(df: Dataset[Row],
             ParamLiteral(np.value, np.dataType, p, false)
           }
           case pl @ ParamLiteral(v, dt, p, true) => {
-            assert (pvs != null)
-            assert (p < pvs.getParameterCount)
             val dvd = pvs.getParameter(p - 1)
             val scalaTypeVal = setValue(dvd)
             val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
