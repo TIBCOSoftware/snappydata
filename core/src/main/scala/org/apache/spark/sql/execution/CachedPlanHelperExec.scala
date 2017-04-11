@@ -138,7 +138,7 @@ object CachedPlanHelperExec extends Logging {
         println(y)
       } else {
         assert (pvs != null)
-        assert (p < pvs.getParameterCount)
+        assert (p - 1 < pvs.getParameterCount)
         val dvd = pvs.getParameter(p - 1)
         val scalaTypeVal = setValue(dvd)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
