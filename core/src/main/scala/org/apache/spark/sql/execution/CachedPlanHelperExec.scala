@@ -119,7 +119,6 @@ object CachedPlanHelperExec extends Logging {
   }
 
   def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
-<<<<<<< HEAD
       newpls: mutable.ArrayBuffer[ParamLiteral], pvs: ParameterValueSet): Unit = {
     // TODO - enable this code
 //    if (pvs != null) {
@@ -132,12 +131,13 @@ object CachedPlanHelperExec extends Logging {
 //        s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
 //            s" param-count=$countParams")
 //    }
-    //if (newpls.length == literals.length) {
     literals.foreach { case lv @ LiteralValue(_, _, p, isParameter) =>
       if (!isParameter) {
+        //if (newpls.length == literals.length) {
         lv.value = newpls.find(_.pos == p).get.value
         val y = newpls.find(_.pos == p).get.value
         // println(y)
+        //}
       } else {
         assert (pvs != null)
         assert (p - 1 < pvs.getParameterCount)
@@ -183,6 +183,5 @@ object CachedPlanHelperExec extends Logging {
 
       case _ => dvd.getObject
     }
-    //}
   }
 }
