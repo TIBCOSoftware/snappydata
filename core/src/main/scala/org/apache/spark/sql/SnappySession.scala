@@ -1722,7 +1722,7 @@ object SnappySession extends Logging {
   }
 
   private def evaluatePlan(df: DataFrame,
-      session: SnappySession): (CachedDataFrame, Map[String, String]) = {
+      session: SnappySession, key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
       case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
       case plan => plan
@@ -1733,7 +1733,7 @@ object SnappySession extends Logging {
 
     // println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
     if (!(params1.deep == params2.deep)) {
-      throw new EntryExistsException("uncached plan", df) // don't cache
+      key.invalidatePlan
     }
     // keep the broadcast hash join plans and their references as well
     val allbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
@@ -1808,7 +1808,7 @@ object SnappySession extends Logging {
         if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
           (null, null)
         } else {
-          evaluatePlan(df, session)
+          evaluatePlan(df, session, key)
         }
       }
     }
@@ -1843,6 +1843,9 @@ object SnappySession extends Logging {
         case _ => false
       }
     }
+
+    var valid = true
+    def invalidatePlan = valid = false
   }
 
   object CachedKey {
@@ -1903,6 +1906,7 @@ object SnappySession extends Logging {
       val key = CachedKey(session, lp, sqlText)
       SnappySession.currCachedKey = key
       val evaluation = planCache.getUnchecked(key)
+      if (!key.valid) planCache.invalidate(key)
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
       logDebug(s"sqlText = ${sqlText} and cachedDataframe = " +
