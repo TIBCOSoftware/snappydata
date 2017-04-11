@@ -1726,7 +1726,7 @@ object SnappySession extends Logging {
     val params1 = getAllParamLiterals(executedPlan)
     val params2 = getAllParamLiterals(df.queryExecution.logical)
 
-    println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
+    // println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
     if (!(params1.deep == params2.deep)) {
       throw new EntryExistsException("uncached plan", df) // don't cache
     }
