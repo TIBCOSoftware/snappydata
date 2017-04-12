@@ -18,10 +18,10 @@ package org.apache.spark.memory
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.gemstone.gemfire.internal.cache.LocalRegion
-
 import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.{Logging, SparkConf}
 

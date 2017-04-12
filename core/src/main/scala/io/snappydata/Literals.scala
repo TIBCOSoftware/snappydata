@@ -205,7 +205,7 @@ object Property extends Enumeration {
         "the unit (in bytes) that will be used to split the data into chunks " +
         "for efficient storage and retrieval. It can also be set for each table " +
         s"using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
-        "create table DDL.", Some(24 * 1024 * 1024))
+        "create table DDL.", Some(32 * 1024 * 1024))
 
   val ColumnMaxDeltaRows = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
     "The maximum number of rows that can be in the delta buffer of a column table. " +
