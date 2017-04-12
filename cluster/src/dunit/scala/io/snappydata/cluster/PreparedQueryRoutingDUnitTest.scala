@@ -17,7 +17,7 @@
 
 package io.snappydata.cluster
 
-import java.sql.{Connection, Date, DriverManager, ResultSet}
+import java.sql.{Date, DriverManager, ResultSet}
 import java.time.LocalDate
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -25,7 +25,6 @@ import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.types.{DataType, DateType}
 
 /**
  * Tests for query routing from JDBC client driver.
@@ -169,17 +168,19 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
 
     assert(!assertionFailed)
+
+    prep_rs.close()
+    stmt_rs.close()
   }
 
-  def query1_like_clause_test1(limitClause: String, tableName: String,
-      expectedNoRows: Int): Unit = {
+  def query1_like_clause_test1(limit: Boolean, tableName: String): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
     // scalastyle:off println
     println(s"query1_like_clause: Connected to $serverHostPort")
     // scalastyle:on println
-
+    val limitClause = if (limit) "limit 20" else ""
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
     try {
@@ -194,8 +195,6 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       prepStatement = conn.prepareStatement(qry)
       prepStatement.setBigDecimal(1, new java.math.BigDecimal("500.11"))
       prepStatement.setString(2, "%0")
-      val rs = prepStatement.executeQuery
-
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < 500.11 " +
@@ -203,11 +202,20 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" and ol_str_id LIKE '%0' " +
           s" $limitClause" +
           s""
-      val rs2 = stmt.executeQuery(qry2)
+      verifyQuery_test1("query1_like_clause_test1.1", prepStatement.executeQuery,
+        stmt.executeQuery(qry2), if (limit) 20 else 39)
 
-      verifyQuery_test1("query1", rs, rs2, expectedNoRows)
-      rs.close()
-      rs2.close()
+      prepStatement.setBigDecimal(1, new java.math.BigDecimal("800.11"))
+      prepStatement.setString(2, "%0")
+      val qry3 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 800.11 " +
+          s" and ol_int2_id > 100 " +
+          s" and ol_str_id LIKE '%0' " +
+          s" $limitClause" +
+          s""
+      verifyQuery_test1("query1_like_clause_test1.2", prepStatement.executeQuery,
+        stmt.executeQuery(qry3), if (limit) 20 else 69)
 
       // Thread.sleep(1000000)
 
@@ -218,15 +226,14 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
   }
 
-  def query2_in_clause_test1(limitClause: String, tableName: String,
-      expectedNoRows: Int): Unit = {
+  def query2_in_clause_test1(limit: Boolean, tableName: String): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
     // scalastyle:off println
     println(s"query2_in_clause: Connected to $serverHostPort")
     // scalastyle:on println
-
+    val limitClause = if (limit) "limit 20" else ""
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
     try {
@@ -238,15 +245,12 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" $limitClause" +
           s""
 
-
       prepStatement = conn.prepareStatement(qry)
       prepStatement.setBigDecimal(1, new java.math.BigDecimal("500.11"))
       prepStatement.setInt(2, 100)
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 300)
       prepStatement.setString(5, "%0")
-      val rs = prepStatement.executeQuery
-
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < 500.11 " +
@@ -254,11 +258,24 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" and ol_str_id LIKE '%0' " +
           s" $limitClause" +
           s""
-      val rs2 = stmt.executeQuery(qry2)
+      verifyQuery_test1("query2_in_clause_test1.1", prepStatement.executeQuery,
+        stmt.executeQuery(qry2), 3)
 
-      verifyQuery_test1("query3", rs, rs2, expectedNoRows)
-      rs.close()
-      rs2.close()
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setBigDecimal(1, new java.math.BigDecimal("300.11"))
+      prepStatement.setInt(2, 110)
+      prepStatement.setInt(3, 120)
+      prepStatement.setInt(4, 130)
+      prepStatement.setString(5, "1%")
+      val qry3 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 300.11 " +
+          s" and ol_int2_id in (110, 120, 130) " +
+          s" and ol_str_id LIKE '1%' " +
+          s" $limitClause" +
+          s""
+      verifyQuery_test1("query2_in_clause_test1.2", prepStatement.executeQuery,
+        stmt.executeQuery(qry3), 3)
 
       // Thread.sleep(1000000)
 
@@ -270,10 +287,10 @@ class PreparedQueryRoutingDUnitTest(val s: String)
   }
 
   def query_test1(tableName: String): Unit = {
-    query1_like_clause_test1("limit 20", tableName, 20)
-    query1_like_clause_test1("", tableName, 39)
-    query2_in_clause_test1("limit 20", tableName, 3)
-    query2_in_clause_test1("", tableName, 3)
+    query1_like_clause_test1(true, tableName)
+    query1_like_clause_test1(false, tableName)
+    query2_in_clause_test1(true, tableName)
+    query2_in_clause_test1(false, tableName)
   }
 
   def insertRows_test2(numRows: Int, tableName: String): Unit = {
@@ -381,20 +398,24 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
 
     assert(!assertionFailed)
+
+    prep_rs.close()
+    stmt_rs.close()
   }
 
-  def query1_test2(limitClause: String, tableName: String, expectedNoRows: Int): Unit = {
+  def query1_test2(limit: Boolean, tableName: String): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
     // scalastyle:off println
     println(s"query1_test2: Connected to $serverHostPort")
     // scalastyle:on println
-
+    val limitClause = if (limit) "limit 20" else ""
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
     val oneDate = Date.valueOf("2017-03-15")
     val twoDate = Date.valueOf("2017-02-28")
+    val threeDate = Date.valueOf("2017-03-31")
     try {
       val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -408,8 +429,6 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       prepStatement.setString(1, oneDate.toString)
       prepStatement.setDate(2, twoDate)
       prepStatement.setString(3, "%-%")
-      val rs = prepStatement.executeQuery
-
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < '${oneDate.toString}' " +
@@ -417,11 +436,20 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" and ol_str_id LIKE '%-%' " +
           s" $limitClause" +
           s""
-      val rs2 = stmt.executeQuery(qry2)
+      verifyQuery_test2("query1_test2.1", prepStatement.executeQuery, stmt.executeQuery(qry2), 14)
 
-      verifyQuery_test2("query3", rs, rs2, expectedNoRows)
-      rs.close()
-      rs2.close()
+      prepStatement.setString(1, threeDate.toString)
+      prepStatement.setDate(2, twoDate)
+      prepStatement.setString(3, "%-%")
+      val qry3 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < '${threeDate.toString}' " +
+          s" and ol_int2_id > '${twoDate.toString}' " +
+          s" and ol_str_id LIKE '%-%' " +
+          s" $limitClause" +
+          s""
+      verifyQuery_test2("query1_test2.2", prepStatement.executeQuery, stmt.executeQuery(qry3),
+        if (limit) 20 else 30)
 
       // Thread.sleep(1000000)
 
@@ -433,8 +461,8 @@ class PreparedQueryRoutingDUnitTest(val s: String)
   }
 
   def query_test2(tableName: String): Unit = {
-    query1_test2("limit 20", tableName: String, 14)
-    query1_test2("", tableName: String, 14)
+    query1_test2(true, tableName: String)
+    query1_test2(false, tableName: String)
   }
 
   def test2_date(): Unit = {
@@ -561,20 +589,24 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     }
 
     assert(!assertionFailed)
+
+    prep_rs.close()
+    stmt_rs.close()
   }
 
-  def query1_test3(limitClause: String, tableName: String, expectedNoRows: Int): Unit = {
+  def query1_test3(limit: Boolean, tableName: String): Unit = {
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
     // scalastyle:off println
     println(s"query1_test2: Connected to $serverHostPort")
     // scalastyle:on println
-
+    val limitClause = if (limit) "limit 20" else ""
     val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
     val oneTs = java.sql.Timestamp.valueOf("2017-03-15 12:02:03")
     val twoTs = java.sql.Timestamp.valueOf("2017-02-28 12:02:04")
+    val threeTs = java.sql.Timestamp.valueOf("2017-03-31 12:02:04")
     try {
       val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -588,8 +620,6 @@ class PreparedQueryRoutingDUnitTest(val s: String)
       prepStatement.setString(1, oneTs.toString)
       prepStatement.setTimestamp(2, twoTs)
       prepStatement.setString(3, "%-%")
-      val rs = prepStatement.executeQuery
-
       val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < '${oneTs.toString}' " +
@@ -597,11 +627,20 @@ class PreparedQueryRoutingDUnitTest(val s: String)
           s" and ol_str_id LIKE '%-%' " +
           s" $limitClause" +
           s""
-      val rs2 = stmt.executeQuery(qry2)
+      verifyQuery_test3("query1_test3.1", prepStatement.executeQuery, stmt.executeQuery(qry2), 15)
 
-      verifyQuery_test3("query3", rs, rs2, expectedNoRows)
-      rs.close()
-      rs2.close()
+      prepStatement.setString(1, threeTs.toString)
+      prepStatement.setTimestamp(2, twoTs)
+      prepStatement.setString(3, "%-%")
+      val qry3 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < '${threeTs.toString}' " +
+          s" and ol_int2_id > '${twoTs.toString}' " +
+          s" and ol_str_id LIKE '%-%' " +
+          s" $limitClause" +
+          s""
+      verifyQuery_test3("query1_test3.1", prepStatement.executeQuery, stmt.executeQuery(qry3),
+        if (limit) 20 else 31)
 
       // Thread.sleep(1000000)
 
@@ -613,8 +652,8 @@ class PreparedQueryRoutingDUnitTest(val s: String)
   }
 
   def query_test3(tableName: String): Unit = {
-    query1_test3("limit 20", tableName: String, 15)
-    query1_test3("", tableName: String, 15)
+    query1_test3(true, tableName: String)
+    query1_test3(false, tableName: String)
   }
 
   def test3_timestamp(): Unit = {
