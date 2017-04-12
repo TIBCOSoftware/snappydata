@@ -130,6 +130,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     var prepStatement2: java.sql.PreparedStatement = null
     var prepStatement3: java.sql.PreparedStatement = null
     var prepStatement4: java.sql.PreparedStatement = null
+    var prepStatement5: java.sql.PreparedStatement = null
     try {
       val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -228,6 +229,26 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement4.setInt(3, 700)
       prepStatement4.setInt(4, 800)
       verifyResults("qry4-2", prepStatement4.executeQuery, Array(600, 700, 800), 3)
+
+      val qry5 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where cast(ol_int_id as double) < ? " +
+          s" and ol_int2_id in (?, ?, ?) " +
+          s" limit 20" +
+          s""
+
+      prepStatement5 = conn.prepareStatement(qry5)
+      prepStatement5.setDouble(1, 500.01)
+      prepStatement5.setInt(2, 100)
+      prepStatement5.setInt(3, 200)
+      prepStatement5.setInt(4, 300)
+      verifyResults("qry5-1", prepStatement5.executeQuery, Array(100, 200, 300), 4)
+
+      prepStatement5.setDouble(1, 900.01)
+      prepStatement5.setInt(2, 600)
+      prepStatement5.setInt(3, 700)
+      prepStatement5.setInt(4, 800)
+      verifyResults("qry5-2", prepStatement5.executeQuery, Array(600, 700, 800), 4)
 
       // Thread.sleep(1000000)
     } finally {

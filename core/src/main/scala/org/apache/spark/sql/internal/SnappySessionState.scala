@@ -328,18 +328,15 @@ class SnappySessionState(snappySession: SnappySession)
 
   object ResolveParameters extends Rule[LogicalPlan] {
     def getDataTypeResolvedPlan(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case b@BinaryComparison(left: AttributeReference, right: ParamConstants) =>
+      case b@BinaryComparison(left: Expression, right: ParamConstants) =>
         b.makeCopy(Array(left, right.copy(paramType = left.dataType,
           nullableValue = left.nullable)))
-      case b@BinaryComparison(left: ParamConstants, right: AttributeReference) =>
+      case b@BinaryComparison(left: ParamConstants, right: Expression) =>
         b.makeCopy(Array(left.copy(paramType = right.dataType,
           nullableValue = right.nullable), right))
-      case l@Like(left: AttributeReference, right: ParamConstants) =>
+      case l@Like(left: Expression, right: ParamConstants) =>
         l.makeCopy(Array(left, right.copy(paramType = left.dataType,
           nullableValue = left.nullable)))
-      case l@Like(left: ParamConstants, right: AttributeReference) =>
-        l.makeCopy(Array(left.copy(paramType = right.dataType,
-          nullableValue = right.nullable), right))
       case i@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
       list: Seq[Expression]) => i.makeCopy(Array(value, list.map {
         case pc: ParamConstants => pc.copy(paramType = value.dataType,
