@@ -345,7 +345,7 @@ public class SnappyPrms extends BasePrms {
      * (String) Memory to be used for spark executor while executing spark-submit. Defaults to
      * 1GB if not provided.
      */
-    public static Long executorHeapSize;
+    public static Long executorMemory;
 
     public static int getRetryCountForJob() {
         Long key = numTimesToRetry;
@@ -585,9 +585,14 @@ public class SnappyPrms extends BasePrms {
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
-    public static String getExecutorHeapSize() {
-        Long key = executorHeapSize;
-        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "1g"));
+    public static String getExecutorMemory() {
+      Long key = executorMemory;
+      String heapSize = tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+      if (heapSize == null)
+          return "";
+      String executorMem = " --executor-memory " + heapSize;
+      return executorMem;
+
     }
 
 
