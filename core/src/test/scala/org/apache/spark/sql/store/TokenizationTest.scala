@@ -71,7 +71,7 @@ class TokenizationTest
 
       val q2 = s"select * from $table where a like '20%'"
       var result2 = snc.sql(q2).collect()
-      assert(!(result.deep == result2.deep))
+      assert(!(result.sameElements(result2)) && result.length > 0)
     }
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
@@ -178,7 +178,7 @@ class TokenizationTest
       query = s"select * from $table where a in (5, 7)"
       res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 7)
-      assert(!(res1.deep == res2.deep))
+      assert(!(res1.sameElements(res2)))
 
       // let us clear the plan cache
       snc.clear()
@@ -195,7 +195,7 @@ class TokenizationTest
       query = s"select * from $table t1, $table2 t2 where t1.a = 5"
       res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
-      assert(!(res1.deep == res2.deep))
+      assert(!(res1.sameElements(res2)))
 
       query = s"select * from $table t1, $table2 t2 where t2.a = 5"
       snc.sql(query).collect()
@@ -221,7 +221,7 @@ class TokenizationTest
       query = s"select t1.b, SUM(t1.a) from $table t1 group by t1.b having SUM(t1.a) > 5"
       res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
-      assert(!(res1.deep == res2.deep))
+      assert(!res1.sameElements(res2))
 
       snc.sql(s"drop table $table")
       snc.sql(s"drop table $table2")
@@ -298,8 +298,8 @@ class TokenizationTest
     createSimpleTableAndPoupulateData(numRows, s"$table2")
     var query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 5 limit 2"
     //snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
-    var result = snc.sql(query).collect()
-    result.foreach( r => {
+    val result1 = snc.sql(query).collect()
+    result1.foreach( r => {
       println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
     })
     val cacheMap = SnappySession.getPlanCache.asMap()
@@ -307,12 +307,15 @@ class TokenizationTest
     assert( cacheMap.size() == 1)
 
     query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 7 limit 2"
-    result = snc.sql(query).collect()
-    result.foreach( r => {
+    val result2 = snc.sql(query).collect()
+    result2.foreach( r => {
       println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
     })
     assert( cacheMap.size() == 1)
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    assert(!result1.sameElements(result2))
+    assert(result1.length > 0)
+    assert(result2.length > 0)
     logInfo("Successful")
   }
 
@@ -438,7 +441,7 @@ class TokenizationTest
           s" by avgTaxiTime desc")
 
       val rows1 = rs1.collect()
-      assert(rows0.deep == rows1.deep)
+      assert(rows0.sameElements(rows1))
       // rows1.foreach(println)
 
       val cacheMap = SnappySession.getPlanCache.asMap()
@@ -451,7 +454,7 @@ class TokenizationTest
           s" by avgTaxiTime desc")
 
       val rows11 = rs11.collect()
-      assert(!(rows1.deep == rows11.deep))
+      assert(!rows11.sameElements(rows1))
       assert(cacheMap.size() == 1)
     }
     finally {
