@@ -1701,7 +1701,7 @@ object SnappySession extends Logging {
       case p@ParamLiteral(_, _, _, isParameter) if isParameter == isParam => res += p
         p
     }
-    res.toSet.toArray
+    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
 
   def countParameters(plan: LogicalPlan): Int = {
@@ -1729,7 +1729,7 @@ object SnappySession extends Logging {
       }
       else {
         val params1 = getAllParamLiterals(executedPlan, false)
-        if (!(params1.deep == key.pls.deep)) {
+        if (!(params1.sameElements(key.pls))) {
           key.invalidatePlan
         }
 
@@ -1888,7 +1888,7 @@ object SnappySession extends Logging {
 
       // normalize lp so that two queries can be determined to be equal
       val tlp = lp.transform(transformExprID)
-      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.toArray)
+      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
     }
   }
 
@@ -1924,6 +1924,9 @@ object SnappySession extends Logging {
       } else {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
         cachedDF.reset()
+        if (key.valid) {
+          cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+        }
       }
       if (key.valid) {
         CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, currentWrappedConstants,
