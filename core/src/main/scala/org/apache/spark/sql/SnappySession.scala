@@ -1723,7 +1723,7 @@ object SnappySession extends Logging {
   private def getAllParamLiterals(queryplan: SparkPlan, isParam: Boolean): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
     queryplan transformAllExpressions {
-      case p@ParamLiteral(_, _, _, isParam) => res += p
+      case p@ParamLiteral(_, _, _, isParameter) if isParameter == isParam => res += p
         p
     }
     res.toSet.toArray
