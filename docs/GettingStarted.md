@@ -19,10 +19,8 @@ the [SnappyData Approach](intro/about.md#approach)
 
 **Related Topics:**
 
-* Challenges
+* [The Challenge with Spark and Remote Data Sources](intro/about#the-challenge-with-spark-and-remote-data-sources.md)
 
-* SnappyData Cluster Architecture
+* [SnappyData Cluster Architecture](architecture.md)
 
-* SnappyData Core Components
-
-* Key Benefits
+* [Key Features](intro/key_features.md)

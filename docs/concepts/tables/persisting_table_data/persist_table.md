@@ -43,4 +43,4 @@ You configure the persistence settings for a partitioned or replicated table whe
 
 * [CREATE TABLE](../../../reference/sql_reference/create-table.md)
 
-* [Evicting Table Data from Memory](../../../concepts/tables/evicting_table_data_from_memory.md)
+* [Evicting Table Data from Memory](../../../concepts/tables/evicting_table_data/evicting_table_data_from_memory.md)

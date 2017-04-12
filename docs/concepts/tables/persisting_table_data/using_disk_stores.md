@@ -46,6 +46,6 @@ See More:
 
 * [CREATE TABLE](../../../reference/sql_reference/create-table.md)
 
-* [Persisting Table Data to a Disk Store](../../../concepts/tables/disk_storage/persist_table.md)
+* [Persisting Table Data to a Disk Store](../../../concepts/tables/persisting_table_data/persist_table.md)
 
-* [Evicting Table Data from Memory](../../../concepts/tables/evicting_table_data_from_memory.md)
+* [Evicting Table Data from Memory](../../../concepts/tables/evicting_table_data/evicting_table_data_from_memory.md)

@@ -2,7 +2,7 @@
 
 The two persistence options, overflow and persistence, can be used individually or together. Overflow uses disk stores as an extension of in-memory table management for both partitioned and replicated tables. Persistence stores a redundant copy of all table data in disk stores.
 
-See [Evicting Table Data from Memory](../evicting_table_data_from_memory.md) for more information about configuring tables to overflow to disk.
+See [Evicting Table Data from Memory](../evicting_table_data/evicting_table_data_from_memory.md) for more information about configuring tables to overflow to disk.
 
 
 ## Shared-Nothing Disk Store Design

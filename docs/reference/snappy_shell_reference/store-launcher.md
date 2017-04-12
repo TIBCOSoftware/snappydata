@@ -45,7 +45,7 @@ The launcher honors the current CLASSPATH environment variable and adds it to th
 !!!Note:
 	The `JAVA\_ARGS` environment variable does not apply to the `snappy SnappyData server` and `snappy SnappyData locator` tools that launch a separate background process. To pass Java properties to those tools, use the `-J` option as described in the help for those tools. </p>
 
-The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the `GFXD\_JAVA` environment variable to point to the desired Java executable. (note the supported JRE versions in [Supported Configurations and System Requirements](../../../sys_requirement.md).
+The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the `GFXD\_JAVA` environment variable to point to the desired Java executable. (note the supported JRE versions in [Supported Configurations and System Requirements](../../sys_requirement.md).
 
 -   **[backup](../../reference/snappy_shell_reference/store-backup.md)**
     Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.

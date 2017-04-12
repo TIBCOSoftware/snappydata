@@ -8,9 +8,11 @@ For the memory settings, the number of older rows that need to be removed to mak
 
 When eviction is enabled, SnappyData manages table rows in a hash map-like structure where the primary key value is used as the key for all other column data in the row. When a row is evicted, the primary key value remains in memory while the remaining column data is evicted.
 
-To configure LRU eviction, see [Create a Table with Eviction Settings](create_table_with_eviction_setting.md) and [CREATE TABLE](../../reference/sql_reference/create-table.md). 
+To configure LRU eviction, see [Create a Table with Eviction Settings](create_table_with_eviction_setting.md) and [CREATE TABLE](../../../reference/sql_reference/create-table.md). 
+
 <mark> 
 TO BE CONFIRMED 
 After you configure eviction features, you can optionally install a RowLoader and/or synchronous writer plug-in to access an external data source, effectively allowing SnappyData to be used as a cache. </mark>
-For limitations of this capability, see <a href="../caching_database/eviction_limitations.html#how_eviction_works" class="xref" title="LRU eviction is only effective for operations that operate on a primary key value.">Limitations of Eviction</a>.
+
+For limitations of this capability, see [Limitations of Eviction](limitations_of_eviction.md).
 

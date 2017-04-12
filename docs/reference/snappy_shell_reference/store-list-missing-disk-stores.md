@@ -25,7 +25,7 @@ The table describes options for snappy list-missing-disk-stores.
 <a id="reference_FF886BB14E5949B79E47AC334D23EEE5__section_373A5D6CDE984CC49A03632C63252F2E"></a>
 ##Description
 
-<a href="../../disk_storage/handling_missing_disk_stores.html#handling_missing_disk_stores" class="xref" title="Use the snappy list-missing-disk-stores command to find disk stores with the latest persisted data. Use snappy revoke-missing-disk-stores to stop waiting for the data when you cannot bring it online.">Handling Missing Disk Stores</a> provides more details about listing and revoking missing disk stores.
+[Handling Missing Disk Stores](../../concepts/tables/persisting_table_data/handling_missing_disk_stores.md#handling_missing_disk_stores) provides more details about listing and revoking missing disk stores.
 
 <a id="reference_FF886BB14E5949B79E47AC334D23EEE5__section_AFA4A7ACB7BA4CD58E33C8711B607AAD"></a>
 

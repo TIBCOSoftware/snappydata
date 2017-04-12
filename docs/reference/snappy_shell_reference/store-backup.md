@@ -3,15 +3,15 @@ Creates a backup of operational disk stores for all members running in the distr
 
 <a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_06BC55B8DB414173BBD71BEFB9F8F1BD"><p !!!
 !!!Note:
-	 SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. See <a href="../../disk_storage/backup_restore_disk_store.html#backup_restore_disk_store" class="xref" title="When you invoke the snappy backup command, SnappyData backs up disk stores for all members that are running in the distributed system at that time. Each member with persistent data creates a backup of its own configuration and disk stores.">Backing Up and Restoring Disk Stores</a>.</p>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_B06049F2187548D2A567EB7C2AF6F1A6" class="xref">Syntax</a>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_C75C621FB18D435D94E93BD865BA35E0" class="xref">Description</a>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_E151532922C349FA99C2120880E82D1F" class="xref">Prerequisites and Best Practices</a>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3" class="xref">Specifying the Backup Directory</a>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_19EAC375FDBE43FB922EA3E99F41B07E" class="xref">Example</a>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_F65D456EEE55433E9C6F6EC9B4057734" class="xref">Output Messages from snappy backup</a>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_70860E525F5C4F5D995551846E007AC8" class="xref">Backup Directory Structure and Its Contents</a>
--   <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_050663B03C0A4C42B07B4C5F69EAC95D" class="xref">Restoring an Online Backup</a>
+	 SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. See [Backing Up and Restoring Disk Stores](../../concepts/tables/persisting_table_data/backup_restore_disk_store.md#backup_restore_disk_store).</p>
+-   [Syntax](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_B06049F2187548D2A567EB7C2AF6F1A6)
+-   [Description](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_C75C621FB18D435D94E93BD865BA35E0)
+-   [Prerequisites and Best Practices](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_E151532922C349FA99C2120880E82D1F)
+-   [Specifying the Backup Directory](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3)
+-   [Example](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_19EAC375FDBE43FB922EA3E99F41B07E)
+-   [Output Messages from snappy backup](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_F65D456EEE55433E9C6F6EC9B4057734)
+-   [Backup Directory Structure and Its Contents](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_70860E525F5C4F5D995551846E007AC8)
+-   [Restoring an Online Backup](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_050663B03C0A4C42B07B4C5F69EAC95D)
 
 <a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_B06049F2187548D2A567EB7C2AF6F1A6"></a>
 
@@ -32,7 +32,7 @@ The table describes options for snappy backup.
 |Option|Description|
 |-|-|
 |-baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble <span class="ph filepath">/export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30</span>).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
-|&lt;target-directory&gt;|The directory in which SnappyData stores the backup content. See <a href="store-backup.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3" class="xref">Specifying the Backup Directory</a>.|
+|&lt;target-directory&gt;|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3).|
 |-mcast-port|Multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead). </br>Valid values are in the range 0–65535, with a default value of 10334.|
 |-mcast-address|Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
@@ -57,7 +57,7 @@ An online backup saves the following:
 -   Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
 -   Do not try to create backup files from a running system using file copy commands. You will get incomplete and unusable copies.
 -   Make sure the target backup directory directory exists and has the proper permissions for your members to write to it and create subdirectories.
--   You might want to compact your disk store before running the backup. See the <a href="store-compact-all-disk-stores.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC" class="xref noPageCitation" title="Perform online compaction of SnappyData disk stores.">compact-all-disk-stores</a> command.
+-   You might want to compact your disk store before running the backup. See the [compact-all-disk-stores](store-compact-all-disk-stores.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC) command.
 -   Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members.)
 
 <a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3"></a>
@@ -80,7 +80,7 @@ snappy backup  ./snappyStoreBackupLocation
   -locators=machine[26340]
 ```
 
-See also <a href="../../disk_storage/backup_restore_disk_store.html#backup_restore_disk_store" class="xref" title="When you invoke the snappy backup command, SnappyData backs up disk stores for all members that are running in the distributed system at that time. Each member with persistent data creates a backup of its own configuration and disk stores.">Backing Up and Restoring Disk Stores</a>.
+See also [Backing Up and Restoring Disk Stores](../../concepts/tables/persisting_table_data/backup_restore_disk_store.md#backup_restore_disk_store).
 
 To perform an incremental backup at a later time:
 
@@ -89,7 +89,8 @@ snappy backup -baseline=./snappyStoreBackupLocation/2012-10-01-12-30 ./snappySto
   -locators=machine[26340] 
 ```
 
-<p class="note"><strong>Note:</strong> SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.</p>
+!!! Note:
+	SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.</p>
 
 <a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_F65D456EEE55433E9C6F6EC9B4057734"></a>
 

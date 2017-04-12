@@ -4,7 +4,7 @@ Apache Spark is a general purpose parallel computational engine for analytics at
 Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance. For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. Caching within Spark is immutable and results in stale insight.
 
 <a id="approach"></a>
-# The SnappyData Approach
+### The SnappyData Approach
 At SnappyData, we take a very different approach. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) 
 into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar 
 format as Spark. All query engine operators are more optimized through better vectorization and code generation. 
