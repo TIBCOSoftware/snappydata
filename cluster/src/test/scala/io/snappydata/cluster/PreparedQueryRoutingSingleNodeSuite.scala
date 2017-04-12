@@ -16,17 +16,16 @@
  */
 package io.snappydata.cluster
 
-import java.sql.DriverManager
+import java.sql.{DriverManager, ResultSet}
 
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.TestUtil
-import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{Property, SnappyFunSuite}
-import org.apache.log4j.{Level, Logger}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.SnappySession
 
 class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -46,13 +45,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       */
     new org.apache.spark.SparkConf().setAppName("PreparedQueryRoutingSingleNodeSuite")
         .setMaster("local[6]")
-        .set("spark.logConf", "true")
-        .set("mcast-port", "4958")
+        // .set("spark.logConf", "true")
+        //.set("mcast-port", "4958")
   }
 
   override def beforeAll(): Unit = {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
-    System.setProperty("spark.testing", "true")
+    // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    // System.setProperty("spark.testing", "true")
     super.beforeAll()
     // reducing DML chunk size size to force lead node to send
     // results in multiple batches
@@ -60,8 +59,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   override def afterAll(): Unit = {
-    System.clearProperty("org.codehaus.janino.source_debugging.enable")
-    System.clearProperty("spark.testing")
+    // System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    // System.clearProperty("spark.testing")
     setDMLMaxChunkSize(default_chunk_size)
     super.afterAll()
   }
@@ -95,63 +94,98 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     }
   }
 
-  def query(): Unit = {
+  private def verifyResults(rs: ResultSet, results: Array[Int], cacheMapSize: Int): Unit = {
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    assert( cacheMap.size() == cacheMapSize)
+
+    var index = 0
+    while (rs.next()) {
+      val i = rs.getInt(1)
+      val j = rs.getInt(2)
+      val s = rs.getString(3)
+      println(s"row($index) $i $j $s ")
+      index += 1
+
+      assert(results.contains(i))
+    }
+
+    println("1 Number of rows read " + index)
+    assert(index == results.length)
+    rs.close()
+  }
+
+  def query1(): Unit = {
     // sc.setLogLevel("TRACE")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
-    println(serverHostPort)
-    val stmt = conn.createStatement()
     var prepStatement: java.sql.PreparedStatement = null
-      try {
-        val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
-            s" from $tableName " +
-            s" where ol_int_id < ? " +
-            s" and ol_int2_id in (?, ?, ?) " +
-            s" and ol_str_id LIKE ? " +
-            s" limit 20" +
-            s""
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id in (?, ?, ?) " +
+          s" and ol_str_id LIKE ? " +
+          s" limit 20" +
+          s""
 
-      val prepStatement = conn.prepareStatement(qry)
+      prepStatement = conn.prepareStatement(qry)
       prepStatement.setInt(1, 500)
-        prepStatement.setInt(2, 100)
-        prepStatement.setInt(3, 200)
-        prepStatement.setInt(4, 300)
+      prepStatement.setInt(2, 100)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 300)
       prepStatement.setString(5, "%0")
-      val rs = prepStatement.executeQuery
+      verifyResults(prepStatement.executeQuery, Array(100, 200, 300), 0)
 
-      // val rs = stmt.executeQuery(qry)
-
-      var index = 0
-      while (rs.next()) {
-        val i = rs.getInt(1)
-        val j = rs.getInt(2)
-        val s = rs.getString(3)
-        println(s"row($index) $i $j $s ")
-        index += 1
-      }
-      println("Number of rows read " + index)
-      val reg = Misc.getRegionByPath("/APP/ORDER_LINE_COL", false).asInstanceOf[PartitionedRegion]
-      println("reg " + reg)
-      val b1 = reg.getDataStore.getAllLocalBucketRegions.iterator().next()
-      println("b = " + b1.getName + " and size = " + b1.size());
-
-      val itr = reg.getDataStore.getAllLocalBucketRegions.iterator()
-      itr.next()
-      val b2 = itr.next()
-      println("b = " + b2.getName + " and size = " + b2.size());
-      rs.close()
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      prepStatement.setString(5, "%0")
+      verifyResults(prepStatement.executeQuery, Array(600, 700, 800), 0)
 
       //Thread.sleep(1000000)
-
     } finally {
-      stmt.close()
       if (prepStatement != null) prepStatement.close()
       conn.close()
     }
   }
 
-  test("test serialization with lesser dml chunk size") {
+  def query2(): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id in (?, ?, ?) " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setInt(2, 100)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 300)
+      verifyResults(prepStatement.executeQuery, Array(100, 200, 300), 1)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      verifyResults(prepStatement.executeQuery, Array(600, 700, 800), 1)
+
+      //Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  test("test Prepared Statement via JDBC") {
 
     snc.sql(s"create table $tableName (ol_int_id  integer," +
         s" ol_int2_id  integer, ol_str_id STRING) using column " +
@@ -159,12 +193,10 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
 
     serverHostPort = TestUtil.startNetServer()
-    println("network server started")
+    // println("network server started")
     insertRows(1000)
 
-    val r = GemFireCacheImpl.getInstance().getPartitionedRegions
-    println(r)
-    // (1 to 5).foreach(d => query())
-    query()
+    query1()
+    query2()
   }
 }
