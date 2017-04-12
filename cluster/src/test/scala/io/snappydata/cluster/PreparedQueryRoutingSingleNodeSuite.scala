@@ -32,7 +32,6 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
   val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
   var serverHostPort = ""
-  val tableName = "order_line_col"
 
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     /**
@@ -68,7 +67,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
   }
 
-  def insertRows(numRows: Int): Unit = {
+  def insertRows(tableName: String, numRows: Int): Unit = {
 
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
@@ -120,7 +119,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     rs.close()
   }
 
-  def query(): Unit = {
+  def query1(tableName: String): Unit = {
     // sc.setLogLevel("TRACE")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
@@ -262,7 +261,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("test Prepared Statement via JDBC") {
-
+    val tableName = "order_line_col"
     snc.sql(s"create table $tableName (ol_int_id  integer," +
         s" ol_int2_id  integer, ol_str_id STRING) using column " +
         "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
@@ -270,7 +269,75 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
     serverHostPort = TestUtil.startNetServer()
     // println("network server started")
-    insertRows(1000)
-    query()
+    insertRows(tableName, 1000)
+    query1(tableName)
+  }
+
+  def query2(tableName1: String, tableName2: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    var prepStatement1: java.sql.PreparedStatement = null
+    var prepStatement2: java.sql.PreparedStatement = null
+    var prepStatement3: java.sql.PreparedStatement = null
+    var prepStatement4: java.sql.PreparedStatement = null
+    var prepStatement5: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
+          s" from $tableName1 " +
+          s" where ol_1_int_id < ? " +
+          s" and ol_1_int2_id in (" +
+          s"select ol_2_int_id " +
+          s" from $tableName2 " +
+          s" where ol_2_int_id in (?, ?, ?) " +
+          s") " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setInt(2, 100)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 300)
+      prepStatement.setString(5, "%0")
+      verifyResults("qry-1", prepStatement.executeQuery, Array(100, 200, 300), 1)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      prepStatement.setString(5, "%0")
+      verifyResults("qry-2", prepStatement.executeQuery, Array(600, 700, 800), 1)
+
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      if (prepStatement1 != null) prepStatement1.close()
+      if (prepStatement2 != null) prepStatement2.close()
+      if (prepStatement3 != null) prepStatement3.close()
+      if (prepStatement4 != null) prepStatement4.close()
+      conn.close()
+    }
+  }
+
+  ignore("test Join, SubQuery and Aggragtes") {
+    val tableName1 = "order_line_1_col"
+    val tableName2 = "order_line_2_col"
+    snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+        "options( partition_by 'ol_1_int_id, ol_1_int2_id', buckets '2')")
+
+    snc.sql(s"create table $tableName2 (ol_2_int_id  integer," +
+        s" ol_2_int2_id  integer, ol_2_str_id STRING) using column " +
+        "options( partition_by 'ol_2_int_id, ol_2_int2_id', buckets '2')")
+
+
+    serverHostPort = TestUtil.startNetServer()
+    // println("network server started")
+    insertRows(tableName1, 1000)
+    insertRows(tableName2, 1000)
+    query2(tableName1, tableName2)
   }
 }
