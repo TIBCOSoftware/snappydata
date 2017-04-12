@@ -122,9 +122,11 @@ object CachedPlanHelperExec extends Logging {
       newpls: mutable.ArrayBuffer[ParamLiteral], pvs: ParameterValueSet): Unit = {
     if (pvs != null) {
       var countParams = 0
-      literals.foreach { case lv@LiteralValue(_, _, p, true) =>
-        countParams += 1
-        assert (p - 1 < pvs.getParameterCount)
+      literals.foreach {
+        case lv@LiteralValue(_, _, p, true) =>
+          countParams += 1
+          assert (p - 1 < pvs.getParameterCount)
+        case _ =>
       }
       assert(pvs.getParameterCount == countParams,
         s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
