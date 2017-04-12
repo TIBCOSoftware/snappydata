@@ -792,14 +792,6 @@ class SnappyParser(session: SnappySession)
     }}
   }
 
-//  protected final def DEBUG: Rule0 = rule {
-//    MATCH ~> {() =>
-//      println("parser is: " + this.getClass.getName)
-//      println("isselect: " + isselect)
-//      println("tokenize: " + tokenize)
-//    }
-//  }
-
   protected final def TOKENIZE_END: Rule0 = rule {
     MATCH ~> {() => tokenize = false}
   }

@@ -61,10 +61,10 @@ class CachedDataFrame(df: Dataset[Row],
     extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
-    * Return true if [[collectWithHandler]] supports partition-wise separate
-    * result handling by default, else result handler is invoked for a
-    * single partition result.
-    */
+   * Return true if [[collectWithHandler]] supports partition-wise separate
+   * result handling by default, else result handler is invoked for a
+   * single partition result.
+   */
   def hasPartitionWiseHandling: Boolean = cachedRDD ne null
 
   private lazy val boundEnc = exprEnc.resolveAndBind(logicalPlan.output,
@@ -120,9 +120,9 @@ class CachedDataFrame(df: Dataset[Row],
 
 
   /**
-    * Wrap a Dataset action to track the QueryExecution and time cost,
-    * then report to the user-registered callback functions.
-    */
+   * Wrap a Dataset action to track the QueryExecution and time cost,
+   * then report to the user-registered callback functions.
+   */
   private def withCallback[U](name: String)(action: DataFrame => U) = {
     try {
       queryExecution.executedPlan.foreach { plan =>

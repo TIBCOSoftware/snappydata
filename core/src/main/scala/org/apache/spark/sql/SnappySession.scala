@@ -1691,31 +1691,6 @@ object SnappySession extends Logging {
     }
   }
 
-  private def checkPlanCaching(df: DataFrame, executedPlan: SparkPlan,
-      session: SnappySession) = {
-    val nocaching = session.getContextObject[Boolean](
-      CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
-    if (nocaching) {
-      throw new EntryExistsException("uncached plan", df) // don't cache
-    }
-  }
-
-  private def _getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
-    def collectFromProduct(p: Product, result: ArrayBuffer[ParamLiteral]): Unit = {
-      (0 until p.productArity).foreach { i =>
-        val elem = p.productElement(i)
-        elem match {
-          case p: ParamLiteral => result += p
-          case pc: Product => collectFromProduct(pc, result)
-          case _ => // do nothing
-        }
-      }
-    }
-    val res = new ArrayBuffer[ParamLiteral]()
-    collectFromProduct(queryplan, res)
-    res.toSet.toArray
-  }
-
   private def getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
     queryplan transformAllExpressions {
