@@ -18,10 +18,9 @@ package io.snappydata.cluster
 
 import java.sql.{DriverManager, ResultSet}
 
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.{Property, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
@@ -46,7 +45,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     new org.apache.spark.SparkConf().setAppName("PreparedQueryRoutingSingleNodeSuite")
         .setMaster("local[6]")
         // .set("spark.logConf", "true")
-        //.set("mcast-port", "4958")
+        // .set("mcast-port", "4958")
   }
 
   override def beforeAll(): Unit = {
@@ -87,14 +86,17 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         }
       })
       stmt.executeBatch()
+      // scalastyle:off println
       println(s"committed $numRows rows")
+      // scalastyle:on println
     } finally {
       stmt.close()
       conn.close()
     }
   }
 
-  private def verifyResults(rs: ResultSet, results: Array[Int], cacheMapSize: Int): Unit = {
+  private def verifyResults(qry: String, rs: ResultSet, results: Array[Int],
+      cacheMapSize: Int): Unit = {
     val cacheMap = SnappySession.getPlanCache.asMap()
     assert( cacheMap.size() == cacheMapSize)
 
@@ -103,23 +105,30 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       val i = rs.getInt(1)
       val j = rs.getInt(2)
       val s = rs.getString(3)
-      println(s"row($index) $i $j $s ")
+      // scalastyle:off println
+      println(s"$qry row($index) $i $j $s ")
+      // scalastyle:on println
       index += 1
 
       assert(results.contains(i))
     }
 
-    println("1 Number of rows read " + index)
+    // scalastyle:off println
+    println(s"$qry Number of rows read " + index)
+    // scalastyle:on println
     assert(index == results.length)
     rs.close()
   }
 
-  def query1(): Unit = {
+  def query(): Unit = {
     // sc.setLogLevel("TRACE")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
     var prepStatement: java.sql.PreparedStatement = null
+    var prepStatement1: java.sql.PreparedStatement = null
+    var prepStatement2: java.sql.PreparedStatement = null
+    var prepStatement3: java.sql.PreparedStatement = null
     try {
       val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -135,52 +144,76 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 300)
       prepStatement.setString(5, "%0")
-      verifyResults(prepStatement.executeQuery, Array(100, 200, 300), 0)
+      verifyResults("qry-1", prepStatement.executeQuery, Array(100, 200, 300), 0)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
       prepStatement.setInt(3, 700)
       prepStatement.setInt(4, 800)
       prepStatement.setString(5, "%0")
-      verifyResults(prepStatement.executeQuery, Array(600, 700, 800), 0)
+      verifyResults("qry-2", prepStatement.executeQuery, Array(600, 700, 800), 0)
 
-      //Thread.sleep(1000000)
-    } finally {
-      if (prepStatement != null) prepStatement.close()
-      conn.close()
-    }
-  }
+      val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id in (?, ?, 300) " +
+          s" limit 20" +
+          s""
 
-  def query2(): Unit = {
-    // sc.setLogLevel("TRACE")
-    val conn = DriverManager.getConnection(
-      "jdbc:snappydata://" + serverHostPort)
+      prepStatement1 = conn.prepareStatement(qry1)
+      prepStatement1.setInt(1, 500)
+      prepStatement1.setInt(2, 100)
+      prepStatement1.setInt(3, 200)
+      verifyResults("qry1-1", prepStatement1.executeQuery, Array(100, 200, 300), 1)
 
-    var prepStatement: java.sql.PreparedStatement = null
-    try {
-      val qry = s"select ol_int_id, ol_int2_id, ol_str_id " +
+      prepStatement1.setInt(1, 500)
+      prepStatement1.setInt(2, 100)
+      prepStatement1.setInt(3, 400)
+      verifyResults("qry1-2", prepStatement1.executeQuery, Array(100, 400, 300), 1)
+
+      val qry2 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" and ol_int2_id in (?, ?, 800) " +
+          s" limit 20" +
+          s""
+      prepStatement2 = conn.prepareStatement(qry2)
+      prepStatement2.setInt(1, 900)
+      prepStatement2.setInt(2, 600)
+      prepStatement2.setInt(3, 700)
+      verifyResults("qry2-1", prepStatement2.executeQuery, Array(600, 700, 800), 1)
+
+      prepStatement2.setInt(1, 900)
+      prepStatement2.setInt(2, 400)
+      prepStatement2.setInt(3, 500)
+      verifyResults("qry2-2", prepStatement2.executeQuery, Array(400, 500, 800), 1)
+
+      val qry3 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
           s" where ol_int_id < ? " +
           s" and ol_int2_id in (?, ?, ?) " +
           s" limit 20" +
           s""
 
-      prepStatement = conn.prepareStatement(qry)
-      prepStatement.setInt(1, 500)
-      prepStatement.setInt(2, 100)
-      prepStatement.setInt(3, 200)
-      prepStatement.setInt(4, 300)
-      verifyResults(prepStatement.executeQuery, Array(100, 200, 300), 1)
+      prepStatement3 = conn.prepareStatement(qry3)
+      prepStatement3.setInt(1, 500)
+      prepStatement3.setInt(2, 100)
+      prepStatement3.setInt(3, 200)
+      prepStatement3.setInt(4, 300)
+      verifyResults("qry3-1", prepStatement3.executeQuery, Array(100, 200, 300), 2)
 
-      prepStatement.setInt(1, 900)
-      prepStatement.setInt(2, 600)
-      prepStatement.setInt(3, 700)
-      prepStatement.setInt(4, 800)
-      verifyResults(prepStatement.executeQuery, Array(600, 700, 800), 1)
+      prepStatement3.setInt(1, 900)
+      prepStatement3.setInt(2, 600)
+      prepStatement3.setInt(3, 700)
+      prepStatement3.setInt(4, 800)
+      verifyResults("qry3-2", prepStatement3.executeQuery, Array(600, 700, 800), 2)
 
-      //Thread.sleep(1000000)
+      // Thread.sleep(1000000)
     } finally {
       if (prepStatement != null) prepStatement.close()
+      if (prepStatement1 != null) prepStatement1.close()
+      if (prepStatement2 != null) prepStatement2.close()
+      if (prepStatement3 != null) prepStatement3.close()
       conn.close()
     }
   }
@@ -195,8 +228,6 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     serverHostPort = TestUtil.startNetServer()
     // println("network server started")
     insertRows(1000)
-
-    query1()
-    query2()
+    query()
   }
 }
