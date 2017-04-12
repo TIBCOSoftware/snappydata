@@ -29,9 +29,9 @@ class ValidateNWQueriesJob extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     val snc = snappySession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val outputFile = "ValidateNWQueries_" + jobConfig.getString("logFileName")
-    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
+    val outputFile = "ValidateNWQueries_" + tableType + "_" + jobConfig.getString("logFileName")
+    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val isSmokeRun: Boolean = jobConfig.getString("isSmokeRun").toBoolean
     val fullResultSetValidation: Boolean = jobConfig.getString("fullResultSetValidation").toBoolean
     val sc = SparkContext.getOrCreate()

@@ -149,6 +149,8 @@ public class SnappyTest implements Serializable {
                 if (isLongRunningTest) {
                     snappyTest.generateConfig("locatorConnInfo");
                     snappyTest.generateConfig("leadHost");
+                    snappyTest.generateConfig("leadPort");
+                    snappyTest.generateConfig("locatorList");
                 }
             }
         }
@@ -402,8 +404,17 @@ public class SnappyTest implements Serializable {
     }
 
     protected static String getLocatorsList(String userKey) {
-        Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
         String locatorsList = null;
+        if (isLongRunningTest) {
+            locatorsList = getDataFromFile("locatorList");
+            if (locatorsList == null) locatorsList = getLocatorList(userKey);
+        } else locatorsList = getLocatorList(userKey);
+        return locatorsList;
+    }
+
+    protected static String getLocatorList(String userKey) {
+        String locatorsList = null;
+        Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
         Set<String> locatorHostPortList = new LinkedHashSet<>();
         for (String key : keys) {
             if (key.startsWith(userKey)) {
@@ -420,7 +431,8 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Write the configuration data required to start the snappy locator/s in locators file under conf directory at snappy build location.
+     * Write the configuration data required to start the snappy locator/s in locators file under
+     * conf directory at snappy build location.
      */
     public static void HydraTask_writeLocatorConfigData() {
         snappyTest.writeLocatorConfigData("locators", "locatorLogDir");
@@ -428,22 +440,53 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Write the configuration data required to start the snappy server/s in servers file under conf directory at snappy build location.
+     * Write the configuration data required to start the snappy server/s in servers file under
+     * conf directory at snappy build location.
      */
     public static void HydraTask_writeServerConfigData() {
         snappyTest.writeConfigData("servers", "serverLogDir");
     }
 
     /**
-     * Write the configuration data required to start the snappy lead/s in leads file under conf directory at snappy build location.
+     * Write the configuration data required to start the snappy lead/s in leads file under conf
+     * directory at snappy build location.
      */
     public static void HydraTask_writeLeadConfigData() {
         snappyTest.writeConfigData("leads", "leadLogDir");
-        if (isLongRunningTest) writeLeadHostInfo();
+        //if (isLongRunningTest) writeLeadHostInfo();
     }
 
     /**
-     * Write the configuration data required to start the spark worker/s in slaves file and the log directory locations in spark-env.sh file under conf directory at snappy build location.
+     * Write the primary lead host,port info into the file(leadHost) under conf directory at
+     * snappy build location. This is required for long running test scenarios where in  cluster
+     * will be started  in first test and then rest all tests will use the same cluster
+     */
+    public static void HydraTask_writeLeadHostPortInfo() {
+        writeLeadHostPortInfo();
+    }
+
+    /**
+     * Write the spark master host info into the file(masterHost) under conf directory at
+     * snappy build location. This is required for long running test scenarios where in cluster
+     * will be started in first test and then rest all tests will use the same cluster
+     */
+    public static void HydraTask_writeMasterHostInfo() {
+        writeSparkMasterHostInfo();
+    }
+
+    /**
+     * Write the locator list containing host:port information for all locators in the snappy
+     * cluster into the file(locatorList) under conf directory at snappy build location.
+     * This is required for long running test scenarios where in cluster
+     * will be started in first test and then rest all tests will use the same cluster
+     */
+    public static void HydraTask_writeLocatorInfo() {
+        writeLocatorInfo();
+    }
+
+    /**
+     * Write the configuration data required to start the spark worker/s in slaves file and the
+     * log directory locations in spark-env.sh file under conf directory at snappy build location.
      */
     public static void HydraTask_writeWorkerConfigData() {
         snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
@@ -461,7 +504,7 @@ public class SnappyTest implements Serializable {
             throw new TestException(s);
         }
         for (String s : fileContent) {
-            snappyTest.writeToFile(s, file);
+            snappyTest.writeToFile(s, file, true);
         }
     }
 
@@ -494,14 +537,14 @@ public class SnappyTest implements Serializable {
                 newLocatorsList = locatorsList.replace(replaceString, "");
             }
             String nodeLogDir = s.concat(" -locators=" + newLocatorsList);
-            snappyTest.writeToFile(nodeLogDir, file);
+            snappyTest.writeToFile(nodeLogDir, file, true);
         }
     }
 
-    protected void writeNodeConfigData(String fileName, String nodeLogDir) {
+    protected void writeNodeConfigData(String fileName, String nodeLogDir, boolean append) {
         String filePath = productConfDirPath + fileName;
         File file = new File(filePath);
-        snappyTest.writeToFile(nodeLogDir, file);
+        snappyTest.writeToFile(nodeLogDir, file, append);
     }
 
     protected void writeWorkerConfigData(String fileName, String logDir) {
@@ -514,7 +557,7 @@ public class SnappyTest implements Serializable {
             throw new TestException(s);
         }
         for (String s : fileContent) {
-            snappyTest.writeToFile(s, file);
+            snappyTest.writeToFile(s, file, true);
         }
     }
 
@@ -859,31 +902,51 @@ public class SnappyTest implements Serializable {
      */
     protected static void writeLocatorConnectionInfo() {
         List<String> endpoints = validateLocatorEndpointData();
-        snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0));
+        snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0), true);
+    }
+
+    /**
+     * Writes the comma seperated host:port list of all locators started in a cluster to the
+     * locatorList file under conf directory.
+     */
+    protected static void writeLocatorInfo() {
+        String locatorList = getLocatorsList("locators");
+        snappyTest.writeNodeConfigData("locatorList", locatorList, false);
     }
 
     /**
      * Writes the lead host information to the leadHost file under conf directory.
      */
-    protected static void writeLeadHostInfo() {
-        leadHost = (String) SnappyBB.getBB().getSharedMap().get("leadHost");
-        snappyTest.writeNodeConfigData("leadHost", leadHost);
+    protected static void writeLeadHostPortInfo() {
+        leadHost = snappyTest.getLeadHost();
+        snappyTest.writeNodeConfigData("leadHost", leadHost, false);
+        String leadPort = snappyTest.getLeadPort();
+        snappyTest.writeNodeConfigData("leadPort", leadPort, false);
     }
 
-    protected static String getLeadHostFromFile() {
-        File logFile = getLogFile("leadHost");
+    /**
+     * Writes the master host information to the masterHost file under conf directory.
+     */
+    protected static void writeSparkMasterHostInfo() {
+        String masterHost = getSparkMasterHost();
+        snappyTest.writeNodeConfigData("masterHost", masterHost, false);
+    }
+
+    protected static String getDataFromFile(String fileName) {
+        File logFile = getLogFile(fileName);
+        String data = null;
         try {
             BufferedReader br = readDataFromFile(logFile);
             String str = null;
             while ((str = br.readLine()) != null) {
-                leadHost = str;
+                data = str;
             }
             br.close();
         } catch (IOException e) {
             String s = "Problem while reading the file : " + logFile.getAbsolutePath();
             throw new TestException(s, e);
         }
-        return leadHost;
+        return data;
     }
 
     protected static BufferedReader readDataFromFile(File filename) {
@@ -901,6 +964,12 @@ public class SnappyTest implements Serializable {
     protected static File getLogFile(String filename) {
         String dest = productConfDirPath + filename;
         File logFile = new File(dest);
+        if (!logFile.exists()) try {
+            logFile.createNewFile();
+        } catch (IOException e) {
+            String s = "Unable to create file: " + logFile.getAbsolutePath();
+            throw new TestException(s);
+        }
         return logFile;
     }
 
@@ -1225,9 +1294,9 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void writeToFile(String logDir, File file) {
+    protected void writeToFile(String logDir, File file, boolean append) {
         try {
-            FileWriter fw = new FileWriter(file.getAbsoluteFile(), true);
+            FileWriter fw = new FileWriter(file.getAbsoluteFile(), append);
             BufferedWriter bw = new BufferedWriter(fw);
             bw.write(logDir);
             bw.newLine();
@@ -1588,14 +1657,33 @@ public class SnappyTest implements Serializable {
 
     public String getLeadHost() {
         if (isLongRunningTest) {
-            leadHost = getLeadHostFromFile();
+            leadHost = getDataFromFile("leadHost");
+            if (leadHost == null)
+                leadHost = getPrimaryLeadHost();
         } else {
+            leadHost = getPrimaryLeadHost();
+        }
+        return leadHost;
+    }
+
+    public String getLeadPort() {
+        String leadPort = null;
+        if (isLongRunningTest) {
+            leadPort = getDataFromFile("leadPort");
+            if (leadPort == null)
+                leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+        } else {
+            leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+        }
+        return leadPort;
+    }
+
+    protected String getPrimaryLeadHost() {
+        leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
+        if (leadHost == null) {
+            retrievePrimaryLeadHost();
             leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
-            if (leadHost == null) {
-                retrievePrimaryLeadHost();
-                leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
-                Log.getLogWriter().info("primaryLead Host is: " + leadHost);
-            }
+            Log.getLogWriter().info("primaryLead Host is: " + leadHost);
         }
         return leadHost;
     }
@@ -1619,7 +1707,8 @@ public class SnappyTest implements Serializable {
         if (appName == null) appName = SnappyPrms.getUserAppName();
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
-        String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+        //String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+        String leadPort = getLeadPort();
         Log.getLogWriter().info("primaryLead Port is : " + leadPort);
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
@@ -1630,11 +1719,8 @@ public class SnappyTest implements Serializable {
                 } else {
                     APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
                 }
-                Log.getLogWriter().info("SS - APP_PROPS : " + APP_PROPS.toString());
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + leadPort + "/jobs?appName=" + appName + "&classPath=" + userJob + "'";
-                Log.getLogWriter().info("SS - curlCommand1 : " + curlCommand1.toString());
-                Log.getLogWriter().info("SS - curlCommand2 : " + curlCommand2.toString());
                 ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -1867,7 +1953,7 @@ public class SnappyTest implements Serializable {
                     SnappyBB.getBB().getSharedMap().put("primaryLeadHost", leadHost);
                     leadPort = getPrimaryLeadPort(clientName);
                     SnappyBB.getBB().getSharedMap().put("primaryLeadPort", leadPort);
-                    if (isLongRunningTest) writeLeadHostInfo();
+                    if (isLongRunningTest) writeLeadHostPortInfo();
                 }
             }
         }
@@ -2403,14 +2489,14 @@ public class SnappyTest implements Serializable {
         generateConfig(confFileName);
         Set<String> fileContent = new LinkedHashSet<String>();
         if (isLead) {
-            if (isLongRunningTest) writeLeadHostInfo();
+            if (isLongRunningTest) writeLeadHostPortInfo();
             fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
         } else {
             fileContent = snappyTest.getFileContents("serverLogDir", fileContent);
         }
         for (String nodeConfig : fileContent) {
             if (nodeConfig.contains(vmDir)) {
-                writeNodeConfigData(confFileName, nodeConfig);
+                writeNodeConfigData(confFileName, nodeConfig, true);
             }
         }
     }
@@ -2516,6 +2602,18 @@ public class SnappyTest implements Serializable {
     }
 
     protected static String getSparkMasterHost() {
+        String masterHost = null;
+        if (isLongRunningTest) {
+            masterHost = getDataFromFile("masterHost");
+            if (masterHost == null) {
+                masterHost = getMasterHost();
+                snappyTest.writeNodeConfigData("masterHost", masterHost, false);
+            }
+        } else masterHost = getMasterHost();
+        return masterHost;
+    }
+
+    protected static String getMasterHost() {
         String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
         if (masterHost == null) {
             try {

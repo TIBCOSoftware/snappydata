@@ -33,13 +33,6 @@ class SnappyHydraRunner extends SnappyTestRunner {
     if (snappyHome == null) {
       throw new Exception("SNAPPY_HOME should be set as an environment variable")
     }
-    /*val dtestsDir = new File(s"$SNAPPYDATA_SOURCE_DIR/dtests/build-artifacts/scala-2.11/")
-    if (dtestsDir.exists) {
-      FileUtils.deleteDirectory(dtestsDir)
-    }
-    val command: String = s"$SNAPPYDATA_SOURCE_DIR/gradlew snappy-dtests:packageTests"
-    val (out, err) = executeProcess("buildDtests", command)
-    val dtestsBuildStatus = out*/
     currWorkingDir = System.getProperty("user.dir")
   }
 
@@ -51,7 +44,10 @@ class SnappyHydraRunner extends SnappyTestRunner {
     if (logDir.exists) {
       FileUtils.deleteDirectory(logDir)
     }
-    val command: String = s"$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $logDir $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/smoke.bt"
+    /*val command: String =  s"$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample" +
+      s"-runbt.sh $logDir $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/nwSmoke.bt"*/
+    val command: String =  s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
+      s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
     val (out, err) = executeProcess("smokeBT", command)
     val smokeBTRunStatus = out
   }
