@@ -1742,8 +1742,6 @@ object SnappySession extends Logging {
       }
       else {
         val params1 = getAllParamLiterals(executedPlan)
-
-        // println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
         if (!(params1.deep == key.pls.deep)) {
           key.invalidatePlan
         }
@@ -1815,7 +1813,6 @@ object SnappySession extends Logging {
         (CachedDataFrame, Map[String, String])] {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
-        // println(s"KN: new load for query=${key.sqlText} plan=${key.lp}")
         val session = key.session
         val df = session.executeSQL(key.sqlText)
         val plan = df.queryExecution.executedPlan
@@ -1900,16 +1897,6 @@ object SnappySession extends Logging {
     }
   }
 
-  def printhashcode(lp: LogicalPlan, sqlt: String) = {
-    println(s"sqltext = ${sqlt}")
-    lp transformAllExpressions {
-      case x: Any => {
-        println(s"$x = ${x.hashCode()} xclass = ${x.getClass}")
-        x
-      }
-    }
-  }
-
   def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     try {
       val lp = session.onlyParseSQL(sqlText)
@@ -1923,14 +1910,6 @@ object SnappySession extends Logging {
       if (!key.valid) planCache.invalidate(key)
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
-      logDebug(s"sqlText = ${sqlText} and cachedDataframe = " +
-          System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
-      //println(s"sqlText = ${sqlText} and cachedDataframe = " +
-        //  System.identityHashCode(cachedDF) + " key = " + CachedKey + " session = " + System.identityHashCode(session))
-      if ( cachedDF != null ) {
-        //println(s"lp = ${lp} and executed plan = ${cachedDF.queryExecution.executedPlan}")
-      }
-      val pcache = getPlanCache.asMap()
 
       // if null has been returned, then evaluate
       if (cachedDF eq null) {

@@ -106,7 +106,6 @@ object CachedPlanHelperExec extends Logging {
   val WRAPPED_CONSTANTS = "TokenizedConstants"
   val NOCACHING_KEY    =  "TokenizationNoCaching"
 
-  //val broadcastReferences: Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = _
   private[sql] def allLiterals(allReferences: Seq[Seq[Any]]): Array[LiteralValue] = {
     allReferences.flatMap(_.collect {
       case l: LiteralValue => l
@@ -115,12 +114,9 @@ object CachedPlanHelperExec extends Logging {
 
   def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
-    //if (newpls.length == literals.length) {
     literals.foreach { case lv@LiteralValue(_, _, p) =>
       lv.value = newpls.find(_.pos == p).get.value
       val y = newpls.find(_.pos == p).get.value
-      //  println(y)
     }
-    //}
   }
 }
