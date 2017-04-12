@@ -1700,7 +1700,7 @@ object SnappySession extends Logging {
     }
   }
 
-  private def getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
+  private def _getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
     def collectFromProduct(p: Product, result: ArrayBuffer[ParamLiteral]): Unit = {
       (0 until p.productArity).foreach { i =>
         val elem = p.productElement(i)
@@ -1716,6 +1716,17 @@ object SnappySession extends Logging {
     res.toSet.toArray
   }
 
+  private def getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
+    val res = new ArrayBuffer[ParamLiteral]()
+    queryplan transformAllExpressions {
+      case p: ParamLiteral => {
+        res += p
+        p
+      }
+    }
+    res.toSet.toArray
+  }
+
   private def evaluatePlan(df: DataFrame,
       session: SnappySession, key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
@@ -1723,12 +1734,20 @@ object SnappySession extends Logging {
       case plan => plan
     }
 
-    val params1 = getAllParamLiterals(executedPlan)
-    val params2 = getAllParamLiterals(df.queryExecution.logical)
+    if (key != null) {
+      val nocaching = session.getContextObject[Boolean](
+        CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
+      if (nocaching) {
+        key.invalidatePlan
+      }
+      else {
+        val params1 = getAllParamLiterals(executedPlan)
 
-    // println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
-    if (!(params1.deep == params2.deep)) {
-      key.invalidatePlan
+        // println(s"params1 = ${params1.toSet} AND params2 = ${params2.toSet}")
+        if (!(params1.deep == key.pls.deep)) {
+          key.invalidatePlan
+        }
+      }
     }
     // keep the broadcast hash join plans and their references as well
     val allbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
@@ -1770,13 +1789,15 @@ object SnappySession extends Logging {
     // keep references as well
     // filter unvisited literals. If the query is on a view for example the
     // modified tpch query no 15, It even picks those literal which we don't want.
-    val allLiterals: Array[LiteralValue] = (CachedPlanHelperExec.allLiterals(
-      session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
-        CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty)
-    )).filter(!_.collectedForPlanCaching)
+    var allLiterals: Array[LiteralValue] = Array.empty
+    if (key != null && key.valid) {
+      allLiterals = (CachedPlanHelperExec.allLiterals(
+        session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
+          CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty)
+      )).filter(!_.collectedForPlanCaching)
 
-    allLiterals.foreach(_.collectedForPlanCaching = true)
-
+      allLiterals.foreach(_.collectedForPlanCaching = true)
+    }
     val cdf = new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
       localCollect, allLiterals, allbroadcastplans)
 
@@ -1823,7 +1844,7 @@ object SnappySession extends Logging {
 
   class CachedKey(
       val session: SnappySession, val lp: LogicalPlan,
-      val sqlText: String, val hintHashcode: Int) {
+      val sqlText: String, val hintHashcode: Int, val pls: Array[ParamLiteral]) {
 
     override def hashCode(): Int = {
       (session, lp, hintHashcode).hashCode()
@@ -1842,7 +1863,8 @@ object SnappySession extends Logging {
   }
 
   object CachedKey {
-    def apply(session: SnappySession, lp: LogicalPlan, sqlText: String): CachedKey = {
+    def apply(session: SnappySession, lp: LogicalPlan, sqlText: String, pls:
+    ArrayBuffer[ParamLiteral]): CachedKey = {
 
       def normalizeExprIds: PartialFunction[Expression, Expression] = {
         case s: ScalarSubquery =>
@@ -1874,7 +1896,7 @@ object SnappySession extends Logging {
 
       // normalize lp so that two queries can be determined to be equal
       val tlp = lp.transform(transformExprID)
-      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode())
+      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.toArray)
     }
   }
 
@@ -1896,7 +1918,7 @@ object SnappySession extends Logging {
         case Some(list) => list
         case None => mutable.ArrayBuffer.empty[ParamLiteral]
       }
-      val key = CachedKey(session, lp, sqlText)
+      val key = CachedKey(session, lp, sqlText, currentWrappedConstants)
       val evaluation = planCache.getUnchecked(key)
       if (!key.valid) planCache.invalidate(key)
       var cachedDF = evaluation._1
@@ -1929,12 +1951,10 @@ object SnappySession extends Logging {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
         cachedDF.reset()
       }
-      // println(s"Executed plan = ${cachedDF.queryExecution.executedPlan}")
-      // println(s"broadcasthashjoins = ${cachedDF.allbcplans}")
-      // re-prepare the broadcast if required
-      cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
-      // replace the constants from this logical plan
-      CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
+      if (key.valid) {
+        cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+        CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
+      }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
         session.queryHints.clear()
