@@ -95,6 +95,11 @@ class TokenizationTest
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
+  def getAllValidKeys(): Int = {
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    cacheMap.keySet().toArray().filter(_.asInstanceOf[CachedKey].valid).length
+  }
+
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
@@ -132,31 +137,33 @@ class TokenizationTest
 
       // test limit
       var query = s"select * from $table where a = 0 limit 1"
-      snc.sql(query).collect()
+      var res1 = snc.sql(query).collect()
       assert( cacheMap.size() == 3)
 
       query = s"select * from $table where a = 0 limit 10"
-      snc.sql(query).collect()
+      var res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 4)
 
       // test constants in projection
       query = s"select a, 'x' from $table where a = 0"
-      snc.sql(query).collect()
+      res1 = snc.sql(query).collect()
       assert( cacheMap.size() == 5)
 
       query = s"select a, 'y' from $table where a = 0"
-      snc.sql(query).collect()
+      res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 6)
 
       // check in based queries
       query = s"select * from $table where a in (0, 1)"
-      snc.sql(query).collect()
+      res1 = snc.sql(query).collect()
       assert( cacheMap.size() == 7)
 
+      assert( getAllValidKeys() == 7)
       // new plan should not be generated so size should be same
       query = s"select * from $table where a in (5, 7)"
-      snc.sql(query).collect()
+      res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 7)
+      assert(!(res1.deep == res2.deep))
 
       // let us clear the plan cache
       snc.clear()
@@ -167,12 +174,13 @@ class TokenizationTest
       assert( cacheMap.size() == 0)
       // fire a join query
       query = s"select * from $table t1, $table2 t2 where t1.a = 0"
-      snc.sql(query).collect()
+      res1 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
 
       query = s"select * from $table t1, $table2 t2 where t1.a = 5"
-      snc.sql(query).collect()
+      res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
+      assert(!(res1.deep == res2.deep))
 
       query = s"select * from $table t1, $table2 t2 where t2.a = 5"
       snc.sql(query).collect()
@@ -192,12 +200,13 @@ class TokenizationTest
 
       // let us test for having
       query = s"select t1.b, SUM(t1.a) from $table t1 group by t1.b having SUM(t1.a) > 0"
-      snc.sql(query).collect()
+      res1 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
 
       query = s"select t1.b, SUM(t1.a) from $table t1 group by t1.b having SUM(t1.a) > 5"
-      snc.sql(query).collect()
+      res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
+      assert(!(res1.deep == res2.deep))
 
       snc.sql(s"drop table $table")
       snc.sql(s"drop table $table2")
