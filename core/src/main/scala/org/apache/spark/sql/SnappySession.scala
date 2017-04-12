@@ -1699,7 +1699,7 @@ object SnappySession extends Logging {
         p
       }
     }
-    res.toSet.toArray
+    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
 
   private def evaluatePlan(df: DataFrame,
@@ -1717,7 +1717,7 @@ object SnappySession extends Logging {
       }
       else {
         val params1 = getAllParamLiterals(executedPlan)
-        if (!(params1.deep == key.pls.deep)) {
+        if (!(params1.sameElements(key.pls))) {
           key.invalidatePlan
         }
       }
@@ -1868,7 +1868,7 @@ object SnappySession extends Logging {
 
       // normalize lp so that two queries can be determined to be equal
       val tlp = lp.transform(transformExprID)
-      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.toArray)
+      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
     }
   }
 
@@ -1904,6 +1904,9 @@ object SnappySession extends Logging {
       } else {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
         cachedDF.reset()
+        if (key.valid) {
+          cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+        }
       }
       if (key.valid) {
         cachedDF.reprepareBroadcast(lp, currentWrappedConstants)

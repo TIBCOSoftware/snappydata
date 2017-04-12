@@ -37,12 +37,27 @@ class TokenizationTest
   val table2 = "my_table2"
   val all_typetable = "my_table3"
 
+  override def beforeAll(): Unit = {
+    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    System.setProperty("spark.sql.codegen.comments", "true")
+    System.setProperty("spark.testing", "true")
+    super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    System.clearProperty("spark.sql.codegen.comments")
+    System.clearProperty("spark.testing")
+    super.afterAll()
+  }
+
   after {
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
     SnappySession.clearAllCache()
     snc.dropTable(s"$table", ifExists = true)
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
+    snc.dropTable(s"$colTableName", ifExists = true)
   }
 
   test("like queries") {
@@ -357,8 +372,97 @@ class TokenizationTest
     if (dosleep) Thread.sleep(5000)
   }
 
+  val colTableName = "airlineColTable"
+
   test("Test broadcast hash joins and scalar sub-queries") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val ddlStr = "(YearI INT," + // NOT NULL
+          "MonthI INT," + // NOT NULL
+          "DayOfMonth INT," + // NOT NULL
+          "DayOfWeek INT," + // NOT NULL
+          "DepTime INT," +
+          "CRSDepTime INT," +
+          "ArrTime INT," +
+          "CRSArrTime INT," +
+          "UniqueCarrier VARCHAR(20)," + // NOT NULL
+          "FlightNum INT," +
+          "TailNum VARCHAR(20)," +
+          "ActualElapsedTime INT," +
+          "CRSElapsedTime INT," +
+          "AirTime INT," +
+          "ArrDelay INT," +
+          "DepDelay INT," +
+          "Origin VARCHAR(20)," +
+          "Dest VARCHAR(20)," +
+          "Distance INT," +
+          "TaxiIn INT," +
+          "TaxiOut INT," +
+          "Cancelled INT," +
+          "CancellationCode VARCHAR(20)," +
+          "Diverted INT," +
+          "CarrierDelay INT," +
+          "WeatherDelay INT," +
+          "NASDelay INT," +
+          "SecurityDelay INT," +
+          "LateAircraftDelay INT," +
+          "ArrDelaySlot INT)"
+
+      val hfile: String = getClass.getResource("/2015.parquet").getPath
+      val snContext = snc
+      snContext.sql("set spark.sql.shuffle.partitions=6")
+
+      val airlineDF = snContext.read.load(hfile)
+      val airlineparquetTable = "airlineparquetTable"
+      airlineDF.registerTempTable(airlineparquetTable)
+
+      // val colTableName = "airlineColTable"
+
+      snc.sql(s"CREATE TABLE $colTableName $ddlStr" +
+          "USING column options()")
+
+      airlineDF.write.insertInto(colTableName)
+
+      val rs0 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
+          s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
+          s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
+          s" group by dest having count ( * ) > 100) group by dest order " +
+          s" by avgTaxiTime desc")
+
+      val rows0 = rs0.collect()
+
+      val rs1 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
+          s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
+          s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
+          s" group by dest having count ( * ) > 100) group by dest order " +
+          s" by avgTaxiTime desc")
+
+      val rows1 = rs1.collect()
+      assert(rows0.deep == rows1.deep)
+      // rows1.foreach(println)
+
+      val cacheMap = SnappySession.getPlanCache.asMap()
+      assert(cacheMap.size() == 1)
+
+      val rs11 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
+          s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
+          s" where (taxiin > 10 or taxiout > 10) and dest in  (select dest from $colTableName " +
+          s" group by dest having count ( * ) > 10000) group by dest order " +
+          s" by avgTaxiTime desc")
+
+      val rows11 = rs11.collect()
+      assert(!(rows1.deep == rows11.deep))
+      assert(cacheMap.size() == 1)
+    }
+    finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  test("Test broadcast hash joins and scalar sub-queries - 2") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val th = 10L * 1024 * 1024 * 1024
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=$th")
     val ddlStr = "(YearI INT," + // NOT NULL
         "MonthI INT," + // NOT NULL
         "DayOfMonth INT," + // NOT NULL
@@ -398,44 +502,38 @@ class TokenizationTest
     val airlineparquetTable = "airlineparquetTable"
     airlineDF.registerTempTable(airlineparquetTable)
 
-    val colTableName = "airlineColTable"
-
     snc.sql(s"CREATE TABLE $colTableName $ddlStr" +
         "USING column options()")
 
     airlineDF.write.insertInto(colTableName)
 
-    val rs0 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
-        s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
-        s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
-        s" group by dest having count ( * ) > 100) group by dest order " +
-        s" by avgTaxiTime desc")
+//    snc.sql(s"select Y.distance, Y.dest, X.distance, X.dest from (select distance, dest, count(*) " +
+//        s" from $colTableName where taxiin > 20 or taxiout > 20" +
+//        s" group by dest, distance) X " +
+//        s" right outer join " +
+//        s"(select distance, dest, count(*) " +
+//        s" from $colTableName where taxiin > 10 or taxiout > 10" +
+//        s" group by dest, distance) Y" +
+//        s" on X.dest = Y.dest and X.distance = Y.distance").collect().foreach(println)
 
-    val rows0 = rs0.collect()
-
-    val rs1 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
-        s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
-        s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
-        s" group by dest having count ( * ) > 100) group by dest order " +
-        s" by avgTaxiTime desc")
-
-    val rows1 = rs1.collect()
-    assert(rows0.deep == rows1.deep)
-    //rows1.foreach(println)
-
-    val cacheMap = SnappySession.getPlanCache.asMap()
-    assert( cacheMap.size() == 1)
-
-    val rs11 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
+    var df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
         s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
         s" where (taxiin > 10 or taxiout > 10) and dest in  (select dest from $colTableName " +
-        s" group by dest having count ( * ) > 10000) group by dest order " +
+        s" where distance = 100 group by dest having count ( * ) > 100) group by dest order " +
         s" by avgTaxiTime desc")
+    // df.explain(true)
+    val res1 = df.collect()
 
-    val rows11 = rs11.collect()
-    //rows11.foreach(println)
-    assert(!(rows1.deep == rows11.deep))
-    assert( cacheMap.size() == 1)
+    df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
+        s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
+        s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
+        s" where distance = 658 group by dest having count ( * ) > 100) group by dest order " +
+        s" by avgTaxiTime desc")
+    val res2 = df.collect()
+
+    assert(!res1.sameElements(res2))
+    assert( SnappySession.getPlanCache.asMap().size() == 1)
+
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 }
