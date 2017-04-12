@@ -111,20 +111,18 @@ object CachedPlanHelperExec extends Logging {
   val WRAPPED_CONSTANTS = "TokenizedConstants"
   val NOCACHING_KEY    =  "TokenizationNoCaching"
 
-  //val broadcastReferences: Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = _
   private[sql] def allLiterals(allReferences: Seq[Seq[Any]]): Array[LiteralValue] = {
     allReferences.flatMap(_.collect {
       case l: LiteralValue => l
     }).toSet[LiteralValue].toArray.sortBy(_.position)
   }
 
-  def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
-      newpls: mutable.ArrayBuffer[ParamLiteral], pvs: ParameterValueSet): Unit = {
+  def replaceConstants(literals: Array[LiteralValue], newpls: mutable.ArrayBuffer[ParamLiteral],
+      pvs: ParameterValueSet): Unit = {
     if (pvs != null) {
       var countParams = 0
       literals.foreach {
-        case lv@LiteralValue(_, _, p, true) =>
-          countParams += 1
+        case lv@LiteralValue(_, _, p, true) => countParams += 1
           assert (p - 1 < pvs.getParameterCount)
         case _ =>
       }
@@ -132,16 +130,10 @@ object CachedPlanHelperExec extends Logging {
         s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
             s" param-count=$countParams")
     }
-    literals.foreach { case lv @ LiteralValue(_, _, p, isParameter) =>
-      if (!isParameter) {
-        lv.value = newpls.find(_.pos == p).get.value
-        val y = newpls.find(_.pos == p).get.value
-      } else {
-        val dvd = pvs.getParameter(p - 1)
-        val scalaTypeVal = setValue(dvd)
-        val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-        lv.value = catalystTypeVal
-      }
+    literals.foreach {
+      case lv @ LiteralValue(_, _, p, false) => lv.value = newpls.find(_.pos == p).get.value
+      case lv @ LiteralValue(_, _, p, true) => val dvd = pvs.getParameter(p - 1)
+        lv.value = CatalystTypeConverters.convertToCatalyst(setValue(dvd))
     }
   }
 
