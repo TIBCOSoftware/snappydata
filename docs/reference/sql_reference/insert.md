@@ -19,7 +19,8 @@ Query can be:
 -   a VALUES list
 -   a multiple-row VALUES expression
 
-<p class="note"><strong>Note:</strong> SnappyData does not support an INSERT with a subselect query if any subselect query requires aggregation. </p>
+!!! Note
+	SnappyData does not support an INSERT with a subselect query if any subselect query requires aggregation. </p>
 Single-row and multiple-row lists can include the keyword DEFAULT. Specifying DEFAULT for a column inserts the column's default value into the column. Another way to insert the default value into the column is to omit the column from the column list and only insert values into other columns in the table. More information is provided in <a href="ref-valuesexpression.html#reference_9518856325F74F79B13674B8E060E6C5" class="xref" title="The VALUES expression allows construction of a row or a table from other values.">VALUES</a>.
 
 <a href="ref-select.html#reference_29DE31649A5149C3B89F958FC5CB6CBE" class="xref" title="A query with an optional ORDER BY CLAUSE and an optional FOR UPDATE clause.">SELECT</a> and <a href="ref-join.html#reference_9518856325F74F79B13674B8E060E6C5" class="xref" title="Perform joins between two tables.">JOIN Operations</a> provide additional information.

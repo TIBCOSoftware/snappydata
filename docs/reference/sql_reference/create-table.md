@@ -9,7 +9,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     ( { column-definition | table-constraint }
     [ , { column-definition | table-constraint } ] * )
 }
-USING row | column
+USING row | column | column_sample
 OPTIONS (
 COLOCATE_WITH 'string-constant',  // Default none
 PARTITION_BY 'PRIMARY KEY | string-constant', // If not specified it will be a replicated table.
@@ -22,6 +22,10 @@ OVERFLOW 'true | false', // specifies the action to be executed upon eviction ev
 EXPIRE ‘TIMETOLIVE in seconds',
 COLUMN_BATCH_SIZE 'string-constant', // Must be an integer
 COLUMN_MAX_DELTA_ROWS 'string-constant', // Must be an integer
+QCS 'string-constant', // column-name [, column-name ] * //only applicable for column_sample
+FRACTION 'string-constant',  //Must be a double //only applicable for column_sample
+STRATARESERVOIRSIZE 'string-constant',  // Default 50 Must be an integer. //only applicable for column_sample
+BASETABLE 'string-constant', //base table name //only applicable for column_sample
 )
 [AS select_statement];
 ```
@@ -34,7 +38,7 @@ The CREATE TABLE statement has two variants depending on whether you are specify
 
 <a id="ddl"></a>
 ## DDL Extensions to SnappyStore Tables
-The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
+The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. 
 
    * COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
@@ -48,7 +52,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * PERSISTENT:  PERSISTENT: When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
-   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
+   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](create-diskstore.md).
 
    * EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
 
@@ -65,7 +69,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
 		* `snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit COLUMN_MAX_DELTA_ROWS specification, then this is inherited for that table property.
 
-Refer to the [SQL Reference Guide](../../sql_reference.md) for information on the extensions.   
+Refer to the [CREATE SAMPLE TABLE](../../create-sample-table.md) for information on the extensions applicable to sample tables.
 
 ## Example: Column Table
 ```
@@ -93,7 +97,22 @@ Refer to the [SQL Reference Guide](../../sql_reference.md) for information on th
           S_COMMENT STRING NOT NULL)
           USING ROW OPTIONS (PERSISTENT 'asynchronous');
 ```
-          
+
+## Example: Sample Table
+```
+CREATE TABLE CUSTOMER_SAMPLE ( 
+        C_CUSTKEY     INTEGER NOT NULL,
+        C_NAME        VARCHAR(25) NOT NULL,
+        C_ADDRESS     VARCHAR(40) NOT NULL,
+        C_NATIONKEY   INTEGER NOT NULL,
+        C_PHONE       VARCHAR(15) NOT NULL,
+        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+        C_COMMENT     VARCHAR(117) NOT NULL)
+    USING COLUMN_SAMPLE OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
+    strataReservoirSize '50', baseTable 'CUSTOMER_BASE')
+```
+
 # CREATE TABLE … AS …
 With the alternate form of the CREATE TABLE statement, you specify the column names and/or the column data types with a query. The columns in the query result are used as a model for creating the columns in the new table.
 
