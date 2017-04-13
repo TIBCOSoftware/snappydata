@@ -127,7 +127,7 @@ pages:
 #        - 'Using Distributed Transactions in Your Applications': 'concepts/developing_applications/using_distributed_transactions.md'
         - 'Connecting Java Clients and Peers': 'concepts/developing_applications/connecting_java_clients_and_peers.md'
         - 'Using Result Sets and Cursors': 'concepts/developing_applications/using_result_sets_and_cursors.md'
-#        - 'Storing and Loading JAR Files': 'concepts/developing_applications/storing_and_loading_jar_files.md'
+        - 'Storing and Loading JAR Files': 'concepts/developing_applications/storing_and_loading_jar_files.md'
         - 'Import Export': 'concepts/developing_applications/import_export.md'
     - 'Synopsis Data Engine (SDE)': aqp.md
     - 'Synopsis Data Engine (SDE)':
@@ -154,20 +154,21 @@ pages:
 - 'Best Practises':
     - 'Using Index': 'best_practises/using_index.md'
     - 'Using Collocated Joins': 'best_practises/collocated_joins.md'
-    - 'Using Char or Varchar string': 'best_practises/char_varchar_string.md'
+#    - 'Using Char or Varchar string': 'best_practises/char_varchar_string.md'
     - 'Physical designing with SnappyData': 'best_practises/physical_design.md'
     - 'Using Row vs Column Tables': 'best_practises/use_row_column_table.md'
     - 'Right Affinity Mode to Use': 'best_practises/affinity_mode_to_use.md'
     - 'Capacity Planning': 'best_practises/capacity_planning.md'
+    - 'Preventing Disk Full Errors': 'troubleshooting/prevent_disk_full_errors.md'
     - 'Design Database and Schema': 'design_schema.md'
-    - 'Design Database and Schema': 
-        - 'Physical Design': 'best_practises/design_schema/physical_design.md'
-        - 'Using Row and Column Table': 'best_practises/design_schema/row_column_table.md'
-        - 'Design Principles of Scalable': 'best_practises/design_schema/principles_of_scalable.md'
-        - 'Identify Entity Groups and Partitioning Keys': 'best_practises/design_schema/entity_group_partitioning_keys.md'
-        - 'Replicate Dimension Tables': 'best_practises/design_schema/replicate_dimension_tables.md'
-        - 'Example for Adapting Database Schema for SnappyData': 'best_practises/design_schema/adapting_database_scheme.md'
-        - 'Dealing with Many-to-Many Relationships': 'best_practises/design_schema/many-to-many-relationship.md'
+#    - 'Design Database and Schema': 
+#        - 'Physical Design': 'best_practises/design_schema/physical_design.md'
+#        - 'Using Row and Column Table': 'best_practises/design_schema/row_column_table.md'
+#        - 'Design Principles of Scalable': 'best_practises/design_schema/principles_of_scalable.md'
+#        - 'Identify Entity Groups and Partitioning Keys': 'best_practises/design_schema/entity_group_partitioning_keys.md'
+#        - 'Replicate Dimension Tables': 'best_practises/design_schema/replicate_dimension_tables.md'
+#        - 'Example for Adapting Database Schema for SnappyData': 'best_practises/design_schema/adapting_database_scheme.md'
+#        - 'Dealing with Many-to-Many Relationships': 'best_practises/design_schema/many-to-many-relationship.md'
 # -- Topic - How Tos
 - 'How Tos': 'howto.md'
 - 'How Tos':
@@ -222,14 +223,13 @@ pages:
 - 'Troubleshooting and Analysis': 'troubleshooting.md'
 - 'Troubleshooting and Analysis': 
     - 'Getting thread dumps from GUI or detailed stacks using SIGURG': 'troubleshooting/thread_dumps.md'
-    - 'Collocating logs and stats using collect-debug-artifacts.sh': 'troubleshooting/collocating_logs.md'
+    - 'Collecting logs and stats using collect-debug-artifacts.sh': 'troubleshooting/collocating_logs.md'
     - 'Using VSD (can we make use of GemFire VSD docs?)': 'troubleshooting/using_vsd.md'
     - 'Enabling/disabling logging levels/traces on-the-fly': 'troubleshooting/logging_levels.md'
     - 'Cannot connect using EC2 Scripts': 'troubleshooting/connect_ec2_scripts.md'
-    - 'Increase memory for Spark executors': 'troubleshooting/increase_memory.md'
-    - 'Can I read orc files from snappy-shell?': 'troubleshooting/read_orc_files.md'
+#    - 'Increase memory for Spark executors': 'troubleshooting/increase_memory.md'
+#    - 'Can I read orc files from snappy-shell?': 'troubleshooting/read_orc_files.md'
     - 'Observing logs for warning/severe/errors and decoding log messages': 'troubleshooting/observing_logs.md'
-    - 'Preventing Disk Full Errors': 'troubleshooting/prevent_disk_full_errors.md'
 # -- Topic - Reference Guide
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
