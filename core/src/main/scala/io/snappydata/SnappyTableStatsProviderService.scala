@@ -59,6 +59,8 @@ object SnappyTableStatsProviderService {
   def getService: TableStatsProviderService = {
     statsProviderService
   }
+
+  var suspendCacheInvalidation = false
 }
 
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
