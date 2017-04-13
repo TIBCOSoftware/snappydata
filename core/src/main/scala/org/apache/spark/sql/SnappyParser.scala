@@ -26,7 +26,7 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
-import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
@@ -620,33 +620,33 @@ class SnappyParser(session: SnappySession)
 
   protected final def primary: Rule1[Expression] = rule {
     identifier ~ (
-        '(' ~ ws ~ (
-            '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
-              if (udfName.equalsIgnoreCase("COUNT")) {
-                AggregateExpression(Count(Literal(1, IntegerType)),
-                  mode = Complete, isDistinct = false)
-              } else {
-                throw Utils.analysisException(s"invalid expression $udfName(*)")
-              }) |
-            (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
-                (OVER ~ windowSpec).? ~> { (u: Any, d: Any, e: Any, w: Any) =>
-              val udfName = u.asInstanceOf[String]
-              val exprs = e.asInstanceOf[Seq[Expression]]
-              val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
-                UnresolvedFunction(udfName, exprs, isDistinct = false)
-              } else if (udfName.equalsIgnoreCase("COUNT")) {
-                aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
-              } else {
-                UnresolvedFunction(udfName, exprs, isDistinct = true)
-              }
-              w.asInstanceOf[Option[WindowSpec]] match {
-                case None => function
-                case Some(spec: WindowSpecDefinition) =>
-                  WindowExpression(function, spec)
-                case Some(ref: WindowSpecReference) =>
-                  UnresolvedWindowExpression(function, ref)
-              }
+      ('.' ~ identifier).? ~ '(' ~ ws ~ (
+        '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
+          if (n1.equalsIgnoreCase("COUNT")) {
+            AggregateExpression(Count(Literal(1, IntegerType)),
+              mode = Complete, isDistinct = false)
+          } else {
+            throw Utils.analysisException(s"invalid expression $n1(*)")
+          }) |
+          (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
+            (OVER ~ windowSpec).? ~> { (n1: String, n2: Option[String], d: Any, e: Any, w: Any) =>
+            val udfName = n2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
+            val exprs = e.asInstanceOf[Seq[Expression]]
+            val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
+              UnresolvedFunction(udfName, exprs, isDistinct = false)
+            } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
+              aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
+            } else {
+              UnresolvedFunction(udfName, exprs, isDistinct = true)
             }
+            w.asInstanceOf[Option[WindowSpec]] match {
+              case None => function
+              case Some(spec: WindowSpecDefinition) =>
+                WindowExpression(function, spec)
+              case Some(ref: WindowSpecReference) =>
+                UnresolvedWindowExpression(function, ref)
+            }
+          }
         ) |
         '.' ~ ws ~ (
             identifier. +('.' ~ ws) ~> ((i1: String, rest: Any) =>
@@ -656,10 +656,10 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
-    '{' ~ FN ~ ws ~ identifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
-      (f: Any, e: Any) =>
-        f.asInstanceOf[String] match {
-          case f if f.equalsIgnoreCase("TIMESTAMPADD") =>
+    '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
+      (f: FunctionIdentifier, e: Any) =>
+        f match {
+          case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
             val exprs = e.asInstanceOf[Seq[Expression]].toList
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
