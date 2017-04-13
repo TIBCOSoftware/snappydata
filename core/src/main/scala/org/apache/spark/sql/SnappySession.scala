@@ -1924,9 +1924,6 @@ object SnappySession extends Logging {
       } else {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
         cachedDF.reset()
-        if (key.valid) {
-          cachedDF.reprepareBroadcast(currentWrappedConstants, session.sessionState.pvs)
-        }
       }
       if (key.valid) {
         CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, currentWrappedConstants,
