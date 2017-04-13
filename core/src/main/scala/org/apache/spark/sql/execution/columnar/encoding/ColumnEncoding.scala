@@ -704,7 +704,8 @@ object ColumnEncoding {
 
   def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
     if (buffer.isDirect) {
-      getColumnDecoder(null, UnsafeHolder.getDirectBufferAddress(buffer), field)
+      getColumnDecoder(null, UnsafeHolder.getDirectBufferAddress(buffer) +
+          buffer.position(), field)
     } else {
       getColumnDecoder(buffer.array(), buffer.arrayOffset() +
           buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
