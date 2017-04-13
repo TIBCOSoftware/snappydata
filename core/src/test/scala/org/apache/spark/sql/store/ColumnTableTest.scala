@@ -934,7 +934,7 @@ class ColumnTableTest
 
     val region = Misc.getRegionForTable(
       ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
+    SnappyTableStatsProviderService.getService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
         .getPRNumRowsInColumnBatches
 

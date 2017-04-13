@@ -68,7 +68,7 @@ trait SplitClusterDUnitTestBase extends Logging {
   protected def startNetworkServers(): Unit
 
   def doTestColumnTableCreation(): Unit = {
-    startNetworkServers()
+//    startNetworkServers()
 
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("column")
@@ -93,7 +93,7 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
   def doTestRowTableCreation(): Unit = {
-    startNetworkServers()
+//    startNetworkServers()
 
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("row")
@@ -109,7 +109,7 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
   def doTestComplexTypesForColumnTables_SNAP643(): Unit = {
-    startNetworkServers()
+//    startNetworkServers()
 
     // Embedded Cluster Operations
     val props = Map("buckets" -> "7")
@@ -125,7 +125,7 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
   def doTestTableFormChanges(skewNetworkServers: Boolean): Unit = {
-    startNetworkServers()
+//    startNetworkServers()
 
     // StandAlone Spark Cluster Operations
     // row table

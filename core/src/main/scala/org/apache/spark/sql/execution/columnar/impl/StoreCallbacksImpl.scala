@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.lang
+import java.{util, lang}
 import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
@@ -26,12 +26,13 @@ import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallb
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
+import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.Constant
+import io.snappydata.{SnappyTableStatsProviderService, Constant}
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql.catalyst.FunctionIdentifier
@@ -178,6 +179,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def registerRelationDestroyForHiveStore(): Unit = {
     SnappyStoreHiveCatalog.registerRelationDestroy()
+  }
+
+  def getSnappyTableStats: AnyRef = {
+    val c = SnappyTableStatsProviderService.getService.getTableSizeStats().values.asJavaCollection
+    val list: java.util.List[SnappyRegionStats] = new util.ArrayList(c.size())
+    list.addAll(c)
+    list
   }
 
   override def performConnectorOp(ctx: Object): Unit = {
