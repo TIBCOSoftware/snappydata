@@ -194,6 +194,8 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
     (var converter: Any => Any = createToScalaConverter(dataType))
     extends KryoSerializable {
 
+  @transient var collectedForPlanCaching = false
+
   override def write(kryo: Kryo, output: Output): Unit = {
     kryo.writeClassAndObject(output, value)
     kryo.writeClassAndObject(output, dataType.jsonValue)

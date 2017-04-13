@@ -89,7 +89,8 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
+        .asInstanceOf[SnappySession])).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
