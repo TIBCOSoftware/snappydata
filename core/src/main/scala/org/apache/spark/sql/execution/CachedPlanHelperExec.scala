@@ -29,6 +29,7 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.SnappySession.CachedKey
+
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, SortOrder}
@@ -144,13 +145,10 @@ object CachedPlanHelperExec extends Logging {
       case ti: SQLTinyint => ti.getByte
       case d: SQLDouble => d.getDouble
       case li: SQLLongint => li.getLong
-
       case bid: BigIntegerDecimal => bid.getDouble
       case de: SQLDecimal => de.getBigDecimal
       case r: SQLReal => r.getFloat
-
       case b: SQLBoolean => b.getBoolean
-
       case cl: SQLClob =>
         val charArray = cl.getCharArray()
         if (charArray != null) {
@@ -160,13 +158,11 @@ object CachedPlanHelperExec extends Logging {
       case lvc: SQLLongvarchar => UTF8String.fromString(lvc.getString)
       case vc: SQLVarchar => UTF8String.fromString(vc.getString)
       case c: SQLChar => UTF8String.fromString(c.getString)
-
       case ts: SQLTimestamp => ts.getTimestamp(null)
       case t: SQLTime => t.getTime(null)
       case d: SQLDate =>
         val c: Calendar = null
         d.getDate(c)
-
       case _ => dvd.getObject
     }
   }

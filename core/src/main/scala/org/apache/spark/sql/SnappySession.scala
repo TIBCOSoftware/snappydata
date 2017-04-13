@@ -34,7 +34,6 @@ import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import io.snappydata.Constant
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -45,10 +44,18 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+<<<<<<< HEAD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, InSet, ListQuery, LiteralValue, ParamConstants, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.trees.TreeNode
+=======
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId}
+import org.apache.spark.sql.catalyst.expressions.{Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.{PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.plans.QueryPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
+>>>>>>> master
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -1877,6 +1884,7 @@ object SnappySession extends Logging {
         case ae: AggregateExpression =>
           val eee = ae.copy(resultId = ExprId(0))
           eee
+<<<<<<< HEAD
       }
 
       def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
@@ -1886,6 +1894,17 @@ object SnappySession extends Logging {
           child = child.transformAllExpressions(normalizeExprIds))
       }
 
+=======
+      }
+
+      def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
+        case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
+        case f@Filter(condition, child) => f.copy(
+          condition = condition.transform(normalizeExprIds),
+          child = child.transformAllExpressions(normalizeExprIds))
+      }
+
+>>>>>>> master
       // normalize lp so that two queries can be determined to be equal
       val tlp = lp.transform(transformExprID)
       new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
@@ -1926,9 +1945,14 @@ object SnappySession extends Logging {
         cachedDF.reset()
       }
       if (key.valid) {
+<<<<<<< HEAD
         CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, currentWrappedConstants,
           session.sessionState.pvs)
         cachedDF.reprepareBroadcast(currentWrappedConstants, session.sessionState.pvs)
+=======
+        cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+        CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
+>>>>>>> master
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
