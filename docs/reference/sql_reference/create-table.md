@@ -9,7 +9,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     ( { column-definition | table-constraint }
     [ , { column-definition | table-constraint } ] * )
 }
-USING row | column | column_sample
+USING row | column
 OPTIONS (
 COLOCATE_WITH 'string-constant',  // Default none
 PARTITION_BY 'PRIMARY KEY | string-constant', // If not specified it will be a replicated table.
@@ -22,10 +22,6 @@ OVERFLOW 'true | false', // specifies the action to be executed upon eviction ev
 EXPIRE ‘TIMETOLIVE in seconds',
 COLUMN_BATCH_SIZE 'string-constant', // Must be an integer
 COLUMN_MAX_DELTA_ROWS 'string-constant', // Must be an integer
-QCS 'string-constant', // column-name [, column-name ] *
-FRACTION 'string-constant',  //Must be a double
-STRATARESERVOIRSIZE 'string-constant',  // Default 50 Must be an integer.
-BASETABLE 'string-constant', //base table name
 )
 [AS select_statement];
 ```
