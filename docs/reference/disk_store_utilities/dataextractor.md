@@ -1,6 +1,6 @@
 # dataextractor
 
-Operates against a set of available RowStore operational log files (disk stores) in order to extract data to CSV files and provide recommendations for how to best restore the data in a new distributed system.
+Operates against a set of available SnappyData operational log files (disk stores) in order to extract data to CSV files and provide recommendations for how to best restore the data in a new distributed system.
 
 ## Syntax
 
@@ -16,11 +16,11 @@ dataextractor  property-file=<filename>
   [--user-name=<user>]
 ```
 
-See also <a href="../../concepts/tables/persisting_table_data/extractor_overview.md#disk_storage" class="xref" title="In cases where disk store files become corrupted, or where you cannot restore disk store backups to members, RowStore provides a data extractor utility that attempts to recover as much data as possible from available disk store files. The recovered data is stored in multiple comma-separated values (CSV) files, which you can use to load the data into a new RowStore system.">[Recovering Data from Disk Stores]() for limitations, requirements, and examples of using this utility.
+See also [Recovering Data from Disk Stores](../../concepts/tables/persisting_table_data/extractor_overview.md#disk_storage) for limitations, requirements, and examples of using this utility.
 
 | Option |Description |
 |--------|--------|
-|property-file=&lt;filename&gt;|(Required.) The properties file defines the full list of disk store files that are available for each host in the SnappyData distributed system you are attempting to recover. Each line in the properties file describes the disk store directories for a single member of the SnappyData distributed system, and uses the format: </br><pre class="pre codeblock"><code>hostname=path-to-server-directory,path-to-disk-store[,path-to-diskstore]...</code></pre> </br><p class="note"><strong>Note:</strong> The first value that follows the hostname must specify the full path to the member's working directory. Additional paths can be added to specify the locations of additional disk store files as needed. <p class="note"><strong>Note:</strong> The disk store files that contain the persistent data dictionary are required in order to use the <code class="ph codeph">dataextractor</code> utility. Each locator and data store member of the distributed system persists the data dictionary in the <span class="ph filepath">/datadictionary</span> subdirectory of the member working directory.|
+|property-file=&lt;filename&gt;|(Required.) The properties file defines the full list of disk store files that are available for each host in the SnappyData distributed system you are attempting to recover. Each line in the properties file describes the disk store directories for a single member of the SnappyData distributed system, and uses the format: </br><pre class="pre codeblock"><code>hostname=path-to-server-directory,path-to-disk-store[,path-to-diskstore]...</code></pre> </br> **Note**: </br>*The first value that follows the hostname must specify the full path to the member's working directory. Additional paths can be added to specify the locations of additional disk store files as needed. </br> * The disk store files that contain the persistent data dictionary are required in order to use the <code class="ph codeph">dataextractor</code> utility. Each locator and data store member of the distributed system persists the data dictionary in the <span class="ph filepath">/datadictionary</span> subdirectory of the member working directory.|
 |--use-single-ddl=&lt;filename&gt;|By default the utility constructs DDL files using the data dictionaries provided in the properties file list. You can optionally specify a single DDL file to use for recovering data. If you specify a DDL file, then the utility only recovers data for the schema defined in that file, rather than all schemas discovered in the disk store files.|
 |--string-delimiter=&quot;&lt;delimiter&gt;&quot;|Specifies a custom delimiter to use in generated CSV files. The default is a double quotation mark: &quot;|
 |--help|Displays usage information.|
@@ -33,7 +33,7 @@ See also <a href="../../concepts/tables/persisting_table_data/extractor_overview
 <a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_050663B03C0A4C42B07B4C5F69EAC95D"></a>
 ## Description
 
-Whenever possible, Pivotal recommends that you recover data using an online or offline disk store backup, using the techniques described in [Backing Up and Restoring Disk Stores](../../concepts/tables/persisting_table_data/backup_restore_disk_store.md#backup_restore_disk_store). The data recovery utilities provide a "best effort" attempt to recover data in cases where disk store files are corrupted and no viable backup is available.
+Whenever possible, SnappyData recommends that you recover data using an online or offline disk store backup, using the techniques described in [Backing Up and Restoring Disk Stores](../../concepts/backup/backup_restore_disk_store.md). The data recovery utilities provide a "best effort" attempt to recover data in cases where disk store files are corrupted and no viable backup is available.
 
 See [Recovering Data from Disk Stores](../../concepts/tables/persisting_table_data/extractor_overview.md#disk_storage)for more information.
 

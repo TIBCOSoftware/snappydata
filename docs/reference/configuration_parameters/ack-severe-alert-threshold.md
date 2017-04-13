@@ -1,4 +1,4 @@
-# [ack-severe-alert-threshold](ack-severe-alert-threshold.md)
+# ack-severe-alert-threshold
 
 ## Description
 

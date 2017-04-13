@@ -1,1 +1,0 @@
-##Recovering from failures, revoking safely ensuring no loss of data

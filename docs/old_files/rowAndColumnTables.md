@@ -146,9 +146,9 @@ this, we ensure that the query doesn't miss any data.
 We use a persistent Hive catalog for all our metadata storage. All table, schema definition are stored here in a reliable manner. As we intend be able to quickly recover from driver failover, we chose GemFireXd itself to store meta information. This gives us ability to query underlying GemFireXD to reconstruct the metastore incase of a driver failover. 
 
 There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. 
+
 ##### SQL Reference to the Syntax
-For detailed syntax for GemFire XD check
-http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference.html
+For detailed syntax for SnappyData refer to the [SQL Reference Guide]()
 
 
 

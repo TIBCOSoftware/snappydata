@@ -87,7 +87,6 @@ pages:
             -  'Recovering Persistent Data at Startup': 'concepts/tables/persisting_table_data/how_startup_works_in_system_with_disk_stores.md'
             -  'Recovering Persistent Data at Startup': 
                -  'Start a System with Disk Stores': 'concepts/tables/persisting_table_data/starting_system_with_disk_stores.md'
-            -  'Backing Up and Restoring Disk Stores': 'concepts/tables/persisting_table_data/backup_restore_disk_store.md'
             -  'Disk Store Management': 'concepts/tables/persisting_table_data/managing_disk_stores.md'
             -  'Disk Store Management': 
                -  'Validate a Disk Store': 'concepts/tables/persisting_table_data/validating_disk_store.md'
@@ -105,20 +104,30 @@ pages:
 #        - 'Overview of Disk Stores': 'concepts/tables/disk_stores.md'
         - 'Additional Topics': 'concepts/tables/estimating_heap_overhead.md'
     - 'Working with heterogeneous data': 'concepts/heterogenous_data/working_with_heterogenous_data.md'
-    - 'Backup and Recovery': 'backup.md'
-    - 'Backup and Recovery':
-        - 'Online and offline backup and recovery': 'concepts/backup/online_offline_backup.md'
-        - 'Redundancy and Data Availability for Failures': 'concepts/backup/redundancy_data_availability.md'
-        - 'Recovering from Failures and Revoking Safely': 'concepts/backup/recovery_revoking.md'
-        - 'Recovery using data extractor; data redundancy implications': 'concepts/backup/recovery_using_data_extractor_redundancy.md'
+    - 'Backing Up and Restoring Disk Stores': 'concepts/backup/backup_restore_disk_store.md'
+    - 'Backing Up and Restoring Disk Stores': 
+        -  'Backup Guidelines and Prerequisites': 'concepts/backup/backup_guidelines_and_prerequisites.md'
+        -  'Performing a Full Online Backup': 'concepts/backup/performing_a_full_online_backup.md'
+        -  'Performing an Incremental Backup': 'concepts/backup/performing_an_incremental_backup.md'
+        -  'What a Full Online Backup Saves': 'concepts/backup/what_a_full_online_backup_saves.md'
+        -  'What an Incremental Online Backup Saves': 'concepts/backup/what_an_incremental_online_backup_saves.md'
+        -  'Offline Members: Manual Catch-Up to an Online Backup': 'concepts/backup/offline_members.md'
+        -  'Restore an Online Backup': 'concepts/backup/restore_an_online_backup.md'
+        -  'Offline File Backup and Restore': 'concepts/backup/offline_file_backup_and_restore.md'
+#    - 'Backup and Recovery': 'backup.md'
+#    - 'Backup and Recovery':
+#        - 'Online and offline backup and recovery': 'concepts/backup/online_offline_backup.md'
+#        - 'Redundancy and Data Availability for Failures': 'concepts/backup/redundancy_data_availability.md'
+#        - 'Recovering from Failures and Revoking Safely': 'concepts/backup/recovery_revoking.md'
+#        - 'Recovery using data extractor; data redundancy implications': 'concepts/backup/recovery_using_data_extractor_redundancy.md'
     - 'Developing Applications': 'developing_applications.md'
     - 'Developing Applications': 
         - 'Configuring SnappyData as a JDBC Data source': 'concepts/developing_applications/configuring-JDBC_datasource.md'
         - 'Understanding the Data Consistency Model': 'concepts/developing_applications/understanding_the_data_consistency.md'
-        - 'Using Distributed Transactions in Your Applications': 'concepts/developing_applications/using_distributed_transactions.md'
+#        - 'Using Distributed Transactions in Your Applications': 'concepts/developing_applications/using_distributed_transactions.md'
         - 'Connecting Java Clients and Peers': 'concepts/developing_applications/connecting_java_clients_and_peers.md'
         - 'Using Result Sets and Cursors': 'concepts/developing_applications/using_result_sets_and_cursors.md'
-        - 'Storing and Loading JAR Files': 'concepts/developing_applications/storing_and_loading_jar_files.md'
+#        - 'Storing and Loading JAR Files': 'concepts/developing_applications/storing_and_loading_jar_files.md'
         - 'Import Export': 'concepts/developing_applications/import_export.md'
     - 'Synopsis Data Engine (SDE)': aqp.md
     - 'Synopsis Data Engine (SDE)':

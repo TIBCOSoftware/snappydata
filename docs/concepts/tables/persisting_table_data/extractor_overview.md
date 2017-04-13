@@ -3,7 +3,7 @@
 In cases where disk store files become corrupted, or where you cannot restore disk store backups to members, SnappyData provides a data extractor utility that attempts to recover as much data as possible from available disk store files. The recovered data is stored in multiple comma-separated values (CSV) files, which you can use to load the data into a new SnappyData system.
 
 !!!Note:
-	Whenever possible, SnappyData recommends that you recover data using an online or offline disk store backup, using the techniques described in [Backing Up and Restoring Disk Stores](backup_restore_disk_store.md). The data recovery utilities provide a "best effort" attempt to recover data in the following types of failure scenarios:
+	Whenever possible, SnappyData recommends that you recover data using an online or offline disk store backup, using the techniques described in [Backing Up and Restoring Disk Stores](../../backup/backup_restore_disk_store.md). The data recovery utilities provide a "best effort" attempt to recover data in the following types of failure scenarios:
 
 	-   Corruption of disk store file data at the hardware level, with no access to recent disk store backups.
 

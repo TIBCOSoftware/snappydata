@@ -1,1 +1,0 @@
-##Redundancy and ensuring data availability for failures

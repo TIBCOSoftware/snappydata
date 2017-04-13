@@ -21,16 +21,16 @@ Configuring the Progress DataDirect ODBC Driver
 
 
 ###Installing the Progress DataDirect ODBC Driver for Linux
-1. Download and unzip the RowStore ODBC Distribution 1.4.1. For example:
+1. Download and unzip the SnappyData ODBC Distribution 1.4.1. For example:
  
  ```
- $ tar -zxvf SnappyData_RowStore_XX_bNNNNN_ODBC.tar.gz -C path_to_install_location
+ $ tar -zxvf SnappyData_RowStore_XX_bNNNNN_ODBC.tar.gz -C path_to_install_location <mark>Verify File Name </mark>
  ```
  where path_to_install_location is an already existing directory.
 2. Change to the /linux subdirectory of the ODBC distribution:
  
  ```
- $ cd path_to_install_location/SnappyData_RowStore_XX_bNNNNN_ODBC/linux
+ $ cd path_to_install_location/SnappyData_RowStore_XX_bNNNNN_ODBC/linux <mark>Verify Location </mark>
  ```
 3. Display the contents of the readme.txt file, and note the IPE key of the architecture (32-bit or 64-bit) of your linux system. You will need to enter the correct IPE key during the installation. For example:
  
@@ -41,8 +41,8 @@ Configuring the Progress DataDirect ODBC Driver
  for the appropriate platform. 
 
  Linux:
- 1076719616 RowStore All 32-bit Platforms
- 1076719872 RowStore All 64-bit Platforms
+ 1076719616 SnappyData All 32-bit Platforms
+ 1076719872 SnappyData All 64-bit Platforms
  [...]
 ```
 
@@ -71,14 +71,14 @@ Configuring the Progress DataDirect ODBC Driver
 12. After the installation completes, click **Done** to exit the installer.
 
 ###Installing the Progress DataDirect ODBC Driver for Windows
-1. Download and unzip the RowStore ODBC Distribution 1.4.1.
+1. Download and unzip the SnappyData ODBC Distribution 1.4.1.<mark>Verify Version Number</mark>
 2. Change to the \windows\32 or \windows\64 subdirectory of the ODBC distribution, depending on the architecture of your operating system (32-bit or 64-bit). For example:
  ```
- c:\> cd path_to_install_location\SnappyData_RowStore_XX_bNNNNN_ODBC\windows
+ c:\> cd path_to_install_location\SnappyData_RowStore_XX_bNNNNN_ODBC\windows<mark>Verify File Name </mark>
  ```
 3. Execute the ODBC Installer executable in the directory. For example:
  ```
- c:\SnappyData_RowStore_XX_bNNNNN_ODBC\windows\64> PROGRESS_DATADIRECT_ODBC_7.1_WIN_64_INSTALL.EXE
+ c:\SnappyData_RowStore_XX_bNNNNN_ODBC\windows\64> PROGRESS_DATADIRECT_ODBC_7.1_WIN_64_INSTALL.EXE<mark>Verify File Name </mark>
  ```
  The installer loads and displays the Introduction screen:
 
@@ -104,5 +104,5 @@ Configuring the Progress DataDirect ODBC Driver
 ###Configuring the Progress DataDirect ODBC Driver
 Refer to the installed ODBC driver documentation for detailed instructions about configuring and using the driver:
 
- * The primary documentation for the ODBC driver is installed in path_to_install_location/help/RowStoreHelp/index.html
-* The Quick Start Connect section (path_to_install_location/help/RowStoreHelp/RowStoreHelp/snappystore/quick-start-connect.html) explains how to configure and test the newly-installed driver.
+ * The primary documentation for the ODBC driver is installed in path_to_install_location/help/RowStoreHelp/index.html<mark>To Be Confirmed </mark>
+* The Quick Start Connect section (path_to_install_location/help/RowStoreHelp/RowStoreHelp/snappystore/quick-start-connect.html) explains how to configure and test the newly-installed driver.<mark>To Be Confirmed </mark>

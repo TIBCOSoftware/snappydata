@@ -6,7 +6,7 @@ Display the disk store metadata for a specified disk store directory.
 
 
 ``` pre
-snappy-shell show-disk-store-metadata <disk-store> <directory>+
+snappy show-disk-store-metadata <disk-store> <directory>+
   [-mcast-port=<port>]
   [-mcast-address=<address>]
   [-locators=<addresses>] 

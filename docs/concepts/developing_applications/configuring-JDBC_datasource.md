@@ -19,7 +19,7 @@ If you have not configured authentication in SnappyData, specify “app” as bo
 
 6. For the driver class, specify: 
 
-        com.pivotal.snappydata.internal.jdbc.ClientConnectionPoolDataSource
+        com.pivotal.snappydata.internal.jdbc.ClientConnectionPoolDataSource <mark>to be confirmed </mark>
 
 7. The JDBC URL that you specify must begin with `jdbc:snappydata://`. Remove any template properties such as `create=true` if they are present in the URL or properties fields.</br>
  In products such as WebLogic, you cannot specify JDBC connection properties for an embedded datasource as part of the JDBC URL. Instead, use the properties field and specify connectionAttributes using the format:

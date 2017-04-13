@@ -3,17 +3,17 @@ Creates a backup of operational disk stores for all members running in the distr
 
 <a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_06BC55B8DB414173BBD71BEFB9F8F1BD"><p !!!
 !!!Note:
-	 SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. See [Backing Up and Restoring Disk Stores](../../concepts/tables/persisting_table_data/backup_restore_disk_store.md#backup_restore_disk_store).</p>
--   [Syntax](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_B06049F2187548D2A567EB7C2AF6F1A6)
--   [Description](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_C75C621FB18D435D94E93BD865BA35E0)
--   [Prerequisites and Best Practices](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_E151532922C349FA99C2120880E82D1F)
--   [Specifying the Backup Directory](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3)
--   [Example](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_19EAC375FDBE43FB922EA3E99F41B07E)
--   [Output Messages from snappy backup](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_F65D456EEE55433E9C6F6EC9B4057734)
--   [Backup Directory Structure and Its Contents](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_70860E525F5C4F5D995551846E007AC8)
--   [Restoring an Online Backup](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_050663B03C0A4C42B07B4C5F69EAC95D)
+	 SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. See [Backing Up and Restoring Disk Stores](../../concepts/backup/backup_restore_disk_store.md).</p>
+-   [Syntax](store-backup.md#syntax)
+-   [Description](store-backup.md#description)
+-   [Prerequisites and Best Practices](store-backup.md#prereq)
+-   [Specifying the Backup Directory](store-backup.md#backup_directory)
+-   [Example](store-backup.md#example)
+-   [Output Messages from snappy backup](store-backup.md#output_messages)
+-   [Backup Directory Structure and Its Contents](store-backup.md#directory_structure)
+-   [Restoring an Online Backup](store-backup.md#restore_online_backup)
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_B06049F2187548D2A567EB7C2AF6F1A6"></a>
+<a id="syntax"></a>
 
 #Syntax
 
@@ -32,14 +32,14 @@ The table describes options for snappy backup.
 |Option|Description|
 |-|-|
 |-baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble <span class="ph filepath">/export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30</span>).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the `-baseline` option.|
-|&lt;target-directory&gt;|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3).|
+|&lt;target-directory&gt;|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
 |-mcast-port|Multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead). </br>Valid values are in the range 0–65535, with a default value of 10334.|
 |-mcast-address|Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
 |-prop-name|Any other SnappyData distributed system property.|
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_C75C621FB18D435D94E93BD865BA35E0"></a>
+<a id="description"></a>
 
 #Description
 
@@ -50,7 +50,7 @@ An online backup saves the following:
 -   gemfirexd.properties, with the properties the member was started with.
 -   A restore script, written for the member's operating system, that copies the files back to their original locations. For example, in Windows, the file is restore.bat and in Linux, it is restore.sh.
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_E151532922C349FA99C2120880E82D1F"></a>
+<a id="prereq"></a>
 
 #Prerequisites and Best Practices
 
@@ -60,7 +60,7 @@ An online backup saves the following:
 -   You might want to compact your disk store before running the backup. See the [compact-all-disk-stores](store-compact-all-disk-stores.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC) command.
 -   Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members.)
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_FEB691B4C9664C31A980B5AB1C1045F3"></a>
+<a id="backup_directory"></a>
 
 #Specifying the Backup Directory
 
@@ -69,7 +69,7 @@ The directory you specify for backup can be used multiple times. Each backup fir
 -   Use a single physical location, such as a network file server. (For example, /export/fileServerDirectory/snappyStoreBackupLocation).
 -   Use a directory that is local to all host machines in the system. (For example, ./snappyStoreBackupLocation).
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_19EAC375FDBE43FB922EA3E99F41B07E"></a>
+<a id="example"></a>
 
 #Example
 
@@ -80,7 +80,7 @@ snappy backup  ./snappyStoreBackupLocation
   -locators=machine[26340]
 ```
 
-See also [Backing Up and Restoring Disk Stores](../../concepts/tables/persisting_table_data/backup_restore_disk_store.md#backup_restore_disk_store).
+See also [Backing Up and Restoring Disk Stores](../../concepts/backup/backup_restore_disk_store.md#backup_restore_disk_store).
 
 To perform an incremental backup at a later time:
 
@@ -92,7 +92,7 @@ snappy backup -baseline=./snappyStoreBackupLocation/2012-10-01-12-30 ./snappySto
 !!! Note:
 	SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.</p>
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_F65D456EEE55433E9C6F6EC9B4057734"></a>
+<a id="output_messages"></a>
 
 #Output Messages from snappy backup
 
@@ -131,7 +131,7 @@ DiskStore at hostc.pivotal.com /home/user/dir3
 
 A member that fails to complete its backup is noted in this ending status message and leaves the file INCOMPLETE\_BACKUP in its highest level backup directory.
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_70860E525F5C4F5D995551846E007AC8"></a>
+<a id="directory_structure"></a>
 
 #Backup Directory Structure and Its Contents
 
@@ -154,7 +154,7 @@ BACKUPGFXD-DD-DISKSTORE_1.drf BACKUPGFXD-DD-DISKSTORE_2.crf
 BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
 ```
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_050663B03C0A4C42B07B4C5F69EAC95D"></a>
+<a id="restore_online_backup"></a>
 
 #Restoring an Online Backup
 

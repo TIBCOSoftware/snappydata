@@ -2,13 +2,13 @@
 
 ## Description
 
-File to to use for writing log messages. If set to null, the default is used.
+File to use for writing log messages. If set to null, the default is used.
 
 Each member type has its own default output:
 
 -   application: standard out
 -   locator: `locator.log`
--   server: `snappy-shellserver.log`
+-   server: `snappy-server.log`
 
 Use the snappydata. prefix for SnappyData members, or use the snappydata.client prefix for client-side logging.
 

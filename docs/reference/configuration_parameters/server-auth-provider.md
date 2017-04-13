@@ -2,6 +2,9 @@
 
 ## Description
 
+!!!Warning
+	This property is not supported in this release.
+
 Specifies the authentication scheme to use for server connections. Possible values are same as those for auth-provider.
 
 ## Default Value
