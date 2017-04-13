@@ -69,7 +69,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
 		* `snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit COLUMN_MAX_DELTA_ROWS specification, then this is inherited for that table property.
 
-Refer to the [CREATE SAMPLE TABLE](../../create-sample-table.md) for information on the extensions applicable to sample tables.
+Refer to the [CREATE SAMPLE TABLE](create-sample-table.md) for information on the extensions applicable to sample tables.
 
 ## Example: Column Table
 ```

@@ -4,21 +4,21 @@ This guide contains a list of of Data Definition Language (DDL) and Data Manipul
 
 * [CREATE STATEMENTS](reference/sql_reference/create-statements/)
 
-	- **[CREATE DISKSTORE](create-diskstore.md)**
+	- **[CREATE DISKSTORE](reference/sql_reference/create-diskstore.md)**
 
-	- **[CREATE FUNCTION](create-function.md)**
+	- **[CREATE FUNCTION](reference/sql_reference/create-function.md)**
 
-	- **[CREATE INDEX](create-index.md)**
+	- **[CREATE INDEX](reference/sql_reference/create-index.md)**
 
-	- **[CREATE SCHEMA](create-schema.md)**
+	- **[CREATE SCHEMA](reference/sql_reference/create-schema.md)**
 
-	- **[CREATE TABLE](create-table.md)**
+	- **[CREATE TABLE](reference/sql_reference/create-table.md)**
 
-	- **[CREATE EXTERNAL TABLE](create-external-table.md)**
+	- **[CREATE EXTERNAL TABLE](reference/sql_reference/create-external-table.md)**
 
-	- **[CREATE SAMPLE TABLE](create-sample-table.md)**
+	- **[CREATE SAMPLE TABLE](reference/sql_reference/create-sample-table.md)**
 
-	- **[CREATE STREAM TABLE](create-stream-table.md)** 
+	- **[CREATE STREAM TABLE](reference/sql_reference/create-stream-table.md)** 
 
 * [DELETE](reference/sql_reference/delete.md)
 
