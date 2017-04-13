@@ -62,16 +62,13 @@ class SparkSQLPrepareImpl(val sql: String,
   protected[this] val hdos = new GfxdHeapDataOutputStream(
     thresholdListener, sql, true, senderVersion)
 
-  def allParamConstants(): Array[ParamConstants] = {
-    var lls = new ArrayBuffer[ParamConstants]()
-    df.queryExecution.analyzed transform {
-      case q: LogicalPlan => q transformExpressionsUp {
-        case pc@ParamConstants(_, _, _) =>
-          lls += pc
-          pc
-      }
+  private def allParamConstants(): Array[ParamConstants] = {
+    val res = new ArrayBuffer[ParamConstants]()
+    df.queryExecution.analyzed transformAllExpressions {
+      case pc@ParamConstants(_, _, _) => res += pc
+        pc
     }
-    lls.sortBy(_.pos).toArray
+    res.toSet[ParamConstants].toArray.sortBy(_.pos)
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,

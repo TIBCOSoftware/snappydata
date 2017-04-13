@@ -1706,8 +1706,7 @@ object SnappySession extends Logging {
   def countParameters(plan: LogicalPlan): Int = {
     var countParams = 0
     plan transformAllExpressions {
-      case pc: ParamConstants =>
-        countParams = countParams + 1
+      case pc: ParamConstants => countParams = countParams + 1
         pc
     }
     countParams
@@ -1822,8 +1821,6 @@ object SnappySession extends Logging {
 
   //noinspection ScalaStyle
   def getPlanCache = planCache
-
-  var currCachedKey: CachedKey = _
 
   private[spark] def addBucketProfileListener(pr: PartitionedRegion): Unit = {
     val advisers = pr.getRegionAdvisor.getAllBucketAdvisorsHostedAndProxies
