@@ -649,10 +649,10 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
   * match or are superset of the child distribution.
   */
 case class InsertCachedPlanHelper(session: SparkSession) extends Rule[SparkPlan] {
-  override def apply(plan: SparkPlan): SparkPlan = {
-    plan match {
-      case codegen: CodegenSupport => CachedPlanHelperExec(codegen)
-      case _ => plan
+  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
+    case ws @ WholeStageCodegenExec(onlychild) => {
+      val c = onlychild.asInstanceOf[CodegenSupport]
+      ws.copy(child = CachedPlanHelperExec(c, session.asInstanceOf[SnappySession]))
     }
   }
 }
