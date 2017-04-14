@@ -1,22 +1,42 @@
-def scalaBinaryVersion = "2.10"
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+def scalaBinaryVersion = '2.11'
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-core_' + scalaBinaryVersion
-include ':snappy-tools_' + scalaBinaryVersion
-include 'snappy-dunits'
-include 'snappy-examples'
+include ':snappy-cluster_' + scalaBinaryVersion
+include ':snappy-examples_' + scalaBinaryVersion
+include 'dunit'
+include ':snappy-dtests_' + scalaBinaryVersion
 
-project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-core" as File
-project(':snappy-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-tools" as File
+project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
+project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
+project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
+project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" as File
 
-if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
+if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'
   // sub-projects of snappy-spark
-  include ':snappy-spark:snappy-spark-test-tags_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-tags_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-mllib-local_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion
@@ -28,47 +48,66 @@ if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
   include ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion
 
+  project(':snappy-spark').projectDir = "$rootDir/spark" as File
   // sub-project directories of snappy-spark
-  project(':snappy-spark:snappy-spark-test-tags_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/tags" as File
-  project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/core" as File
-  project(':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/bagel" as File
-  project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/graphx" as File
-  project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/mllib" as File
-  project(':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/tools" as File
-  project(':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/common" as File
-  project(':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/shuffle" as File
-  project(':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/yarn" as File
-  project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/yarn" as File
-  project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/streaming" as File
-  project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/catalyst" as File
-  project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/core" as File
-  project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/hive" as File
-  project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/hive-thriftserver" as File
-  project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/unsafe" as File
-  project(':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/assembly" as File
-  project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/twitter" as File
-  project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume" as File
-  project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume-sink" as File
-  project(':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/mqtt" as File
-  project(':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/zeromq" as File
-  project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/examples" as File
-  project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/repl" as File
-  project(':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/launcher" as File
-  project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
+  project(':snappy-spark:snappy-spark-tags_' + scalaBinaryVersion).projectDir =
+      "$rootDir/spark/common/tags" as File
+  project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).projectDir = "$rootDir/spark/core" as File
+  project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion).projectDir = "$rootDir/spark/graphx" as File
+  project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion).projectDir = "$rootDir/spark/mllib" as File
+  project(':snappy-spark:snappy-spark-mllib-local_' + scalaBinaryVersion).projectDir =
+      "$rootDir/spark/mllib-local" as File
+  project(':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion).projectDir = "$rootDir/spark/tools" as File
+  project(':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion).projectDir =
+      "$rootDir/spark/common/network-common" as File
+  project(':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion).projectDir =
+      "$rootDir/spark/common/network-shuffle" as File
+  project(':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion).projectDir =
+      "$rootDir/spark/common/network-yarn" as File
+  project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion).projectDir = "$rootDir/spark/yarn" as File
+  project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion).projectDir = "$rootDir/spark/streaming" as File
+  project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/catalyst" as File
+  project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/core" as File
+  project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/hive" as File
+  project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion).projectDir = "$rootDir/spark/sql/hive-thriftserver" as File
+  project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion).projectDir =
+      "$rootDir/spark/common/unsafe" as File
+  project(':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion).projectDir =
+      "$rootDir/spark/common/sketch" as File
+  project(':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/spark/assembly" as File
+  project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume" as File
+  project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume-sink" as File
+  project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-8" as File
+  project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10" as File
+  project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10-sql" as File
+  project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/spark/examples" as File
+  project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion).projectDir = "$rootDir/spark/repl" as File
+  project(':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion).projectDir = "$rootDir/spark/launcher" as File
+
+  if (rootProject.hasProperty('docker')) {
+    include ':snappy-spark:snappy-spark-docker-integration-tests_' + scalaBinaryVersion
+    project(':snappy-spark:snappy-spark-docker-integration-tests_' + scalaBinaryVersion).projectDir =
+        "$rootDir/spark/external/docker-integration-tests" as File
+  }
+  if (rootProject.hasProperty('ganglia')) {
+    include ':snappy-spark:snappy-spark-ganglia-lgpl_' + scalaBinaryVersion
+    project(':snappy-spark:snappy-spark-ganglia-lgpl_' + scalaBinaryVersion).projectDir =
+        "$rootDir/spark/external/spark-ganglia-lgpl" as File
+  }
 }
 
-if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+if (new File(rootDir, 'store/build.gradle').exists()) {
   include ':snappy-store'
   // sub-projects of snappy-store
   include ':snappy-store:gemfire-jgroups'
@@ -80,27 +119,43 @@ if (new File(rootDir, "snappy-store/build.gradle").exists()) {
   include ':snappy-store:gemfire-core'
   include ':snappy-store:gemfire-web'
   include ':snappy-store:gemfire-examples'
-  include ':snappy-store:gemfirexd:shared'
-  include ':snappy-store:gemfirexd:prebuild'
-  include ':snappy-store:gemfirexd:core'
-  include ':snappy-store:gemfirexd:client'
-  include ':snappy-store:gemfirexd:native'
+  include ':snappy-store:gemfirexd-shared'
+  include ':snappy-store:gemfirexd-prebuild'
+  include ':snappy-store:gemfirexd-core'
+  include ':snappy-store:gemfirexd-client'
   include ':snappy-store:gemfirexd-hibernate'
-  include ':snappy-store:gemfirexd:tools'
-  include ':snappy-store:tests-core'
-  include ':snappy-store:tests-sql'
+  include ':snappy-store:gemfirexd-tools'
+  include ':snappy-store:gemfire-tests'
+  include ':snappy-store:gemfirexd-tests'
+  include ':snappy-store:snappydata-native'
 
-  project(':snappy-store:gemfire-jgroups').projectDir = "$rootDir/snappy-store/lgpl/gemfire-jgroups" as File
-  project(':snappy-store:gemfire-trove').projectDir = "$rootDir/snappy-store/lgpl/gemfire-trove" as File
-  project(':snappy-store:gemfirexd-hibernate').projectDir = "$rootDir/snappy-store/lgpl/gemfirexd-hibernate" as File
-  project(':snappy-store:tests-core').projectDir = "$rootDir/snappy-store/tests/core" as File
-  project(':snappy-store:tests-sql').projectDir = "$rootDir/snappy-store/tests/sql" as File
+  project(':snappy-store').projectDir = "$rootDir/store" as File
+  project(':snappy-store:gemfire-jgroups').projectDir = "$rootDir/store/lgpl/gemfire-jgroups" as File
+  project(':snappy-store:gemfire-trove').projectDir = "$rootDir/store/lgpl/gemfire-trove" as File
+  project(':snappy-store:gemfire-joptsimple').projectDir = "$rootDir/store/gemfire-joptsimple" as File
+  project(':snappy-store:gemfire-json').projectDir = "$rootDir/store/gemfire-json" as File
+  project(':snappy-store:gemfire-junit').projectDir = "$rootDir/store/gemfire-junit" as File
+  project(':snappy-store:gemfire-shared').projectDir = "$rootDir/store/gemfire-shared" as File
+  project(':snappy-store:gemfire-core').projectDir = "$rootDir/store/gemfire-core" as File
+  project(':snappy-store:gemfire-web').projectDir = "$rootDir/store/gemfire-web" as File
+  project(':snappy-store:gemfire-examples').projectDir = "$rootDir/store/gemfire-examples" as File
+  project(':snappy-store:gemfirexd-shared').projectDir = "$rootDir/store/gemfirexd/shared" as File
+  project(':snappy-store:gemfirexd-prebuild').projectDir = "$rootDir/store/gemfirexd/prebuild" as File
+  project(':snappy-store:gemfirexd-core').projectDir = "$rootDir/store/gemfirexd/core" as File
+  project(':snappy-store:gemfirexd-client').projectDir = "$rootDir/store/gemfirexd/client" as File
+  project(':snappy-store:gemfirexd-hibernate').projectDir = "$rootDir/store/lgpl/gemfirexd-hibernate" as File
+  project(':snappy-store:gemfirexd-tools').projectDir = "$rootDir/store/gemfirexd/tools" as File
+  project(':snappy-store:gemfire-tests').projectDir = "$rootDir/store/tests/core" as File
+  project(':snappy-store:gemfirexd-tests').projectDir = "$rootDir/store/tests/sql" as File
+  project(':snappy-store:snappydata-native').projectDir = "$rootDir/store/native" as File
 }
 
-if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
-  include ':spark-jobserver'
+if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
+  include ':spark-jobserver_' + scalaBinaryVersion
+  project(':spark-jobserver_' + scalaBinaryVersion).projectDir = "$rootDir/spark-jobserver" as File
 }
 
-if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
-  include ':snappy-aqp'
+if (new File(rootDir, 'aqp/build.gradle').exists()) {
+  include ':snappy-aqp_' + scalaBinaryVersion
+  project(':snappy-aqp_' + scalaBinaryVersion).projectDir = "$rootDir/aqp" as File
 }

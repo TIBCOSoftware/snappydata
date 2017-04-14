@@ -1,0 +1,310 @@
+####################################################################################################
+# PLEASE KEEP THE WIDTH OF THE LINES BELOW WITHIN 100 CHARACTERS.                                  #
+# MOST RECENT CHANGE AT THE TOP.                                                                   #
+# KEEP THE DESCRIPTION OF EACH OF YOUR CHANGES THAT NEEDS TO BE PUT INTO THE RELEASE NOTES TO ONE  #
+# TO THREE LINES.                                                                                  #
+# KEEP A LINE BLANK BETWEEN TWO NOTES.                                                             #
+# ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
+####################################################################################################
+
+
+Release 0.8
+
+- Known Issues
+
+  [SNAP-1384] Inserting into or querying a table with wide schema may fail with
+  StackOverflowException due to a limitation of JVM.
+
+- New Features/Fixed Issues
+
+  [SNAP-1357] ODBC Driver and Installer. You can now connect to the SnappyData cluster using the
+  SnappyData ODBC driver and execute SQL queries.
+
+  [SNAP-1313] Multiple Language Binding using Thrift Protocol. SnappyData now provides support for
+  Apache Thrift protocol enabling users to access the cluster from other languages that are not
+  supported directly by SnappyData.
+
+  [SNAP-490] Insert Performance Optimizations - Insert into tables is much more optimized and
+  performant now. A new insert plan has been introduced which uses code generation
+  and a new encoding format.
+
+  Fixes backward compatibility with Spark 2.0.0 - The 0.8 SnappyData release is based on the Spark
+  2.0.2 version. And, the SnappyData Smart Connector is now backward compatible with
+  Spark 2.0.0 and 2.0.1 releases.
+
+  [SNAP-1146] Fixes RowBuffer bloating. Data was not being aged into the internal compressed
+  columnar format leading to unoptimized storage and hence bad query performances.
+
+  [SNAP-1308] Incorrect number of entries displayed on UI if insert was being done from a Spark app
+  using Smart Connector.
+
+  [SNAP-1293] The driver process of external Spark app using Smart connector were incorrectly being
+  displayed as members of SnappyData cluster.
+
+  [SNAP-1282] The Spark web UI stopped working with SnappyData 0.7. Fixed.
+
+  [SNAP-1243] UI incorrectly displaying multiple entries for the same lead node after restarts.
+
+  [SNAP-1296] ResultsSet obtained from PreparedStatement.executeQuery returned 0 column count
+  from its metadata. However SNAP-1311 needs to be fixed for complete support of Prepared
+  Statement jdbc api. Being worked on.
+
+  [SNAP-1291] Queries issued with execution-engine=store hint were getting ignored in some cases
+
+  [SNAP-1287] Query execution using indexes on row tables was sometimes throwing ClasscastException
+
+  [SNAP-1269] Create tables using schema of other table but with different column names were using
+  column names of the source tables itself.
+
+  [SNAP-1134] A job throwing exception remained in hung state instead of reporting failure
+
+  [SNAP-982] Support for persistent UDFs added. Even after restart the UDF can be used now
+
+  Enhancements in SDE
+  - Sample selection logic enhanced. It can now select best suited sample table even if SQL
+    functions are used on QCS columns while creating sample tables.
+
+  - Poisson multiplicity generator logic for bootstrap is improved. Error estimated using
+    bootstrap are now more accurate.
+
+  - Improved performance of closed-form and bootstrap error estimations.
+
+Release 0.7
+
+  [SNAP-1260] Miscellaneous plan optimizations.
+
+  [SNAP-1251][SNAP-1252] Avoid exchange when join columns are superset of partitioning.
+
+  [SNAP-1112] Query hints for executionEngine doesn't work correctly.
+
+  [SNAP-1240] SnappyData monitoring dashboard.
+
+  [SNAP-1234] Always skip broadcast join for cases of collocated PR joins.
+
+  [SNAP-1229] Fixed Snappy Python APIs broken after Spark 2.0 merge.
+
+  [SNAP-1219] Unable to drop persistent column table when a server node is killed abruptly.
+
+  [SNAP-1225] Performance improvements for hash joins (and other fixes).
+
+  [SNAP-1218] Enable RDD-bucket de-linking for single table and replicated table joins.
+
+  [SNAP-1217] Introduce Enable Experimental Feature property.
+
+  [SNAP-1213] Using esoteric ExternalizableSerializable as default serializer for Externalizable
+    rather than FieldSerialzable.
+
+  [AQP-259] Fixing the issue where the size of the Map was not being assigned early enough,
+    resulting in flush increasing the reservoir size in an unbounded manner.
+
+  [SNAP-1209] Updated LocalJoin to cover colocated join cases as well.
+
+  [SNAP-1205] Avoid exchange when the table is partitioned with the join key.
+
+  [SNAP-1193] Optimized Collect aggregate plan to avoid last step exchange.
+
+  [SNAP-1191] Basic plan caching (without constant tokenization). Add plan caching and reuse of
+    SparkPlan, RDD and PlanInfo.
+
+  [SNAP-1194] Optimization for single dictionary column GROUP BY and JOIN
+
+  [SNAP-1136] Pooled version of Kryo serializer which works for closures.
+    New PooledKryoSerializer that does pooling of Kryo objects (else performance is bad if new
+    instance is created for every call which needs to register and walk tons of classes)
+
+  [SNAP-1067] Optimized GROUP BY (HashAggregateExec) and HASH JOIN. Optimized hash table
+    for GROUP BY (HashAggregateExec) and for LocalJoin.
+
+  [SNAP-1087] Maintain stats (which include lower bound, upper bound, null count, etc.)
+    for every column. And then uses the upper bound and lower bound values of columns to
+    filter out the cached batches. This will be a perf enhancement for the queries which
+    filters extensively.
+
+  [SNAP-1084] Cache and return CatalogTable instead of going to hive
+
+  [SNAP-1182] Added map/flatMap/filter/glom/mapPartition/transform APIs to SchemaDStream
+
+  [SNAP-1180] Use ConfigEntry mechanism for SnappyData properties. Added SQLConfigEntry and
+    convenience methods.
+
+  [SNAP-999] Changes to remove the install jar and instead use SparkJobServer only.
+
+  Apache Spark 2.0.2 merge.
+
+  [SNAP-730] Add a rule to replace column tables with indexes when the join column is indexed.
+
+  Removing the kafka-0.10 dependencies and shipping only kafka-0.8
+
+  [SNAP-1075] Added a service to publish store table size that is used for query plan generation.
+    These stats are also published on SnappyData Dashboard.
+
+  [SNAP-1060] [SNAP-1141] [SNAP-1115] Fixes for Streaming related issues after Apache Spark 2.0
+    merge.
+
+  [SNAP-1152] Fixing NPE in aggregation. Handling null entry in ObjectHashMapAccessor during code
+    generation.
+
+  Avoid pooling of stream Input and Output objects in PooledKryoSerializer to try and fix occasional
+    failures in TPCHDUnitTest.
+
+  [SNAP-1172] Changes to render StringType as VARCHAR for tables created via API.
+
+  [SNAP-1185] Changing all internal.Logging references to public one.
+
+  [SNAP-1188] Set batch uuid to previous record if the current batchuuid is null.
+
+  [SNAP-69] Fix SparkJobServer rootDir to point to current working directory instead of /tmp.
+    Redirecting rootdir from /tmp to "-dir" startup parameter via gemfirexd.system.home variable
+    set in the launcher.
+
+  Fixing failure for optimized=T case in TPCETrade
+
+  [SNAP-1147] Properly handle dropping of collocated table.
+
+  [SNAP-1087] Removing StatsPredicateCompiler and closure; instead generate embedded predicate code
+    in a new function in the same context as for ColumnTableScan code.
+
+  [SNAP-977] Allow user to specify configuration on command-line while submitting a job.
+
+  [SNAP-1021] Added an external catalog to SnappyCatalog to ensure the Catalog API of Spark will
+    also work fine. This makes Snappy catalog cleaner and removes redundant code.
+
+  [SNAP-1096] Add Lead attribute in Member MBean.
+
+  [SNAP-1066] Modified existing tests to inferschema instead of using string and proper use of
+    nullValue.
+
+  Fixed readLongDecimal for ColumnEncoding adapters.
+
+  [SNAP-1199] Making external table visible with SnappyData Connector.
+
+  [SNAP-1083] Fixing multiple issues in RDD de-linking.
+
+  [SNAP-1190] Reduce per-partition task overhead.
+
+
+Release 0.6
+
+  [SNAP-735] Supporting VARCHAR with size and processing STRING as VARCHAR(32762), by default.
+    Provided query hint (--+ columnsAsClob(*)) to force processing STRING as CLOB. Changes to render
+    CHAR as CHAR and VARCHAR as VARCHAR. Added a system property to stop treating STRING as max size
+    VARCHAR but as CLOB.
+
+  [SNAP-1049] IllegalArgumentException: requirement failed: partitions(1).partition == 5, but it
+    should equal 1
+
+  [SNAP-1050] Query execution from JDBC waits infinitely for external table if column name in query
+    is wrong
+
+  [SNAP-1036] Optimize access to row store using raw region iterators
+
+  [SNAP-1000] Perf improvement for localjoin through code generation
+
+  [SNAP-1034] Optimized generated code iteration for Column tables
+
+  [SNAP-1047] Fix column table row count in UI
+
+  [SNAP-1044] Support for describe table and show table using snappycontext
+
+  [SNAP-846] Ensuring that Spark Uncaught exceptions are handled in the Snappy side and do not cause
+    a system.exit
+
+  [SNAP-1025] Stream tables return duplicate rows
+
+  [SNAP-959] create table as select not working as expected if row table is source table
+
+  [SNAP-845] Atomicity of DDLs across catalogs
+
+  [SNAP-981] Support Snappy with multiple Hadoop version
+
+  [SNAP-979] Correct table size and count shown on the Snappy UI tab
+
+  [SNAP-936] Automatic selection of execution engine based on query type. Query hint also provided
+    to select a particular engine for execution
+
+  [SNAP-653] Cleanup relation artifacts when it is altered/dropped/... from external cluster
+
+  [SNAP-654] If the Lead is running and an application runs a program that points to the Snappy
+    cluster as the Master, then, the client program perpetually hangs.
+
+  [SNAP-174] No ssh required for starting cluster through scripts if only localhost is being used
+
+  [SNAP-910] DELETE / UPDATE FROM COLUMN TABLE throws proper exception now
+
+  [SNAP-293] Single install/replace jar utility. User can install a jar using install jar utility
+    and it will be available to all executors, store and driver node the jar uploaded via the job
+    server also follows the same norm.
+
+  [SNAP-824] Support for CUBE/ROLLUP/GROUPING SETS through sql. Support for window clauses and
+    partition/distribute by
+
+  SPARK 2.0 merge
+
+  [SNAP-861] Zeppelin interpreter for SnappyData
+
+  [SNAP-947] Unable to restart cluster with 0.5 version with columnar persistent tables
+
+  [SNAP-961] Fix passing of some DDL extension clauses like OFFHEAP PERSISTENT etc.
+
+  [SNAP-734] Support for EXISTS from sql
+
+  [SNAP-835] Drop table from default schema with fully qualified name throws "Table Not Found" Error
+
+  [SNAP-784] Fully qualified table name access fails with "Table Not Found" Error
+
+  [SNAP-864] Script to launch SnappyData cluster on Amazon Web Services EC2 instances.
+
+  [AQP-77] exception " STRATIFIED_SAMPLER_WEIGHTAGE#411L missing
+
+  [AQP-94] Class cast exception if aggregate is on string column
+
+  [AQP-107] scala.MatchError,while using reserved word sample_ in the query
+
+  [AQP-143] Unexpected error for query on empty table
+
+  [AQP-154] Actual sample count varies with varying number of columns in QCS.
+
+  [AQP-177] Unable to drop the sample table
+
+  [AQP-190] Relative Error estimates are wildly OFF
+
+  [AQP-199] Use of alias in FROM clause results in Sample not being selected
+
+  [AQP-203] COUNT(DISTINCT) queries 'with error' clause fails with No plan for ErrorDefaults
+
+  [AQP-204] Inconsistent results ,each time the same bootStrap query is executed multiple times.
+
+  [AQP-205] Bug in abortSegment implementation of stratum cache/ concurrent segment hashmap causes
+    count to be inocrrect
+
+  [AQP-206] Exception while using error_functions in HAVING clause
+
+  [AQP-207] Join query fails with error while evaluating an expression
+
+  [AQP-210] Mathematical expression involving error estimates not working
+
+  [AQP-212] HAC behavior 'local_omit' doesnot work as expected.
+
+  [AQP-213] Exception when using errorFuntion in HAVING clause with HAC behavior 'run_on_full_table'
+    and 'partial_run_on_base_table'
+
+  [AQP-214] Need support for functions in sample creation
+
+  [AQP-216] Cannot use float datatype for sample creted on row table
+
+
+Release 0.5
+
+  Rowstore quickstarts are now packaged into the SnappyData distribution.
+
+  [AQP] Optimizations of bootstrap for sort based aggregate.
+
+  [AQP] Minimize the query plan size for bootstrap.
+
+  [AQP] Optimized the Declarative aggregate function.
+
+  [SNAP-858] Added documentation for Python APIs.
+
+  [SNAP-852] Added new fields on the Snappy Store tab in Spark UI.
+
+  [SNAP-730] Added index creation and colocated joins

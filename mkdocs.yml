@@ -1,7 +1,7 @@
-site_name: SnappyData Docs - Preview release
+site_name: SnappyData Documentation
 site_url: http://www.snappydata.io
-site_description: Project documentation with Markdown.
-site_author: SnappyData development team
+site_description: Project documentation for SnappyData
+site_author: SnappyData Team
 site_favicon: favicon.ico
 
 repo_url: https://github.com/SnappyDataInc/snappydata
@@ -9,26 +9,29 @@ repo_url: https://github.com/SnappyDataInc/snappydata
 pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
-- Getting Started: index.md
-- Building from source, project layout: build-instructions.md
-- Overview: snappyIntroduction.md
-- Key features: features.md
+- Overview: index.md
+# - Introduction: snappyIntroduction.md
+- Getting Started: quickstart.md
+- Download and Install: install.md
+- How Tos: howto.md
 - Architecture: architecture.md
-- Configuring the cluster: configuration.md
-- Connecting using JDBC, Spark: connectingToCluster.md
-- Developing Apps using the Spark API: jobs.md
-- Row and Column tables: rowAndColumnTables.md
-- Approximate query processing: aqp.md
-- Stream processing using SQL: streamingWithSQL.md
-- Deployment topologies: deployment.md
+- Configuring the Cluster: configuration.md
+- Programming Guide: programming_guide.md
+- Affinity Modes: deployment.md
+- Synopsis Data Engine (SDE): aqp.md
+- Using iSight-Cloud: aqp_aws.md
 - API: apidocsintro.md
+- Reference Documents: additional_docs.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
+    - Contact and Support: techsupport.md
     - License: LICENSE.md
 
 theme: readthedocs
 
+theme_dir: docs/custom_theme
+
 extra_css: [extra.css]
 
-copyright: Copyright &copy; 2016 SnappyData Inc.
+copyright: Copyright &copy; 2017 SnappyData Inc.

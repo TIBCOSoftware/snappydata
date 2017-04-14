@@ -1,0 +1,8 @@
+io/snappydata/hydra/cluster/runAirlineDataQueriesAndJobs.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+
+io/snappydata/hydra/cluster/runAirlineDataQueries.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+
+io/snappydata/hydra/cluster/runAirlineDataJobs.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4

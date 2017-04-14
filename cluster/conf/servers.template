@@ -1,0 +1,37 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Specify the host name on which a Snappy server will be started. Also
+# specify the startup directory where the logs and configuration files
+# for that server instance are kept. Apart from these two things, snappy
+# specific properties can also be passed. If the directory and properties
+# are not specified a default directory is created inside the SPARK_HOME directory.
+#
+# localhost   -dir=/tmp/data/server (config args)
+#
+# An example of how you can specify multiple locators for a server and
+# set its heap size to 64 GB.
+# 
+#     localhost   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
+# 
+# One can also specify bind address for clients and the port where it listens for
+# the client connections.
+# 
+#     localhost   -client-bind-address=server1 -client-port=1555
+# 
+# For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
+localhost

@@ -1,0 +1,7 @@
+io/snappydata/hydra/cluster/snappyCluster.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=3 leadVMsPerHost=1 leadThreadsPerVM=1
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  redundantCopies=1
+//  useHeapPercentage=true
+//  setCriticalHeap = true

@@ -1,0 +1,15 @@
+## Changes proposed in this pull request
+
+(Fill in the changes here)
+
+## Patch testing
+
+(Fill in the details about how this patch was tested)
+
+## ReleaseNotes.txt changes
+
+(Does this change require an entry in ReleaseNotes.txt? If yes, has it been added to it?)
+
+## Other PRs 
+
+(Does this change require changes in other projects- store, spark, spark-jobserver, aqp? Add the links of PR of the other subprojects that are related to this change)

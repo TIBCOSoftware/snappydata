@@ -9,7 +9,7 @@
 if "%OS%"=="Windows_NT" setlocal
 
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-set DEFAULT_JVM_OPTS=-Xmx2g -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m
+set DEFAULT_JVM_OPTS=-Xmx2g -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m -Djava.net.preferIPv4Stack=true
 
 set DIRNAME=%~dp0
 if "%DIRNAME%" == "" set DIRNAME=.
@@ -46,7 +46,7 @@ echo location of your Java installation.
 goto fail
 
 :init
-@rem Get command-line arguments, handling Windowz variants
+@rem Get command-line arguments, handling Windows variants
 
 if not "%OS%" == "Windows_NT" goto win9xME_args
 if "%@eval[2+2]" == "4" goto 4NT_args

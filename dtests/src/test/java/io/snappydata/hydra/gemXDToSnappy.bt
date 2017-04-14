@@ -1,0 +1,7 @@
+io/snappydata/hydra/gemFireXDToSnappyUpgradeWithPersistentPartition.conf
+   locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+   A=store storeHosts=2 storeVMsPerHost=2 storeThreadsPerVM=9
+   B=snappystore snappystoreHosts=2 snappystoreVMsPerHost=2 snappystoreThreadsPerVM=9
+   C=snappylocator snappylocatorHosts=1 snappylocatorVMsPerHost=1 snappylocatorThreadsPerVM=1
+   version1=141 version2=default
+   redundantCopies=1

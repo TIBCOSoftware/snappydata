@@ -1,11 +1,127 @@
-h1 {
-      font-size: 250%;
+html {
+    font-size: 10pt;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+/*
+Formatting for body text
+*/
+p{
+font-size: 14px;
+font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
-h2 {
-      font-size: 200%;
+/*
+Formatting for headings
+*/
+
+h1{
+    color: #000000;
+    font-size: 20pt;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background-color: #e8e9ea;
 }
 
-p {
-      font-size: 120%;
+
+h2{
+    color: #335183;
+    font-size: 18pt;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+
+h3{
+    color: #404040;
+    font-size: 16pt;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    border-bottom: thin double #e0e0e0;
+}
+
+h4 {
+    color: #404040;
+    font-size: 14pt;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-style: italic;
+}
+
+
+/*
+Defines the indetation for the navigation pane
+*/
+
+.wy-menu-vertical li.current > a::before {
+    content: url("Images/arrow-20x20-expanded.png");
+    float: left;
+}
+
+.wy-menu-vertical li > a[class="toctree-l4"]{
+  margin-left: 10px;
+}
+
+.wy-menu-vertical li > a[class="toctree-l4"]::before {
+  content: url("Images/dash-20x20-collapsed.png");
+  float: left;
+}
+
+
+
+/*
+Formatting for code snippets 
+*/
+
+pre code {
+  white-space: pre;
+  word-wrap: normal;
+  display: block;
+  padding: 12px;
+  background-color: #f5f6f6;
+  font-family: Monaco,Menlo,Consolas,"Courier New",monospace;
+  font-size:12px;
+}
+
+/*
+Formatting for inline code  
+*/
+
+code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: 2px 5px;
+}
+
+
+pre .cs, pre .c {
+    font-weight: inherit;
+    font-style: inherit;
+}
+
+/*
+Formatting for information in the Note
+*/
+
+note {
+    color: green;
+    font-size: 14px;
+    font-style: italic;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+/* Image Alignment - Center
+*/
+img {
+    display: inline-block;
+    background-color: transparent;
+    border: 1px solid #ededed;
+    margin: 10px 0px 25px 25px;
+    float: center;    
+}
+	
+/*
+Formatting for text for review/comments purpose only
+*/
+
+mark {
+    color: red;
+    font-size: 10px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background-color: #f6f3d7;
 }

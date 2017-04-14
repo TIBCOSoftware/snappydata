@@ -1,0 +1,139 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+group 'io.snappydata'
+version '0.1.0-SNAPSHOT'
+
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+
+
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir 'src/main/java'
+sourceSets.main.java.srcDirs = []
+//sourceSets.test.resources.srcDirs 'src/resources'
+sourceSets.test.scala.srcDir "src/test/java"
+sourceSets.test.java.srcDirs = []
+
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    subprojectBase = ':snappy-store:'
+    osName = org.gradle.internal.os.OperatingSystem.current()
+}
+
+dependencies {
+    compile 'org.scala-lang:scala-library:' + scalaVersion
+    compile 'org.scala-lang:scala-reflect:' + scalaVersion
+    compile 'org.scala-lang:scala-compiler:' + scalaVersion
+
+    compile (project(':snappy-core_' + scalaBinaryVersion)) {
+       exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+       exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+    }
+    if (new File(rootDir, 'spark/build.gradle').exists()) {
+        testCompile (project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')) {
+          exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+          exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+        }
+        compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
+        compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+        compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
+        compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+    } else {
+        compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + snappySparkVersion
+        compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
+        compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
+        compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
+    }
+
+    if (new File(rootDir, 'store/build.gradle').exists()) {
+        testCompile project(':snappy-store:gemfirexd-client')
+        testCompile project(':snappy-store:gemfirexd-core')
+        testCompile project(':snappy-store:gemfirexd-tools')
+        testCompile project(':snappy-store:gemfirexd-tests')
+        testCompile project(':snappy-store:gemfire-tests')
+        testCompile project(':snappy-store:gemfire-core')
+        testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+    } else {
+        testCompile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-hydra-tests', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'gemfire-hydra-tests', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'gemfire-core', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
+    }
+    testRuntime project(':snappy-core_' + scalaBinaryVersion)
+    testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-cluster_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+    testCompile project(':snappy-cluster_' + scalaBinaryVersion)
+    testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
+    testRuntime "org.pegdown:pegdown:${pegdownVersion}"
+
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+    classifier = 'javadoc'
+    from scaladoc
+}
+
+artifacts {
+  archives packageTests
+}
+if (rootProject.hasProperty('enablePublish')) {
+    artifacts {
+        archives packageScalaDocs, packageSources
+    }
+}
+
+archivesBaseName = 'snappydata-store-scala-tests'
+
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    copy {
+      from ("src/test/java") {
+          include '**/*.bt'
+          include '**/*.conf'
+          include '**/*.inc'
+          include '**/*.sql'
+      }
+          into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+    }
+  }
+}
