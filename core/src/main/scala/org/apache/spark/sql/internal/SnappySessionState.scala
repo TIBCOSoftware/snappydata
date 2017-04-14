@@ -19,11 +19,9 @@ package org.apache.spark.sql.internal
 
 import java.util.Properties
 
-import scala.collection.concurrent.TrieMap
-import scala.reflect.{ClassTag, classTag}
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
-import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, OptionalConfigEntry, TypedConfigBuilder}
+import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
@@ -37,7 +35,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{PartitioningUtils, DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
@@ -46,6 +44,9 @@ import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.{Partition, SparkConf}
+
+import scala.collection.concurrent.TrieMap
+import scala.reflect.{ClassTag, classTag}
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -527,7 +528,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,
-      StoreStrategy, StreamQueryStrategy) ++
+      StoreStrategy, StreamQueryStrategy, StructuredStreamingQueryStrategy) ++
         storeOptimizedRules ++
         super.strategies
 }

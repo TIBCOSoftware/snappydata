@@ -48,9 +48,9 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
-    // compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    // compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   } else {
@@ -59,8 +59,8 @@ dependencies {
     provided "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}"
     provided "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
     provided "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}"
-    provided "org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}"
-    // provided "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
+    // provided "org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}"
+    provided "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
     provided "org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
     provided "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}"
     provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
