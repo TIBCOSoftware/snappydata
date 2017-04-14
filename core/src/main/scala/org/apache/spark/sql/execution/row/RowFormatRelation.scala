@@ -352,18 +352,17 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+      catalog.registerDataSourceTable(
+        catalog.newQualifiedTableName(tableName), None,
+        Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
+        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
             overwrite = false)
         case None =>
       }
-
-      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-      catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), None,
-        Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
-        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
       success = true
       relation
     } finally {
