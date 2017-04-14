@@ -631,6 +631,19 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(snc.sql("select count(*) from airline").count()>0)
     snc.sql("drop table airline")
   }
+
+  def testSNAP1210(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+
+    snc.sql(s"create table t1 using com.databricks.spark.csv options(path '${(getClass.getResource("/northwind/orders"+
+      ".csv").getPath)}', header 'true', inferschema 'true')")
+    snc.sql("select * from t1").printSchema()
+    snc.sql("select * from t1").show
+    snc.sql("select * from t1").write.csv("/tmp/test")
+    assert(snc.sql("select count(*) from airline").count()>0)
+  }
+
 }
 
 case class TData(Key1: Int, Value: Int)
