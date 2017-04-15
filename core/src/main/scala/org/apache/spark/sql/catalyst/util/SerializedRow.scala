@@ -115,11 +115,11 @@ trait SerializedRowData extends SpecializedGetters
   @inline protected final def getFieldCursor(ordinal: Int): Long =
     baseOffset + bitSetWidthInBytes + (ordinal << 3L)
 
-  @inline protected final def assertIndexIsValid(index: Int): Unit = {
-    if (index < 0 || index >= nFields) {
-      throw new AssertionError(s"index $index should be >= 0 and < $nFields")
-    }
-  }
+  @inline protected final def indexIsValid(index: Int): Boolean =
+    index >= 0 && index < nFields
+
+  protected final def indexInvalid(index: Int): AssertionError =
+    new AssertionError(s"index $index should be >= 0 and < $nFields")
 
   @inline private final def readInt(ordinal: Int): Int =
     ColumnEncoding.readInt(baseObject, getFieldCursor(ordinal))
@@ -193,46 +193,53 @@ trait SerializedRowData extends SpecializedGetters
   }
 
   final def isNullAt(ordinal: Int): Boolean = {
-    assertIndexIsValid(ordinal)
-    BitSetMethods.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3))
+    if (indexIsValid(ordinal)) {
+      BitSetMethods.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3))
+    } else throw indexInvalid(ordinal)
   }
 
   final def getBoolean(ordinal: Int): Boolean = {
-    assertIndexIsValid(ordinal)
-    Platform.getBoolean(baseObject, getFieldCursor(ordinal))
+    if (indexIsValid(ordinal)) {
+      Platform.getBoolean(baseObject, getFieldCursor(ordinal))
+    } else throw indexInvalid(ordinal)
   }
 
   final def getByte(ordinal: Int): Byte = {
-    assertIndexIsValid(ordinal)
-    Platform.getByte(baseObject, getFieldCursor(ordinal))
+    if (indexIsValid(ordinal)) {
+      Platform.getByte(baseObject, getFieldCursor(ordinal))
+    } else throw indexInvalid(ordinal)
   }
 
   final def getShort(ordinal: Int): Short = {
-    assertIndexIsValid(ordinal)
-    ColumnEncoding.readShort(baseObject, getFieldCursor(ordinal))
+    if (indexIsValid(ordinal)) {
+      ColumnEncoding.readShort(baseObject, getFieldCursor(ordinal))
+    } else throw indexInvalid(ordinal)
   }
 
   final def getInt(ordinal: Int): Int = {
-    assertIndexIsValid(ordinal)
-    readInt(ordinal)
+    if (indexIsValid(ordinal)) readInt(ordinal)
+    else throw indexInvalid(ordinal)
   }
 
   final def getLong(ordinal: Int): Long = {
-    assertIndexIsValid(ordinal)
-    readLong(ordinal)
+    if (indexIsValid(ordinal)) readLong(ordinal)
+    else throw indexInvalid(ordinal)
   }
 
   final def getFloat(ordinal: Int): Float = {
-    assertIndexIsValid(ordinal)
-    ColumnEncoding.readFloat(baseObject, getFieldCursor(ordinal))
+    if (indexIsValid(ordinal)) {
+      ColumnEncoding.readFloat(baseObject, getFieldCursor(ordinal))
+    } else throw indexInvalid(ordinal)
   }
 
   final def getDouble(ordinal: Int): Double = {
-    assertIndexIsValid(ordinal)
-    ColumnEncoding.readDouble(baseObject, getFieldCursor(ordinal))
+    if (indexIsValid(ordinal)) {
+      ColumnEncoding.readDouble(baseObject, getFieldCursor(ordinal))
+    } else throw indexInvalid(ordinal)
   }
 
   final def getDecimal(ordinal: Int, precision: Int, scale: Int): Decimal = {
+    // index validity checked in the isNullAt call
     if (isNullAt(ordinal)) null
     else if (precision <= Decimal.MAX_LONG_DIGITS) {
       Decimal.createUnsafe(readLong(ordinal), precision, scale)
@@ -245,6 +252,7 @@ trait SerializedRowData extends SpecializedGetters
   }
 
   final def getUTF8String(ordinal: Int): UTF8String = {
+    // index validity checked in the isNullAt call
     if (isNullAt(ordinal)) null
     else {
       val offsetAndSize = readLong(ordinal)
@@ -255,11 +263,13 @@ trait SerializedRowData extends SpecializedGetters
   }
 
   final def getBinary(ordinal: Int): Array[Byte] = {
+    // index validity checked in the isNullAt call
     if (isNullAt(ordinal)) null
     else readBinary(ordinal)
   }
 
   final def getInterval(ordinal: Int): CalendarInterval = {
+    // index validity checked in the isNullAt call
     if (isNullAt(ordinal)) null
     else {
       val offsetAndSize = readLong(ordinal)
@@ -271,6 +281,7 @@ trait SerializedRowData extends SpecializedGetters
   }
 
   final def getStruct(ordinal: Int, numFields: Int): SerializedRow = {
+    // index validity checked in the isNullAt call
     if (isNullAt(ordinal)) null
     else {
       val offsetAndSize = readLong(ordinal)
@@ -283,6 +294,7 @@ trait SerializedRowData extends SpecializedGetters
   }
 
   final def getArray(ordinal: Int): SerializedArray = {
+    // index validity checked in the isNullAt call
     if (isNullAt(ordinal)) null
     else {
       val offsetAndSize = readLong(ordinal)
@@ -295,6 +307,7 @@ trait SerializedRowData extends SpecializedGetters
   }
 
   final def getMap(ordinal: Int): SerializedMap = {
+    // index validity checked in the isNullAt call
     if (isNullAt(ordinal)) null
     else {
       val offsetAndSize = readLong(ordinal)

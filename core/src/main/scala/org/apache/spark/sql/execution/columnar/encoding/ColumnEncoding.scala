@@ -20,7 +20,6 @@ import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import io.snappydata.util.StringUtils
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -31,7 +30,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.collection.BitSet
@@ -73,13 +71,9 @@ abstract class ColumnDecoder extends ColumnEncoding {
       field: StructField): Long
 
   def initialize(buffer: ByteBuffer, field: StructField): Long = {
-    if (buffer.isDirect) {
-      initialize(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), field)
-    } else {
-      initialize(buffer.array(), buffer.arrayOffset() +
-          buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
-    }
+    val allocator = ColumnEncoding.getAllocator(buffer)
+    initialize(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
+        buffer.position(), field)
   }
 
   def initialize(columnBytes: AnyRef, cursor: Long,
@@ -564,19 +558,77 @@ trait ColumnEncoder extends ColumnEncoding {
     throw new UnsupportedOperationException(s"writeUnsafeData for $toString")
 
   // Helper methods for writing complex types and elements inside them.
+
+  /**
+   * Temporary offset results to be read by generated code immediately
+   * after initializeComplexType, so not an issue for nested types.
+   */
   protected final var baseTypeOffset: Long = _
   protected final var baseDataOffset: Long = _
 
-  @inline final def setOffsetAndSize(cursor: Long, fieldCursor: Long,
+  @inline final def setOffsetAndSize(cursor: Long, fieldOffset: Long,
       baseOffset: Long, size: Int): Unit = {
     val relativeOffset = cursor - columnBeginPosition - baseOffset
     val offsetAndSize = (relativeOffset << 32L) | size.toLong
-    Platform.putLong(columnBytes, fieldCursor, offsetAndSize)
+    Platform.putLong(columnBytes, columnBeginPosition + fieldOffset,
+      offsetAndSize)
   }
 
   final def getBaseTypeOffset: Long = baseTypeOffset
+
   final def getBaseDataOffset: Long = baseDataOffset
 
+  /**
+   * Complex types are written similar to UnsafeRows while respecting platform
+   * endianness (format is always little endian) so appropriate for storage.
+   * Also have other minor differences related to size writing and interval
+   * type handling. General layout looks like below:
+   * {{{
+   *   .--------------------------- Optional total size including itself (4 bytes)
+   *   |   .----------------------- Optional number of elements (4 bytes)
+   *   |   |   .------------------- Null bitset longs (8 x (N / 8) bytes,
+   *   |   |   |                                       empty if null count is zero)
+   *   |   |   |     .------------- Offsets+Sizes of elements (8 x N bytes)
+   *   |   |   |     |     .------- Variable length elements
+   *   V   V   V     V     V
+   *   +---+---+-----+-------------+
+   *   |   |   | ... | ... ... ... |
+   *   +---+---+-----+-------------+
+   *    \-----/ \-----------------/
+   *     header      body
+   * }}}
+   * The above generic layout is used for ARRAY and STRUCT types.
+   *
+   * The total size of the data is written for top-level complex types. Nested
+   * complex objects write their sizes in the "Offsets+Sizes" portion in the
+   * respective parent object.
+   *
+   * ARRAY types also write the number of elements in the array in the header
+   * while STRUCT types skip it since it is fixed in the meta-data.
+   *
+   * The null bitset follows the header. To keep the reads aligned at 8 byte
+   * boundaries while preserving space, the implementation will combine the
+   * header and the null bitset portion, then pad them together at 8 byte
+   * boundary (in particular it will consider header as some additional empty
+   * fields in the null bitset itself).
+   *
+   * After this follows the "Offsets+Sizes" which keeps the offset and size
+   * for variable length elements. Fixed length elements less than 8 bytes
+   * in size are written directly in the offset+size portion. Variable length
+   * elements have their offsets (from start of this array) and sizes encoded
+   * in this portion as a long (4 bytes for each of offset and size). Fixed
+   * width elements that are greater than 8 bytes are encoded like variable
+   * length elements. [[CalendarInterval]] is the only type currently that
+   * is of that nature whose "months" portion is encoded into the size
+   * while the "microseconds" portion is written into variable length part.
+   *
+   * MAP types are written as an ARRAY of keys followed by ARRAY of values
+   * like in Spark. To keep things simpler both ARRAYs always have the
+   * optional size header at their respective starts which together determine
+   * the total size of the encoded MAP object. For nested MAP types, the
+   * total size is skipped from the "Offsets+Sizes" portion and only
+   * the offset is written (which is the start of key ARRAY).
+   */
   final def initializeComplexType(cursor: Long, numElements: Int,
       skipBytes: Int, writeNumElements: Boolean): Long = {
     val numNullBytes = calculateBitSetWidthInBytes(
@@ -587,16 +639,11 @@ trait ColumnEncoder extends ColumnEncoding {
     if (position + fixedWidth > columnEndPosition) {
       position = expand(position, fixedWidth)
     }
-    // explicitly zero out the null bytes for off-heap allocator
-    if (allocator.isDirect) {
-      var i = 0
-      while (i < numNullBytes) {
-        Platform.putLong(null, position + i, 0L)
-        i += 8
-      }
-    }
-    baseTypeOffset = offset(position)
-    baseDataOffset = baseTypeOffset + numNullBytes
+    val baseTypeOffset = offset(position).toInt
+    // initialize the null bytes to zeros
+    allocator.clearBuffer(columnData, baseTypeOffset, numNullBytes)
+    this.baseTypeOffset = baseTypeOffset
+    this.baseDataOffset = baseTypeOffset + numNullBytes
     if (writeNumElements) {
       writeIntUnchecked(position + skipBytes - 4, numElements)
     }
@@ -604,46 +651,47 @@ trait ColumnEncoder extends ColumnEncoding {
   }
 
   private final def writeStructData(cursor: Long, value: AnyRef, size: Int,
-      valueOffset: Long, fieldCursor: Long, baseOffset: Long): Long = {
-    val alignedSize = ByteArrayMethods.roundNumberOfBytesToNearestWord(size)
+      valueOffset: Long, fieldOffset: Long, baseOffset: Long): Long = {
+    val alignedSize = ((size + 7) >>> 3) << 3
     // Write the bytes to the variable length portion.
     var position = cursor
     if (position + alignedSize > columnEndPosition) {
       position = expand(position, alignedSize)
     }
+    setOffsetAndSize(position, fieldOffset, baseOffset, size)
     Platform.copyMemory(value, valueOffset, columnBytes, position, size)
-    setOffsetAndSize(position, fieldCursor, baseOffset, size)
     position + alignedSize
   }
 
   final def writeStructUTF8String(cursor: Long, value: UTF8String,
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     writeStructData(cursor, value.getBaseObject, value.numBytes(),
-      value.getBaseOffset, fieldCursor, baseOffset)
+      value.getBaseOffset, fieldOffset, baseOffset)
   }
 
   final def writeStructBinary(cursor: Long, value: Array[Byte],
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     writeStructData(cursor, value, value.length, Platform.BYTE_ARRAY_OFFSET,
-      fieldCursor, baseOffset)
+      fieldOffset, baseOffset)
   }
 
   final def writeStructDecimal(cursor: Long, value: Decimal,
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     // assume precision and scale are matching and ensured by caller
     val bytes = value.toJavaBigDecimal.unscaledValue.toByteArray
     writeStructData(cursor, bytes, bytes.length, Platform.BYTE_ARRAY_OFFSET,
-      fieldCursor, baseOffset)
+      fieldOffset, baseOffset)
   }
 
   final def writeStructInterval(cursor: Long, value: CalendarInterval,
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     var position = cursor
     if (position + 8 > columnEndPosition) {
       position = expand(position, 8)
     }
+    // write months in the size field itself instead of using separate bytes
+    setOffsetAndSize(position, fieldOffset, baseOffset, value.months)
     Platform.putLong(columnBytes, position, value.microseconds)
-    setOffsetAndSize(position, fieldCursor, baseOffset, value.months)
     position + 8
   }
 
@@ -702,14 +750,13 @@ object ColumnEncoding {
     }
   }
 
+  def getAllocator(buffer: ByteBuffer): ColumnAllocator =
+    if (buffer.isDirect) DirectBufferAllocator else HeapBufferAllocator
+
   def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
-    if (buffer.isDirect) {
-      getColumnDecoder(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), field)
-    } else {
-      getColumnDecoder(buffer.array(), buffer.arrayOffset() +
-          buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
-    }
+    val allocator = getAllocator(buffer)
+    getColumnDecoder(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
+        buffer.position(), field)
   }
 
   def getColumnDecoder(columnBytes: AnyRef, offset: Long,

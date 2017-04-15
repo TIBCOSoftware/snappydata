@@ -30,8 +30,13 @@ trait ColumnAllocator {
   /** Allocate a new ByteBuffer of given size. */
   def allocate(size: Int): ByteBuffer
 
-  /** Clears the memory to be zeros immediately after allocation. */
+  /**
+   * Clears the given portion of the buffer with zeros after allocation.
+   */
   def clearPostAllocate(buffer: ByteBuffer): Unit
+
+  /** Clear the given portion of the buffer setting it with zeros. */
+  def clearBuffer(buffer: ByteBuffer, position: Int, numBytes: Int): Unit
 
   /** Get the base object of the ByteBuffer for raw reads by Unsafe API. */
   def baseObject(buffer: ByteBuffer): AnyRef
@@ -77,6 +82,12 @@ object HeapBufferAllocator extends ColumnAllocator {
 
   override def clearPostAllocate(buffer: ByteBuffer): Unit = {}
 
+  override def clearBuffer(buffer: ByteBuffer, position: Int,
+      numBytes: Int): Unit = {
+    UnsafeHolder.getUnsafe.setMemory(buffer.array(), baseOffset(buffer) +
+        position, numBytes, 0)
+  }
+
   override def baseObject(buffer: ByteBuffer): AnyRef = buffer.array()
 
   override def baseOffset(buffer: ByteBuffer): Long =
@@ -108,10 +119,15 @@ object DirectBufferAllocator extends ColumnAllocator {
     UnsafeHolder.allocateDirectBuffer(size)
 
   override def clearPostAllocate(buffer: ByteBuffer): Unit = {
-    UnsafeHolder.getUnsafe.setMemory(null, baseOffset(buffer),
-      // use capacity which will be a factor of 8 where setMemory
-      // will be more efficient
-      buffer.capacity(), 0)
+    // clear till the capacity and not limit since former will be a factor
+    // of 8 and hence more efficient in Unsafe.setMemory
+    clearBuffer(buffer, 0, buffer.capacity())
+  }
+
+  override def clearBuffer(buffer: ByteBuffer, position: Int,
+      numBytes: Int): Unit = {
+    UnsafeHolder.getUnsafe.setMemory(null, baseOffset(buffer) +
+        position, numBytes, 0)
   }
 
   override def baseObject(buffer: ByteBuffer): AnyRef = null

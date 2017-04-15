@@ -413,7 +413,8 @@ object ColumnWriter {
           s"$cursorTerm = $encoder.write$typeName($cursorTerm, $input);"
         } else {
           // offsetTerm is non-null for recursive writes of StructType
-          s"$encoder.write${typeName}Unchecked($offsetTerm, $input);"
+          s"$encoder.write${typeName}Unchecked($encoder.baseOffset() + " +
+              s"$offsetTerm, $input);"
         }
       case StringType =>
         if (offsetTerm eq null) {
@@ -428,7 +429,8 @@ object ColumnWriter {
               s"$input, $batchSizeTerm, ${d.precision}, ${d.scale});"
         } else {
           // assume caller has already ensured matching precision+scale
-          s"$encoder.writeLongUnchecked($offsetTerm, $input.toUnscaledLong());"
+          s"$encoder.writeLongUnchecked($encoder.baseOffset() + " +
+              s"$offsetTerm, $input.toUnscaledLong());"
         }
       case d: DecimalType =>
         if (offsetTerm eq null) {
@@ -632,16 +634,15 @@ object ColumnWriter {
 
     val getter = ctx.getValue(input, dt, index)
     val bitSetMethodsClass = classOf[BitSetMethods].getName
-    val fieldCursor = ctx.freshName("fieldCursor")
+    val fieldOffset = ctx.freshName("fieldOffset")
     val value = ctx.freshName("value")
     var canBeNull = nullable
     val serializeValue =
       s"""
-         |final long $fieldCursor = $encoder.baseOffset() + $baseDataOffset +
-         |    ($index << 3);
+         |final long $fieldOffset = $baseDataOffset + ($index << 3);
          |${genCodeColumnWrite(ctx, dt, nullable = false, encoder,
             cursorTerm, ExprCode("", "false", value), batchSizeTerm,
-            fieldCursor, baseOffset)}
+            fieldOffset, baseOffset)}
       """.stripMargin
     val (checkNull, assignValue) = dt match {
       case d: DecimalType => val checkNull =
