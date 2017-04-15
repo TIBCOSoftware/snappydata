@@ -24,7 +24,7 @@ You can simply get started by adding SnappyData as a package dependency. You can
 You can download and install the latest version of SnappyData from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases/). 
 Refer to the [documentation](http://snappydatainc.github.io/snappydata/install/#install-on-premise) for installation steps.
 
-If you would like to build SnappyData from source, refer to the [documentation on building from source](http://snappydatainc.github.io/snappydata/install/#building-from-source.).
+If you would like to build SnappyData from source, refer to the [documentation on building from source](http://snappydatainc.github.io/snappydata/install/#building-from-source).
 
 ## SnappyData in 5 Minutes!
 Refer to the [5 minutes guide](docs/quickstart.md) which is intended for both first time and experienced SnappyData users. It provides you with references and common examples to help you get started quickly!

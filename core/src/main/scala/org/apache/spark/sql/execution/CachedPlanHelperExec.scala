@@ -17,24 +17,75 @@
 package org.apache.spark.sql.execution
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
+import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 
-case class CachedPlanHelperExec(childPlan: CodegenSupport)
+case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: SnappySession)
     extends UnaryExecNode with CodegenSupport {
 
-  var ctxReferences: mutable.ArrayBuffer[Any] = _
+  override def output: Seq[Attribute] = child.output
+
+  override def outputPartitioning: Partitioning = child.outputPartitioning
+
+  override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 
   override def child: SparkPlan = childPlan
 
-  override def inputRDDs(): Seq[RDD[InternalRow]] = childPlan.inputRDDs()
+  override def inputRDDs(): Seq[RDD[InternalRow]] = {
+    val childRDDs = childPlan.inputRDDs()
+    childRDDs
+  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    ctxReferences = ctx.references
+    // cannot flatten out the references buffer here since the values may not
+    // have been populated yet
+    session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](REFERENCES_KEY) match {
+      case Some(references) => references += ctx.references
+      case None => session.addContextObject(REFERENCES_KEY,
+        ArrayBuffer[ArrayBuffer[Any]](ctx.references))
+    }
+    // keep a map of the first Hroadcasthashjoinexec plan and the corresponding ref array
+    // collect the broadcasthashjoins in this wholestage and the references array
+    var nextStageStarted = false
+    var alreadyGotBroadcastNode = false
+    childPlan transformDown {
+      case bchj: BroadcastHashJoinExec =>
+        if (!nextStageStarted) {
+          // The below assertion was kept thinking that there will be just one
+          // broadcasthashjoin in one stage but there can be more than one and so
+          // removing the assertion and instead adding this information in the context
+          // indicating the above layer not to cache this plan.
+          // assert(!alreadyGotBroadcastNode, "only one broadcast plans expected per wholestage")
+          if (alreadyGotBroadcastNode) {
+            session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+              CachedPlanHelperExec.NOCACHING_KEY) match {
+              case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+              case Some(_) =>
+            }
+          }
+          session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+            CachedPlanHelperExec.BROADCASTS_KEY) match {
+            case Some(map) => map += bchj -> ctx.references
+            case None => session.addContextObject(CachedPlanHelperExec.BROADCASTS_KEY,
+              mutable.Map(bchj -> ctx.references))
+          }
+          alreadyGotBroadcastNode = true
+        }
+        bchj
+      case cp: CachedPlanHelperExec =>
+        nextStageStarted = true
+        cp
+    }
     childPlan.produce(ctx, this)
   }
 
@@ -42,28 +93,25 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
     parent.doConsume(ctx, input, row)
 
   override protected def doExecute(): RDD[InternalRow] = childPlan.execute()
+}
 
-  override def output: Seq[Attribute] = childPlan.output
+object CachedPlanHelperExec extends Logging {
 
-  private lazy val allLiterals: Array[LiteralValue] = {
-    ctxReferences.filter(
-      { p: Any => p.isInstanceOf[LiteralValue] }).map(
-      _.asInstanceOf[LiteralValue]).sortBy(_.position).toArray
+  val REFERENCES_KEY = "TokenizationReferences"
+  val BROADCASTS_KEY = "TokenizationBroadcasts"
+  val WRAPPED_CONSTANTS = "TokenizedConstants"
+  val NOCACHING_KEY = "TokenizationNoCaching"
+
+  private[sql] def allLiterals(allReferences: Seq[Seq[Any]]): Array[LiteralValue] = {
+    allReferences.flatMap(_.collect {
+      case l: LiteralValue => l
+    }).toSet[LiteralValue].toArray.sortBy(_.position)
   }
 
-  private lazy val hasParamLiteralNode = allLiterals.length > 0
-
-  def collectParamLiteralNodes(lp: LogicalPlan): Unit = {
-    if (hasParamLiteralNode) {
-      lp transformAllExpressions {
-        case p: ParamLiteral =>
-          allLiterals(p.pos - 1).value = p.value
-          p
-      }
+  def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
+      newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
+    literals.foreach { case lv@LiteralValue(_, _, p) =>
+      lv.value = newpls.find(_.pos == p).get.value
     }
-  }
-
-  def replaceConstants(currLogicalPlan: LogicalPlan): Unit = {
-    collectParamLiteralNodes(currLogicalPlan)
   }
 }
