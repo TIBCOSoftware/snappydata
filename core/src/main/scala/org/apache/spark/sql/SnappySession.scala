@@ -1206,7 +1206,8 @@ class SnappySession(@transient private val sc: SparkContext,
       case ThinClientConnectorMode(_, _) =>
         val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
         if (!isTempTable) {
-          sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropTable(tableIdent, ifExists)
+          sessionCatalog.asInstanceOf[ConnectorCatalog]
+              .connectorHelper.dropTable(tableIdent, ifExists)
           return
         }
       case _ =>
@@ -1332,8 +1333,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.
+        sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.
             createIndex(indexIdent, tableIdent, indexColumns, options)
+        return
       case _ =>
     }
 
@@ -1390,7 +1392,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropIndex(indexName, ifExists)
+        sessionCatalog.asInstanceOf[ConnectorCatalog]
+            .connectorHelper.dropIndex(indexName, ifExists)
+        return
       case _ =>
     }
 
@@ -1694,10 +1698,9 @@ object SnappySession extends Logging {
   private def getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
     queryplan transformAllExpressions {
-      case p: ParamLiteral => {
+      case p: ParamLiteral =>
         res += p
         p
-      }
     }
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
@@ -1713,12 +1716,12 @@ object SnappySession extends Logging {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching) {
-        key.invalidatePlan
+        key.invalidatePlan()
       }
       else {
         val params1 = getAllParamLiterals(executedPlan)
-        if (!(params1.sameElements(key.pls))) {
-          key.invalidatePlan
+        if (!params1.sameElements(key.pls)) {
+          key.invalidatePlan()
         }
       }
     }
@@ -1764,10 +1767,10 @@ object SnappySession extends Logging {
     // modified tpch query no 15, It even picks those literal which we don't want.
     var allLiterals: Array[LiteralValue] = Array.empty
     if (key != null && key.valid) {
-      allLiterals = (CachedPlanHelperExec.allLiterals(
+      allLiterals = CachedPlanHelperExec.allLiterals(
         session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
           CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty)
-      )).filter(!_.collectedForPlanCaching)
+      ).filter(!_.collectedForPlanCaching)
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
     }
@@ -1831,7 +1834,8 @@ object SnappySession extends Logging {
     }
 
     var valid = true
-    def invalidatePlan = valid = false
+
+    def invalidatePlan(): Unit = valid = false
   }
 
   object CachedKey {
@@ -1860,10 +1864,10 @@ object SnappySession extends Logging {
       }
 
       def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
-        case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
         case f@Filter(condition, child) => f.copy(
           condition = condition.transform(normalizeExprIds),
           child = child.transformAllExpressions(normalizeExprIds))
+        case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
       }
 
       // normalize lp so that two queries can be determined to be equal

@@ -180,7 +180,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
-       |$closeEncodersFunction();
+       |if ($numInsertions > 0) {
+       |  $closeEncodersFunction();
+       |}
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
