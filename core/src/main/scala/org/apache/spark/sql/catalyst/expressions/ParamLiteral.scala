@@ -47,6 +47,8 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int, val isParamet
 
   override def nullable: Boolean = super.nullable
 
+  var nullableAtPreapreTime: Boolean = false
+
   override def eval(input: InternalRow): Any = literalValue.value
 
   def convertedLiteral: Any = literalValue.converter(literalValue.value)

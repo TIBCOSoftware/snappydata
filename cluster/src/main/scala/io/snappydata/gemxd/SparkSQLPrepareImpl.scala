@@ -29,10 +29,8 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.catalyst.expressions.ParamConstants
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -62,13 +60,13 @@ class SparkSQLPrepareImpl(val sql: String,
   protected[this] val hdos = new GfxdHeapDataOutputStream(
     thresholdListener, sql, true, senderVersion)
 
-  private def allParamConstants(): Array[ParamConstants] = {
-    val res = new ArrayBuffer[ParamConstants]()
+  private def allParamConstants(): Array[ParamLiteral] = {
+    val res = new ArrayBuffer[ParamLiteral]()
     df.queryExecution.analyzed transformAllExpressions {
-      case pc@ParamConstants(_, _, _) => res += pc
+      case pc: ParamLiteral => res += pc
         pc
     }
-    res.toSet[ParamConstants].toArray.sortBy(_.pos)
+    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,
@@ -87,7 +85,7 @@ class SparkSQLPrepareImpl(val sql: String,
         types(index) = sqlType._1
         types(index + 1) = sqlType._2
         types(index + 2) = sqlType._3
-        types(index + 3) = if (paramConstantsArr(i).nullable) 1 else 0
+        types(index + 3) = if (paramConstantsArr(i).nullableAtPreapreTime) 1 else 0
       })
       DataSerializer.writeIntArray(types, hdos)
     } else {

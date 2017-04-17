@@ -360,6 +360,13 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = if (isPreparePhase) {
       val preparedPlan = getDataTypeResolvedPlan(plan)
       assertAllDataTypeResolved(preparedPlan)
+      val parameterResolvedPlan = preparedPlan transformAllExpressions {
+        case pc@ParamConstants(pos, paramType, nullableValue) =>
+          val pl = ParamLiteral(null, paramType, pos, true)
+          pl.nullableAtPreapreTime = nullableValue
+          pl
+      }
+      assertAllParametersResolved(parameterResolvedPlan)
     } else if (pvs != null) {
       val countParams = SnappySession.countParameters(plan)
       if (countParams > 0) {
