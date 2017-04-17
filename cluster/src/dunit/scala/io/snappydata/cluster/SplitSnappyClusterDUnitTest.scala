@@ -81,7 +81,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   override protected def testObject = SplitSnappyClusterDUnitTest
 
   def testCollocatedJoinInSplitModeRowTable(): Unit = {
-//    startNetworkServers()
     testObject.createRowTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE1" :+ "PR_TABLE2" :+ Boolean.box(useThinClientConnector) :+
@@ -89,14 +88,12 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testCollocatedJoinInSplitModeColumnTable(): Unit = {
-//    startNetworkServers()
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
         "PR_TABLE3" :+ "PR_TABLE4" :+ Boolean.box(useThinClientConnector) :+
         Int.box(locatorClientPort))
   }
   def testColumnTableStatsInSplitMode(): Unit = {
-//    startNetworkServers()
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
         "1" :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
@@ -108,7 +105,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def doTestBatchSize(): Unit = {
-//    startNetworkServers()
     val snc = SnappyContext(sc)
     val tblBatchSizeSmall = "APP.tblBatchSizeSmall_embedded"
     val tblSizeBig = "APP.tblBatchSizeBig_embedded"
@@ -185,7 +181,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testColumnTableStatsInSplitModeWithHA(): Unit = {
-//    startNetworkServers()
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
         "1" :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
     val props = bootProps
@@ -468,7 +463,9 @@ object SplitSnappyClusterDUnitTest
     val dimensionDf = snc.createDataFrame(dimension2)
     dimensionDf.write.insertInto("PR_TABLE2")
 
-
+    // force the stats to be populated
+    SnappyTableStatsProviderService.getService.getTableStatsFromService("APP.PR_TABLE1")
+    SnappyTableStatsProviderService.getService.getTableStatsFromService("APP.PR_TABLE2")
   }
 
   def createColumnTableForCollocatedJoin(): Unit = {
@@ -506,6 +503,10 @@ object SplitSnappyClusterDUnitTest
     val countdf1 = snc.sql("select * from PR_TABLE4")
     count = countdf1.count()
     assert(count == 1000, s"Unexpected count = $count, expected 1000")
+
+    // force the stats to be populated
+    SnappyTableStatsProviderService.getService.getTableStatsFromService("APP.PR_TABLE3")
+    SnappyTableStatsProviderService.getService.getTableStatsFromService("APP.PR_TABLE4")
   }
 
 
@@ -514,10 +515,6 @@ object SplitSnappyClusterDUnitTest
       useThinClientConnector: Boolean, locatorClientPort: Int): Unit = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
       locatorProp, useThinConnectorMode = useThinClientConnector, locatorClientPort)
-
-    // force the stats to be populated
-    SnappyTableStatsProviderService.getService.getTableStatsFromService("APP." + table1)
-    SnappyTableStatsProviderService.getService.getTableStatsFromService("APP." + table2)
 
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
