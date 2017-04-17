@@ -63,7 +63,7 @@ class SparkSQLPrepareImpl(val sql: String,
   private def allParamConstants(): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
     df.queryExecution.analyzed transformAllExpressions {
-      case pc: ParamLiteral => res += pc
+      case pc@ParamLiteral(_ , _, _, true) => res += pc
         pc
     }
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
