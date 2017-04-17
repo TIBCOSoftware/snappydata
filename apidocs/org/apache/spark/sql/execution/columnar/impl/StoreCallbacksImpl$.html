@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>StoreCallbacksImpl - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl</title>
-          <meta name="description" content="StoreCallbacksImpl - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl" />
-          <meta name="keywords" content="StoreCallbacksImpl snappydata 2.11 0.7 API org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl" />
+          <title>StoreCallbacksImpl - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl</title>
+          <meta name="description" content="StoreCallbacksImpl - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl" />
+          <meta name="keywords" content="StoreCallbacksImpl snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -145,6 +145,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#acquireStorageMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="acquireStorageMemory(objectName:String,numBytes:Long,buffer:com.gemstone.gemfire.internal.snappy.UMMMemoryTracker,shouldEvict:Boolean):Boolean"></a>
+      <a id="acquireStorageMemory(String,Long,UMMMemoryTracker,Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">acquireStorageMemory</span><span class="params">(<span name="objectName">objectName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytes">numBytes: <span class="extype" name="scala.Long">Long</span></span>, <span name="buffer">buffer: <span class="extype" name="com.gemstone.gemfire.internal.snappy.UMMMemoryTracker">UMMMemoryTracker</span></span>, <span name="shouldEvict">shouldEvict: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@acquireStorageMemory(objectName:String,numBytes:Long,buffer:com.gemstone.gemfire.internal.snappy.UMMMemoryTracker,shouldEvict:Boolean):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -236,6 +253,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#dropStorageMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dropStorageMemory(objectName:String,ignoreBytes:Long):Unit"></a>
+      <a id="dropStorageMemory(String,Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dropStorageMemory</span><span class="params">(<span name="objectName">objectName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreBytes">ignoreBytes: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@dropStorageMemory(objectName:String,ignoreBytes:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -310,6 +344,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#getExecutionPoolSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getExecutionPoolSize():Long"></a>
+      <a id="getExecutionPoolSize():Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getExecutionPoolSize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@getExecutionPoolSize():Long" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#getExecutionPoolUsedMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getExecutionPoolUsedMemory():Long"></a>
+      <a id="getExecutionPoolUsedMemory():Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getExecutionPoolUsedMemory</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@getExecutionPoolUsedMemory():Long" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#getHashCodeSnappy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getHashCodeSnappy(dvds:Array[Object],numPartitions:Int):Int"></a>
       <a id="getHashCodeSnappy(Array[AnyRef],Int):Int"></a>
@@ -374,6 +442,74 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@getLastIndexOfRow(o:Object):Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#getNumBytesForEviction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNumBytesForEviction():Long"></a>
+      <a id="getNumBytesForEviction():Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNumBytesForEviction</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@getNumBytesForEviction():Long" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#getRegionOverhead" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getRegionOverhead(region:com.gemstone.gemfire.internal.cache.LocalRegion):Long"></a>
+      <a id="getRegionOverhead(LocalRegion):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getRegionOverhead</span><span class="params">(<span name="region">region: <span class="extype" name="com.gemstone.gemfire.internal.cache.LocalRegion">LocalRegion</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@getRegionOverhead(region:com.gemstone.gemfire.internal.cache.LocalRegion):Long" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#getStoragePoolSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getStoragePoolSize():Long"></a>
+      <a id="getStoragePoolSize():Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getStoragePoolSize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@getStoragePoolSize():Long" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#getStoragePoolUsedMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getStoragePoolUsedMemory():Long"></a>
+      <a id="getStoragePoolUsedMemory():Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getStoragePoolUsedMemory</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@getStoragePoolUsedMemory():Long" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -463,6 +599,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#isSnappyStore" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isSnappyStore():Boolean"></a>
+      <a id="isSnappyStore():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isSnappyStore</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@isSnappyStore():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
     </li><li name="org.apache.spark.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isTraceEnabled:Boolean"></a>
       <a id="isTraceEnabled:Boolean"></a>
@@ -735,6 +888,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#performConnectorOp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="performConnectorOp(ctx:Object):Unit"></a>
+      <a id="performConnectorOp(AnyRef):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">performConnectorOp</span><span class="params">(<span name="ctx">ctx: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@performConnectorOp(ctx:Object):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#registerRelationDestroyForHiveStore" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="registerRelationDestroyForHiveStore():Unit"></a>
       <a id="registerRelationDestroyForHiveStore():Unit"></a>
@@ -752,6 +922,57 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#releaseStorageMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="releaseStorageMemory(objectName:String,numBytes:Long):Unit"></a>
+      <a id="releaseStorageMemory(String,Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">releaseStorageMemory</span><span class="params">(<span name="objectName">objectName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytes">numBytes: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@releaseStorageMemory(objectName:String,numBytes:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#resetMemoryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="resetMemoryManager():Unit"></a>
+      <a id="resetMemoryManager():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetMemoryManager</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@resetMemoryManager():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#sizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sizer:com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation"></a>
+      <a id="sizer:GemFireXDInstrumentation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sizer</span><span class="result">: <span class="extype" name="com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation">GemFireXDInstrumentation</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@sizer:com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#snappyInternalSchemaName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="snappyInternalSchemaName():String"></a>
       <a id="snappyInternalSchemaName():String"></a>

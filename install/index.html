@@ -218,6 +218,22 @@
 <li><a href="#setting-up-cluster-on-amazon-web-services-aws">Setting up Cluster on Amazon Web Services (AWS)</a></li>
 <li><a href="#building-from-source">Building from Source</a></li>
 </ul>
+<p><note>Note:  Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the <strong>/etc/security/limits.conf</strong> file. </br>A minimum of <strong>8192</strong> is recommended for open file descriptors limit and <strong>&gt;128K</strong> is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
+</note>
+<note></p>
+<pre><code>snappydata          hard    nofile      81920
+snappydata          soft    nofile      8192
+snappydata          hard    nproc       unlimited
+snappydata          soft    nproc       524288
+snappydata          hard    sigpending  unlimited
+snappydata          soft    sigpending  524288
+
+</code></pre>
+
+<p></note>
+<note>
+Here <code>snappydata</code> is the user name under which the SnappyData processes are started. 
+</note></p>
 <h2 id="install-on-premise">Install On-Premise</h2>
 <p>SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.</p>
 <h3 id="prerequisites">Prerequisites</h3>
@@ -237,8 +253,8 @@
 </ul>
 <h3 id="single-host-installation">Single Host Installation</h3>
 <p>This is the simplest form of deployment and can be used for testing and POCs.</p>
-<p>Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory. </p>
-<pre><code class="bash">$ tar -xzf snappydata-0.8-bin.tar.gz   
+<p>Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory.</p>
+<pre><code class="bash">$ tar -xzf snappydata-0.8-bin.tar.gz
 $ cd snappydata-0.8-bin/
 </code></pre>
 
@@ -267,7 +283,7 @@ $ cd snappydata-0.8-bin/
 </li>
 <li>
 <p>Extract the downloaded archive file and go to SnappyData home directory.</p>
-<pre><code>$ tar -xzf snappydata-0.8-bin.tar.gz 
+<pre><code>$ tar -xzf snappydata-0.8-bin.tar.gz
 $ cd snappydata-0.8-bin/
 </code></pre>
 </li>
@@ -332,7 +348,7 @@ $ bin/snappy server stop
 <p>On the <strong>Choose an Amazon Machine Image (AMI)</strong> page, select <strong>Community AMIs</strong> from the left pane.</p>
 </li>
 <li>
-<p>Enter <strong>SnappyData</strong> in the search box, and press <strong>Enter</strong> on your keyboard. </p>
+<p>Enter <strong>SnappyData</strong> in the search box, and press <strong>Enter</strong> on your keyboard.</p>
 </li>
 <li>
 <p>The search result is displayed. From the search results, click <strong>Select</strong> to choose the AMI with the latest release version.</p>
@@ -364,10 +380,10 @@ $ bin/snappy server stop
 <p>Use SSH to connect to the instance using the <strong>ubuntu</strong> username. You require:</p>
 <ul>
 <li>
-<p>The private key file of the key pair with which the instance was launched, and </p>
+<p>The private key file of the key pair with which the instance was launched, and</p>
 </li>
 <li>
-<p>Details of the public hostname or IP address of the instance. 
+<p>Details of the public hostname or IP address of the instance.
 Refer to the following documentation, for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html">accessing an EC2 instance</a>.</p>
 </li>
 </ul>
@@ -401,7 +417,7 @@ Refer to the following documentation, for more information on <a href="http://do
 <br/>Refer to the Amazon Web Services EC2 documentation for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html">generating your own EC2 Key Pair</a>.</p>
 </li>
 <li>
-<p>Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, <code>AWS_SECRET_ACCESS_KEY</code> and <code>AWS_ACCESS_KEY_ID</code>. You can find this information in the AWS IAM console page.<br/> 
+<p>Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, <code>AWS_SECRET_ACCESS_KEY</code> and <code>AWS_ACCESS_KEY_ID</code>. You can find this information in the AWS IAM console page.<br/>
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.</p>
 <p>For example:
 <code>export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112</code>
@@ -418,16 +434,16 @@ If you already have set up the AWS Command Line Interface on your local machine,
 <p><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;</code></p>
 <p>Here, <code>&lt;your-key-name&gt;</code> refers to the EC2 Key Pair, <code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file and <code>&lt;action&gt;</code> refers to the action to be performed (for example, launch, start, stop).</p>
 <p>By default, the script starts one instance of a locator, lead and server each.
-The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups. </p>
-<p>The  names and details of the members are automatically derived from the provided cluster name. </p>
+The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.</p>
+<p>The  names and details of the members are automatically derived from the provided cluster name.</p>
 <p>For example, if you launch a cluster named <strong>my-cluster</strong>, the locator is available in security group named <strong>my-cluster-locator</strong> and the store/server are available in <strong>my-cluster-store</strong>.</p>
 <p>When running the script you can also specify properties like the number of stores and region.</p>
 <p>For example, using the following command, you can start a SnappyData cluster named <strong>snappydata-cluster</strong> with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.</p>
 <p>The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.</p>
-<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster 
+<pre><code>./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster
 </code></pre>
 
-<p>To start Apache Zeppelin on a separate instance, use <code>--with-zeppelin=non-embedded</code>. </p>
+<p>To start Apache Zeppelin on a separate instance, use <code>--with-zeppelin=non-embedded</code>.</p>
 <h5 id="specifying-properties">Specifying Properties</h5>
 <p>If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named <strong>locators</strong>, <strong>leads</strong> or <strong>servers</strong>, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to <a href="../configuration/#configuration-files">this SnappyData documentation page</a> for example on how to write these conf files.</p>
 <p>This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the <code>sbin/snappy-start-all.sh</code> script.</p>
@@ -598,7 +614,7 @@ Options:
 </li>
 </ul>
 <h2 id="building-from-source">Building from Source</h2>
-<p>Building SnappyData requires JDK 7+ installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>). </p>
+<p>Building SnappyData requires JDK 8 installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>).</p>
 <p>Quickstart to build all components of SnappyData:</p>
 <p><strong>Latest release branch</strong></p>
 <pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.8 --recursive
@@ -655,7 +671,7 @@ Options:
 
 <p>The above aliases can serve as useful shortcuts to pull and push all projects from top-level <em>snappydata</em> repository.</p>
 <h3 id="building">Building</h3>
-<p>Gradle is the build tool used for all the SnappyData projects. Changes to <em>Apache Spark</em> and <em>spark-jobserver</em> forks include the addition of Gradle build scripts to allow building them independently as well as a subproject of SnappyData. The only requirement for the build is a JDK 7+ installation. Currently, most of the testing has been with JDK 7. The Gradle wrapper script downloads all the other build dependencies as required.</p>
+<p>Gradle is the build tool used for all the SnappyData projects. Changes to <em>Apache Spark</em> and <em>spark-jobserver</em> forks include the addition of Gradle build scripts to allow building them independently as well as a subproject of SnappyData. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.</p>
 <p>If a user does not want to deal with submodules and only work on SnappyData project, then can clone only the SnappyData repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from maven central.</p>
 <p>If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The <em>spark</em> and <em>store</em> submodules can also be built and published independently.</p>
 <p>Useful build and test targets:</p>
@@ -686,33 +702,36 @@ Options:
 </code></pre>
 
 <p>Running individual tests within some suite works using the <em>--tests</em> argument.</p>
-<h3 id="setting-up-intellij-with-gradle">Setting up IntelliJ with Gradle</h3>
-<p>IntelliJ is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support but has been seen to not work as well (for example, Gradle support is not integrated with Scala plugin etc).  </p>
-<p>To import into IntelliJ:</p>
+<h3 id="setting-up-intellij-idea-with-gradle">Setting up IntelliJ IDEA with Gradle</h3>
+<p>Intellij IDEA is the IDE commonly used by the SnappyData developers. Those who really prefer Eclipse can try the Scala-IDE and Gradle support but has been seen to not work as well. Steps required for setting up SnappyData with all its components in IDEA are listed below.</p>
+<p>To import into IntelliJ IDEA:</p>
 <ul>
 <li>
-<p>Update IntelliJ to the latest 14.x (or 15.x) version, including the latest Scala plug-in. Older versions have trouble dealing with Scala code particularly, some of the code in Spark.</p>
+<p>Update IntelliJ IDEA to the latest version, including the latest Scala plug-in. Older versions (pre 14.x) have trouble dealing with Scala code, particularly some of the code in Spark. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via <em>JAVA_HOME</em>).</p>
 </li>
 <li>
-<p>Select <strong>Import Project</strong>, and then point to the SnappyData directory. Use external Gradle import. When using JDK 7, add <strong>-XX:MaxPermSize=350m</strong> to VM options in global Gradle settings. Select the default values, and click <strong>Next</strong> in the following screens.<br/> 
-<note> Note:</note> </p>
+<p>Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase -Xmx option to be something like <em>-Xmx=2g</em> for comfortable use.</p>
+</li>
+<li>
+<p>Select <strong>Import Project</strong>, and then point to the SnappyData directory. Use external Gradle import. <strong>Un-select</strong> the "Create separate module per source set" option while other options can be defaults. Click <strong>Next</strong> in the following screens.<br/>
+<note> Note:</note></p>
 <ul>
-<li><note>Ignore the <strong>"Gradle location is unknown warning"</strong>.</note> </li>
-<li><note>Ensure that a JDK 7/8 installation has been selected.</note> </li>
+<li><note>Ignore the <strong>"Gradle location is unknown warning"</strong>.</note></li>
+<li><note>Ensure that the JDK 8 installation has been selected.</note></li>
 <li><note>Ignore and dismiss the <strong>"Unindexed remote maven repositories found"</strong> warning message if seen.</note></li>
 </ul>
 </li>
 <li>
-<p>When import is completed, go to <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Scala</strong>. Set the scheme as <strong>Project</strong>. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy <strong>codeStyleSettings.xml</strong> located in the SnappyData top-level directory, to the <strong>.idea</strong> directory created by IntelliJ. Check that the settings are now applied in <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Java</strong> which should display Indent as 2 and continuation indent as 4 (same as Scala).</p>
+<p>When import is completed, go to <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Scala</strong>. Set the scheme as <strong>Project</strong>. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy <strong>codeStyleSettings.xml</strong> located in the SnappyData top-level directory, to the <strong>.idea</strong> directory created by IDEA. Check that the settings are now applied in <strong>File&gt; Settings&gt; Editor&gt; Code Style&gt; Java</strong> which should display Indent as 2 and continuation indent as 4 (same as Scala).</p>
 </li>
 <li>
 <p>If the Gradle tab is not visible immediately, then select it from window list pop-up at the left-bottom corner of IDE. If you click on that window list icon, then the tabs are displayed permanently.</p>
 </li>
 <li>
-<p>Generate Apache Avro and GemFireXD required sources by expanding: <strong>snappydata_2.11&gt; Tasks&gt; other</strong>. Right-click on <strong>generateSources</strong> and run it. The Run option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may some time to complete,  as it downloads jar files and other required files. This step has to be done the first time, or if <strong>./gradlew clean</strong> has been run, or if you have made changes to <strong>javacc/avro/messages.xml</strong> source files. </p>
+<p>Generate Apache Avro and SnappyData required sources by expanding: <strong>snappydata_2.11&gt; Tasks&gt; other</strong>. Right-click on <strong>generateSources</strong> and run it. The Run option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may some time to complete,  as it downloads jar files and other required files. This step has to be done the first time, or if <strong>./gradlew clean</strong> has been run, or if you have made changes to <strong>javacc/avro/messages.xml</strong> source files.</p>
 </li>
 <li>
-<p>If you get unexpected <strong>"Database not found"</strong> or <strong>NullPointerException</strong> errors in GemFireXD layer, then first thing to try is to run the <strong>generateSources</strong> target again.*</p>
+<p>If you get unexpected <strong>"Database not found"</strong> or <strong>NullPointerException</strong> errors in SnappyData-store/GemFireXD layer, then first thing to try is to run the <strong>generateSources</strong> target again.</p>
 </li>
 <li>
 <p>Increase the compiler heap sizes or else the build can take quite long especially with integrated <strong>spark</strong> and <strong>store</strong>. In <strong>File&gt; Settings&gt; Build, Execution, Deployment&gt; Compiler increase</strong>, <strong>Build process heap size</strong> to say 1536 or 2048. Similarly, increase JVM maximum heap size in <strong>Languages &amp; Frameworks&gt; Scala Compiler Server</strong> to 1536 or 2048.</p>
@@ -721,23 +740,20 @@ Options:
 <p>Test the full build.</p>
 </li>
 <li>
-<p>For JDK 7: <strong>Open Run&gt; Edit Configurations</strong>. Expand <strong>Defaults</strong>, and select <strong>Application</strong>. Add <strong>-XX:MaxPermSize=350m</strong> in the VM options. Similarly, add it to VM parameters for ScalaTest and JUnit. Most of the unit tests have trouble without this option.</p>
-</li>
-<li>
-<p>For JUnit configuration also append <strong>/build-artifacts</strong> to the working directory. That is, the directory should be <strong>\$MODULE_DIR\$/build-artifacts</strong>. Likewise change working directory for ScalaTest to be inside <strong>build-artifacts</strong> otherwise, all intermediate log and other files (specially created by GemFireXD) pollute the source tree and may need to be cleaned manually.</p>
+<p>For JUnit tests configuration also append <strong>/build-artifacts</strong> to the working directory. That is, open <strong>Run&gt; Edit Configurations</strong>, expand <strong>Defaults</strong> and select <strong>JUnit</strong>, the working directory should be <strong>\$MODULE_DIR\$/build-artifacts</strong>. Likewise append <strong>build-artifacts</strong> to working directory for ScalaTest. Without this all intermediate log and other files pollute the source tree and then need to be cleaned manually.</p>
 </li>
 </ul>
 <h3 id="running-a-scalatestjunit">Running a ScalaTest/JUnit</h3>
-<p>Running Scala/JUnit tests from IntelliJ is straightforward. Ensure that <strong>MaxPermSize</strong> has been increased when using JDK 7 as mentioned above especially for Spark/Snappy tests.</p>
+<p>Running Scala/JUnit tests from IntelliJ IDEA is straightforward.</p>
 <ul>
 <li>
-<p>When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise an external Gradle process is launched that can start building the project again and won't be cleanly integrated with IntelliJ. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).</p>
+<p>When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise an external Gradle process is launched that can start building the project again and won't be cleanly integrated with IDEA. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).</p>
 </li>
 <li>
-<p>For JUnit tests, ensure that working directory is <strong>\$MODULE_DIR\$/build-artifacts</strong> as mentioned before. Otherwise, many GemFireXD tests will fail to find the resource files required in tests. They also pollute the files etc, so when launched this will allow those to go into build-artifacts that is easier to clean. For that reason, it may be preferable to do the same for ScalaTests.</p>
+<p>For JUnit tests, ensure that working directory is the top-level <strong>\$MODULE_DIR\$/build-artifacts</strong> as mentioned before. Otherwise, many SnappyData-store tests will fail to find the resource files required in tests. They also pollute the files etc, so when launched this will allow those to go into <strong>build-artifacts</strong> that is easier to clean. For that reason, it is preferable to do the same for ScalaTests.</p>
 </li>
 <li>
-<p>Some of the tests use data files from the <strong>tests-common</strong> directory. For such tests, run the Gradle task <strong>snappydata_2.11&gt; Tasks&gt; other&gt; copyResourcesAll</strong> to copy the resources in build area where IntelliJ runs can find it.</p>
+<p>Some of the tests use data files from the <strong>tests-common</strong> directory. For such tests, run the Gradle task <strong>snappydata_2.11&gt; Tasks&gt; other&gt; copyResourcesAll</strong> to copy the resources in build area where IDEA runs can find it.</p>
 </li>
 </ul>
               

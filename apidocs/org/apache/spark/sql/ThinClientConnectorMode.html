@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CalendarConvertor - snappydata_2.11 0.7 API - io.snappydata.examples.udfs.CalendarConvertor</title>
-          <meta name="description" content="CalendarConvertor - snappydata 2.11 0.7 API - io.snappydata.examples.udfs.CalendarConvertor" />
-          <meta name="keywords" content="CalendarConvertor snappydata 2.11 0.7 API io.snappydata.examples.udfs.CalendarConvertor" />
+          <title>ThinClientConnectorMode - snappydata_2.11 0.8 API - org.apache.spark.sql.ThinClientConnectorMode</title>
+          <meta name="description" content="ThinClientConnectorMode - snappydata 2.11 0.8 API - org.apache.spark.sql.ThinClientConnectorMode" />
+          <meta name="keywords" content="ThinClientConnectorMode snappydata 2.11 0.8 API org.apache.spark.sql.ThinClientConnectorMode" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -16,7 +16,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../index.html';
-            var hash = 'io.snappydata.examples.udfs.CalendarConvertor';
+            var hash = 'org.apache.spark.sql.ThinClientConnectorMode';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -29,11 +29,11 @@
         <body class="type">
       <div id="definition">
         <img alt="Class" src="../../../../lib/class_big.png" />
-        <p id="owner"><a href="../../../package.html" class="extype" name="io">io</a>.<a href="../../package.html" class="extype" name="io.snappydata">snappydata</a>.<a href="../package.html" class="extype" name="io.snappydata.examples">examples</a>.<a href="package.html" class="extype" name="io.snappydata.examples.udfs">udfs</a></p>
-        <h1>CalendarConvertor</h1><h3><span class="morelinks"><div>Related Doc:
-            <a href="package.html" class="extype" name="io.snappydata.examples.udfs">package udfs</a>
+        <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>ThinClientConnectorMode</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql">package sql</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -42,16 +42,20 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">class</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CalendarConvertor</span><span class="result"> extends <a href="../../../../org/apache/spark/sql/api/java/UDF1.html" class="extype" name="org.apache.spark.sql.api.java.UDF1">UDF1</a>[<span class="extype" name="java.sql.Timestamp">Timestamp</span>, <span class="extype" name="java.lang.Double">Double</span>]</span>
+        <span class="name">ThinClientConnectorMode</span><span class="params">(<span name="sc">sc: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="ClusterMode.html" class="extype" name="org.apache.spark.sql.ClusterMode">ClusterMode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Similar to SplitClusterMode but this will use thin client driver for making
+connections to Snappy cluster.</p><p>This is for the two cluster mode: one is
+the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
+cluster fetching data from the snappy cluster on demand that just
+remains like an external datastore.</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../../org/apache/spark/sql/api/java/UDF1.html" class="extype" name="org.apache.spark.sql.api.java.UDF1">UDF1</a>[<span class="extype" name="java.sql.Timestamp">Timestamp</span>, <span class="extype" name="java.lang.Double">Double</span>], <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="ClusterMode.html" class="extype" name="org.apache.spark.sql.ClusterMode">ClusterMode</a>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +73,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="io.snappydata.examples.udfs.CalendarConvertor"><span>CalendarConvertor</span></li><li class="in" name="org.apache.spark.sql.api.java.UDF1"><span>UDF1</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.ThinClientConnectorMode"><span>ThinClientConnectorMode</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="org.apache.spark.sql.ClusterMode"><span>ClusterMode</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -88,19 +92,19 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="io.snappydata.examples.udfs.CalendarConvertor#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;():io.snappydata.examples.udfs.CalendarConvertor"></a>
-      <a id="&lt;init&gt;:CalendarConvertor"></a>
+              <ol><li name="org.apache.spark.sql.ThinClientConnectorMode#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(sc:org.apache.spark.SparkContext,url:String):org.apache.spark.sql.ThinClientConnectorMode"></a>
+      <a id="&lt;init&gt;:ThinClientConnectorMode"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CalendarConvertor</span><span class="params">()</span>
+        <span class="name">ThinClientConnectorMode</span><span class="params">(<span name="sc">sc: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@&lt;init&gt;():io.snappydata.examples.udfs.CalendarConvertor" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@&lt;init&gt;(sc:org.apache.spark.SparkContext,url:String):org.apache.spark.sql.ThinClientConnectorMode" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -126,7 +130,7 @@
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@!=(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -143,7 +147,7 @@
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@##():Int" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@##():Int" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -160,7 +164,7 @@
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@==(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@==(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -177,28 +181,11 @@
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@asInstanceOf[T0]:T0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="io.snappydata.examples.udfs.CalendarConvertor#call" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="call(timestamp:java.sql.Timestamp):Double"></a>
-      <a id="call(Timestamp):Double"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">call</span><span class="params">(<span name="timestamp">timestamp: <span class="extype" name="java.sql.Timestamp">Timestamp</span></span>)</span><span class="result">: <span class="extype" name="java.lang.Double">Double</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@call(timestamp:java.sql.Timestamp):Double" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.examples.udfs.CalendarConvertor">CalendarConvertor</a> → <a href="../../../../org/apache/spark/sql/api/java/UDF1.html" class="extype" name="org.apache.spark.sql.api.java.UDF1">UDF1</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -211,7 +198,7 @@
         <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@clone():Object" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@clone():Object" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -234,28 +221,11 @@
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a>
-      <a id="equals(Any):Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@equals(x$1:Any):Boolean" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -268,7 +238,7 @@
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@finalize():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@finalize():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -291,24 +261,7 @@
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@getClass():Class[_]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
-      <a id="hashCode():Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@hashCode():Int" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@getClass():Class[_]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -325,7 +278,7 @@
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -342,7 +295,7 @@
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -359,7 +312,7 @@
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@notify():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@notify():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -376,11 +329,28 @@
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@notifyAll():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@notifyAll():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.ThinClientConnectorMode#sc" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sc:org.apache.spark.SparkContext"></a>
+      <a id="sc:SparkContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sc</span><span class="result">: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@sc:org.apache.spark.SparkContext" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.ThinClientConnectorMode">ThinClientConnectorMode</a> → <a href="ClusterMode.html" class="extype" name="org.apache.spark.sql.ClusterMode">ClusterMode</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -393,28 +363,28 @@
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
-      <a id="toString():String"></a>
+    </li><li name="org.apache.spark.sql.ThinClientConnectorMode#url" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="url:String"></a>
+      <a id="url:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">url</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@toString():String" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@url:String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.ThinClientConnectorMode">ThinClientConnectorMode</a> → <a href="ClusterMode.html" class="extype" name="org.apache.spark.sql.ClusterMode">ClusterMode</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -427,7 +397,7 @@
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@wait():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@wait():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -450,7 +420,7 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -473,7 +443,7 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.examples.udfs.CalendarConvertor@wait(x$1:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.ThinClientConnectorMode@wait(x$1:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -493,10 +463,16 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.api.java.UDF1">
-              <h3>Inherited from <a href="../../../../org/apache/spark/sql/api/java/UDF1.html" class="extype" name="org.apache.spark.sql.api.java.UDF1">UDF1</a>[<span class="extype" name="java.sql.Timestamp">Timestamp</span>, <span class="extype" name="java.lang.Double">Double</span>]</h3>
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
+            </div><div class="parent" name="org.apache.spark.sql.ClusterMode">
+              <h3>Inherited from <a href="ClusterMode.html" class="extype" name="org.apache.spark.sql.ClusterMode">ClusterMode</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

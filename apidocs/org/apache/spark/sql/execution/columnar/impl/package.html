@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>impl - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.columnar.impl</title>
-          <meta name="description" content="impl - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.columnar.impl" />
-          <meta name="keywords" content="impl snappydata 2.11 0.7 API org.apache.spark.sql.execution.columnar.impl" />
+          <title>impl - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl</title>
+          <meta name="description" content="impl - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl" />
+          <meta name="keywords" content="impl snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.impl" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -66,12 +66,12 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="BaseColumnFormatRelationextendsJDBCAppendableRelationwithPartitionedDataSourceScanwithRowInsertableRelation"></a>
       <a id="BaseColumnFormatRelation:BaseColumnFormatRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">abstract </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -130,7 +130,7 @@ Bulk insert example is shown above.
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.impl.DefaultSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DefaultSourceextendsColumnarRelationProvider"></a>
+      <a id="DefaultSourceextendsSchemaRelationProviderwithCreatableRelationProvider"></a>
       <a id="DefaultSource:DefaultSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -138,10 +138,10 @@ Bulk insert example is shown above.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DefaultSource.html"><span class="name">DefaultSource</span></a><span class="result"> extends <a href="../ColumnarRelationProvider.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnarRelationProvider">ColumnarRelationProvider</a></span>
+        <a href="DefaultSource.html"><span class="name">DefaultSource</span></a><span class="result"> extends <a href="../../../sources/SchemaRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.SchemaRelationProvider">SchemaRelationProvider</a> with <a href="../../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@DefaultSourceextendsColumnarRelationProvider" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@DefaultSourceextendsSchemaRelationProviderwithCreatableRelationProvider" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -165,7 +165,7 @@ Bulk insert example is shown above.
       <p class="shortcomment cmt">Currently this is same as ColumnFormatRelation but has kept it as a separate class
 to allow adding of any index specific functionality in future.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="JDBCSourceAsColumnarStoreextendsJDBCSourceAsStore"></a>
+      <a id="JDBCSourceAsColumnarStoreextendsExternalStore"></a>
       <a id="JDBCSourceAsColumnarStore:JDBCSourceAsColumnarStore"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -173,44 +173,44 @@ to allow adding of any index specific functionality in future.</p>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="JDBCSourceAsColumnarStore.html"><span class="name">JDBCSourceAsColumnarStore</span></a><span class="result"> extends <a href="../JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a></span>
+        <a href="JDBCSourceAsColumnarStore.html"><span class="name">JDBCSourceAsColumnarStore</span></a><span class="result"> extends <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@JDBCSourceAsColumnarStoreextendsJDBCSourceAsStore" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@JDBCSourceAsColumnarStoreextendsExternalStore" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Column Store implementation for GemFireXD.</p>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.SparkShellColumnBatchRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SparkShellColumnBatchRDDextendsRDDKryo[org.apache.spark.sql.execution.columnar.ColumnBatch]withKryoSerializable"></a>
-      <a id="SparkShellColumnBatchRDD:SparkShellColumnBatchRDD"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SmartConnectorColumnRDDextendsRDDKryo[Any]withKryoSerializable"></a>
+      <a id="SmartConnectorColumnRDD:SmartConnectorColumnRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkShellColumnBatchRDD.html"><span class="name">SparkShellColumnBatchRDD</span></a><span class="result"> extends <a href="../../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<a href="../ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+        <a href="SmartConnectorColumnRDD.html"><span class="name">SmartConnectorColumnRDD</span></a><span class="result"> extends <a href="../../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="scala.Any">Any</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SparkShellColumnBatchRDDextendsRDDKryo[org.apache.spark.sql.execution.columnar.ColumnBatch]withKryoSerializable" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SmartConnectorColumnRDDextendsRDDKryo[Any]withKryoSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SparkShellRowRDDextendsRowFormatScanRDD"></a>
-      <a id="SparkShellRowRDD:SparkShellRowRDD"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SmartConnectorRowRDDextendsRowFormatScanRDD"></a>
+      <a id="SmartConnectorRowRDD:SmartConnectorRowRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkShellRowRDD.html"><span class="name">SparkShellRowRDD</span></a><span class="result"> extends <a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></span>
+        <a href="SmartConnectorRowRDD.html"><span class="name">SmartConnectorRowRDD</span></a><span class="result"> extends <a href="../../row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SparkShellRowRDDextendsRowFormatScanRDD" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@SmartConnectorRowRDDextendsRowFormatScanRDD" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

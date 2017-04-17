@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyStoreHiveCatalog - snappydata_2.11 0.7 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog</title>
-          <meta name="description" content="SnappyStoreHiveCatalog - snappydata 2.11 0.7 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
-          <meta name="keywords" content="SnappyStoreHiveCatalog snappydata 2.11 0.7 API org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
+          <title>SnappyStoreHiveCatalog - snappydata_2.11 0.8 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog</title>
+          <meta name="description" content="SnappyStoreHiveCatalog - snappydata 2.11 0.8 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
+          <meta name="keywords" content="SnappyStoreHiveCatalog snappydata 2.11 0.8 API org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -58,7 +58,7 @@ stream/topK tables and returning LogicalPlan to materialize these entities.
           <div class="superTypes hiddenContent"><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="SnappyStoreAQPHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a></div>
+            <div class="subClasses hiddenContent"><a href="ConnectorCatalog.html" class="extype" name="org.apache.spark.sql.hive.ConnectorCatalog">ConnectorCatalog</a>, <a href="SnappyConnectorCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyConnectorCatalog">SnappyConnectorCatalog</a>, <a href="SnappyStoreAQPHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a></div>
           </div></div>
         
 
@@ -265,18 +265,18 @@ this becomes a no-op.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#cachedDataSourceTables" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="cachedDataSourceTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,(org.apache.spark.sql.execution.datasources.LogicalRelation,org.apache.spark.sql.catalyst.catalog.CatalogTable)]"></a>
-      <a id="cachedDataSourceTables:LoadingCache[QualifiedTableName,(LogicalRelation,CatalogTable)]"></a>
+      <a id="cachedDataSourceTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,(org.apache.spark.sql.execution.datasources.LogicalRelation,org.apache.spark.sql.catalyst.catalog.CatalogTable,org.apache.spark.sql.hive.RelationInfo)]"></a>
+      <a id="cachedDataSourceTables:LoadingCache[QualifiedTableName,(LogicalRelation,CatalogTable,RelationInfo)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">cachedDataSourceTables</span><span class="result">: <span class="extype" name="com.google.common.cache.LoadingCache">LoadingCache</span>[<a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a>, (<a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a>, <a href="../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>)]</span>
+        <span class="name">cachedDataSourceTables</span><span class="result">: <span class="extype" name="com.google.common.cache.LoadingCache">LoadingCache</span>[<a href="QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a>, (<a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a>, <a href="../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>, <a href="RelationInfo.html" class="extype" name="org.apache.spark.sql.hive.RelationInfo">RelationInfo</a>)]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog@cachedDataSourceTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,(org.apache.spark.sql.execution.datasources.LogicalRelation,org.apache.spark.sql.catalyst.catalog.CatalogTable)]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog@cachedDataSourceTables:com.google.common.cache.LoadingCache[org.apache.spark.sql.hive.QualifiedTableName,(org.apache.spark.sql.execution.datasources.LogicalRelation,org.apache.spark.sql.catalyst.catalog.CatalogTable,org.apache.spark.sql.hive.RelationInfo)]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1168,6 +1168,23 @@ current database.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#invalidateAll" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="invalidateAll():Unit"></a>
+      <a id="invalidateAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">invalidateAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog@invalidateAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#invalidateTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="invalidateTable(tableIdent:org.apache.spark.sql.hive.QualifiedTableName):Unit"></a>
       <a id="invalidateTable(QualifiedTableName):Unit"></a>
@@ -1985,6 +2002,23 @@ the same name, then, if that does not exist, return the table from the current d
     </span>
       <p class="shortcomment cmt">Creates a data source table (a table created with USING clause)
 in Hive's meta-store.</p>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#registerRelationDestroy" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="registerRelationDestroy():Unit"></a>
+      <a id="registerRelationDestroy():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">registerRelationDestroy</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog@registerRelationDestroy():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#registerTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="registerTable(tableName:org.apache.spark.sql.hive.QualifiedTableName,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit"></a>
       <a id="registerTable(QualifiedTableName,LogicalPlan):Unit"></a>
@@ -1998,6 +2032,23 @@ in Hive's meta-store.</p>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog@registerTable(tableName:org.apache.spark.sql.hive.QualifiedTableName,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#relationDestroyVersion" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="relationDestroyVersion:Int"></a>
+      <a id="relationDestroyVersion:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">relationDestroyVersion</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog@relationDestroyVersion:Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

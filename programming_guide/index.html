@@ -106,27 +106,82 @@
             
                 <li class="toctree-l3"><a href="#overview">Overview</a></li>
                 
-                    <li><a class="toctree-l4" href="#snappysession-and-snappystreamingcontext">SnappySession and SnappyStreamingContext</a></li>
+            
+                <li class="toctree-l3"><a href="#snappysession-and-snappystreamingcontext">SnappySession and SnappyStreamingContext</a></li>
                 
-                    <li><a class="toctree-l4" href="#snappydata-jobs">SnappyData Jobs</a></li>
+                    <li><a class="toctree-l4" href="#to-create-a-snappysession">To Create a SnappySession</a></li>
                 
-                    <li><a class="toctree-l4" href="#managing-jar-files">Managing JAR Files</a></li>
+                    <li><a class="toctree-l4" href="#to-create-a-snappystreamingcontext">To Create a SnappyStreamingContext</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-snappydata-shell">Using SnappyData Shell</a></li>
+            
+                <li class="toctree-l3"><a href="#snappydata-jobs">SnappyData Jobs</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-the-spark-shell-and-spark-submit">Using the Spark Shell and spark-submit</a></li>
+                    <li><a class="toctree-l4" href="#scala_2">Scala</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-jdbc-with-snappydata">Using JDBC with SnappyData</a></li>
+                    <li><a class="toctree-l4" href="#java_2">Java</a></li>
                 
-                    <li><a class="toctree-l4" href="#multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</a></li>
+                    <li><a class="toctree-l4" href="#scala_3">Scala</a></li>
                 
-                    <li><a class="toctree-l4" href="#building-snappydata-applications-using-spark-api">Building SnappyData Applications using Spark API</a></li>
+                    <li><a class="toctree-l4" href="#java_3">Java</a></li>
                 
-                    <li><a class="toctree-l4" href="#tables-in-snappydata">Tables in SnappyData</a></li>
+                    <li><a class="toctree-l4" href="#submitting-jobs">Submitting Jobs</a></li>
                 
-                    <li><a class="toctree-l4" href="#stream-processing-using-sql">Stream processing using SQL</a></li>
+                    <li><a class="toctree-l4" href="#running-python-applications">Running Python Applications</a></li>
                 
-                    <li><a class="toctree-l4" href="#user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</a></li>
+                    <li><a class="toctree-l4" href="#streaming-jobs">Streaming Jobs</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#managing-jar-files">Managing JAR Files</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#using-snappydata-shell">Using SnappyData Shell</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#using-the-spark-shell-and-spark-submit">Using the Spark Shell and spark-submit</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#using-jdbc-with-snappydata">Using JDBC with SnappyData</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#multiple-language-binding-using-thrift-protocol">Multiple Language Binding using Thrift Protocol</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#building-snappydata-applications-using-spark-api">Building SnappyData Applications using Spark API</a></li>
+                
+                    <li><a class="toctree-l4" href="#snappysession-usage">SnappySession Usage</a></li>
+                
+                    <li><a class="toctree-l4" href="#create-row-tables-using-api-update-the-contents-of-row-table">Create Row Tables using API, Update the Contents of Row Table</a></li>
+                
+                    <li><a class="toctree-l4" href="#snappystreamingcontext-usage">SnappyStreamingContext Usage</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#tables-in-snappydata">Tables in SnappyData</a></li>
+                
+                    <li><a class="toctree-l4" href="#row-and-column-tables">Row and Column Tables</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#stream-processing-using-sql">Stream processing using SQL</a></li>
+                
+                    <li><a class="toctree-l4" href="#spark-streaming-overview">Spark Streaming Overview</a></li>
+                
+                    <li><a class="toctree-l4" href="#snappydata-streaming-extensions-over-spark">SnappyData Streaming Extensions over Spark</a></li>
+                
+                    <li><a class="toctree-l4" href="#working-with-stream-tables">Working with Stream Tables</a></li>
+                
+                    <li><a class="toctree-l4" href="#stream-sql-through-snappy-sql">Stream SQL through snappy-sql</a></li>
+                
+                    <li><a class="toctree-l4" href="#schemadstream">SchemaDStream</a></li>
+                
+                    <li><a class="toctree-l4" href="#registering-continuous-queries">Registering Continuous Queries</a></li>
+                
+                    <li><a class="toctree-l4" href="#dynamic-ad-hoc-continuous-queries">Dynamic (ad-hoc) Continuous Queries</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#user-defined-functions-udf-and-user-defined-aggregate-functions-udaf">User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)</a></li>
+                
+                    <li><a class="toctree-l4" href="#create-user-defined-function">Create User Defined Function</a></li>
+                
+                    <li><a class="toctree-l4" href="#create-user-defined-aggregate-functions">Create User Defined Aggregate Functions</a></li>
                 
             
             </ul>
@@ -227,7 +282,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="overview">Overview</h1>
+                <h3 id="overview">Overview</h3>
 <p>SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). 
 All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.<br />
 We therefore recommend that you understand the <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#overview">concepts in SparkSQL</a> 

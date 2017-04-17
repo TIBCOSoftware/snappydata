@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>expressions - snappydata_2.11 0.7 API - org.apache.spark.sql.catalyst.expressions</title>
-          <meta name="description" content="expressions - snappydata 2.11 0.7 API - org.apache.spark.sql.catalyst.expressions" />
-          <meta name="keywords" content="expressions snappydata 2.11 0.7 API org.apache.spark.sql.catalyst.expressions" />
+          <title>expressions - snappydata_2.11 0.8 API - org.apache.spark.sql.catalyst.expressions</title>
+          <meta name="description" content="expressions - snappydata 2.11 0.8 API - org.apache.spark.sql.catalyst.expressions" />
+          <meta name="keywords" content="expressions snappydata 2.11 0.8 API org.apache.spark.sql.catalyst.expressions" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -1539,6 +1539,32 @@ sequence.</p><p>This documentation has been based upon similar documentation for
                 <span class="name">@<a href="ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DynamicFoldableExpressionextendsExpressionwithProductwithSerializable"></a>
+      <a id="DynamicFoldableExpression:DynamicFoldableExpression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DynamicFoldableExpression.html"><span class="name">DynamicFoldableExpression</span></a><span class="params">(<span name="expr">expr: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.package@DynamicFoldableExpressionextendsExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Wrap any ParamLiteral expression with this so that we can generate literal initialization code
+within the <code>.init()</code> method of the generated class.</code></p><div class="fullcomment"><div class="comment cmt"><p>Wrap any ParamLiteral expression with this so that we can generate literal initialization code
+within the <code>.init()</code> method of the generated class.
+<br><br></p><p>We try to locate first foldable expression in a query tree such that all its child is foldable
+but parent isn't. That way we locate the exact point where an expression is safe to evalute
+once instead of evaluating every row.
+<br><br></p><p>Expressions like <code> select c from tab where
+ case col2 when 1 then col3 else 'y' end = 22 </code>
+like queries doesn't converts literal evaluation into init method.
+</p></div><dl class="paramcmts block"><dt class="param">expr</dt><dd class="cmt"><p>minimal expression tree that can be evaluated only once and turn into a constant.</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Elt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="EltextendsExpressionwithImplicitCastInputTypeswithCodegenFallbackwithProductwithSerializable"></a>
       <a id="Elt:Elt"></a>
@@ -3131,6 +3157,23 @@ WHERE   a.id IN (SELECT  id
     </span>
       <p class="shortcomment cmt">In order to do type checking, use Literal.create() instead of constructor
 </p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.LiteralValue" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LiteralValueextendsKryoSerializablewithProductwithSerializable"></a>
+      <a id="LiteralValue:LiteralValue"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="LiteralValue.html"><span class="name">LiteralValue</span></a><span class="params">(<span name="value">value: <span class="extype" name="scala.Any">Any</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="position">position: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span name="converter">converter: (<span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Any">Any</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">createToScalaConverter(dataType)</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.package@LiteralValueextendsKryoSerializablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.expressions.Log" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LogextendsUnaryLogExpressionwithProductwithSerializable"></a>
       <a id="Log:Log"></a>
@@ -4020,6 +4063,23 @@ offset -2, will get the value of x 2 rows back in the partition.
 plan.</p><div class="fullcomment"><div class="comment cmt"><p>A place holder used to hold a reference that has been resolved to a field outside of the current
 plan. This is used for correlated subqueries.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParamLiteralextendsLiteral"></a>
+      <a id="ParamLiteral:ParamLiteral"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ParamLiteral.html"><span class="name">ParamLiteral</span></a><span class="result"> extends <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.package@ParamLiteralextendsLiteral" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.expressions.ParseUrl" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ParseUrlextendsExpressionwithExpectsInputTypeswithCodegenFallbackwithProductwithSerializable"></a>
       <a id="ParseUrl:ParseUrl"></a>
@@ -6976,6 +7036,23 @@ When a = b, returns c; when a = d, returns e; else returns f.
     </span>
       <p class="shortcomment cmt">An extractor that matches non-null literal values
 </p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParamLiteral"></a>
+      <a id="ParamLiteral:ParamLiteral"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ParamLiteral$.html"><span class="name">ParamLiteral</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.package@ParamLiteral" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.expressions.ParseUrl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ParseUrl"></a>
       <a id="ParseUrl:ParseUrl"></a>

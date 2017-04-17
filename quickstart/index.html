@@ -226,7 +226,7 @@ Depending on your preference you can try any of the following options:</p>
 <ul>
 <li><a href="#getting-started-with-your-spark-distribution">Option 1: Getting Started with your Spark Distribution</a></li>
 <li><a href="#getting-started-using-spark-scala-apis">Option 2: Getting Started Using Spark Scala APIs</a></li>
-<li><a href="#Start Benchmark">Option 3: 20X Faster than Spark 2.0.2 Caching</a></li>
+<li><a href="#start_benchmark">Option 3: 20X Faster than Spark 2.0.2 Caching</a></li>
 <li><a href="#getting-started-using-sql">Option 4: Getting Started using SQL</a></li>
 <li><a href="#getting-started-by-installing-snappydata-on-premise">Option 5: Getting Started by Installing SnappyData On-Premise</a></li>
 <li><a href="#getting-started-on-aws">Option 6: Getting Started on AWS</a></li>
@@ -333,7 +333,8 @@ scala&gt;  snappy.dropTable(&quot;rowTable&quot;, ifExists = true)
 scala&gt;  snappy.dropTable(&quot;colTable&quot;, ifExists = true)
 </code></pre>
 
-<p><a id="Start Benchmark"></a></p>
+<p><a id="Start Benchmark"></a>
+<a id="start_benchmark"></a></p>
 <h2 id="option-3-20x-faster-than-spark-202">Option 3: 20X Faster than Spark 2.0.2</h2>
 <p>Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
 We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. </p>
@@ -462,7 +463,7 @@ scala&gt;  snappy.sql(&quot;drop table if exists colTable &quot;)
 <pre><code>scala&gt; :q //Quit the Spark Shell
 </code></pre>
 
-<p>Now that we have seen the basic working of SnappyData tables, let us run the <a href="#Start Benchmark">benchmark</a> code to see the performance of SnappyData and compare it to Spark's native cache performance.</p>
+<p>Now that we have seen the basic working of SnappyData tables, let us run the <a href="#start_benchmark">benchmark</a> code to see the performance of SnappyData and compare it to Spark's native cache performance.</p>
 <p><a id="getting-started-by-installing-snappydata-on-premise"></a></p>
 <h2 id="option-5-getting-started-by-installing-snappydata-on-premise">Option 5: Getting Started by Installing SnappyData On-Premise</h2>
 <p>Download the latest version of SnappyData from the <a href="https://github.com/SnappyDataInc/snappydata/releases/">SnappyData Release Page</a> page, which lists the latest and previous releases of SnappyData.</p>

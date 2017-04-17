@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>snappydata_2.11 0.7 API</title>
-          <meta name="description" content="snappydata 2.11 0.7 API" />
-          <meta name="keywords" content="snappydata 2.11 0.7 API" />
+          <title>snappydata_2.11 0.8 API</title>
+          <meta name="description" content="snappydata 2.11 0.8 API" />
+          <meta name="keywords" content="snappydata 2.11 0.8 API" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
@@ -611,7 +611,7 @@
       <div class="name">getAggregateTransformer</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/GetErrorBounds.html" class="extype" name="org.apache.spark.sql.execution.common.GetErrorBounds">GetErrorBounds</a> </div>
     </div><div class="entry">
-      <div class="name">getAggregatedTableStatsOnDemand</div>
+      <div class="name">getAggregatedStatsOnDemand</div>
       <div class="occurrences"><a href="../io/snappydata/SnappyTableStatsProviderService$.html" class="extype" name="io.snappydata.SnappyTableStatsProviderService">SnappyTableStatsProviderService</a> </div>
     </div><div class="entry">
       <div class="name">getAggregationBuffer</div>
@@ -785,6 +785,9 @@
       <div class="name">getBitSet</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/collection/MultiColumnOpenHashSet.html" class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashSet">MultiColumnOpenHashSet</a> <a href="../org/apache/spark/util/collection/OpenHashSet.html" class="extype" name="org.apache.spark.util.collection.OpenHashSet">OpenHashSet</a> </div>
     </div><div class="entry">
+      <div class="name">getBlob</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SmartConnectorHelper$.html" class="extype" name="org.apache.spark.sql.SmartConnectorHelper">SmartConnectorHelper</a> </div>
+    </div><div class="entry">
       <div class="name">getBlock</div>
       <div class="occurrences"><a href="../org/apache/spark/storage/StorageStatus.html" class="extype" name="org.apache.spark.storage.StorageStatus">StorageStatus</a> </div>
     </div><div class="entry">
@@ -839,6 +842,9 @@
       <div class="name">getCachedHiveTableProperties</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> </div>
     </div><div class="entry">
+      <div class="name">getCachedRelationInfo</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/ConnectorCatalog.html" class="extype" name="org.apache.spark.sql.hive.ConnectorCatalog">ConnectorCatalog</a> </div>
+    </div><div class="entry">
       <div class="name">getCachedSampledRelations</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> </div>
     </div><div class="entry">
@@ -853,6 +859,9 @@
     </div><div class="entry">
       <div class="name">getCatalogName</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TGetColumnsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetColumnsReq">TGetColumnsReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetFunctionsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetFunctionsReq">TGetFunctionsReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetSchemasReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetSchemasReq">TGetSchemasReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetTablesReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTablesReq">TGetTablesReq</a> </div>
+    </div><div class="entry">
+      <div class="name">getCatalogTable</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/ConnectorCatalog.html" class="extype" name="org.apache.spark.sql.hive.ConnectorCatalog">ConnectorCatalog</a> </div>
     </div><div class="entry">
       <div class="name">getCatalogs</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/CLIService.html" class="extype" name="org.apache.hive.service.cli.CLIService">CLIService</a> <a href="../org/apache/hive/service/cli/EmbeddedCLIServiceClient.html" class="extype" name="org.apache.hive.service.cli.EmbeddedCLIServiceClient">EmbeddedCLIServiceClient</a> <a href="../org/apache/hive/service/cli/ICLIService.html" class="extype" name="org.apache.hive.service.cli.ICLIService">ICLIService</a> <a href="../org/apache/hive/service/cli/session/HiveSession.html" class="extype" name="org.apache.hive.service.cli.session.HiveSession">HiveSession</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> <a href="../org/apache/hive/service/cli/thrift/ThriftCLIServiceClient.html" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIServiceClient">ThriftCLIServiceClient</a> </div>
@@ -942,7 +951,10 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> </div>
     </div><div class="entry">
       <div class="name">getColumnBatchRDD</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a> <a href="../org/apache/spark/sql/execution/columnar/JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a> <a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a> <a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
+    </div><div class="entry">
+      <div class="name">getColumnBatchStatistics</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> </div>
     </div><div class="entry">
       <div class="name">getColumnDecoder</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnEncoding$.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a> </div>
@@ -955,6 +967,9 @@
     </div><div class="entry">
       <div class="name">getColumnEncoder</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnEncoding$.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a> </div>
+    </div><div class="entry">
+      <div class="name">getColumnLob</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ColumnBatchIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator">ColumnBatchIterator</a> <a href="../org/apache/spark/sql/execution/columnar/ColumnBatchIteratorOnRS.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS">ColumnBatchIteratorOnRS</a> </div>
     </div><div class="entry">
       <div class="name">getColumnName</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TColumnDesc.html" class="extype" name="org.apache.hive.service.cli.thrift.TColumnDesc">TColumnDesc</a> <a href="../org/apache/hive/service/cli/thrift/TGetColumnsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetColumnsReq">TGetColumnsReq</a> </div>
@@ -1025,11 +1040,14 @@
       <div class="name">getConfigurationSize</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TOpenSessionReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TOpenSessionReq">TOpenSessionReq</a> <a href="../org/apache/hive/service/cli/thrift/TOpenSessionResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TOpenSessionResp">TOpenSessionResp</a> </div>
     </div><div class="entry">
+      <div class="name">getConn</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SmartConnectorHelper$.html" class="extype" name="org.apache.spark.sql.SmartConnectorHelper">SmartConnectorHelper</a> </div>
+    </div><div class="entry">
       <div class="name">getConnectedExternalStore</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a> <a href="../org/apache/spark/sql/execution/columnar/JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a> <a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a> <a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
     </div><div class="entry">
       <div class="name">getConnection</div>
-      <div class="occurrences"><a href="../io/snappydata/impl/SparkShellRDDHelper.html" class="extype" name="io.snappydata.impl.SparkShellRDDHelper">SparkShellRDDHelper</a> <a href="../org/apache/spark/jdbc/ConnectionUtil$.html" class="extype" name="org.apache.spark.jdbc.ConnectionUtil">ConnectionUtil</a> <a href="../org/apache/spark/rdd/JdbcRDD$$ConnectionFactory.html" class="extype" name="org.apache.spark.rdd.JdbcRDD.ConnectionFactory">ConnectionFactory</a> <a href="../org/apache/spark/sql/execution/columnar/ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a> <a href="../org/apache/spark/sql/execution/columnar/ExternalStoreUtils$.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils">ExternalStoreUtils</a> <a href="../org/apache/spark/sql/execution/columnar/JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/impl/SparkShellRDDHelper.html" class="extype" name="io.snappydata.impl.SparkShellRDDHelper">SparkShellRDDHelper</a> <a href="../org/apache/spark/jdbc/ConnectionUtil$.html" class="extype" name="org.apache.spark.jdbc.ConnectionUtil">ConnectionUtil</a> <a href="../org/apache/spark/rdd/JdbcRDD$$ConnectionFactory.html" class="extype" name="org.apache.spark.rdd.JdbcRDD.ConnectionFactory">ConnectionFactory</a> <a href="../org/apache/spark/sql/execution/columnar/ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a> <a href="../org/apache/spark/sql/execution/columnar/ExternalStoreUtils$.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils">ExternalStoreUtils</a> <a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
     </div><div class="entry">
       <div class="name">getConnectionType</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ExternalStoreUtils$.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils">ExternalStoreUtils</a> </div>
@@ -1220,6 +1238,12 @@
       <div class="name">getExecutionMetrics</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/ui/SQLListener.html" class="extype" name="org.apache.spark.sql.execution.ui.SQLListener">SQLListener</a> </div>
     </div><div class="entry">
+      <div class="name">getExecutionPoolSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/NoOpSnappyMemoryManager.html" class="extype" name="org.apache.spark.memory.NoOpSnappyMemoryManager">NoOpSnappyMemoryManager</a> <a href="../org/apache/spark/memory/SnappyUnifiedMemoryManager.html" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> <a href="../org/apache/spark/memory/StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> <a href="../org/apache/spark/memory/TempMemoryManager.html" class="extype" name="org.apache.spark.memory.TempMemoryManager">TempMemoryManager</a> <a href="../org/apache/spark/sql/execution/columnar/impl/StoreCallbacksImpl$.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">getExecutionPoolUsedMemory</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/NoOpSnappyMemoryManager.html" class="extype" name="org.apache.spark.memory.NoOpSnappyMemoryManager">NoOpSnappyMemoryManager</a> <a href="../org/apache/spark/memory/SnappyUnifiedMemoryManager.html" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> <a href="../org/apache/spark/memory/StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> <a href="../org/apache/spark/memory/TempMemoryManager.html" class="extype" name="org.apache.spark.memory.TempMemoryManager">TempMemoryManager</a> <a href="../org/apache/spark/sql/execution/columnar/impl/StoreCallbacksImpl$.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> </div>
+    </div><div class="entry">
       <div class="name">getExecutorEnv</div>
       <div class="occurrences"><a href="../org/apache/spark/SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a> </div>
     </div><div class="entry">
@@ -1243,9 +1267,6 @@
     </div><div class="entry">
       <div class="name">getExtended</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/ExpressionInfo.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionInfo">ExpressionInfo</a> </div>
-    </div><div class="entry">
-      <div class="name">getExternalSource</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ColumnarRelationProvider.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnarRelationProvider">ColumnarRelationProvider</a> </div>
     </div><div class="entry">
       <div class="name">getExternalStoreMetaData</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> </div>
@@ -1325,9 +1346,6 @@
       <div class="name">getGaps</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/feature/RegexTokenizer.html" class="extype" name="org.apache.spark.ml.feature.RegexTokenizer">RegexTokenizer</a> </div>
     </div><div class="entry">
-      <div class="name">getGaussian</div>
-      <div class="occurrences"><a href="../io/snappydata/examples/CERNNormalDistribution$.html" class="extype" name="io.snappydata.examples.CERNNormalDistribution">CERNNormalDistribution</a> </div>
-    </div><div class="entry">
       <div class="name">getGeneratedIndexStatement</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/store/CodeGeneration$.html" class="extype" name="org.apache.spark.sql.store.CodeGeneration">CodeGeneration</a> </div>
     </div><div class="entry">
@@ -1378,6 +1396,9 @@
     </div><div class="entry">
       <div class="name">getHiveFile</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/hive/test/TestHiveContext.html" class="extype" name="org.apache.spark.sql.hive.test.TestHiveContext">TestHiveContext</a> </div>
+    </div><div class="entry">
+      <div class="name">getHiveTableAndMetadata</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SmartConnectorHelper.html" class="extype" name="org.apache.spark.sql.SmartConnectorHelper">SmartConnectorHelper</a> </div>
     </div><div class="entry">
       <div class="name">getHiveTableMetaData</div>
       <div class="occurrences"><a href="../io/snappydata/impl/SnappyHiveCatalog.html" class="extype" name="io.snappydata.impl.SnappyHiveCatalog">SnappyHiveCatalog</a> </div>
@@ -1856,6 +1877,9 @@
       <div class="name">getNulls</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TBinaryColumn.html" class="extype" name="org.apache.hive.service.cli.thrift.TBinaryColumn">TBinaryColumn</a> <a href="../org/apache/hive/service/cli/thrift/TBoolColumn.html" class="extype" name="org.apache.hive.service.cli.thrift.TBoolColumn">TBoolColumn</a> <a href="../org/apache/hive/service/cli/thrift/TByteColumn.html" class="extype" name="org.apache.hive.service.cli.thrift.TByteColumn">TByteColumn</a> <a href="../org/apache/hive/service/cli/thrift/TDoubleColumn.html" class="extype" name="org.apache.hive.service.cli.thrift.TDoubleColumn">TDoubleColumn</a> <a href="../org/apache/hive/service/cli/thrift/TI16Column.html" class="extype" name="org.apache.hive.service.cli.thrift.TI16Column">TI16Column</a> <a href="../org/apache/hive/service/cli/thrift/TI32Column.html" class="extype" name="org.apache.hive.service.cli.thrift.TI32Column">TI32Column</a> <a href="../org/apache/hive/service/cli/thrift/TI64Column.html" class="extype" name="org.apache.hive.service.cli.thrift.TI64Column">TI64Column</a> <a href="../org/apache/hive/service/cli/thrift/TStringColumn.html" class="extype" name="org.apache.hive.service.cli.thrift.TStringColumn">TStringColumn</a> </div>
     </div><div class="entry">
+      <div class="name">getNumBytesForEviction</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/StoreCallbacksImpl$.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> </div>
+    </div><div class="entry">
       <div class="name">getNumClasses</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/classification/Classifier.html" class="extype" name="org.apache.spark.ml.classification.Classifier">Classifier</a> <a href="../org/apache/spark/mllib/tree/configuration/Strategy.html" class="extype" name="org.apache.spark.mllib.tree.configuration.Strategy">Strategy</a> </div>
     </div><div class="entry">
@@ -2036,8 +2060,11 @@
       <div class="name">getPartitionData</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/collection/Utils$.html" class="extype" name="org.apache.spark.sql.collection.Utils">Utils</a> </div>
     </div><div class="entry">
+      <div class="name">getPartitionEvaluator</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/ColumnarStorePartitionedRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD">ColumnarStorePartitionedRDD</a> </div>
+    </div><div class="entry">
       <div class="name">getPartitionID</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a> <a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
     </div><div class="entry">
       <div class="name">getPartitionId</div>
       <div class="occurrences"><a href="../org/apache/spark/TaskContext$.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a> </div>
@@ -2046,7 +2073,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/store/StoreUtils$.html" class="extype" name="org.apache.spark.sql.store.StoreUtils">StoreUtils</a> </div>
     </div><div class="entry">
       <div class="name">getPartitions</div>
-      <div class="occurrences"><a href="../io/snappydata/impl/SparkShellRDDHelper$.html" class="extype" name="io.snappydata.impl.SparkShellRDDHelper">SparkShellRDDHelper</a> <a href="../org/apache/spark/graphx/EdgeRDD.html" class="extype" name="org.apache.spark.graphx.EdgeRDD">EdgeRDD</a> <a href="../org/apache/spark/graphx/VertexRDD.html" class="extype" name="org.apache.spark.graphx.VertexRDD">VertexRDD</a> <a href="../org/apache/spark/rdd/CoGroupedRDD.html" class="extype" name="org.apache.spark.rdd.CoGroupedRDD">CoGroupedRDD</a> <a href="../org/apache/spark/rdd/HadoopRDD.html" class="extype" name="org.apache.spark.rdd.HadoopRDD">HadoopRDD</a> <a href="../org/apache/spark/rdd/JdbcRDD.html" class="extype" name="org.apache.spark.rdd.JdbcRDD">JdbcRDD</a> <a href="../org/apache/spark/rdd/NewHadoopRDD.html" class="extype" name="org.apache.spark.rdd.NewHadoopRDD">NewHadoopRDD</a> <a href="../org/apache/spark/rdd/PartitionPruningRDD.html" class="extype" name="org.apache.spark.rdd.PartitionPruningRDD">PartitionPruningRDD</a> <a href="../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> <a href="../org/apache/spark/rdd/ShuffledRDD.html" class="extype" name="org.apache.spark.rdd.ShuffledRDD">ShuffledRDD</a> <a href="../org/apache/spark/rdd/UnionRDD.html" class="extype" name="org.apache.spark.rdd.UnionRDD">UnionRDD</a> <a href="../org/apache/spark/sql/DelegateRDD.html" class="extype" name="org.apache.spark.sql.DelegateRDD">DelegateRDD</a> <a href="../org/apache/spark/sql/SampledCachedRDD.html" class="extype" name="org.apache.spark.sql.SampledCachedRDD">SampledCachedRDD</a> <a href="../org/apache/spark/sql/collection/ExecutorLocalRDD.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalRDD">ExecutorLocalRDD</a> <a href="../org/apache/spark/sql/collection/FixedPartitionRDD.html" class="extype" name="org.apache.spark.sql.collection.FixedPartitionRDD">FixedPartitionRDD</a> <a href="../org/apache/spark/sql/execution/ShuffledRowRDD.html" class="extype" name="org.apache.spark.sql.execution.ShuffledRowRDD">ShuffledRowRDD</a> <a href="../org/apache/spark/sql/execution/StratifiedSampledRDD.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampledRDD">StratifiedSampledRDD</a> <a href="../org/apache/spark/sql/execution/WholeStageCodegenRDD.html" class="extype" name="org.apache.spark.sql.execution.WholeStageCodegenRDD">WholeStageCodegenRDD</a> <a href="../org/apache/spark/sql/execution/columnar/ExternalStorePartitionedRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD">ExternalStorePartitionedRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/ColumnarStorePartitionedRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD">ColumnarStorePartitionedRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SparkShellColumnBatchRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SparkShellColumnBatchRDD">SparkShellColumnBatchRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SparkShellRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD">SparkShellRowRDD</a> <a href="../org/apache/spark/sql/execution/datasources/FileScanRDD.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileScanRDD">FileScanRDD</a> <a href="../org/apache/spark/sql/execution/row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a> <a href="../org/apache/spark/sql/execution/streaming/state/StateStoreRDD.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.StateStoreRDD">StateStoreRDD</a> <a href="../org/apache/spark/sql/internal/StoreInitRDD.html" class="extype" name="org.apache.spark.sql.internal.StoreInitRDD">StoreInitRDD</a> <a href="../org/apache/spark/sql/sampling/DummyRDD.html" class="extype" name="org.apache.spark.sql.sampling.DummyRDD">DummyRDD</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/impl/SparkShellRDDHelper$.html" class="extype" name="io.snappydata.impl.SparkShellRDDHelper">SparkShellRDDHelper</a> <a href="../org/apache/spark/graphx/EdgeRDD.html" class="extype" name="org.apache.spark.graphx.EdgeRDD">EdgeRDD</a> <a href="../org/apache/spark/graphx/VertexRDD.html" class="extype" name="org.apache.spark.graphx.VertexRDD">VertexRDD</a> <a href="../org/apache/spark/rdd/CoGroupedRDD.html" class="extype" name="org.apache.spark.rdd.CoGroupedRDD">CoGroupedRDD</a> <a href="../org/apache/spark/rdd/HadoopRDD.html" class="extype" name="org.apache.spark.rdd.HadoopRDD">HadoopRDD</a> <a href="../org/apache/spark/rdd/JdbcRDD.html" class="extype" name="org.apache.spark.rdd.JdbcRDD">JdbcRDD</a> <a href="../org/apache/spark/rdd/NewHadoopRDD.html" class="extype" name="org.apache.spark.rdd.NewHadoopRDD">NewHadoopRDD</a> <a href="../org/apache/spark/rdd/PartitionPruningRDD.html" class="extype" name="org.apache.spark.rdd.PartitionPruningRDD">PartitionPruningRDD</a> <a href="../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> <a href="../org/apache/spark/rdd/ShuffledRDD.html" class="extype" name="org.apache.spark.rdd.ShuffledRDD">ShuffledRDD</a> <a href="../org/apache/spark/rdd/UnionRDD.html" class="extype" name="org.apache.spark.rdd.UnionRDD">UnionRDD</a> <a href="../org/apache/spark/sql/DelegateRDD.html" class="extype" name="org.apache.spark.sql.DelegateRDD">DelegateRDD</a> <a href="../org/apache/spark/sql/SampledCachedRDD.html" class="extype" name="org.apache.spark.sql.SampledCachedRDD">SampledCachedRDD</a> <a href="../org/apache/spark/sql/collection/ExecutorLocalRDD.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalRDD">ExecutorLocalRDD</a> <a href="../org/apache/spark/sql/collection/FixedPartitionRDD.html" class="extype" name="org.apache.spark.sql.collection.FixedPartitionRDD">FixedPartitionRDD</a> <a href="../org/apache/spark/sql/execution/ShuffledRowRDD.html" class="extype" name="org.apache.spark.sql.execution.ShuffledRowRDD">ShuffledRowRDD</a> <a href="../org/apache/spark/sql/execution/StratifiedSampledRDD.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampledRDD">StratifiedSampledRDD</a> <a href="../org/apache/spark/sql/execution/WholeStageCodegenRDD.html" class="extype" name="org.apache.spark.sql.execution.WholeStageCodegenRDD">WholeStageCodegenRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/ColumnarStorePartitionedRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD">ColumnarStorePartitionedRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SmartConnectorColumnRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD">SmartConnectorColumnRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SmartConnectorRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD">SmartConnectorRowRDD</a> <a href="../org/apache/spark/sql/execution/datasources/FileScanRDD.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileScanRDD">FileScanRDD</a> <a href="../org/apache/spark/sql/execution/row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a> <a href="../org/apache/spark/sql/execution/streaming/state/StateStoreRDD.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.StateStoreRDD">StateStoreRDD</a> <a href="../org/apache/spark/sql/internal/StoreInitRDD.html" class="extype" name="org.apache.spark.sql.internal.StoreInitRDD">StoreInitRDD</a> <a href="../org/apache/spark/sql/sampling/DummyRDD.html" class="extype" name="org.apache.spark.sql.sampling.DummyRDD">DummyRDD</a> </div>
     </div><div class="entry">
       <div class="name">getPassword</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSessionBase.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionBase">HiveSessionBase</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> <a href="../org/apache/hive/service/cli/thrift/TOpenSessionReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TOpenSessionReq">TOpenSessionReq</a> </div>
@@ -2079,6 +2106,9 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a> </div>
     </div><div class="entry">
       <div class="name">getPlan</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappySession$.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a> </div>
+    </div><div class="entry">
+      <div class="name">getPlanCache</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappySession$.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a> </div>
     </div><div class="entry">
       <div class="name">getPlanHasSort</div>
@@ -2115,7 +2145,7 @@
       <div class="occurrences"><a href="../org/apache/hive/service/cli/TypeDescriptor.html" class="extype" name="org.apache.hive.service.cli.TypeDescriptor">TypeDescriptor</a> <a href="../org/apache/hive/service/cli/TypeQualifiers.html" class="extype" name="org.apache.hive.service.cli.TypeQualifiers">TypeQualifiers</a> </div>
     </div><div class="entry">
       <div class="name">getPreferredLocations</div>
-      <div class="occurrences"><a href="../org/apache/spark/graphx/impl/VertexRDDImpl.html" class="extype" name="org.apache.spark.graphx.impl.VertexRDDImpl">VertexRDDImpl</a> <a href="../org/apache/spark/rdd/HadoopRDD.html" class="extype" name="org.apache.spark.rdd.HadoopRDD">HadoopRDD</a> <a href="../org/apache/spark/rdd/NewHadoopRDD.html" class="extype" name="org.apache.spark.rdd.NewHadoopRDD">NewHadoopRDD</a> <a href="../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> <a href="../org/apache/spark/rdd/ShuffledRDD.html" class="extype" name="org.apache.spark.rdd.ShuffledRDD">ShuffledRDD</a> <a href="../org/apache/spark/rdd/UnionRDD.html" class="extype" name="org.apache.spark.rdd.UnionRDD">UnionRDD</a> <a href="../org/apache/spark/sql/DelegateRDD.html" class="extype" name="org.apache.spark.sql.DelegateRDD">DelegateRDD</a> <a href="../org/apache/spark/sql/SampledCachedRDD.html" class="extype" name="org.apache.spark.sql.SampledCachedRDD">SampledCachedRDD</a> <a href="../org/apache/spark/sql/collection/ExecutorLocalRDD.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalRDD">ExecutorLocalRDD</a> <a href="../org/apache/spark/sql/execution/ShuffledRowRDD.html" class="extype" name="org.apache.spark.sql.execution.ShuffledRowRDD">ShuffledRowRDD</a> <a href="../org/apache/spark/sql/execution/StratifiedSampledRDD.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampledRDD">StratifiedSampledRDD</a> <a href="../org/apache/spark/sql/execution/WholeStageCodegenRDD.html" class="extype" name="org.apache.spark.sql.execution.WholeStageCodegenRDD">WholeStageCodegenRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/ColumnarStorePartitionedRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD">ColumnarStorePartitionedRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SparkShellColumnBatchRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SparkShellColumnBatchRDD">SparkShellColumnBatchRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SparkShellRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD">SparkShellRowRDD</a> <a href="../org/apache/spark/sql/execution/datasources/FileScanRDD.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileScanRDD">FileScanRDD</a> <a href="../org/apache/spark/sql/execution/row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a> <a href="../org/apache/spark/sql/execution/streaming/state/StateStoreRDD.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.StateStoreRDD">StateStoreRDD</a> <a href="../org/apache/spark/sql/internal/StoreInitRDD.html" class="extype" name="org.apache.spark.sql.internal.StoreInitRDD">StoreInitRDD</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/graphx/impl/VertexRDDImpl.html" class="extype" name="org.apache.spark.graphx.impl.VertexRDDImpl">VertexRDDImpl</a> <a href="../org/apache/spark/rdd/HadoopRDD.html" class="extype" name="org.apache.spark.rdd.HadoopRDD">HadoopRDD</a> <a href="../org/apache/spark/rdd/NewHadoopRDD.html" class="extype" name="org.apache.spark.rdd.NewHadoopRDD">NewHadoopRDD</a> <a href="../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> <a href="../org/apache/spark/rdd/ShuffledRDD.html" class="extype" name="org.apache.spark.rdd.ShuffledRDD">ShuffledRDD</a> <a href="../org/apache/spark/rdd/UnionRDD.html" class="extype" name="org.apache.spark.rdd.UnionRDD">UnionRDD</a> <a href="../org/apache/spark/sql/DelegateRDD.html" class="extype" name="org.apache.spark.sql.DelegateRDD">DelegateRDD</a> <a href="../org/apache/spark/sql/SampledCachedRDD.html" class="extype" name="org.apache.spark.sql.SampledCachedRDD">SampledCachedRDD</a> <a href="../org/apache/spark/sql/collection/ExecutorLocalRDD.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalRDD">ExecutorLocalRDD</a> <a href="../org/apache/spark/sql/execution/ShuffledRowRDD.html" class="extype" name="org.apache.spark.sql.execution.ShuffledRowRDD">ShuffledRowRDD</a> <a href="../org/apache/spark/sql/execution/StratifiedSampledRDD.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampledRDD">StratifiedSampledRDD</a> <a href="../org/apache/spark/sql/execution/WholeStageCodegenRDD.html" class="extype" name="org.apache.spark.sql.execution.WholeStageCodegenRDD">WholeStageCodegenRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/ColumnarStorePartitionedRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD">ColumnarStorePartitionedRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SmartConnectorColumnRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD">SmartConnectorColumnRDD</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SmartConnectorRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD">SmartConnectorRowRDD</a> <a href="../org/apache/spark/sql/execution/datasources/FileScanRDD.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileScanRDD">FileScanRDD</a> <a href="../org/apache/spark/sql/execution/row/RowFormatScanRDD.html" class="extype" name="org.apache.spark.sql.execution.row.RowFormatScanRDD">RowFormatScanRDD</a> <a href="../org/apache/spark/sql/execution/streaming/state/StateStoreRDD.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.StateStoreRDD">StateStoreRDD</a> <a href="../org/apache/spark/sql/internal/StoreInitRDD.html" class="extype" name="org.apache.spark.sql.internal.StoreInitRDD">StoreInitRDD</a> </div>
     </div><div class="entry">
       <div class="name">getPrefix</div>
       <div class="occurrences"><a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
@@ -2198,8 +2228,8 @@
       <div class="name">getRegionName</div>
       <div class="occurrences"><a href="../io/snappydata/test/memscale/OffHeapChunkInfo.html" class="extype" name="io.snappydata.test.memscale.OffHeapChunkInfo">OffHeapChunkInfo</a> </div>
     </div><div class="entry">
-      <div class="name">getRelation</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ColumnarRelationProvider.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnarRelationProvider">ColumnarRelationProvider</a> </div>
+      <div class="name">getRegionOverhead</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/StoreCallbacksImpl$.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> </div>
     </div><div class="entry">
       <div class="name">getRelativeError</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> </div>
@@ -2256,7 +2286,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/RowIterator.html" class="extype" name="org.apache.spark.sql.execution.RowIterator">RowIterator</a> <a href="../org/apache/spark/sql/execution/vectorized/ColumnarBatch.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch">ColumnarBatch</a> </div>
     </div><div class="entry">
       <div class="name">getRowInsertStr</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
     </div><div class="entry">
       <div class="name">getRowIterator</div>
       <div class="occurrences"><a href="../io/snappydata/gemxd/ClusterCallbacksImpl$.html" class="extype" name="io.snappydata.gemxd.ClusterCallbacksImpl">ClusterCallbacksImpl</a> <a href="../io/snappydata/gemxd/SparkSQLExecuteImpl$.html" class="extype" name="io.snappydata.gemxd.SparkSQLExecuteImpl">SparkSQLExecuteImpl</a> </div>
@@ -2292,7 +2322,7 @@
       <div class="occurrences"><a href="../io/snappydata/gemxd/ClusterCallbacksImpl$.html" class="extype" name="io.snappydata.gemxd.ClusterCallbacksImpl">ClusterCallbacksImpl</a> </div>
     </div><div class="entry">
       <div class="name">getSQLStatement</div>
-      <div class="occurrences"><a href="../io/snappydata/impl/SparkShellRDDHelper.html" class="extype" name="io.snappydata.impl.SparkShellRDDHelper">SparkShellRDDHelper</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SparkShellRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD">SparkShellRowRDD</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/impl/SparkShellRDDHelper.html" class="extype" name="io.snappydata.impl.SparkShellRDDHelper">SparkShellRDDHelper</a> <a href="../org/apache/spark/sql/execution/columnar/impl/SmartConnectorRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD">SmartConnectorRowRDD</a> </div>
     </div><div class="entry">
       <div class="name">getSamples</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappyStoreAQPHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog">SnappyStoreAQPHiveCatalog</a> </div>
@@ -2329,6 +2359,9 @@
     </div><div class="entry">
       <div class="name">getSchemaName</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TGetColumnsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetColumnsReq">TGetColumnsReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetFunctionsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetFunctionsReq">TGetFunctionsReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetSchemasReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetSchemasReq">TGetSchemasReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetTablesReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTablesReq">TGetTablesReq</a> </div>
+    </div><div class="entry">
+      <div class="name">getSchemaString</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappyStoreHiveCatalog$.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> </div>
     </div><div class="entry">
       <div class="name">getSchemaStringFromHiveTable</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappyStoreHiveCatalog$.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> </div>
@@ -2528,6 +2561,15 @@
       <div class="name">getStorageLevel</div>
       <div class="occurrences"><a href="../org/apache/spark/api/java/JavaRDDLike.html" class="extype" name="org.apache.spark.api.java.JavaRDDLike">JavaRDDLike</a> <a href="../org/apache/spark/graphx/impl/EdgeRDDImpl.html" class="extype" name="org.apache.spark.graphx.impl.EdgeRDDImpl">EdgeRDDImpl</a> <a href="../org/apache/spark/graphx/impl/VertexRDDImpl.html" class="extype" name="org.apache.spark.graphx.impl.VertexRDDImpl">VertexRDDImpl</a> <a href="../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> </div>
     </div><div class="entry">
+      <div class="name">getStoragePoolMemoryUsed</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/NoOpSnappyMemoryManager.html" class="extype" name="org.apache.spark.memory.NoOpSnappyMemoryManager">NoOpSnappyMemoryManager</a> <a href="../org/apache/spark/memory/SnappyUnifiedMemoryManager.html" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> <a href="../org/apache/spark/memory/StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> <a href="../org/apache/spark/memory/TempMemoryManager.html" class="extype" name="org.apache.spark.memory.TempMemoryManager">TempMemoryManager</a> </div>
+    </div><div class="entry">
+      <div class="name">getStoragePoolSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/NoOpSnappyMemoryManager.html" class="extype" name="org.apache.spark.memory.NoOpSnappyMemoryManager">NoOpSnappyMemoryManager</a> <a href="../org/apache/spark/memory/SnappyUnifiedMemoryManager.html" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> <a href="../org/apache/spark/memory/StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> <a href="../org/apache/spark/memory/TempMemoryManager.html" class="extype" name="org.apache.spark.memory.TempMemoryManager">TempMemoryManager</a> <a href="../org/apache/spark/sql/execution/columnar/impl/StoreCallbacksImpl$.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> </div>
+    </div><div class="entry">
+      <div class="name">getStoragePoolUsedMemory</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/StoreCallbacksImpl$.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> </div>
+    </div><div class="entry">
       <div class="name">getStore</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/streaming/state/StateStoreProvider.html" class="extype" name="org.apache.spark.sql.execution.streaming.state.StateStoreProvider">StateStoreProvider</a> </div>
     </div><div class="entry">
@@ -2577,7 +2619,7 @@
       <div class="occurrences"><a href="../io/snappydata/test/dunit/Host.html" class="extype" name="io.snappydata.test.dunit.Host">Host</a> </div>
     </div><div class="entry">
       <div class="name">getTable</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/execution/cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> <a href="../org/apache/spark/sql/hive/QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a> <a href="../org/apache/spark/sql/internal/SnappySessionState$ResolveRelationsExtended$.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState.ResolveRelationsExtended">ResolveRelationsExtended</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/impl/SnappyHiveCatalog.html" class="extype" name="io.snappydata.impl.SnappyHiveCatalog">SnappyHiveCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/execution/cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> <a href="../org/apache/spark/sql/hive/QualifiedTableName.html" class="extype" name="org.apache.spark.sql.hive.QualifiedTableName">QualifiedTableName</a> <a href="../org/apache/spark/sql/internal/SnappySessionState$ResolveRelationsExtended$.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState.ResolveRelationsExtended">ResolveRelationsExtended</a> </div>
     </div><div class="entry">
       <div class="name">getTableExistsQuery</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a> <a href="../org/apache/spark/sql/row/GemFireXDBaseDialect.html" class="extype" name="org.apache.spark.sql.row.GemFireXDBaseDialect">GemFireXDBaseDialect</a> </div>
@@ -2589,7 +2631,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> </div>
     </div><div class="entry">
       <div class="name">getTableName</div>
-      <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TGetColumnsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetColumnsReq">TGetColumnsReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetTablesReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTablesReq">TGetTablesReq</a> </div>
+      <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TGetColumnsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetColumnsReq">TGetColumnsReq</a> <a href="../org/apache/hive/service/cli/thrift/TGetTablesReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTablesReq">TGetTablesReq</a> <a href="../org/apache/spark/sql/execution/columnar/JDBCAppendableRelation$.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> </div>
     </div><div class="entry">
       <div class="name">getTableNamesAndNullability</div>
       <div class="occurrences"><a href="../io/snappydata/gemxd/SparkSQLExecuteImpl.html" class="extype" name="io.snappydata.gemxd.SparkSQLExecuteImpl">SparkSQLExecuteImpl</a> </div>

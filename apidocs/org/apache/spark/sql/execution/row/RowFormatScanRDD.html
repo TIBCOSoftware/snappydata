@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>RowFormatScanRDD - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.row.RowFormatScanRDD</title>
-          <meta name="description" content="RowFormatScanRDD - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.row.RowFormatScanRDD" />
-          <meta name="keywords" content="RowFormatScanRDD snappydata 2.11 0.7 API org.apache.spark.sql.execution.row.RowFormatScanRDD" />
+          <title>RowFormatScanRDD - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.row.RowFormatScanRDD</title>
+          <meta name="description" content="RowFormatScanRDD - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.row.RowFormatScanRDD" />
+          <meta name="keywords" content="RowFormatScanRDD snappydata 2.11 0.8 API org.apache.spark.sql.execution.row.RowFormatScanRDD" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -56,7 +56,7 @@ This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
           <div class="superTypes hiddenContent"><a href="../RDDKryo.html" class="extype" name="org.apache.spark.sql.execution.RDDKryo">RDDKryo</a>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="../columnar/impl/SparkShellRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD">SparkShellRowRDD</a></div>
+            <div class="subClasses hiddenContent"><a href="../columnar/impl/SmartConnectorRowRDD.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD">SmartConnectorRowRDD</a></div>
           </div></div>
         
 
@@ -94,7 +94,7 @@ This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitionEvaluator:()=&gt;Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD"></a>
       <a id="&lt;init&gt;:RowFormatScanRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -102,10 +102,11 @@ This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RowFormatScanRDD</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="columns">columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="pushProjections">pushProjections: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="useResultSet">useResultSet: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="connProperties">connProperties: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Filter]</a></span></span></span>, <span name="parts">parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Partition]</a></span></span></span>)</span>
+        <span class="name">RowFormatScanRDD</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="columns">columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="pushProjections">pushProjections: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="useResultSet">useResultSet: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="connProperties">connProperties: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Filter]</a></span></span></span>, <span name="partitionEvaluator">partitionEvaluator: () ⇒ <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">() =&gt;
+      Array.empty[Partition]</a></span></span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],parts:Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitionEvaluator:()=&gt;Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1814,6 +1815,23 @@ should be <code>false</code> unless this is a pair RDD and the input function do
       </a>
     </span>
       <p class="shortcomment cmt">Returns the jth parent RDD: e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the jth parent RDD: e.g. rdd.parent[T](0) is equivalent to rdd.firstParent[T]</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark">org.apache.spark</a>] </dd><dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#partitionEvaluator" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="partitionEvaluator:()=&gt;Array[org.apache.spark.Partition]"></a>
+      <a id="partitionEvaluator:()⇒Array[Partition]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partitionEvaluator</span><span class="result">: () ⇒ <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@partitionEvaluator:()=&gt;Array[org.apache.spark.Partition]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#partitioner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="partitioner:Option[org.apache.spark.Partitioner]"></a>
       <a id="partitioner:Option[Partitioner]"></a>
@@ -1851,23 +1869,6 @@ should be <code>false</code> unless this is a pair RDD and the input function do
 RDD is checkpointed or not.</p><div class="fullcomment"><div class="comment cmt"><p>Get the array of partitions of this RDD, taking into account whether the
 RDD is checkpointed or not.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#parts" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="parts:Array[org.apache.spark.Partition]"></a>
-      <a id="parts:Array[Partition]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">parts</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@parts:Array[org.apache.spark.Partition]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#persist" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="persist():RDD.this.type"></a>
       <a id="persist():RowFormatScanRDD.this.type"></a>

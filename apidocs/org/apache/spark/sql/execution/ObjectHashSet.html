@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ObjectHashSet - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.ObjectHashSet</title>
-          <meta name="description" content="ObjectHashSet - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.ObjectHashSet" />
-          <meta name="keywords" content="ObjectHashSet snappydata 2.11 0.7 API org.apache.spark.sql.execution.ObjectHashSet" />
+          <title>ObjectHashSet - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.ObjectHashSet</title>
+          <meta name="description" content="ObjectHashSet - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.ObjectHashSet" />
+          <meta name="keywords" content="ObjectHashSet snappydata 2.11 0.8 API org.apache.spark.sql.execution.ObjectHashSet" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -97,7 +97,7 @@ java interfaces to keep byte code overheads minimal.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.ObjectHashSet#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(initialCapacity:Int,loadFactor:Double,numColumns:Int)(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.sql.execution.ObjectHashSet[T]"></a>
+      <a id="&lt;init&gt;(initialCapacity:Int,loadFactor:Double,numColumns:Int,longLived:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.sql.execution.ObjectHashSet[T]"></a>
       <a id="&lt;init&gt;:ObjectHashSet[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -105,10 +105,10 @@ java interfaces to keep byte code overheads minimal.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ObjectHashSet</span><span class="params">(<span name="initialCapacity">initialCapacity: <span class="extype" name="scala.Int">Int</span></span>, <span name="loadFactor">loadFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="numColumns">numColumns: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.execution.ObjectHashSet.T">T</span>]</span>)</span>
+        <span class="name">ObjectHashSet</span><span class="params">(<span name="initialCapacity">initialCapacity: <span class="extype" name="scala.Int">Int</span></span>, <span name="loadFactor">loadFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="numColumns">numColumns: <span class="extype" name="scala.Int">Int</span></span>, <span name="longLived">longLived: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.execution.ObjectHashSet.T">T</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashSet@&lt;init&gt;(initialCapacity:Int,loadFactor:Double,numColumns:Int)(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.sql.execution.ObjectHashSet[T]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashSet@&lt;init&gt;(initialCapacity:Int,loadFactor:Double,numColumns:Int,longLived:Boolean)(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.sql.execution.ObjectHashSet[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -338,6 +338,23 @@ java interfaces to keep byte code overheads minimal.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterable</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ObjectHashSet#freeStorageMemory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="freeStorageMemory():Unit"></a>
+      <a id="freeStorageMemory():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">freeStorageMemory</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashSet@freeStorageMemory():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -390,18 +407,18 @@ java interfaces to keep byte code overheads minimal.
     </span>
       
     </li><li name="org.apache.spark.sql.execution.ObjectHashSet#handleNewInsert" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="handleNewInsert():Boolean"></a>
-      <a id="handleNewInsert():Boolean"></a>
+      <a id="handleNewInsert(pos:Int):Boolean"></a>
+      <a id="handleNewInsert(Int):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">handleNewInsert</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">handleNewInsert</span><span class="params">(<span name="pos">pos: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashSet@handleNewInsert():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashSet@handleNewInsert(pos:Int):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -610,6 +627,23 @@ java interfaces to keep byte code overheads minimal.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ObjectHashSet#toArray" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toArray:Array[AnyRef]"></a>
+      <a id="toArray:Array[AnyRef]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toArray</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ObjectHashSet@toArray:Array[AnyRef]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

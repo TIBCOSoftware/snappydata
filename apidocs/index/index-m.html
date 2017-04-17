@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>snappydata_2.11 0.7 API</title>
-          <meta name="description" content="snappydata 2.11 0.7 API" />
-          <meta name="keywords" content="snappydata 2.11 0.7 API" />
+          <title>snappydata_2.11 0.8 API</title>
+          <meta name="description" content="snappydata 2.11 0.8 API" />
+          <meta name="keywords" content="snappydata 2.11 0.8 API" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
@@ -130,6 +130,9 @@
     </div><div class="entry">
       <div class="name">MILLIS_PER_DAY</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/util/DateTimeUtils$.html" class="extype" name="org.apache.spark.sql.catalyst.util.DateTimeUtils">DateTimeUtils</a> </div>
+    </div><div class="entry">
+      <div class="name">MINIMUM_ENTRIES_PER_BUCKET</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/SnappyStorageEvictor$.html" class="extype" name="org.apache.spark.memory.SnappyStorageEvictor">SnappyStorageEvictor</a> </div>
     </div><div class="entry">
       <div class="name">MINS</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> </div>
@@ -305,8 +308,14 @@
       <div class="name">MemoryConsumer</div>
       <div class="occurrences"><a href="../org/apache/spark/memory/package.html" class="extype" name="org.apache.spark.memory">memory</a> </div>
     </div><div class="entry">
+      <div class="name">MemoryEventListener</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/package.html" class="extype" name="org.apache.spark.memory">memory</a> </div>
+    </div><div class="entry">
       <div class="name">MemoryLocation</div>
       <div class="occurrences"><a href="../org/apache/spark/unsafe/memory/package.html" class="extype" name="org.apache.spark.unsafe.memory">memory</a> </div>
+    </div><div class="entry">
+      <div class="name">MemoryManagerCallback</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/package.html" class="extype" name="org.apache.spark.memory">memory</a> </div>
     </div><div class="entry">
       <div class="name">MemoryMode</div>
       <div class="occurrences"><a href="../org/apache/spark/memory/package.html" class="extype" name="org.apache.spark.memory">memory</a> </div>
@@ -579,7 +588,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> <a href="../org/apache/spark/sql/hive/SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> <a href="../org/apache/spark/sql/internal/UDFFunction$.html" class="extype" name="org.apache.spark.sql.internal.UDFFunction">UDFFunction</a> </div>
     </div><div class="entry">
       <div class="name">makeInsertStmnt</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/JDBCSourceAsStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore">JDBCSourceAsStore</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
     </div><div class="entry">
       <div class="name">makeRDD</div>
       <div class="occurrences"><a href="../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> </div>
@@ -701,6 +710,9 @@
       <div class="name">markFiltered</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/vectorized/ColumnarBatch.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnarBatch">ColumnarBatch</a> </div>
     </div><div class="entry">
+      <div class="name">markFoldable</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/ParamLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> </div>
+    </div><div class="entry">
       <div class="name">markForRecursion</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/common/ReplaceWithSampleTable$.html" class="extype" name="org.apache.spark.sql.execution.common.ReplaceWithSampleTable">ReplaceWithSampleTable</a> </div>
     </div><div class="entry">
@@ -758,6 +770,9 @@
       <div class="name">maxDepth</div>
       <div class="occurrences"><a href="../org/apache/spark/examples/ml/DecisionTreeExample$$Params.html" class="extype" name="org.apache.spark.examples.ml.DecisionTreeExample.Params">Params</a> <a href="../org/apache/spark/examples/ml/GBTExample$$Params.html" class="extype" name="org.apache.spark.examples.ml.GBTExample.Params">Params</a> <a href="../org/apache/spark/examples/ml/RandomForestExample$$Params.html" class="extype" name="org.apache.spark.examples.ml.RandomForestExample.Params">Params</a> <a href="../org/apache/spark/examples/mllib/DecisionTreeRunner$$Params.html" class="extype" name="org.apache.spark.examples.mllib.DecisionTreeRunner.Params">Params</a> <a href="../org/apache/spark/examples/mllib/GradientBoostedTreesRunner$$Params.html" class="extype" name="org.apache.spark.examples.mllib.GradientBoostedTreesRunner.Params">Params</a> <a href="../org/apache/spark/mllib/tree/configuration/Strategy.html" class="extype" name="org.apache.spark.mllib.tree.configuration.Strategy">Strategy</a> </div>
     </div><div class="entry">
+      <div class="name">maxExecutionSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/SnappyUnifiedMemoryManager.html" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> </div>
+    </div><div class="entry">
       <div class="name">maxFileAgeMs</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/streaming/FileStreamOptions.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamOptions">FileStreamOptions</a> </div>
     </div><div class="entry">
@@ -802,6 +817,9 @@
     </div><div class="entry">
       <div class="name">maxSaslEncryptedBlockSize</div>
       <div class="occurrences"><a href="../org/apache/spark/network/util/TransportConf.html" class="extype" name="org.apache.spark.network.util.TransportConf">TransportConf</a> </div>
+    </div><div class="entry">
+      <div class="name">maxStorageSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/SnappyUnifiedMemoryManager.html" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> </div>
     </div><div class="entry">
       <div class="name">maxTasks</div>
       <div class="occurrences"><a href="../org/apache/spark/status/api/v1/ExecutorSummary.html" class="extype" name="org.apache.spark.status.api.v1.ExecutorSummary">ExecutorSummary</a> </div>
@@ -872,8 +890,11 @@
       <div class="name">memoryBytesSpilled</div>
       <div class="occurrences"><a href="../org/apache/spark/executor/TaskMetrics.html" class="extype" name="org.apache.spark.executor.TaskMetrics">TaskMetrics</a> <a href="../org/apache/spark/status/api/v1/ExecutorStageSummary.html" class="extype" name="org.apache.spark.status.api.v1.ExecutorStageSummary">ExecutorStageSummary</a> <a href="../org/apache/spark/status/api/v1/StageData.html" class="extype" name="org.apache.spark.status.api.v1.StageData">StageData</a> <a href="../org/apache/spark/status/api/v1/TaskMetricDistributions.html" class="extype" name="org.apache.spark.status.api.v1.TaskMetricDistributions">TaskMetricDistributions</a> <a href="../org/apache/spark/status/api/v1/TaskMetrics.html" class="extype" name="org.apache.spark.status.api.v1.TaskMetrics">TaskMetrics</a> </div>
     </div><div class="entry">
+      <div class="name">memoryForObject</div>
+      <div class="occurrences"><a href="../org/apache/spark/memory/TempMemoryManager.html" class="extype" name="org.apache.spark.memory.TempMemoryManager">TempMemoryManager</a> </div>
+    </div><div class="entry">
       <div class="name">memoryManager</div>
-      <div class="occurrences"><a href="../org/apache/spark/SparkEnv.html" class="extype" name="org.apache.spark.SparkEnv">SparkEnv</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/SparkEnv.html" class="extype" name="org.apache.spark.SparkEnv">SparkEnv</a> <a href="../org/apache/spark/memory/MemoryManagerCallback$.html" class="extype" name="org.apache.spark.memory.MemoryManagerCallback">MemoryManagerCallback</a> </div>
     </div><div class="entry">
       <div class="name">memoryMapBytes</div>
       <div class="occurrences"><a href="../org/apache/spark/network/util/TransportConf.html" class="extype" name="org.apache.spark.network.util.TransportConf">TransportConf</a> </div>

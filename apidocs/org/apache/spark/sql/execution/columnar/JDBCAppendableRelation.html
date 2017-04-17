@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JDBCAppendableRelation - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.columnar.JDBCAppendableRelation</title>
-          <meta name="description" content="JDBCAppendableRelation - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" />
-          <meta name="keywords" content="JDBCAppendableRelation snappydata 2.11 0.7 API org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" />
+          <title>JDBCAppendableRelation - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.JDBCAppendableRelation</title>
+          <meta name="description" content="JDBCAppendableRelation - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" />
+          <meta name="keywords" content="JDBCAppendableRelation snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -28,10 +28,12 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img alt="Class" src="../../../../../../lib/class_big.png" />
+        <a href="JDBCAppendableRelation$.html" title="See companion object"><img alt="Class/Object" src="../../../../../../lib/class_to_object_big.png" /></a>
         <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution.columnar">columnar</a></p>
-        <h1>JDBCAppendableRelation</h1><h3><span class="morelinks"><div>Related Doc:
-            <a href="package.html" class="extype" name="org.apache.spark.sql.execution.columnar">package columnar</a>
+        <h1><a href="JDBCAppendableRelation$.html" title="See companion object">JDBCAppendableRelation</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="JDBCAppendableRelation$.html" title="See companion object">object JDBCAppendableRelation</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.sql.execution.columnar">package columnar</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
@@ -41,7 +43,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">abstract </span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
@@ -115,10 +117,30 @@ are retrieved using a JDBC URL or DataSource.
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan#buildUnsafeScan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
+      <a id="buildUnsafeScan(Array[String],Array[Filter]):(RDD[Any],Seq[RDD[InternalRow]])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>)</span><span class="result">: (<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]])</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></dd></dl></div>
+    </li></ol>
+            </div>
 
         <div id="values" class="values members">
-              <h3>Value Members</h3>
+              <h3>Concrete Value Members</h3>
               <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a>
       <a id="!=(Any):Boolean"></a>
@@ -187,23 +209,6 @@ are retrieved using a JDBC URL or DataSource.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#buildUnsafeScan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
-      <a id="buildUnsafeScan(Array[String],Array[Filter]):(RDD[Any],Seq[RDD[InternalRow]])"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>)</span><span class="result">: (<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]])</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → <a href="../../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -979,18 +984,18 @@ of Spark SQL should leave this as true.
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#scanTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):org.apache.spark.rdd.RDD[org.apache.spark.sql.execution.columnar.ColumnBatch]"></a>
-      <a id="scanTable(String,Array[String],Array[Filter]):RDD[ColumnBatch]"></a>
+      <a id="scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],prunePartitions:=&gt;Int):org.apache.spark.rdd.RDD[Any]"></a>
+      <a id="scanTable(String,Array[String],Array[Filter],⇒Int):RDD[Any]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">scanTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
+        <span class="name">scanTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>, <span name="prunePartitions">prunePartitions: ⇒ <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):org.apache.spark.rdd.RDD[org.apache.spark.sql.execution.columnar.ColumnBatch]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],prunePartitions:=&gt;Int):org.apache.spark.rdd.RDD[Any]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -274,18 +274,34 @@ With iSight-Cloud, you can speed up the process of understanding what your data 
 <h2 id="quick-start-steps">Quick Start Steps</h2>
 <p>To understand the product follow these easy steps that can get you started quickly:</p>
 <ol>
-<li><a href="#SettingUp">Setting up SnappyData Cloud Cluster</a><ul>
-<li><a href="#DeployingClusterCloudFormation">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</a></li>
-<li><a href="#DeployingClusterScript">Deploying SnappyData Cloud Cluster on AWS using Scripts</a></li>
+<li>
+<p><a href="#SettingUp">Setting up SnappyData Cloud Cluster</a></p>
+<ul>
+<li>
+<p><a href="#DeployingClusterCloudFormation">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</a></p>
+</li>
+<li>
+<p><a href="#DeployingClusterScript">Deploying SnappyData Cloud Cluster on AWS using Scripts</a></p>
+</li>
 </ul>
 </li>
-<li><a href="#LoggingZeppelin">Using Apache Zeppelin</a>    <ul>
-<li><a href="#predefinednotebook">Using Predefined Notebook</a></li>
-<li><a href="#Creatingnotebook">Creating your own Notebook</a></li>
+<li>
+<p><a href="#LoggingZeppelin">Using Apache Zeppelin</a>    </p>
+<ul>
+<li>
+<p><a href="#predefinednotebook">Using Predefined Notebook</a></p>
+</li>
+<li>
+<p><a href="#Creatingnotebook">Creating your own Notebook</a></p>
+</li>
 </ul>
 </li>
-<li><a href="#dataAWSS3">Loading Data from AWS S3</a></li>
-<li><a href="#Monitoring">Monitoring SnappyData Cloud Cluster</a></li>
+<li>
+<p><a href="#dataAWSS3">Loading Data from AWS S3</a></p>
+</li>
+<li>
+<p><a href="#Monitoring">Monitoring SnappyData Cloud Cluster</a></p>
+</li>
 </ol>
 <p><a id="SettingUp"></a></p>
 <h2 id="setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</h2>
@@ -349,12 +365,22 @@ Refer to the Amazon documentation for more information on  <a href="http://docs.
 </ul>
 </li>
 <li>
-<p>On the <strong>Select Template page</strong>, the URL for the Amazon S3 template is pre-populated. Click <strong>Next</strong> to continue.   <br>
+<p>On the <strong>Select Template</strong> page, the URL for the Amazon S3 template is pre-populated. Click <strong>Next</strong> to continue.   <br>
 <img alt="STEP" src="../Images/aws_selecttemplate.png" /></p>
 </li>
 <li>
-<p>You can change the stack name or click <strong>Next</strong> to use the provided default value.</p>
-<p><Note> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.</Note></p>
+<p>On the <strong>Specify Details</strong> page:</p>
+<ul>
+<li>
+<p><strong>Stack name</strong>: You can change the stack name.</br>
+<Note> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.</Note></p>
+</li>
+<li>
+<p><strong>VPCID</strong>: From the drop-down list, select the Virtual Private Cloud (VPC) ID that is set as default. Your instances will be launched within this VPC.</p>
+</li>
+</ul>
+<p>Click <strong>Next</strong> to continue.</p>
+<p><img alt="STEP" src="../Images/aws_vpcid.png" /></p>
 </li>
 <li>
 <p>Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click <strong>Next</strong>.</p>
@@ -578,24 +604,20 @@ In this example, the input forms are, <code>${taxiin=60} or taxiout &gt; ${taxio
 </ul>
 <p><a id="Monitoring"></a></p>
 <h2 id="monitoring-the-snappydata-cloud-cluster">Monitoring the SnappyData Cloud Cluster</h2>
-<p>You can monitor the SnappyData cluster using SnappyData Pulse Console and the Apache Spark Console. The monitoring tools enable you to observe and record the performance and the activities on the SnappyData cluster.</p>
-<p>The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members, and tables. 
-It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.<br />
-It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.</p>
+<p>You can monitor the SnappyData cluster using the Apache Spark Console. This enables you to observe and record the performance and the activities on the SnappyData cluster.</p>
+<!--The SnappyData Pulse Console provides a graphical dashboard which helps you monitor vital, real-time health and performance of SnappyData clusters, members, and tables. 
+It provides information on the health, operational and configuration data, system alerts, CPU, disk and memory usage, throughput performance and statistics for system members like locators, leads, stores/servers, connected clients etc.  
+It also displays data information for various tables created in the cluster on different nodes/members along with their statistics.
+-->
+
 <p>The Apache Spark Console displays useful information about SnappyData. This includes a list of scheduler stages and tasks, summary of tables and memory usage.</p>
 <h3 id="accessing-the-console">Accessing the Console</h3>
-<p>To access the SnappyData Pulse or Apache Spark console from the Apache Zeppelin notebook: </p>
+<p>To access the Apache Spark console from the Apache Zeppelin notebook: </p>
 <ol>
-<li>
-<p>Click on the <strong>Spark UI</strong> or <strong>Pulse</strong> links provided in the paragraph. 
-<img alt="Launch Spark" src="../Images/aws_pulsespark.png" /></p>
-</li>
-<li>
-<p>For the SnappyData Pulse console, enter the default login credentials "admin" as both the username and password.</p>
-</li>
-<li>
-<p>Once you have logged in, you can start monitoring SnappyData cluster. </p>
-</li>
+<li>Click on the <strong>Spark UI</strong> <!--or **Pulse** -->link provided in the paragraph.
+    <img alt="Launch Spark" src="../Images/aws_pulsespark.png" />
+<!--2. For the SnappyData Pulse console, enter the default login credentials "admin" as both the username and password.--></li>
+<li>Once you have logged in, you can start monitoring the SnappyData cluster. </li>
 </ol>
 <h2 id="the-technology-powering-isight-cloud">The Technology Powering iSight Cloud</h2>
 <p>iSight Cloud uses the SnappyData Synopsis Engine to deliver blazing fast responses to queries that have long processing times. Analytic queries typically aim to provide aggregate information and involve full table or partial table scans. The cost of these queries is directly proportional to the amount of data that needs to be scanned. Analytics queries also often involve distributed joins of a dimension table with one or more fact tables. The cost of pruning these queries down to the final result is directly proportional to the size of the data involved. Distributed joins involve lots of data movement making such queries extremely expensive in traditional systems that process the entire data set.</p>

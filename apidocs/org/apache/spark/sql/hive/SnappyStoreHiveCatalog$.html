@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyStoreHiveCatalog - snappydata_2.11 0.7 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog</title>
-          <meta name="description" content="SnappyStoreHiveCatalog - snappydata 2.11 0.7 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
-          <meta name="keywords" content="SnappyStoreHiveCatalog snappydata 2.11 0.7 API org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
+          <title>SnappyStoreHiveCatalog - snappydata_2.11 0.8 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog</title>
+          <meta name="description" content="SnappyStoreHiveCatalog - snappydata 2.11 0.8 API - org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
+          <meta name="keywords" content="SnappyStoreHiveCatalog snappydata 2.11 0.8 API org.apache.spark.sql.hive.SnappyStoreHiveCatalog" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -363,6 +363,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getSchemaString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getSchemaString(tableProps:scala.collection.Map[String,String]):Option[String]"></a>
+      <a id="getSchemaString(Map[String,String]):Option[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSchemaString</span><span class="params">(<span name="tableProps">tableProps: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog$@getSchemaString(tableProps:scala.collection.Map[String,String]):Option[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getSchemaStringFromHiveTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getSchemaStringFromHiveTable(table:org.apache.hadoop.hive.metastore.api.Table):String"></a>
       <a id="getSchemaStringFromHiveTable(Table):String"></a>
@@ -482,6 +499,63 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#relationDestroyLock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="relationDestroyLock:java.util.concurrent.locks.ReentrantReadWriteLock"></a>
+      <a id="relationDestroyLock:ReentrantReadWriteLock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">relationDestroyLock</span><span class="result">: <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock">ReentrantReadWriteLock</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog$@relationDestroyLock:java.util.concurrent.locks.ReentrantReadWriteLock" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#setRelationDestroyVersionOnAllMembers" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setRelationDestroyVersionOnAllMembers:Unit"></a>
+      <a id="setRelationDestroyVersionOnAllMembers:Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setRelationDestroyVersionOnAllMembers</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog$@setRelationDestroyVersionOnAllMembers:Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#suspendActiveSession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="suspendActiveSession[T](function:=&gt;T):T"></a>
+      <a id="suspendActiveSession[T](⇒T):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">suspendActiveSession</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="function">function: ⇒ <span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog.suspendActiveSession.T">T</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog.suspendActiveSession.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyStoreHiveCatalog$@suspendActiveSession[T](function:=&gt;T):T" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Suspend the active SparkSession in case &quot;function&quot; creates new threads
+that can end up inheriting it.</p><div class="fullcomment"><div class="comment cmt"><p>Suspend the active SparkSession in case &quot;function&quot; creates new threads
+that can end up inheriting it. Currently used during hive client creation
+otherwise the BoneCP background threads hold on to old sessions
+(even after a restart) due to the InheritableThreadLocal. Shows up as
+leaks in unit tests where lead JVM size keeps on increasing with new tests.
+</p></div></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

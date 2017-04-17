@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>sql - snappydata_2.11 0.7 API - org.apache.spark.sql</title>
-          <meta name="description" content="sql - snappydata 2.11 0.7 API - org.apache.spark.sql" />
-          <meta name="keywords" content="sql snappydata 2.11 0.7 API org.apache.spark.sql" />
+          <title>sql - snappydata_2.11 0.8 API - org.apache.spark.sql</title>
+          <meta name="description" content="sql - snappydata 2.11 0.8 API - org.apache.spark.sql" />
+          <meta name="keywords" content="sql snappydata 2.11 0.8 API org.apache.spark.sql" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -164,7 +164,7 @@ Thrown when a query fails to analyze, usually because the query itself is invali
     </span>
       
     </li><li name="org.apache.spark.sql.CachedDataFrame" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CachedDataFrameextendsDataset[org.apache.spark.sql.Row]"></a>
+      <a id="CachedDataFrameextendsDataset[org.apache.spark.sql.Row]withLogging"></a>
       <a id="CachedDataFrame:CachedDataFrame"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -172,10 +172,10 @@ Thrown when a query fails to analyze, usually because the query itself is invali
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="CachedDataFrame.html"><span class="name">CachedDataFrame</span></a><span class="result"> extends <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
+        <a href="CachedDataFrame.html"><span class="name">CachedDataFrame</span></a><span class="result"> extends <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>] with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@CachedDataFrameextendsDataset[org.apache.spark.sql.Row]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.package@CachedDataFrameextendsDataset[org.apache.spark.sql.Row]withLogging" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -690,6 +690,24 @@ in the <code>open</code> method.</p><p>Scala example:</p><pre>datasetOfString.wr
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.InsertCachedPlanHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InsertCachedPlanHelperextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
+      <a id="InsertCachedPlanHelper:InsertCachedPlanHelper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InsertCachedPlanHelper.html"><span class="name">InsertCachedPlanHelper</span></a><span class="params">(<span name="session">session: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@InsertCachedPlanHelperextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Rule to collapse the partial and final aggregates if the grouping keys
+match or are superset of the child distribution.</p>
     </li><li name="org.apache.spark.sql.JavaSnappySQLJob" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="JavaSnappySQLJobextendsSnappySQLJob"></a>
       <a id="JavaSnappySQLJob:JavaSnappySQLJob"></a>
@@ -1023,6 +1041,23 @@ with each partition handling one or more segments of the hashmap on a node.
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@SaveModeextendsEnum[org.apache.spark.sql.SaveMode]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SmartConnectorHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SmartConnectorHelperextendsLogging"></a>
+      <a id="SmartConnectorHelper:SmartConnectorHelper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SmartConnectorHelper.html"><span class="name">SmartConnectorHelper</span></a><span class="result"> extends <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SmartConnectorHelperextendsLogging" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1366,6 +1401,28 @@ writing libraries should instead consider using the stable APIs provided in
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.ThinClientConnectorMode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ThinClientConnectorModeextendsClusterModewithProductwithSerializable"></a>
+      <a id="ThinClientConnectorMode:ThinClientConnectorMode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ThinClientConnectorMode.html"><span class="name">ThinClientConnectorMode</span></a><span class="params">(<span name="sc">sc: <a href="../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="url">url: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="ClusterMode.html" class="extype" name="org.apache.spark.sql.ClusterMode">ClusterMode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@ThinClientConnectorModeextendsClusterModewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Similar to SplitClusterMode but this will use thin client driver for making
+connections to Snappy cluster.</p><div class="fullcomment"><div class="comment cmt"><p>Similar to SplitClusterMode but this will use thin client driver for making
+connections to Snappy cluster.</p><p>This is for the two cluster mode: one is
+the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
+cluster fetching data from the snappy cluster on demand that just
+remains like an external datastore.</p></div></div>
     </li><li name="org.apache.spark.sql.TimeEpoch" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TimeEpochextendsAnyRef"></a>
       <a id="TimeEpoch:TimeEpoch"></a>
@@ -1572,6 +1629,23 @@ getOrCreate instead of the global one.
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@SampleDataFrameContract" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SmartConnectorHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SmartConnectorHelper"></a>
+      <a id="SmartConnectorHelper:SmartConnectorHelper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SmartConnectorHelper$.html"><span class="name">SmartConnectorHelper</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SmartConnectorHelper" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

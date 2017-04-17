@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>execution - snappydata_2.11 0.7 API - org.apache.spark.sql.execution</title>
-          <meta name="description" content="execution - snappydata 2.11 0.7 API - org.apache.spark.sql.execution" />
-          <meta name="keywords" content="execution snappydata 2.11 0.7 API org.apache.spark.sql.execution" />
+          <title>execution - snappydata_2.11 0.8 API - org.apache.spark.sql.execution</title>
+          <meta name="description" content="execution - snappydata 2.11 0.8 API - org.apache.spark.sql.execution" />
+          <meta name="keywords" content="execution snappydata 2.11 0.8 API org.apache.spark.sql.execution" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -307,6 +307,23 @@ InMemoryRelation.  This relation is automatically substituted query plans that r
       </a>
     </span>
       <p class="shortcomment cmt">Holds a cached logical plan and its data</p>
+    </li><li name="org.apache.spark.sql.execution.CachedPlanHelperExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CachedPlanHelperExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable"></a>
+      <a id="CachedPlanHelperExec:CachedPlanHelperExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CachedPlanHelperExec.html"><span class="name">CachedPlanHelperExec</span></a><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>, <span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CachedPlanHelperExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.CoGroupExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CoGroupExecextendsSparkPlanwithBinaryExecNodewithObjectProducerExecwithProductwithSerializable"></a>
       <a id="CoGroupExec:CoGroupExec"></a>
@@ -711,23 +728,6 @@ InputSchema: x#<span class="num">1</span>, y#<span class="num">2</span></pre><p>
 Second call to next(): ([b], Iterator([b, <span class="num">2</span>], [b, <span class="num">3</span>])</pre><p>Note, the class does not handle the case of an empty input for simplicity of implementation.
 Use the factory to construct a new instance.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.HashingUtil" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="HashingUtilextendsObject"></a>
-      <a id="HashingUtil:HashingUtil"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="HashingUtil.html"><span class="name">HashingUtil</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@HashingUtilextendsObject" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.Hokusai" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="Hokusai[T]extendsAnyRef"></a>
       <a id="Hokusai[T]:Hokusai[T]"></a>
@@ -1061,6 +1061,23 @@ used as a more efficient map that uses a single object for both key and
 value parts (and user's key object can be coded to be so).</p><p>Adapted from Spark's OpenHashSet implementation. It deliberately uses
 java interfaces to keep byte code overheads minimal.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.ObjectHashSetMemoryConsumer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ObjectHashSetMemoryConsumerextendsMemoryConsumer"></a>
+      <a id="ObjectHashSetMemoryConsumer:ObjectHashSetMemoryConsumer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ObjectHashSetMemoryConsumer.html"><span class="name">ObjectHashSetMemoryConsumer</span></a><span class="result"> extends <a href="../../memory/MemoryConsumer.html" class="extype" name="org.apache.spark.memory.MemoryConsumer">MemoryConsumer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ObjectHashSetMemoryConsumerextendsMemoryConsumer" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.ObjectProducerExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ObjectProducerExecextendsSparkPlan"></a>
       <a id="ObjectProducerExec:ObjectProducerExec"></a>
@@ -2267,6 +2284,23 @@ of specialized classes: <span class="extype" name="RowBoundOrdering">RowBoundOrd
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CMSParams" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.CachedPlanHelperExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CachedPlanHelperExec"></a>
+      <a id="CachedPlanHelperExec:CachedPlanHelperExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CachedPlanHelperExec$.html"><span class="name">CachedPlanHelperExec</span></a><span class="result"> extends <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CachedPlanHelperExec" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

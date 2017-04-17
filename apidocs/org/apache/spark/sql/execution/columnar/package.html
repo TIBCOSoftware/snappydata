@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>columnar - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.columnar</title>
-          <meta name="description" content="columnar - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.columnar" />
-          <meta name="keywords" content="columnar snappydata 2.11 0.7 API org.apache.spark.sql.execution.columnar" />
+          <title>columnar - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar</title>
+          <meta name="description" content="columnar - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar" />
+          <meta name="keywords" content="columnar snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -120,7 +120,7 @@ code to closure callbacks model as required by StratifiedSampler.append
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnBatchIteratorextendsPRValuesIterator[org.apache.spark.sql.execution.columnar.ColumnBatch]"></a>
+      <a id="ColumnBatchIteratorextendsPRValuesIterator[Array[Byte]]"></a>
       <a id="ColumnBatchIterator:ColumnBatchIterator"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -128,16 +128,16 @@ code to closure callbacks model as required by StratifiedSampler.append
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnBatchIterator.html"><span class="name">ColumnBatchIterator</span></a><span class="result"> extends <a href="../row/PRValuesIterator.html" class="extype" name="org.apache.spark.sql.execution.row.PRValuesIterator">PRValuesIterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
+        <a href="ColumnBatchIterator.html"><span class="name">ColumnBatchIterator</span></a><span class="result"> extends <a href="../row/PRValuesIterator.html" class="extype" name="org.apache.spark.sql.execution.row.PRValuesIterator">PRValuesIterator</a>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnBatchIteratorextendsPRValuesIterator[org.apache.spark.sql.execution.columnar.ColumnBatch]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnBatchIteratorextendsPRValuesIterator[Array[Byte]]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnBatchIteratorOnRSextendsResultSetIterator[org.apache.spark.sql.execution.columnar.ColumnBatch]"></a>
+      <a id="ColumnBatchIteratorOnRSextendsResultSetIterator[Array[Byte]]"></a>
       <a id="ColumnBatchIteratorOnRS:ColumnBatchIteratorOnRS"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -145,10 +145,10 @@ code to closure callbacks model as required by StratifiedSampler.append
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnBatchIteratorOnRS.html"><span class="name">ColumnBatchIteratorOnRS</span></a><span class="result"> extends <a href="ResultSetIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
+        <a href="ColumnBatchIteratorOnRS.html"><span class="name">ColumnBatchIteratorOnRS</span></a><span class="result"> extends <a href="ResultSetIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</a>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnBatchIteratorOnRSextendsResultSetIterator[org.apache.spark.sql.execution.columnar.ColumnBatch]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnBatchIteratorOnRSextendsResultSetIterator[Array[Byte]]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -205,23 +205,6 @@ code to closure callbacks model as required by StratifiedSampler.append
     </span>
       <p class="shortcomment cmt">An Iterator to walk through the InternalRows from a CachedBatch
 </p>
-    </li><li name="org.apache.spark.sql.execution.columnar.ColumnarRelationProvider" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnarRelationProviderextendsSchemaRelationProviderwithCreatableRelationProvider"></a>
-      <a id="ColumnarRelationProvider:ColumnarRelationProvider"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ColumnarRelationProvider.html"><span class="name">ColumnarRelationProvider</span></a><span class="result"> extends <a href="../../sources/SchemaRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.SchemaRelationProvider">SchemaRelationProvider</a> with <a href="../../sources/CreatableRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.CreatableRelationProvider">CreatableRelationProvider</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnarRelationProviderextendsSchemaRelationProviderwithCreatableRelationProvider" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.ConnectedExternalStore" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ConnectedExternalStoreextendsExternalStore"></a>
       <a id="ConnectedExternalStore:ConnectedExternalStore"></a>
@@ -239,23 +222,6 @@ code to closure callbacks model as required by StratifiedSampler.append
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.DefaultSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DefaultSourceextendsColumnarRelationProvider"></a>
-      <a id="DefaultSource:DefaultSource"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="DefaultSource.html"><span class="name">DefaultSource</span></a><span class="result"> extends <a href="ColumnarRelationProvider.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnarRelationProvider">ColumnarRelationProvider</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@DefaultSourceextendsColumnarRelationProvider" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ExternalStoreextendsSerializable"></a>
       <a id="ExternalStore:ExternalStore"></a>
@@ -269,23 +235,6 @@ code to closure callbacks model as required by StratifiedSampler.append
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ExternalStoreextendsSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStorePartitionedRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ExternalStorePartitionedRDD[T]extendsRDD[org.apache.spark.sql.execution.columnar.ColumnBatch]"></a>
-      <a id="ExternalStorePartitionedRDD[T]:ExternalStorePartitionedRDD[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ExternalStorePartitionedRDD.html"><span class="name">ExternalStorePartitionedRDD</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ExternalStorePartitionedRDD[T]extendsRDD[org.apache.spark.sql.execution.columnar.ColumnBatch]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -324,12 +273,12 @@ code to closure callbacks model as required by StratifiedSampler.append
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="JDBCAppendableRelationextendsBaseRelationwithPrunedUnsafeFilteredScanwithInsertableRelationwithPlanInsertableRelationwithDestroyRelationwithIndexableRelationwithLoggingwithSerializablewithProduct"></a>
       <a id="JDBCAppendableRelation:JDBCAppendableRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">abstract </span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
@@ -342,23 +291,6 @@ code to closure callbacks model as required by StratifiedSampler.append
     </span>
       <p class="shortcomment cmt">A LogicalPlan implementation for an external column table whose contents
 are retrieved using a JDBC URL or DataSource.</p>
-    </li><li name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="JDBCSourceAsStoreextendsExternalStore"></a>
-      <a id="JDBCSourceAsStore:JDBCSourceAsStore"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="JDBCSourceAsStore.html"><span class="name">JDBCSourceAsStore</span></a><span class="result"> extends <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@JDBCSourceAsStoreextendsExternalStore" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.MutableUnsafeRow" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MutableUnsafeRowextendsGenericMutableRow"></a>
       <a id="MutableUnsafeRow:MutableUnsafeRow"></a>
@@ -418,7 +350,24 @@ are retrieved using a JDBC URL or DataSource.</p>
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.columnar.ColumnWriter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnBatchIterator"></a>
+      <a id="ColumnBatchIterator:ColumnBatchIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnBatchIterator$.html"><span class="name">ColumnBatchIterator</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@ColumnBatchIterator" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnWriter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ColumnWriter"></a>
       <a id="ColumnWriter:ColumnWriter"></a>
       <h4 class="signature">
@@ -499,6 +448,40 @@ are retrieved using a JDBC URL or DataSource.</p>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@InMemoryRelation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JDBCAppendableRelation"></a>
+      <a id="JDBCAppendableRelation:JDBCAppendableRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JDBCAppendableRelation$.html"><span class="name">JDBCAppendableRelation</span></a><span class="result"> extends <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@JDBCAppendableRelation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.JDBCSourceAsStore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JDBCSourceAsStore"></a>
+      <a id="JDBCSourceAsStore:JDBCSourceAsStore"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JDBCSourceAsStore$.html"><span class="name">JDBCSourceAsStore</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.package@JDBCSourceAsStore" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

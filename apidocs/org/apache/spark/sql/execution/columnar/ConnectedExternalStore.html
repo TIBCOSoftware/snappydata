@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ConnectedExternalStore - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.columnar.ConnectedExternalStore</title>
-          <meta name="description" content="ConnectedExternalStore - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.columnar.ConnectedExternalStore" />
-          <meta name="keywords" content="ConnectedExternalStore snappydata 2.11 0.7 API org.apache.spark.sql.execution.columnar.ConnectedExternalStore" />
+          <title>ConnectedExternalStore - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.ConnectedExternalStore</title>
+          <meta name="description" content="ConnectedExternalStore - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.ConnectedExternalStore" />
+          <meta name="keywords" content="ConnectedExternalStore snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.ConnectedExternalStore" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -127,18 +127,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[this] </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#getColumnBatchRDD" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="getColumnBatchRDD(tableName:String,requiredColumns:Array[String],session:org.apache.spark.sql.SparkSession):org.apache.spark.rdd.RDD[org.apache.spark.sql.execution.columnar.ColumnBatch]"></a>
-      <a id="getColumnBatchRDD(String,Array[String],SparkSession):RDD[ColumnBatch]"></a>
+      <a id="getColumnBatchRDD(tableName:String,rowBuffer:String,requiredColumns:Array[String],prunePartitions:=&gt;Int,session:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType):org.apache.spark.rdd.RDD[Any]"></a>
+      <a id="getColumnBatchRDD(String,String,Array[String],⇒Int,SparkSession,StructType):RDD[Any]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getColumnBatchRDD</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a>]</span>
+        <span class="name">getColumnBatchRDD</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rowBuffer">rowBuffer: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="prunePartitions">prunePartitions: ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ConnectedExternalStore@getColumnBatchRDD(tableName:String,requiredColumns:Array[String],session:org.apache.spark.sql.SparkSession):org.apache.spark.rdd.RDD[org.apache.spark.sql.execution.columnar.ColumnBatch]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ConnectedExternalStore@getColumnBatchRDD(tableName:String,rowBuffer:String,requiredColumns:Array[String],prunePartitions:=&gt;Int,session:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType):org.apache.spark.rdd.RDD[Any]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

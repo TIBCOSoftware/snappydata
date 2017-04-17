@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnarStorePartitionedRDD - snappydata_2.11 0.7 API - org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD</title>
-          <meta name="description" content="ColumnarStorePartitionedRDD - snappydata 2.11 0.7 API - org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" />
-          <meta name="keywords" content="ColumnarStorePartitionedRDD snappydata 2.11 0.7 API org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" />
+          <title>ColumnarStorePartitionedRDD - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD</title>
+          <meta name="description" content="ColumnarStorePartitionedRDD - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" />
+          <meta name="keywords" content="ColumnarStorePartitionedRDD snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,store:org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore):org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,partitionPruner:=&gt;Int,store:org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore):org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD"></a>
       <a id="&lt;init&gt;:ColumnarStorePartitionedRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnarStorePartitionedRDD</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="store">store: <a href="JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a></span>)</span>
+        <span class="name">ColumnarStorePartitionedRDD</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="partitionPruner">partitionPruner: ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="store">store: <a href="JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,store:org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore):org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,partitionPruner:=&gt;Int,store:org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore):org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -909,6 +909,23 @@ be called once, so it is safe to implement a time-consuming computation in it.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD#getPartitionEvaluator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getPartitionEvaluator:()=&gt;Array[org.apache.spark.Partition]"></a>
+      <a id="getPartitionEvaluator:()⇒Array[Partition]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPartitionEvaluator</span><span class="result">: () ⇒ <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD@getPartitionEvaluator:()=&gt;Array[org.apache.spark.Partition]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD#getPartitions" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getPartitions:Array[org.apache.spark.Partition]"></a>
       <a id="getPartitions:Array[Partition]"></a>
