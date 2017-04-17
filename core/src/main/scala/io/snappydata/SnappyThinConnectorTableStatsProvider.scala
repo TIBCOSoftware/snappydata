@@ -19,7 +19,7 @@
 
 package io.snappydata
 
-import java.sql.{SQLException, CallableStatement, Connection}
+import java.sql.{CallableStatement, Connection}
 import java.util.{Properties, Timer, TimerTask}
 
 import scala.collection.JavaConversions
@@ -30,7 +30,6 @@ import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SmartConnectorHelper
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
@@ -65,29 +64,6 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         }
       }, delay, delay)
   }
-
-//  override def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
-//      Map[String, SnappyIndexStats]) = {
-//    val (tableStats, indexStats) = getStatsFromAllServers
-//
-//    val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
-//    val aggregatedStatsIndex = scala.collection.mutable.Map[String, SnappyIndexStats]()
-//    if (!doRun) return (Map.empty, Map.empty)
-//    // val samples = getSampleTableList(snc)
-//    tableStats.foreach { stat =>
-//      aggregatedStats.get(stat.getRegionName) match {
-//        case Some(oldRecord) =>
-//          aggregatedStats.put(stat.getRegionName, oldRecord.getCombinedStats(stat))
-//        case None =>
-//          aggregatedStats.put(stat.getRegionName, stat)
-//      }
-//    }
-//
-//    indexStats.foreach { stat =>
-//      aggregatedStatsIndex.put(stat.getIndexName, stat)
-//    }
-//    (Utils.immutableMap(aggregatedStats), Utils.immutableMap(aggregatedStatsIndex))
-//  }
 
   def executeStatsStmt(): Unit = {
     if (conn == null) initializeConnection()
