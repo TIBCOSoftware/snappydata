@@ -26,6 +26,7 @@ import scala.reflect.{ClassTag, classTag}
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types._
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -34,9 +35,8 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.{CatalystConf, CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, Expression, Like, Literal, ParamConstants, ParamLiteral, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, DynamicFoldableExpression, EmptyRow, Exists, Expression, Like, ListQuery, Literal, ParamConstants, ParamLiteral, PredicateHelper, PredicateSubquery, ScalarSubquery, SubqueryExpression, UnaryExpression}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, EmptyRow, Expression, Literal, ParamLiteral, PredicateHelper, UnaryExpression}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -51,7 +51,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.{DataType, DecimalType}
+import org.apache.spark.sql.types.{DataType => _, _}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
@@ -327,6 +327,9 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   object ResolveParameters extends Rule[LogicalPlan] {
+    private def applyRule(plan: LogicalPlan, rule: (LogicalPlan) => LogicalPlan): LogicalPlan =
+      SnappySession.handleSubquery(rule(plan), rule)
+
     def getDataTypeResolvedPlan(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
       case b@BinaryComparison(left: Expression, right: ParamConstants) =>
         b.makeCopy(Array(left, right.copy(paramType = left.dataType,
@@ -357,32 +360,36 @@ class SnappySessionState(snappySession: SnappySession)
         pc
     }
 
+    def replaceValuesAtPrepareTime(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case pc@ParamConstants(pos, paramType, nullableValue) =>
+        val pl = ParamLiteral(null, paramType, pos, true)
+        pl.nullableAtPreapreTime = nullableValue
+        pl
+    }
+
+    def replaceValuesAtExecuteTime(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case pc@ParamConstants(pos, paramType, _) =>
+        val dvd = pvs.getParameter(pos - 1)
+        val scalaTypeVal = CachedPlanHelperExec.setValue(dvd)
+        val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
+        ParamLiteral(catalystTypeVal, paramType, pos, true)
+    }
+
     def apply(plan: LogicalPlan): LogicalPlan = if (isPreparePhase) {
-      val preparedPlan = getDataTypeResolvedPlan(plan)
-      assertAllDataTypeResolved(preparedPlan)
-      val parameterResolvedPlan = preparedPlan transformAllExpressions {
-        case pc@ParamConstants(pos, paramType, nullableValue) =>
-          val pl = ParamLiteral(null, paramType, pos, true)
-          pl.nullableAtPreapreTime = nullableValue
-          pl
-      }
-      assertAllParametersResolved(parameterResolvedPlan)
+      val preparedPlan = applyRule(plan, getDataTypeResolvedPlan)
+      applyRule(preparedPlan, assertAllDataTypeResolved)
+      val parameterResolvedPlan = applyRule(preparedPlan, replaceValuesAtPrepareTime)
+      applyRule(parameterResolvedPlan, assertAllParametersResolved)
     } else if (pvs != null) {
       val countParams = SnappySession.countParameters(plan)
       if (countParams > 0) {
         assert(pvs.getParameterCount == countParams,
           s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
               s" param-count=$countParams")
-        val preparedPlan = getDataTypeResolvedPlan(plan)
-        assertAllDataTypeResolved(preparedPlan)
-        val parameterResolvedPlan = preparedPlan transformAllExpressions {
-          case pc@ParamConstants(pos, paramType, _) =>
-            val dvd = pvs.getParameter(pos - 1)
-            val scalaTypeVal = CachedPlanHelperExec.setValue(dvd)
-            val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-            ParamLiteral(catalystTypeVal, paramType, pos, true)
-        }
-        assertAllParametersResolved(parameterResolvedPlan)
+        val preparedPlan = applyRule(plan, getDataTypeResolvedPlan)
+        applyRule(preparedPlan, assertAllDataTypeResolved)
+        val parameterResolvedPlan = applyRule(preparedPlan, replaceValuesAtExecuteTime)
+        applyRule(parameterResolvedPlan, assertAllParametersResolved)
       } else plan // means already done
     } else plan
   }

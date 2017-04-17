@@ -44,7 +44,7 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, InSet, ListQuery, LiteralValue, ParamConstants, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, InSet, ListQuery, LiteralValue, ParamConstants, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.trees.TreeNode
@@ -1704,12 +1704,24 @@ object SnappySession extends Logging {
   }
 
   def countParameters(plan: LogicalPlan): Int = {
-    var countParams = 0
-    plan transformAllExpressions {
-      case pc: ParamConstants => countParams = countParams + 1
+    var countP = 0
+
+    def countParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
+      case pc: ParamConstants => countP = countP + 1
         pc
     }
-    countParams
+    handleSubquery(countParams(plan), countParams)
+    countP
+  }
+
+  def handleSubquery(plan: LogicalPlan,
+      f: (LogicalPlan) => LogicalPlan): LogicalPlan = plan transformAllExpressions {
+    case sub: SubqueryExpression => sub match {
+      case l@ListQuery(query, x) => l.copy(f(query), x)
+      case e@Exists(query, x) => e.copy(f(query), x)
+      case p@PredicateSubquery(query, x, y, z) => p.copy(f(query), x, y, z)
+      case s@ScalarSubquery(query, x, y) => s.copy(f(query), x, y)
+    }
   }
 
   private def evaluatePlan(df: DataFrame,
