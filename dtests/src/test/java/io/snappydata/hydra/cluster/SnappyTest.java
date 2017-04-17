@@ -151,6 +151,8 @@ public class SnappyTest implements Serializable {
                     snappyTest.generateConfig("leadHost");
                     snappyTest.generateConfig("leadPort");
                     snappyTest.generateConfig("locatorList");
+                    snappyTest.generateConfig("primaryLocatorHost");
+                    snappyTest.generateConfig("primaryLocatorPort");
                 }
             }
         }
@@ -472,6 +474,15 @@ public class SnappyTest implements Serializable {
      */
     public static void HydraTask_writeMasterHostInfo() {
         writeSparkMasterHostInfo();
+    }
+
+    /**
+     * Write the primary locator host,port info into the file under conf directory at
+     * snappy build location. This is required for long running test scenarios where in cluster
+     * will be started in first test and then rest all tests will use the same cluster
+     */
+    public static void HydraTask_writePrimaryLocatorHostPortInfo() {
+        writePrimaryLocatorHostPortInfo();
     }
 
     /**
@@ -932,6 +943,13 @@ public class SnappyTest implements Serializable {
         snappyTest.writeNodeConfigData("masterHost", masterHost, false);
     }
 
+    protected static void writePrimaryLocatorHostPortInfo() {
+        String primaryLocatorHost = getPrimaryLocatorHost();
+        String primaryLocatorPort = getPrimaryLocatorPort();
+        snappyTest.writeNodeConfigData("primaryLocatorHost", primaryLocatorHost, false);
+        snappyTest.writeNodeConfigData("primaryLocatorPort", primaryLocatorPort, false);
+    }
+
     protected static String getDataFromFile(String fileName) {
         File logFile = getLogFile(fileName);
         String data = null;
@@ -1302,7 +1320,8 @@ public class SnappyTest implements Serializable {
             bw.newLine();
             bw.close();
         } catch (IOException e) {
-            throw new TestException("Error occurred while writing to a file: " + file + e.getMessage());
+            throw new TestException("Error occurred while writing to a file: " + file +
+                    e.getMessage());
         }
     }
 
@@ -1310,9 +1329,10 @@ public class SnappyTest implements Serializable {
      * Executes user SQL scripts.
      */
     public static synchronized void HydraTask_executeSQLScripts() {
-        Vector scriptNames, dataLocationList = null, persistenceModeList = null, colocateWithOptionList = null,
-                partitionByOptionList = null, numPartitionsList = null, redundancyOptionList = null,
-                recoverDelayOptionList = null, maxPartitionSizeList = null, evictionByOptionList = null;
+        Vector scriptNames, dataLocationList = null, persistenceModeList = null,
+                colocateWithOptionList = null, partitionByOptionList = null, numPartitionsList =
+                null, redundancyOptionList = null, recoverDelayOptionList = null,
+                maxPartitionSizeList = null, evictionByOptionList = null;
         File log = null, logFile = null;
         scriptNames = SnappyPrms.getSQLScriptNames();
         if (scriptNames == null) {
@@ -1330,47 +1350,57 @@ public class SnappyTest implements Serializable {
             maxPartitionSizeList = SnappyPrms.getMaxPartitionSizeList();
             evictionByOptionList = SnappyPrms.getEvictionByOptionList();
             if (dataLocationList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \" \" parameter in the dataLocationList for the scripts for which no dataLocation is specified.");
+                Log.getLogWriter().info("Adding \" \" parameter in the dataLocationList for the  " +
+                        "scripts for which no dataLocation is specified.");
                 while (dataLocationList.size() != scriptNames.size())
                     dataLocationList.add(" ");
             }
             if (persistenceModeList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \"sync\" parameter in the persistenceModeList for the scripts for which no persistence mode is specified.");
+                Log.getLogWriter().info("Adding \"sync\" parameter in the persistenceModeList for" +
+                        "  the scripts for which no persistence mode is specified.");
                 while (persistenceModeList.size() != scriptNames.size())
                     persistenceModeList.add("sync");
             }
             if (colocateWithOptionList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \"none\" parameter in the colocateWithOptionList for the scripts for which no COLOCATE_WITH Option is specified.");
+                Log.getLogWriter().info("Adding \"none\" parameter in the colocateWithOptionList " +
+                        " for the scripts for which no COLOCATE_WITH Option is specified.");
                 while (colocateWithOptionList.size() != scriptNames.size())
                     colocateWithOptionList.add("none");
             }
             if (partitionByOptionList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \" \" parameter in the partitionByOptionList for the scripts for which no PARTITION_BY option is specified.");
+                Log.getLogWriter().info("Adding \" \" parameter in the partitionByOptionList for " +
+                        " the scripts for which no PARTITION_BY option is specified.");
                 while (partitionByOptionList.size() != scriptNames.size())
                     partitionByOptionList.add(" ");
             }
             if (numPartitionsList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \"113\" parameter in the partitionByOptionsList for the scripts for which no BUCKETS option is specified.");
+                Log.getLogWriter().info("Adding \"113\" parameter in the partitionByOptionsList " +
+                        "for  the scripts for which no BUCKETS option is specified.");
                 while (numPartitionsList.size() != scriptNames.size())
                     numPartitionsList.add("113");
             }
             if (redundancyOptionList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \" \" parameter in the redundancyOptionList for the scripts for which no REDUNDANCY option is specified.");
+                Log.getLogWriter().info("Adding \" \" parameter in the redundancyOptionList for " +
+                        "the  scripts for which no REDUNDANCY option is specified.");
                 while (redundancyOptionList.size() != scriptNames.size())
                     redundancyOptionList.add(" ");
             }
             if (recoverDelayOptionList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \" \" parameter in the recoverDelayOptionList for the scripts for which no RECOVER_DELAY option is specified.");
+                Log.getLogWriter().info("Adding \" \" parameter in the recoverDelayOptionList for" +
+                        "  the scripts for which no RECOVER_DELAY option is specified.");
                 while (recoverDelayOptionList.size() != scriptNames.size())
                     recoverDelayOptionList.add(" ");
             }
             if (maxPartitionSizeList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \" \" parameter in the maxPartitionSizeList for the scripts for which no MAX_PART_SIZE option is specified.");
+                Log.getLogWriter().info("Adding \" \" parameter in the maxPartitionSizeList for " +
+                        "the  scripts for which no MAX_PART_SIZE option is specified.");
                 while (maxPartitionSizeList.size() != scriptNames.size())
                     maxPartitionSizeList.add(" ");
             }
             if (evictionByOptionList.size() != scriptNames.size()) {
-                Log.getLogWriter().info("Adding \"LRUHEAPPERCENT\" parameter in the evictionByOptionList for the scripts for which no EVICTION_BY option is specified.");
+                Log.getLogWriter().info("Adding \"LRUHEAPPERCENT\" parameter in the  " +
+                        "evictionByOptionList for the scripts for which no EVICTION_BY option is" +
+                        " specified.");
                 while (evictionByOptionList.size() != scriptNames.size())
                     evictionByOptionList.add("LRUHEAPPERCENT");
             }
@@ -1388,21 +1418,50 @@ public class SnappyTest implements Serializable {
                 String dataLocation = snappyTest.getDataLocation(location);
                 String filePath = snappyTest.getScriptLocation(userScript);
                 log = new File(".");
-                String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
+                String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult_" +
+                        RemoteTestModule.getCurrentThread().getThreadId() + ".log";
                 logFile = new File(dest);
-                String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
-                String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:dataLocation=" + dataLocation,
-                        "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" + colocateWith,
-                        "-param:partitionBy=" + partitionBy, "-param:numPartitions=" + numPartitions,
-                        "-param:redundancy=" + redundancy, "-param:recoverDelay=" + recoverDelay,
-                        "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption=" + evictionByOption,
-                        "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+                String primaryLocatorHost = getPrimaryLocatorHost();
+                String primaryLocatorPort = getPrimaryLocatorPort();
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
+                        filePath, "-param:dataLocation=" + dataLocation,
+                        "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" +
+                        colocateWith, "-param:partitionBy=" + partitionBy,
+                        "-param:numPartitions=" + numPartitions, "-param:redundancy=" +
+                        redundancy, "-param:recoverDelay=" + recoverDelay,
+                        "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption="
+                        + evictionByOption, "-client-port=" + primaryLocatorPort,
+                        "-client-bind-address=" + primaryLocatorHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
-            throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
+            throw new TestException("IOException occurred while retriving destination logFile " +
+                    "path  " + log + "\nError Message:" + e.getMessage());
         }
+    }
+
+    protected static String getPrimaryLocatorHost() {
+        String primaryLocatorHost = null;
+        if (isLongRunningTest) {
+            primaryLocatorHost = getDataFromFile("primaryLocatorHost");
+            if (primaryLocatorHost == null)
+                primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get
+                        ("primaryLocatorHost");
+        } else
+            primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
+        return primaryLocatorHost;
+    }
+
+    protected static String getPrimaryLocatorPort() {
+        String primaryLocatorPort = null;
+        if (isLongRunningTest) {
+            primaryLocatorPort = getDataFromFile("primaryLocatorPort");
+            if (primaryLocatorPort == null)
+                primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get
+                        ("primaryLocatorPort");
+        } else
+            primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
+        return primaryLocatorPort;
     }
 
     public void executeProcess(ProcessBuilder pb, File logFile) {
@@ -1422,9 +1481,11 @@ public class SnappyTest implements Serializable {
                 Log.getLogWriter().info("Failed with exit code: " + rc);
             }
         } catch (IOException e) {
-            throw new TestException("Exception occurred while starting the process:" + pb + "\nError Message:" + e.getMessage());
+            throw new TestException("Exception occurred while starting the process:" + pb +
+                    "\nError Message:" + e.getMessage());
         } catch (InterruptedException e) {
-            throw new TestException("Exception occurred while waiting for the process execution:" + p + "\nError Message:" + e.getMessage());
+            throw new TestException("Exception occurred while waiting for the process execution:"
+                    + p + "\nError Message:" + e.getMessage());
         }
     }
 

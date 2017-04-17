@@ -40,7 +40,7 @@ class SnappyHydraRunner extends SnappyTestRunner {
   }
 
   test("smokeBT") {
-    val logDir = new File(s"$snappyHome/scalatest")
+    val logDir = new File(s"$snappyHome/tests/snappy/scalatest/smokeBT")
     if (logDir.exists) {
       FileUtils.deleteDirectory(logDir)
     }
