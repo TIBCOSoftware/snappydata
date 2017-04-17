@@ -75,7 +75,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     try {
       function
     } catch {
-      case e: SQLException if SmartConnectorHelper.isConnectionException(e) =>
+      case e: SQLException if isConnectionException(e) =>
         // attempt to create a new connection if connection
         // is closed
         SmartConnectorHelper.close()
@@ -84,7 +84,10 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     }
   }
 
-
+  def isConnectionException(e: SQLException): Boolean = {
+    e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX) ||
+        e.getSQLState.startsWith(SQLState.LANG_DEAD_STATEMENT)
+  }
 
   def createTable(
       tableIdent: QualifiedTableName,
@@ -294,10 +297,5 @@ object SmartConnectorHelper {
     val baip = new ByteArrayInputStream(value)
     val ois = new ObjectInputStream(baip)
     ois.readObject()
-  }
-
-  def isConnectionException(e: SQLException): Boolean = {
-    e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX) ||
-        e.getSQLState.startsWith(SQLState.LANG_DEAD_STATEMENT)
   }
 }
