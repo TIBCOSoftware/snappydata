@@ -791,12 +791,12 @@ class SnappyParser(session: SnappySession)
     MATCH ~> {() => tokenize = false}
   }
 
-  protected def SET_SELECT: Rule0 = rule {
-    MATCH ~> {() => isSelect = true}
+  protected final def SET_SELECT: Rule0 = rule {
+    MATCH ~> (() => isSelect = true)
   }
 
-  protected def SET_NOSELECT: Rule0 = rule {
-    MATCH ~> {() => isSelect = false}
+  protected final def SET_NOSELECT: Rule0 = rule {
+    MATCH ~> (() => isSelect = false)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
