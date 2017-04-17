@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -25,20 +26,23 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.CachedPlanHelperExec
 import org.apache.spark.sql.sources.PutIntoTable
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.CalendarInterval
+import org.datanucleus.store.rdbms.sql.expression.ParameterLiteral
+
+import org.apache.spark.sql.execution.CachedPlanHelperExec
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 
 class SnappyParser(session: SnappySession)
     extends SnappyDDLParser(session) {
@@ -779,29 +783,30 @@ class SnappyParser(session: SnappySession)
   // true
   private var tokenize = session.sessionState.conf.wholeStageEnabled
 
-  private var isSelect = false
+  private var isselect = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() =>
-      if (isSelect) tokenize = session.sessionState.conf.wholeStageEnabled
-      else tokenize = false)
+    MATCH ~> {() => isselect match {
+      case true => tokenize = session.sessionState.conf.wholeStageEnabled
+      case _ => tokenize = false
+    }}
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
     MATCH ~> {() => tokenize = false}
   }
 
-  protected final def SET_SELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = true)
+  protected def SET_SELECT: Rule0 = rule {
+    MATCH ~> {() => isselect = true}
   }
 
-  protected final def SET_NOSELECT: Rule0 = rule {
-    MATCH ~> (() => isSelect = false)
+  protected def SET_NOSELECT: Rule0 = rule {
+    MATCH ~> {() => isselect = false}
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (SET_SELECT ~ query.named("select")) | (SET_NOSELECT ~ (insert | put |
-        dmlOperation | ctes | ddl | set | cache | uncache | desc))
+    (SET_SELECT ~ query.named("select")) | (SET_NOSELECT ~ (insert | put | dmlOperation | ctes |
+        ddl | set | cache | uncache | desc))
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
