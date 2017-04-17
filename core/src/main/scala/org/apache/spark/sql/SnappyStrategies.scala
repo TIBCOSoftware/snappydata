@@ -31,7 +31,6 @@ import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec,
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
-import org.apache.spark.sql.execution.streaming.SnappySinkPlan
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
 

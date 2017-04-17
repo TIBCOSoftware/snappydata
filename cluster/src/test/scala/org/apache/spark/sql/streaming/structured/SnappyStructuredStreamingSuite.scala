@@ -21,13 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import io.snappydata.SnappyFunSuite
 import org.apache.kafka.common.TopicPartition
-import org.apache.spark.sql.streaming.{OutputMode, ProcessingTime}
+import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext}
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import scala.collection.mutable.HashMap
 
 class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
@@ -141,7 +140,7 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     Serialization.write(result)
   }
 
-  test("SnappyData Structured Streaming with Kafka - Snappy sink") {
+  test("ETL Job") {
     val topic = newTopic()
     kafkaUtils.createTopic(topic, partitions = 3)
 
@@ -157,8 +156,6 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
 
     val startingOffsets = partitionOffsets(partitions)
 
-    println(startingOffsets)
-
     val reader = snc.sparkSession
       .readStream
       .format("kafka")
@@ -172,14 +169,13 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     val kafka = reader.load()
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
       .as[(String, String)]
-    val mapped: org.apache.spark.sql.Dataset[_] = kafka.map(kv => kv._2.toInt)
 
-    val query = mapped
+    val query = kafka
       .writeStream
       .format("snappy")
       .option("checkpointLocation", "/tmp")
       .queryName("snappyTable")
-      .outputMode(OutputMode.Append)
+      .outputMode("append")
       .trigger(ProcessingTime("1 seconds"))
       .start
 
@@ -188,11 +184,58 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     kafkaUtils.sendMessages(topic, Array("1"), Some(2))
 
     query.awaitTermination(timeoutMs = 15000)
-    spark.sql("select * from snappyTable").show
     assert(113 == spark.sql("select * from snappyTable").count)
   }
 
-  test("SnappyData Structured Streaming with Kafka - SnappyForeachWriter sink") {
+  test("infinite streaming aggregation") {
+    val topic = newTopic()
+    kafkaUtils.createTopic(topic, partitions = 3)
+
+    val spark = snc.sparkSession
+
+    import spark.implicits._
+
+    val partitions = Map(
+      new TopicPartition(topic, 0) -> 0L,
+      new TopicPartition(topic, 1) -> 0L,
+      new TopicPartition(topic, 2) -> 0L
+    )
+
+    val startingOffsets = partitionOffsets(partitions)
+
+    val reader = snc.sparkSession
+      .readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
+      .option("kafka.metadata.max.age.ms", "1")
+      .option("maxOffsetsPerTrigger", 10)
+      .option("subscribe", topic)
+      .option("startingOffsets", startingOffsets)
+      .option("failOnDataLoss", "false")
+
+    val streamFrame = reader.load()
+      .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").groupBy("value").count()
+      .as[(String, String)]
+
+    val query = streamFrame
+      .writeStream
+      .format("snappy")
+      .option("checkpointLocation", "/tmp")
+      .queryName("snappyAggrTable")
+      .outputMode("complete")
+      .trigger(ProcessingTime("1 seconds"))
+      .start
+
+    kafkaUtils.sendMessages(topic, (100 to 150).map(_.toString).toArray, Some(0))
+    kafkaUtils.sendMessages(topic, (125 to 150).map(_.toString).toArray, Some(1))
+    kafkaUtils.sendMessages(topic, (100 to 124).map(_.toString).toArray, Some(2))
+
+    query.awaitTermination(timeoutMs = 40000)
+
+    assert(51 == spark.sql("select * from snappyAggrTable").count)
+    assert(2.0 == spark.sql("select avg(cnt) from snappyAggrTable").collect()(0).getDouble(0))
+  }
+  test("SnappyForeachWriter sink") {
     val topic = newTopic()
     kafkaUtils.createTopic(topic, partitions = 3)
     kafkaUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))

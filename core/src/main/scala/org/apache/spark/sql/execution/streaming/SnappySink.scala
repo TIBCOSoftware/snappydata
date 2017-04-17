@@ -26,6 +26,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, Statistics}
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.OutputMode
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.snappy._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -34,7 +35,7 @@ import scala.collection.mutable.ArrayBuffer
   */
 
 class SnappySink(/* val schema: StructType, */ session: SnappySession,
-                 outputMode: OutputMode)
+                 outputMode: OutputMode, tableName: String)
   extends Sink with Logging {
 
   /** An order list of batches that have been written to this [[Sink]]. */
@@ -58,14 +59,15 @@ class SnappySink(/* val schema: StructType, */ session: SnappySession,
       logDebug(s"Committing batch $batchId to $this")
       outputMode match {
         case InternalOutputModes.Append | InternalOutputModes.Update =>
-          data.write.insertInto("snappyTable")
+          data.write.insertInto(tableName)
           synchronized {
             batches += batchId
           }
 
         case InternalOutputModes.Complete =>
-          // truncate the table first and then insert
-          data.write.insertInto("snappyTable")
+          val df = session.createDataFrame(
+            session.sparkContext.parallelize(data.collect()), data.schema)
+          df.write.putInto(tableName)
           synchronized {
             batches.clear()
             batches += batchId
@@ -84,13 +86,11 @@ class SnappySink(/* val schema: StructType, */ session: SnappySession,
 
   // currently no way to pass the schema from DataSource.
   // may need to suggest spark team to modify the StreamSinkProvider
-  var schema: StructType = StructType(Array(StructField("value", IntegerType, false)))
+  var schema: StructType = StructType(Array(StructField("id", IntegerType, false),
+    StructField("cnt", IntegerType, false)))
 
 }
 
-/**
-  * Used to query the data that has been written into a [[SnappySink]].
-  */
 case class SnappySinkPlan(sink: SnappySink, output: Seq[Attribute]) extends LeafNode {
   def this(sink: SnappySink) = this(sink, sink.schema.toAttributes)
 
@@ -107,10 +107,18 @@ class SnappyStreamSinkProvider extends StreamSinkProvider with DataSourceRegiste
                   outputMode: OutputMode): Sink = {
     val spark = SparkSession.getActiveSession.orNull
     val session = SnappySession.getOrCreate(spark.sparkContext)
-    val sink = new SnappySink(session, outputMode)
-    val resultDf = Dataset.ofRows(spark, new SnappySinkPlan(sink))
-    session.snappyContext.createTable("snappyTable", "column",
-      resultDf.schema, Map.empty[String, String])
+    val queryName = parameters.get("queryName").get
+    val sink = new SnappySink(session, outputMode, queryName)
+    // val resultDf = Dataset.ofRows(spark, new SnappySinkPlan(sink))
+    outputMode match {
+      case InternalOutputModes.Append | InternalOutputModes.Update =>
+        session.snappyContext.createTable(queryName, "column",
+          sink.schema, Map.empty[String, String], false)
+      case InternalOutputModes.Complete =>
+        val schemaDDL = "(id INT NOT NULL PRIMARY KEY, cnt INT)"
+        session.snappyContext.createTable(queryName, "row",
+          schemaDDL, Map.empty[String, String], false)
+    }
     // resultDf.write.insertInto("snappyTable") // Pass the queryName somehow
     sink
   }
