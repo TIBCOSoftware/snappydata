@@ -84,9 +84,9 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     }
   }
 
-  def isConnectionException(e: SQLException): Boolean = {
+  private def isConnectionException(e: SQLException): Boolean = {
     e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX) ||
-        e.getSQLState.startsWith(SQLState.LANG_DEAD_STATEMENT)
+    e.getSQLState.startsWith(SQLState.LANG_DEAD_STATEMENT)
   }
 
   def createTable(
