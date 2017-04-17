@@ -586,8 +586,8 @@ trait ColumnEncoder extends ColumnEncoding {
    * {{{
    *   .--------------------------- Optional total size including itself (4 bytes)
    *   |   .----------------------- Optional number of elements (4 bytes)
-   *   |   |   .------------------- Null bitset longs (8 x (N / 8) bytes,
-   *   |   |   |                                       empty if null count is zero)
+   *   |   |   .------------------- Null bitset longs (8 x (N / 8) bytes)
+   *   |   |   |
    *   |   |   |     .------------- Offsets+Sizes of elements (8 x N bytes)
    *   |   |   |     |     .------- Variable length elements
    *   V   V   V     V     V
