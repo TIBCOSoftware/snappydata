@@ -9,3 +9,27 @@ evolving, the supported SQL is much richer than SparkSQL. The extension SQL supp
 In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered 
 to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
 Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but it can also be reliably managed on disk.
+
+The following topics are covered in this section:
+
+* [SnappySession and SnappyStreamingContext](pgm_guide/snappysession_and_snappystreamingcontext.md)
+
+* [SnappyData Jobs](pgm_guide/snappydata_jobs.md)
+
+* [Managing JAR Files](pgm_guide/managing_jar_files.md)
+
+* [Using SnappyData Shell](pgm_guide/using_snappydata_shell.md)
+
+* [Using the Spark Shell and spark-submit](pgm_guide/spark_shell_spark_submit.md)
+
+* [Using JDBC with SnappyData](pgm_guide/using_jdbc.md)
+
+* [Multiple Language Binding using Thrift Protocol](pgm_guide/multiple_language_using_thrift.md)
+
+* [Building SnappyData Applications using Spark API](pgm_guide/building_apps_spark_api.md)
+
+* [Tables in SnappyData](pgm_guide/tables_in_snappydata.md)
+
+* [Stream processing using SQL](pgm_guide/stream_processing_using_sql.md)
+
+* [User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)](pgm_guide/user_defined_function.md)

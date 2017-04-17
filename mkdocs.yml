@@ -159,8 +159,8 @@ pages:
     - 'Using Row vs Column Tables': 'best_practises/use_row_column_table.md'
     - 'Right Affinity Mode to Use': 'best_practises/affinity_mode_to_use.md'
     - 'Capacity Planning': 'best_practises/capacity_planning.md'
-    - 'Preventing Disk Full Errors': 'troubleshooting/prevent_disk_full_errors.md'
-    - 'Design Database and Schema': 'design_schema.md'
+    - 'Preventing Disk Full Errors': 'best_practises/prevent_disk_full_errors.md'
+    - 'Design Database and Schema': 'best_practises/design_schema.md'
 #    - 'Design Database and Schema': 
 #        - 'Physical Design': 'best_practises/design_schema/physical_design.md'
 #        - 'Using Row and Column Table': 'best_practises/design_schema/row_column_table.md'

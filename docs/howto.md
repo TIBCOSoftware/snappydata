@@ -19,27 +19,37 @@ You can run the examples in any of the following ways:
 The following topics are covered in this section:
 
 * [How to Start a SnappyData Cluster](how_to/start_snappydata_cluster.md#howto-startCluster)
+
 * [How to Run Spark Job inside the Cluster](how_to/run_spark_job_inside_the_cluster.md#howto-job)
+
 * [How to Access SnappyData Store from existing Spark Installation using Smart Connector](how_to/access_snappydata_store.md#howto-splitmode)
+
 * [How to Create Row Tables and Run Queries](how_to/create_column_tables_and_run_queries.md#howto-row)
+
 * [How to Create Column Tables and Run Queries](how_to/create_row_tables_and_run_queries.md#howto-column)
+
 * [How to Load Data in SnappyData Tables](how_to/load_data_in_snappydata_tables.md#howto-load)
+
 * [How to perform a Collocated Join](how_to/perform_a_collocated_join.md#howto-collacatedJoin)
+
 * [How to Connect using JDBC Driver](how_to/connect_using_jdbc_driver.md#howto-jdbc)
+
 * [How to Store and Query JSON Objects](how_to/store_and_query_json_objects.md#howto-JSON)
+
 * [How to Store and Query Objects](how_to/store_and_query_objects.md#howto-objects)
+
 * [How to Use Stream Processing with SnappyData](how_to/use_stream_processing.md#howto-streams)
+
 * [How to Use Synopsis Data Engine to Run Approximate Queries](how_to/use_synopsis_data_engine.md#howto-sde)
+
 * [How to Use Python to Create Tables and Run Queries](how_to/use_python_to_create_tables_and_run_queries.md#howto-python)
 
 <mark>
 
 #EXTRA "HOW TO" TOPICS FOR GA REALEASE
 
-* How to Import/Export data
 * How to connect to SnappyData using third party tools-
 	- Tablaeu: Steps for how to use with SnappyData
-	- Zoomdata: Steps for how to use with SnappyData
 	- Zeppelin: Steps for how to use with SnappyData (already covered in iSight?)
 
 </mark>
