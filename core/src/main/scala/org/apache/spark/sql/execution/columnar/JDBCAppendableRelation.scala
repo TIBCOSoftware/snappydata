@@ -74,13 +74,10 @@ abstract case class JDBCAppendableRelation(
   def numBuckets: Int = -1
 
   override def sizeInBytes: Long = {
-    logInfo(s"JDBCAppendableRelation.sizeInBytes sdeshmukh looking size of table $table")
-    val size = SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
+    SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
       case Some(s) => s.getTotalSize
       case None => super.sizeInBytes
     }
-    logInfo(s"JDBCAppendableRelation.sizeInBytes sdeshmukh $table size is $size")
-    size
   }
 
   protected final def dialect: JdbcDialect = connProperties.dialect
