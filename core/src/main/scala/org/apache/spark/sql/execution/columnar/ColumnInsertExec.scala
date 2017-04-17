@@ -59,6 +59,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   @transient private val MAX_CURSOR_DECLARATIONS = 30
   @transient private var cursorsArrayTerm: String = _
   @transient private var cursorsArrayCreate: String = _
+  @transient private var encoderArrayTerm: String = _
+  @transient private var cursorArrayTerm: String = _
 
   @transient private[sql] var batchIdRef = -1
 
@@ -78,7 +80,132 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     else ("1", "0x0")
   }
 
+  def loop(code: String, numTimes: Int): String = {
+    s"""
+       |for(int i=0;i< $numTimes; i++){
+       |   $code
+       |}
+       """.stripMargin
+  }
+
+  private def doProduceWideTable(ctx: CodegenContext): String = {
+    val encodingClass = classOf[ColumnEncoding].getName
+    val numInsertedRowsMetric = if (onExecutor) null
+    else metricTerm(ctx, "numInsertedRows")
+    schemaTerm = ctx.addReferenceObj("schema", relationSchema,
+      classOf[StructType].getName)
+
+    val schemaLength = relationSchema.length
+    encoderArrayTerm = ctx.freshName("encoderArray")
+    cursorArrayTerm = ctx.freshName("cursorArray")
+
+
+    encoderCursorTerms = relationSchema.map { _ =>
+      (ctx.freshName("encoder"), ctx.freshName("cursor"))
+    }
+    numInsertions = ctx.freshName("numInsertions")
+    ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
+    maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
+    batchSizeTerm = ctx.freshName("currentBatchSize")
+    val batchSizeDeclaration = if (true) {
+      ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
+      ""
+    } else {
+      s"int $batchSizeTerm = 0;"
+    }
+    defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
+    ctx.addMutableState("int", defaultBatchSizeTerm, "")
+    val defaultRowSize = ctx.freshName("defaultRowSize")
+
+    val childProduce = doChildProduce(ctx)
+    child match {
+      case c: CallbackColumnInsert =>
+        ctx.addNewFunction(c.resetInsertions,
+          s"""
+             |public final void ${c.resetInsertions}() {
+             |  $batchSizeTerm = 0;
+             |  $numInsertions = -1;
+             |}
+          """.stripMargin)
+        batchBucketIdTerm = Some(c.bucketIdTerm)
+      case _ =>
+    }
+
+    val initEncoderCode =
+      s"""
+         |this.$encoderArrayTerm[i] = $encodingClass$$.MODULE$$.getColumnEncoder(
+         |           |  $schemaTerm.fields()[i]);
+       """.stripMargin
+
+    val initEncoderArray = loop(initEncoderCode, relationSchema.length)
+
+    val iniCursorCode = s"this.$cursorArrayTerm[i] = 0L;"
+    val iniCursorArray = loop(iniCursorCode, relationSchema.length)
+
+    ctx.addMutableState("org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder[]",
+      encoderArrayTerm,
+      s"""
+         |this.$encoderArrayTerm =
+         | new org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder[$schemaLength];
+         |$initEncoderArray
+        """.stripMargin)
+
+    ctx.addMutableState("long[]", cursorArrayTerm,
+      s"""
+         |this.$cursorArrayTerm = new long[$schemaLength];
+         |$iniCursorArray
+        """.stripMargin)
+
+    val encoderLoopCode = s"$defaultRowSize += " +
+      s"$encoderArrayTerm[i].defaultSize($schemaTerm.fields()[i].dataType());"
+
+    val declarations = loop(encoderLoopCode, relationSchema.length)
+
+    val checkEnd = if (useMemberVariables) {
+      "if (!currentRows.isEmpty()) return"
+    } else {
+      s"if ($numInsertions >= 0) return"
+    }
+    // no need to stop in iteration at any point
+    ctx.addNewFunction("shouldStop",
+      s"""
+         |@Override
+         |protected final boolean shouldStop() {
+         |  return false;
+         |}
+      """.stripMargin)
+    s"""
+       |$checkEnd; // already done
+       |$batchSizeDeclaration
+       |if ($numInsertions < 0) {
+       |  $numInsertions = 0;
+       |  int $defaultRowSize = 0;
+       |  $declarations
+       |  $defaultBatchSizeTerm = Math.max(
+       |    (${math.abs(columnBatchSize)} - 8) / $defaultRowSize, 16);
+       |  // ceil to nearest multiple of $checkFrequency since size is checked
+       |  // every $checkFrequency rows
+       |  $defaultBatchSizeTerm = ((($defaultBatchSizeTerm - 1) / $checkFrequency) + 1)
+       |      * $checkFrequency;
+       |  $initEncoders
+       |  $childProduce
+       |}
+       |if ($batchSizeTerm > 0) {
+       |  $storeColumnBatch(-1, $storeColumnBatchArgs);
+       |  $batchSizeTerm = 0;
+       |}
+       |${
+      if (numInsertedRowsMetric eq null) ""
+      else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"
+    }
+       |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+    """.stripMargin
+  }
+
   override protected def doProduce(ctx: CodegenContext): String = {
+    if (relationSchema.length > MAX_CURSOR_DECLARATIONS) {
+      return doProduceWideTable(ctx)
+    }
     val encodingClass = classOf[ColumnEncoding].getName
     val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
@@ -175,22 +302,200 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     """.stripMargin
   }
 
+  private def genCodeFiledWiseColumnStats(ctx: CodegenContext, field: StructField,
+                                  encoder: String): String = {
+
+    val (code, statsSchema, statsVars) = genCodeColumnStats(ctx, field, encoder)
+
+    val statsExprs = statsSchema.zipWithIndex.map { case (a, i) =>
+      a.dataType match {
+        // some types will always be null so avoid unnecessary generated code
+        case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
+        case _ => BoundReference(i, a.dataType, a.nullable)
+      }
+    }
+    ctx.INPUT_ROW = null
+    ctx.currentVars = statsVars
+    val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
+    Seq(code, statsEv.code).mkString("\n")
+  }
+
+  /**
+    * Generate multiple methods in java class based
+    * on the size and returns the calling code to invoke them
+    */
+  private def genMultipleMethods(ctx: CodegenContext,
+                                 methodName: String,
+                                 size: Int,
+                                 code: IndexedSeq[String],
+                                 args: Seq[String] = Seq.empty[String],
+                                 schema: StructType): String = {
+    // Assumption is that the below three iterator are of same size
+    val codeSeq = code.grouped(size)
+    val typeSeq = schema.fields.map(f => ctx.javaType(f.dataType)).toSeq
+
+    val arguments = typeSeq.zip(args).map(k => (s"${k._1} ${k._2}")).grouped(size)
+    val megaIt = codeSeq.zip(arguments).zip(args.grouped(size))
+
+    val methodCallCode = megaIt.map(c => {
+      val m = ctx.freshName(methodName)
+      val methodParams = c._1._2.mkString(",\n")
+      val calleeParams = c._2.mkString(",\n")
+      ctx.addNewFunction(m,
+        s"""
+           |private void $m($methodParams){
+           |${c._1._1.mkString("\n")}
+           |}
+         """.stripMargin
+      )
+      s"$m($calleeParams);"
+    })
+
+    methodCallCode.toSeq.mkString("\n\n")
+  }
+
+
+  private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode],
+                                  row: ExprCode): String = {
+    val schema = relationSchema
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+    val buffers = ctx.freshName("buffers")
+    val columnBatch = ctx.freshName("columnBatch")
+    val sizeTerm = ctx.freshName("size")
+    cursorsArrayTerm = ctx.freshName("cursors")
+
+    val columnWrite = schema.indices.map { i =>
+      val field = schema(i)
+      genCodeColumnWrite(ctx, field.dataType, field.nullable, s"$encoderArrayTerm[$i]",
+        s"$cursorArrayTerm[$i]", input(i))
+    }
+
+    val columnStatsC = schema.indices.map { i =>
+      val field = schema(i)
+      genCodeFiledWiseColumnStats(ctx, field, s"$encoderArrayTerm[$i]")
+    }
+
+    val columnStats = schema.indices.map { i =>
+      val (encoderTerm, cursorTerm) = encoderCursorTerms(i)
+      val field = schema(i)
+      genCodeColumnStats(ctx, field, encoderTerm)
+    }
+
+    val cursorLoopCode =
+      s"""
+         |$cursorArrayTerm[i]  = $encoderArrayTerm[i].initialize(
+         |          $schemaTerm.fields()[i], $defaultBatchSizeTerm, true);
+       """.stripMargin
+
+    val encoderLoopCode = s"$sizeTerm += $encoderArrayTerm[i].sizeInBytes($cursorArrayTerm[i]);"
+
+    initEncoders = loop(cursorLoopCode, relationSchema.length)
+    val calculateSize = loop(encoderLoopCode, relationSchema.length)
+
+
+    val columnBatchClass = classOf[ColumnBatch].getName
+    batchIdRef = ctx.references.length
+    val batchUUID = ctx.addReferenceObj("batchUUID", None,
+      classOf[Option[_]].getName)
+    val partitionIdCode = if (partitioned) "partitionIndex"
+    else {
+      // check for bucketId variable if available
+      batchBucketIdTerm.getOrElse(
+        // add as a reference object which can be updated by caller if required
+        s"${ctx.addReferenceObj("partitionId", -1, "Integer")}.intValue()")
+    }
+    val tableName = ctx.addReferenceObj("columnTable", columnTable,
+      "java.lang.String")
+    val (statsCode, statsSchema, stats) = columnStats.unzip3
+    val statsVars = stats.flatten
+    val statsExprs = statsSchema.flatten.zipWithIndex.map { case (a, i) =>
+      a.dataType match {
+        // some types will always be null so avoid unnecessary generated code
+        case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
+        case _ => BoundReference(i, a.dataType, a.nullable)
+      }
+    }
+    ctx.INPUT_ROW = null
+    ctx.currentVars = statsVars
+    val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
+    val statsRow = statsEv.value
+
+    val bufferLoopCode = s"$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n"
+
+    val buffersCodeC = loop(bufferLoopCode, relationSchema.length)
+
+    val multipleStatsCode = genMultipleMethods(ctx, "writeStats",
+      MAX_CURSOR_DECLARATIONS, columnStatsC, Seq.empty[String], schema)
+
+    storeColumnBatch = ctx.freshName("storeColumnBatch")
+    ctx.addNewFunction(storeColumnBatch,
+      s"""
+         |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
+         |    int $batchSizeTerm, long[] $cursorArrayTerm) {
+         |  // create statistics row
+         |  ${multipleStatsCode}
+         |  // create ColumnBatch and insert
+         |  final java.nio.ByteBuffer[] $buffers =
+         |      new java.nio.ByteBuffer[${schema.length}];
+         |  ${buffersCodeC.toString()}
+         |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
+         |      $batchSizeTerm, $buffers, $statsRow.getBytes());
+         |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
+         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm);
+         |  $numInsertions += $batchSizeTerm;
+         |}
+      """.stripMargin)
+    // no shouldStop check required
+    if (!ctx.addedFunctions.contains("shouldStop")) {
+      ctx.addNewFunction("shouldStop",
+        s"""
+          @Override
+          protected final boolean shouldStop() {
+            return false;
+          }
+        """)
+    }
+
+    storeColumnBatchArgs = s"$batchSizeTerm, ${cursorArrayTerm}"
+    val args = input.map(_.value)
+    val writeColumns = genMultipleMethods(ctx, "writeToEncoder",
+      MAX_CURSOR_DECLARATIONS, columnWrite, args, schema)
+
+    s"""
+       |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&
+       |    $batchSizeTerm > 0) {
+       |  // check if batch size has exceeded max allowed
+       |  long $sizeTerm = 0L;
+       |  ${calculateSize.toString()}
+       |  if ($sizeTerm >= $columnBatchSize) {
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs);
+       |    $batchSizeTerm = 0;
+       |    $initEncoders
+       |  }
+       |}
+       |${evaluateVariables(input)}
+       |$writeColumns
+       |$batchSizeTerm++;
+    """.stripMargin
+  }
+
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
+
+    if (relationSchema.length > MAX_CURSOR_DECLARATIONS) {
+      return doConsumeWideTables(ctx, input, row)
+    }
     val schema = relationSchema
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
 
-    val cursorsAsArray = schema.length > MAX_CURSOR_DECLARATIONS
 
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
     val sizeTerm = ctx.freshName("size")
-    cursorsArrayTerm = if (cursorsAsArray) ctx.freshName("cursors") else null
 
     val encoderClass = classOf[ColumnEncoder].getName
     val buffersCode = new StringBuilder
     val encoderCursorDeclarations = new StringBuilder
-    val cursorsArrayCode = new StringBuilder
     val batchFunctionDeclarations = new StringBuilder
     val batchFunctionCall = new StringBuilder
     val calculateSize = new StringBuilder
@@ -203,14 +508,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
         s"$buffers[$i] = $encoderTerm.finish($cursorTerm);\n")
       encoderCursorDeclarations.append(
         s"final $encoderClass $encoderTerm = this.$encoderTerm;\n")
-      if (cursorsAsArray) {
-        encoderCursorDeclarations.append(
-          s"long $cursorTerm = $cursorsArrayTerm[$i];\n")
-        cursorsArrayCode.append(s"$cursorsArrayTerm[$i] = $cursorTerm;\n")
-      } else {
-        batchFunctionDeclarations.append(s"long $cursorTerm,\n")
-        batchFunctionCall.append(s"$cursorTerm,\n")
-      }
+
+      batchFunctionDeclarations.append(s"long $cursorTerm,\n")
+      batchFunctionCall.append(s"$cursorTerm,\n")
       calculateSize.append(
         s"$sizeTerm += $encoderTerm.sizeInBytes($cursorTerm);\n")
       (init, genCodeColumnWrite(ctx, field.dataType, field.nullable, encoderTerm,
@@ -218,19 +518,10 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     }.unzip3
     initEncoders = encodersInit.mkString("\n")
 
-    if (cursorsAsArray) {
-      batchFunctionDeclarations.append(s"long[] $cursorsArrayTerm")
-      batchFunctionCall.append(s"$cursorsArrayTerm")
-      cursorsArrayCreate =
-          s"""
-             |final long[] $cursorsArrayTerm = new long[${schema.length}];
-             |${cursorsArrayCode.toString()}""".stripMargin
-    } else {
-      batchFunctionDeclarations.setLength(
+    batchFunctionDeclarations.setLength(
         batchFunctionDeclarations.length - 2)
-      batchFunctionCall.setLength(batchFunctionCall.length - 2)
-      cursorsArrayCreate = ""
-    }
+    batchFunctionCall.setLength(batchFunctionCall.length - 2)
+    cursorsArrayCreate = ""
 
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
