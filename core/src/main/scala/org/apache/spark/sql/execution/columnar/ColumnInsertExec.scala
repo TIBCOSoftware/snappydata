@@ -332,26 +332,43 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
                                  schema: StructType): String = {
     // Assumption is that the below three iterator are of same size
     val codeSeq = code.grouped(size)
-    val typeSeq = schema.fields.map(f => ctx.javaType(f.dataType)).toSeq
-
-    val arguments = typeSeq.zip(args).map(k => (s"${k._1} ${k._2}")).grouped(size)
-    val megaIt = codeSeq.zip(arguments).zip(args.grouped(size))
-
-    val methodCallCode = megaIt.map(c => {
-      val m = ctx.freshName(methodName)
-      val methodParams = c._1._2.mkString(",\n")
-      val calleeParams = c._2.mkString(",\n")
-      ctx.addNewFunction(m,
-        s"""
-           |private void $m($methodParams){
-           |${c._1._1.mkString("\n")}
-           |}
+    val methodCalls = if (args.isEmpty) {
+      val methodCallCode = codeSeq.map(c => {
+        val m = ctx.freshName(methodName)
+        ctx.addNewFunction(m,
+          s"""
+             |private void $m(){
+             |${c.mkString("\n")}
+             |}
          """.stripMargin
-      )
-      s"$m($calleeParams);"
-    })
+        )
+        s"$m();"
+      })
 
-    methodCallCode.toSeq.mkString("\n\n")
+      methodCallCode.toSeq.mkString("\n\n")
+    } else {
+      val typeSeq = schema.fields.map(f => ctx.javaType(f.dataType)).toSeq
+
+      val arguments = typeSeq.zip(args).map(k => (s"${k._1} ${k._2}")).grouped(size)
+      val megaIt = codeSeq.zip(arguments).zip(args.grouped(size))
+
+      val methodCallCode = megaIt.map(c => {
+        val m = ctx.freshName(methodName)
+        val methodParams = if (args.isEmpty) "" else c._1._2.mkString(",\n")
+        val calleeParams = if (args.isEmpty) "" else c._2.mkString(",\n")
+        ctx.addNewFunction(m,
+          s"""
+             |private void $m($methodParams){
+             |${c._1._1.mkString("\n")}
+             |}
+         """.stripMargin
+        )
+        s"$m($calleeParams);"
+      })
+
+      methodCallCode.toSeq.mkString("\n\n")
+    }
+    methodCalls
   }
 
 
@@ -370,7 +387,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
         s"$cursorArrayTerm[$i]", input(i))
     }
 
-    val columnStatsC = schema.indices.map { i =>
+    val fieldWiseColumnStats = schema.indices.map { i =>
       val field = schema(i)
       genCodeFiledWiseColumnStats(ctx, field, s"$encoderArrayTerm[$i]")
     }
@@ -422,10 +439,10 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
     val bufferLoopCode = s"$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n"
 
-    val buffersCodeC = loop(bufferLoopCode, relationSchema.length)
+    val buffersCode = loop(bufferLoopCode, relationSchema.length)
 
     val multipleStatsCode = genMultipleMethods(ctx, "writeStats",
-      MAX_CURSOR_DECLARATIONS, columnStatsC, Seq.empty[String], schema)
+      MAX_CURSOR_DECLARATIONS, fieldWiseColumnStats, Seq.empty[String], schema)
 
     storeColumnBatch = ctx.freshName("storeColumnBatch")
     ctx.addNewFunction(storeColumnBatch,
@@ -437,7 +454,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  // create ColumnBatch and insert
          |  final java.nio.ByteBuffer[] $buffers =
          |      new java.nio.ByteBuffer[${schema.length}];
-         |  ${buffersCodeC.toString()}
+         |  ${buffersCode.toString()}
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes());
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
