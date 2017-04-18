@@ -28,6 +28,7 @@ import org.apache.spark.Partition
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 
@@ -91,7 +92,7 @@ object StoreUtils {
     GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
     ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS,
     ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE,
-    ExternalStoreUtils.EXTERNAL_DATASOURCE)
+    JdbcExtendedUtils.SCHEMA_PROPERTY, ExternalStoreUtils.USER_SPECIFIED_SCHEMA)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
@@ -420,7 +421,7 @@ object StoreUtils {
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.forall(v => {
-      if (!ddlOptions.contains(v.toString.toUpperCase)) {
+      if (!ddlOptions.contains(Utils.toUpperCase(v.toString))) {
         throw new AnalysisException(
           s"Unknown options $v specified while creating table ")
       }

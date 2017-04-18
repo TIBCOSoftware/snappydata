@@ -433,7 +433,8 @@ class QueryRoutingDUnitTest(val s: String)
 
       val dbmd = conn.getMetaData
       val rSet = dbmd.getTables(null, "APP", null,
-        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"))
+        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+          "EXTERNAL TABLE", "STREAM TABLE"))
       assert(rSet.next())
 
       s.execute(s"drop table $rowTable")
@@ -509,7 +510,8 @@ class QueryRoutingDUnitTest(val s: String)
 
     // Simulates 'SHOW TABLES' of ij
     var rSet = dbmd.getTables(null, "APP", null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"))
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        "EXTERNAL TABLE", "STREAM TABLE"))
 
     var foundTable = false
     while (rSet.next()) {
@@ -521,7 +523,8 @@ class QueryRoutingDUnitTest(val s: String)
     assert(foundTable)
 
     val rSet2 = dbmd.getTables(null, INTERNAL_SCHEMA_NAME, null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"))
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        "EXTERNAL TABLE", "STREAM TABLE"))
 
     foundTable = false
     while (rSet2.next()) {

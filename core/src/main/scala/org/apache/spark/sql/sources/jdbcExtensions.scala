@@ -25,7 +25,6 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
@@ -75,10 +74,10 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
 object JdbcExtendedUtils extends Logging {
 
-  val DBTABLE_PROPERTY = "dbtable"
-  val SCHEMA_PROPERTY = "schemaddl"
-  val ALLOW_EXISTING_PROPERTY = "allowexisting"
-  val BASETABLE_PROPERTY = "basetable"
+  val DBTABLE_PROPERTY = "DBTABLE"
+  val SCHEMA_PROPERTY = "SCHEMADDL"
+  val ALLOW_EXISTING_PROPERTY = "ALLOWEXISTING"
+  val BASETABLE_PROPERTY = "BASETABLE"
 
   val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
 
@@ -229,8 +228,7 @@ object JdbcExtendedUtils extends Logging {
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
         dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString) +
-              (ExternalStoreUtils.EXTERNAL_DATASOURCE -> "true")),
+          new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString)),
           schemaString, data)
 
       case _ => throw new AnalysisException(
