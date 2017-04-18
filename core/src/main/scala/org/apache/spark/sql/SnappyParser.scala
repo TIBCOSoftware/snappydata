@@ -209,21 +209,26 @@ class SnappyParser(session: SnappySession)
         }
         val dataType = SnappySession.getDataType(storeType, storePrecision, storeScale)
         paramcounter = paramcounter + 1
-        ParamLiteral(catalystTypeVal, dataType, paramcounter)
+        val p = ParamLiteral(catalystTypeVal, dataType, paramcounter)
+        addParamLiteralToContext(p)
+        p
       }
     })
   }
+
+  def addParamLiteralToContext(p: ParamLiteral): Unit =
+    session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
+      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      case Some(list) => list += p
+      case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
+        mutable.ArrayBuffer(p))
+    }
 
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
       val p = ParamLiteral(l.value, l.dataType, paramcounter)
-      session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
-        CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
-        case Some(list) => list += p
-        case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
-          mutable.ArrayBuffer(p))
-      }
+      addParamLiteralToContext(p)
       p
     })
   }
