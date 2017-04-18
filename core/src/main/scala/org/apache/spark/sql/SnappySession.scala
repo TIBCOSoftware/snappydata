@@ -266,17 +266,22 @@ class SnappySession(@transient private val sc: SparkContext,
   def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
       keyTypes: Seq[(DataType, Boolean)],
       types: Seq[(DataType, Boolean)]): Option[(String, String)] = {
-    getContextObject[(String, String)](ctx, "C", (baseTypes, keyTypes, types))
+    getClass(ctx, baseTypes, keyTypes, types, false)
   }
 
+  def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
+      keyTypes: Seq[(DataType, Boolean)],
+      types: Seq[(DataType, Boolean)], multimap: Boolean): Option[(String, String)] = {
+    getContextObject[(String, String)](ctx, "C", (baseTypes, keyTypes, types, multimap))
+  }
   /**
    * Register code generated for a new class (for <code>CodegenSupport</code>).
    */
   private[sql] def addClass(ctx: CodegenContext,
       baseTypes: Seq[(DataType, Boolean)], keyTypes: Seq[(DataType, Boolean)],
       types: Seq[(DataType, Boolean)], baseClassName: String,
-      className: String): Unit = {
-    addContextObject(ctx, "C", (baseTypes, keyTypes, types),
+      className: String, multiMap: Boolean): Unit = {
+    addContextObject(ctx, "C", (baseTypes, keyTypes, types, multiMap),
       baseClassName -> className)
   }
 
