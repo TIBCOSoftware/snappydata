@@ -20,7 +20,7 @@ import java.sql.{DriverManager, ResultSet}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
@@ -261,16 +261,21 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("test Prepared Statement via JDBC") {
-    val tableName = "order_line_col"
-    snc.sql(s"create table $tableName (ol_int_id  integer," +
-        s" ol_int2_id  integer, ol_str_id STRING) using column " +
-        "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val tableName = "order_line_col"
+      snc.sql(s"create table $tableName (ol_int_id  integer," +
+          s" ol_int2_id  integer, ol_str_id STRING) using column " +
+          "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
 
 
-    serverHostPort = TestUtil.startNetServer()
-    // println("network server started")
-    insertRows(tableName, 1000)
-    query1(tableName)
+      serverHostPort = TestUtil.startNetServer()
+      // println("network server started")
+      insertRows(tableName, 1000)
+      query1(tableName)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
   }
 
   def query2(tableName1: String, tableName2: String): Unit = {
@@ -321,21 +326,26 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("test Join, SubQuery and Aggragtes") {
-    val tableName1 = "order_line_1_col"
-    val tableName2 = "order_line_2_col"
-    snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
-        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
-        "options( partition_by 'ol_1_int_id, ol_1_int2_id', buckets '2')")
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val tableName1 = "order_line_1_col"
+      val tableName2 = "order_line_2_col"
+      snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+          "options( partition_by 'ol_1_int_id, ol_1_int2_id', buckets '2')")
 
-    snc.sql(s"create table $tableName2 (ol_2_int_id  integer," +
-        s" ol_2_int2_id  integer, ol_2_str_id STRING) using column " +
-        "options( partition_by 'ol_2_int_id, ol_2_int2_id', buckets '2')")
+      snc.sql(s"create table $tableName2 (ol_2_int_id  integer," +
+          s" ol_2_int2_id  integer, ol_2_str_id STRING) using column " +
+          "options( partition_by 'ol_2_int_id, ol_2_int2_id', buckets '2')")
 
 
-    serverHostPort = TestUtil.startNetServer()
-    // println("network server started")
-    insertRows(tableName1, 1000)
-    insertRows(tableName2, 1000)
-    query2(tableName1, tableName2)
+      serverHostPort = TestUtil.startNetServer()
+      // println("network server started")
+      insertRows(tableName1, 1000)
+      insertRows(tableName2, 1000)
+      query2(tableName1, tableName2)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
   }
 }
