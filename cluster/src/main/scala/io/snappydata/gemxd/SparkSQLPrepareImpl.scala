@@ -65,20 +65,20 @@ class SparkSQLPrepareImpl(val sql: String,
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    val paramConstantsArr = SnappySession.getAllParamLiterals(analyzedPlan, true)
-    if (paramConstantsArr != null) {
-      val paramCount = paramConstantsArr.length
+    val paramLiteralAtPrepares = SnappySession.getAllParamLiteralsAtPrepare(analyzedPlan)
+    if (paramLiteralAtPrepares != null) {
+      val paramCount = paramLiteralAtPrepares.length
       val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
       (0 until paramCount) foreach (i => {
-        assert(paramConstantsArr(i).pos == i + 1)
+        assert(paramLiteralAtPrepares(i).pos == i + 1)
         val index = i * 4 + 1
-        val dType = paramConstantsArr(i).dataType
+        val dType = paramLiteralAtPrepares(i).dataType
         val sqlType = getSQLType(dType)
         types(index) = sqlType._1
         types(index + 1) = sqlType._2
         types(index + 2) = sqlType._3
-        types(index + 3) = if (paramConstantsArr(i).nullableAtPreapreTime) 1 else 0
+        types(index + 3) = if (paramLiteralAtPrepares(i).nullable) 1 else 0
       })
       DataSerializer.writeIntArray(types, hdos)
     } else {

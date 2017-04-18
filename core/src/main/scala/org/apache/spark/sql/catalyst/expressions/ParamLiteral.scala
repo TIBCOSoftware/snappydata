@@ -47,8 +47,6 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int, val isParamet
 
   override def nullable: Boolean = super.nullable
 
-  var nullableAtPreapreTime: Boolean = false
-
   override def eval(input: InternalRow): Any = literalValue.value
 
   def convertedLiteral: Any = literalValue.converter(literalValue.value)
@@ -59,7 +57,7 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int, val isParamet
 
 //  override def toString: String = s"pl[${super.toString}]"
 
-  override def hashCode(): Int = ParamLiteral.hashCode(dataType, pos)
+  override def hashCode(): Int = 31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
@@ -183,9 +181,6 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int, val isParamet
 }
 
 object ParamLiteral {
-  def hashCode(dataType: DataType, pos: Int): Int =
-    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
-  
   def apply(_value: Any, _dataType: DataType, pos: Int, isParameter: Boolean): ParamLiteral =
     new ParamLiteral(_value, _dataType, pos, isParameter)
 
@@ -260,17 +255,18 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression {
   }
 }
 
-case class ParamConstants(pos: Int, private val paramType: DataType,
+case class ParamLiteralAtPrepare(pos: Int, private val paramType: DataType,
     private val nullableValue: Boolean) extends LeafExpression {
 
   override def dataType: DataType = paramType
 
-  override def hashCode(): Int = ParamLiteral.hashCode(dataType, pos)
+  override def hashCode(): Int =
+    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos) + Objects.hashCode(nullable)
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case pc: ParamConstants =>
-        pc.dataType == dataType && pc.pos == pos
+      case pc: ParamLiteralAtPrepare =>
+        pc.dataType == dataType && pc.pos == pos && pc.nullable == nullable
       case _ => false
     }
   }

@@ -35,7 +35,7 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.{CatalystConf, CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, DynamicFoldableExpression, EmptyRow, Exists, Expression, Like, ListQuery, Literal, ParamConstants, ParamLiteral, PredicateHelper, PredicateSubquery, ScalarSubquery, SubqueryExpression, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, DynamicFoldableExpression, EmptyRow, Exists, Expression, Like, ListQuery, Literal, ParamLiteralAtPrepare, ParamLiteral, PredicateHelper, PredicateSubquery, ScalarSubquery, SubqueryExpression, UnaryExpression}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
@@ -331,66 +331,32 @@ class SnappySessionState(snappySession: SnappySession)
       SnappySession.handleSubquery(rule(plan), rule)
 
     def getDataTypeResolvedPlan(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case b@BinaryComparison(left: Expression, right: ParamConstants) =>
+      case b@BinaryComparison(left: Expression, right: ParamLiteralAtPrepare) =>
         b.makeCopy(Array(left, right.copy(paramType = left.dataType,
           nullableValue = left.nullable)))
-      case b@BinaryComparison(left: ParamConstants, right: Expression) =>
+      case b@BinaryComparison(left: ParamLiteralAtPrepare, right: Expression) =>
         b.makeCopy(Array(left.copy(paramType = right.dataType,
           nullableValue = right.nullable), right))
-      case l@Like(left: Expression, right: ParamConstants) =>
+      case l@Like(left: Expression, right: ParamLiteralAtPrepare) =>
         l.makeCopy(Array(left, right.copy(paramType = left.dataType,
           nullableValue = left.nullable)))
       case i@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
       list: Seq[Expression]) => i.makeCopy(Array(value, list.map {
-        case pc: ParamConstants => pc.copy(paramType = value.dataType,
+        case pc: ParamLiteralAtPrepare => pc.copy(paramType = value.dataType,
           nullableValue = value.nullable)
         case x => x
       }))
     }
 
     def assertAllDataTypeResolved(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case pc@ParamConstants(_, paramType, _) =>
+      case pc@ParamLiteralAtPrepare(_, paramType, _) =>
         assert(paramType != org.apache.spark.sql.types.NullType)
         pc
-    }
-
-    def assertAllParametersResolved(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case pc@ParamConstants(_, _, _) =>
-        assert(false, "Not all parameters value could be replaced")
-        pc
-    }
-
-    def replaceValuesAtPrepareTime(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case pc@ParamConstants(pos, paramType, nullableValue) =>
-        val pl = ParamLiteral(null, paramType, pos, true)
-        pl.nullableAtPreapreTime = nullableValue
-        pl
-    }
-
-    def replaceValuesAtExecuteTime(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case pc@ParamConstants(pos, paramType, _) =>
-        val dvd = pvs.getParameter(pos - 1)
-        val scalaTypeVal = CachedPlanHelperExec.setValue(dvd)
-        val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-        ParamLiteral(catalystTypeVal, paramType, pos, true)
     }
 
     def apply(plan: LogicalPlan): LogicalPlan = if (isPreparePhase) {
       val preparedPlan = applyRule(plan, getDataTypeResolvedPlan)
       applyRule(preparedPlan, assertAllDataTypeResolved)
-      val parameterResolvedPlan = applyRule(preparedPlan, replaceValuesAtPrepareTime)
-      applyRule(parameterResolvedPlan, assertAllParametersResolved)
-    } else if (pvs != null) {
-      val countParams = SnappySession.countParameters(plan)
-      if (countParams > 0) {
-        assert(pvs.getParameterCount == countParams,
-          s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
-              s" param-count=$countParams")
-        val preparedPlan = applyRule(plan, getDataTypeResolvedPlan)
-        applyRule(preparedPlan, assertAllDataTypeResolved)
-        val parameterResolvedPlan = applyRule(preparedPlan, replaceValuesAtExecuteTime)
-        applyRule(parameterResolvedPlan, assertAllParametersResolved)
-      } else plan // means already done
     } else plan
   }
 }

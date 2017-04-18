@@ -44,7 +44,7 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, InSet, ListQuery, LiteralValue, ParamConstants, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, SubqueryExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, InSet, ListQuery, LiteralValue, ParamLiteralAtPrepare, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.trees.TreeNode
@@ -1709,21 +1709,21 @@ object SnappySession extends Logging {
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
 
-  def getAllParamLiterals(plan: LogicalPlan, isParam: Boolean): Array[ParamLiteral] = {
-    val res = new ArrayBuffer[ParamLiteral]()
+  def getAllParamLiteralsAtPrepare(plan: LogicalPlan): Array[ParamLiteralAtPrepare] = {
+    val res = new ArrayBuffer[ParamLiteralAtPrepare]()
     def allParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
-      case p@ParamLiteral(_, _, _, isParameter) if isParameter == isParam => res += p
+      case p@ParamLiteralAtPrepare(_, _, _) => res += p
         p
     }
     handleSubquery(allParams(plan), allParams)
-    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
+    res.toSet[ParamLiteralAtPrepare].toArray.sortBy(_.pos)
   }
 
   def countParameters(plan: LogicalPlan): Int = {
     var countP = 0
 
     def countParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
-      case pc: ParamConstants => countP = countP + 1
+      case pc: ParamLiteralAtPrepare => countP = countP + 1
         pc
     }
     handleSubquery(countParams(plan), countParams)
