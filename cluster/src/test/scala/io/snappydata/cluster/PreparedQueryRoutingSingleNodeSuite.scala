@@ -301,14 +301,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(2, 100)
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 300)
-      prepStatement.setString(5, "%0")
       verifyResults("qry-1", prepStatement.executeQuery, Array(100, 200, 300), 1)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
       prepStatement.setInt(3, 700)
       prepStatement.setInt(4, 800)
-      prepStatement.setString(5, "%0")
       verifyResults("qry-2", prepStatement.executeQuery, Array(600, 700, 800), 1)
 
       // Thread.sleep(1000000)
@@ -322,7 +320,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     }
   }
 
-  ignore("test Join, SubQuery and Aggragtes") {
+  test("test Join, SubQuery and Aggragtes") {
     val tableName1 = "order_line_1_col"
     val tableName2 = "order_line_2_col"
     snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
