@@ -201,13 +201,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement3.setInt(2, 100)
       prepStatement3.setInt(3, 200)
       prepStatement3.setInt(4, 300)
-      verifyResults("qry3-1", prepStatement3.executeQuery, Array(100, 200, 300), 2)
+      verifyResults("qry3-1", prepStatement3.executeQuery, Array(100, 200, 300), 1)
 
       prepStatement3.setInt(1, 900)
       prepStatement3.setInt(2, 600)
       prepStatement3.setInt(3, 700)
       prepStatement3.setInt(4, 800)
-      verifyResults("qry3-2", prepStatement3.executeQuery, Array(600, 700, 800), 2)
+      verifyResults("qry3-2", prepStatement3.executeQuery, Array(600, 700, 800), 1)
 
       val qry4 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -221,13 +221,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement4.setInt(2, 100)
       prepStatement4.setInt(3, 200)
       prepStatement4.setInt(4, 300)
-      verifyResults("qry4-1", prepStatement4.executeQuery, Array(100, 200, 300), 3)
+      verifyResults("qry4-1", prepStatement4.executeQuery, Array(100, 200, 300), 2)
 
       prepStatement4.setInt(1, 900)
       prepStatement4.setInt(2, 600)
       prepStatement4.setInt(3, 700)
       prepStatement4.setInt(4, 800)
-      verifyResults("qry4-2", prepStatement4.executeQuery, Array(600, 700, 800), 3)
+      verifyResults("qry4-2", prepStatement4.executeQuery, Array(600, 700, 800), 2)
 
       val qry5 = s"select ol_int_id, ol_int2_id, ol_str_id " +
           s" from $tableName " +
@@ -241,13 +241,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement5.setInt(2, 100)
       prepStatement5.setInt(3, 200)
       prepStatement5.setInt(4, 300)
-      verifyResults("qry5-1", prepStatement5.executeQuery, Array(100, 200, 300), 4)
+      verifyResults("qry5-1", prepStatement5.executeQuery, Array(100, 200, 300), 3)
 
       prepStatement5.setDouble(1, 900.01)
       prepStatement5.setInt(2, 600)
       prepStatement5.setInt(3, 700)
       prepStatement5.setInt(4, 800)
-      verifyResults("qry5-2", prepStatement5.executeQuery, Array(600, 700, 800), 4)
+      verifyResults("qry5-2", prepStatement5.executeQuery, Array(600, 700, 800), 3)
 
       // Thread.sleep(1000000)
     } finally {
@@ -261,6 +261,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("test Prepared Statement via JDBC") {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     try {
       val tableName = "order_line_col"
@@ -326,6 +328,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("test Join, SubQuery and Aggragtes") {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     try {
       val tableName1 = "order_line_1_col"
