@@ -54,7 +54,7 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
       case None => session.addContextObject(REFERENCES_KEY,
         ArrayBuffer[ArrayBuffer[Any]](ctx.references))
     }
-    // keep a map of the first Hroadcasthashjoinexec plan and the corresponding ref array
+    // keep a map of the first BroadcastHashJoinExec plan and the corresponding ref array
     // collect the broadcasthashjoins in this wholestage and the references array
     var nextStageStarted = false
     var alreadyGotBroadcastNode = false
