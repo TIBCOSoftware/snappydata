@@ -66,7 +66,7 @@ class SparkSQLPrepareImpl(val sql: String,
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    val paramLiteralAtPrepares = SnappySession.getAllParamLiteralsAtPrepare(analyzedPlan)
+    val paramLiteralAtPrepares = getAllParamLiteralsAtPrepare(analyzedPlan)
     if (paramLiteralAtPrepares != null) {
       val paramCount = paramLiteralAtPrepares.length
       val types = new Array[Int](paramCount * 4 + 1)
