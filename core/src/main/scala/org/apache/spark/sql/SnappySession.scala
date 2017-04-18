@@ -1710,27 +1710,6 @@ object SnappySession extends Logging {
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
 
-  def getAllParamLiteralsAtPrepare(plan: LogicalPlan): Array[ParamLiteralAtPrepare] = {
-    val res = new ArrayBuffer[ParamLiteralAtPrepare]()
-    def allParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
-      case p@ParamLiteralAtPrepare(_, _, _) => res += p
-        p
-    }
-    handleSubquery(allParams(plan), allParams)
-    res.toSet[ParamLiteralAtPrepare].toArray.sortBy(_.pos)
-  }
-
-  def countParameters(plan: LogicalPlan): Int = {
-    var countP = 0
-
-    def countParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
-      case pc: ParamLiteralAtPrepare => countP = countP + 1
-        pc
-    }
-    handleSubquery(countParams(plan), countParams)
-    countP
-  }
-
   def handleSubquery(plan: LogicalPlan,
       f: (LogicalPlan) => LogicalPlan): LogicalPlan = plan transformAllExpressions {
     case sub: SubqueryExpression => sub match {

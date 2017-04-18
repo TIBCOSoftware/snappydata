@@ -31,7 +31,8 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.ParamLiteral
+import org.apache.spark.sql.SnappySession.handleSubquery
+import org.apache.spark.sql.catalyst.expressions.{ParamLiteral, ParamLiteralAtPrepare}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
@@ -89,6 +90,16 @@ class SparkSQLPrepareImpl(val sql: String,
       SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
     }
     msg.lastResult(srh)
+  }
+
+  def getAllParamLiteralsAtPrepare(plan: LogicalPlan): Array[ParamLiteralAtPrepare] = {
+    val res = new ArrayBuffer[ParamLiteralAtPrepare]()
+    def allParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
+      case p@ParamLiteralAtPrepare(_, _, _) => res += p
+        p
+    }
+    handleSubquery(allParams(plan), allParams)
+    res.toSet[ParamLiteralAtPrepare].toArray.sortBy(_.pos)
   }
 
   override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =

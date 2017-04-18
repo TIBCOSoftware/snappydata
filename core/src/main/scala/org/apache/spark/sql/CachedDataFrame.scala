@@ -27,7 +27,6 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 
 import org.apache.spark.broadcast.Broadcast
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
