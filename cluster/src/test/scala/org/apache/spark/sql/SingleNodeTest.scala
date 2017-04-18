@@ -48,6 +48,30 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   test("Nodes Pruning") {
     SingleNodeTest.testNodesPruning(snc)
   }
+
+  test("case when generation") {
+
+    snc.sql("create table czec1(c1 varchar(10), c2 integer) using column")
+    (1 until 10).foreach(v => snc.sql(s"insert into czec1 values('$v', $v)"))
+
+    val expected = Set("[3,3,3]",
+      "[2,Other,2]",
+      "[5,Other,5]"
+    )
+
+    val found = snc.sql(
+        "SELECT \"CZECB\".\"C1\" AS \"CB\"," +
+        "  (CASE \"CZECB\".\"C1\" WHEN '3' THEN '3' ELSE 'Other' END) AS \"CB__group_\"," +
+        "  SUM(\"CZECB\".\"C2\") AS \"sum_CC_ok\" " +
+        "FROM \"APP\".\"CZEC1\" \"CZECB\"" +
+        "WHERE ((\"CZECB\".\"C1\" IN ('2', '3', '5')) AND " +
+        "((\"CZECB\".\"C1\" IS NULL) OR " +
+        "(NOT ({fn LOCATE('1',{fn LCASE(\"CZECB\".\"C1\")},1)} > 0)))) " +
+        "GROUP BY 2, 1"
+    ).collect().map(_.toString).toSet
+
+    assert(expected.equals(found))
+  }
 }
 
 
