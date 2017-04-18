@@ -28,14 +28,14 @@ import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 
-class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int, val isParameter: Boolean)
+class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     extends Literal(_value, _dataType) {
 
   private[this] var _foldable = false
 
   private[this] var literalValueRef: String = _
 
-  private[this] val literalValue: LiteralValue = LiteralValue(value, dataType, pos, isParameter)()
+  private[this] val literalValue: LiteralValue = LiteralValue(value, dataType, pos)()
 
   private[this] def lv(ctx: CodegenContext) = if (ctx.references.exists(_ equals literalValue)) {
     assert(literalValueRef != null)
@@ -181,15 +181,14 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int, val isParamet
 }
 
 object ParamLiteral {
-  def apply(_value: Any, _dataType: DataType, pos: Int, isParameter: Boolean): ParamLiteral =
-    new ParamLiteral(_value, _dataType, pos, isParameter)
+  def apply(_value: Any, _dataType: DataType, pos: Int): ParamLiteral =
+    new ParamLiteral(_value, _dataType, pos)
 
-  def unapply(arg: ParamLiteral): Option[(Any, DataType, Int, Boolean)] =
-    Some((arg.value, arg.dataType, arg.pos, arg.isParameter))
+  def unapply(arg: ParamLiteral): Option[(Any, DataType, Int)] =
+    Some((arg.value, arg.dataType, arg.pos))
 }
 
-case class LiteralValue(var value: Any, var dataType: DataType, var position: Int,
-    var isParameter: Boolean)
+case class LiteralValue(var value: Any, var dataType: DataType, var position: Int)
     (var converter: Any => Any = createToScalaConverter(dataType))
     extends KryoSerializable {
 
@@ -199,14 +198,12 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
     kryo.writeClassAndObject(output, value)
     kryo.writeClassAndObject(output, dataType.jsonValue)
     output.writeVarInt(position, true)
-    output.writeBoolean(isParameter)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
     value = kryo.readClassAndObject(input)
     dataType = DataType.parseDataType(kryo.readClassAndObject(input).asInstanceOf[JValue])
     position = input.readVarInt(true)
-    isParameter = input.readBoolean()
     converter = createToScalaConverter(dataType)
   }
 }

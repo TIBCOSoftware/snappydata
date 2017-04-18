@@ -198,7 +198,7 @@ class SnappyParser(session: SnappySession)
         val scalaTypeVal = CachedPlanHelperExec.setValue(dvd)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
         paramcounter = paramcounter + 1
-        ParamLiteral(catalystTypeVal, IntegerType, paramcounter, true)
+        ParamLiteral(catalystTypeVal, IntegerType, paramcounter)
       }
     })
   }
@@ -206,7 +206,7 @@ class SnappyParser(session: SnappySession)
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
-      val p = ParamLiteral(l.value, l.dataType, paramcounter, false)
+      val p = ParamLiteral(l.value, l.dataType, paramcounter)
       session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
         CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
         case Some(list) => list += p

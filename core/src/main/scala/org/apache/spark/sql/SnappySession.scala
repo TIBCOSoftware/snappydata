@@ -1700,10 +1700,10 @@ object SnappySession extends Logging {
     }
   }
 
-  private def getAllParamLiterals(queryplan: SparkPlan, isParam: Boolean): Array[ParamLiteral] = {
+  private def getAllParamLiterals(queryplan: SparkPlan): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
     queryplan transformAllExpressions {
-      case p@ParamLiteral(_, _, _, isParameter) if isParameter == isParam => res += p
+      case p@ParamLiteral(_, _, _) => res += p
         p
     }
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
@@ -1754,14 +1754,8 @@ object SnappySession extends Logging {
         key.invalidatePlan
       }
       else {
-        val params1 = getAllParamLiterals(executedPlan, false)
+        val params1 = getAllParamLiterals(executedPlan)
         if (!(params1.sameElements(key.pls))) {
-          key.invalidatePlan
-        }
-
-        val paramsCountLogical = countParameters(df.queryExecution.logical)
-        val paramsCountExecuted = getAllParamLiterals(executedPlan, true).length
-        if (!(paramsCountExecuted == paramsCountLogical)) {
           key.invalidatePlan
         }
       }
@@ -1950,9 +1944,8 @@ object SnappySession extends Logging {
         cachedDF.reset()
       }
       if (key.valid) {
-        CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, currentWrappedConstants,
-          session.sessionState.pvs)
-        cachedDF.reprepareBroadcast(currentWrappedConstants, session.sessionState.pvs)
+        cachedDF.reprepareBroadcast(currentWrappedConstants)
+        CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, currentWrappedConstants)
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {

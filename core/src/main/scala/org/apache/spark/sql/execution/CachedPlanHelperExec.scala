@@ -118,23 +118,10 @@ object CachedPlanHelperExec extends Logging {
     }).toSet[LiteralValue].toArray.sortBy(_.position)
   }
 
-  def replaceConstants(literals: Array[LiteralValue], newpls: mutable.ArrayBuffer[ParamLiteral],
-      pvs: ParameterValueSet): Unit = {
-    if (pvs != null) {
-      var countParams = 0
-      literals.foreach {
-        case lv@LiteralValue(_, _, p, true) => countParams += 1
-          assert (p - 1 < pvs.getParameterCount)
-        case _ =>
-      }
-      assert(pvs.getParameterCount == countParams,
-        s"Unequal param count: pvs-count=${pvs.getParameterCount}" +
-            s" param-count=$countParams")
-    }
+  def replaceConstants(literals: Array[LiteralValue],
+      newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
     literals.foreach {
-      case lv @ LiteralValue(_, _, p, false) => lv.value = newpls.find(_.pos == p).get.value
-      case lv @ LiteralValue(_, _, p, true) => val dvd = pvs.getParameter(p - 1)
-        lv.value = CatalystTypeConverters.convertToCatalyst(setValue(dvd))
+      case lv @ LiteralValue(_, _, p) => lv.value = newpls.find(_.pos == p).get.value
     }
   }
 

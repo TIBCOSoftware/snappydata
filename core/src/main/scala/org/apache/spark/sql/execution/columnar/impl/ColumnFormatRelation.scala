@@ -129,9 +129,9 @@ abstract class BaseColumnFormatRelation(
     // RDDs needn't have to care for orderless hashing scheme at invocation point.
     val (pruningExpressions, fields) = partitionColumns.map { pc =>
       filters.collectFirst {
-          case EqualTo(a, v@ParamLiteral(_, _, _, _)) if pc.equalsIgnoreCase(a) =>
+          case EqualTo(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
             (v, schema(a))
-          case EqualNullSafe(a, v@ParamLiteral(_, _, _, _)) if pc.equalsIgnoreCase(a) =>
+          case EqualNullSafe(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
             (v, schema(a))
       }
     }.filter(_.nonEmpty).map(_.get).unzip

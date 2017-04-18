@@ -41,7 +41,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, Codege
 import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.CachedPlanHelperExec.setValue
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
@@ -270,20 +269,14 @@ class CachedDataFrame(df: Dataset[Row],
 
   var firstAccess = true
 
-  def reprepareBroadcast(newpls: mutable.ArrayBuffer[ParamLiteral], pvs: ParameterValueSet) = {
+  def reprepareBroadcast(newpls: mutable.ArrayBuffer[ParamLiteral]) = {
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
-          case pl @ ParamLiteral(v, dt, p, false) => {
+          case pl @ ParamLiteral(v, dt, p) => {
             val np = newpls.find(_.pos == p).getOrElse(pl)
-            ParamLiteral(np.value, np.dataType, p, false)
-          }
-          case pl @ ParamLiteral(v, dt, p, true) => {
-            val dvd = pvs.getParameter(p - 1)
-            val scalaTypeVal = setValue(dvd)
-            val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-            ParamLiteral(catalystTypeVal, dt, p, true)
+            ParamLiteral(np.value, np.dataType, p)
           }
         }
         val tmpCtx = new CodegenContext
