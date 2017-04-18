@@ -118,10 +118,10 @@ object CachedPlanHelperExec extends Logging {
     }).toSet[LiteralValue].toArray.sortBy(_.position)
   }
 
-  def replaceConstants(literals: Array[LiteralValue],
+  def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
-    literals.foreach {
-      case lv @ LiteralValue(_, _, p) => lv.value = newpls.find(_.pos == p).get.value
+    literals.foreach { case lv @ LiteralValue(_, _, p) =>
+      lv.value = newpls.find(_.pos == p).get.value
     }
   }
 

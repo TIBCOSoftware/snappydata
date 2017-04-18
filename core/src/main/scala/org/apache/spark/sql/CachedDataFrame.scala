@@ -268,7 +268,7 @@ class CachedDataFrame(df: Dataset[Row],
 
   var firstAccess = true
 
-  def reprepareBroadcast(newpls: mutable.ArrayBuffer[ParamLiteral]) = {
+  def reprepareBroadcast(lp: LogicalPlan, newpls: mutable.ArrayBuffer[ParamLiteral]) = {
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])

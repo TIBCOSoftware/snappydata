@@ -1924,8 +1924,8 @@ object SnappySession extends Logging {
         cachedDF.reset()
       }
       if (key.valid) {
-        cachedDF.reprepareBroadcast(currentWrappedConstants)
-        CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, currentWrappedConstants)
+        cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+        CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
