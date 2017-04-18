@@ -53,7 +53,7 @@ class SparkSQLPrepareImpl(val sql: String,
 
   session.setPreparedQuery(true, null)
 
-  private[this] val df = session.sqlUncached(sql)
+  private[this] val analyzedPlan = session.prepareSQL(sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
@@ -62,7 +62,7 @@ class SparkSQLPrepareImpl(val sql: String,
 
   private def allParamConstants(): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
-    df.queryExecution.analyzed transformAllExpressions {
+    analyzedPlan transformAllExpressions {
       case pc@ParamLiteral(_ , _, _, true) => res += pc
         pc
     }
