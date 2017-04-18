@@ -73,6 +73,21 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      new PreprocessTableInsertOrPut(conf) ::
+          new FindDataSourceTable(snappySession) ::
+          DataSourceAnalysis(conf) ::
+          ResolveRelationsExtended ::
+          AnalyzeChildQuery(snappySession) ::
+          ResolveQueryHints(snappySession) ::
+          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
+
+    override val extendedCheckRules = Seq(
+      datasources.PreWriteCheck(conf, catalog),
+      PrePutCheck)
+  }
+
   object BaseAnalyzerRules extends Analyzer(catalog, conf)
 
   lazy val analyzerOnlyForPreparedStatement: Analyzer = new Analyzer(catalog, conf) {
@@ -86,19 +101,6 @@ class SnappySessionState(snappySession: SnappySession)
       case otherBatch => Batch(otherBatch.name, otherBatch.strategy.asInstanceOf[this.Strategy],
         otherBatch.rules: _*)
     }
-  }
-
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      new PreprocessTableInsertOrPut(conf) ::
-          new FindDataSourceTable(snappySession) ::
-          DataSourceAnalysis(conf) ::
-          ResolveRelationsExtended ::
-          AnalyzeChildQuery(snappySession) ::
-          ResolveQueryHints(snappySession) ::
-          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
-
-    override val extendedCheckRules = Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
