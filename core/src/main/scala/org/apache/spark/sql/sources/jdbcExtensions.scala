@@ -74,7 +74,9 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
 object JdbcExtendedUtils extends Logging {
 
-  val DBTABLE_PROPERTY = "DBTABLE"
+  // "dbtable" lower case since some other code including Spark's depends on it
+  val DBTABLE_PROPERTY = "dbtable"
+
   val SCHEMA_PROPERTY = "SCHEMADDL"
   val ALLOW_EXISTING_PROPERTY = "ALLOWEXISTING"
   val BASETABLE_PROPERTY = "BASETABLE"
