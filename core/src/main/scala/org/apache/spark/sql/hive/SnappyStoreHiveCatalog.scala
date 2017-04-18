@@ -45,9 +45,10 @@ import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf, UDFFunction}
@@ -158,8 +159,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val table = in.getTable(client)
         val partitionColumns = table.partitionColumns.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
-        val options = table.storage.serdeProperties
-        val userSpecifiedSchema = if (options.contains(
+        val options = new CaseInsensitiveMap(table.storage.serdeProperties)
+        val userSpecifiedSchema = if (table.properties.contains(
           ExternalStoreUtils.USER_SPECIFIED_SCHEMA)) {
           ExternalStoreUtils.getTableSchema(table.properties)
         } else None
@@ -548,7 +549,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
 
-        var newOptions = options
+        var newOptions = new CaseInsensitiveMutableHashMap(options)
         options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
           case Some(_) =>
           case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
@@ -572,7 +573,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         // separate SerDe property.
         val tableSchema = userSpecifiedSchema match {
           case Some(schema) =>
-            newOptions += (ExternalStoreUtils.USER_SPECIFIED_SCHEMA -> "true")
+            tableProperties.put(ExternalStoreUtils.USER_SPECIFIED_SCHEMA, "true")
             schema
           case None => relation.schema
         }
@@ -629,7 +630,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             outputFormat = None,
             serde = None,
             compressed = false,
-            serdeProperties = newOptions
+            serdeProperties = newOptions.toMap
           ),
           properties = tableProperties.toMap)
 

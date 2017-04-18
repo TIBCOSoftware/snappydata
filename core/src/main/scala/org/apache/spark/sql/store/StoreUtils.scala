@@ -92,7 +92,7 @@ object StoreUtils {
     GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
     ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS,
     ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE,
-    JdbcExtendedUtils.SCHEMA_PROPERTY, ExternalStoreUtils.USER_SPECIFIED_SCHEMA)
+    JdbcExtendedUtils.SCHEMA_PROPERTY)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"

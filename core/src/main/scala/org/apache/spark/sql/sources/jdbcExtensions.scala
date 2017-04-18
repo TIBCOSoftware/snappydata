@@ -81,6 +81,7 @@ object JdbcExtendedUtils extends Logging {
   val ALLOW_EXISTING_PROPERTY = "ALLOWEXISTING"
   val BASETABLE_PROPERTY = "BASETABLE"
 
+  // internal properties will be stored as Hive table parameters
   val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
 
   def executeUpdate(sql: String, conn: Connection): Unit = {

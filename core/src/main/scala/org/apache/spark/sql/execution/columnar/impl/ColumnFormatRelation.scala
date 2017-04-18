@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
+import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
@@ -519,7 +521,7 @@ class ColumnFormatRelation(
       // SB: Now populate the index table from base table.
       df.write.insertInto(snappySession.getIndexTable(indexIdent).toString())
     } catch {
-      case e: Throwable =>
+      case NonFatal(e) =>
         snappySession.dropTable(indexIdent, ifExists = false)
         throw e
     }

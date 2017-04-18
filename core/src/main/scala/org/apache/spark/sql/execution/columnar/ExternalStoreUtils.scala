@@ -61,6 +61,7 @@ object ExternalStoreUtils extends Logging {
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
+  // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
   def lookupName(tableName: String, schema: String): String = {
