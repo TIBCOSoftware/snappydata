@@ -324,51 +324,59 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     * Generate multiple methods in java class based
     * on the size and returns the calling code to invoke them
     */
-  private def genMultipleMethods(ctx: CodegenContext,
-                                 methodName: String,
-                                 size: Int,
-                                 code: IndexedSeq[String],
-                                 args: Seq[String] = Seq.empty[String],
-                                 schema: StructType): String = {
+  private def genMethodsColumnWriter(ctx: CodegenContext,
+                                     methodName: String,
+                                     size: Int,
+                                     code: IndexedSeq[String],
+                                     inputs: Seq[ExprCode],
+                                     row: String = ""): String = {
+
     // Assumption is that the below three iterator are of same size
     val codeSeq = code.grouped(size)
-    val methodCalls = if (args.isEmpty) {
-      val methodCallCode = codeSeq.map(c => {
-        val m = ctx.freshName(methodName)
-        ctx.addNewFunction(m,
-          s"""
-             |private void $m(){
-             |${c.mkString("\n")}
-             |}
+    val exprSeq = inputs.grouped(size)
+    val combinedIt = codeSeq.zip(exprSeq)
+    val methodCallCode = combinedIt.map(c => {
+      val m = ctx.freshName(methodName)
+      val mParam = if (row != "") s"InternalRow $row" else ""
+      val cParam = if (row != "") s"$row" else ""
+      ctx.addNewFunction(m,
+        s"""
+           |private void $m($mParam){
+           |${evaluateVariables(c._2)}
+           |${c._1.mkString("\n")}
+           |}
          """.stripMargin
-        )
-        s"$m();"
-      })
+      )
+      s"$m($cParam);"
+    })
+    methodCallCode.toSeq.mkString("\n\n")
+  }
 
-      methodCallCode.toSeq.mkString("\n\n")
-    } else {
-      val typeSeq = schema.fields.map(f => ctx.javaType(f.dataType)).toSeq
-
-      val arguments = typeSeq.zip(args).map(k => (s"${k._1} ${k._2}")).grouped(size)
-      val megaIt = codeSeq.zip(arguments).zip(args.grouped(size))
-
-      val methodCallCode = megaIt.map(c => {
-        val m = ctx.freshName(methodName)
-        val methodParams = if (args.isEmpty) "" else c._1._2.mkString(",\n")
-        val calleeParams = if (args.isEmpty) "" else c._2.mkString(",\n")
-        ctx.addNewFunction(m,
-          s"""
-             |private void $m($methodParams){
-             |${c._1._1.mkString("\n")}
-             |}
+  /**
+    * Generate multiple methods in java class based
+    * on the size and returns the calling code to invoke them
+    * Not using ctx.splitExpressions as that depends on a row which is declared as a member
+    * variable.
+    */
+  private def genMultipleStatsMethods(ctx: CodegenContext,
+                                 methodName: String,
+                                 size: Int,
+                                 code: IndexedSeq[String]): String = {
+    // Assumption is that the below three iterator are of same size
+    val codeSeq = code.grouped(size)
+    val methodCallCode = codeSeq.map(c => {
+      val m = ctx.freshName(methodName)
+      ctx.addNewFunction(m,
+        s"""
+           |private void $m(){
+           |${c.mkString("\n")}
+           |}
          """.stripMargin
-        )
-        s"$m($calleeParams);"
-      })
+      )
+      s"$m();"
+    })
 
-      methodCallCode.toSeq.mkString("\n\n")
-    }
-    methodCalls
+    methodCallCode.toSeq.mkString("\n\n")
   }
 
 
@@ -381,10 +389,35 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val sizeTerm = ctx.freshName("size")
     cursorsArrayTerm = ctx.freshName("cursors")
 
+    val mutableRow = ctx.freshName("mutableRow")
+    ctx.addMutableState("MutableRow", mutableRow,
+      s"$mutableRow = new GenericMutableRow(${relationSchema.length});")
+
+
+    val expressionCodes = schema.indices.map { i =>
+      val field = schema(i)
+      val dataType = field.dataType
+      val evaluationCode = input(i)
+      s"""
+            if (${evaluationCode.isNull}) {
+              $mutableRow.setNullAt($i);
+            } else {
+              ${evaluationCode.code}
+              ${ctx.setColumn(mutableRow, dataType, i, evaluationCode.value)};
+            }
+          """
+    }
+    val allExpressions = ctx.splitExpressions(ctx.INPUT_ROW, expressionCodes)
+    ctx.INPUT_ROW = mutableRow
+    val columWriteExprs = schema.zipWithIndex.map { case (field, ordinal) =>
+      (BoundReference(ordinal, field.dataType, nullable = true)).genCode(ctx)
+    }
+
+
     val columnWrite = schema.indices.map { i =>
       val field = schema(i)
       genCodeColumnWrite(ctx, field.dataType, field.nullable, s"$encoderArrayTerm[$i]",
-        s"$cursorArrayTerm[$i]", input(i))
+        s"$cursorArrayTerm[$i]", columWriteExprs(i))
     }
 
     val fieldWiseColumnStats = schema.indices.map { i =>
@@ -441,8 +474,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
     val buffersCode = loop(bufferLoopCode, relationSchema.length)
 
-    val multipleStatsCode = genMultipleMethods(ctx, "writeStats",
-      MAX_CURSOR_DECLARATIONS, fieldWiseColumnStats, Seq.empty[String], schema)
+    val multipleStatsSetters = genMultipleStatsMethods(ctx, "writeStats",
+      MAX_CURSOR_DECLARATIONS, fieldWiseColumnStats)
 
     storeColumnBatch = ctx.freshName("storeColumnBatch")
     ctx.addNewFunction(storeColumnBatch,
@@ -450,7 +483,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
          |    int $batchSizeTerm, long[] $cursorArrayTerm) {
          |  // create statistics row
-         |  ${multipleStatsCode}
+         |  ${multipleStatsSetters}
          |  // create ColumnBatch and insert
          |  final java.nio.ByteBuffer[] $buffers =
          |      new java.nio.ByteBuffer[${schema.length}];
@@ -474,9 +507,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     }
 
     storeColumnBatchArgs = s"$batchSizeTerm, ${cursorArrayTerm}"
-    val args = input.map(_.value)
-    val writeColumns = genMultipleMethods(ctx, "writeToEncoder",
-      MAX_CURSOR_DECLARATIONS, columnWrite, args, schema)
+
+    val writeColumns = genMethodsColumnWriter(ctx, "writeToEncoder",
+      MAX_CURSOR_DECLARATIONS, columnWrite, columWriteExprs, mutableRow)
 
     s"""
        |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&
@@ -490,7 +523,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |    $initEncoders
        |  }
        |}
-       |${evaluateVariables(input)}
+       |$allExpressions
        |$writeColumns
        |$batchSizeTerm++;
     """.stripMargin
