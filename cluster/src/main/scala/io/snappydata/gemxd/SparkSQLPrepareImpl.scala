@@ -30,7 +30,9 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.ParamLiteral
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -60,19 +62,10 @@ class SparkSQLPrepareImpl(val sql: String,
   protected[this] val hdos = new GfxdHeapDataOutputStream(
     thresholdListener, sql, true, senderVersion)
 
-  private def allParamConstants(): Array[ParamLiteral] = {
-    val res = new ArrayBuffer[ParamLiteral]()
-    analyzedPlan transformAllExpressions {
-      case pc@ParamLiteral(_ , _, _, true) => res += pc
-        pc
-    }
-    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
-  }
-
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    val paramConstantsArr = allParamConstants()
+    val paramConstantsArr = SnappySession.getAllParamLiterals(analyzedPlan, true)
     if (paramConstantsArr != null) {
       val paramCount = paramConstantsArr.length
       val types = new Array[Int](paramCount * 4 + 1)

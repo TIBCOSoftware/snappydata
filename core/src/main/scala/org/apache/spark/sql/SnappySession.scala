@@ -174,7 +174,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def prepareSQL(sqlText: String): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText)
-    SparkSession.setActiveSession(this) // TODO - if needed?
+    SparkSession.setActiveSession(this)
     sessionState.analyzer.execute(logical)
   }
 
@@ -1706,6 +1706,16 @@ object SnappySession extends Logging {
       case p@ParamLiteral(_, _, _, isParameter) if isParameter == isParam => res += p
         p
     }
+    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
+  }
+
+  def getAllParamLiterals(plan: LogicalPlan, isParam: Boolean): Array[ParamLiteral] = {
+    val res = new ArrayBuffer[ParamLiteral]()
+    def allParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
+      case p@ParamLiteral(_, _, _, isParameter) if isParameter == isParam => res += p
+        p
+    }
+    handleSubquery(allParams(plan), allParams)
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
 
