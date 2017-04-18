@@ -21,6 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
 import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
@@ -197,8 +198,18 @@ class SnappyParser(session: SnappySession)
         val dvd = session.sessionState.pvs.getParameter(questionMarkCounter - 1)
         val scalaTypeVal = CachedPlanHelperExec.setValue(dvd)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
+        val storeType = dvd.getTypeFormatId
+        val storePrecision = dvd match {
+          case d: SQLDecimal => d.getDecimalValuePrecision
+          case _ => -1
+        }
+        val storeScale = dvd match {
+          case d: SQLDecimal => d.getDecimalValueScale
+          case _ => -1
+        }
+        val dataType = SnappySession.getDataType(storeType, storePrecision, storeScale)
         paramcounter = paramcounter + 1
-        ParamLiteral(catalystTypeVal, IntegerType, paramcounter)
+        ParamLiteral(catalystTypeVal, dataType, paramcounter)
       }
     })
   }
