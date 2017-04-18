@@ -73,23 +73,10 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
-  object analyzerRules extends Analyzer(catalog, conf){
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      new PreprocessTableInsertOrPut(conf) ::
-          new FindDataSourceTable(snappySession) ::
-          DataSourceAnalysis(conf) ::
-          ResolveRelationsExtended ::
-          AnalyzeChildQuery(snappySession) ::
-          ResolveQueryHints(snappySession) ::
-          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
-  }
+  object BaseAnalyzerRules extends Analyzer(catalog, conf)
 
-  /* * Important:
-    * All Analyzer rules changes should be done in object analyzerRules
-    * Do not override extendedResolutionRules here.
-    * */
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
-    override lazy val batches: Seq[Batch] = analyzerRules.batches.map {
+  lazy val analyzerOnlyForPreparedStatement: Analyzer = new Analyzer(catalog, conf) {
+    override lazy val batches: Seq[Batch] = BaseAnalyzerRules.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         // ResolveParameters must come before TypeCoercion rules
         val splitIndex = batch.rules.indexWhere(_.ruleName.contains("TypeCoercion"))
@@ -99,6 +86,17 @@ class SnappySessionState(snappySession: SnappySession)
       case otherBatch => Batch(otherBatch.name, otherBatch.strategy.asInstanceOf[this.Strategy],
         otherBatch.rules: _*)
     }
+  }
+
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      new PreprocessTableInsertOrPut(conf) ::
+          new FindDataSourceTable(snappySession) ::
+          DataSourceAnalysis(conf) ::
+          ResolveRelationsExtended ::
+          AnalyzeChildQuery(snappySession) ::
+          ResolveQueryHints(snappySession) ::
+          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
     override val extendedCheckRules = Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
