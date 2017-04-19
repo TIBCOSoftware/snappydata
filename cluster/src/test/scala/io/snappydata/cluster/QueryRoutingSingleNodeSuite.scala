@@ -137,7 +137,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
   private def verifyResults(qry: String, rs: ResultSet, results: Array[Int],
       cacheMapSize: Int): Unit = {
     val cacheMap = SnappySession.getPlanCache.asMap()
-    assert( cacheMap.size() == cacheMapSize)
+    assert(cacheMap.size() == cacheMapSize || -1 == cacheMapSize)
 
     var index = 0
     while (rs.next()) {
@@ -159,6 +159,31 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     rs.close()
   }
 
+  // TODO: After Fix remove this comment
+  // This test do not work with 100, 200 but works with 300
+  def query1(tableName1: String, tableName2: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn: java.sql.Connection = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt: java.sql.Statement = conn.createStatement()
+    try {
+      val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
+          s" from $tableName1 " +
+          s" where ol_1_int_id < 500 " +
+          s" and ol_1_int2_id in (" +
+          s"select ol_2_int_id " +
+          s" from $tableName2 " +
+          s" where ol_2_int_id = 100 " +
+          s") " +
+          s""
+      verifyResults("query1-1", stmt.executeQuery(qry), Array(100),
+        -1) // TODO pass a number than -1
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
   def query2(tableName1: String, tableName2: String, serverHostPort: String): Unit = {
     // sc.setLogLevel("TRACE")
     val conn: java.sql.Connection = DriverManager.getConnection(
@@ -175,7 +200,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s") " +
           s" limit 20" +
           s""
-      verifyResults("qry-1", stmt.executeQuery(qry), Array(100, 200, 300), 1)
+      verifyResults("query2-1", stmt.executeQuery(qry), Array(100, 200, 300), 1)
 
       val qry2 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
           s" from $tableName1 " +
@@ -187,7 +212,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s") " +
           s" limit 20" +
           s""
-      verifyResults("qry-2", stmt.executeQuery(qry2), Array(600, 700, 800), 1)
+      verifyResults("query2-2", stmt.executeQuery(qry2), Array(600, 700, 800), 1)
     } finally {
       stmt.close()
       conn.close()
@@ -214,6 +239,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       // println("network server started")
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
+      query1(tableName1, tableName2, serverHostPort)
       query2(tableName1, tableName2, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
