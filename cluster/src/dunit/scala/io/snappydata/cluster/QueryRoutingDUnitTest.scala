@@ -20,6 +20,8 @@ package io.snappydata.cluster
 import java.io.File
 import java.sql.{Connection, DatabaseMetaData, SQLException, Statement}
 
+import scala.collection.mutable
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
@@ -447,11 +449,33 @@ class QueryRoutingDUnitTest(val s: String)
       doQueries(newConn.createStatement(), newConn.getMetaData, colTable)
 
       // Ensure parquet table can be dropped (SNAP-215)
-      val tableName = "PARQUETTABLE"
+      val parquetTable = "PARQUETTABLE"
       dataDir.mkdir()
-      s.execute(s"CREATE EXTERNAL TABLE $tableName " +
+      s.execute(s"CREATE EXTERNAL TABLE APP_PARQUET.$parquetTable " +
           s"(Col1 INT, Col2 INT, Col3 INT) USING parquet OPTIONS (path '$filePath')")
-      s.execute(s"DROP TABLE $tableName")
+
+      // check meta-data
+      val schemaMd = dbmd.getSchemas
+      val results = new mutable.HashSet[String]()
+      while (schemaMd.next()) {
+        results += schemaMd.getString(1)
+      }
+      assert(results.contains("APP"))
+      assert(results.contains("APP_PARQUET"))
+      results.clear()
+
+      val tableMd = dbmd.getTables(null, "APP%", null,
+        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+          "EXTERNAL TABLE", "STREAM TABLE"))
+      while (tableMd.next()) {
+        results += tableMd.getString(2) + '.' + tableMd.getString(3)
+      }
+      // 2 for column table and 1 for parquet external table
+      assert(results.size == 3, s"Got size = ${results.size} but expected 3")
+      assert(results.contains(s"APP.$colTable"))
+      assert(results.contains(s"APP_PARQUET.$parquetTable"))
+
+      s.execute(s"DROP TABLE APP_PARQUET.$parquetTable")
 
     } finally {
       conn.close()
