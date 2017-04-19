@@ -53,14 +53,12 @@ class SnappyParser(session: SnappySession)
   override final def input: ParserInput = _input
 
   private var paramcounter = 0
-
-  private var questionMarkCounter = 0
-
+  
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
     paramcounter = 0
-    questionMarkCounter = 0
+    session.sessionState.questionMarkCounter = 0
     tokenize = false
   }
 
@@ -184,18 +182,18 @@ class SnappyParser(session: SnappySession)
 
   protected final def paramQuestionMark: Rule1[LeafExpression] = rule {
     questionMark ~> (() => {
-      questionMarkCounter = questionMarkCounter + 1
+      session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
       if (session.sessionState.isPreparePhase) {
-        ParamLiteralAtPrepare(questionMarkCounter, NullType, false)
+        ParamLiteralAtPrepare(session.sessionState.questionMarkCounter, NullType, false)
       } else {
         assert(session.sessionState.pvs != null,
           "For Prepared Statement, Parameter constants are not provided")
-        if (questionMarkCounter > session.sessionState.pvs.getParameterCount) {
+        if (session.sessionState.questionMarkCounter > session.sessionState.pvs.getParameterCount) {
           assert(false, s"For Prepared Statement, Got more number of" +
-              s" placeholders = $questionMarkCounter than given number of parameter" +
+              s" placeholders = $session.sessionState.questionMarkCounter than given number of parameter" +
               s" constants = ${session.sessionState.pvs.getParameterCount}")
         }
-        val dvd = session.sessionState.pvs.getParameter(questionMarkCounter - 1)
+        val dvd = session.sessionState.pvs.getParameter(session.sessionState.questionMarkCounter - 1)
         val scalaTypeVal = CachedPlanHelperExec.setValue(dvd)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
         val storeType = dvd.getTypeFormatId

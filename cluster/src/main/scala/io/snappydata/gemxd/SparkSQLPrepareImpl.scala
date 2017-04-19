@@ -31,8 +31,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.SnappySession.handleSubquery
-import org.apache.spark.sql.catalyst.expressions.{ParamLiteral, ParamLiteralAtPrepare}
+import org.apache.spark.sql.catalyst.expressions.{ParamLiteralAtPrepare}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
@@ -66,20 +65,20 @@ class SparkSQLPrepareImpl(val sql: String,
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    val paramLiteralAtPrepares = getAllParamLiteralsAtPrepare(analyzedPlan)
-    if (paramLiteralAtPrepares != null) {
-      val paramCount = paramLiteralAtPrepares.length
+    val paramLiteralsAtPrepare = SnappySession.getAllParamLiteralsAtPrepare(analyzedPlan)
+    if (paramLiteralsAtPrepare != null) {
+      val paramCount = paramLiteralsAtPrepare.length
       val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
       (0 until paramCount) foreach (i => {
-        assert(paramLiteralAtPrepares(i).pos == i + 1)
+        assert(paramLiteralsAtPrepare(i).pos == i + 1)
         val index = i * 4 + 1
-        val dType = paramLiteralAtPrepares(i).dataType
+        val dType = paramLiteralsAtPrepare(i).dataType
         val sqlType = getSQLType(dType)
         types(index) = sqlType._1
         types(index + 1) = sqlType._2
         types(index + 2) = sqlType._3
-        types(index + 3) = if (paramLiteralAtPrepares(i).nullable) 1 else 0
+        types(index + 3) = if (paramLiteralsAtPrepare(i).nullable) 1 else 0
       })
       DataSerializer.writeIntArray(types, hdos)
     } else {
@@ -90,16 +89,6 @@ class SparkSQLPrepareImpl(val sql: String,
       SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
     }
     msg.lastResult(srh)
-  }
-
-  def getAllParamLiteralsAtPrepare(plan: LogicalPlan): Array[ParamLiteralAtPrepare] = {
-    val res = new ArrayBuffer[ParamLiteralAtPrepare]()
-    def allParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
-      case p@ParamLiteralAtPrepare(_, _, _) => res += p
-        p
-    }
-    handleSubquery(allParams(plan), allParams)
-    res.toSet[ParamLiteralAtPrepare].toArray.sortBy(_.pos)
   }
 
   override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =

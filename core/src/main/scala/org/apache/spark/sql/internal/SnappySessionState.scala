@@ -93,14 +93,18 @@ class SnappySessionState(snappySession: SnappySession)
 
   lazy val analyzerOnlyForPreparedStatement: Analyzer = new Analyzer(catalog, conf) {
     override lazy val batches: Seq[Batch] = BaseAnalyzerRules.batches.map {
+      case firstBatch if firstBatch.name.equalsIgnoreCase("Substitution") =>
+        Batch(firstBatch.name, firstBatch.strategy.asInstanceOf[this.Strategy],
+          firstBatch.rules: _*)
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         // ResolveParameters must come before TypeCoercion rules
         val splitIndex = batch.rules.indexWhere(_.ruleName.contains("TypeCoercion"))
         val (left, right) = batch.rules.splitAt(splitIndex)
         Batch(batch.name, batch.strategy.asInstanceOf[this.Strategy],
-          left ++ Some(ResolveParameters) ++ right: _*)
+          left ++ Some(ResolveParameters): _*)
+      // Ignore right i.e. rest of the rules. Analyzer stops here
       case otherBatch => Batch(otherBatch.name, otherBatch.strategy.asInstanceOf[this.Strategy],
-        otherBatch.rules: _*)
+        Nil: _*) // ...ignore other batches
     }
   }
 
@@ -322,6 +326,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   var pvs: ParameterValueSet = null
 
+  var questionMarkCounter: Int = 0
+
   def setPreparedQuery(preparePhase: Boolean, paramSet: ParameterValueSet): Unit = {
     isPreparePhase = preparePhase
     pvs = paramSet
@@ -358,6 +364,11 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = if (isPreparePhase) {
       val preparedPlan = applyRule(plan, getDataTypeResolvedPlan)
       applyRule(preparedPlan, assertAllDataTypeResolved)
+      val paramLiteralsAtPrepare = SnappySession.getAllParamLiteralsAtPrepare(preparedPlan)
+      if (paramLiteralsAtPrepare.length != questionMarkCounter) {
+        throw new UnsupportedOperationException("This query is unsupported for prepared statement")
+      }
+      preparedPlan
     } else plan
   }
 }
