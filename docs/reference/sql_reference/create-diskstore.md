@@ -17,7 +17,6 @@ CREATE DISKSTORE diskstore_name
     [ ( 'dir-name' [ integer-constant ] [,'dir-name' [ integer-constant ] ]* ) ]
 ```
 
-<a id="create-diskstore__section_CEFE3C3073E342A6B431737BC51FC781"></a>
 ##Description
 
 SnappyData attempts to preallocate oplog files when you execute the CREATE DISKSTORE command. See [Preventing Disk Full Errors](../../best_practises/prevent_disk_full_errors.md) for more information.
@@ -67,14 +66,14 @@ The optional `dir-name` entry defines a specific host system directory to use fo
 
 In each entry:
 
-* `dir-name` specifies the name of a directory to use for the disk store. The disk store directory is created on each member if necessary. If you do not specify an absolute path, then SnappyData creates or uses the named directory in each member's working directory (or in the value specified by the <a href="../configuration/ConnectionAttributes.html#jdbc_connection_attributes__section_86AA2AD28CEB4C4E945434AC6564A4CC" class="xref noPageCitation">sys-disk-dir</a> boot property, if defined). If you specify an absolute path, then all parent directories in the path must exist at the time you execute the command.
+* `dir-name` specifies the name of a directory to use for the disk store. The disk store directory is created on each member if necessary. If you do not specify an absolute path, then SnappyData creates or uses the named directory in each member's working directory (or in the value specified by the [sys-disk-dir](../../reference/configuration_parameters/sys-disk-dir.md) boot property, if defined). If you specify an absolute path, then all parent directories in the path must exist at the time you execute the command.
 
 	!!! Note 
     	SnappyData uses a "shared nothing" disk store design, and you cannot use a single disk store directory to store oplog files from multiple SnappyData members. 
 
 *   *integer-constant* optionally specifies the maximum amount of space, in megabytes, to use for the disk store in that directory. The space used is calculated as the combined sizes of all oplog files in the directory.
 
-    If you do not specify an *integer-constant* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings (see <a href="../configuration/ConnectionAttributes.html#jdbc_connection_attributes__diskspace-warning-interval" class="xref">gemfire.DISKSPACE\_WARNING\_INTERVAL</a>). If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
+    If you do not specify an *integer-constant* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings (see [gemfire.DISKSPACE_WARNING_INTERVAL](../../reference/configuration_parameters/gemfire.DISKSPACE_WARNING_INTERVAL.md)). If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
 
 You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
 
