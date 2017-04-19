@@ -218,7 +218,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testCTAS(): Unit = {
-//    startNetworkServers()
     val snc = SnappyContext(sc)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "splitModeCreateTableUsingCTAS",
@@ -241,7 +240,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def doTestUDF(skewServerDistribution: Boolean): Unit = {
-//    startNetworkServers()
     testObject.createUDFInEmbeddedMode()
 
     // StandAlone Spark Cluster Operations
