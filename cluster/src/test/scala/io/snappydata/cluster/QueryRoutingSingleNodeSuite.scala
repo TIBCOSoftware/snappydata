@@ -187,14 +187,14 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s") " +
           s" limit 20" +
           s""
-      verifyResults("qry-2", stmt.executeQuery(qry), Array(600, 700, 800), 1)
+      verifyResults("qry-2", stmt.executeQuery(qry2), Array(600, 700, 800), 1)
     } finally {
       stmt.close()
       conn.close()
     }
   }
 
-  ignore("test IN SubQuery") {
+  ignore("Tokenization test with IN SubQuery") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
