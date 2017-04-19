@@ -474,6 +474,18 @@ class QueryRoutingDUnitTest(val s: String)
       assert(results.size == 3, s"Got size = ${results.size} but expected 3")
       assert(results.contains(s"APP.$colTable"))
       assert(results.contains(s"APP_PARQUET.$parquetTable"))
+      results.clear()
+
+      // check the columns
+      val columnsMd = dbmd.getColumns(null, "APP_PARQUET", null, null)
+      while (columnsMd.next()) {
+        results += columnsMd.getString(4)
+      }
+      assert(results.size == 3, s"Got columns = ${results.size} but expected 3")
+      assert(results.contains("COL1"), s"columns = $results")
+      assert(results.contains("COL2"))
+      assert(results.contains("COL3"))
+      results.clear()
 
       s.execute(s"DROP TABLE APP_PARQUET.$parquetTable")
 

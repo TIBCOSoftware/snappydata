@@ -303,8 +303,8 @@ subprojects {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
     maxParallelForks = 1
-    minHeapSize '1g'
-    maxHeapSize '1g'
+    minHeapSize '2g'
+    maxHeapSize '2g'
 
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
