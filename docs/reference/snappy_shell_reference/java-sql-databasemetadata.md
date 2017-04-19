@@ -1,12 +1,16 @@
 # java.sql.DatabaseMetaData Interface
 
-<a id="java-sql-databasemetadata__section_1B3CCBB2590346FAA2D4CF84BDA9A13D">The following sections describe `java.sql.DatabaseMetaData` functionality in SnappyData.</a>
--   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_C813D9A7C9044BB1A540B35CDA6F3517" class="xref">DatabaseMetaData Result Sets</a>
--   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_51DDFA8B7026432788B8F76FE9AC6D06" class="xref">java.sql.DatabaseMetaData.getProcedureColumns Method</a>
--   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_87386A01281B43469BC0012704BE1105" class="xref">Parameters to getProcedureColumns</a>
--   <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_F9F0D4197E944136B1996DEC342CCD21" class="xref">java.sql.DatabaseMetaData.getBestRowIdentifier Method</a>
+The following sections describe `java.sql.DatabaseMetaData` functionality in SnappyData.
 
-<a id="java-sql-databasemetadata__section_C813D9A7C9044BB1A540B35CDA6F3517"></a>
+- [DatabaseMetaData Result Sets](#databasemetadata)
+
+- [java.sql.DatabaseMetaData.getProcedureColumns Method](java-sql-databasemetadata.md)
+
+- [Parameters to getProcedureColumns](parameters.md)
+
+- [java.sql.DatabaseMetaData.getBestRowIdentifier Method](columnds.md)
+
+<a id="databasemetadata"></a>
 
 ##DatabaseMetaData Result Sets
 
@@ -14,7 +18,7 @@
 
 *DatabaseMetaData* result sets are closed if a user performs any other action on a JDBC object that causes an automatic *commit* to occur. If you need the *DatabaseMetaData* result sets to be accessible while executing other actions that would cause automatic commits, turn off auto-commit with *setAutoCommit(false)*.
 
-<a id="java-sql-databasemetadata__section_51DDFA8B7026432788B8F76FE9AC6D06"></a>
+<a id="java-sql-databasemetadata"></a>
 
 ##java.sql.DatabaseMetaData.getProcedureColumns Method
 
@@ -22,7 +26,7 @@ SnappyData supports Java procedures and allows you to call Java procedures withi
 
 *getProcedureColumns* returns a ResultSet. Each row describes a single parameter or return value.
 
-<a id="java-sql-databasemetadata__section_87386A01281B43469BC0012704BE1105"></a>
+<a id="parameters"></a>
 
 ##Parameters to getProcedureColumns
 
@@ -40,7 +44,7 @@ A String object representing a procedure name pattern.
 **column-Name-Pattern   **
 A String object representing the name pattern of the parameter names or return value names. Java procedures have parameter names matching those defined in the CREATE PROCEDURE statement. Use "%" to find all parameter names.
 
-<a id="java-sql-databasemetadata__section_C9699F70A52244F68111446F186AFE81"></a>
+<a id="columns"></a>
 
 ##Columns in the ResultSet Returned by getProcedureColumns
 
@@ -56,7 +60,7 @@ Schema for a Java procedure.
 Name of the procedure.
 
 **COLUMN\_NAME   **
-Name of the parameter. See column-Name-Pattern under <a href="java-sql-databasemetadata.html#java-sql-databasemetadata__section_87386A01281B43469BC0012704BE1105" class="xref">Parameters to getProcedureColumns</a>.
+Name of the parameter. See column-Name-Pattern under <mark> Parameters to getProcedureColumns java-sql-databasemetadata.md To be Confirmed</mark>.
 
 **COLUMN\_TYPE   **
 Short indicating what the row describes. It is always *DatabaseMetaData.procedureColumnIn* for method parameters, unless the parameter is an array. If so, it is *DatabaseMetaData.procedureColumnInOut*. It always returns *DatabaseMetaData.procedureColumnReturn* for return values.

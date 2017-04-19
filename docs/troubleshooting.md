@@ -4,7 +4,7 @@ The following topics are covered in this section:
 
 * [Getting thread dumps from GUI or detailed stacks using SIGURG](troubleshooting/thread_dumps.md)
 
-* [Collecting logs and stats using collect-debug-artifacts.sh](troubleshooting/collocating_logs.md)
+* [Collecting logs and stats using collect-debug-artifacts.sh](troubleshooting/collecting_logs.md)
 
 * [Using VSD (can we make use of GemFire VSD docs?)](troubleshooting/using_vsd.md)
 

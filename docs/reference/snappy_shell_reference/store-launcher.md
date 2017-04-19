@@ -14,7 +14,7 @@ The command form to display a particular utility's usage is:
 snappy <utility> --help
 ```
 
-With no arguments, `snappy` starts an <a href="store_command_reference.md#concept_15619CF8E8494962BE296C1BC976D2B3" class="xref noPageCitation" title="gfxd implements an interactive command-line tool that is based on the Apache Derby ij tool. Use gfxd to run scripts or interactive queries against a SnappyData cluster.">interactive SQL command shell</a>:
+With no arguments, `snappy` starts an [interactive SQL command shell](../../reference/interactive_commands/store_command_reference.md):
 
 ``` pre
 snappy

@@ -3,7 +3,7 @@
 
 Sets the percentage threshold of Java heap memory usage that triggers a SnappyData data store to perform LRU eviction on tables that are configured for LRU\_HEAP eviction. This procedure executes only on the local SnappyData data store member.
 
-This procedure sets the percentage threshold for evicting table data from the Java heap for the local SnappyData data store. When the used heap reaches the percentage, SnappyData begins to evict rows, using a LRU algorithm, from tables that are configured with LRU\_HEAP eviction. <a href="../../overflow/configuring_data_eviction.html#configuring_data_eviction" class="xref" title="Use eviction settings to keep your table within a specified limit, either by removing evicted data completely or by creating an overflow table that persists the evicted data to a disk store.">Create a Table with Eviction Settings</a> describes the eviction process. The default eviction heap percentage is 80% of the critical heap percentage value.
+This procedure sets the percentage threshold for evicting table data from the Java heap for the local SnappyData data store. When the used heap reaches the percentage, SnappyData begins to evict rows, using a LRU algorithm, from tables that are configured with LRU\_HEAP eviction. [Create a Table with Eviction Settings](../../concepts/tables/evicting_table_data/create_table_with_eviction_setting.md) describes the eviction process. The default eviction heap percentage is 80% of the critical heap percentage value.
 
 ##Syntax
 

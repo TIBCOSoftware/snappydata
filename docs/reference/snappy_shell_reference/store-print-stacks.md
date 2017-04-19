@@ -19,14 +19,13 @@ The table describes options for `snappy print-stacks`. If no multicast or locato
 |Option|Description|
 |-|-|
 |-all-threads|By default this command attempts to remove idle SnappyData threads from the stack dump. Include `-all-threads` to include idle threads in the dump.|
-|[&lt;filename&gt;]|An optional filename to store the stack dumps. See also <a href="../system_procedures/dump-stacks.html#reference_A7533A4A873D48FBAB05A67DD5CC7F66" class="xref" title="Writes thread stacks, locks, and transaction states to the SnappyData log file. You can write stack information either for the current SnappyData member or for all SnappyData members in the distributed system.">SYS.DUMP\_STACKS</a> for information about appending stack dump information to the SnappyData log file.|
+|[<filename>]|An optional filename to store the stack dumps. See also [SYS.DUMP_STACKS](../../reference/inbuilt/dump-stacks.md) for information about appending stack dump information to the SnappyData log file.|
 |-mcast-port|Multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead).</br>Valid values are in the range 0–65535, with a default value of 10334.|
 |-mcast-address|Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default `gfxd` uses the hostname, or localhost if the hostname points to a local loopback address.|
 |-&lt;prop-name&gt;=&lt;prop-value&gt;|Any other SnappyData distributed system property.|
 
-<a id="reference_13F8B5AFCD9049E380715D2EF0E33BDC__section_050663B03C0A4C42B07B4C5F69EAC95D"></a>
 ##Example
 
 The following command prints the stack dump of all SnappyData processes to standard out:
@@ -89,6 +88,6 @@ Connecting to distributed system: mcast=/239.192.81.1:10334
 1 stack dumps written to gfxd-stack-dump.txt
 ```
 
-See also <a href="../system_procedures/dump-stacks.html#reference_A7533A4A873D48FBAB05A67DD5CC7F66" class="xref" title="Writes thread stacks, locks, and transaction states to the SnappyData log file. You can write stack information either for the current SnappyData member or for all SnappyData members in the distributed system.">SYS.DUMP\_STACKS</a> for information about appending stack dump information to the SnappyData log file.
+See also [SYS.DUMP_STACKS](../../reference/inbuilt/dump-stacks.md) for information about appending stack dump information to the SnappyData log file.
 
 
