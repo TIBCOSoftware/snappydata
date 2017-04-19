@@ -361,9 +361,9 @@ final class DefaultSource extends MutableRelationProvider {
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), None,
-        Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
-        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
+        catalog.newQualifiedTableName(tableName), None, Array.empty[String],
+        classOf[execution.row.DefaultSource].getCanonicalName,
+        options, relation)
       success = true
       relation
     } finally {

@@ -16,25 +16,16 @@
  */
 package org.apache.spark.streaming
 
-import java.io.File
-
-import scala.reflect.ClassTag
-
 import io.snappydata.SnappyFunSuite
-import org.apache.commons.io.FileUtils
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.SpanSugar._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.streaming.dstream.{InputDStream, DStream}
-import org.apache.spark.streaming.scheduler.StreamInputInfo
 import org.apache.spark.util.Utils
 import org.apache.spark.{SparkConf, SparkContext}
 
 
-class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with BeforeAndAfter with BeforeAndAfterAll{
-
+class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually
+    with BeforeAndAfter with BeforeAndAfterAll {
 
   def framework: String = this.getClass.getSimpleName
 
@@ -225,5 +216,4 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
       assert(snsc.conf.get("someKey") === "someValue")
     }
   }
-
 }
