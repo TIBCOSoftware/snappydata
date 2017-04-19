@@ -19,7 +19,7 @@ package org.apache.spark.sql.sources
 import java.sql.Connection
 import java.util.Properties
 
-import scala.collection.{Map => SMap}
+import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
 import org.apache.spark.Logging
@@ -134,7 +134,13 @@ object JdbcExtendedUtils extends Logging {
       options: SMap[String, String]): SMap[String, String] = {
     // split the string into parts for size limitation in hive metastore table
     val parts = value.grouped(3500).toSeq
-    var opts = options
+    val opts = options match {
+      case m: mutable.Map[String, String] => m
+      case _ =>
+        val m = new mutable.HashMap[String, String]
+        m ++= options
+        m
+    }
     opts += (s"$propertyName.numParts" -> parts.size.toString)
     parts.zipWithIndex.foreach { case (part, index) =>
       opts += (s"$propertyName.part.$index" -> part)
