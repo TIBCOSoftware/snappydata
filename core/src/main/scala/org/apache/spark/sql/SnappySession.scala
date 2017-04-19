@@ -300,12 +300,6 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
       keyTypes: Seq[(DataType, Boolean)],
-      types: Seq[(DataType, Boolean)]): Option[(String, String)] = {
-    getClass(ctx, baseTypes, keyTypes, types, false)
-  }
-
-  def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
-      keyTypes: Seq[(DataType, Boolean)],
       types: Seq[(DataType, Boolean)], multimap: Boolean): Option[(String, String)] = {
     getContextObject[(String, String)](ctx, "C", (baseTypes, keyTypes, types, multimap))
   }
