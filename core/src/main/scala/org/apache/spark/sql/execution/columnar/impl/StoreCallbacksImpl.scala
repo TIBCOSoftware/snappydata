@@ -86,7 +86,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           val tableName = container.getQualifiedTableName
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
-          if (catalogEntry.tableType == ExternalTableType.Sample.toString &&
+          if (catalogEntry.tableType == ExternalTableType.Sample.name &&
               schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)

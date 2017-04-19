@@ -81,7 +81,7 @@ abstract class MutableRelationProvider
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[org.apache.spark.sql.row.DefaultSource].getCanonicalName,
-        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
+        options, relation)
       success = true
       relation
     } finally {
