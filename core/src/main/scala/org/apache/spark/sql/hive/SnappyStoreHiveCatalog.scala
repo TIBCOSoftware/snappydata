@@ -21,8 +21,8 @@ import java.net.URL
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -164,7 +164,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           ExternalStoreUtils.USER_SPECIFIED_SCHEMA)) {
           ExternalStoreUtils.getTableSchema(table.properties)
         } else None
-        val relation = options.get(JdbcExtendedUtils.SCHEMA_PROPERTY) match {
+        val relation = JdbcExtendedUtils.readSplitProperty(
+          JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 
@@ -577,14 +578,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             schema
           case None => relation.schema
         }
-        val threshold = sqlConf.schemaStringLengthThreshold
         val schemaJsonString = tableSchema.json
         // Split the JSON string.
-        val parts = schemaJsonString.grouped(threshold).toSeq
-        tableProperties.put(HIVE_SCHEMA_NUMPARTS, parts.size.toString)
-        parts.zipWithIndex.foreach { case (part, index) =>
-          tableProperties.put(s"$HIVE_SCHEMA_PART.$index", part)
-        }
+        JdbcExtendedUtils.addSplitProperty(schemaJsonString,
+          HIVE_SCHEMA_PROP, tableProperties)
 
         // get the tableType
         val tableType = getTableType(relation)
@@ -713,7 +710,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def getDataSourceTables(tableTypes: Seq[ExternalTableType],
       baseTable: Option[String] = None): Seq[QualifiedTableName] = {
-    val tables = new ArrayBuffer[QualifiedTableName](4)
+    val tables = new mutable.ArrayBuffer[QualifiedTableName](4)
     allTables().foreach { t =>
       val tableIdent = newQualifiedTableName(formatTableName(t))
       tableIdent.getTableOption(this) match {
@@ -733,7 +730,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   private def allTables(): Seq[String] = {
-    val allTables = new ArrayBuffer[String]()
+    val allTables = new mutable.ArrayBuffer[String]()
     val currentSchemaName = this.currentSchema
     var hasCurrentDb = false
     val client = this.client
@@ -982,8 +979,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 object SnappyStoreHiveCatalog {
 
   val HIVE_PROVIDER = "spark.sql.sources.provider"
-  val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
-  val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
+  val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
   val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
   val cachedSampleTables: LoadingCache[QualifiedTableName,
       Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
@@ -1021,7 +1017,8 @@ object SnappyStoreHiveCatalog {
   }
 
   def getSchemaStringFromHiveTable(table: Table): String =
-    ExternalStoreUtils.getTableSchemaString(table.getParameters).orNull
+    JdbcExtendedUtils.readSplitProperty(HIVE_SCHEMA_PROP,
+      table.getParameters.asScala).orNull
 
   def closeCurrent(): Unit = {
     Hive.closeCurrent()

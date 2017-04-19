@@ -91,8 +91,7 @@ object StoreUtils {
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
     GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
     ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS,
-    ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE,
-    JdbcExtendedUtils.SCHEMA_PROPERTY)
+    ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
@@ -421,7 +420,9 @@ object StoreUtils {
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.forall(v => {
-      if (!ddlOptions.contains(Utils.toUpperCase(v.toString))) {
+      val u = Utils.toUpperCase(v)
+      if (!u.startsWith(JdbcExtendedUtils.SCHEMADDL_PROPERTY) &&
+          !ddlOptions.contains(u)) {
         throw new AnalysisException(
           s"Unknown options $v specified while creating table ")
       }

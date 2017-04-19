@@ -542,34 +542,14 @@ object ExternalStoreUtils extends Logging {
     new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
-  def getTableSchemaString(
-      tableProps: java.util.Map[String, String]): Option[String] =
-    getTableSchemaString(tableProps.asScala)
-
-  def getTableSchemaString(
-      tableProps: scala.collection.Map[String, String]): Option[String] = {
-    tableProps.get(
-      SnappyStoreHiveCatalog.HIVE_SCHEMA_NUMPARTS).map { numParts =>
-      (0 until numParts.toInt).map { index =>
-        val partProp = s"${SnappyStoreHiveCatalog.HIVE_SCHEMA_PART}.$index"
-        tableProps.get(partProp) match {
-          case Some(part) => part
-          case None => throw new AnalysisException("Could not read " +
-              "schema from metastore because it is corrupted (missing " +
-              s"part $index of the schema, $numParts parts expected).")
-        }
-        // Stick all parts back to a single schema string.
-      }.mkString
-    }
-  }
-
   def getTableSchema(
       tableProps: java.util.Map[String, String]): Option[StructType] =
     getTableSchema(tableProps.asScala)
 
   def getTableSchema(
       tableProps: scala.collection.Map[String, String]): Option[StructType] =
-    getTableSchemaString(tableProps).map(StructType.fromString)
+    JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
+      tableProps).map(StructType.fromString)
 
   def getColumnMetadata(
       schema: Option[StructType]): java.util.List[ExternalTableMetaData.Column] = {
