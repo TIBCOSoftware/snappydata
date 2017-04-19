@@ -644,12 +644,12 @@ class SnappyParser(session: SnappySession)
       })
   }
 
-  protected final def keyWhenThenElse: Rule1[Seq[Expression]] = rule {
-    (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
-        t: Expression) => (w, t))). + ~ (ELSE ~ expression).? ~ END ~>
-        ((altPart: Any, elsePart: Any) =>
-          altPart.asInstanceOf[Seq[(Expression, Expression)]].flatMap(
-            e => Seq(e._1, e._2)) ++ elsePart.asInstanceOf[Option[Expression]])
+  protected final def keyWhenThenElse: Rule1[WhenElseType] = rule {
+    expression ~ (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
+        t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
+        ((key: Expression, altPart: Any, elsePart: Any) =>
+          (altPart.asInstanceOf[Seq[(Expression, Expression)]].map(
+            e => EqualTo(key, e._1) -> e._2), elsePart).asInstanceOf[WhenElseType])
   }
 
   protected final def whenThenElse: Rule1[WhenElseType] = rule {
@@ -714,7 +714,7 @@ class SnappyParser(session: SnappySession)
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
-        expression ~ keyWhenThenElse ~> (CaseKeyWhen(_, _))
+        keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
     ) |
     EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
     CURRENT_DATE ~> CurrentDate |

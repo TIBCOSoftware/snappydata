@@ -510,14 +510,15 @@ class TokenizationTest
 
     airlineDF.write.insertInto(colTableName)
 
-//    snc.sql(s"select Y.distance, Y.dest, X.distance, X.dest from (select distance, dest, count(*) " +
-//        s" from $colTableName where taxiin > 20 or taxiout > 20" +
-//        s" group by dest, distance) X " +
-//        s" right outer join " +
-//        s"(select distance, dest, count(*) " +
-//        s" from $colTableName where taxiin > 10 or taxiout > 10" +
-//        s" group by dest, distance) Y" +
-//        s" on X.dest = Y.dest and X.distance = Y.distance").collect().foreach(println)
+    snc.sql(s"select Y.distance, Y.dest, X.distance, X.dest from " +
+        s" (select distance, dest, count(*) " +
+        s" from $colTableName where taxiin > 20 or taxiout > 20" +
+        s" group by dest, distance) X " +
+        s" right outer join " +
+        s"(select distance, dest, count(*) " +
+        s" from $colTableName where taxiin > 10 or taxiout > 10" +
+        s" group by dest, distance) Y" +
+        s" on X.dest = Y.dest and X.distance = Y.distance").collect().foreach(println)
 
     var df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
         s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
@@ -535,7 +536,7 @@ class TokenizationTest
     val res2 = df.collect()
 
     assert(!res1.sameElements(res2))
-    assert( SnappySession.getPlanCache.asMap().size() == 1)
+    assert( SnappySession.getPlanCache.asMap().size() == 2)
 
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
