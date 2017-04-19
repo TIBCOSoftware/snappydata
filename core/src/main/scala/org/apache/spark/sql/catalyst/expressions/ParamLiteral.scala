@@ -31,8 +31,6 @@ import org.apache.spark.sql.types._
 class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     extends Literal(_value, _dataType) {
 
-  override def toString: String = if (value != null) s"ParamLiteral[${value.toString}]" else "null"
-
   private[this] var _foldable = false
 
   private[this] var literalValueRef: String = _
