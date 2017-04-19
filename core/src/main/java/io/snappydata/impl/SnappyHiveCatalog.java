@@ -57,7 +57,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   private ThreadLocal<HiveMetaStoreClient> hmClients = new ThreadLocal<>();
 
-  static final ThreadLocal<Boolean> IS_CATALOG_THREAD = new ThreadLocal<>();
+  public static final ThreadLocal<Boolean> SKIP_HIVE_TABLE_CALLS =
+      new ThreadLocal<>();
 
   private final ThreadLocal<HMSQuery> queries = new ThreadLocal<>();
 
@@ -109,7 +110,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public List<ExternalTableMetaData> getNonStoreTables(boolean skipLocks) {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
-    if (Boolean.TRUE.equals(IS_CATALOG_THREAD.get())) {
+    if (Boolean.TRUE.equals(
+        SKIP_HIVE_TABLE_CALLS.get())) {
       return Collections.emptyList();
     }
     HMSQuery q = getHMSQuery();
@@ -216,7 +218,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
     @Override
     public Object call() throws Exception {
-      IS_CATALOG_THREAD.set(Boolean.TRUE);
+      SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
       try {
         if (this.skipLock) {
           GfxdDataDictionary.SKIP_LOCKS.set(true);
