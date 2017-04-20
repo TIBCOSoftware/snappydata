@@ -247,24 +247,33 @@ case class SnappyHashAggregateExec(
     if (groupingExpressions.isEmpty) return false
     // check the outputs of the plan
     val planOutput = plan.output
-    // linear search is enough instead of map create/lookup like in intersect
-    keyBufferAccessor.output.forall(a => planOutput.exists(_.semanticEquals(a)))
+    // check for possible optimized dictionary code path;
+    // linear search is enough instead of map create/lookup like in intersect;
+    // below is a loose search while actual decision will be taken as per
+    // availability of ExprCodeEx with DictionaryCode in doConsume
+    DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
+      keyBufferAccessor.keyExpressions) && keyBufferAccessor.output.forall(
+      a => planOutput.exists(_.semanticEquals(a)))
   }
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
     if (groupingExpressions.isEmpty) ""
     else {
-      // pluck out the variables from input as per the plan output
-      val planOutput = plan.output
-      val mapOutput = keyBufferAccessor.output
-      val mapInput = mapOutput.map { a =>
-        // we expect it to exist as per the check in canConsume
-        input(planOutput.indexWhere(_.semanticEquals(a)))
-      }
-      // check for optimized dictionary code path
-      keyBufferAccessor.initDictionaryCodeForSingleKeyCase(
-        dictionaryArrayTerm, mapInput)
+      // create an empty method to populate the dictionary array
+      // which will be actually filled with code in consume if the dictionary
+      // optimization is possible using the incoming ExprCodeEx
+      val className = keyBufferAccessor.getClassName
+      // this array will be used at batch level for grouping if possible
+      dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+      dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
+      ctx.addNewFunction(dictionaryArrayInit,
+        s"""
+           |private $className[] $dictionaryArrayInit() {
+           |  return null;
+           |}
+         """.stripMargin)
+      s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
     }
   }
 
@@ -405,6 +414,7 @@ case class SnappyHashAggregateExec(
   @transient private var mapDataTerm: String = _
   @transient private var maskTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
+  @transient private var dictionaryArrayInit: String = _
 
   /**
    * Generate the code for output.
@@ -492,14 +502,6 @@ case class SnappyHashAggregateExec(
     val entryClass = keyBufferAccessor.getClassName
     val numKeyColumns = groupingExpressions.length
 
-    // check for possible optimized dictionary code path
-    val dictInit = if (DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
-      keyBufferAccessor.keyExpressions)) {
-      // this array will be used at batch level for grouping if possible
-      dictionaryArrayTerm = ctx.freshName("dictionaryArray")
-      s"$entryClass[] $dictionaryArrayTerm = null;"
-    } else ""
-
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
     ctx.addNewFunction(doAgg,
@@ -509,7 +511,6 @@ case class SnappyHashAggregateExec(
             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
           $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
           int $maskTerm = $hashMapTerm.mask();
-          $dictInit
 
           $childProduce
 
@@ -583,7 +584,7 @@ case class SnappyHashAggregateExec(
 
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
-      initVars, initCode, input, dictionaryArrayTerm)
+      initVars, initCode, input, dictionaryArrayTerm, dictionaryArrayInit)
 
     ctx.currentVars = bufferVars ++ input
     val inputCodes = evaluateRequiredVariables(child.output,
