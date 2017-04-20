@@ -55,7 +55,11 @@ class SparkSQLPrepareImpl(val sql: String,
 
   session.setPreparedQuery(true, null)
 
-  private[this] val analyzedPlan = session.prepareSQL(sql)
+  private[this] val analyzedPlan = {
+    val method = classOf[SnappySession].getDeclaredMethod("prepareSQL", classOf[String])
+    method.setAccessible(true)
+    method.invoke(session, sql).asInstanceOf[LogicalPlan]
+  }
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
