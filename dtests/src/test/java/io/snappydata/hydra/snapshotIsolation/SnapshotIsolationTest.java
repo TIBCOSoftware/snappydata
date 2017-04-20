@@ -43,6 +43,7 @@ import hydra.Prms;
 import hydra.RemoteTestModule;
 import hydra.TestConfig;
 import hydra.blackboard.AnyCyclicBarrier;
+import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import sql.ClientDiscDBManager;
 import sql.SQLHelper;
@@ -122,6 +123,23 @@ public class SnapshotIsolationTest extends SnappyTest {
     if (!dmlthreads.contains(testInstance.getMyTid())) {
       dmlthreads.add(testInstance.getMyTid());
       SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("dmlThreads", dmlthreads);
+    }
+    testInstance.releaseDmlLock();
+  }
+
+  public static void HydraTask_initializeSelectThreads() {
+    if (testInstance == null)
+      testInstance = new SnapshotIsolationTest();
+    testInstance.getDmlLock();
+    ArrayList<Integer> selectThreads;
+    if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
+      selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap()
+          .get("selectThreads");
+    else
+      selectThreads = new ArrayList<>();
+    if (!selectThreads.contains(testInstance.getMyTid())) {
+      selectThreads.add(testInstance.getMyTid());
+      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("selectThreads", selectThreads);
     }
     testInstance.releaseDmlLock();
   }
@@ -338,7 +356,7 @@ public class SnapshotIsolationTest extends SnappyTest {
         dConn = getDerbyConnection();
         derbyPS = getPreparedStatement(dConn, tableName, insertStmt, row);
         Log.getLogWriter().info("Inserting in derby with statement : " + insertStmt + " with " +
-            "values(" + row + "," + getMyTid() + ")");
+            "values(" + row + ")");
         rowCount = derbyPS.executeUpdate();
         Log.getLogWriter().info("Inserted " + rowCount + " row in derby.");
         derbyPS.close();
@@ -454,19 +472,18 @@ public class SnapshotIsolationTest extends SnappyTest {
       closeDiscConnection(dConn,true);
   }
 
-  public String getRowFromCSV(String tableName,int rand) {
+  public String getRowFromCSV(String tableName,int randTable) {
     String row = null;
     int insertCounter;
     String csvFilePath = SnapshotIsolationPrms.getCsvLocationforLargeData();
-    String csvFileName = SnapshotIsolationPrms.getInsertCsvFileNames()[rand];
+    String csvFileName = SnapshotIsolationPrms.getInsertCsvFileNames()[randTable];
     getDmlLock();
     List<Integer> counters = (List<Integer>)SnapshotIsolationBB.getBB().getSharedMap().get("insertCounters");
-    insertCounter = counters.get(rand);
-    counters.add(rand, insertCounter + 1);
+    insertCounter = counters.get(randTable);
+    counters.set(randTable, insertCounter + 1);
     SnapshotIsolationBB.getBB().getSharedMap().put("insertCounters", counters);
     releaseDmlLock();
-    Log.getLogWriter().info("insert Counter is :" + insertCounter);
-    Log.getLogWriter().info("csv path is :" + csvFilePath + File.separator + csvFileName);
+    Log.getLogWriter().info("insert Counter is :" + insertCounter + " for csv " + csvFilePath + File.separator + csvFileName);
     try (Stream<String> lines = Files.lines(Paths.get(csvFilePath + File.separator + csvFileName))) {
       row = lines.skip(insertCounter).findFirst().get();
     } catch (IOException io) {
@@ -490,11 +507,18 @@ public class SnapshotIsolationTest extends SnappyTest {
         String columnValue = columnValues[i];
         switch (clazz) {
           case "String":
-            ps.setString(i + 1, columnValue);
+            if (columnValue.equalsIgnoreCase("NULL"))
+              ps.setNull(i + 1, Types.VARCHAR);
+            else
+              ps.setString(i + 1, columnValue);
             break;
           case "Timestamp":
-            Timestamp ts = Timestamp.valueOf(columnValue);
-            ps.setTimestamp(i + 1, ts);
+            if (columnValue.equalsIgnoreCase("NULL"))
+              ps.setNull(i + 1, Types.TIMESTAMP);
+            else {
+              Timestamp ts = Timestamp.valueOf(columnValue);
+              ps.setTimestamp(i + 1, ts);
+            }
             break;
           case "Integer":
             if (columnValue.equalsIgnoreCase("NULL"))
@@ -503,7 +527,10 @@ public class SnapshotIsolationTest extends SnappyTest {
               ps.setInt(i + 1, Integer.parseInt(columnValue));
             break;
           case "Double":
-            ps.setDouble(i + 1, Double.parseDouble(columnValue));
+            if (columnValue.equalsIgnoreCase("NULL"))
+              ps.setNull(i + 1, Types.DOUBLE);
+            else
+              ps.setDouble(i + 1, Double.parseDouble(columnValue));
             break;
 
         }
@@ -912,7 +939,7 @@ public class SnapshotIsolationTest extends SnappyTest {
           else
             tid = dmlthreads.get(new Random().nextInt(dmlthreads.size()));
           String rowStmt = insertStmt + row + "," + tid + ")";
-          //Log.getLogWriter().info("Row is : " +  rowStmt);
+          Log.getLogWriter().info("Row is : " +  rowStmt);
           conn.createStatement().execute(rowStmt);
           dConn.createStatement().execute(rowStmt);
         }

@@ -1,7 +1,7 @@
 //test for single select without any DMLOps
 io/snappydata/hydra/snapshotIsolation/testSnapshotWithoutDMLOPsJDBCClient_ReplicatedRow.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=4
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync"
@@ -10,7 +10,7 @@ io/snappydata/hydra/snapshotIsolation/testSnapshotWithoutDMLOPsJDBCClient_Replic
 
 io/snappydata/hydra/snapshotIsolation/testSnapshotWithoutDMLOPsJDBCClient_PartitionedRow.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=4
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=1  persistenceMode="sync"
@@ -19,7 +19,7 @@ io/snappydata/hydra/snapshotIsolation/testSnapshotWithoutDMLOPsJDBCClient_Partit
 
 io/snappydata/hydra/snapshotIsolation/testSnapshotWithoutDMLOPsJDBCClient_ColumnTables.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=4
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=1  persistenceMode="sync"
@@ -28,7 +28,7 @@ io/snappydata/hydra/snapshotIsolation/testSnapshotWithoutDMLOPsJDBCClient_Column
 
 io/snappydata/hydra/snapshotIsolation/testSnapshotWithoutDMLOPsJDBCClient_ColocatedTables.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=4
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   redundantCopies=1  persistenceMode="sync"

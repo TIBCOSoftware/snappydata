@@ -22,7 +22,7 @@ import hydra.blackboard.Blackboard;
 
 public class SnapshotIsolationDMLOpsBB extends Blackboard {
   //Blackboard creation variables
-  static String SNAPSHOT_DML_BB_NAME = "Snapshot_Blackboard";
+  static String SNAPSHOT_DML_BB_NAME = "Snapshot_DML_Blackboard";
   static String SNAPSHOT_DML_BB_TYPE = "RMI";
 
   public static SnapshotIsolationDMLOpsBB bbInstance = null;

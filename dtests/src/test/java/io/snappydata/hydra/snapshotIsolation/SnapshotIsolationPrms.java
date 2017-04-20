@@ -33,6 +33,8 @@ public class SnapshotIsolationPrms extends SnappyPrms {
 
   public static Long insertStmts;
 
+  public static Long duplicateSchemas;
+
   public static String[] getTableNames() {
     Long key = tablesList;
     Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
@@ -121,6 +123,11 @@ public class SnapshotIsolationPrms extends SnappyPrms {
       strArr[i] = (String)ddlExtn.elementAt(i);
     }
     return strArr;
+  }
+
+  public static boolean hasDuplicateSchemas() {
+    Long key = duplicateSchemas;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   static {
