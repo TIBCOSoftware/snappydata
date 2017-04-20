@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS staging_orders_details;
 
 -- CREATE PARTITIONED ROW TABLE ORDERS_DETAILS --
 CREATE EXTERNAL TABLE staging_orders_details USING com.databricks.spark.csv
-             OPTIONS (path ':dataLocation/ORDERS_DETAILS.dat', header 'true', inferSchema 'true',
+             OPTIONS (path ':dataLocation/ORDERS_DETAILS.dat', header 'true', inferSchema 'false',
               nullValue 'NULL');
 
 CREATE TABLE ORDERS_DETAILS
@@ -61,7 +61,7 @@ DROP TABLE IF EXISTS staging_exec_details;
 
 -- CREATE PARTITIONED ROW TABLE EXEC_DETAILS --
 CREATE EXTERNAL TABLE staging_exec_details USING com.databricks.spark.csv
-             OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'true', nullValue 'NULL');
+             OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL');
 
 CREATE TABLE EXEC_DETAILS
              (EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64),SYS_EXEC_STAT VARCHAR(20),
