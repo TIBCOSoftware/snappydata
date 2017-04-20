@@ -2,27 +2,32 @@
 
 When you shut down a member that persists data, the data remains in the disk store files, available to be reloaded when the member starts up again. Keep in mind that peer clients are dependent on locators or data store members to persist data, as they cannot persist data on their own.
 
-<a id="how_startup_works_in_system_with_disk_stores__section_E0D6B357C9CB4A089E433764DF91DD69"></a>
-## Shutdown: Most Recent Data from the Last Run
 
 
 The following sections explain what happens during startup and shutdown:
 
--   <a href="how_startup_works_in_system_with_disk_stores.html#how_startup_works_in_system_with_disk_stores__section_E0D6B357C9CB4A089E433764DF91DD69" class="xref">Shutdown: Most Recent Data from the Last Run</a>
--   <a href="how_startup_works_in_system_with_disk_stores.html#how_startup_works_in_system_with_disk_stores__section_027A20F6E37046738619DDB6E7160100" class="xref">Startup Process</a>
--   <a href="how_startup_works_in_system_with_disk_stores.html#how_startup_works_in_system_with_disk_stores__section_5E32F488EB5D4E74AAB6BF394E4329D6" class="xref">Example Startup Scenarios</a>
+
+<a id="shutdown"></a>
+## Shutdown: Most Recent Data from the Last Run
+
+-   [Shutdown: Most Recent Data from the Last Run](#shutdown)
+
+-   [Startup Process](#startup-process)
+
+-   [Example Startup Scenarios](#example-startup)
 
 If more than one member has the same persistent table or queue, the last member to exit leaves the most up-to-date data on disk.
 
 SnappyData stores information on member exit order in the disk stores, so it can start your members with the most recent data set:
 
 -   For a persistent replicated table, the last member to exit leaves the most recent data on disk.
+
 -   For a partitioned table, where the data is split into buckets, the last member to exist that hosts a particular bucket leaves the most recent data on disk for that bucket.
 
 !!!Note: 
 	Peer clients rely on data stores for persistence. [Peer Client Considerations for Persistent Data](how_disk_stores_work.md#how_disk_stores_work__section_1A93EFBE3E514918833592C17CFC4C40).
 
-<a id="how_startup_works_in_system_with_disk_stores__section_027A20F6E37046738619DDB6E7160100"></a>
+<a id="startup-process"></a>
 
 ## Startup Process
 
@@ -32,32 +37,30 @@ When you start a member that uses disk stores, the persisted data is loaded back
 
     If your log level is set to "info" or below, the system provides messaging about the wait. In this example, the disk store for hostA has the most recent data and hostB is waiting for it.
 
-    ``` pre
-    [info 2010/04/09 10:48:26.039 PDT CacheRunner <main> tid=0x1]  
-    Region /persistent_PR initialized with data from 
-    /10.80.10.64:/export/straw3/users/jpearson/GemFireTesting/hostB/
-    backupDirectory created at timestamp 1270834766425 version 0 is     
-    waiting for the data previously hosted at 
-    [/10.80.10.64:/export/straw3/users/jpearson/GemFireTesting/hostA/
-    backupDirectory created at timestamp 1270834763353 version 0] to 
-    be available
-    ```
+	    [info 2010/04/09 10:48:26.039 PDT CacheRunner <main> tid=0x1]  
+    	Region /persistent_PR initialized with data from 
+    	/10.80.10.64:/export/straw3/users/jpearson/GemFireTesting/hostB/
+    	backupDirectory created at timestamp 1270834766425 version 0 is     
+    	waiting for the data previously hosted at 
+    	[/10.80.10.64:/export/straw3/users/jpearson/GemFireTesting/hostA/
+    	backupDirectory created at timestamp 1270834763353 version 0] to 
+    	be available
+    
 
     During normal startup you can expect to see some waiting messages.
 
 2.  When the most recent data is available, the system updates the local tables as needed, logs a message like this, and continues with startup.
-
-    ``` pre
-    [info 2010/04/09 10:52:13.010 PDT CacheRunner <main> tid=0x1]    
-       Done waiting for the remote data to be available.
-    ```
-
+	
+    	[info 2010/04/09 10:52:13.010 PDT CacheRunner <main> tid=0x1]    
+       	Done waiting for the remote data to be available.
+    
 Each member’s persistent tables load and go online as quickly as possible, not waiting unnecessarily for other members to complete. For performance reasons, several actions are taken asynchronously:
 
 -   If both primary *and* secondary buckets are persisted, data is made available when the primary buckets are loaded without waiting for the secondary buckets to load. The secondary buckets load asynchronously.
+
 -   Entry keys first get loaded from the key file if this file is available (see information about the `krf` file in <mark>Disk Store File Names and Extensions TO BE CONFIRMED </mark>). Once all keys are loaded, SnappyData loads the entry values asynchronously. If a value is requested before it is loaded, the value is immediately fetched from the disk store.
 
-<a id="how_startup_works_in_system_with_disk_stores__section_5E32F488EB5D4E74AAB6BF394E4329D6"></a>
+<a id="example-startup"></a>
 
 ## Example Startup Scenarios
 

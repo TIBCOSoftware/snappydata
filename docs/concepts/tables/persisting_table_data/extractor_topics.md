@@ -11,7 +11,6 @@ hostname=path-to-server-directory,path-to-disk-store[,path-to-diskstore]...
 !!!Note
 	The first value that follows the hostname must specify the full path to the member's working directory. Additional paths can be added to specify the locations of additional disk store files as needed. </br>Running the [dataextractor](../../../reference/disk_store_utilities/dataextractor.md) utility with your properties file instructs the utility to examine the available disk store files and determine which files contain the most recent version of the persistent data. The utility uses this information to extract as much data as possible, outputting information into the following files:
 
-<a id="disk_storage__table_zhq_gvw_d4"></a>
 
 | File Type	 | Example	 |Description |
 |--------|--------|--------|
@@ -23,8 +22,7 @@ hostname=path-to-server-directory,path-to-disk-store[,path-to-diskstore]...
 
 After running `dataextractor`, you can choose to use the recommendations file as-is, or edit the file to recover only a portion of the available data. You then run `dataextractloader` with the recommendations file to load the data into a new SnappyData system.
 
-<a id="id_vnc_ysw_d4"></a>
-
+<a id="datarecovery-limitations"></a>
 ## Limitations for Data Recovery
 
 The `dataextractor` utility provides only a "best effort" attempt to recover disk store data. Keep these limitations in mind when you use the utilities
@@ -41,7 +39,7 @@ The `dataextractor` utility provides only a "best effort" attempt to recover dis
 
 -   The `dataextractor` utility does not recover any index information.
 
-<a id="topic_eks_mxw_d4"></a>
+<a id="requirements"></a>
 
 ## Requirements
 
@@ -60,7 +58,7 @@ The following procedures and resources are required in order to use the data rec
 
 -   The machine on which you run `dataextractor` must have twice the amount of disk space available than the total size of the disk store files specified in the input properties file.
 
-<a id="topic_ddt_gbx_d4"></a>
+<a id="procedure-recover-data"></a>
 
 ## Procedure for Recovering Data from Disk Stores
 
@@ -106,7 +104,7 @@ Follow these steps to extract available data from available SnappyData disk stor
 
         recoveredserver1=/Users/yozie/recovery-directory/server1,/Users/yozie/recovery-directory/server1-external-diskstores
         
-6.  Set the JAVA\_ARGS environment variable to allocate the required heap space (see <a href="#topic_eks_mxw_d4" class="xref" title="The following procedures and resources are required in order to use the data recovery utilities.">Requirements</a>). For example:
+6.  Set the JAVA\_ARGS environment variable to allocate the required heap space (see [Requirements](#requirements)). For example:
 
         $ export JAVA_ARGS=-Xmx2G
     
@@ -145,7 +143,7 @@ Follow these steps to extract available data from available SnappyData disk stor
     	Completed Summary and Recommendation
     
 	!!!Note:
-		See <a href="../reference/disk-store-utilities/dataextractor.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC" class="xref" title="Operates against a set of available SnappyData operational log files (disk stores) in order to extract data to CSV files and provide recommendations for how to best restore the data in a new distributed system.">dataextractor</a> for a full description of additional command-line options.</p>
+		See [dataextractor](../../../reference/disk_store_utilities/dataextractor.md) for a full description of additional command-line options.</p>
 
     Output from the utility is stored in two subdirectories of the working directory, named <span class="ph filepath">EXTRACTED\_FILES</span> and <span class="ph filepath">datadictionary</span>. For example:
 
@@ -198,11 +196,11 @@ Follow these steps to extract available data from available SnappyData disk stor
 Follow these steps to load the SQL and CSV files that were recovered using `dataextractor` into a new SnappyData system.
 
 !!!Note 
-	The example commands and output in this section use the example recovery files that were generated in <a href="#topic_ddt_gbx_d4" class="xref" title="Follow these steps to extract available data from available SnappyData disk store files.">Procedure for Recovering Data from Disk Stores</a>.</p>
+	The example commands and output in this section use the example recovery files that were generated in [Procedure for Recovering Data from Disk Stores](#procedure-recover-data).</p>
 
 1.  Boot a new SnappyData distributed system into which you will load the recovered data. Ensure that you define the necessary server groups, heap configuration, and disk resources needed to host the recovered data. Refer to the DDL EXPORT INFORMATION portion of the <span class="ph filepath">Summary.txt</span> file to determine which server groups are expected when recreating the schema.
 
-	If you are continuing with the example cluster recovered in <a href="#topic_ddt_gbx_d4" class="xref" title="Follow these steps to extract available data from available SnappyData disk store files.">Procedure for Recovering Data from Disk Stores</a>, then a single datastore is sufficient to reload the sample data. Create and start the new datastore directly in the recovery subdirectory:
+	If you are continuing with the example cluster recovered in [Procedure for Recovering Data from Disk Stores](#procedure-recover-data), then a single datastore is sufficient to reload the sample data. Create and start the new datastore directly in the recovery subdirectory:
 
         $ cd ~/recovery-directory
         $ mkdir recovery-server
@@ -224,7 +222,7 @@ Follow these steps to load the SQL and CSV files that were recovered using `data
     	[...]
     
    	!!! Note: 
-		* See <a href="../reference/disk-store-utilities/dataextractloader.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC" class="xref" title="Takes the SQL, CSV, and recommendations output files from dataextractor, and uses those inputs to load recovered disk store data into a new SnappyData system">dataextractloader</a> for a full description of additional command-line options.</p> 
+		* See [dataextractloader](../../../reference/disk_store_utilities/dataextractloader.md) for a full description of additional command-line options. 
 
         * Any errors that occur while loading data from the CSV files is recorded in the output log file, which is stored in <span class="ph filepath">EXTRACTED\_LOADER/extractor.log</span>. Errors do not prevent the loader from attempting to load further data.</p>
 
@@ -279,14 +277,14 @@ Follow these steps to load the SQL and CSV files that were recovered using `data
 
 This section describes some common errors that can occur while recovering data or loading recovered data into a new system.
 
-<a id="topic_cqs_k5c_24__table_bjw_s5c_24"></a>
+<a id="data-recovery-errors"></a>
 
 | Error | Description |
 |--------|--------|
 |Errors indicate that a disk store was not recovered from a directory.|A common error during data extraction indicates that a named disk store was not recovered from a specific directory. This generally does not indicate an error in the extraction process. In order to avoid problems caused by corrupt directory mappings in oplog files, the utility looks for all disk store files in all directories listed for a SnappyData member. While this ensures that the tool recovers as much data as possible, it also results in this error when a disk store's files do not appear in a specified directory.|
-|`dataextractor` fails to recover any data.|The persistent data dictionary must be available in order to recover any data from the disk store files. See <a href="#topic_eks_mxw_d4" class="xref" title="The following procedures and resources are required in order to use the data recovery utilities.">Requirements</a> |
+|`dataextractor` fails to recover any data.|The persistent data dictionary must be available in order to recover any data from the disk store files. See [Requirements](#requirements) |
 |Out of Memory Exceptions during data recovery.|The `dataextractor` utility attempts to calculate the size of the target disk stores, and spawns multiple threads in order to extract data as fast as possible. The number of threads is determined by how much heap memory you provide to the utility. If you receive out of memory exceptions:</p> * Use the `--num-threads` option to reduce the number of threads spawned by the utility. Specify a value that is less than what `dataextractor` reports in the console when the extraction process begins.</br> * If the number of threads is already low, providing the utility with additional heap space.  |
 |  Out of disk space errors.| If you run out of disk space while executing <code class="ph codeph">dataextractor</code>, the utility exits and all data that was recovered up to that point is available in the output directory. However, the <span class="ph filepath">Recommended.txt</span> and <span class="ph filepath">Summary.txt</span> files are not created. If this occurs, free the available disk space and then re-run the utility.|
 |  Data not recovered for a server, "This oplog is a pre 7.0 version" error, or other failures.| A corrupted disk store metadata file (<span class="ph filepath">.if</span> extension) can result in a failure to extract data for a member, or can manifest itself in other ways, such as by reporting the &quot;pre 7.0 version&quot; error. In this case, data may not be recoverable unless you can restore a viable <span class="ph filepath">.if</span> file from backup.|
-|Errors while loading recovered data.| As described in <a href="#id_vnc_ysw_d4" class="xref" title="The dataextractor utility provides only a &quot;best effort&quot; attempt to recover disk store data. Keep these limitations in mind when you use the utilities">Limitations for Data Recovery</a>, the disk store recovery process cannot guarantee data consistency. Errors that occur while loading recovered data are common. However, errors that occur while executing the <a href="../reference/disk-store-utilities/dataextractloader.html#reference_13F8B5AFCD9049E380715D2EF0E33BDC" class="xref noPageCitation" title="Takes the SQL, CSV, and recommendations output files from dataextractor, and uses those inputs to load recovered disk store data into a new SnappyData system">dataextractloader</a> do not prevent the utility from attempting to load additional data. See the <code class="ph codeph">dataextractloader</code> log file for a complete record of errors that occurred.|
+|Errors while loading recovered data.| As described in [Limitations for Data Recovery](#datarecovery-limitations), the disk store recovery process cannot guarantee data consistency. Errors that occur while loading recovered data are common. However, errors that occur while executing the [dataextractloader](../../../reference/disk_store_utilities/dataextractloader.md) do not prevent the utility from attempting to load additional data. See the <code class="ph codeph">dataextractloader</code> log file for a complete record of errors that occurred.|
 

@@ -25,9 +25,7 @@ Disk storage can be used for persisting:
 
 ## Creating Disk Stores and Using the Default Disk Store
 
-Create named disk stores in the data dictionary using the <a href="../reference/language_ref/ref-create-diskstore.
-
-[CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore.md) DDL statement. You can then specify named disk stores for individual tables in the [CREATE TABLE](../../../reference/sql_reference/create-table/) DDL statements for persistence and/or overflow. You can store data from multiple tables and queues in the same named disk store. See [Guidelines for Designing Disk Stores](using_disk_stores.md).
+Create named disk stores in the data dictionary using the [CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore.md) DDL statement. You can then specify named disk stores for individual tables in the [CREATE TABLE](../../../reference/sql_reference/create-table/) DDL statements for persistence and/or overflow. You can store data from multiple tables and queues in the same named disk store. See [Guidelines for Designing Disk Stores](using_disk_stores.md).
 
 Tables that do not name a disk store but specify persistence or overflow in their `CREATE TABLE` statement use the default disk store. The location of the default diskstore is determined by the value of the `sys-disk-dir` boot property. The default disk store is named <mark>GFXD-DEFAULT-DISKSTORE. </br>TO BE CONFIRMED</mark>
 

@@ -6,15 +6,19 @@ You can configure automatic compaction for an operation log based on percentage 
 
 The following topics deal with compaction:
 
--   <a href="compacting_disk_stores.html#compacting_disk_stores__section_F7781CFEC3B342CFAB523ED130922233" class="xref">How Compaction Works</a>
--   <a href="compacting_disk_stores.html#compacting_disk_stores__section_98C6B6F48E4F4F0CB7749E426AF4D647" class="xref">Online Compaction Diagram</a>
--   <a href="compacting_disk_stores.html#compacting_disk_stores__section_96E774B5502648458E7742B37CA235FF" class="xref">Run Online Compaction</a>
--   <a href="compacting_disk_stores.html#compacting_disk_stores__section_25BDB098E9584EAA9BC6582597544726" class="xref">Run Offline Compaction</a>
--   <a href="compacting_disk_stores.html#compacting_disk_stores__section_D2374039480947C5AE4CC64167E60978" class="xref">Performance Benefits of Manual Compaction</a>
--   <a href="compacting_disk_stores.html#compacting_disk_stores__section_A9EE86F662EE4D46A327C336E901A0F2" class="xref">Directory Size Limits</a>
--   <a href="compacting_disk_stores.html#compacting_disk_stores__section_7A311038408440D49097B8FA4E2BCED9" class="xref">Example Compaction Run</a>
+-   [Online Compaction Diagram](#online-compact)
 
-<a id="compacting_disk_stores__section_64BA304595364E38A28098EB09494531"></a>
+-   [Run Online Compaction](#run-online-compact)
+
+-   [Run Offline Compaction](#run-offline-compact)
+
+-   [Performance Benefits of Manual Compaction](#performance-benefits)
+
+-   [Directory Size Limits](#directory-limits)
+
+-   [Example Compaction Run](#example-compact)
+
+<a id="intro"></a>
 
 When a DML operation is added to a disk store, any preexisting operation record for the same record becomes obsolete, and SnappyData marks it as garbage. For example, when you update a record, the update operation is added to the store. If you delete the record later, the delete operation is added and the update operation becomes garbage. SnappyData does not remove garbage records as it goes, but it tracks the percentage of garbage in each operation log, and provides mechanisms for removing garbage to compact your log files.
 
@@ -22,18 +26,14 @@ SnappyData compacts an old operation log by copying all non-garbage records into
 
 You can configure the system to automatically compact any closed operation log when its garbage content reaches a certain percentage. You can also manually request compaction for online and offline disk stores. For the online disk store, the current operation log is not available for compaction, no matter how much garbage it contains.
 
-<a id="compacting_disk_stores__section_98C6B6F48E4F4F0CB7749E426AF4D647"></a>
-
+<a id="online-compact"></a>
 ## Online Compaction Diagram
-
-<img src="../common/images/diskStores-3.gif" id="compacting_disk_stores__image_7E34CC58B13548B196DAA15F5B0A0ECA" class="image" />
+![Compaction](../../../Images/diskStores-3.gif)
 
 Offline compaction runs essentially in the same way, but without the incoming DML operations. Also, because there is no current open log, the compaction creates a new one to get started.
 
-<a id="compacting_disk_stores__section_96E774B5502648458E7742B37CA235FF"></a>
-
-Run Online Compaction
----------------------
+<a id="run-online-compact"></a>
+## Run Online Compaction
 
 Old log files become eligible for online compaction when their garbage content surpasses a configured percentage of the total file. A record is garbage when its operation is superseded by a more recent operation for the same record. During compaction, the non-garbage records are added to the current log along with new DML operations. Online compaction does not block current system operations.
 
@@ -50,8 +50,7 @@ Old log files become eligible for online compaction when their garbage content s
         !!!Note:
         	This `snappy` command requires a local `gemfirexd.properties` file that contains properties to locate the distributed system. Or, specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port\_number*). </p>
 
-<a id="compacting_disk_stores__section_25BDB098E9584EAA9BC6582597544726"></a>
-
+<a id="run-offline-compact"></a>
 ## Run Offline Compaction
 
 !!! Note
@@ -69,12 +68,14 @@ You must provide all of the directories in the disk store. If no oplog max size 
 
 Offline compaction can take a lot of memory. If you get a `java.lang.OutOfMemory` error while running this, you made need to increase your heap size. See the `snappy` command help for instructions on how to do this.
 
+<a id="performance-benefits"></a>
 ## Performance Benefits of Manual Compaction
 
 You can improve performance during busy times if you disable automatic compaction and run your own manual compaction during lighter system load or during downtimes. You could run the API call after your application performs a large set of data operations. You could run `snappy compact-all-disk-stores` every night when system use is very low.
 
 To follow a strategy like this, you need to set aside enough disk space to accommodate all non-compacted disk data. You might need to increase system monitoring to make sure you do not overrun your disk space. You may be able to run only offline compaction. If so, you can set `ALLOWFORCECOMPACTION` to false and avoid storing the information required for manual online compaction.
 
+<a id="directory-limits"></a>
 ## Directory Size Limits
 
 If you reach the disk directory size limits during compaction:
@@ -82,8 +83,7 @@ If you reach the disk directory size limits during compaction:
 -   For automatic compaction, the system logs a warning, but does not stop.
 -   For manual compaction, the operation stops and returns a `DiskAccessException` to the calling process, reporting that the system has run out of disk space.
 
-<a id="compacting_disk_stores__section_7A311038408440D49097B8FA4E2BCED9"></a>
-
+<a id="example-compact"></a>
 ## Example Compaction Run
 
 In this example offline compaction run listing, the disk store compaction had nothing to do in the `*_3.*` files, so they were left alone. The `*_4.*` files had garbage records, so the oplog from them was compacted into the new `*_5.*` files.

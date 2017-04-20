@@ -9,7 +9,7 @@ You configure the persistence settings for a partitioned or replicated table whe
 	!!! Note 
     	All SnappyData data stores in the same cluster must use a consistent `persist-dd` value. Accessors cannot persist data, and you cannot set `persist-dd` to true for an accessor. </p>
 
-2.  Create the disk store that you want to use for persisting the table's data, or use the default disk store. See <a href="create_disk_store.html#how_disk_stores_work" class="xref" title="You can create a disk store for persistence and/or overflow or use the default disk store. Data from multiple tables can be stored in the same disk store.">Creating a Disk Store or Using the Default</a>.
+2.  Create the disk store that you want to use for persisting the table's data, or use the default disk store. See [Creating a Disk Store or Using the Default](create_disk_store.md).
 
 3.  Specify table persistence and the named disk store in the CREATE TABLE statement. For example:
     
@@ -34,7 +34,7 @@ You configure the persistence settings for a partitioned or replicated table whe
         Creating persistent region region-name, but enable-network-partition-detection is set to false. Running with network partition 
         detection disabled can lead to an unrecoverable system in the event of a network split.
     
-    See <mark>Detecting and Handling Network Segmentation (&quot;Split Brain&quot;) TO BE CONFIRMED </mark>for more information. 
+    See <mark>Detecting and Handling Network Segmentation ("Split Brain") TO BE CONFIRMED </mark>for more information. 
 
 
 **See More:**

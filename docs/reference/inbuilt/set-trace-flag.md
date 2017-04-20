@@ -2,7 +2,7 @@
 
 Enables a `snappydata.debug.true` trace flag on all members of the distributed system, including locators.
 
-This procedure enables or disables a specific trace flag for the distributed system as a whole. You must be a system user to execute this procedure. See <a href="../../manage_guide/log-debug.html#concept_0F36D4EF575C42069159670739D1ECC8" class="xref" title="SnappyData provides debug trace flags to record additional information about SnappyData features in the log file.">Using Trace Flags for Advanced Debugging</a> for a description of some commonly-used trace flags.
+This procedure enables or disables a specific trace flag for the distributed system as a whole. You must be a system user to execute this procedure. See <mark> TO BE CONFIRMED RowStore Link [Using Trace Flags for Advanced Debugging](http://rowstore.docs.snappydata.io/docs/manage_guide/log-debug.html)</mark> for a description of some commonly-used trace flags.
 
 ##Syntax
 
@@ -13,10 +13,8 @@ IN ON BOOLEAN
 )
 ```
 
-TRACE\_FLAG   
+TRACE_FLAG   
 Specifies name of the trace flag to enable or disable.
-
-<!-- -->
 
 ON   
 Specifies boolean value: "true" to enable the trace flag, or "false" to disable it.
