@@ -1119,10 +1119,13 @@ You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execu
 To download and install the ODBC driver:
 
 1. Download the SnappyData ODBC Driver from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases).  
-Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.
-    * 32-bit: [snappydata-0.8-odbc32 Installer](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc32.zip)
+Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.
 
-    * 64-bit: [snappydata-0.8-odbc64 Installer](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc64.zip)
+    * [For 32-bit Installer for 32-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32.zip)
+
+    * [For 32-bit Installer for 64-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32_64.zip)
+
+    * [For 64-bit Installer for 64-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc64.zip)
 
 2. Extract the contents of the downloaded file. 
 
@@ -1146,7 +1149,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 1. [Download and Install SnappyData](install.md#download-snappydata) </br>
  The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Release.
 	
-    | SnappyData Zeppelin Interpreter | Apache Zeppelin Installer | SnappyData Release|
+    | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
 	|[Version 0.61](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) and [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) |
     |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) |
@@ -1159,21 +1162,19 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 5. [Start the SnappyData cluster](howto.md#how-to-start-a-snappydata-cluster)
 
-6. Extract the contents of the Zeppelin Intrepreter file. </br> 
+6. Extract the contents of the Zeppelin binary package. </br> 
 
 7. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
-	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<zeppelin_installer_version_number>`. </br>
+	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<snappydata_interperter_version_number>`. </br>
     Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
 
-	<note>Note: If the installation fails, delete the **interpreter.json** file located in the zeppelin-<_version_number_>-bin-all/conf directory, and repeat this step.</note>
+8. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
 
-7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
+9. Edit the **zeppeline-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
 
-8. Edit the **zeppeline-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
+10. Restart the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
 
-9. Restart the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
-
-10. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
+11. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
 
 ### Step 2: Configure SnappyData for Apache Zeppelin
 
@@ -1184,16 +1185,23 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 3. From the **Interpreter group** drop-down select **snappydata**.
 	 ![Configure Interpreter](Images/snappydata_interpreter_properties.png)
 
+	<note>Note: If **snappydata** is not displayed in the **Interpreter group **drop-down list, try the following options, and then restart Zeppelin daemon: </note>
+
+    * <note>Delete the **interpreter.json** file located in the **conf** directory (in the Zeppelin home directory).</note>
+
+    * <note>Delete the **zeppelin-spark_<_version_number_>.jar **file located in the **interpreter/snappydata** directory (in the Zeppelin home directory).</note>
+
+
 4. Click the **Connect to existing process** option. The fields **Host **and **Port** are displayed.
 
-4. Specify the host on which the SnappyData lead node is executing, and the SnappyData Zeppelin Port (Default is 3768).
+5. Specify the host on which the SnappyData lead node is executing, and the SnappyData Zeppelin Port (Default is 3768).
 	
 	| Property | Default Values | Description |
 	|--------|--------| -------- |
 	|Host|localhost        |Specify host on which the SnappyData lead node is executing  |
 	|Port        |3768        |Specify the Zeppelin server port  |
 	
-5. Configure the interpreter properties. </br>The table lists the properties required for SnappyData.
+6. Configure the interpreter properties. </br>The table lists the properties required for SnappyData.
 
 	| Property | Value | Description |
 	|--------|--------| -------- |
@@ -1203,16 +1211,16 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 	|master|local[*]| Specify the URI of the spark master (only local/split mode) |
 	|zeppelin.jdbc.concurrent.use|true| Specify the Zeppelin scheduler to be used. </br>Select **True** for Fair and **False** for FIFO | 
 
-6. If required, edit other properties, and then click **Save** to apply your changes.</br>
+7. If required, edit other properties, and then click **Save** to apply your changes.</br>
 
-7. Bind the interpreter and set SnappyData as the default interpreter.</br> SnappyData Zeppelin Interpreter group consist of two interpreters. Click and drag *<_Interpreter_Name_>* to the top of the list to set it as the default interpreter. 
+8. Bind the interpreter and set SnappyData as the default interpreter.</br> SnappyData Zeppelin Interpreter group consist of two interpreters. Click and drag *<_Interpreter_Name_>* to the top of the list to set it as the default interpreter. 
  	
 	| Interpreter Name | Description |
 	|--------|--------|
     | %snappydata.snappydata or </br> %snappydata.spark | This interpreter is used to write Scala code in the paragraph. SnappyContext is injected in this interpreter and can be accessed using variable **snc** |
     |%snappydata.sql | This interpreter is used to execute SQL queries on the SnappyData cluster. It also has features of executing approximate queries on the SnappyData cluster.|
 
-8. Click **Save** to apply your changes.
+9. Click **Save** to apply your changes.
 
 <note >Note: You can modify the default port number of the Zeppelin intrepreter by setting the property:</br> 
 `-zeppelin.interpreter.port=<port_number>` in [lead node configuration](configuration.md#configuring-leads). </note>
