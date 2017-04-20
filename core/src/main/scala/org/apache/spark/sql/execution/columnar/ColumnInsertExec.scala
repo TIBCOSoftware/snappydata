@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
@@ -25,6 +25,8 @@ import org.apache.spark.sql.execution.{SparkPlan, TableInsertExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.bitset.BitSetMethods
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Generated code plan for bulk insertion into a column table.
@@ -82,12 +84,17 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
   def loop(code: String, numTimes: Int): String = {
     s"""
-       |for(int i=0;i< $numTimes; i++){
-       |   $code
-       |}
-       """.stripMargin
+      for(int i=0;i< $numTimes; i++){
+          $code
+      }""".stripMargin
   }
 
+  /**
+    * This method will be used when column count exceeds 30 to avoid
+    * the 64K size limit of JVM. Most of the code which generated big codes, has been
+    * chaunked or put in an array/row to avoid huge code blocks. This will impact the performance,
+    * but will work till the store column limit of 1012.
+    */
   private def doProduceWideTable(ctx: CodegenContext): String = {
     val encodingClass = classOf[ColumnEncoding].getName
     val numInsertedRowsMetric = if (onExecutor) null
@@ -98,8 +105,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val schemaLength = relationSchema.length
     encoderArrayTerm = ctx.freshName("encoderArray")
     cursorArrayTerm = ctx.freshName("cursorArray")
-
-
     encoderCursorTerms = relationSchema.map { _ =>
       (ctx.freshName("encoder"), ctx.freshName("cursor"))
     }
@@ -116,8 +121,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
     ctx.addMutableState("int", defaultBatchSizeTerm, "")
     val defaultRowSize = ctx.freshName("defaultRowSize")
-
     val childProduce = doChildProduce(ctx)
+
     child match {
       case c: CallbackColumnInsert =>
         ctx.addNewFunction(c.resetInsertions,
@@ -138,7 +143,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        """.stripMargin
 
     val initEncoderArray = loop(initEncoderCode, relationSchema.length)
-
     val iniCursorCode = s"this.$cursorArrayTerm[i] = 0L;"
     val iniCursorArray = loop(iniCursorCode, relationSchema.length)
 
@@ -303,21 +307,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   }
 
   private def genCodeFiledWiseColumnStats(ctx: CodegenContext, field: StructField,
-                                  encoder: String): String = {
-
-    val (code, statsSchema, statsVars) = genCodeColumnStats(ctx, field, encoder)
-
-    val statsExprs = statsSchema.zipWithIndex.map { case (a, i) =>
-      a.dataType match {
-        // some types will always be null so avoid unnecessary generated code
-        case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
-        case _ => BoundReference(i, a.dataType, a.nullable)
-      }
-    }
-    ctx.INPUT_ROW = null
-    ctx.currentVars = statsVars
-    val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
-    Seq(code, statsEv.code).mkString("\n")
+                                  encoder: String): (String, Seq[Attribute], Seq[ExprCode]) = {
+    genCodeColumnStats(ctx, field, encoder)
   }
 
   /**
@@ -331,25 +322,44 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
                                      inputs: Seq[ExprCode],
                                      row: String = ""): String = {
 
-    // Assumption is that the below three iterator are of same size
-    val codeSeq = code.grouped(size)
-    val exprSeq = inputs.grouped(size)
-    val combinedIt = codeSeq.zip(exprSeq)
-    val methodCallCode = combinedIt.map(c => {
-      val m = ctx.freshName(methodName)
-      val mParam = if (row != "") s"InternalRow $row" else ""
-      val cParam = if (row != "") s"$row" else ""
-      ctx.addNewFunction(m,
+
+    val blocks = new ArrayBuffer[String]()
+    val blockBuilder = new StringBuilder()
+    val writeCodeWithIndex = code.zipWithIndex
+    for ((code, index) <- writeCodeWithIndex) {
+      // We can't know how many bytecode will be generated, so use the length of source code
+      // as metric. A method should not go beyond 8K, otherwise it will not be JITted, should
+      // also not be too small, or it will have many function calls (for wide table), see the
+      // results in BenchmarkWideTable.
+      if (blockBuilder.length > 1024) {
+        blocks.append(blockBuilder.toString())
+        blockBuilder.clear()
+      }
+      val expr = inputs(index)
+      val writeCode =
         s"""
-           |private void $m($mParam){
-           |${evaluateVariables(c._2)}
-           |${c._1.mkString("\n")}
+           ${evaluateVariables(Seq(expr))}
+           $code
+         """.stripMargin
+      blockBuilder.append(s"$writeCode\n")
+    }
+
+    blocks.append(blockBuilder.toString())
+    val apply = ctx.freshName(methodName)
+    val functions = blocks.zipWithIndex.map { case (body, i) =>
+      val name = s"${apply}_$i"
+      val code =
+        s"""
+           |private void $name() {
+           |  $body
            |}
          """.stripMargin
-      )
-      s"$m($cParam);"
-    })
-    methodCallCode.toSeq.mkString("\n\n")
+      ctx.addNewFunction(name, code)
+      name
+    }
+    s"""
+       |${functions.map(name => s"$name();").mkString("\n")}
+     """.stripMargin
   }
 
   /**
@@ -359,24 +369,63 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     * variable.
     */
   private def genMultipleStatsMethods(ctx: CodegenContext,
-                                 methodName: String,
-                                 size: Int,
-                                 code: IndexedSeq[String]): String = {
-    // Assumption is that the below three iterator are of same size
-    val codeSeq = code.grouped(size)
-    val methodCallCode = codeSeq.map(c => {
-      val m = ctx.freshName(methodName)
-      ctx.addNewFunction(m,
+                                      methodName: String,
+                                      statsCode: IndexedSeq[String],
+                                      schema : IndexedSeq[Seq[Attribute]],
+                                      exprs: IndexedSeq[Seq[ExprCode]]): (String, String) = {
+
+
+    val statsRowTerm = ctx.freshName("statsRow")
+    ctx.addMutableState("MutableRow", statsRowTerm,
+      s"$statsRowTerm = new GenericMutableRow(${schema.flatten.length});")
+
+
+    val blocks = new ArrayBuffer[String]()
+    val blockBuilder = new StringBuilder()
+    val statsCodeWithIndex = statsCode.zipWithIndex
+    var ordinal = 0
+    for ((code, index) <- statsCodeWithIndex) {
+      // We can't know how many bytecode will be generated, so use the length of source code
+      // as metric. A method should not go beyond 8K, otherwise it will not be JITted, should
+      // also not be too small, or it will have many function calls (for wide table), see the
+      // results in BenchmarkWideTable.
+      if (blockBuilder.length > 1024) {
+        blocks.append(blockBuilder.toString())
+        blockBuilder.clear()
+      }
+      blockBuilder.append(s"$code\n")
+      val expr = exprs(index).zip(schema(index))
+      for (e <- expr) {
+        val writerCode =
+          s"""
+          if (${e._1.isNull}) {
+             $statsRowTerm.setNullAt($ordinal);
+          } else {
+             ${ctx.setColumn(statsRowTerm, e._2.dataType, ordinal, e._1.value)};
+          }
+         """.stripMargin
+        blockBuilder.append(s"$writerCode\n")
+        ordinal += 1
+      }
+    }
+
+    blocks.append(blockBuilder.toString())
+    val apply = ctx.freshName(methodName)
+    val functions = blocks.zipWithIndex.map { case (body, i) =>
+      val name = s"${apply}_$i"
+      val code =
         s"""
-           |private void $m(){
-           |${c.mkString("\n")}
+           |private void $name() {
+           |  $body
            |}
          """.stripMargin
-      )
-      s"$m();"
-    })
+      ctx.addNewFunction(name, code)
+      name
+    }
+    (s"""
+       |${functions.map(name => s"$name();").mkString("\n")}
+     """.stripMargin, statsRowTerm)
 
-    methodCallCode.toSeq.mkString("\n\n")
   }
 
 
@@ -393,40 +442,35 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("MutableRow", mutableRow,
       s"$mutableRow = new GenericMutableRow(${relationSchema.length});")
 
-
-    val expressionCodes = schema.indices.map { i =>
+    val rowWriteExprs = schema.indices.map { i =>
       val field = schema(i)
       val dataType = field.dataType
       val evaluationCode = input(i)
+      evaluationCode.code +
       s"""
-            if (${evaluationCode.isNull}) {
-              $mutableRow.setNullAt($i);
-            } else {
-              ${evaluationCode.code}
-              ${ctx.setColumn(mutableRow, dataType, i, evaluationCode.value)};
-            }
-          """
+         if (${evaluationCode.isNull}) {
+           $mutableRow.setNullAt($i);
+         } else {
+           ${ctx.setColumn(mutableRow, dataType, i, evaluationCode.value)};
+         }
+      """
     }
-    val allExpressions = ctx.splitExpressions(ctx.INPUT_ROW, expressionCodes)
+    val allRowWriteExprs = ctx.splitExpressions(ctx.INPUT_ROW, rowWriteExprs)
     ctx.INPUT_ROW = mutableRow
-    val columWriteExprs = schema.zipWithIndex.map { case (field, ordinal) =>
-      (BoundReference(ordinal, field.dataType, nullable = true)).genCode(ctx)
-    }
 
+    val rowReadExprs = schema.zipWithIndex.map { case (field, ordinal) =>
+      ExprCode("", s"${ctx.INPUT_ROW}.isNullAt($ordinal)",
+        ctx.getValue(ctx.INPUT_ROW, field.dataType, ordinal.toString))
+    }
 
     val columnWrite = schema.indices.map { i =>
       val field = schema(i)
       genCodeColumnWrite(ctx, field.dataType, field.nullable, s"$encoderArrayTerm[$i]",
-        s"$cursorArrayTerm[$i]", columWriteExprs(i))
-    }
-
-    val fieldWiseColumnStats = schema.indices.map { i =>
-      val field = schema(i)
-      genCodeFiledWiseColumnStats(ctx, field, s"$encoderArrayTerm[$i]")
+        s"$cursorArrayTerm[$i]", rowReadExprs(i))
     }
 
     val columnStats = schema.indices.map { i =>
-      val (encoderTerm, cursorTerm) = encoderCursorTerms(i)
+      val encoderTerm = s"$encoderArrayTerm[$i]"
       val field = schema(i)
       genCodeColumnStats(ctx, field, encoderTerm)
     }
@@ -441,8 +485,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
     initEncoders = loop(cursorLoopCode, relationSchema.length)
     val calculateSize = loop(encoderLoopCode, relationSchema.length)
-
-
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", None,
@@ -465,17 +507,17 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
         case _ => BoundReference(i, a.dataType, a.nullable)
       }
     }
-    ctx.INPUT_ROW = null
-    ctx.currentVars = statsVars
-    val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
-    val statsRow = statsEv.value
 
-    val bufferLoopCode = s"$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n"
-
+    val bufferLoopCode =
+      s"""$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n""".stripMargin
     val buffersCode = loop(bufferLoopCode, relationSchema.length)
 
-    val multipleStatsSetters = genMultipleStatsMethods(ctx, "writeStats",
-      MAX_CURSOR_DECLARATIONS, fieldWiseColumnStats)
+    val (statsSplitCode, statsRowTerm) =
+      genMultipleStatsMethods(ctx, "writeStats", statsCode, statsSchema, stats)
+
+    ctx.INPUT_ROW = statsRowTerm
+    val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
+    val statsRow = statsEv.value
 
     storeColumnBatch = ctx.freshName("storeColumnBatch")
     ctx.addNewFunction(storeColumnBatch,
@@ -483,7 +525,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
          |    int $batchSizeTerm, long[] $cursorArrayTerm) {
          |  // create statistics row
-         |  ${multipleStatsSetters}
+         |  $statsSplitCode
+         |  ${statsEv.code.trim}
          |  // create ColumnBatch and insert
          |  final java.nio.ByteBuffer[] $buffers =
          |      new java.nio.ByteBuffer[${schema.length}];
@@ -509,7 +552,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     storeColumnBatchArgs = s"$batchSizeTerm, ${cursorArrayTerm}"
 
     val writeColumns = genMethodsColumnWriter(ctx, "writeToEncoder",
-      MAX_CURSOR_DECLARATIONS, columnWrite, columWriteExprs, mutableRow)
+      MAX_CURSOR_DECLARATIONS, columnWrite, rowReadExprs, mutableRow)
 
     s"""
        |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&
@@ -523,7 +566,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |    $initEncoders
        |  }
        |}
-       |$allExpressions
+       |$allRowWriteExprs
        |$writeColumns
        |$batchSizeTerm++;
     """.stripMargin
@@ -566,6 +609,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       (init, genCodeColumnWrite(ctx, field.dataType, field.nullable, encoderTerm,
         cursorTerm, input(i)), genCodeColumnStats(ctx, field, encoderTerm))
     }.unzip3
+
     initEncoders = encodersInit.mkString("\n")
 
     batchFunctionDeclarations.setLength(
