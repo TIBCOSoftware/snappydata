@@ -43,7 +43,6 @@ import hydra.Prms;
 import hydra.RemoteTestModule;
 import hydra.TestConfig;
 import hydra.blackboard.AnyCyclicBarrier;
-import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import sql.ClientDiscDBManager;
 import sql.SQLHelper;
@@ -62,6 +61,7 @@ public class SnapshotIsolationTest extends SnappyTest {
   public static HydraThreadLocal derbyConnection = new HydraThreadLocal();
   public static HydraThreadLocal resetDerbyConnection = new HydraThreadLocal(); //whether needs to reset the derby connection
   protected static hydra.blackboard.SharedLock counterLock,dmlLock;
+  public static boolean hasDuplicateSchemas = false;
 
   //ENUM for DML Ops
   public enum DMLOp {
@@ -95,20 +95,21 @@ public class SnapshotIsolationTest extends SnappyTest {
   public static void HydraTask_initialize() {
     hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
     testUniqueKeys = TestConfig.tab().booleanAt(SQLPrms.testUniqueKeys, true);
-
-    if (testInstance == null) {
+    if (testInstance == null)
       testInstance = new SnapshotIsolationTest();
-      SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.DMLExecuting);
-      SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.PauseDerby);
-      SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.BlockOps);
-      SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.firstThread);
-      int dmlTableLength = SnapshotIsolationPrms.getDMLTables().length;
-      ArrayList<Integer> insertCounters = new ArrayList<>();
-      for (int i = 0; i < dmlTableLength; i++) {
-        insertCounters.add(1);
-      }
-      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("insertCounters",insertCounters);
+
+    SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.DMLExecuting);
+    SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.PauseDerby);
+    SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.BlockOps);
+    SnapshotIsolationBB.getBB().getSharedCounters().zero(SnapshotIsolationBB.firstThread);
+    int dmlTableLength = SnapshotIsolationPrms.getDMLTables().length;
+    ArrayList<Integer> insertCounters = new ArrayList<>();
+    for (int i = 0; i < dmlTableLength; i++) {
+      insertCounters.add(1);
     }
+    if(!SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
+      SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
+    hasDuplicateSchemas = SnapshotIsolationPrms.hasDuplicateSchemas();
   }
 
   public static void HydraTask_initializeDMLThreads() {
@@ -235,17 +236,37 @@ public class SnapshotIsolationTest extends SnappyTest {
         TestHelper.waitForCounter(SnapshotIsolationBB.getBB(), "SnapshotIsolationBB.DMLExecuting", SnapshotIsolationBB.DMLExecuting,
             0, true, -1, 1000);
         Log.getLogWriter().info("Executing " + query[i] + " on snappy.");
-        snappyRS[i] = conn.createStatement().executeQuery(query[i]);
-        Log.getLogWriter().info("Executed query on snappy.");
+        try {
+          snappyRS[i] = conn.createStatement().executeQuery(query[i]);
+          Log.getLogWriter().info("Executed query on snappy.");
+        } catch(SQLException se){
+          if(se.getSQLState().equals("21000")){
+            //retry select query with routing
+            Log.getLogWriter().info("Got exception while executing select query, retrying with " +
+                "executionEngine as spark.");
+            String query1 = query[i] +  " --GEMFIREXD-PROPERTIES executionEngine=Spark";
+            snappyRS[i] = conn.createStatement().executeQuery(query1);
+            Log.getLogWriter().info("Executed query on snappy.");
+          }else throw new SQLException(se);
+        }
+
         ArrayList<Integer> dmlThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
             ("dmlThreads");
-        for(int n : dmlThreads)
-          replayOpsInDerby(n);
+        for(int n : dmlThreads){
+          if(hasDuplicateSchemas)
+            replayOpsInDerby(i + "_" + getMyTid());
+          else
+            replayOpsInDerby(String.valueOf(i));
+        }
         if (hasDerbyServer)
           dConn = getDerbyConnection();
         //run select query in derby
         Log.getLogWriter().info("Executing " + query[i] + " on derby.");
-        derbyRS = dConn.createStatement().executeQuery(query[i]);
+        if(hasDuplicateSchemas) {
+          String derby_query = query[i].replace("app", "app_" + getMyTid());
+          derbyRS = dConn.createStatement().executeQuery(derby_query);
+        }else
+          derbyRS = dConn.createStatement().executeQuery(query[i]);
         Log.getLogWriter().info("Executed query on derby.");
         Log.getLogWriter().info("Pausing derby Op.");
         SnapshotIsolationBB.getBB().getSharedCounters().decrement(SnapshotIsolationBB.BlockOps);
@@ -291,22 +312,43 @@ public class SnapshotIsolationTest extends SnappyTest {
       SnapshotIsolationBB.getBB().getSharedCounters().increment(SnapshotIsolationBB.BlockOps);
       SnapshotIsolationBB.getBB().getSharedCounters().increment(SnapshotIsolationBB.PauseDerby);
       releaseCounterLock();
+      ResultSet snappyRS;
       TestHelper.waitForCounter(SnapshotIsolationBB.getBB(),"SnapshotIsolationBB.DMLExecuting", SnapshotIsolationBB.DMLExecuting ,
           0, true, -1, 1000);
       Log.getLogWriter().info("Executing " + query + " on snappy.");
-      ResultSet snappyRS = conn.createStatement().executeQuery(query);
-      Log.getLogWriter().info("Executed query on snappy.");
+      try {
+        snappyRS = conn.createStatement().executeQuery(query);
+        Log.getLogWriter().info("Executed query on snappy.");
+      } catch(SQLException se){
+        if(se.getSQLState().equals("21000")){
+          //retry select query with routing
+          Log.getLogWriter().info("Got exception while executing select query, retrying with " +
+              "executionEngine as spark.");
+          String query1 = query +  " --GEMFIREXD-PROPERTIES executionEngine=Spark";
+          snappyRS = conn.createStatement().executeQuery(query1);
+          Log.getLogWriter().info("Executed query on snappy.");
+        }else throw new SQLException(se);
+      }
       ArrayList<Integer> dmlthreads = null;
       if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads")) {
         dmlthreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
-        for (int i : dmlthreads)
-          replayOpsInDerby(i);
+        for (int i : dmlthreads) {
+          if(hasDuplicateSchemas)
+            replayOpsInDerby(i + "_" + getMyTid());
+          else
+            replayOpsInDerby(String.valueOf(i));
+        }
       }
       if(hasDerbyServer)
         dConn = getDerbyConnection();
+      ResultSet derbyRS = null;
       //run select query in derby
       Log.getLogWriter().info("Executing " + query + " on derby.");
-      ResultSet derbyRS = dConn.createStatement().executeQuery(query);
+      if(hasDuplicateSchemas) {
+        String derby_query = query.replace("app", "app_" + getMyTid());
+        derbyRS = dConn.createStatement().executeQuery(derby_query);
+      }else
+        derbyRS = dConn.createStatement().executeQuery(query);
       Log.getLogWriter().info("Executed query on derby.");
       Log.getLogWriter().info("Pausing derby Op.");
       SnapshotIsolationBB.getBB().getSharedCounters().decrement(SnapshotIsolationBB.BlockOps);
@@ -333,13 +375,13 @@ public class SnapshotIsolationTest extends SnappyTest {
   public void performInsert(Connection conn) throws SQLException {
     Connection dConn = null;
     String[] dmlTable = SnapshotIsolationPrms.getDMLTables();
-    int n = new Random().nextInt(dmlTable.length);
-    String tableName = dmlTable[n];
-    String row = getRowFromCSV(tableName, n);
+    int rand = new Random().nextInt(dmlTable.length);
+    String tableName = dmlTable[rand];
+    String row = getRowFromCSV(tableName, rand);
     row = row + "," + getMyTid();
     Log.getLogWriter().info("Selected row is : " + row);
-    PreparedStatement snappyPS, derbyPS;
-    String insertStmt = SnapshotIsolationPrms.getInsertStmts()[n];
+    PreparedStatement snappyPS, derbyPS = null;
+    String insertStmt = SnapshotIsolationPrms.getInsertStmts()[rand];
     TestHelper.waitForCounter(SnapshotIsolationBB.getBB(), "SnapshotIsolationBB.BlockOps", SnapshotIsolationBB.BlockOps,
         0, true, -1, 1000);
     SnapshotIsolationBB.getBB().getSharedCounters().increment(SnapshotIsolationBB.DMLExecuting);
@@ -352,17 +394,44 @@ public class SnapshotIsolationTest extends SnappyTest {
     if (hasDerbyServer) {
       if (SnapshotIsolationBB.getBB().getSharedCounters().read(SnapshotIsolationBB.PauseDerby) == 0) {
         //no need to write op in BB, execute stmt in derby, but write previous ops first.
-        replayOpsInDerby(getMyTid());
-        dConn = getDerbyConnection();
-        derbyPS = getPreparedStatement(dConn, tableName, insertStmt, row);
-        Log.getLogWriter().info("Inserting in derby with statement : " + insertStmt + " with " +
-            "values(" + row + ")");
-        rowCount = derbyPS.executeUpdate();
-        Log.getLogWriter().info("Inserted " + rowCount + " row in derby.");
+        if (hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String stmt = insertStmt.replace("app", "app_" + selectTid);
+              replayOpsInDerby(getMyTid() + "_" + selectTid);
+              dConn = getDerbyConnection();
+              derbyPS = getPreparedStatement(dConn, tableName, stmt, row);
+              Log.getLogWriter().info("Inserting in derby app_" + selectTid + " with statement : " +
+                  insertStmt + " with values(" + row + ")");
+              rowCount = derbyPS.executeUpdate();
+              Log.getLogWriter().info("Inserted " + rowCount + " row in derby app_" + selectTid);
+            }
+          }
+        } else {
+          replayOpsInDerby(String.valueOf(getMyTid()));
+          dConn = getDerbyConnection();
+          derbyPS = getPreparedStatement(dConn, tableName, insertStmt, row);
+          Log.getLogWriter().info("Inserting in derby with statement : " + insertStmt + " with " +
+              "values(" + row + ")");
+          rowCount = derbyPS.executeUpdate();
+          Log.getLogWriter().info("Inserted " + rowCount + " row in derby.");
+        }
         derbyPS.close();
       } else {
         //need to write operation to BB
-        writeOpToBB(tableName,insertStmt,row,getMyTid());
+        if (hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String stmt = insertStmt.replace("app", "app_" + selectTid);
+              writeOpToBB(tableName, stmt, row, getMyTid() + "_" + selectTid);
+            }
+          }
+        } else
+          writeOpToBB(tableName, insertStmt, row, String.valueOf(getMyTid()));
       }
       if (dConn != null)
         closeDiscConnection(dConn, true);
@@ -389,16 +458,43 @@ public class SnapshotIsolationTest extends SnappyTest {
     if (hasDerbyServer) {
       if (SnapshotIsolationBB.getBB().getSharedCounters().read(SnapshotIsolationBB.PauseDerby) == 0) {
         //no need to write op in BB, execute stmt in derby, but write previous ops first.
-        replayOpsInDerby(getMyTid());
-        dConn = getDerbyConnection();
-        PreparedStatement derbyPS = dConn.prepareStatement(updateStmt);
-        //derbyPS.setInt(1,getMyTid());
-        Log.getLogWriter().info("Updating in derby with statement : " + updateStmt);
-        rowCount = derbyPS.executeUpdate();
-        Log.getLogWriter().info("Updated " + rowCount + " rows in derby.");
+        if (hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String stmt = updateStmt.replace("app", "app_"+selectTid);
+              replayOpsInDerby(getMyTid() + "_" + selectTid);
+              dConn = getDerbyConnection();
+              PreparedStatement derbyPS = dConn.prepareStatement(stmt);
+              //derbyPS.setInt(1,getMyTid());
+              Log.getLogWriter().info("Updating in derby with statement : " + stmt);
+              rowCount = derbyPS.executeUpdate();
+              Log.getLogWriter().info("Updated " + rowCount + " rows in derby.");
+            }
+          }
+        } else {
+          replayOpsInDerby(String.valueOf(getMyTid()));
+          dConn = getDerbyConnection();
+          PreparedStatement derbyPS = dConn.prepareStatement(updateStmt);
+          //derbyPS.setInt(1,getMyTid());
+          Log.getLogWriter().info("Updating in derby with statement : " + updateStmt);
+          rowCount = derbyPS.executeUpdate();
+          Log.getLogWriter().info("Updated " + rowCount + " rows in derby.");
+        }
       } else {
         //need to write operation to BB
-        writeOpToBB(null,updateStmt,null,getMyTid());
+        if (hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String stmt = updateStmt.replace("app", "app_" + selectTid);
+              writeOpToBB(null, stmt, null, getMyTid() + "_" + selectTid);
+            }
+          }
+        }else
+          writeOpToBB(null, updateStmt, null, String.valueOf(getMyTid()));
       }
       if (dConn != null)
         closeDiscConnection(dConn, true);
@@ -425,16 +521,43 @@ public class SnapshotIsolationTest extends SnappyTest {
     if (hasDerbyServer) {
       if (SnapshotIsolationBB.getBB().getSharedCounters().read(SnapshotIsolationBB.PauseDerby) == 0) {
         //no need to write op in BB, execute stmt in derby, but write previous ops first.
-        replayOpsInDerby(getMyTid());
-        dConn = getDerbyConnection();
-        PreparedStatement derbyPS = dConn.prepareStatement(deleteStmt);
-        //derbyPS.setInt(1,getMyTid());
-        Log.getLogWriter().info("Deleting in derby with statement : " + deleteStmt);
-        rowCount = derbyPS.executeUpdate();
-        Log.getLogWriter().info("Deleted " + rowCount + " rows  in derby.");
+        if (hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String stmt = deleteStmt.replace("app", "app_" + selectTid);
+              replayOpsInDerby(getMyTid() + "_" + selectTid);
+              dConn = getDerbyConnection();
+              PreparedStatement derbyPS = dConn.prepareStatement(deleteStmt);
+              //derbyPS.setInt(1,getMyTid());
+              Log.getLogWriter().info("Deleting in derby with statement : " + deleteStmt);
+              rowCount = derbyPS.executeUpdate();
+              Log.getLogWriter().info("Deleted " + rowCount + " rows  in derby.");
+            }
+          }
+        } else {
+          replayOpsInDerby(String.valueOf(getMyTid()));
+          dConn = getDerbyConnection();
+          PreparedStatement derbyPS = dConn.prepareStatement(deleteStmt);
+          //derbyPS.setInt(1,getMyTid());
+          Log.getLogWriter().info("Deleting in derby with statement : " + deleteStmt);
+          rowCount = derbyPS.executeUpdate();
+          Log.getLogWriter().info("Deleted " + rowCount + " rows  in derby.");
+        }
       } else {
         //need to write operation to BB
-        writeOpToBB(null,deleteStmt,null,getMyTid());
+        if (hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String stmt = deleteStmt.replace("app", "app_"+selectTid);
+              writeOpToBB(null, stmt, null, getMyTid() + "_" + selectTid);
+            }
+          }
+        }else
+          writeOpToBB(null, deleteStmt, null, String.valueOf(getMyTid()));
       }
       if (dConn != null)
         closeDiscConnection(dConn, true);
@@ -478,15 +601,16 @@ public class SnapshotIsolationTest extends SnappyTest {
     String csvFilePath = SnapshotIsolationPrms.getCsvLocationforLargeData();
     String csvFileName = SnapshotIsolationPrms.getInsertCsvFileNames()[randTable];
     getDmlLock();
-    List<Integer> counters = (List<Integer>)SnapshotIsolationBB.getBB().getSharedMap().get("insertCounters");
+    List<Integer> counters = (List<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("insertCounters");
     insertCounter = counters.get(randTable);
     counters.set(randTable, insertCounter + 1);
-    SnapshotIsolationBB.getBB().getSharedMap().put("insertCounters", counters);
+    SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
     releaseDmlLock();
     Log.getLogWriter().info("insert Counter is :" + insertCounter + " for csv " + csvFilePath + File.separator + csvFileName);
     try (Stream<String> lines = Files.lines(Paths.get(csvFilePath + File.separator + csvFileName))) {
       row = lines.skip(insertCounter).findFirst().get();
     } catch (IOException io) {
+      throw new TestException("File not found at specified location.");
     }
     //row = "insert into " + tableName + " values (" + row + "," + getMyTid() + ")";
     return row;
@@ -498,7 +622,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     String[] columnValues = row.split(",");
     try {
       ps = conn.prepareStatement(stmt);
-      StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationBB.getBB().getSharedMap().get
+      StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
           ("tableMetaData_" + tableName);
       ObjectType[] oTypes = sType.getFieldTypes();
       String[] fieldNames = sType.getFieldNames();
@@ -622,8 +746,12 @@ public class SnapshotIsolationTest extends SnappyTest {
     try {
       if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads")) {
         ArrayList<Integer> dmlthreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
-        for (int i : dmlthreads)
-          replayOpsInDerby(i);
+        for (int i : dmlthreads) {
+          if(hasDuplicateSchemas)
+            replayOpsInDerby(i + "_" + getMyTid());
+          else
+            replayOpsInDerby(String.valueOf(i));
+        }
       }
     }catch(SQLException se){
       throw new TestException("Got Exception while replaying ops in derby.",se);
@@ -631,6 +759,7 @@ public class SnapshotIsolationTest extends SnappyTest {
 
     StringBuffer mismatchString = new StringBuffer();
     String tableName="";
+    ResultSet derbyRS = null;
     try {
       String[] tables = SnapshotIsolationPrms.getTableNames();
       String stmt = "select * from ";
@@ -642,9 +771,23 @@ public class SnapshotIsolationTest extends SnappyTest {
         Log.getLogWriter().info("Verifying results for " +  table + " using " + selectStmt);
         ResultSet snappyRS = conn.createStatement().executeQuery(stmt + table);
         List<Struct> snappyList = convertToList(snappyRS,false);
-        ResultSet derbyRS = dConn.createStatement().executeQuery(stmt + table);
-        List<Struct> derbyList = convertToList(derbyRS,true);
-        compareResultSets(derbyList,snappyList);
+        if (hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String tab = table;
+              tab = tab.replace("app", "app_" + selectTid);
+              derbyRS = dConn.createStatement().executeQuery(stmt + tab);
+              List<Struct> derbyList = convertToList(derbyRS, true);
+              compareResultSets(derbyList, snappyList);
+            }
+          }
+        } else {
+          derbyRS = dConn.createStatement().executeQuery(stmt + table);
+          List<Struct> derbyList = convertToList(derbyRS, true);
+          compareResultSets(derbyList, snappyList);
+        }
       }
     }catch(SQLException se){
       throw new TestException("Got Exception while verifying the table data.",se);
@@ -772,7 +915,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     }
     Connection conn = getDerbyConnection();
     Log.getLogWriter().info("creating schemas on disc.");
-    createSchemas(conn);
+    createSchemas(conn,true);
     Log.getLogWriter().info("done creating schemas on disc.");
     closeDiscConnection(conn,true);
   }
@@ -786,7 +929,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     int ddlThread = getMyTid();
     Connection conn = getLocatorConnection();
     Log.getLogWriter().info("creating schemas in gfe.");
-    createSchemas(conn);
+    createSchemas(conn,false);
     Log.getLogWriter().info("done creating schemas in gfe.");
     closeConnection(conn);
     } catch (SQLException se) {
@@ -794,12 +937,26 @@ public class SnapshotIsolationTest extends SnappyTest {
     }
   }
 
-  protected void createSchemas(Connection conn) {
+  protected void createSchemas(Connection conn,Boolean isDerby) {
     String[] schemas = SQLPrms.getSchemas();
+    StringBuffer aStr = new StringBuffer("Created schemas \n");
     try {
       Statement s = conn.createStatement();
       for (int i = 0; i < schemas.length; i++) {
-        s.execute(schemas[i]);
+        if (isDerby && hasDuplicateSchemas) {
+          ArrayList<Integer> selectThreads = null;
+          if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
+            selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+          for (int selectTid : selectThreads) {
+            String schema = schemas[i].trim() + "_" + selectTid;
+            s.execute(schema);
+            aStr.append(schema + "\n");
+          }
+        } else {
+          s.execute(schemas[i]);
+          Object o = schemas[i];
+          aStr.append(o.toString() + "\n");
+        }
       }
       s.close();
       commit(conn);
@@ -810,11 +967,7 @@ public class SnapshotIsolationTest extends SnappyTest {
       } else
         SQLHelper.handleSQLException(se);
     }
-    StringBuffer aStr = new StringBuffer("Created schemas \n");
-    for (int i = 0; i < schemas.length; i++) {
-      Object o = schemas[i];
-      aStr.append(o.toString() + "\n");
-    }
+
     Log.getLogWriter().info(aStr.toString());
   }
 
@@ -861,15 +1014,29 @@ public class SnapshotIsolationTest extends SnappyTest {
   protected void createTables(Connection conn, boolean isDerby) {
     //to get create table statements from config file
     String[] createTablesDDL = getCreateTablesStatements(true);
-    String[] tableNames = SnapshotIsolationPrms.getTableNames();
     String[] ddlExtn = SnapshotIsolationPrms.getSnappyDDLExtn();
+    StringBuffer aStr = new StringBuffer("Created tables \n");
     try {
       Statement s = conn.createStatement();
       if (isDerby) {
         for (int i = 0; i < createTablesDDL.length; i++) {
-          Log.getLogWriter().info("about to create table : " + createTablesDDL[i]);
-          s.execute(createTablesDDL[i]);
-          Log.getLogWriter().info("Created table " + createTablesDDL[i]);
+          String createDDL = createTablesDDL[i];
+          if(hasDuplicateSchemas) {
+            ArrayList<Integer> selectThreads = null;
+            if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
+              selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              createDDL = createTablesDDL[i];
+              createDDL = createDDL.replace("app", "app_" + selectTid);
+              Log.getLogWriter().info("about to create table : " + createDDL);
+              s.execute(createDDL);
+              Log.getLogWriter().info("Created table " + createDDL);
+            }
+          }else {
+            Log.getLogWriter().info("about to create table : " + createDDL);
+            s.execute(createDDL);
+            Log.getLogWriter().info("Created table " + createDDL);
+          }
         }
       } else {
         for (int i = 0; i < createTablesDDL.length; i++) {
@@ -886,10 +1053,7 @@ public class SnapshotIsolationTest extends SnappyTest {
       throw new TestException("Not able to create tables\n"
           + TestHelper.getStackTrace(se));
     }
-    StringBuffer aStr = new StringBuffer("Created tables \n");
-    for (int i = 0; i < tableNames.length; i++) {
-      aStr.append(tableNames[i] + "\n");
-    }
+
     Log.getLogWriter().info(aStr.toString());
   }
 
@@ -939,9 +1103,20 @@ public class SnapshotIsolationTest extends SnappyTest {
           else
             tid = dmlthreads.get(new Random().nextInt(dmlthreads.size()));
           String rowStmt = insertStmt + row + "," + tid + ")";
-          Log.getLogWriter().info("Row is : " +  rowStmt);
+          Log.getLogWriter().info("[Sonal] Row is : " +  rowStmt);
           conn.createStatement().execute(rowStmt);
-          dConn.createStatement().execute(rowStmt);
+          if(hasDuplicateSchemas) {
+            ArrayList<Integer> selectThreads = null;
+            if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
+              selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads) {
+              String insert = rowStmt;
+              insert = insert.replace("APP", "APP_" + selectTid);
+              dConn.createStatement().execute(insert);
+            }
+          }
+          else
+            dConn.createStatement().execute(rowStmt);
         }
         Log.getLogWriter().info("Done loading data into table " + tableName );
       }
@@ -1009,7 +1184,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     }
   }
 
-  public synchronized List<List<String>> getDerbyOps(int tid) {
+  public synchronized List<List<String>> getDerbyOps(String tid) {
     List<List<String>> derbyOps = null;
     if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("derbyOps_" + tid)) {
       getDmlLock();
@@ -1017,16 +1192,16 @@ public class SnapshotIsolationTest extends SnappyTest {
       SnapshotIsolationDMLOpsBB.getBB().getSharedMap().remove("derbyOps_" + tid);
       releaseDmlLock();
     } else
-      Log.getLogWriter().info("No Ops to perform in derby from BB");
+      Log.getLogWriter().info("No Ops to perform in derby from BB " + tid);
     return derbyOps;
   }
 
-  public synchronized void replayOpsInDerby(int tid) throws SQLException {
+  public synchronized void replayOpsInDerby(String tid) throws SQLException {
     List<List<String>> derbyOps = getDerbyOps(tid);
     //perform operation on derby
     if (derbyOps != null) {
       Connection dConn = getDerbyConnection();
-      Log.getLogWriter().info("Performing Ops in derby from BB...");
+      Log.getLogWriter().info("Performing Ops in derby from BB " + tid);
       PreparedStatement ps;
       for (List<String> operation : derbyOps) {
         String stmt = operation.get(1);
@@ -1046,14 +1221,15 @@ public class SnapshotIsolationTest extends SnappyTest {
       }
       if(dConn!=null)
         testInstance.closeDiscConnection(dConn, true);
-      Log.getLogWriter().info("Performed " + derbyOps.size() + " Ops in derby from BB.");
+      Log.getLogWriter().info("Performed " + derbyOps.size() + " ops in derby from BB " + tid +
+          ".");
     } else
-      Log.getLogWriter().info("derbyOps is null");
+      Log.getLogWriter().info("derbyOps " + tid + " is null");
   }
 
-  public synchronized void writeOpToBB(String tableName, String stmt, String row,int tid) {
+  public synchronized void writeOpToBB(String tableName, String stmt, String row,String tid) {
     List<List<String>> derbyOps;
-    Log.getLogWriter().info("Adding operation for derby in BB : " + stmt);
+    Log.getLogWriter().info("Adding operation for derby in BB " + tid + " : " + stmt);
     List l1 = new ArrayList<>();
     l1.add(tableName);
     l1.add(stmt);
@@ -1068,7 +1244,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     derbyOps.add(l1);
     SnapshotIsolationDMLOpsBB.getBB().getSharedMap().put("derbyOps_" + tid, derbyOps);
     releaseDmlLock();
-    Log.getLogWriter().info("Added operation for derby in BB : " + stmt);
+    Log.getLogWriter().info("Added operation for derby in BB " + tid + " : " + stmt);
   }
 
   public static void printOpsInBB() {
