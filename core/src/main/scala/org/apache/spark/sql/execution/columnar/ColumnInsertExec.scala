@@ -447,7 +447,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       val dataType = field.dataType
       val evaluationCode = input(i)
       evaluationCode.code +
-      s"""
+        s"""
          if (${evaluationCode.isNull}) {
            $mutableRow.setNullAt($i);
          } else {
