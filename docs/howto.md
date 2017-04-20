@@ -375,7 +375,7 @@ The same table can be created using SQL as shown below:
 You can perform various operations such as inset data, mutate it (update/delete), select data from the table. All these operations can be done either through APIs or by using SQL queries.
 For example:
 
-** To insert data in the SUPPLIER table:**
+**To insert data in the SUPPLIER table:** 
 
 ```	
 	snSession.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
@@ -383,25 +383,24 @@ For example:
     snSession.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
     snSession.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
 ```
-** To print the contents of the SUPPLIER table:**
+**To print the contents of the SUPPLIER table:** 
 
 ```    
     var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 ```
-** To update the table account balance for SUPPLIER4:**
+**To update the table account balance for SUPPLIER4:** 
 
 ```    
     snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 ```
-**To print contents of the SUPPLIER table after update**
+**To print contents of the SUPPLIER table after update** 
 
 ```
     tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
     tableData.foreach(println)
 ```
-**To delete the records for SUPPLIER2 and SUPPLIER3
-**
+**To delete the records for SUPPLIER2 and SUPPLIER3** 
 ```
     snSession.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
 ```
@@ -436,7 +435,7 @@ The code snippet below shows how to create a column table using DataFrame API.
 
     val snSession = new SnappySession(spark.sparkContext)
 ```
-**Define the table schema **
+**Define the table schema**
 
 ```
 val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
@@ -612,7 +611,7 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
         "COLOCATE_WITH 'CUSTOMER' )")
 ```
 
-**Perform a Collocate join: **
+**Perform a Collocate join:** 
 
 ```
     // Selecting orders for all customers
@@ -629,7 +628,8 @@ You can connect to and execute queries against SnappyData cluster using JDBC dri
 
 Where the `<locatorHostName>` is the host name of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
-**Code Example: **
+**Code Example:**
+
 **Connect to a SnappyData cluster using JDBC on default client port**
 
 The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at [JDBCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
@@ -661,7 +661,7 @@ for (x <- 1 to 10) {
 preparedStmt1.executeBatch()
 preparedStmt1.close()
 ```
-<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
+<note> Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</note>
 
 <a id="howto-JSON"></a>
 ## How to Store and Query JSON Objects
@@ -1131,6 +1131,8 @@ Depending on your Windows installation, download the required version of the Sna
 
 3. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
+For more information, refer to the documentation on [setting up SnappyData ODBC Driver and Tableau Desktop](https://github.com/SnappyDataInc/snappydata/blob/master/docs/setting_up_odbc_driver-tableau_desktop.md).
+
 ### Connect to the SnappyData cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
 
@@ -1185,14 +1187,14 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 3. From the **Interpreter group** drop-down select **snappydata**.
 	 ![Configure Interpreter](Images/snappydata_interpreter_properties.png)
 
-	<note>Note: If **snappydata** is not displayed in the **Interpreter group **drop-down list, try the following options, and then restart Zeppelin daemon: </note>
+	<note>Note: If **snappydata** is not displayed in the **Interpreter group** drop-down list, try the following options, and then restart Zeppelin daemon: </note>
 
     * <note>Delete the **interpreter.json** file located in the **conf** directory (in the Zeppelin home directory).</note>
 
-    * <note>Delete the **zeppelin-spark_<_version_number_>.jar **file located in the **interpreter/snappydata** directory (in the Zeppelin home directory).</note>
+    * <note>Delete the **zeppelin-spark_<_version_number_>.jar** file located in the **interpreter/snappydata** directory (in the Zeppelin home directory).</note>
 
 
-4. Click the **Connect to existing process** option. The fields **Host **and **Port** are displayed.
+4. Click the **Connect to existing process** option. The fields **Host** and **Port** are displayed.
 
 5. Specify the host on which the SnappyData lead node is executing, and the SnappyData Zeppelin Port (Default is 3768).
 	
