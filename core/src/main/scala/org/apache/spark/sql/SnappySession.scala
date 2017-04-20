@@ -980,7 +980,6 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
-    var relationSchema: Option[StructType] = None
     val source = if (isBuiltIn) SnappyContext.getProvider(provider,
       onlyBuiltIn = true) else provider
 
@@ -996,13 +995,12 @@ class SnappySession(@transient private val sc: SparkContext,
           className = source,
           options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
               (mode != SaveMode.ErrorIfExists).toString)).resolveRelation(true)
-        relationSchema = Some(r.schema)
         r
     }
 
     val plan = LogicalRelation(relation)
     if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
-      sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
+      sessionCatalog.registerDataSourceTable(tableIdent, schema,
         Array.empty[String], source, params, relation)
     }
     snappyContextFunctions.postRelationCreation(relation, this)
@@ -1103,9 +1101,10 @@ class SnappySession(@transient private val sc: SparkContext,
       }
     } else None
 
-    val (relation, schema) = schemaDDL match {
-      case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
-        cols, source, mode, params, Some(query)), None)
+    val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
+    val relation = schemaDDL match {
+      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
+        cols, source, mode, params, Some(query))
 
       case None =>
         val data = Dataset.ofRows(this, query)
@@ -1134,7 +1133,7 @@ class SnappySession(@transient private val sc: SparkContext,
             try {
               ir.insert(data, overwrite)
               success = true
-              (ir, Some(ir.schema))
+              ir
             } finally {
               if (!success) ir match {
                 case dr: DestroyRelation =>
@@ -1143,12 +1142,11 @@ class SnappySession(@transient private val sc: SparkContext,
               }
             }
           case None =>
-            val r = DataSource(self,
+            DataSource(self,
               className = source,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
               options = params).write(mode, df)
-            (r, Some(r.schema))
         }
     }
 
