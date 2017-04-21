@@ -35,7 +35,7 @@ import io.snappydata.Constant
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql.catalyst.FunctionIdentifier
-import org.apache.spark.sql.catalyst.catalog.{JarResource, CatalogFunction, FunctionResource, FunctionResourceType}
+import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
@@ -98,7 +98,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           val tableName = container.getQualifiedTableName
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
-          if (catalogEntry.tableType == ExternalTableType.Sample.toString &&
+          if (catalogEntry.tableType == ExternalTableType.Sample.name &&
               schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
@@ -240,15 +240,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_UDF =>
         val session = SnappyContext(null: SparkContext).snappySession
         val db = context.getDb
-        val className= context.getClassName
+        val className = context.getClassName
         val functionName = context.getFunctionName
         val jarURI = context.getjarURI()
-        val resources: Seq[FunctionResource] = Seq(new FunctionResource(JarResource, jarURI))
+        val resources: Seq[FunctionResource] = Seq(FunctionResource(JarResource, jarURI))
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating udf $functionName")
         val snappySharedState = session.sharedState.asInstanceOf[SnappySharedState]
-        val functionDefinition = new CatalogFunction(new FunctionIdentifier(functionName, Option(db)),
-        className, resources)
+        val functionDefinition = CatalogFunction(new FunctionIdentifier(
+          functionName, Option(db)), className, resources)
         snappySharedState.externalCatalog.createFunction(db, functionDefinition)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_UDF =>
