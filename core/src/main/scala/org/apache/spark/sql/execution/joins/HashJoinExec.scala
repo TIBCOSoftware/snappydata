@@ -304,7 +304,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
 
-    val longLived = if (replicatedTableJoin) true else false
+    val longLived = replicatedTableJoin
 
     val buildSideCreateMap =
       s"""$hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
