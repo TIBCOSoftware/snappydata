@@ -20,6 +20,8 @@ import java.lang.reflect.Field
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
+import com.gemstone.gemfire.cache.IsolationLevel
+
 import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -219,8 +221,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       context: TaskContext): Iterator[Any] = {
 
     if (commitTx) {
-      logInfo(" task context is : " + TaskContext.get())
       Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+        logDebug(" task context is : " + TaskContext.get() + " attempt number is " + context.attemptNumber()
+        +" attempt ID " + context.taskAttemptId())
         val tx = TXManagerImpl.snapshotTxState.get()
         if (tx != null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/) {
           GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
@@ -244,7 +247,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
-        val txId = null
+        val txManagerImpl: TXManagerImpl = GemFireCacheImpl.getInstance().getCacheTransactionManager
+        if (txManagerImpl.getTXState == null)
+          txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
+
+        val txId = txManagerImpl.getTransactionId
         new CompactExecRowIteratorOnScan(container, bucketIds, txId)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
