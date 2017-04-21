@@ -2115,6 +2115,23 @@ public class SnappyTest implements Serializable {
             Files.delete(Paths.get(sparkEnvConf));
             Log.getLogWriter().info("spark-env.sh file deleted");
         }
+        if(isLongRunningTest){
+            String locatorList = productConfDirPath + sep + "locatorList";
+            String locatorConnInfo = productConfDirPath + sep + "locatorConnInfo";
+            String leadHost = productConfDirPath + sep + "leadHost";
+            String leadPort = productConfDirPath + sep + "leadPort";
+            String masterHost = productConfDirPath + sep + "masterHost";
+            String primaryLocatorHost = productConfDirPath + sep + "primaryLocatorHost";
+            String primaryLocatorPort = productConfDirPath + sep + "primaryLocatorPort";
+            Files.delete(Paths.get(locatorList));
+            Files.delete(Paths.get(locatorConnInfo));
+            Files.delete(Paths.get(leadHost));
+            Files.delete(Paths.get(leadPort));
+            Files.delete(Paths.get(masterHost));
+            Files.delete(Paths.get(primaryLocatorHost));
+            Files.delete(Paths.get(primaryLocatorPort));
+            Log.getLogWriter().info("Long Running Test artifacts deleted.");
+        }
         // Removing twitter data directories if exists.
         String twitterdata = dtests + "twitterdata";
         String copiedtwitterdata = dtests + "copiedtwitterdata";

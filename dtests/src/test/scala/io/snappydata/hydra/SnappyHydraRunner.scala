@@ -46,10 +46,61 @@ class SnappyHydraRunner extends SnappyTestRunner {
     }
     /*val command: String =  s"$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample" +
       s"-runbt.sh $logDir $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/nwSmoke.bt"*/
-    val command: String =  s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
+    val command: String = s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
       s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
+    println("SS - command : " + command)
     val (out, err) = executeProcess("smokeBT", command)
-    val smokeBTRunStatus = out
+
+    import scala.sys.process._
+    val c1 = s"grep -r Exception $logDir"
+    val c2 = "grep -v  java.net.BindException"
+    val c3 = "grep -v NoSuchObjectException"
+    val c4 = "grep -v RegionDestroyedException"
+    val c5 = "grep -v statArchive.gfs"
+    val c6 = "grep -v DistributedSystemDisconnectedException"
+    val c7 = "grep -v newDisconnectedException"
+    val c8 = "grep -v CacheClosedException"
+    val command1 = c1 #| c2 #| c3 #| c4 #| c5 #| c6 #| c7 #| c8
+    val output1: String = command1.!!
+    /*try {
+      if (!output1.replace("Binary file (standard input) matches\n", "").equals("")) {
+        println("=======================Exception Start===================")
+        println(s"smokeBT Failed with below Exceptions:\n" + output1 + "\nCheck the logs at " +
+          logDir + " for more details on Exception.... ")
+        println("=======================Exception End===================")
+        throw new Exception(s"smokeBT Failed with below Exceptions:\n" + output1 +
+          "\nCheck the logs at " + logDir + " for more details on Exception.... ")
+      } else {
+        println("No unexpected Exceptions observed during smoke bt run.")
+      }
+    }
+    catch {
+      case i => throw i
+    }*/
+    try {
+      throw new Exception(s"smokeBT Failed with below Exceptions:\n" + output1 +
+        "\nCheck the logs at " + logDir + " for more details on Exception.... ")
+    }
+    catch {
+      case r: java.lang.RuntimeException =>
+        println("No unexpected Exceptions observed during smoke bt run.")
+      case i => throw i
+    }
+
+    val c9 = s"grep -r \'result mismatch observed\' $logDir"
+    val c10 = "grep -v Q37"
+    val c11 = "grep -v Q36"
+    val command2 = c9 #| c10 #| c11
+    val output2: String = command2.!!
+    try {
+      throw new Exception(s"Result mismatch observed in smoke bt run:\n " + output2 +
+        "\nCheck the logs at " + logDir + " for more details.")
+    }
+    catch {
+      case r: java.lang.RuntimeException =>
+        println("smoke bt run is successful.")
+      case i => throw i
+    }
   }
 }
 
