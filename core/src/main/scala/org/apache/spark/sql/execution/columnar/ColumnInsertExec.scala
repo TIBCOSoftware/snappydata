@@ -516,6 +516,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       genMultipleStatsMethods(ctx, "writeStats", statsCode, statsSchema, stats)
 
     ctx.INPUT_ROW = statsRowTerm
+    ctx.currentVars = null
     val statsEv = GenerateUnsafeProjection.createCode(ctx, statsExprs)
     val statsRow = statsEv.value
 
