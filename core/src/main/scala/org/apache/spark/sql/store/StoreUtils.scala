@@ -96,7 +96,7 @@ object StoreUtils {
   val EMPTY_STRING = ""
   val NONE = "NONE"
 
-  val SHADOW_COLUMN_NAME = "rowid"
+  val SHADOW_COLUMN_NAME = "snappydata_internal_rowid"
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 

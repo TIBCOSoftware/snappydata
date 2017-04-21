@@ -115,7 +115,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       return Collections.emptyList();
     }
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.GET_NON_STORE_TABLES, null, null, skipLocks);
+    q.resetValues(HMSQuery.GET_HIVE_TABLES, null, null, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     // noinspection unchecked
     return (List<ExternalTableMetaData>)handleFutureResult(f);
@@ -201,7 +201,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private static final int REMOVE_TABLE = 5;
     private static final int GET_COL_TABLE = 6;
     // private static final int CLOSE_HMC = 7;
-    private static final int GET_NON_STORE_TABLES = 8;
+    private static final int GET_HIVE_TABLES = 8;
 
     // More to be added later
 
@@ -242,7 +242,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           hmc = SnappyHiveCatalog.this.hmClients.get();
           return getSchema(hmc);
 
-        case GET_NON_STORE_TABLES: {
+        case GET_HIVE_TABLES: {
           hmc = SnappyHiveCatalog.this.hmClients.get();
           List<String> schemas = hmc.getAllDatabases();
           ArrayList<ExternalTableMetaData> externalTables = new ArrayList<>();
@@ -253,7 +253,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               String tableType = table.getParameters().get(
                   JdbcExtendedUtils.TABLETYPE_PROPERTY());
               if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType) &&
-                  !ExternalTableType.Column().name().equalsIgnoreCase(tableType) &&
                   !ExternalTableType.Index().name().equalsIgnoreCase(tableType)) {
                 // TODO: FIX ME: should not convert to upper case blindly
                 // but unfortunately hive meta-store is not case-sensitive
