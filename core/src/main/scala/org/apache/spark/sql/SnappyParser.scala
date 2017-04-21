@@ -156,7 +156,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ Consts.numericSuffix.?) ~
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ (plusOrMinus ~
+        CharPredicate.Digit. +).? ~ Consts.numericSuffix.?) ~
         delimiter ~> ((s: String) => toNumericLiteral(s))
   }
 
@@ -581,7 +582,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def keyWhenThenElse: Rule1[WhenElseType] = rule {
     expression ~ (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
-        t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
+        t: Expression) => (w, t))). + ~ (ELSE ~ expression).? ~ END ~>
         ((key: Expression, altPart: Any, elsePart: Any) =>
           (altPart.asInstanceOf[Seq[(Expression, Expression)]].map(
             e => EqualTo(key, e._1) -> e._2), elsePart).asInstanceOf[WhenElseType])
@@ -633,16 +634,16 @@ class SnappyParser(session: SnappySession)
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     '{' ~ FN ~ ws ~ identifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
-      (f: Any, e: Any) =>
-        f.asInstanceOf[String] match {
+      (fn: Any, e: Any) =>
+        fn.asInstanceOf[String] match {
           case f if f.equalsIgnoreCase("TIMESTAMPADD") =>
             val exprs = e.asInstanceOf[Seq[Expression]].toList
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
                 exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
             DateAdd(exprs(2), exprs(1))
-          case f =>
-            UnresolvedFunction(f, e.asInstanceOf[Seq[Expression]], false)
+          case f => UnresolvedFunction(f, e.asInstanceOf[Seq[Expression]],
+            isDistinct = false)
         }
     } |
     literal |
