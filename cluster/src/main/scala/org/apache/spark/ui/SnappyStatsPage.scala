@@ -37,11 +37,12 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
 
   def render(request: HttpServletRequest): Seq[Node] = {
     val uiDisplayInfo = SnappyTableStatsProviderService
-        .getAggregatedTableStatsOnDemand
+        .getAggregatedStatsOnDemand
 
-    val nodes = if (uiDisplayInfo.nonEmpty) {
+    val uiTableInfo = uiDisplayInfo._1
+    val nodes = if (uiTableInfo.nonEmpty) {
       <span>
-        <h4>Snappy Tables</h4>{UIUtils.listingTable(header, rowTable, uiDisplayInfo.values)}
+        <h4>Snappy Tables</h4>{UIUtils.listingTable(header, rowTable, uiTableInfo.values)}
       </span>
     } else Nil
 

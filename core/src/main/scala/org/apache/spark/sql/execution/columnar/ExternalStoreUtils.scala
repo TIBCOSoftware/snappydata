@@ -172,6 +172,8 @@ object ExternalStoreUtils extends Logging {
             // Already connected to SnappyData in embedded mode.
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
                 "skip-constraint-checks=true"
+          case ThinClientConnectorMode(_, url) =>
+            url + ";route-query=false"
           case SplitClusterMode(_, _) =>
             ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
