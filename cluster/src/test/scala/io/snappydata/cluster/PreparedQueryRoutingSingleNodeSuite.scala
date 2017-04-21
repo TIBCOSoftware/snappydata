@@ -280,17 +280,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     }
   }
 
-  def query2(tableName1: String, tableName2: String): Unit = {
+  def query1(tableName1: String, tableName2: String): Unit = {
     // sc.setLogLevel("TRACE")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
     var prepStatement: java.sql.PreparedStatement = null
-    var prepStatement1: java.sql.PreparedStatement = null
-    var prepStatement2: java.sql.PreparedStatement = null
-    var prepStatement3: java.sql.PreparedStatement = null
-    var prepStatement4: java.sql.PreparedStatement = null
-    var prepStatement5: java.sql.PreparedStatement = null
     try {
       val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
           s" from $tableName1 " +
@@ -319,10 +314,108 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       // Thread.sleep(1000000)
     } finally {
       if (prepStatement != null) prepStatement.close()
-      if (prepStatement1 != null) prepStatement1.close()
-      if (prepStatement2 != null) prepStatement2.close()
-      if (prepStatement3 != null) prepStatement3.close()
-      if (prepStatement4 != null) prepStatement4.close()
+      conn.close()
+    }
+  }
+
+  def query2(tableName1: String, tableName2: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_1_int_id, ol_2_int2_id, ol_1_str_id " +
+          s" from $tableName1 inner join $tableName2 " +
+          s" where ol_1_int2_id < ? " +
+          s" and ol_1_int2_id in (?, ?, ?) " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setInt(2, 100)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 300)
+      verifyResults("qry-1", prepStatement.executeQuery, Array(100, 200, 300), 1)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      verifyResults("qry-2", prepStatement.executeQuery, Array(600, 700, 800), 1)
+
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query3(tableName1: String, tableName2: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
+          s" from $tableName1 " +
+          s" where ol_1_int2_id = ? " +
+          s" union " +
+          s" select ol_2_int_id, ol_2_int2_id, ol_2_str_id " +
+          s" from $tableName2 " +
+          s" where ol_2_int2_id in (?, ?, ?) " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 100)
+      prepStatement.setInt(2, 300)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 400)
+      verifyResults("qry-1", prepStatement.executeQuery, Array(100, 200, 300, 400), 1)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      verifyResults("qry-2", prepStatement.executeQuery, Array(900, 600, 700, 800), 1)
+
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query4(tableName1: String, tableName2: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select sum(ol_1_int_id) s, 0, 'a' " +
+          s" from $tableName1 " +
+          s" group by ol_1_int2_id having sum(ol_1_int_id) in (?, ?, ?) " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 400)
+      prepStatement.setInt(2, 300)
+      prepStatement.setInt(3, 200)
+      verifyResults("qry-1", prepStatement.executeQuery, Array(400, 200, 300), 1)
+
+      prepStatement.setInt(1, 600)
+      prepStatement.setInt(2, 800)
+      prepStatement.setInt(3, 700)
+      verifyResults("qry-2", prepStatement.executeQuery, Array(600, 700, 800), 1)
+
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
       conn.close()
     }
   }
@@ -347,7 +440,10 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       // println("network server started")
       insertRows(tableName1, 1000)
       insertRows(tableName2, 1000)
-      query2(tableName1, tableName2)
+      // query1(tableName1, tableName2)
+      // query2(tableName1, tableName2)
+      // query3(tableName1, tableName2)
+      // query4(tableName1, tableName2)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
