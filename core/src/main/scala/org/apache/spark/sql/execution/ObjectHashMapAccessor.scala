@@ -18,8 +18,7 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable
 
-import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, ClientSharedUtils}
-import com.gemstone.gemfire.internal.util.ArrayUtils
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -899,7 +898,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       valueInit = null)
     val preEvalKeys = if (initFilterCode.isEmpty) ""
     else evaluateVariables(streamKeyVars)
-    initDictionaryCodeForSingleKeyCase(dictArrayInitVar, streamKeyVars,
+    initDictionaryCodeForSingleKeyCase(dictArrayInitVar, input,
       streamKeys, streamOutput)
     var mapLookupCode = dictionaryKey match {
       case Some(dictKey) =>

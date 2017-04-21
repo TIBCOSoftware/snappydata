@@ -423,15 +423,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {
-    // check the outputs of the plan
-    val planOutput = plan.output
     // check for possible optimized dictionary code path;
-    // linear search is enough instead of map create/lookup like in intersect;
     // below is a loose search while actual decision will be taken as per
     // availability of ExprCodeEx with DictionaryCode in doConsume
-    DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
-      streamSideKeys) && streamedPlan.output.forall(
-      a => planOutput.exists(_.semanticEquals(a)))
+    DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(streamSideKeys)
   }
 
   override def batchConsume(ctx: CodegenContext,

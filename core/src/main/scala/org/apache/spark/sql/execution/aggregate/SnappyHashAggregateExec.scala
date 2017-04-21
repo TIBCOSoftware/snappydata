@@ -245,15 +245,11 @@ case class SnappyHashAggregateExec(
 
   override def canConsume(plan: SparkPlan): Boolean = {
     if (groupingExpressions.isEmpty) return false
-    // check the outputs of the plan
-    val planOutput = plan.output
     // check for possible optimized dictionary code path;
-    // linear search is enough instead of map create/lookup like in intersect;
     // below is a loose search while actual decision will be taken as per
     // availability of ExprCodeEx with DictionaryCode in doConsume
     DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
-      keyBufferAccessor.keyExpressions) && keyBufferAccessor.output.forall(
-      a => planOutput.exists(_.semanticEquals(a)))
+      keyBufferAccessor.keyExpressions)
   }
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
