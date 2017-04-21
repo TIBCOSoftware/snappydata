@@ -63,10 +63,13 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     loadFactor: Double, numColumns: Int, longLived: Boolean = false)
     extends java.lang.Iterable[T] with Serializable {
 
-  private[this] val consumer =
-    new ObjectHashSetMemoryConsumer(TaskContext.get().taskMemoryManager())
+  private[this] val taskContext = TaskContext.get()
 
-  if (!longLived) {
+  private[this] val consumer = if (taskContext ne null) {
+    new ObjectHashSetMemoryConsumer(taskContext.taskMemoryManager())
+  } else null
+
+  if (!longLived && (taskContext ne null)) {
     freeMemoryOnTaskCompletion()
   }
 
@@ -277,16 +280,16 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   private def acquireMemory(required: Long) = {
     if (longLived) {
-      val blockId = TaskResultBlockId(TaskContext.get().taskAttemptId())
+      val blockId = TaskResultBlockId(taskContext.taskAttemptId())
       SparkEnv.get.memoryManager
-          .acquireStorageMemory(blockId, required, MemoryMode.ON_HEAP)
-    } else {
+        .acquireStorageMemory(blockId, required, MemoryMode.ON_HEAP)
+    } else if (consumer ne null) {
       consumer.acquireMemory(required)
     }
   }
 
   private def freeMemoryOnTaskCompletion(): Unit = {
-    TaskContext.get().addTaskCompletionListener { _ =>
+    taskContext.addTaskCompletionListener { _ =>
       consumer.freeMemory(totalSize)
     }
   }

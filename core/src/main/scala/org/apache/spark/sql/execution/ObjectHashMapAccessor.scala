@@ -147,7 +147,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val valClassTypes = if (multiMap) valueTypes else Nil
     // check for existing class with same schema
     val (valueClass, entryClass, exists) = session.getClass(ctx,
-      valClassTypes, keyTypes, entryTypes) match {
+      valClassTypes, keyTypes, entryTypes, multiMap) match {
       case Some((v, e)) => (v, e, true)
       case None =>
         val entryClass = ctx.freshName(classPrefix)
@@ -215,7 +215,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       }
       ctx.addNewFunction(entryClass, classCode)
       session.addClass(ctx, valClassTypes, keyTypes, entryTypes,
-        valueClass, entryClass)
+        valueClass, entryClass, multiMap)
     }
 
     (entryClass, valueClass, entryVars ++ valClassVars, numNulls)

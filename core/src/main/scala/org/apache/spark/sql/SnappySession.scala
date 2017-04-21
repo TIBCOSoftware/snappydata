@@ -31,7 +31,7 @@ import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
-import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
@@ -300,18 +300,17 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   def getClass(ctx: CodegenContext, baseTypes: Seq[(DataType, Boolean)],
       keyTypes: Seq[(DataType, Boolean)],
-      types: Seq[(DataType, Boolean)]): Option[(String, String)] = {
-    getContextObject[(String, String)](ctx, "C", (baseTypes, keyTypes, types))
+      types: Seq[(DataType, Boolean)], multimap: Boolean): Option[(String, String)] = {
+    getContextObject[(String, String)](ctx, "C", (baseTypes, keyTypes, types, multimap))
   }
-
   /**
    * Register code generated for a new class (for <code>CodegenSupport</code>).
    */
   private[sql] def addClass(ctx: CodegenContext,
       baseTypes: Seq[(DataType, Boolean)], keyTypes: Seq[(DataType, Boolean)],
       types: Seq[(DataType, Boolean)], baseClassName: String,
-      className: String): Unit = {
-    addContextObject(ctx, "C", (baseTypes, keyTypes, types),
+      className: String, multiMap: Boolean): Unit = {
+    addContextObject(ctx, "C", (baseTypes, keyTypes, types, multiMap),
       baseClassName -> className)
   }
 
@@ -988,7 +987,6 @@ class SnappySession(@transient private val sc: SparkContext,
     }
 
     val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
-    var relationSchema: Option[StructType] = None
     val source = if (isBuiltIn) SnappyContext.getProvider(provider,
       onlyBuiltIn = true) else provider
 
@@ -1004,13 +1002,12 @@ class SnappySession(@transient private val sc: SparkContext,
           className = source,
           options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
               (mode != SaveMode.ErrorIfExists).toString)).resolveRelation(true)
-        relationSchema = Some(r.schema)
         r
     }
 
     val plan = LogicalRelation(relation)
     if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
-      sessionCatalog.registerDataSourceTable(tableIdent, relationSchema,
+      sessionCatalog.registerDataSourceTable(tableIdent, schema,
         Array.empty[String], source, params, relation)
     }
     snappyContextFunctions.postRelationCreation(relation, this)
@@ -1111,9 +1108,10 @@ class SnappySession(@transient private val sc: SparkContext,
       }
     } else None
 
-    val (relation, schema) = schemaDDL match {
-      case Some(cols) => (JdbcExtendedUtils.externalResolvedDataSource(self,
-        cols, source, mode, params, Some(query)), None)
+    val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
+    val relation = schemaDDL match {
+      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
+        cols, source, mode, params, Some(query))
 
       case None =>
         val data = Dataset.ofRows(this, query)
@@ -1142,7 +1140,7 @@ class SnappySession(@transient private val sc: SparkContext,
             try {
               ir.insert(data, overwrite)
               success = true
-              (ir, Some(ir.schema))
+              ir
             } finally {
               if (!success) ir match {
                 case dr: DestroyRelation =>
@@ -1151,12 +1149,11 @@ class SnappySession(@transient private val sc: SparkContext,
               }
             }
           case None =>
-            val r = DataSource(self,
+            DataSource(self,
               className = source,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
               options = params).write(mode, df)
-            (r, Some(r.schema))
         }
     }
 
@@ -1206,7 +1203,8 @@ class SnappySession(@transient private val sc: SparkContext,
       case ThinClientConnectorMode(_, _) =>
         val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
         if (!isTempTable) {
-          sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropTable(tableIdent, ifExists)
+          sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
+              .dropTable(tableIdent, ifExists)
           return
         }
       case _ =>
@@ -1332,8 +1330,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.
+        sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.
             createIndex(indexIdent, tableIdent, indexColumns, options)
+        return
       case _ =>
     }
 
@@ -1390,7 +1389,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.dropIndex(indexName, ifExists)
+        sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
+            .dropIndex(indexName, ifExists)
+        return
       case _ =>
     }
 
@@ -1694,10 +1695,9 @@ object SnappySession extends Logging {
   private def getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
     queryplan transformAllExpressions {
-      case p: ParamLiteral => {
+      case p: ParamLiteral =>
         res += p
         p
-      }
     }
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
@@ -1713,12 +1713,12 @@ object SnappySession extends Logging {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching) {
-        key.invalidatePlan
+        key.invalidatePlan()
       }
       else {
         val params1 = getAllParamLiterals(executedPlan)
-        if (!(params1.sameElements(key.pls))) {
-          key.invalidatePlan
+        if (!params1.sameElements(key.pls)) {
+          key.invalidatePlan()
         }
       }
     }
@@ -1764,10 +1764,10 @@ object SnappySession extends Logging {
     // modified tpch query no 15, It even picks those literal which we don't want.
     var allLiterals: Array[LiteralValue] = Array.empty
     if (key != null && key.valid) {
-      allLiterals = (CachedPlanHelperExec.allLiterals(
+      allLiterals = CachedPlanHelperExec.allLiterals(
         session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
           CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty)
-      )).filter(!_.collectedForPlanCaching)
+      ).filter(!_.collectedForPlanCaching)
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
     }
@@ -1803,8 +1803,8 @@ object SnappySession extends Logging {
     CacheBuilder.newBuilder().maximumSize(300).build(loader)
   }
 
-  //noinspection ScalaStyle
-  def getPlanCache = planCache
+  def getPlanCache: LoadingCache[CachedKey, (CachedDataFrame,
+      Map[String, String])] = planCache
 
   private[spark] def addBucketProfileListener(pr: PartitionedRegion): Unit = {
     val advisers = pr.getRegionAdvisor.getAllBucketAdvisorsHostedAndProxies
@@ -1830,8 +1830,8 @@ object SnappySession extends Logging {
       }
     }
 
-    var valid = true
-    def invalidatePlan = valid = false
+    private[sql] var valid = true
+    def invalidatePlan(): Unit = valid = false
   }
 
   object CachedKey {
@@ -1860,10 +1860,10 @@ object SnappySession extends Logging {
       }
 
       def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
-        case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
         case f@Filter(condition, child) => f.copy(
           condition = condition.transform(normalizeExprIds),
           child = child.transformAllExpressions(normalizeExprIds))
+        case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
       }
 
       // normalize lp so that two queries can be determined to be equal

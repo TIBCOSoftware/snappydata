@@ -27,7 +27,6 @@ import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.Logging
-import org.apache.spark.ui.{UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
 
 /** Page showing list of tables currently stored in the cluster */
