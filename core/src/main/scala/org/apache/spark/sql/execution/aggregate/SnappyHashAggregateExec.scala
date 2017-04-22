@@ -583,8 +583,10 @@ case class SnappyHashAggregateExec(
       initVars, initCode, input, dictionaryArrayTerm, dictionaryArrayInit)
 
     ctx.currentVars = bufferVars ++ input
+    // pre-evaluate input variables used by child expressions and updateExpr
     val inputCodes = evaluateRequiredVariables(child.output,
-      ctx.currentVars.takeRight(child.output.length), child.references)
+      ctx.currentVars.takeRight(child.output.length),
+      child.references ++ AttributeSet(updateExpr))
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttr))
     val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(

@@ -19,18 +19,17 @@ package org.apache.spark.sql
 import java.nio.ByteBuffer
 import java.sql.SQLException
 
-import scala.collection.mutable
 import scala.annotation.tailrec
-
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import org.apache.spark.broadcast.Broadcast
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
@@ -41,12 +40,9 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
-import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, HashedRelation}
 import org.apache.spark.sql.execution.{CachedPlanHelperExec, CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec, _}
-
-
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
@@ -90,6 +86,7 @@ class CachedDataFrame(df: Dataset[Row],
   }
 
   private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
+
   private lazy val unsafe = UnsafeHolder.getUnsafe
   private lazy val rdd_partitions_ = {
     val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
@@ -267,28 +264,26 @@ class CachedDataFrame(df: Dataset[Row],
 
   var firstAccess = true
 
-  def reprepareBroadcast(lp: LogicalPlan, newpls: mutable.ArrayBuffer[ParamLiteral]) = {
+  def reprepareBroadcast(lp: LogicalPlan,
+      newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
-          case pl @ ParamLiteral(v, dt, p) => {
+          case pl@ParamLiteral(_, _, p) =>
             val np = newpls.find(_.pos == p).getOrElse(pl)
             ParamLiteral(np.value, np.dataType, p)
-          }
         }
         val tmpCtx = new CodegenContext
-        val parameterType = tmpCtx.getClass()
+        val parameterType = tmpCtx.getClass
         val method = newbchj.getClass.getDeclaredMethod("prepareBroadcast", parameterType)
         method.setAccessible(true)
         val bc = method.invoke(newbchj, tmpCtx)
-        refs(broadcastIndex) = bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1
+        refs(broadcastIndex) = bc.asInstanceOf[(Broadcast[_], String)]._1
       }
     }
     firstAccess = false
   }
-
-  override def finalize(): Unit = super.finalize()
 }
 
 final class AggregatePartialDataIterator(
