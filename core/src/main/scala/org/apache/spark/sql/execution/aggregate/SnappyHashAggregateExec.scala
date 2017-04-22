@@ -209,7 +209,8 @@ case class SnappyHashAggregateExec(
     // Code generation should never fail.
     // If code generation is not supported (due to ImperativeAggregate)
     // then this plan should not be created (SnappyAggregation.supportCodegen).
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
+        .asInstanceOf[SnappySession])).execute()
   }
 
   // all the mode of aggregate expressions

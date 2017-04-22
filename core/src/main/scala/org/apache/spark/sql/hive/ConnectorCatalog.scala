@@ -31,7 +31,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamBaseRelation
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{AnalysisException, SaveMode, SmartConnectorHelper}
 
 trait ConnectorCatalog extends SnappyStoreHiveCatalog {
@@ -67,19 +67,22 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
       override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
         logDebug(s"Creating new cached data source for $in")
 
-        //        val (hiveTable: Table, relationInfo: RelationInfo) = SmartConnectorHelper.getHiveTableAndMetadata(in)
-        val (hiveTable: Table, relationInfo: RelationInfo) = connectorHelper.getHiveTableAndMetadata(in)
+        // val (hiveTable: Table, relationInfo: RelationInfo) =
+        //   SmartConnectorHelper.getHiveTableAndMetadata(in)
+        val (hiveTable: Table, relationInfo: RelationInfo) =
+          connectorHelper.getHiveTableAndMetadata(in)
 
         //        val table: CatalogTable = in.getTable(client)
-        val table: CatalogTable = getCatalogTable(new org.apache.hadoop.hive.ql.metadata.Table(hiveTable)).get
+        val table: CatalogTable = getCatalogTable(
+          new org.apache.hadoop.hive.ql.metadata.Table(hiveTable)).get
 
-        val schemaString = SnappyStoreHiveCatalog.getSchemaString(table.properties)
-        val userSpecifiedSchema = schemaString.map(s =>
-          DataType.fromJson(s).asInstanceOf[StructType])
+        val userSpecifiedSchema = ExternalStoreUtils.getTableSchema(
+          table.properties)
         val partitionColumns = table.partitionColumns.map(_.name)
         val provider = table.properties(SnappyStoreHiveCatalog.HIVE_PROVIDER)
         val options = table.storage.serdeProperties
-        val relation = options.get(JdbcExtendedUtils.SCHEMA_PROPERTY) match {
+        val relation = JdbcExtendedUtils.readSplitProperty(
+          JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 
@@ -90,8 +93,8 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
                   (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")).resolveRelation()
         }
         relation match {
-          case sr: StreamBaseRelation => // Do Nothing as it is not supported for stream relation
-          case pr: ParentRelation =>
+          case _: StreamBaseRelation => // Do Nothing as it is not supported for stream relation
+          case _: ParentRelation =>
             var dependentRelations: Array[String] = Array()
             if (table.properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
               dependentRelations = table.properties(ExternalStoreUtils.DEPENDENT_RELATIONS)
@@ -176,7 +179,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
   }
 
   private def fromHiveColumn(hc: FieldSchema): CatalogColumn = {
-    new CatalogColumn(
+    CatalogColumn(
       name = hc.getName,
       dataType = hc.getType,
       nullable = true,
