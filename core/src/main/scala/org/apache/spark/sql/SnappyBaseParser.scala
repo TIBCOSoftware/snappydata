@@ -289,7 +289,7 @@ object SnappyParserConsts {
   final val arithmeticOperator = CharPredicate('*', '/', '%', '&', '|', '^')
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
-      CharPredicate('.') ++ exponent
+      CharPredicate('.')
   final val numericSuffix: CharPredicate = CharPredicate('D', 'L')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
