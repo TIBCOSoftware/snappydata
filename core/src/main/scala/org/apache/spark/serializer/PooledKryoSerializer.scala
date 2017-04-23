@@ -148,11 +148,6 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
 
-    // use Externalizable by default as last fallback, if available,
-    // rather than going to FieldSerializer
-    kryo.addDefaultSerializer(classOf[Externalizable],
-      new ExternalizableSerializer)
-
     try {
       val launchTasksClass = Utils.classForName(
         "org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.LaunchTasks")
@@ -160,6 +155,11 @@ final class PooledKryoSerializer(conf: SparkConf)
     } catch {
       case _: ClassNotFoundException => // ignore
     }
+
+    // use Externalizable by default as last fallback, if available,
+    // rather than going to FieldSerializer
+    kryo.addDefaultSerializer(classOf[Externalizable],
+      new ExternalizableSerializer)
 
     kryo
   }

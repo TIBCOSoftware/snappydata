@@ -33,7 +33,7 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
  */
 abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
-  val caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
+  val caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
 
   private[sql] final val queryHints = new mutable.HashMap[String, String]
 

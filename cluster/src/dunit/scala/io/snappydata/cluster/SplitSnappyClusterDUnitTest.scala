@@ -29,13 +29,12 @@ import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
-import org.apache.log4j.{Level, Logger}
-import junit.framework.Assert
+import org.junit.Assert
 
+import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.store.SnappyJoinSuite
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
-import org.apache.spark.sql._
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -318,13 +317,15 @@ object SplitSnappyClusterDUnitTest
     snc.sql("DROP TABLE IF EXISTS COL_TABLE")
 
     snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL, description String, price BIGINT)")
-    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, description String, price  LONG) using column options()")
+    snc.sql("CREATE TABLE COL_TABLE(OrderRef INT NOT NULL, " +
+        "description String, price  LONG) using column options()")
 
     refDf.write.insertInto("RR_TABLE")
     refDf.write.insertInto("COL_TABLE")
 
     // create a udf in embedded mode
-    val udfText: String = "public class IntegerUDF implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+    val udfText: String = "public class IntegerUDF implements " +
+        "    org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
         " @Override public Integer call(String s){ " +
         "               return 6; " +
         "}" +
@@ -339,6 +340,7 @@ object SplitSnappyClusterDUnitTest
     row.foreach(r => assert(r(0) == 6))
   }
 
+  // scalastyle:off println
   def createUDFInSplitMode(locatorPort: Int,
       prop: Properties, locatorProp: String,
       useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
@@ -371,7 +373,7 @@ object SplitSnappyClusterDUnitTest
   }
 
   def verifyUDFInEmbeddedMode(): Unit = {
-    val snc =  SnappyContext(sc)
+    val snc = SnappyContext(sc)
     // use function created in splitmode
     val row2 = snc.sql("select intudf_splitmode(description) from col_table").collect()
     row2.foreach(r => println(r))
@@ -551,8 +553,8 @@ object SplitSnappyClusterDUnitTest
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
       mode match {
-        case SplitClusterMode(_, _) => //expected
-        case _ => assert(false , "cluster mode is " + mode)
+        case SplitClusterMode(_, _) => // expected
+        case _ => assert(false, "cluster mode is " + mode)
       }
       snc
     } else {
@@ -580,13 +582,14 @@ object SplitSnappyClusterDUnitTest
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
       mode match {
-        case ThinClientConnectorMode(_, _) => //expected
-        case _ => assert(false , "cluster mode is " + mode)
+        case ThinClientConnectorMode(_, _) => // expected
+        case _ => assert(false, "cluster mode is " + mode)
       }
 
       snc
     }
   }
+  // scalastyle:on println
 
   def splitModeTableCreate(locatorPort: Int,
       prop: Properties, locatorProp: String,
@@ -674,7 +677,7 @@ object SplitSnappyClusterDUnitTest
     val count2 = snc.sql("select * from customer_2").count()
     assert(count2 == 750, s"Expected 750 rows. Actual rows = $count2")
 
-    //also test temp table
+    // also test temp table
     snc.sql(s"CREATE TEMPORARY TABLE CUSTOMER_TEMP AS SELECT * FROM CUSTOMER_STAGING")
     val count3 = snc.sql("select * from CUSTOMER_TEMP").count()
     assert(count3 == 750, s"Expected 750 rows. Actual rows = $count3")
@@ -690,7 +693,8 @@ object SplitSnappyClusterDUnitTest
     assert(df.schema.fields.length == 3)
     snc.dropTable("APP.T1")
 
-    snc.sql(s"CREATE TABLE T1(COL1 STRING, COL2 STRING) USING $tableType OPTIONS (PARTITION_BY 'COL1')")
+    snc.sql(s"CREATE TABLE T1(COL1 STRING, COL2 STRING) " +
+        s"USING $tableType OPTIONS (PARTITION_BY 'COL1')")
     snc.sql("INSERT INTO T1 VALUES('AA', 'AA')")
     snc.sql("INSERT INTO T1 VALUES('BB', 'BB')")
     snc.sql("INSERT INTO T1 VALUES('CC', 'CC')")
@@ -709,7 +713,8 @@ object SplitSnappyClusterDUnitTest
         useThinClientConnector, locatorClientPort)
     }
     // row table
-    connectorSnc.sql(s"CREATE TABLE T1(C1 INT, C2 INT, C3 INT) USING $tableType OPTIONS (PARTITION_BY 'C1')")
+    connectorSnc.sql(s"CREATE TABLE T1(C1 INT, C2 INT, C3 INT) " +
+        s"USING $tableType OPTIONS (PARTITION_BY 'C1')")
     connectorSnc.sql("INSERT INTO T1 VALUES(1, 1, 1)")
     connectorSnc.sql("INSERT INTO T1 VALUES(2, 2, 2)")
     connectorSnc.sql("INSERT INTO T1 VALUES(3, 3, 3)")
