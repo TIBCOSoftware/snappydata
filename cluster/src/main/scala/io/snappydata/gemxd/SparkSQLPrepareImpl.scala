@@ -18,7 +18,7 @@ package io.snappydata.gemxd
 
 import java.io.DataOutput
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
@@ -31,7 +31,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.{Row, SnappySession}
-import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
+import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.types._
@@ -77,11 +77,14 @@ class SparkSQLPrepareImpl(val sql: String,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
     if (sessionState.questionMarkCounter > 0) {
-      val paramLiteralsAtPrepare = getAllParamLiteralsAtPrepare(analyzedPlan)
-      if (paramLiteralsAtPrepare.length != sessionState.questionMarkCounter) {
+      val paramLiterals0 = new mutable.HashSet[ParamLiteral]()
+      val paramLiterals1 = allParamLiteralsPhase1(analyzedPlan, paramLiterals0)
+      val paramLiterals2 = allParamLiteralsPhase2(analyzedPlan, paramLiterals1)
+      val paramLiteralsAtPrepare = paramLiterals2.toArray.sortBy(_.pos)
+      val paramCount = paramLiteralsAtPrepare.length
+      if (paramCount != sessionState.questionMarkCounter) {
         throw new UnsupportedOperationException("This query is unsupported for prepared statement")
       }
-      val paramCount = paramLiteralsAtPrepare.length
       val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
       (0 until paramCount) foreach (i => {
@@ -92,7 +95,7 @@ class SparkSQLPrepareImpl(val sql: String,
         types(index) = sqlType._1
         types(index + 1) = sqlType._2
         types(index + 2) = sqlType._3
-        types(index + 3) = if (paramLiteralsAtPrepare(i).nullable) 1 else 0
+        types(index + 3) = if (paramLiteralsAtPrepare(i).value.asInstanceOf[Boolean]) 1 else 0
       })
       DataSerializer.writeIntArray(types, hdos)
     } else {
@@ -131,34 +134,48 @@ class SparkSQLPrepareImpl(val sql: String,
     case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
   }
 
-  def getAllParamLiteralsAtPrepare(plan: LogicalPlan): Array[ParamLiteral] = {
-    val res = new ArrayBuffer[ParamLiteral]()
-
-    def addParamLiteral(e: Expression, i: Int) = res += ParamLiteral(e.nullable, e.dataType, i)
+  def allParamLiteralsPhase1(plan: LogicalPlan,
+      result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
 
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
       case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
-        addParamLiteral(left, pos)
+        result += ParamLiteral(left.nullable, left.dataType, pos)
         bl
       case br@BinaryComparison(ParamLiteral(Row(pos: Int), _, _), right: Expression) =>
-        addParamLiteral(right, pos)
+        result += ParamLiteral(right.nullable, right.dataType, pos)
         br
       case l@Like(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
-        addParamLiteral(left, pos)
+        result += ParamLiteral(left.nullable, left.dataType, pos)
         l
       case inlist@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
       list: Seq[Expression]) => list.map {
-        case ParamLiteral(Row(pos: Int), _, _) => addParamLiteral(value, pos)
+        case ParamLiteral(Row(pos: Int), _, _) =>
+          result += ParamLiteral(value.nullable, value.dataType, pos)
         case x => x
       }
         inlist
     }
 
-    handleSubquery(allParams(plan), allParams)
-    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
+    handleSubQuery(allParams(plan), allParams)
+    result
   }
 
-  def handleSubquery(plan: LogicalPlan,
+  def allParamLiteralsPhase2(plan: LogicalPlan,
+      result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
+
+    def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case c@Cast(ParamLiteral(Row(pos: Int), _, _), right: DataType) =>
+        if (!result.exists(_.pos == pos)) {
+          result += ParamLiteral(false, right, pos)
+        }
+        c
+    }
+
+    handleSubQuery(allParams(plan), allParams)
+    result
+  }
+
+  def handleSubQuery(plan: LogicalPlan,
       f: (LogicalPlan) => LogicalPlan): LogicalPlan = plan transformAllExpressions {
     case sub: SubqueryExpression => sub match {
       case l@ListQuery(query, x) => l.copy(f(query), x)
