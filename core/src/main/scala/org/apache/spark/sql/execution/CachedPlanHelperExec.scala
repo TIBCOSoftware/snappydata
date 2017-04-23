@@ -125,32 +125,30 @@ object CachedPlanHelperExec extends Logging {
     }
   }
 
-  def setValue(dvd: DataValueDescriptor): Any = {
-    dvd match {
-      case i: SQLInteger => i.getInt
-      case si: SQLSmallint => si.getShort
-      case ti: SQLTinyint => ti.getByte
-      case d: SQLDouble => d.getDouble
-      case li: SQLLongint => li.getLong
-      case bid: BigIntegerDecimal => bid.getDouble
-      case de: SQLDecimal => de.getBigDecimal
-      case r: SQLReal => r.getFloat
-      case b: SQLBoolean => b.getBoolean
-      case cl: SQLClob =>
-        val charArray = cl.getCharArray()
-        if (charArray != null) {
-          val str = String.valueOf(charArray)
-          UTF8String.fromString(str)
-        } else null
-      case lvc: SQLLongvarchar => UTF8String.fromString(lvc.getString)
-      case vc: SQLVarchar => UTF8String.fromString(vc.getString)
-      case c: SQLChar => UTF8String.fromString(c.getString)
-      case ts: SQLTimestamp => ts.getTimestamp(null)
-      case t: SQLTime => t.getTime(null)
-      case d: SQLDate =>
-        val c: Calendar = null
-        d.getDate(c)
-      case _ => dvd.getObject
-    }
+  def setValue(dvd: DataValueDescriptor): Any = dvd match {
+    case i: SQLInteger => i.getInt
+    case si: SQLSmallint => si.getShort
+    case ti: SQLTinyint => ti.getByte
+    case d: SQLDouble => d.getDouble
+    case li: SQLLongint => li.getLong
+    case bid: BigIntegerDecimal => bid.getDouble
+    case de: SQLDecimal => de.getBigDecimal
+    case r: SQLReal => r.getFloat
+    case b: SQLBoolean => b.getBoolean
+    case cl: SQLClob =>
+      val charArray = cl.getCharArray()
+      if (charArray != null) {
+        val str = String.valueOf(charArray)
+        UTF8String.fromString(str)
+      } else null
+    case lvc: SQLLongvarchar => UTF8String.fromString(lvc.getString)
+    case vc: SQLVarchar => UTF8String.fromString(vc.getString)
+    case c: SQLChar => UTF8String.fromString(c.getString)
+    case ts: SQLTimestamp => ts.getTimestamp(null)
+    case t: SQLTime => t.getTime(null)
+    case d: SQLDate =>
+      val c: Calendar = null
+      d.getDate(c)
+    case _ => dvd.getObject
   }
 }

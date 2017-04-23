@@ -45,6 +45,7 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
@@ -1693,7 +1694,7 @@ object SnappySession extends Logging {
     }
   }
 
-  private def getAllParamLiterals(queryplan: SparkPlan): Array[ParamLiteral] = {
+  private def getAllParamLiterals(queryplan: QueryPlan[_]): Array[ParamLiteral] = {
     val res = new ArrayBuffer[ParamLiteral]()
     queryplan transformAllExpressions {
       case p: ParamLiteral =>
@@ -1999,22 +2000,20 @@ object SnappySession extends Logging {
   }
 
   // One-to-One Mapping with SparkSQLPrepareImpl.getSQLType
-  def getDataType(storeType: Int, precision: Int, scale: Int): DataType = {
-    storeType match {
-      case StoredFormatIds.SQL_INTEGER_ID => IntegerType
-      case StoredFormatIds.SQL_CLOB_ID => StringType
-      case StoredFormatIds.SQL_LONGINT_ID => LongType
-      case StoredFormatIds.SQL_TIMESTAMP_ID => TimestampType
-      case StoredFormatIds.SQL_DATE_ID => DateType
-      case StoredFormatIds.SQL_DOUBLE_ID => DoubleType
-      case StoredFormatIds.SQL_DECIMAL_ID => DecimalType(precision, scale)
-      case StoredFormatIds.SQL_REAL_ID => FloatType
-      case StoredFormatIds.SQL_BOOLEAN_ID => BooleanType
-      case StoredFormatIds.SQL_SMALLINT_ID => ShortType
-      case StoredFormatIds.SQL_TINYINT_ID => ByteType
-      case StoredFormatIds.SQL_BLOB_ID => BinaryType
-      case _ => StringType
-    }
+  def getDataType(storeType: Int, precision: Int, scale: Int): DataType = storeType match {
+    case StoredFormatIds.SQL_INTEGER_ID => IntegerType
+    case StoredFormatIds.SQL_CLOB_ID => StringType
+    case StoredFormatIds.SQL_LONGINT_ID => LongType
+    case StoredFormatIds.SQL_TIMESTAMP_ID => TimestampType
+    case StoredFormatIds.SQL_DATE_ID => DateType
+    case StoredFormatIds.SQL_DOUBLE_ID => DoubleType
+    case StoredFormatIds.SQL_DECIMAL_ID => DecimalType(precision, scale)
+    case StoredFormatIds.SQL_REAL_ID => FloatType
+    case StoredFormatIds.SQL_BOOLEAN_ID => BooleanType
+    case StoredFormatIds.SQL_SMALLINT_ID => ShortType
+    case StoredFormatIds.SQL_TINYINT_ID => ByteType
+    case StoredFormatIds.SQL_BLOB_ID => BinaryType
+    case _ => StringType
   }
 }
 

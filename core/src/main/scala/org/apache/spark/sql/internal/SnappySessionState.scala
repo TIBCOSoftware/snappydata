@@ -84,7 +84,6 @@ class SnappySessionState(snappySession: SnappySession)
       datasources.PreWriteCheck(conf, catalog),
       PrePutCheck)
   }
-  
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
