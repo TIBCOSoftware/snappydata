@@ -117,7 +117,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     assert(index == results.length)
     rs.close()
 
-    assert( cacheMap.size() == cacheMapSize)
+    assert( cacheMap.size() == cacheMapSize || -1 == cacheMapSize)
   }
 
   def query1(tableName: String): Unit = {
