@@ -77,10 +77,11 @@ class SparkSQLPrepareImpl(val sql: String,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
     if (sessionState.questionMarkCounter > 0) {
-      val paramLiterals0 = new mutable.HashSet[ParamLiteral]()
-      val paramLiterals1 = allParamLiteralsPhase1(analyzedPlan, paramLiterals0)
-      val paramLiterals2 = allParamLiteralsPhase2(analyzedPlan, paramLiterals1)
-      val paramLiteralsAtPrepare = paramLiterals2.toArray.sortBy(_.pos)
+      val paramLiteralSet = new mutable.HashSet[ParamLiteral]()
+      val paramLiterals = allParamLiterals(analyzedPlan, paramLiteralSet)
+      val paramLiteralsAtPrepare = if (paramLiterals.size < sessionState.questionMarkCounter) {
+        remainingParamLiterals(analyzedPlan, paramLiterals).toArray.sortBy(_.pos)
+      } else paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length
       if (paramCount != sessionState.questionMarkCounter) {
         throw new UnsupportedOperationException("This query is unsupported for prepared statement")
@@ -134,25 +135,37 @@ class SparkSQLPrepareImpl(val sql: String,
     case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
   }
 
-  def allParamLiteralsPhase1(plan: LogicalPlan,
+  def allParamLiterals(plan: LogicalPlan,
       result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
 
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
       case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
         result += ParamLiteral(left.nullable, left.dataType, pos)
         bl
+      case blc@BinaryComparison(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, _), _)) =>
+        result += ParamLiteral(left.nullable, left.dataType, pos)
+        blc
       case br@BinaryComparison(ParamLiteral(Row(pos: Int), _, _), right: Expression) =>
         result += ParamLiteral(right.nullable, right.dataType, pos)
         br
+      case brc@BinaryComparison(Cast(ParamLiteral(Row(pos: Int), _, _), _), right: Expression) =>
+        result += ParamLiteral(right.nullable, right.dataType, pos)
+        brc
       case l@Like(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
         result += ParamLiteral(left.nullable, left.dataType, pos)
         l
+      case lc@Like(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, _), _)) =>
+        result += ParamLiteral(left.nullable, left.dataType, pos)
+        lc
       case inlist@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
-      list: Seq[Expression]) => list.map {
-        case ParamLiteral(Row(pos: Int), _, _) =>
-          result += ParamLiteral(value.nullable, value.dataType, pos)
-        case x => x
-      }
+      list: Seq[Expression]) =>
+        list.map {
+          case ParamLiteral(Row(pos: Int), _, _) =>
+            result += ParamLiteral(value.nullable, value.dataType, pos)
+          case Cast(ParamLiteral(Row(pos: Int), _, _), _) =>
+            result += ParamLiteral(value.nullable, value.dataType, pos)
+          case x => x
+        }
         inlist
     }
 
@@ -160,7 +173,7 @@ class SparkSQLPrepareImpl(val sql: String,
     result
   }
 
-  def allParamLiteralsPhase2(plan: LogicalPlan,
+  def remainingParamLiterals(plan: LogicalPlan,
       result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
 
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
