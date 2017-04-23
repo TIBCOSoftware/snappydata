@@ -1012,4 +1012,14 @@ class ColumnTableTest
     assert(df1.schema == df3.schema)
 
   }
+
+  test("Test create table from CSV without header") {
+    snc.sql(s"create table test1 using com.databricks.spark.csv options(path '${(getClass.getResource
+    ("/northwind/orders" +
+      ".csv").getPath)}', header 'false', inferschema 'true')")
+    snc.sql("create table test2 using column options() as (select * from test1)")
+    val df2 = snc.sql("select * from test1")
+    df2.show()
+
+  }
 }
