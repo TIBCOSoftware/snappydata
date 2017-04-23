@@ -84,25 +84,7 @@ class SnappySessionState(snappySession: SnappySession)
       datasources.PreWriteCheck(conf, catalog),
       PrePutCheck)
   }
-
-  object BaseAnalyzerRules extends Analyzer(catalog, conf)
-
-  lazy val analyzerOnlyForPreparedStatement: Analyzer = new Analyzer(catalog, conf) {
-    override lazy val batches: Seq[Batch] = BaseAnalyzerRules.batches.map {
-      case firstBatch if firstBatch.name.equalsIgnoreCase("Substitution") =>
-        Batch(firstBatch.name, firstBatch.strategy.asInstanceOf[this.Strategy],
-          firstBatch.rules: _*)
-      case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        // ResolveParameters must come before TypeCoercion rules
-        val splitIndex = batch.rules.indexWhere(_.ruleName.contains("TypeCoercion"))
-        val (left, right) = batch.rules.splitAt(splitIndex)
-        // Ignore right i.e. rest of the rules. Analyzer stops here
-        Batch(batch.name, batch.strategy.asInstanceOf[this.Strategy], left: _*)
-      case otherBatch => Batch(otherBatch.name, otherBatch.strategy.asInstanceOf[this.Strategy],
-        Nil: _*) // ...ignore other batches
-    }
-  }
-
+  
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
