@@ -224,7 +224,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     1 to 1000 foreach { _ =>
       data += Array.fill(3)(Random.nextInt())
     }
-    val rdd = context.parallelize(data, data.length).map(s =>
+    val rdd = context.parallelize(data, 8).map(s =>
       Data(s(0), Integer.toString(s(1)),
         Decimal(s(2).toString + '.' + math.abs(s(0)))))
 
@@ -300,7 +300,7 @@ trait SplitClusterDUnitTestObject extends Logging {
         Data(rnd1, Integer.toString(rnd2), Decimal(drnd1.toString + '.' +
             drnd2)), dec(1), ts(math.abs(rnd1) % 5))
     }
-    val rdd = context.parallelize(data, data.length)
+    val rdd = context.parallelize(data, 8)
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, props)
