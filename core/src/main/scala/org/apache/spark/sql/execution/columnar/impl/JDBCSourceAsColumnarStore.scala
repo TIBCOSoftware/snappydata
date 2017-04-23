@@ -28,7 +28,6 @@ import scala.util.Random
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
@@ -76,6 +75,68 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
+  protected def doSnappyInsert(tableName: String, batch: ColumnBatch,
+      batchId: Option[String], partitionId: Int, maxDeltaRows: Int): Unit = {
+    val region = Misc.getRegionForTable[ColumnFormatKey,
+        ColumnFormatValue](tableName, true)
+    var columnIndex = 1
+    val uuid = batchId.getOrElse(UUID.randomUUID().toString)
+    try {
+      // add key-values pairs for each column
+      val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](
+        batch.buffers.length + 1)
+      batch.buffers.foreach { buffer =>
+        val key = new ColumnFormatKey(partitionId, columnIndex, uuid)
+        val value = new ColumnFormatValue(buffer)
+        keyValues.put(key, value)
+        columnIndex += 1
+      }
+      // add the stats row
+      val key = new ColumnFormatKey(partitionId,
+        ColumnBatchIterator.STATROW_COL_INDEX, uuid)
+      val allocator = Misc.getGemFireCache.getBufferAllocator
+      val statsLen = batch.statsData.length
+      val statsBuffer = allocator.allocate(statsLen +
+          ColumnFormatEntry.VALUE_HEADER_SIZE)
+      statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+      statsBuffer.put(batch.statsData, 0, statsLen)
+      // move to start for ColumnFormatValue to write the serialization header
+      statsBuffer.rewind()
+      val value = new ColumnFormatValue(statsBuffer)
+      keyValues.put(key, value)
+
+      // do a putAll of the key-value map
+      region.putAll(keyValues)
+    } catch {
+      // TODO: test this code
+      case e: Exception =>
+        // delete the base entry first
+        val key = new ColumnFormatKey(partitionId,
+          ColumnBatchIterator.STATROW_COL_INDEX, uuid)
+        try {
+          region.destroy(key)
+        } catch {
+          case _: Exception => // ignore
+        }
+        // delete the column entries
+        batch.buffers.indices.foreach { index =>
+          val key = new ColumnFormatKey(partitionId, index + 1, uuid)
+          try {
+            region.destroy(key)
+          } catch {
+            case _: Exception => // ignore
+          }
+        }
+        throw e;
+    }
+  }
+
+  /**
+   * Insert the base entry and n column entries in Snappy. Insert the base entry
+   * in the end to ensure that the partial inserts of a cached batch are ignored
+   * during iteration. We are not cleaning up the partial inserts of cached
+   * batches for now.
+   */
   protected def doGFXDInsert(tableName: String, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int,
       maxDeltaRows: Int): (Connection => Any) = {
@@ -101,7 +162,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           // add the stat row
           stmt.setString(1, uuid)
           stmt.setInt(2, partitionId)
-          stmt.setInt(3, JDBCSourceAsStore.STATROW_COL_INDEX)
+          stmt.setInt(3, ColumnBatchIterator.STATROW_COL_INDEX)
           stmt.setBytes(4, batch.statsData.clone)
           stmt.addBatch()
 
@@ -286,8 +347,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             val region = Misc.getRegionForTable(resolvedColumnTableName, true)
                 .asInstanceOf[PartitionedRegion]
             val batchID = Some(batchId.getOrElse(region.newJavaUUID().toString))
-            doGFXDInsert(resolvedColumnTableName, batch, batchID, partitionId,
-              maxDeltaRows)(connection)
+            doSnappyInsert(resolvedColumnTableName, batch, batchID,
+              partitionId, maxDeltaRows)
+            // doGFXDInsert(resolvedColumnTableName, batch, batchID, partitionId,
+            //  maxDeltaRows)(connection)
 
           case _ =>
             doGFXDInsert(resolvedColumnTableName, batch, batchId, partitionId,
@@ -379,12 +442,14 @@ final class ColumnarStorePartitionedRDD(
   }
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
-    val container = GemFireXDUtils.getGemFireContainer(tableName, true)
     val bucketIds = part match {
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
     }
-    ColumnBatchIterator(container, bucketIds)
+    // val container = GemFireXDUtils.getGemFireContainer(tableName, true)
+    // ColumnBatchIterator(container, bucketIds)
+    val r = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
+    ColumnBatchIterator(r, bucketIds)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

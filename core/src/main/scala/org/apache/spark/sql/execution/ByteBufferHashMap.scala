@@ -19,9 +19,10 @@ package org.apache.spark.sql.execution
 
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.internal.cache.store.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnAllocator, ColumnEncoding}
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
@@ -53,7 +54,7 @@ import org.apache.spark.unsafe.types.UTF8String
  */
 final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     keySize: Int, private val valueSize: Int,
-    private val allocator: ColumnAllocator,
+    private val allocator: BufferAllocator,
     var keyData: ByteBufferData = null,
     var valueData: ByteBufferData = null,
     var valueDataPosition: Long = 0L) {
@@ -219,7 +220,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
     this(buffer, baseObject, baseOffset, baseOffset + buffer.capacity())
   }
 
-  def this(buffer: ByteBuffer, allocator: ColumnAllocator) = {
+  def this(buffer: ByteBuffer, allocator: BufferAllocator) = {
     this(buffer, allocator.baseObject(buffer), allocator.baseOffset(buffer))
   }
 
@@ -241,7 +242,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
   }
 
   def resize(cursor: Long, required: Int,
-      allocator: ColumnAllocator): ByteBufferData = {
+      allocator: BufferAllocator): ByteBufferData = {
     val buffer = allocator.expand(this.buffer, cursor, this.baseOffset,
       required)
     val baseOffset = allocator.baseOffset(buffer)
@@ -263,7 +264,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
     buffer.clear()
   }
 
-  def release(allocator: ColumnAllocator): Unit = {
+  def release(allocator: BufferAllocator): Unit = {
     allocator.release(buffer)
   }
 }

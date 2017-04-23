@@ -18,6 +18,8 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
+import com.gemstone.gemfire.distributed.internal.DistributionConfig
+
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
@@ -41,7 +43,7 @@ object Constant {
 
   val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
 
-  val PROPERTY_PREFIX = "snappydata."
+  val PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
 
   val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
 

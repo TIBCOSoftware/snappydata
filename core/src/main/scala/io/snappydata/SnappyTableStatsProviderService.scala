@@ -19,33 +19,30 @@
 
 package io.snappydata
 
+import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
+import scala.language.implicitConversions
+
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.DataPolicy
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer}
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
-import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
-import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, JDBCSourceAsStore}
-import org.apache.spark.sql.{SnappyContext, SnappySession}
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.{Logging, SparkContext}
 
-import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
-import scala.language.implicitConversions
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey
+import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.{Logging, SparkContext}
 
 object SnappyTableStatsProviderService extends Logging {
 
@@ -104,6 +101,7 @@ object SnappyTableStatsProviderService extends Logging {
         val prevTableSizeInfo = tableSizeInfo
         running = true
         try {
+          // TODO: [sumedh] indexStats never used?
           val (tableStats, indexStats) = getAggregatedStatsOnDemand
           tableSizeInfo = tableStats
           // get members details
@@ -209,40 +207,27 @@ object SnappyTableStatsProviderService extends Logging {
         val pr = region.asInstanceOf[PartitionedRegion]
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
         if (table.startsWith(Constant.INTERNAL_SCHEMA_NAME) &&
-            table.endsWith(Constant.SHADOW_TABLE_SUFFIX)) {
-          if (container != null) {
-            val bufferTable = JDBCAppendableRelation.getTableName(table)
-            val numColumnsInBaseTbl = (Misc.getMemStore.getAllContainers.asScala.find(c => {
-              c.getQualifiedTableName.equalsIgnoreCase(bufferTable)}).get.getNumColumns) - 1
-
-            val numColumnsInStatBlob = numColumnsInBaseTbl * ColumnStatsSchema.NUM_STATS_PER_COLUMN
-            val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
-              true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-            // Resetting PR Numrows in cached batch as this will be calculated every time.
-            // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-            var rowsInColumnBatch: Long = 0
+            table.endsWith(Constant.SHADOW_TABLE_SUFFIX) &&
+            pr.getLocalMaxMemory > 0) {
+          val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
+            true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+          var numColumnsInTable = -1
+          // Resetting PR Numrows in cached batch as this will be calculated every time.
+          // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
+          var rowsInColumnBatch: Long = 0
+          if (container ne null) {
+            // using direct region operations
             while (itr.hasNext) {
-              val rl = itr.next().asInstanceOf[RowLocation]
-              val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
-              val x = key.getKeyColumn(2).getInt
-              val currentBucketRegion = itr.getHostedBucketRegion
-              if (x == JDBCSourceAsStore.STATROW_COL_INDEX) {
-                currentBucketRegion.get(key) match {
-                  case currentVal: Array[Array[Byte]] =>
-                    val rowFormatter = container.
-                        getRowFormatter(currentVal(0))
-                    val statBytes = rowFormatter.getLob(currentVal, 4)
-                    val unsafeRow = new UnsafeRow(numColumnsInStatBlob)
-                    unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
-                      statBytes.length)
-                    rowsInColumnBatch += unsafeRow.getInt(
-                      ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA);
-                  case _ =>
-                }
+              val re = itr.next().asInstanceOf[AbstractRegionEntry]
+              val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
+              if (numColumnsInTable < 0) {
+                numColumnsInTable = key.getNumColumnsInTable(table)
               }
+              rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
+                numColumnsInTable)
             }
-            pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
           }
+          pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
         }
       }
     }

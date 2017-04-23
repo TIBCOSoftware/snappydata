@@ -42,8 +42,9 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   val coptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1",
     "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val cwoptions = Map("BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
-  val poptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "PERSISTENT" -> "SYNCHRONOUS")
+  val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true",
+    "PERSISTENCE" -> "NONE")
+  val poptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "PERSISTENCE" -> "SYNCHRONOUS")
   val memoryMode = MemoryMode.ON_HEAP
 
   test("Test drop table accounting for column partitioned table") {
@@ -145,6 +146,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     // 208 *10. 208 is the row size + memory overhead
 
     var rows = 0
+    // scalastyle:off
     try {
       for (i <- 1 to 100) {
         val row = Row(100000000, 10000000, 10000000)
@@ -159,6 +161,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         assert(memoryIncreaseDuetoEviction > 0)
       }
     }
+    // scalastyle:on
     val count = snSession.sql("select * from t1").count()
     assert(count == rows)
     snSession.dropTable("t1")
@@ -170,6 +173,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = "OPTIONS (BUCKETS '1', " +
         "PARTITION_BY 'Col1', " +
+        "PERSISTENCE 'none', " +
         "EVICTION_BY 'LRUCOUNT 3', " +
         "OVERFLOW 'true')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
@@ -198,7 +202,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = "OPTIONS (BUCKETS '1', " +
         "PARTITION_BY 'Col1', " +
-        "PERSISTENT 'SYNCHRONOUS', " +
+        "PERSISTENCE 'SYNCHRONOUS', " +
         "EVICTION_BY 'LRUCOUNT 3', " +
         "OVERFLOW 'true')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
@@ -227,10 +231,9 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     var sparkSession = createSparkSession(1, 0, 100000L)
     var snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
-    val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', OVERFLOW 'true')"
-    snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
-        options
-    )
+    val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', OVERFLOW 'true', PERSISTENCE 'none')"
+    snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) USING row " +
+        options)
     val beforeInsertMem = SparkEnv.get.memoryManager.storageMemoryUsed
 
     val row = Row(100000000, 10000000, 10000000)
@@ -252,7 +255,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     var sparkSession = createSparkSession(1, 0, 100000L)
     var snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
-    val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', OVERFLOW 'true', PERSISTENT 'SYNCHRONOUS')"
+    val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', OVERFLOW 'true', PERSISTENCE 'SYNCHRONOUS')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
@@ -279,7 +282,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     var snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
-    val options = "OPTIONS (BUCKETS '1', PARTITION_BY 'Col1', PERSISTENT 'SYNCHRONOUS')"
+    val options = "OPTIONS (BUCKETS '1', PARTITION_BY 'Col1', PERSISTENCE 'SYNCHRONOUS')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
     )
@@ -304,6 +307,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = Map("PARTITION_BY" -> "col1",
+      "PERSISTENCE" -> "none",
       "BUCKETS" -> "1",
       "EVICTION_BY" -> "LRUHEAPPERCENT",
       "OVERFLOW" -> "true"
@@ -376,7 +380,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting of delete for replicated tables") {
-    val sparkSession = createSparkSession(1, 0)
+    val sparkSession = createSparkSession(1, 0, sparkMemory = 1200)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, Map.empty[String, String])

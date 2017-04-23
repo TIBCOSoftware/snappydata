@@ -24,7 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, LocalRegion, NonLocalRegionEntry, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -355,19 +355,21 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
   }
 }
 
-abstract class PRValuesIterator[T](val container: GemFireContainer,
-    bucketIds: java.util.Set[Integer]) extends Iterator[T] {
+abstract class PRValuesIterator[T](container: GemFireContainer,
+    region: LocalRegion, bucketIds: java.util.Set[Integer]) extends Iterator[T] {
 
   protected final var hasNextValue = true
   protected final var doMove = true
 
-  protected final val itr = if (container ne null) {
+  private[execution] final val itr = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
       false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-  } else {
-    null
-  }
+  } else if (region ne null) {
+    region.getDataView.getLocalEntriesIterator(
+      bucketIds.asInstanceOf[java.util.Set[Integer]], false, false, true,
+      region, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  } else null
 
   protected def currentVal: T
 
@@ -392,7 +394,8 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
     bucketIds: java.util.Set[Integer])
-    extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
+    extends PRValuesIterator[AbstractCompactExecRow](container,
+      region = null, bucketIds) {
 
   override protected val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]

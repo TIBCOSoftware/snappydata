@@ -19,7 +19,8 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.store.{BufferAllocator, DirectBufferAllocator, HeapBufferAllocator}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.StringUtils
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -28,6 +29,7 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthI
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.bitset.BitSetMethods
@@ -38,15 +40,16 @@ import org.apache.spark.util.collection.BitSet
  * Base class for encoding and decoding in columnar form. Memory layout of
  * the bytes for a set of column values is:
  * {{{
- *   .----------------------- Encoding scheme (4 bytes)
- *   |   .------------------- Null bitset size as number of longs N (4 bytes)
- *   |   |   .--------------- Null bitset longs (8 x N bytes,
- *   |   |   |                                   empty if null count is zero)
- *   |   |   |     .--------- Encoded non-null elements
- *   V   V   V     V
- *   +---+---+-----+---------+
- *   |   |   | ... | ... ... |
- *   +---+---+-----+---------+
+ *    .----------------------- Serialization header (8 bytes)
+ *   |    .------------------- Encoding scheme (4 bytes)
+ *   |   | .------------------ Null bitset size as number of longs N (4 bytes)
+ *   |   | | .---------------- Null bitset longs (8 x N bytes,
+ *   |   | | |                                    empty if null count is zero)
+ *   |   | | |     .---------- Encoded non-null elements
+ *   V   V V V     V
+ *   +---+-+-+-----+---------+
+ *   |   | | | ... | ... ... |
+ *   +---+-+-+-----+---------+
  *    \-----/ \-------------/
  *     header      body
  * }}}
@@ -203,8 +206,8 @@ abstract class ColumnDecoder extends ColumnEncoding {
 
 trait ColumnEncoder extends ColumnEncoding {
 
-  protected final var allocator: ColumnAllocator = _
-  private final var finalAllocator: ColumnAllocator = _
+  protected final var allocator: BufferAllocator = _
+  private final var finalAllocator: BufferAllocator = _
   protected final var columnData: ByteBuffer = _
   protected final var columnBeginPosition: Long = _
   protected final var columnEndPosition: Long = _
@@ -229,12 +232,10 @@ trait ColumnEncoder extends ColumnEncoding {
    * This should be changed to use the matching allocator as per the
    * storage being used by column store in embedded mode.
    */
-  protected final def storageAllocator: ColumnAllocator = {
+  protected final def storageAllocator: BufferAllocator = {
     if (finalAllocator ne null) finalAllocator
     else {
-      finalAllocator =
-          if (GemFireCacheImpl.getInstance ne null) HeapBufferAllocator
-          else allocator
+      finalAllocator = Misc.getGemFireCache.getBufferAllocator
       finalAllocator
     }
   }
@@ -242,7 +243,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def isAllocatorFinal: Boolean =
     allocator.getClass eq storageAllocator.getClass
 
-  protected def setAllocator(allocator: ColumnAllocator): Unit = {
+  protected def setAllocator(allocator: BufferAllocator): Unit = {
     if (this.allocator ne allocator) {
       this.allocator = allocator
       this.finalAllocator = null
@@ -260,7 +261,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def initialize(field: StructField, initSize: Int,
       withHeader: Boolean): Long = {
-    initialize(field, initSize, withHeader, DirectBufferAllocator)
+    initialize(field, initSize, withHeader, DirectBufferAllocator.instance())
   }
 
   protected def initializeLimits(): Unit = {
@@ -285,7 +286,7 @@ trait ColumnEncoder extends ColumnEncoding {
   }
 
   def initialize(field: StructField, initSize: Int,
-      withHeader: Boolean, allocator: ColumnAllocator): Long = {
+      withHeader: Boolean, allocator: BufferAllocator): Long = {
     setAllocator(allocator)
     val dataType = Utils.getSQLDataType(field.dataType)
     val defSize = defaultSize(dataType)
@@ -311,6 +312,8 @@ trait ColumnEncoder extends ColumnEncoding {
       } else {
         initByteSize = defSize.toLong * initSize + numNullBytes
         if (withHeader) {
+          // add header size for serialized form to avoid a copy in Oplog layer
+          initByteSize += ColumnFormatEntry.VALUE_HEADER_SIZE
           initByteSize += 8L /* typeId + nullsSize */
         }
       }
@@ -330,7 +333,8 @@ trait ColumnEncoder extends ColumnEncoding {
     }
     reuseUsedSize = 0
     if (withHeader) {
-      var cursor = columnBeginPosition
+      // skip serialization header which will be filled in by ColumnFormatValue
+      var cursor = columnBeginPosition + ColumnFormatEntry.VALUE_HEADER_SIZE
       // typeId followed by nulls bitset size and space for values
       ColumnEncoding.writeInt(columnBytes, cursor, typeId)
       cursor += 4
@@ -750,8 +754,9 @@ object ColumnEncoding {
     }
   }
 
-  def getAllocator(buffer: ByteBuffer): ColumnAllocator =
-    if (buffer.isDirect) DirectBufferAllocator else HeapBufferAllocator
+  def getAllocator(buffer: ByteBuffer): BufferAllocator =
+    if (buffer.isDirect) DirectBufferAllocator.instance()
+    else HeapBufferAllocator.instance()
 
   def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
     val allocator = getAllocator(buffer)
@@ -1155,8 +1160,8 @@ trait NullableEncoder extends NotNullEncoder {
       val newColumnData = storageAllocator.allocate(newSize)
 
       // first copy the rest of the bytes skipping header and nulls
-      val srcOffset = 8 + initialNullBytes
-      val destOffset = 8 + numNullBytes
+      val srcOffset = ColumnFormatEntry.VALUE_HEADER_SIZE + 8 + initialNullBytes
+      val destOffset = ColumnFormatEntry.VALUE_HEADER_SIZE + 8 + numNullBytes
       newColumnData.position(destOffset)
       copyTo(newColumnData, srcOffset, oldSize.toInt)
       newColumnData.rewind()
@@ -1172,6 +1177,8 @@ trait NullableEncoder extends NotNullEncoder {
       // now write the header including nulls
       val newColumnBytes = storageAllocator.baseObject(newColumnData)
       var position = storageAllocator.baseOffset(newColumnData)
+      // skip serialization header which will be filled in by ColumnFormatValue
+      position += ColumnFormatEntry.VALUE_HEADER_SIZE
       ColumnEncoding.writeInt(newColumnBytes, position, typeId)
       position += 4
       ColumnEncoding.writeInt(newColumnBytes, position, numWords)

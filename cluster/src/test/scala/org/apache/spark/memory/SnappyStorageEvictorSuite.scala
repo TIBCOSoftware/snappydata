@@ -35,7 +35,8 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
       .add(StructField("col2", IntegerType, true))
       .add(StructField("col3", IntegerType, true))
 
-  val options = Map("PARTITION_BY" -> "col1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
+  val options = Map("PARTITION_BY" -> "col1", "EVICTION_BY" -> "LRUHEAPPERCENT",
+    "OVERFLOW" -> "true", "PERSISTENCE" -> "none")
   val coptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val cwoptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")

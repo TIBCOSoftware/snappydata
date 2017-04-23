@@ -18,9 +18,11 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.internal.cache.store.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry
 import org.apache.spark.sql.execution.{ByteBufferHashMap, LongKey, ObjectHashSet}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -205,7 +207,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 
   override def initialize(field: StructField, initSize: Int,
-      withHeader: Boolean, allocator: ColumnAllocator): Long = {
+      withHeader: Boolean, allocator: BufferAllocator): Long = {
     assert(withHeader, "DictionaryEncoding not supported without header")
 
     Utils.getSQLDataType(field.dataType) match {
@@ -343,11 +345,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val numNullWords = getNumNullWords
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
     val storageAllocator = this.storageAllocator
+    // serialization header size + typeId + number of nulls
+    val headerSize = ColumnFormatEntry.VALUE_HEADER_SIZE + 8L
     val columnData = storageAllocator.allocate(ColumnEncoding.checkBufferSize(
-      8L /* typeId + number of nulls */ + (numNullWords << 3L) + dataSize))
+      headerSize + (numNullWords << 3L) + dataSize))
     val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
-    var cursor = baseOffset
+    // skip serialization header which will be filled in by ColumnFormatValue
+    var cursor = baseOffset + ColumnFormatEntry.VALUE_HEADER_SIZE
     // typeId
     ColumnEncoding.writeInt(columnBytes, cursor, typeId)
     cursor += 4

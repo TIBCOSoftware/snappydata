@@ -27,9 +27,8 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Cast, Literal, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -93,7 +92,9 @@ abstract class BaseColumnFormatRelation(
   }
 
   @transient
-  lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
+  lazy val clusterMode: ClusterMode = SnappyContext.getClusterMode(
+    _context.sparkContext)
+
   @transient
   lazy val relInfo: RelationInfo = {
     clusterMode match {
@@ -101,7 +102,7 @@ abstract class BaseColumnFormatRelation(
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-        new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+        RelationInfo(numBuckets, partitionColumns, Array.empty[String],
           Array.empty[String], Array.empty[Partition], -1)
     }
   }
@@ -196,7 +197,7 @@ abstract class BaseColumnFormatRelation(
     // finally skipping any IDs greater than the noted ones.
     // However, with plans for mutability in column store (via row buffer) need
     // to re-think in any case and provide proper snapshot isolation in store.
-    val isPartitioned = (numBuckets != 1)
+    val isPartitioned = numBuckets != 1
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -359,20 +360,24 @@ abstract class BaseColumnFormatRelation(
 
     val (primaryKey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
-      case d: JdbcExtendedDialect =>
+      case _: JdbcExtendedDialect =>
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
             "primary key (uuid, partitionId, columnIndex) ",
-            d.getPartitionByClause("partitionId"),
+            // d.getPartitionByClause("partitionId"),
+            s"PARTITIONER '${classOf[ColumnPartitionResolver].getName}'",
             "  DISABLE CONCURRENCY CHECKS ")
       case _ => ("primary key (uuid)", "", "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
+    val keyConstraint = s"KEY CONSTRAINT '${classOf[ColumnFormatKey].getName}'"
+    val valueConstraint = s"VALUE CONSTRAINT '${classOf[ColumnFormatValue].getName}'"
 
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
     createTable(externalStore, s"create table $tableName (uuid varchar(46) " +
         "not null, partitionId integer, columnIndex integer, data blob " +
         s", $primaryKey) $partitionStrategy $colocationClause " +
+        s" $keyConstraint $valueConstraint" +
         s" $concurrency $ddlExtensionForShadowTable",
       tableName, dropIfExists = false)
   }

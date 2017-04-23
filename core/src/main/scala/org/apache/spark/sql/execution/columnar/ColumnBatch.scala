@@ -21,7 +21,7 @@ import java.sql.{Blob, Connection, PreparedStatement, ResultSet, Statement}
 
 import scala.language.implicitConversions
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, RegionEntry}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gnu.trove.{TIntObjectHashMap, TObjectProcedure}
 import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer}
@@ -29,8 +29,12 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocati
 import io.snappydata.thrift.common.BufferedBlob
 
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.{Logging, TaskContext}
+
+case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
+    statsData: Array[Byte])
 
 abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext)
@@ -99,25 +103,92 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 }
 
-case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
-    statsData: Array[Byte])
-
 object ColumnBatchIterator {
 
   def apply(container: GemFireContainer,
       bucketIds: java.util.Set[Integer]): ColumnBatchIterator = {
     new ColumnBatchIterator(container, bucketIds, null)
-
   }
 
-  def apply(batch: ColumnBatch): ColumnBatchIterator = {
-    new ColumnBatchIterator(null, null, batch)
+  def apply(region: LocalRegion,
+      bucketIds: java.util.Set[Integer]): ColumnBatchBufferIterator = {
+    new ColumnBatchBufferIterator(region, bucketIds, batch = null)
+  }
+
+  def apply(batch: ColumnBatch): ColumnBatchBufferIterator = {
+    new ColumnBatchBufferIterator(region = null, bucketIds = null, batch)
+  }
+
+  val STATROW_COL_INDEX: Int = -1
+}
+
+final class ColumnBatchBufferIterator(region: LocalRegion,
+    bucketIds: java.util.Set[Integer], val batch: ColumnBatch)
+    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
+
+  if (region ne null) {
+    assert(!region.getEnableOffHeapMemory,
+      s"Unexpected buffer iterator call for off-heap $region")
+  } else {
+    // skip the serialization headers in the ByteBuffers
+    batch.buffers.foreach(buffer => buffer.position(buffer.position() +
+        ColumnFormatEntry.VALUE_HEADER_SIZE))
+  }
+
+  protected var currentVal: ByteBuffer = _
+  var currentKeyPartitionId: Int = _
+  var currentKeyUUID: String = _
+  var currentBucketRegion: BucketRegion = _
+  var batchProcessed = false
+
+  def getColumnLob(bufferPosition: Int): ByteBuffer = {
+    if (region ne null) {
+      val key = new ColumnFormatKey(currentKeyPartitionId, bufferPosition,
+        currentKeyUUID)
+      val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
+      else region.get(key)
+      value.asInstanceOf[ColumnFormatValue].getBuffer
+    } else {
+      batch.buffers(bufferPosition - 1)
+    }
+  }
+
+  override protected def moveNext(): Unit = {
+    if (region ne null) {
+      while (itr.hasNext) {
+        val re = itr.next().asInstanceOf[RegionEntry]
+        currentBucketRegion = itr.getHostedBucketRegion
+        // get the stat row region entries only. region entries for individual
+        // columns will be fetched on demand
+        if ((currentBucketRegion ne null) ||
+            re.isInstanceOf[NonLocalRegionEntry]) {
+          val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
+          if (key.columnIndex == ColumnBatchIterator.STATROW_COL_INDEX) {
+            // if currentBucketRegion is null then its the case of
+            // NonLocalRegionEntry where RegionEntryContext arg is not required
+            val v = re.getValue(currentBucketRegion)
+            if (v ne null) {
+              currentKeyPartitionId = key.partitionId
+              currentKeyUUID = key.uuid
+              currentVal = v.asInstanceOf[ColumnFormatValue].getBuffer
+              return
+            }
+          }
+        }
+      }
+      hasNextValue = false
+    } else if (!batchProcessed) {
+      currentVal = ByteBuffer.wrap(batch.statsData)
+      batchProcessed = true
+    } else {
+      hasNextValue = false
+    }
   }
 }
 
 final class ColumnBatchIterator(container: GemFireContainer,
     bucketIds: java.util.Set[Integer], val batch: ColumnBatch)
-    extends PRValuesIterator[Array[Byte]](container, bucketIds) {
+    extends PRValuesIterator[Array[Byte]](container, region = null, bucketIds) {
 
   if (container ne null){
     assert(!container.isOffHeap,
@@ -155,7 +226,7 @@ final class ColumnBatchIterator(container: GemFireContainer,
       if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
         val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
         if (key.getKeyColumn(2).getInt ==
-            JDBCSourceAsStore.STATROW_COL_INDEX) {
+            ColumnBatchIterator.STATROW_COL_INDEX) {
           val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
           else baseRegion.get(key)
           if (v ne null) {
@@ -257,8 +328,4 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     }
     super.close()
   }
-}
-
-object JDBCSourceAsStore {
-  val STATROW_COL_INDEX: Int = -1
 }

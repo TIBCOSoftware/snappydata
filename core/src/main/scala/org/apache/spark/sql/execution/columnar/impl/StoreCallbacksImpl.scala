@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
+import com.gemstone.gemfire.{DataSerializable, Instantiator}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
@@ -49,11 +50,23 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
+  Instantiator.register(new Instantiator(classOf[ColumnFormatKey],
+    ColumnFormatEntry.COLUMN_KEY_CLASSID) {
+    override def newInstance(): DataSerializable = {
+      new ColumnFormatKey()
+    }
+  })
+
+  Instantiator.register(new Instantiator(classOf[ColumnFormatValue],
+    ColumnFormatEntry.COLUMN_VALUE_CLASSID) {
+    override def newInstance(): DataSerializable = {
+      new ColumnFormatValue()
+    }
+  })
+
   private val partitioner = new StoreHashFunction
 
   val sizer: GemFireXDInstrumentation = GemFireXDInstrumentation.getInstance
-
-
 
   override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {

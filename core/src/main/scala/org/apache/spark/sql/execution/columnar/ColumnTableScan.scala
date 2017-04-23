@@ -280,12 +280,8 @@ private[sql] final case class ColumnTableScan(
     } else ("", "")
 
     val iteratorClass = "scala.collection.Iterator"
-    val colIteratorClass = if (isEmbedded) {
-      "org.apache.spark.sql.execution.columnar.ColumnBatchIterator"
-    }
-    else {
-      "org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS"
-    }
+    val colIteratorClass = if (isEmbedded) classOf[ColumnBatchBufferIterator].getName
+    else classOf[ColumnBatchIteratorOnRS].getName
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         ctx.addMutableState(iteratorClass, rowInputSRR,
@@ -330,7 +326,7 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
 
-    ctx.addMutableState("byte[]", buffers, s"$buffers = null;")
+    ctx.addMutableState("java.nio.ByteBuffer", buffers, s"$buffers = null;")
     ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
     ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
 
@@ -448,22 +444,9 @@ private[sql] final case class ColumnTableScan(
     // TODO: add filter function for non-embedded mode (using store layer
     //   function that will invoke the above function in independent class)
     val filterFunction = generateStatPredicate(ctx, numBatchRows)
-    val getUnsafeRow = ctx.freshName("getUnsafeRow")
     val unsafeRow = ctx.freshName("unsafeRow")
-    val statBytes = ctx.freshName("statBytes")
     val colNextBytes = ctx.freshName("colNextBytes")
-    val platformClass = classOf[Platform].getName
     val numColumnsInStatBlob = relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN
-    ctx.addNewFunction(getUnsafeRow,
-      s"""
-         |
-         |private UnsafeRow $getUnsafeRow(byte[] $statBytes) {
-         |  final UnsafeRow unsafeRow = new UnsafeRow($numColumnsInStatBlob);
-         |  unsafeRow.pointTo($statBytes, $platformClass.BYTE_ARRAY_OFFSET,
-         |    $statBytes.length);
-         |  return unsafeRow;
-         |}
-       """.stripMargin)
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(numBatchRows)};"
@@ -479,8 +462,9 @@ private[sql] final case class ColumnTableScan(
     val countIndexInSchema = ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA
     val batchAssign =
       s"""
-        final byte[] $colNextBytes = (byte[])$colInput.next();
-        UnsafeRow $unsafeRow = $getUnsafeRow($colNextBytes);
+        final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
+        UnsafeRow $unsafeRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
+          $colNextBytes, $numColumnsInStatBlob);
         $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
         $incrementBatchCount
         $buffers = $colNextBytes;
