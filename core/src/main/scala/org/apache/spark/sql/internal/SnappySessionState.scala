@@ -25,18 +25,15 @@ import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import com.pivotal.gemfirexd.internal.iapi.types._
-import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.{CatalystConf, CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, BinaryComparison, Cast, DynamicFoldableExpression, EmptyRow, Exists, Expression, Like, ListQuery, Literal, ParamLiteralAtPrepare, ParamLiteral, PredicateHelper, PredicateSubquery, ScalarSubquery, SubqueryExpression, UnaryExpression}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -51,9 +48,8 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.{DataType => _, _}
+import org.apache.spark.sql.types.DecimalType
 import org.apache.spark.streaming.Duration
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
 
@@ -100,9 +96,8 @@ class SnappySessionState(snappySession: SnappySession)
         // ResolveParameters must come before TypeCoercion rules
         val splitIndex = batch.rules.indexWhere(_.ruleName.contains("TypeCoercion"))
         val (left, right) = batch.rules.splitAt(splitIndex)
-        Batch(batch.name, batch.strategy.asInstanceOf[this.Strategy],
-          left ++ Some(ResolveParameters): _*)
-      // Ignore right i.e. rest of the rules. Analyzer stops here
+        // Ignore right i.e. rest of the rules. Analyzer stops here
+        Batch(batch.name, batch.strategy.asInstanceOf[this.Strategy], left: _*)
       case otherBatch => Batch(otherBatch.name, otherBatch.strategy.asInstanceOf[this.Strategy],
         Nil: _*) // ...ignore other batches
     }
@@ -331,45 +326,6 @@ class SnappySessionState(snappySession: SnappySession)
   def setPreparedQuery(preparePhase: Boolean, paramSet: ParameterValueSet): Unit = {
     isPreparePhase = preparePhase
     pvs = paramSet
-  }
-
-  object ResolveParameters extends Rule[LogicalPlan] {
-    private def applyRule(plan: LogicalPlan, rule: (LogicalPlan) => LogicalPlan): LogicalPlan =
-      SnappySession.handleSubquery(rule(plan), rule)
-
-    def getDataTypeResolvedPlan(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case b@BinaryComparison(left: Expression, right: ParamLiteralAtPrepare) =>
-        b.makeCopy(Array(left, right.copy(paramType = left.dataType,
-          nullableValue = left.nullable)))
-      case b@BinaryComparison(left: ParamLiteralAtPrepare, right: Expression) =>
-        b.makeCopy(Array(left.copy(paramType = right.dataType,
-          nullableValue = right.nullable), right))
-      case l@Like(left: Expression, right: ParamLiteralAtPrepare) =>
-        l.makeCopy(Array(left, right.copy(paramType = left.dataType,
-          nullableValue = left.nullable)))
-      case i@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
-      list: Seq[Expression]) => i.makeCopy(Array(value, list.map {
-        case pc: ParamLiteralAtPrepare => pc.copy(paramType = value.dataType,
-          nullableValue = value.nullable)
-        case x => x
-      }))
-    }
-
-    def assertAllDataTypeResolved(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case pc@ParamLiteralAtPrepare(_, paramType, _) =>
-        assert(paramType != org.apache.spark.sql.types.NullType)
-        pc
-    }
-
-    def apply(plan: LogicalPlan): LogicalPlan = if (isPreparePhase) {
-      val preparedPlan = applyRule(plan, getDataTypeResolvedPlan)
-      applyRule(preparedPlan, assertAllDataTypeResolved)
-      val paramLiteralsAtPrepare = SnappySession.getAllParamLiteralsAtPrepare(preparedPlan)
-      if (paramLiteralsAtPrepare.length != questionMarkCounter) {
-        throw new UnsupportedOperationException("This query is unsupported for prepared statement")
-      }
-      preparedPlan
-    } else plan
   }
 }
 

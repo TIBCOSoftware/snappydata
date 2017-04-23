@@ -253,30 +253,3 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression {
     case other => expr.canEqual(other)
   }
 }
-
-case class ParamLiteralAtPrepare(pos: Int, private val paramType: DataType,
-    private val nullableValue: Boolean) extends LeafExpression {
-
-  override def dataType: DataType = paramType
-
-  override def hashCode(): Int =
-    31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos) + Objects.hashCode(nullable)
-
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case pc: ParamLiteralAtPrepare =>
-        pc.dataType == dataType && pc.pos == pos && pc.nullable == nullable
-      case _ => false
-    }
-  }
-
-  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode =
-    throw new UnsupportedOperationException("doGenCode not implemented")
-
-  override def nullable: Boolean = nullableValue
-
-  override def eval(input: InternalRow): Any =
-    throw new UnsupportedOperationException("eval not implemented")
-
-  override def childrenResolved: Boolean = paramType != NullType
-}

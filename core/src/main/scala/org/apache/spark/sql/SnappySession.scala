@@ -45,10 +45,8 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, InSet, ListQuery, LiteralValue, ParamLiteral, ParamLiteralAtPrepare, PredicateSubquery, ScalarSubquery, SortDirection, SubqueryExpression}
-import org.apache.spark.sql.catalyst.plans.QueryPlan
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
-import org.apache.spark.sql.catalyst.trees.TreeNode
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -1710,26 +1708,6 @@ object SnappySession extends Logging {
         p
     }
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
-  }
-
-  def getAllParamLiteralsAtPrepare(plan: LogicalPlan): Array[ParamLiteralAtPrepare] = {
-    val res = new ArrayBuffer[ParamLiteralAtPrepare]()
-    def allParams(plan: LogicalPlan) : LogicalPlan = plan transformAllExpressions {
-      case p@ParamLiteralAtPrepare(_, _, _) => res += p
-        p
-    }
-    handleSubquery(allParams(plan), allParams)
-    res.toSet[ParamLiteralAtPrepare].toArray.sortBy(_.pos)
-  }
-
-  def handleSubquery(plan: LogicalPlan,
-      f: (LogicalPlan) => LogicalPlan): LogicalPlan = plan transformAllExpressions {
-    case sub: SubqueryExpression => sub match {
-      case l@ListQuery(query, x) => l.copy(f(query), x)
-      case e@Exists(query, x) => e.copy(f(query), x)
-      case p@PredicateSubquery(query, x, y, z) => p.copy(f(query), x, y, z)
-      case s@ScalarSubquery(query, x, y) => s.copy(f(query), x, y)
-    }
   }
 
   private def evaluatePlan(df: DataFrame,

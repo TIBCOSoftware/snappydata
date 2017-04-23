@@ -30,9 +30,10 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.{ParamLiteralAtPrepare}
+import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -55,7 +56,13 @@ class SparkSQLPrepareImpl(val sql: String,
 
   session.setPreparedQuery(true, null)
 
-  private[this] val analyzedPlan = {
+  private[this] val sessionState: SnappySessionState = {
+    val field = classOf[SnappySession].getDeclaredField("sessionState")
+    field.setAccessible(true)
+    field.get(session).asInstanceOf[SnappySessionState]
+  }
+
+  private[this] val analyzedPlan: LogicalPlan = {
     val method = classOf[SnappySession].getDeclaredMethod("prepareSQL", classOf[String])
     method.setAccessible(true)
     method.invoke(session, sql).asInstanceOf[LogicalPlan]
@@ -69,8 +76,11 @@ class SparkSQLPrepareImpl(val sql: String,
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    val paramLiteralsAtPrepare = SnappySession.getAllParamLiteralsAtPrepare(analyzedPlan)
-    if (paramLiteralsAtPrepare != null) {
+    if (sessionState.questionMarkCounter > 0) {
+      val paramLiteralsAtPrepare = getAllParamLiteralsAtPrepare(analyzedPlan)
+      if (paramLiteralsAtPrepare.length != sessionState.questionMarkCounter) {
+        throw new UnsupportedOperationException("This query is unsupported for prepared statement")
+      }
       val paramCount = paramLiteralsAtPrepare.length
       val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
@@ -99,27 +109,62 @@ class SparkSQLPrepareImpl(val sql: String,
     SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
 
   // Also see SnappyResultHolder.getNewNullDVD(
-  def getSQLType(dataType: DataType): (Int, Int, Int) = {
-    dataType match {
-      case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
-      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-      case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
-      case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
-      case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)
-      case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
-      case t: DecimalType => (StoredFormatIds.SQL_DECIMAL_ID,
-          t.precision, t.scale)
-      case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
-      case BooleanType => (StoredFormatIds.SQL_BOOLEAN_ID, -1, -1)
-      case ShortType => (StoredFormatIds.SQL_SMALLINT_ID, -1, -1)
-      case ByteType => (StoredFormatIds.SQL_TINYINT_ID, -1, -1)
-      case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
-      case _: ArrayType | _: MapType | _: StructType =>
-        // indicates complex types serialized as json strings
-        (StoredFormatIds.REF_TYPE_ID, -1, -1)
+  def getSQLType(dataType: DataType): (Int, Int, Int) = dataType match {
+    case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
+    case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+    case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
+    case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
+    case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)
+    case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
+    case t: DecimalType => (StoredFormatIds.SQL_DECIMAL_ID,
+        t.precision, t.scale)
+    case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
+    case BooleanType => (StoredFormatIds.SQL_BOOLEAN_ID, -1, -1)
+    case ShortType => (StoredFormatIds.SQL_SMALLINT_ID, -1, -1)
+    case ByteType => (StoredFormatIds.SQL_TINYINT_ID, -1, -1)
+    case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
+    case _: ArrayType | _: MapType | _: StructType =>
+      // indicates complex types serialized as json strings
+      (StoredFormatIds.REF_TYPE_ID, -1, -1)
 
-      // send across rest as objects that will be displayed as json strings
-      case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
+    // send across rest as objects that will be displayed as json strings
+    case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
+  }
+
+  def getAllParamLiteralsAtPrepare(plan: LogicalPlan): Array[ParamLiteral] = {
+    val res = new ArrayBuffer[ParamLiteral]()
+
+    def addParamLiteral(e: Expression, i: Int) = res += ParamLiteral(e.nullable, e.dataType, i)
+
+    def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
+        addParamLiteral(left, pos)
+        bl
+      case br@BinaryComparison(ParamLiteral(Row(pos: Int), _, _), right: Expression) =>
+        addParamLiteral(right, pos)
+        br
+      case l@Like(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
+        addParamLiteral(left, pos)
+        l
+      case inlist@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
+      list: Seq[Expression]) => list.map {
+        case ParamLiteral(Row(pos: Int), _, _) => addParamLiteral(value, pos)
+        case x => x
+      }
+        inlist
+    }
+
+    handleSubquery(allParams(plan), allParams)
+    res.toSet[ParamLiteral].toArray.sortBy(_.pos)
+  }
+
+  def handleSubquery(plan: LogicalPlan,
+      f: (LogicalPlan) => LogicalPlan): LogicalPlan = plan transformAllExpressions {
+    case sub: SubqueryExpression => sub match {
+      case l@ListQuery(query, x) => l.copy(f(query), x)
+      case e@Exists(query, x) => e.copy(f(query), x)
+      case p@PredicateSubquery(query, x, y, z) => p.copy(f(query), x, y, z)
+      case s@ScalarSubquery(query, x, y) => s.copy(f(query), x, y)
     }
   }
 }

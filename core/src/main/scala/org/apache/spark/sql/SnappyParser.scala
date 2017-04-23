@@ -180,11 +180,12 @@ class SnappyParser(session: SnappySession)
     intervalLiteral
   }
 
-  protected final def paramQuestionMark: Rule1[LeafExpression] = rule {
+  protected final def paramQuestionMark: Rule1[ParamLiteral] = rule {
     questionMark ~> (() => {
       session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
       if (session.sessionState.isPreparePhase) {
-        ParamLiteralAtPrepare(session.sessionState.questionMarkCounter, NullType, false)
+        ParamLiteral(Row(session.sessionState.questionMarkCounter), ObjectType(Row.getClass),
+          paramcounter)
       } else {
         assert(session.sessionState.pvs != null,
           "For Prepared Statement, Parameter constants are not provided")
