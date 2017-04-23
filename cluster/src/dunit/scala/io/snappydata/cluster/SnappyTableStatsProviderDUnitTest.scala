@@ -151,7 +151,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
   def createTable(snc: SnappyContext, tableName: String,
       tableType: String, props: Map[String, String] = Map.empty): Unit = {
     val data = for (i <- 1 to 7000) yield (Seq(i, (i + 1), (i + 2)))
-    val rdd = snc.sparkContext.parallelize(data.toSeq, data.length).map(s =>
+    val rdd = snc.sparkContext.parallelize(data.toSeq, 8).map(s =>
       new io.snappydata.externalstore.Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, tableType, dataDF.schema, props)
