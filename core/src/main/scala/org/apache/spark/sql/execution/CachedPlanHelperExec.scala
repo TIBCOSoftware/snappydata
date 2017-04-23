@@ -107,6 +107,7 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
 }
 
 object CachedPlanHelperExec extends Logging {
+
   val REFERENCES_KEY    = "TokenizationReferences"
   val BROADCASTS_KEY    = "TokenizationBroadcasts"
   val WRAPPED_CONSTANTS = "TokenizedConstants"
@@ -120,7 +121,7 @@ object CachedPlanHelperExec extends Logging {
 
   def replaceConstants(literals: Array[LiteralValue], currLogicalPlan: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
-    literals.foreach { case lv @ LiteralValue(_, _, p) =>
+    literals.foreach { case lv@LiteralValue(_, _, p) =>
       lv.value = newpls.find(_.pos == p).get.value
     }
   }

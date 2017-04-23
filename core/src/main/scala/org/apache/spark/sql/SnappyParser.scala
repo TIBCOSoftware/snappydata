@@ -49,7 +49,6 @@ class SnappyParser(session: SnappySession)
   override final def input: ParserInput = _input
 
   private var paramcounter = 0
-  
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
