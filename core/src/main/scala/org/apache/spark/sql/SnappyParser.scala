@@ -176,11 +176,11 @@ class SnappyParser(session: SnappySession)
     intervalLiteral
   }
 
-  protected final def paramQuestionMark: Rule1[ParamLiteral] = rule {
+  protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
     questionMark ~> (() => {
       session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
       if (session.sessionState.isPreparePhase) {
-        ParamLiteral(Row(session.sessionState.questionMarkCounter), NullType, paramcounter)
+        ParamLiteral(Row(session.sessionState.questionMarkCounter), NullType, 0)
       } else {
         assert(session.sessionState.pvs != null,
           "For Prepared Statement, Parameter constants are not provided")
@@ -704,7 +704,7 @@ class SnappyParser(session: SnappySession)
             isDistinct = false)
         }
     } |
-    ( ( test(tokenize) ~ paramliteral ) | literal | paramQuestionMark) |
+    ( ( test(tokenize) ~ paramliteral ) | literal | paramLiteralQuestionMark) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |

@@ -139,30 +139,30 @@ class SparkSQLPrepareImpl(val sql: String,
       result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
 
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
+      case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), _, 0)) =>
         result += ParamLiteral(left.nullable, left.dataType, pos)
         bl
-      case blc@BinaryComparison(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, _), _)) =>
+      case blc@BinaryComparison(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, 0), _)) =>
         result += ParamLiteral(left.nullable, left.dataType, pos)
         blc
-      case br@BinaryComparison(ParamLiteral(Row(pos: Int), _, _), right: Expression) =>
+      case br@BinaryComparison(ParamLiteral(Row(pos: Int), _, 0), right: Expression) =>
         result += ParamLiteral(right.nullable, right.dataType, pos)
         br
-      case brc@BinaryComparison(Cast(ParamLiteral(Row(pos: Int), _, _), _), right: Expression) =>
+      case brc@BinaryComparison(Cast(ParamLiteral(Row(pos: Int), _, 0), _), right: Expression) =>
         result += ParamLiteral(right.nullable, right.dataType, pos)
         brc
-      case l@Like(left: Expression, ParamLiteral(Row(pos: Int), _, _)) =>
+      case l@Like(left: Expression, ParamLiteral(Row(pos: Int), _, 0)) =>
         result += ParamLiteral(left.nullable, left.dataType, pos)
         l
-      case lc@Like(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, _), _)) =>
+      case lc@Like(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, 0), _)) =>
         result += ParamLiteral(left.nullable, left.dataType, pos)
         lc
       case inlist@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
       list: Seq[Expression]) =>
         list.map {
-          case ParamLiteral(Row(pos: Int), _, _) =>
+          case ParamLiteral(Row(pos: Int), _, 0) =>
             result += ParamLiteral(value.nullable, value.dataType, pos)
-          case Cast(ParamLiteral(Row(pos: Int), _, _), _) =>
+          case Cast(ParamLiteral(Row(pos: Int), _, 0), _) =>
             result += ParamLiteral(value.nullable, value.dataType, pos)
           case x => x
         }
