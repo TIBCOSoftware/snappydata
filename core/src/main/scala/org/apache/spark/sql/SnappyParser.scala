@@ -181,8 +181,7 @@ class SnappyParser(session: SnappySession)
     questionMark ~> (() => {
       session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
       if (session.sessionState.isPreparePhase) {
-        ParamLiteral(Row(session.sessionState.questionMarkCounter), ObjectType(Row.getClass),
-          paramcounter)
+        ParamLiteral(Row(session.sessionState.questionMarkCounter), NullType, paramcounter)
       } else {
         assert(session.sessionState.pvs != null,
           "For Prepared Statement, Parameter constants are not provided")
