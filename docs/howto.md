@@ -1128,7 +1128,7 @@ Depending on your Windows installation, download the 32-bit or 64-bit version of
 ### Connect to the SnappyData cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
 
-* Use the SnappyData Driver Conneciton URL:
+* Use the SnappyData Driver Connection URL:
 
 		Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 

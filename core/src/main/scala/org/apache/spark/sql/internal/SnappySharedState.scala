@@ -34,7 +34,11 @@ private[sql] class SnappySharedState(override val sparkContext: SparkContext,
   /**
    * A Hive client used to interact with the metastore.
    */
-  private[sql] lazy val metadataHive = new HiveClientUtil(sparkContext).client
+  private[sql] lazy val metadataHive = {
+    // avoid inheritance of activeSession
+    SparkSession.clearActiveSession()
+    new HiveClientUtil(sparkContext).client
+  }
 
 
   override lazy val externalCatalog =
