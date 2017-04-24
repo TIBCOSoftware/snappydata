@@ -19,6 +19,8 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.lang
 import java.util.{Collections, UUID}
 
+import scala.collection.JavaConverters._
+
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
 import com.gemstone.gemfire.internal.snappy._
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -27,19 +29,23 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
 import io.snappydata.Constant
+
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
+import org.apache.spark.sql.catalyst.FunctionIdentifier
+import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode}
+import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode, _}
 import org.apache.spark.storage.TestBlockId
-import org.apache.spark.{Logging, SparkEnv, SparkException}
-
-import scala.collection.JavaConverters._
+import org.apache.spark.{Logging, SparkContext, SparkEnv, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -88,7 +94,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           val tableName = container.getQualifiedTableName
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
-          if (catalogEntry.tableType == ExternalTableType.Sample.toString &&
+          if (catalogEntry.tableType == ExternalTableType.Sample.name &&
               schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
@@ -168,6 +174,92 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def registerRelationDestroyForHiveStore(): Unit = {
     SnappyStoreHiveCatalog.registerRelationDestroy()
+  }
+
+  override def performConnectorOp(ctx: Object): Unit = {
+
+    val context = ctx.asInstanceOf[LeadNodeSmartConnectorOpContext]
+
+    context.getType match {
+      case LeadNodeSmartConnectorOpContext.OpType.CREATE_TABLE =>
+        val session = SnappyContext(null: SparkContext).snappySession
+
+        val tableIdent = context.getTableIdentifier
+        val userSpecifiedJsonSchema = Option(context.getUserSpecifiedJsonSchema)
+        val userSpecifiedSchema = if (userSpecifiedJsonSchema.isDefined) {
+          Option(DataType.fromJson(userSpecifiedJsonSchema.get).asInstanceOf[StructType])
+        } else {
+          None
+        }
+        val schemaDDL = Option(context.getSchemaDDL)
+        val provider = context.getProvider
+        val mode = SmartConnectorHelper.deserialize(context.getMode).asInstanceOf[SaveMode]
+        val options = SmartConnectorHelper
+            .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
+        val isBuiltIn = context.getIsBuiltIn
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp creating table $tableIdent")
+        session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
+          provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
+
+      case LeadNodeSmartConnectorOpContext.OpType.DROP_TABLE =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val tableIdent = context.getTableIdentifier
+        val ifExists = context.getIfExists
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping table $tableIdent")
+        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent), ifExists)
+
+      case LeadNodeSmartConnectorOpContext.OpType.CREATE_INDEX =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val tableIdent = context.getTableIdentifier
+        val indexIdent = context.getIndexIdentifier
+        val indexColumns = SmartConnectorHelper
+            .deserialize(context.getIndexColumns).asInstanceOf[Map[String, Option[SortDirection]]]
+        val options = SmartConnectorHelper
+            .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp creating index $indexIdent")
+        session.createIndex(
+          session.sessionCatalog.newQualifiedTableName(indexIdent),
+          session.sessionCatalog.newQualifiedTableName(tableIdent),
+          indexColumns, options)
+
+      case LeadNodeSmartConnectorOpContext.OpType.DROP_INDEX =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val indexIdent = context.getIndexIdentifier
+        val ifExists = context.getIfExists
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping index $indexIdent")
+        session.dropIndex(session.sessionCatalog.newQualifiedTableName(indexIdent), ifExists)
+
+      case LeadNodeSmartConnectorOpContext.OpType.CREATE_UDF =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val db = context.getDb
+        val className = context.getClassName
+        val functionName = context.getFunctionName
+        val jarURI = context.getjarURI()
+        val resources: Seq[FunctionResource] = Seq(FunctionResource(JarResource, jarURI))
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp creating udf $functionName")
+        val snappySharedState = session.sharedState.asInstanceOf[SnappySharedState]
+        val functionDefinition = CatalogFunction(new FunctionIdentifier(
+          functionName, Option(db)), className, resources)
+        snappySharedState.externalCatalog.createFunction(db, functionDefinition)
+
+      case LeadNodeSmartConnectorOpContext.OpType.DROP_UDF =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val db = context.getDb
+        val functionName = context.getFunctionName
+
+        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping udf $functionName")
+        val snappySharedState = session.sharedState.asInstanceOf[SnappySharedState]
+        snappySharedState.externalCatalog.dropFunction(db, functionName)
+
+      case _ =>
+        throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")
+    }
+
   }
 
   override def getLastIndexOfRow(o: Object): Int = {

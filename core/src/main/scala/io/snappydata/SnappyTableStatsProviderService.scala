@@ -272,6 +272,7 @@ object SnappyTableStatsProviderService extends Logging {
     (Utils.immutableMap(aggregatedStats), Utils.immutableMap(aggregatedStatsIndex))
   }
 
+  var suspendCacheInvalidation = false
   /*
   private def getSampleTableList(snc: SnappyContext): Seq[String] = {
     try {

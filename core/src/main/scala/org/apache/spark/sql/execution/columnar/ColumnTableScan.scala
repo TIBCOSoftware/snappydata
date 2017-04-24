@@ -232,6 +232,7 @@ private[sql] final case class ColumnTableScan(
 
   private lazy val otherRDDsPartitionIndex = rdd.getNumPartitions
 
+
   @transient private val session =
     Option(sqlContext).map(_.sparkSession.asInstanceOf[SnappySession])
 
@@ -659,16 +660,17 @@ private[sql] final case class ColumnTableScan(
         s"$col = $decoder.read$typeName($buffer, $cursorVar);"
       case StringType =>
         dictionary = ctx.freshName("dictionary")
-        dictIndex = ctx.freshName("dictionaryIndex")
         dictionaryLen = ctx.freshName("dictionaryLength")
+        dictIndex = ctx.freshName("dictionaryIndex")
+        ctx.addMutableState("UTF8String[]", dictionary, "")
+        ctx.addMutableState("int", dictionaryLen, "")
         // initialize index to dictionaryLength - 1 where null value will
         // reside in case there are nulls in the current batch
         jtDecl = s"UTF8String $col; int $dictIndex = $dictionaryLen - 1;"
         bufferInit =
             s"""
-               |final UTF8String[] $dictionary = $decoder.getStringDictionary();
-               |final int $dictionaryLen =
-               |    $dictionary != null ? $dictionary.length : -1;
+               |$dictionary = $decoder.getStringDictionary();
+               |$dictionaryLen = $dictionary != null ? $dictionary.length : -1;
             """.stripMargin
         dictionaryAssignCode =
             s"$dictIndex = $decoder.readDictionaryIndex($buffer, $cursorVar);"
@@ -738,14 +740,14 @@ private[sql] final case class ColumnTableScan(
               }
             }
           """
-        session.foreach(_.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
+        session.foreach(_.addDictionaryCode(ctx, col, DictionaryCode(
           dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen)))
       }
       (ExprCode(code, nullVar, col), bufferInit)
     } else {
       if (!dictionary.isEmpty) {
         val dictionaryCode = jtDecl + '\n' + dictionaryAssignCode
-        session.foreach(_.addExCode(ctx, col :: Nil, attr :: Nil, ExprCodeEx(None,
+        session.foreach(_.addDictionaryCode(ctx, col, DictionaryCode(
           dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen)))
       }
       var code = jtDecl + '\n' + colAssign + '\n'

@@ -1,7 +1,5 @@
 /*
- * Changes for SnappyData data platform.
- *
- * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,15 +14,9 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+package io.snappydata.cluster
 
-package org.apache.spark.ui
+class ThinConnectorSplitClusterDUnitTest(s: String) extends SplitClusterDUnitTest(s) {
+  override protected val useThinClientConnector = true
 
-import org.apache.spark.Logging
-
-/** Web UI showing storage status of all Snappy Tables */
-private[ui] class SnappyStatsTab(sparkUI: SparkUI)
-    extends SparkUITab(sparkUI, "Snappy Store") with Logging {
-  val parent = sparkUI
-  attachPage(new SnappyStatsPage(this))
-  parent.attachTab(this)
 }
