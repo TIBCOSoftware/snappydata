@@ -319,23 +319,6 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#EXTERNAL_DATASOURCE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="EXTERNAL_DATASOURCE:String(&quot;EXTERNAL_DATASOURCE&quot;)"></a>
-      <a id="EXTERNAL_DATASOURCE:String(&quot;EXTERNAL_DATASOURCE&quot;)"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">EXTERNAL_DATASOURCE</span><span class="result">: String(&quot;EXTERNAL_DATASOURCE&quot;)</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@EXTERNAL_DATASOURCE:String(&quot;EXTERNAL_DATASOURCE&quot;)" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#INDEX_NAME" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="INDEX_NAME:String(&quot;INDEX_NAME&quot;)"></a>
       <a id="INDEX_NAME:String(&quot;INDEX_NAME&quot;)"></a>
@@ -455,6 +438,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#USER_SPECIFIED_SCHEMA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="USER_SPECIFIED_SCHEMA:String(&quot;USER_SCHEMA&quot;)"></a>
+      <a id="USER_SPECIFIED_SCHEMA:String(&quot;USER_SCHEMA&quot;)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">USER_SPECIFIED_SCHEMA</span><span class="result">: String(&quot;USER_SCHEMA&quot;)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@USER_SPECIFIED_SCHEMA:String(&quot;USER_SCHEMA&quot;)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -526,23 +526,6 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@columnIndicesAndDataTypes(requestedSchema:org.apache.spark.sql.types.StructType,schema:org.apache.spark.sql.types.StructType):Seq[(Int,org.apache.spark.sql.types.StructField)]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#convertSchemaMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="convertSchemaMap(tableProps:java.util.Map[String,String]):org.apache.spark.sql.types.StructType"></a>
-      <a id="convertSchemaMap(Map[String,String]):StructType"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">convertSchemaMap</span><span class="params">(<span name="tableProps">tableProps: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@convertSchemaMap(tableProps:java.util.Map[String,String]):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -740,6 +723,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getColumnMetadata" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getColumnMetadata(schema:Option[org.apache.spark.sql.types.StructType]):java.util.List[com.gemstone.gemfire.internal.cache.ExternalTableMetaData.Column]"></a>
+      <a id="getColumnMetadata(Option[StructType]):List[com.gemstone.gemfire.internal.cache.ExternalTableMetaData.Column]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getColumnMetadata</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>)</span><span class="result">: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="com.gemstone.gemfire.internal.cache.ExternalTableMetaData.Column">com.gemstone.gemfire.internal.cache.ExternalTableMetaData.Column</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getColumnMetadata(schema:Option[org.apache.spark.sql.types.StructType]):java.util.List[com.gemstone.gemfire.internal.cache.ExternalTableMetaData.Column]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getConnection" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getConnection(id:String,connProperties:org.apache.spark.sql.sources.ConnectionProperties,forExecutor:Boolean):java.sql.Connection"></a>
       <a id="getConnection(String,ConnectionProperties,Boolean):Connection"></a>
@@ -838,6 +838,40 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getJDBCType(dialect:org.apache.spark.sql.jdbc.JdbcDialect,dataType:org.apache.spark.sql.types.DataType):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getTableSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getTableSchema(tableProps:scala.collection.Map[String,String]):Option[org.apache.spark.sql.types.StructType]"></a>
+      <a id="getTableSchema(Map[String,String]):Option[StructType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTableSchema</span><span class="params">(<span name="tableProps">tableProps: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getTableSchema(tableProps:scala.collection.Map[String,String]):Option[org.apache.spark.sql.types.StructType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getTableSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getTableSchema(tableProps:java.util.Map[String,String]):Option[org.apache.spark.sql.types.StructType]"></a>
+      <a id="getTableSchema(Map[String,String]):Option[StructType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getTableSchema</span><span class="params">(<span name="tableProps">tableProps: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getTableSchema(tableProps:java.util.Map[String,String]):Option[org.apache.spark.sql.types.StructType]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

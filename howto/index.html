@@ -573,29 +573,28 @@ The same table can be created using SQL as shown below:</p>
 
 <p>You can perform various operations such as inset data, mutate it (update/delete), select data from the table. All these operations can be done either through APIs or by using SQL queries.
 For example:</p>
-<p><strong> To insert data in the SUPPLIER table:</strong></p>
+<p><strong>To insert data in the SUPPLIER table:</strong> </p>
 <pre><code>    snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')&quot;)
     snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')&quot;)
     snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')&quot;)
     snSession.sql(&quot;INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')&quot;)
 </code></pre>
 
-<p><strong> To print the contents of the SUPPLIER table:</strong></p>
+<p><strong>To print the contents of the SUPPLIER table:</strong> </p>
 <pre><code>    var tableData = snSession.sql(&quot;SELECT * FROM SUPPLIER&quot;).collect()
     tableData.foreach(println)
 </code></pre>
 
-<p><strong> To update the table account balance for SUPPLIER4:</strong></p>
+<p><strong>To update the table account balance for SUPPLIER4:</strong> </p>
 <pre><code>    snSession.sql(&quot;UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'&quot;)
 </code></pre>
 
-<p><strong>To print contents of the SUPPLIER table after update</strong></p>
+<p><strong>To print contents of the SUPPLIER table after update</strong> </p>
 <pre><code>    tableData = snSession.sql(&quot;SELECT * FROM SUPPLIER&quot;).collect()
     tableData.foreach(println)
 </code></pre>
 
-<p><strong>To delete the records for SUPPLIER2 and SUPPLIER3
-</strong></p>
+<p><strong>To delete the records for SUPPLIER2 and SUPPLIER3</strong> </p>
 <pre><code>    snSession.sql(&quot;DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'&quot;)
 </code></pre>
 
@@ -621,7 +620,7 @@ For example:</p>
     val snSession = new SnappySession(spark.sparkContext)
 </code></pre>
 
-<p><strong>Define the table schema </strong></p>
+<p><strong>Define the table schema</strong></p>
 <pre><code>val tableSchema = StructType(Array(StructField(&quot;C_CUSTKEY&quot;, IntegerType, false),
       StructField(&quot;C_NAME&quot;, StringType, false),
       StructField(&quot;C_ADDRESS&quot;, StringType, false),
@@ -765,7 +764,7 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
         &quot;COLOCATE_WITH 'CUSTOMER' )&quot;)
 </code></pre>
 
-<p><strong>Perform a Collocate join: </strong></p>
+<p><strong>Perform a Collocate join:</strong> </p>
 <pre><code>    // Selecting orders for all customers
     val result = snSession.sql(&quot;SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, &quot; +
         &quot;O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY&quot;).collect()
@@ -776,8 +775,8 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
 <p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.</p>
 <p><strong>To connect to the SnappyData cluster</strong>: Using JDBC, use URL of the form <code>jdbc:snappydata://&lt;locatorHostName&gt;:&lt;locatorClientPort&gt;/</code></p>
 <p>Where the <code>&lt;locatorHostName&gt;</code> is the host name of the node on which the locator is started and <code>&lt;locatorClientPort&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
-<p><strong>Code Example: </strong>
-<strong>Connect to a SnappyData cluster using JDBC on default client port</strong></p>
+<p><strong>Code Example:</strong></p>
+<p><strong>Connect to a SnappyData cluster using JDBC on default client port</strong></p>
 <p>The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala">JDBCExample.scala</a></p>
 <pre><code>val url: String = s&quot;jdbc:snappydata://localhost:1527/&quot;
 val conn1 = DriverManager.getConnection(url)
@@ -807,7 +806,7 @@ preparedStmt1.executeBatch()
 preparedStmt1.close()
 </code></pre>
 
-<p><Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</Note></p>
+<p><note> Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</note></p>
 <p><a id="howto-JSON"></a></p>
 <h2 id="how-to-store-and-query-json-objects">How to Store and Query JSON Objects</h2>
 <p>You can insert JSON data in SnappyData tables and execute queries on the tables.</p>
@@ -1194,13 +1193,16 @@ This same table can be created by using createTable API. First we create a schem
 <ol>
 <li>
 <p>Download the SnappyData ODBC Driver from the <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>.<br />
-Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.</p>
+Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.</p>
 <ul>
 <li>
-<p>32-bit: <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc32.zip">snappydata-0.8-odbc32 Installer</a></p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32.zip">For 32-bit Installer for 32-bit Platform</a></p>
 </li>
 <li>
-<p>64-bit: <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-odbc64.zip">snappydata-0.8-odbc64 Installer</a></p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32_64.zip">For 32-bit Installer for 64-bit Platform</a></p>
+</li>
+<li>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc64.zip">For 64-bit Installer for 64-bit Platform</a></p>
 </li>
 </ul>
 </li>
@@ -1211,6 +1213,10 @@ Depending on your Windows installation, download the 32-bit or 64-bit version of
 <p>Double-click on the <strong>SnappyDataODBCDriverInstaller.msi</strong> file, and follow the steps to complete the installation.</p>
 </li>
 </ol>
+<!--
+For more information, refer to the documentation on [setting up SnappyData ODBC Driver and Tableau Desktop](https://github.com/SnappyDataInc/snappydata/blob/master/docs/setting_up_odbc_driver-tableau_desktop.md).
+--->
+
 <h3 id="connect-to-the-snappydata-cluster">Connect to the SnappyData cluster</h3>
 <p>Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:</p>
 <ul>
@@ -1236,7 +1242,7 @@ Depending on your Windows installation, download the 32-bit or 64-bit version of
 <thead>
 <tr>
 <th>SnappyData Zeppelin Interpreter</th>
-<th>Apache Zeppelin Installer</th>
+<th>Apache Zeppelin Binary Package</th>
 <th>SnappyData Release</th>
 </tr>
 </thead>
@@ -1267,13 +1273,12 @@ Depending on your Windows installation, download the 32-bit or 64-bit version of
 <p><a href="./#how-to-start-a-snappydata-cluster">Start the SnappyData cluster</a></p>
 </li>
 <li>
-<p>Extract the contents of the Zeppelin Intrepreter file. </br> </p>
+<p>Extract the contents of the Zeppelin binary package. </br> </p>
 </li>
 <li>
 <p>Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
-    <code>./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:&lt;zeppelin_installer_version_number&gt;</code>. </br>
+    <code>./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:&lt;snappydata_interperter_version_number&gt;</code>. </br>
     Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.</p>
-<p><note>Note: If the installation fails, delete the <strong>interpreter.json</strong> file located in the zeppelin-&lt;<em>version_number</em>&gt;-bin-all/conf directory, and repeat this step.</note></p>
 </li>
 <li>
 <p>Rename the <strong>zeppelin-site.xml.template</strong> file (located in zeppelin-&lt;<em>version_number</em>&gt;-bin-all/conf directory) to <strong>zeppelin-site.xml</strong>.</p>
@@ -1299,9 +1304,18 @@ Depending on your Windows installation, download the 32-bit or 64-bit version of
 <li>
 <p>From the <strong>Interpreter group</strong> drop-down select <strong>snappydata</strong>.
      <img alt="Configure Interpreter" src="../Images/snappydata_interpreter_properties.png" /></p>
+<p><note>Note: If <strong>snappydata</strong> is not displayed in the <strong>Interpreter group</strong> drop-down list, try the following options, and then restart Zeppelin daemon: </note></p>
+<ul>
+<li>
+<p><note>Delete the <strong>interpreter.json</strong> file located in the <strong>conf</strong> directory (in the Zeppelin home directory).</note></p>
 </li>
 <li>
-<p>Click the <strong>Connect to existing process</strong> option. The fields <strong>Host </strong>and <strong>Port</strong> are displayed.</p>
+<p><note>Delete the <strong>zeppelin-spark_&lt;<em>version_number</em>&gt;.jar</strong> file located in the <strong>interpreter/snappydata</strong> directory (in the Zeppelin home directory).</note></p>
+</li>
+</ul>
+</li>
+<li>
+<p>Click the <strong>Connect to existing process</strong> option. The fields <strong>Host</strong> and <strong>Port</strong> are displayed.</p>
 </li>
 <li>
 <p>Specify the host on which the SnappyData lead node is executing, and the SnappyData Zeppelin Port (Default is 3768).</p>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ExprCodeEx - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.ExprCodeEx</title>
-          <meta name="description" content="ExprCodeEx - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.ExprCodeEx" />
-          <meta name="keywords" content="ExprCodeEx snappydata 2.11 0.8 API org.apache.spark.sql.execution.ExprCodeEx" />
+          <title>DictionaryCode - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.DictionaryCode</title>
+          <meta name="description" content="DictionaryCode - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.DictionaryCode" />
+          <meta name="keywords" content="DictionaryCode snappydata 2.11 0.8 API org.apache.spark.sql.execution.DictionaryCode" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -16,7 +16,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../../index.html';
-            var hash = 'org.apache.spark.sql.execution.ExprCodeEx';
+            var hash = 'org.apache.spark.sql.execution.DictionaryCode';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -30,10 +30,10 @@
       <div id="definition">
         <img alt="Class" src="../../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution">execution</a></p>
-        <h1>ExprCodeEx</h1><h3><span class="morelinks"><div>Related Doc:
+        <h1>DictionaryCode</h1><h3><span class="morelinks"><div>Related Doc:
             <a href="package.html" class="extype" name="org.apache.spark.sql.execution">package execution</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -45,13 +45,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ExprCodeEx</span><span class="params">(<span name="hash">hash: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="assignCode">assignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">DictionaryCode</span><span class="params">(<span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueAssignCode">valueAssignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Extended information for ExprCode to also hold the hashCode variable,
-variable having dictionary reference and its index when dictionary
-encoding is being used.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Extended information for ExprCode variable to also hold the variable having
+dictionary reference and its index when dictionary encoding is being used.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -72,7 +71,7 @@ encoding is being used.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.ExprCodeEx"><span>ExprCodeEx</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.DictionaryCode"><span>DictionaryCode</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -91,19 +90,19 @@ encoding is being used.
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="org.apache.spark.sql.execution.ExprCodeEx#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(hash:Option[String],dictionaryCode:String,assignCode:String,dictionary:String,dictionaryIndex:String,dictionaryLen:String):org.apache.spark.sql.execution.ExprCodeEx"></a>
-      <a id="&lt;init&gt;:ExprCodeEx"></a>
+              <ol><li name="org.apache.spark.sql.execution.DictionaryCode#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(dictionaryCode:String,valueAssignCode:String,dictionary:String,dictionaryIndex:String,dictionaryLen:String):org.apache.spark.sql.execution.DictionaryCode"></a>
+      <a id="&lt;init&gt;:DictionaryCode"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ExprCodeEx</span><span class="params">(<span name="hash">hash: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="assignCode">assignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">DictionaryCode</span><span class="params">(<span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueAssignCode">valueAssignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@&lt;init&gt;(hash:Option[String],dictionaryCode:String,assignCode:String,dictionary:String,dictionaryIndex:String,dictionaryLen:String):org.apache.spark.sql.execution.ExprCodeEx" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@&lt;init&gt;(dictionaryCode:String,valueAssignCode:String,dictionary:String,dictionaryIndex:String,dictionaryLen:String):org.apache.spark.sql.execution.DictionaryCode" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -129,7 +128,7 @@ encoding is being used.
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@!=(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -146,7 +145,7 @@ encoding is being used.
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@##():Int" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@##():Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -163,7 +162,7 @@ encoding is being used.
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@==(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@==(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -180,28 +179,11 @@ encoding is being used.
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@asInstanceOf[T0]:T0" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.ExprCodeEx#assignCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="assignCode:String"></a>
-      <a id="assignCode:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">assignCode</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@assignCode:String" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -214,7 +196,7 @@ encoding is being used.
         <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@clone():Object" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@clone():Object" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -225,7 +207,7 @@ encoding is being used.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.ExprCodeEx#dictionary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode#dictionary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="dictionary:String"></a>
       <a id="dictionary:String"></a>
       <h4 class="signature">
@@ -237,12 +219,12 @@ encoding is being used.
         <span class="name">dictionary</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@dictionary:String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionary:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.ExprCodeEx#dictionaryIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode#dictionaryIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="dictionaryIndex:String"></a>
       <a id="dictionaryIndex:String"></a>
       <h4 class="signature">
@@ -254,12 +236,12 @@ encoding is being used.
         <span class="name">dictionaryIndex</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@dictionaryIndex:String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionaryIndex:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.ExprCodeEx#dictionaryLen" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode#dictionaryLen" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="dictionaryLen:String"></a>
       <a id="dictionaryLen:String"></a>
       <h4 class="signature">
@@ -271,7 +253,7 @@ encoding is being used.
         <span class="name">dictionaryLen</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@dictionaryLen:String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@dictionaryLen:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -288,12 +270,12 @@ encoding is being used.
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.ExprCodeEx#evaluateDictionaryCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode#evaluateDictionaryCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="evaluateDictionaryCode(ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String"></a>
       <a id="evaluateDictionaryCode(ExprCode):String"></a>
       <h4 class="signature">
@@ -305,7 +287,7 @@ encoding is being used.
         <span class="name">evaluateDictionaryCode</span><span class="params">(<span name="ev">ev: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@evaluateDictionaryCode(ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@evaluateDictionaryCode(ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -322,7 +304,7 @@ encoding is being used.
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@finalize():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@finalize():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -345,28 +327,11 @@ encoding is being used.
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@getClass():Class[_]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@getClass():Class[_]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.ExprCodeEx#hash" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="hash:Option[String]"></a>
-      <a id="hash:Option[String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">var</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hash</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@hash:Option[String]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -379,7 +344,7 @@ encoding is being used.
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -396,7 +361,7 @@ encoding is being used.
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -413,7 +378,7 @@ encoding is being used.
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@notify():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@notify():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -430,7 +395,7 @@ encoding is being used.
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@notifyAll():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@notifyAll():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -447,11 +412,28 @@ encoding is being used.
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode#valueAssignCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="valueAssignCode:String"></a>
+      <a id="valueAssignCode:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valueAssignCode</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@valueAssignCode:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -464,7 +446,7 @@ encoding is being used.
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@wait():Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@wait():Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -487,7 +469,7 @@ encoding is being used.
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -510,7 +492,7 @@ encoding is being used.
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExprCodeEx@wait(x$1:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DictionaryCode@wait(x$1:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

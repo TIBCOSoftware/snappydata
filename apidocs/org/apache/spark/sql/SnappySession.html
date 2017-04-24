@@ -1207,18 +1207,18 @@ the query planner for advanced functionality.
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#getClass" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getClass(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,baseTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],keyTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],types:Seq[(org.apache.spark.sql.types.DataType,Boolean)]):Option[(String,String)]"></a>
-      <a id="getClass(CodegenContext,Seq[(DataType,Boolean)],Seq[(DataType,Boolean)],Seq[(DataType,Boolean)]):Option[(String,String)]"></a>
+      <a id="getClass(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,baseTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],keyTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],types:Seq[(org.apache.spark.sql.types.DataType,Boolean)],multimap:Boolean):Option[(String,String)]"></a>
+      <a id="getClass(CodegenContext,Seq[(DataType,Boolean)],Seq[(DataType,Boolean)],Seq[(DataType,Boolean)],Boolean):Option[(String,String)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getClass</span><span class="params">(<span name="ctx">ctx: <a href="catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="baseTypes">baseTypes: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>)]</span>, <span name="keyTypes">keyTypes: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>)]</span>, <span name="types">types: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>)]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+        <span class="name">getClass</span><span class="params">(<span name="ctx">ctx: <a href="catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="baseTypes">baseTypes: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>)]</span>, <span name="keyTypes">keyTypes: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>)]</span>, <span name="types">types: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>, <span class="extype" name="scala.Boolean">Boolean</span>)]</span>, <span name="multimap">multimap: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getClass(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,baseTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],keyTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],types:Seq[(org.apache.spark.sql.types.DataType,Boolean)]):Option[(String,String)]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getClass(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,baseTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],keyTypes:Seq[(org.apache.spark.sql.types.DataType,Boolean)],types:Seq[(org.apache.spark.sql.types.DataType,Boolean)],multimap:Boolean):Option[(String,String)]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1240,24 +1240,24 @@ the query planner for advanced functionality.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappySession#getExCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getExCode(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,vars:Seq[String],expr:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Option[org.apache.spark.sql.execution.ExprCodeEx]"></a>
-      <a id="getExCode(CodegenContext,Seq[String],Seq[Expression]):Option[ExprCodeEx]"></a>
+    </li><li name="org.apache.spark.sql.SnappySession#getDictionaryCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDictionaryCode(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,keyVar:String):Option[org.apache.spark.sql.execution.DictionaryCode]"></a>
+      <a id="getDictionaryCode(CodegenContext,String):Option[DictionaryCode]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getExCode</span><span class="params">(<span name="ctx">ctx: <a href="catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="vars">vars: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="expr">expr: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="execution/ExprCodeEx.html" class="extype" name="org.apache.spark.sql.execution.ExprCodeEx">ExprCodeEx</a>]</span>
+        <span class="name">getDictionaryCode</span><span class="params">(<span name="ctx">ctx: <a href="catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="keyVar">keyVar: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="execution/DictionaryCode.html" class="extype" name="org.apache.spark.sql.execution.DictionaryCode">DictionaryCode</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getExCode(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,vars:Seq[String],expr:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Option[org.apache.spark.sql.execution.ExprCodeEx]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getDictionaryCode(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,keyVar:String):Option[org.apache.spark.sql.execution.DictionaryCode]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get <span class="extype" name="ExprCodeEx">ExprCodeEx</span> for a previously registered ExprCode variable
-using <span class="extype" name="addExCode">addExCode</span>.</p>
+      <p class="shortcomment cmt">Get <span class="extype" name="DictionaryCode">DictionaryCode</span> for a previously registered variable in ExprCode
+using <span class="extype" name="addDictionaryCode">addDictionaryCode</span>.</p>
     </li><li name="org.apache.spark.sql.SnappySession#getPreviousQueryHints" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getPreviousQueryHints:Map[String,String]"></a>
       <a id="getPreviousQueryHints:Map[String,String]"></a>

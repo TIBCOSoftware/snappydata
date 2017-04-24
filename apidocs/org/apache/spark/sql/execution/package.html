@@ -510,6 +510,24 @@ logical plan, which happens when the user is collecting results back to the driv
       <p class="shortcomment cmt">Takes the input row from child and turns it into object using the given deserializer expression.</p><div class="fullcomment"><div class="comment cmt"><p>Takes the input row from child and turns it into object using the given deserializer expression.
 The output of this operator is a single-field safe row containing the deserialized object.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.DictionaryCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DictionaryCodeextendsProductwithSerializable"></a>
+      <a id="DictionaryCode:DictionaryCode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DictionaryCode.html"><span class="name">DictionaryCode</span></a><span class="params">(<span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueAssignCode">valueAssignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@DictionaryCodeextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Extended information for ExprCode variable to also hold the variable having
+dictionary reference and its index when dictionary encoding is being used.</p>
     </li><li name="org.apache.spark.sql.execution.EncoderPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="EncoderPlan[T]extendsLogicalRDD"></a>
       <a id="EncoderPlan[T]:EncoderPlan[T]"></a>
@@ -585,25 +603,6 @@ an explicit collect. Only use for plans returning small results.
 multiple output rows for an input row.</p><div class="fullcomment"><div class="comment cmt"><p>Apply all of the GroupExpressions to every input row, hence we will get
 multiple output rows for an input row.</p></div><dl class="paramcmts block"><dt class="param">projections</dt><dd class="cmt"><p>The group of expressions, all of the group expressions should
                    output the same schema specified bye the parameter <code>output</code></p></dd><dt class="param">output</dt><dd class="cmt"><p>The output Schema</p></dd><dt class="param">child</dt><dd class="cmt"><p>Child operator</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.ExprCodeEx" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ExprCodeExextendsProductwithSerializable"></a>
-      <a id="ExprCodeEx:ExprCodeEx"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="ExprCodeEx.html"><span class="name">ExprCodeEx</span></a><span class="params">(<span name="hash">hash: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="dictionaryCode">dictionaryCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="assignCode">assignCode: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionary">dictionary: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryIndex">dictionaryIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dictionaryLen">dictionaryLen: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ExprCodeExextendsProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Extended information for ExprCode to also hold the hashCode variable,
-variable having dictionary reference and its index when dictionary
-encoding is being used.</p>
     </li><li name="org.apache.spark.sql.execution.FileRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="FileRelationextendsAnyRef"></a>
       <a id="FileRelation:FileRelation"></a>

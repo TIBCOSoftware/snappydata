@@ -116,14 +116,6 @@
             
                 <li class="toctree-l3"><a href="#snappydata-jobs">SnappyData Jobs</a></li>
                 
-                    <li><a class="toctree-l4" href="#scala_2">Scala</a></li>
-                
-                    <li><a class="toctree-l4" href="#java_2">Java</a></li>
-                
-                    <li><a class="toctree-l4" href="#scala_3">Scala</a></li>
-                
-                    <li><a class="toctree-l4" href="#java_3">Java</a></li>
-                
                     <li><a class="toctree-l4" href="#submitting-jobs">Submitting Jobs</a></li>
                 
                     <li><a class="toctree-l4" href="#running-python-applications">Running Python Applications</a></li>
@@ -300,7 +292,7 @@ Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apach
 <p>Also SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see <a href="../deployment/">SnappyData Spark Affinity modes</a>.</p>
 <p>If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.</p>
 <h3 id="to-create-a-snappysession">To Create a SnappySession</h3>
-<h4 id="scala">Scala</h4>
+<p><strong>Scala </strong></p>
 <pre><code class="scala"> val spark: SparkSession = SparkSession
          .builder
          .appName(&quot;SparkApp&quot;)
@@ -310,7 +302,7 @@ Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apach
  val snappy = new SnappySession(spark.sparkContext)
 </code></pre>
 
-<h4 id="java">Java</h4>
+<p><strong>Java</strong></p>
 <pre><code class="Java"> SparkSession spark = SparkSession
        .builder()
        .appName(&quot;SparkApp&quot;)
@@ -321,7 +313,7 @@ Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apach
  SnappySession snappy = new SnappySession(spark.sparkContext());
 </code></pre>
 
-<h4 id="python">Python</h4>
+<p><strong>Python</strong></p>
 <pre><code class="Python"> from pyspark.sql.snappy import SnappySession
  from pyspark import SparkContext, SparkConf
 
@@ -331,7 +323,7 @@ Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apach
 </code></pre>
 
 <h3 id="to-create-a-snappystreamingcontext">To Create a SnappyStreamingContext</h3>
-<h4 id="scala_1">Scala</h4>
+<p><strong>Scala</strong></p>
 <pre><code class="scala"> val spark: SparkSession = SparkSession
          .builder
          .appName(&quot;SparkApp&quot;)
@@ -340,7 +332,7 @@ Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apach
  val snsc = new SnappyStreamingContext(spark.sparkContext, Duration(1))
 </code></pre>
 
-<h4 id="java_1">Java</h4>
+<p><strong>Java</strong></p>
 <pre><code class="Java"> SparkSession spark = SparkSession
      .builder()
      .appName(&quot;SparkApp&quot;)
@@ -353,7 +345,7 @@ Similarly, <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apach
  JavaSnappyStreamingContext jsnsc = new JavaSnappyStreamingContext(jsc, batchDuration);
 </code></pre>
 
-<h4 id="python_1">Python</h4>
+<p><strong>Python</strong></p>
 <pre><code class="Python"> from pyspark.streaming.snappy.context import SnappyStreamingContext
  from pyspark import SparkContext, SparkConf
 
@@ -371,7 +363,7 @@ The implementation of <em>runSnappyJob</em> from SnappyStreamingJob uses a Snapp
 The jobs are submitted to the lead node of SnappyData over REST API using a <em>spark-submit</em> like utility.</p>
 <h2 id="snappydata-jobs">SnappyData Jobs</h2>
 <p>To create a job that can be submitted through the job server, the job must implement the <strong>SnappySQLJob</strong> or <strong>SnappyStreamingJob</strong> trait. Your job is displayed as:</p>
-<h4 id="scala_2">Scala</h4>
+<p><strong>Scala</strong></p>
 <pre><code class="scala">class SnappySampleJob implements SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   def runSnappyJob(snappy: SnappySession, jobConfig: Config): Any
@@ -381,7 +373,7 @@ The jobs are submitted to the lead node of SnappyData over REST API using a <em>
 }
 </code></pre>
 
-<h4 id="java_2">Java</h4>
+<p><strong>Java</strong></p>
 <pre><code class="java">class SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(SnappySession snappy, Config jobConfig) {//Implementation}
@@ -392,7 +384,7 @@ The jobs are submitted to the lead node of SnappyData over REST API using a <em>
 
 </code></pre>
 
-<h4 id="scala_3">Scala</h4>
+<p><strong>Scala</strong></p>
 <pre><code class="scala">class SnappyStreamingSampleJob implements SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any
@@ -402,7 +394,7 @@ The jobs are submitted to the lead node of SnappyData over REST API using a <em>
 }
 </code></pre>
 
-<h4 id="java_3">Java</h4>
+<p><strong>Java</strong></p>
 <pre><code class="java">class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
@@ -659,7 +651,7 @@ Thrift allows efficient and reliable communication across programming languages 
 <h3 id="snappysession-usage">SnappySession Usage</h3>
 <h4 id="create-columnar-tables-using-api">Create Columnar Tables using API</h4>
 <p>Other than <code>create</code> and <code>drop</code> table, rest are all based on the Spark SQL Data Source APIs.</p>
-<h4 id="scala_4">Scala</h4>
+<h4 id="scala">Scala</h4>
 <pre><code class="scala"> val props = Map(&quot;BUCKETS&quot; -&gt; &quot;2&quot;)// Number of partitions to use in the SnappyStore
 
  case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -683,7 +675,7 @@ Thrift allows efficient and reliable communication across programming languages 
  results.foreach(r =&gt; println(r))
 </code></pre>
 
-<h4 id="java_4">Java</h4>
+<h4 id="java">Java</h4>
 <pre><code class="Java"> Map&lt;String, String&gt; props1 = new HashMap&lt;&gt;();
  props1.put(&quot;buckets&quot;, &quot;11&quot;);
 
@@ -719,7 +711,7 @@ Thrift allows efficient and reliable communication across programming languages 
  }
 </code></pre>
 
-<h4 id="python_2">Python</h4>
+<h4 id="python">Python</h4>
 <pre><code class="Python">from pyspark.sql.types import *
 
 data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
@@ -780,7 +772,7 @@ results4.foreach(println)
 <h3 id="snappystreamingcontext-usage">SnappyStreamingContext Usage</h3>
 <p>SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.</p>
 <p>Below example shows how to use the <code>SnappyStreamingContext</code> to apply a schema to existing DStream and then query the <code>SchemaDStream</code> with simple SQL. It also shows the ability of the SnappyStreamingContext to deal with SQL queries.</p>
-<h4 id="scala_5">Scala</h4>
+<h4 id="scala_1">Scala</h4>
 <pre><code class="scala"> import org.apache.spark.sql._
  import org.apache.spark.streaming._
  import scala.collection.mutable
@@ -813,7 +805,7 @@ results4.foreach(println)
  snsc.sql(&quot;select count(*) from streamingExample&quot;).show
 </code></pre>
 
-<h4 id="java_5">Java</h4>
+<h4 id="java_1">Java</h4>
 <pre><code class="java"> StructType schema = new StructType(new StructField[]{
      new StructField(&quot;id&quot;, DataTypes.IntegerType, false, Metadata.empty()),
      new StructField(&quot;text&quot;, DataTypes.StringType, false, Metadata.empty())
@@ -852,7 +844,7 @@ results4.foreach(println)
  jsnsc.sql(&quot;select count(*) from streamingExample&quot;).show();
 </code></pre>
 
-<h4 id="python_3">Python</h4>
+<h4 id="python_1">Python</h4>
 <pre><code>from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
 
