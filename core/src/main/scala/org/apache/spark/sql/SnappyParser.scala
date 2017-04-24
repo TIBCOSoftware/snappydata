@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -26,23 +25,20 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.CachedPlanHelperExec
 import org.apache.spark.sql.sources.PutIntoTable
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.CalendarInterval
-import org.datanucleus.store.rdbms.sql.expression.ParameterLiteral
-
-import org.apache.spark.sql.execution.CachedPlanHelperExec
-import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 
 class SnappyParser(session: SnappySession)
     extends SnappyDDLParser(session) {
@@ -166,7 +162,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ Consts.numericSuffix.?) ~
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
+        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.?) ~
         delimiter ~> ((s: String) => toNumericLiteral(s))
   }
 
@@ -605,7 +602,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def keyWhenThenElse: Rule1[WhenElseType] = rule {
     expression ~ (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
-        t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
+        t: Expression) => (w, t))). + ~ (ELSE ~ expression).? ~ END ~>
         ((key: Expression, altPart: Any, elsePart: Any) =>
           (altPart.asInstanceOf[Seq[(Expression, Expression)]].map(
             e => EqualTo(key, e._1) -> e._2), elsePart).asInstanceOf[WhenElseType])
@@ -657,16 +654,16 @@ class SnappyParser(session: SnappySession)
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
-      (f: FunctionIdentifier, e: Any) =>
-        f match {
+      (fn: FunctionIdentifier, e: Any) =>
+        fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
             val exprs = e.asInstanceOf[Seq[Expression]].toList
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
                 exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
             DateAdd(exprs(2), exprs(1))
-          case f =>
-            UnresolvedFunction(f, e.asInstanceOf[Seq[Expression]], false)
+          case f => UnresolvedFunction(f, e.asInstanceOf[Seq[Expression]],
+            isDistinct = false)
         }
     } |
     ( ( test(tokenize) ~ paramliteral ) | literal ) |
@@ -783,13 +780,11 @@ class SnappyParser(session: SnappySession)
   // true
   private var tokenize = session.sessionState.conf.wholeStageEnabled
 
-  private var isselect = false
+  private var isSelect = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> {() => isselect match {
-      case true => tokenize = session.sessionState.conf.wholeStageEnabled
-      case _ => tokenize = false
-    }}
+    MATCH ~> (() =>
+      tokenize = isSelect && session.sessionState.conf.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
@@ -797,16 +792,16 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def SET_SELECT: Rule0 = rule {
-    MATCH ~> {() => isselect = true}
+    MATCH ~> {() => isSelect = true}
   }
 
   protected def SET_NOSELECT: Rule0 = rule {
-    MATCH ~> {() => isselect = false}
+    MATCH ~> {() => isSelect = false}
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (SET_SELECT ~ query.named("select")) | (SET_NOSELECT ~ (insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | desc))
+    (SET_SELECT ~ query.named("select")) | (SET_NOSELECT ~ (insert | put |
+        dmlOperation | ctes | ddl | set | cache | uncache | desc))
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
