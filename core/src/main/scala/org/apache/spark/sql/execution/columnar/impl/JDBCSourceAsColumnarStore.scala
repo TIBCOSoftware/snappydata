@@ -153,7 +153,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             stmt.setString(1, uuid)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, columnIndex)
-            val blob = new ClientBlob(buffer)
+            val blob = new ClientBlob(buffer, true)
             stmt.setBlob(4, blob)
             columnIndex += 1
             stmt.addBatch()

@@ -369,16 +369,14 @@ abstract class BaseColumnFormatRelation(
       case _ => ("primary key (uuid)", "", "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
-    val keyConstraint = s"KEY CONSTRAINT '${classOf[ColumnFormatKey].getName}'"
-    val valueConstraint = s"VALUE CONSTRAINT '${classOf[ColumnFormatValue].getName}'"
+    val encoderClause = s"ENCODER '${classOf[ColumnFormatEncoder].getName}'"
 
     // if the numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
     createTable(externalStore, s"create table $tableName (uuid varchar(46) " +
-        "not null, partitionId integer, columnIndex integer, data blob " +
-        s", $primaryKey) $partitionStrategy $colocationClause " +
-        s" $keyConstraint $valueConstraint" +
-        s" $concurrency $ddlExtensionForShadowTable",
+        "not null, partitionId integer, columnIndex integer, data blob, " +
+        s"$primaryKey) $partitionStrategy $colocationClause " +
+        s"$encoderClause $concurrency $ddlExtensionForShadowTable",
       tableName, dropIfExists = false)
   }
 

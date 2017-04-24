@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.io.{DataInput, DataOutput}
 import java.nio.ByteBuffer
+import java.sql.Blob
 import java.util.concurrent.locks.LockSupport
 
 import scala.collection.JavaConverters._
@@ -26,13 +27,19 @@ import com.gemstone.gemfire.cache.{EntryOperation, Region}
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.store.SerializedBufferData
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, GemFireCacheImpl, InternalPartitionResolver}
-import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, InputStreamChannel, OutputStreamChannel}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, GemFireCacheImpl, InternalPartitionResolver, RegionEntry}
+import com.gemstone.gemfire.internal.shared.{InputStreamChannel, OutputStreamChannel}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{DSCODE, DirectByteBufferDataInput, HeapDataOutputStream}
 import com.gemstone.gemfire.{DataSerializable, DataSerializer}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RowEncoder}
+import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLVarchar}
+import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
+import io.snappydata.thrift.common.BufferedBlob
+import io.snappydata.thrift.internal.ClientBlob
 import org.slf4j.Logger
 
 import org.apache.spark.Logging
@@ -204,10 +211,11 @@ final class ColumnFormatValue
   }
 
   def setBuffer(buffer: ByteBuffer): Unit = {
+    serializedBuffer = GemFireCacheImpl.getCurrentBufferAllocator
+        .transfer(buffer)
     // write the serialization header and move ahead to start of data
-    ColumnFormatEntry.writeValueSerializationHeader(buffer,
+    ColumnFormatEntry.writeValueSerializationHeader(serializedBuffer,
       buffer.remaining() - ColumnFormatEntry.VALUE_HEADER_SIZE)
-    serializedBuffer = buffer
   }
 
   def getBuffer: ByteBuffer = serializedBuffer
@@ -239,8 +247,8 @@ final class ColumnFormatValue
 
         case _ =>
           ColumnFormatEntry.logger.info("SW: toData on non-channel, non-hdos", new Throwable)
-          out.write(ClientSharedUtils.toBytes(buffer, numBytes, numBytes),
-            0, numBytes)
+          val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+          out.write(allocator.toBytes(buffer))
       }
     }
   }
@@ -278,16 +286,13 @@ final class ColumnFormatValue
         case _ =>
           ColumnFormatEntry.logger.info("SW: fromData on a non-channel", new Throwable)
           // order is BIG_ENDIAN by default
-          serializedBuffer = allocator.allocate(numBytes +
+          val bytes = new Array[Byte](numBytes +
               ColumnFormatEntry.VALUE_HEADER_SIZE)
-          ColumnFormatEntry.writeValueSerializationHeader(serializedBuffer,
-            numBytes)
-          val bytes = new Array[Byte](numBytes)
-          in.readFully(bytes, 0, numBytes)
-          val position = serializedBuffer.position()
-          serializedBuffer.put(bytes, 0, numBytes)
-          // move to the start of data
-          serializedBuffer.position(position)
+          in.readFully(bytes, ColumnFormatEntry.VALUE_HEADER_SIZE, numBytes)
+          // extra copy of empty 8-byte header too for direct buffers
+          val buffer = allocator.fromBytes(bytes, 0,
+            numBytes + ColumnFormatEntry.VALUE_HEADER_SIZE)
+          setBuffer(buffer)
       }
     } else {
       serializedBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
@@ -316,5 +321,35 @@ final class ColumnFormatValue
       val size = Sizeable.PER_OBJECT_OVERHEAD + REFERENCE_SIZE /* BB */
       alignedSize(size) + alignedSize(bbSize) + alignedSize(hbSize)
     }
+  }
+}
+
+final class ColumnFormatEncoder extends RowEncoder {
+
+  override def toRow(entry: RegionEntry, value: AnyRef,
+      container: GemFireContainer): ExecRow = {
+    val batchKey = entry.getRawKey.asInstanceOf[ColumnFormatKey]
+    val batchValue = value.asInstanceOf[ColumnFormatValue]
+    // layout the same way as declared in ColumnFormatRelation
+    val row = new ValueRow(4)
+    row.setColumn(1, new SQLVarchar(batchKey.uuid))
+    row.setColumn(2, new SQLInteger(batchKey.partitionId))
+    row.setColumn(3, new SQLInteger(batchKey.columnIndex))
+    row.setColumn(4, new SQLBlob(new ClientBlob(batchValue.getBuffer, false)))
+    row
+  }
+
+  override def fromRow(row: Array[DataValueDescriptor],
+      container: GemFireContainer): java.util.Map.Entry[AnyRef, AnyRef] = {
+    val batchKey = new ColumnFormatKey(uuid = row(0).getString,
+      partitionId = row(1).getInt, columnIndex = row(2).getInt)
+    val batchValue = new ColumnFormatValue()
+    // transfer buffer from BufferedBlob as is, or copy for others
+    row(3).getObject match {
+      case blob: BufferedBlob => batchValue.setBuffer(blob.getAsBuffer)
+      case blob: Blob => batchValue.setBuffer(ByteBuffer.wrap(
+        blob.getBytes(1, blob.length().toInt)))
+    }
+    new java.util.AbstractMap.SimpleEntry[AnyRef, AnyRef](batchKey, batchValue)
   }
 }
