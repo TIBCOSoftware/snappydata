@@ -354,6 +354,78 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
     var prepStatement: java.sql.PreparedStatement = null
     try {
+      val qry = s"select ol_1_int_id, ol_2_int2_id, ol_1_str_id " +
+          s" from $tableName1 A inner join $tableName2 B " +
+          s" on A.ol_1_int_id = B.ol_2_int_id " +
+          s" where ol_1_int2_id < ? " +
+          s" and ol_2_int2_id = case when ol_2_int2_id < ? then ? else ? end " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      prepStatement.setInt(2, 300)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 400)
+      verifyResults("query5-1", prepStatement.executeQuery, Array(200, 400), 3)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 700)
+      prepStatement.setInt(3, 600)
+      prepStatement.setInt(4, 800)
+      verifyResults("query5-2", prepStatement.executeQuery, Array(600, 800), 3)
+
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query4(tableName1: String, tableName2: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
+          s" from $tableName1 " +
+          s" where ol_1_int2_id = ? " +
+          s" union " +
+          s" select ol_2_int_id, ol_2_int2_id, ol_2_str_id " +
+          s" from $tableName2 " +
+          s" where ol_2_int2_id in (?, ?, ?) " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 100)
+      prepStatement.setInt(2, 300)
+      prepStatement.setInt(3, 200)
+      prepStatement.setInt(4, 400)
+      verifyResults("query4-1", prepStatement.executeQuery, Array(100, 200, 300, 400), 4)
+
+      prepStatement.setInt(1, 900)
+      prepStatement.setInt(2, 600)
+      prepStatement.setInt(3, 700)
+      prepStatement.setInt(4, 800)
+      verifyResults("query4-2", prepStatement.executeQuery, Array(900, 600, 700, 800), 4)
+
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query5(tableName1: String, tableName2: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
       val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
           s" from $tableName1 " +
           s" where ol_1_int_id < ? " +
@@ -385,43 +457,6 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     }
   }
 
-  def query4(tableName1: String, tableName2: String): Unit = {
-    // sc.setLogLevel("TRACE")
-    val conn = DriverManager.getConnection(
-      "jdbc:snappydata://" + serverHostPort)
-
-    var prepStatement: java.sql.PreparedStatement = null
-    try {
-      val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
-          s" from $tableName1 " +
-          s" where ol_1_int2_id = ? " +
-          s" union " +
-          s" select ol_2_int_id, ol_2_int2_id, ol_2_str_id " +
-          s" from $tableName2 " +
-          s" where ol_2_int2_id in (?, ?, ?) " +
-          s" limit 20" +
-          s""
-
-      prepStatement = conn.prepareStatement(qry)
-      prepStatement.setInt(1, 100)
-      prepStatement.setInt(2, 300)
-      prepStatement.setInt(3, 200)
-      prepStatement.setInt(4, 400)
-      verifyResults("query4-1", prepStatement.executeQuery, Array(100, 200, 300, 400), -1)
-
-      prepStatement.setInt(1, 900)
-      prepStatement.setInt(2, 600)
-      prepStatement.setInt(3, 700)
-      prepStatement.setInt(4, 800)
-      verifyResults("query4-2", prepStatement.executeQuery, Array(900, 600, 700, 800), -1)
-
-      // Thread.sleep(1000000)
-    } finally {
-      if (prepStatement != null) prepStatement.close()
-      conn.close()
-    }
-  }
-
   test("test Join, SubQuery and Aggragtes") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
@@ -444,8 +479,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       insertRows(tableName2, 1000)
       query1(tableName1, tableName2)
       query2(tableName1, tableName2)
-      // query3(tableName1, tableName2)
-      // query4(tableName1, tableName2)
+      query3(tableName1, tableName2)
+      // query4(tableName1, tableName2) // TODO - Enable with SNAP-1478
+      // query5(tableName1, tableName2) // TODO - Enable with SNAP-1478
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
