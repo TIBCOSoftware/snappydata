@@ -388,8 +388,7 @@ object SnappyUnifiedMemoryManager extends Logging {
   def getMemorySize(conf: SparkConf): Long = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache ne null) {
-      OffHeapStorage.parseOffHeapMemorySize(
-        Misc.getGemFireCache.getDistributedSystem.getConfig.getMemorySize)
+        Misc.getGemFireCache.getMemorySize
     } else { // for local mode testing
       conf.getLong("snappydata.store.memory.size", 0L)
     }
