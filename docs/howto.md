@@ -1131,7 +1131,9 @@ Depending on your Windows installation, download the required version of the Sna
 
 3. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
+<!--
 For more information, refer to the documentation on [setting up SnappyData ODBC Driver and Tableau Desktop](https://github.com/SnappyDataInc/snappydata/blob/master/docs/setting_up_odbc_driver-tableau_desktop.md).
+--->
 
 ### Connect to the SnappyData cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
