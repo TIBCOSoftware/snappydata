@@ -187,7 +187,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
 }
 
-object TPCHUtils {
+object TPCHUtils extends Logging {
 
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
@@ -290,14 +290,14 @@ object TPCHUtils {
       assert(resultOutputFile.count() == 0,
         s"Query result mismatch Observed. Look at Result_Snappy.out for detailed failure")
       if (resultOutputFile.count() != 0) {
-        ClusterManagerTestBase.logger.warn(
+        logWarning(
           s"QUERY RESULT MISMATCH OBSERVED. Look at Result_Snappy.out for detailed failure")
       }
     } else {
       assert(resultOutputFile.count() == 0,
         s"Query result match Observed. Look at Result_Snappy_Tokenization.out for detailed failure")
       if (resultOutputFile.count() != 0) {
-        ClusterManagerTestBase.logger.warn(
+        logWarning(
           s"QUERY RESYLT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
               s" failure")
       }

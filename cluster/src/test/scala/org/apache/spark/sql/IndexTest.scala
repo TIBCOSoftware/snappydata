@@ -23,7 +23,10 @@ import io.snappydata.benchmark.snappy.{SnappyAdapter, SnappyTPCH, TPCH, TPCH_Sna
 import io.snappydata.{PlanTest, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
-import org.apache.spark.sql.catalyst.plans.logical.Sort
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Sort}
 import org.apache.spark.util.Benchmark
 
 class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
@@ -31,6 +34,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 
   override def beforeAll(): Unit = {
     System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
     FabricDatabase.SKIP_SPS_PRECOMPILE = true
@@ -39,10 +43,13 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 
   override def afterAll(): Unit = {
     System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
+    System.clearProperty("DISABLE_PARTITION_PRUNING")
     FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile
     super.afterAll()
   }
+
 /*
 
   test("dd") {
@@ -119,38 +126,88 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 
   ignore("Benchmark tpch") {
 
-    val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
-      "12", "13", "14", "15", "16", "17", "18", "19",
-      "20", "21", "22")
+    try {
+      val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
+        "12", "13", "14", "15", "16", "17", "18", "19",
+        "20", "21", "22")
 
-    TPCHUtils.createAndLoadTables(snc, true)
+      sc(c => c.set("spark.local.dir", "/data/temp"))
 
-    snc.sql(s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
+      TPCHUtils.createAndLoadTables(snc, true)
+
+      snc.sql(
+        s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
              options (COLOCATE_WITH 'customer')
           """)
 
-    snc.sql(s"""CREATE INDEX idx_lineitem_part ON lineitem(l_partkey)
+      snc.sql(
+        s"""CREATE INDEX idx_lineitem_part ON lineitem(l_partkey)
              options (COLOCATE_WITH 'part')
           """)
 
-    val tables = Seq("nation", "region", "supplier", "customer", "orders", "lineitem", "part",
-      "partsupp")
+      val tables = Seq("nation", "region", "supplier", "customer", "orders", "lineitem", "part",
+        "partsupp")
 
-    val tableSizes = tables.map { tableName =>
-      (tableName, snc.table(tableName).count())
-    }.toMap
+      val tableSizes = tables.map { tableName =>
+        (tableName, snc.table(tableName).count())
+      }.toMap
 
-    tableSizes.foreach(println)
-    queries.foreach(q => benchmark(q, tableSizes))
+      tableSizes.foreach(println)
+      runBenchmark("select o_orderkey from orders where o_orderkey = 1", tableSizes, 2)
+      runBenchmark("select o_orderkey from orders where o_orderkey = 32", tableSizes)
+      runBenchmark("select o_orderkey from orders where o_orderkey = 801", tableSizes)
+      runBenchmark("select o_orderkey from orders where o_orderkey = 1409", tableSizes)
+      // queries.foreach(q => benchmark(q, tableSizes))
 
-    snc.sql(s"DROP INDEX idx_orders_cust")
-    snc.sql(s"DROP INDEX idx_lineitem_part")
+    } finally {
+      snc.sql(s"DROP INDEX if exists idx_orders_cust")
+      snc.sql(s"DROP INDEX if exists idx_lineitem_part")
+    }
   }
 
-  private def benchmark(qNum: String, tableSizes: Map[String, Long]) = {
+  private def togglePruning(onOff: Boolean) =
+    System.setProperty("DISABLE_PARTITION_PRUNING", onOff.toString)
+
+  def runBenchmark(queryString: String, tableSizes: Map[String, Long], numSecs: Int = 0): Unit = {
+
+    // This is an indirect hack to estimate the size of each query's input by traversing the
+    // logical plan and adding up the sizes of all tables that appear in the plan. Note that this
+    // currently doesn't take WITH subqueries into account which might lead to fairly inaccurate
+    // per-row processing time for those cases.
+    val queryRelations = scala.collection.mutable.HashSet[String]()
+    snc.sql(queryString).queryExecution.logical.map {
+      case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+        queryRelations.add(t.table.toLowerCase)
+      case lp: LogicalPlan =>
+        lp.expressions.foreach {
+          _ foreach {
+            case subquery: SubqueryExpression =>
+              subquery.plan.foreach {
+                case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+                  queryRelations.add(t.table.toLowerCase)
+                case _ =>
+              }
+            case _ =>
+          }
+        }
+      case _ =>
+    }
+    val size = queryRelations.map(tableSizes.getOrElse(_, 0L)).sum
+
+    import scala.concurrent.duration._
+    val b = new Benchmark(s"JoinOrder optimization", size,
+      warmupTime = numSecs.seconds)
+    b.addCase("WithOut Partition Pruning",
+      prepare = () => togglePruning(true))(_ => snc.sql(queryString).collect().foreach(_ => ()))
+    b.addCase("With Partition Pruning",
+      prepare = () => togglePruning(false)) (_ => snc.sql(queryString).collect().foreach(_ => ()))
+    b.run()
+  }
+
+  def benchmark(qNum: String, tableSizes: Map[String, Long]): Unit = {
 
     val qryProvider = new TPCH with SnappyAdapter
-    val query = qNum.substring(1).toInt
+    val query = qNum.toInt
     def executor(str: String) = snc.sql(str)
 
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
@@ -171,15 +228,19 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
       genPlan = genPlan)._1.foreach(_ => ())
 
-    def evalBaseTPCH = qryProvider.execute(query, executor)
+    def evalBaseTPCH = qryProvider.execute(query, executor)._1.foreach(_ => ())
 
 
-    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
+//    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
 //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
-//    b.addCase(s"$qNum snappyMods joinOrder = F", prepare = case1)(i => evalSnappyMods(false))
-//    b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
-    b.addCase(s"$qNum baseTPCH index = T", prepare = case3)(i =>
-      evalBaseTPCH)
+    b.addCase(s"$qNum without PartitionPruning",
+      prepare = () => togglePruning(true))(_ => evalSnappyMods(false))
+    b.addCase(s"$qNum with PartitionPruning",
+      prepare = () => togglePruning(false))(_ => evalSnappyMods(false))
+/*
+    b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
+    b.addCase(s"$qNum baseTPCH index = T", prepare = case3)(i => evalBaseTPCH)
+*/
     b.run()
 
   }

@@ -21,6 +21,7 @@ import java.net.{URLClassLoader, URL}
 
 import scala.collection.JavaConverters._
 
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.Hive
@@ -28,7 +29,7 @@ import org.apache.hadoop.util.VersionInfo
 
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.{ExternalClusterMode, SplitClusterMode, LocalMode, ExternalEmbeddedMode, SnappyEmbeddedMode, SnappyContext, SQLContext}
+import org.apache.spark.sql._
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.client.{IsolatedClientLoader, HiveClient}
 import org.apache.spark.sql.internal.SQLConf
@@ -139,6 +140,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
     val metadataConf = new HiveConf()
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_POOLING_TYPE, "DBCP")
     var warehouse = metadataConf.get(
       HiveConf.ConfVars.METASTOREWAREHOUSE.varname)
     if (warehouse == null || warehouse.isEmpty ||
@@ -290,6 +292,8 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
           (true, Constant.DEFAULT_EMBEDDED_URL +
               ";host-data=false;disable-streaming=true;default-persistent=true;" +
               props, Constant.JDBC_EMBEDDED_DRIVER)
+        case ThinClientConnectorMode(_, url) =>
+          (true, url + ";route-query=false;", Constant.JDBC_CLIENT_DRIVER)
         case ExternalClusterMode(_, _) =>
           (false, null, null)
       }
