@@ -376,12 +376,13 @@ trait BatchConsumer extends CodegenSupport {
 }
 
 /**
- * Extended information for ExprCode variable to also hold the variable having
- * dictionary reference and its index when dictionary encoding is being used.
+ * Extended information for ExprCode to also hold the hashCode variable,
+ * variable having dictionary reference and its index when dictionary
+ * encoding is being used.
  */
-case class DictionaryCode(private var dictionaryCode: String,
-    valueAssignCode: String, dictionary: String, dictionaryIndex: String,
-    dictionaryLen: String) {
+case class ExprCodeEx(var hash: Option[String],
+    private var dictionaryCode: String, assignCode: String,
+    dictionary: String, dictionaryIndex: String, dictionaryLen: String) {
 
   def evaluateDictionaryCode(ev: ExprCode): String = {
     if (ev.code.isEmpty) ""

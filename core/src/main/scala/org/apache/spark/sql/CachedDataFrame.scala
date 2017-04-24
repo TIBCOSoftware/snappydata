@@ -86,7 +86,6 @@ class CachedDataFrame(df: Dataset[Row],
   }
 
   private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
-
   private lazy val unsafe = UnsafeHolder.getUnsafe
   private lazy val rdd_partitions_ = {
     val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
@@ -270,16 +269,17 @@ class CachedDataFrame(df: Dataset[Row],
       allbcplans.foreach { case (bchj, refs) =>
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
-          case pl@ParamLiteral(_, _, p) =>
+          case pl @ ParamLiteral(v, dt, p) => {
             val np = newpls.find(_.pos == p).getOrElse(pl)
             ParamLiteral(np.value, np.dataType, p)
+          }
         }
         val tmpCtx = new CodegenContext
-        val parameterType = tmpCtx.getClass
+        val parameterType = tmpCtx.getClass()
         val method = newbchj.getClass.getDeclaredMethod("prepareBroadcast", parameterType)
         method.setAccessible(true)
         val bc = method.invoke(newbchj, tmpCtx)
-        refs(broadcastIndex) = bc.asInstanceOf[(Broadcast[_], String)]._1
+        refs(broadcastIndex) = bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1
       }
     }
     firstAccess = false

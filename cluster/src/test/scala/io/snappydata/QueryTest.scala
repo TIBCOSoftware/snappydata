@@ -19,9 +19,8 @@ package io.snappydata
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{Row, SnappyContext, SparkSession}
+import org.apache.spark.sql.{SnappyContext, SparkSession}
 
 class QueryTest extends SnappyFunSuite {
 
@@ -98,22 +97,5 @@ class QueryTest extends SnappyFunSuite {
     if (result1 != result2) {
       fail(s"Expected result: $result2\nGot: $result1")
     }
-  }
-
-  /**
-   * Distinct query failure in code generation reported on github
-   * (https://github.com/SnappyDataInc/snappydata/issues/534)
-   */
-  test("GITHUB-534") {
-    val session = SnappyContext(sc).snappySession
-    session.sql("CREATE TABLE yes_with(device_id VARCHAR(200), " +
-        "sdk_version VARCHAR(200)) USING COLUMN OPTIONS(PARTITION_BY 'device_id')")
-    session.insert("yes_with", Row("id1", "v1"), Row("id1", "v2"),
-      Row("id2", "v1"), Row("id2", "v1"), Row("id2", "v3"))
-    val r = session.sql("select sdk_version, count(distinct device_id) from (" +
-        "select sdk_version,device_id from YES_WITH group by sdk_version, " +
-        "device_id) a group by sdk_version")
-    ColumnCacheBenchmark.collect(r,
-      Seq(Row("v1", 2), Row("v2", 1), Row("v3", 1)))
   }
 }

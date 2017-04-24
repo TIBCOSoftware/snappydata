@@ -73,21 +73,21 @@ object DictionaryOptimizedMapAccessor {
 
   def checkSingleKeyCase(keyExpressions: Seq[Expression],
       keyVars: => Seq[ExprCode], ctx: CodegenContext,
-      session: SnappySession): Option[DictionaryCode] = {
+      session: SnappySession): Option[ExprCodeEx] = {
     if (canHaveSingleKeyCase(keyExpressions)) {
-      session.getDictionaryCode(ctx, keyVars.head.value) match {
-        case e@Some(DictionaryCode(_, _, dict, _, _)) if dict.nonEmpty => e
+      session.getExCode(ctx, keyVars.head.value :: Nil, keyExpressions) match {
+        case e@Some(ExprCodeEx(_, _, _, dict, _, _)) if dict.nonEmpty => e
         case _ => None
       }
     } else None
   }
 
   def dictionaryArrayGetOrInsert(ctx: CodegenContext, keyExpr: Seq[Expression],
-      keyVar: ExprCode, keyDictVar: DictionaryCode, arrayVar: String,
+      keyVar: ExprCode, keyVarEx: ExprCodeEx, arrayVar: String,
       resultVar: String, valueInit: String, continueOnNull: Boolean,
       accessor: ObjectHashMapAccessor): String = {
     val key = keyVar.value
-    val keyIndex = keyDictVar.dictionaryIndex
+    val keyIndex = keyVarEx.dictionaryIndex
     val keyNull = keyVar.isNull != "false"
     val keyEv = ExprCode("", if (keyNull) s"($key == null)" else "false", key)
     val className = accessor.getClassName
@@ -115,7 +115,7 @@ object DictionaryOptimizedMapAccessor {
     val hashExprCode = if (keyNull) s"$key != null ? $key.hashCode() : -1"
     else s"$key.hashCode()"
     // if hash has already been calculated then use it
-    val hashExpr = accessor.session.getHashVar(ctx, keyVar.value :: Nil) match {
+    val hashExpr = keyVarEx.hash match {
       case Some(h) =>
         hash = h
         s"if ($h == 0) $h = $hashExprCode;"
@@ -128,12 +128,11 @@ object DictionaryOptimizedMapAccessor {
     else {
       // in this case replace the keyVar code to skip dictionary index get
       if (keyVar.isNull.isEmpty || keyVar.isNull == "false") {
-        keyVar.code = s"$key = ${keyDictVar.valueAssignCode};"
-        s"$key = ${keyDictVar.dictionary}[$keyIndex];"
+        keyVar.code = s"$key = ${keyVarEx.assignCode};"
+        s"$key = ${keyVarEx.dictionary}[$keyIndex];"
       } else {
-        keyVar.code =
-            s"$key = ${keyVar.isNull} ? null : ${keyDictVar.valueAssignCode};"
-        s"$key = ${keyDictVar.dictionary}[$keyIndex];"
+        keyVar.code = s"$key = ${keyVar.isNull} ? null : ${keyVarEx.assignCode};"
+        s"$key = ${keyVarEx.dictionary}[$keyIndex];"
       }
     }
     s"""if ($arrayVar != null) {

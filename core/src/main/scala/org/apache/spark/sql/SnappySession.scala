@@ -314,32 +314,39 @@ class SnappySession(@transient private val sc: SparkContext,
       baseClassName -> className)
   }
 
-  /**
-   * Register additional [[DictionaryCode]] for a variable in ExprCode.
-   */
-  private[sql] def addDictionaryCode(ctx: CodegenContext, keyVar: String,
-      dictCode: DictionaryCode): Unit =
-    addContextObject(ctx, "D", keyVar, dictCode)
+  private def wrapExpressions(vars: Seq[String],
+      expr: Seq[Expression]): Seq[Expr] =
+    vars.zip(expr).map(p => new Expr(p._1, p._2))
 
   /**
-   * Get [[DictionaryCode]] for a previously registered variable in ExprCode
-   * using [[addDictionaryCode]].
+   * Get [[ExprCodeEx]] for a previously registered ExprCode variable
+   * using [[addExCode]].
    */
-  def getDictionaryCode(ctx: CodegenContext,
-      keyVar: String): Option[DictionaryCode] =
-    getContextObject[DictionaryCode](ctx, "D", keyVar)
+  def getExCode(ctx: CodegenContext, vars: Seq[String],
+      expr: Seq[Expression]): Option[ExprCodeEx] = {
+    getContextObject[ExprCodeEx](ctx, "E", wrapExpressions(vars, expr))
+  }
 
   /**
-   * Register hash variable holding the evaluated hashCode for some variables.
+   * Register additional [[ExprCodeEx]] for a variable in ExprCode.
    */
-  private[sql] def addHashVar(ctx: CodegenContext, keyVars: Seq[String],
-      hashVar: String): Unit = addContextObject(ctx, "H", keyVars, hashVar)
+  private[sql] def addExCode(ctx: CodegenContext, vars: Seq[String],
+      expr: Seq[Expression], exCode: ExprCodeEx): Unit = {
+    addContextObject(ctx, "E", wrapExpressions(vars, expr), exCode)
+  }
 
   /**
-   * Get hash variable for previously registered variables using [[addHashVar]].
+   * Register additional hash variable in [[ExprCodeEx]].
    */
-  private[sql] def getHashVar(ctx: CodegenContext,
-      keyVars: Seq[String]): Option[String] = getContextObject(ctx, "H", keyVars)
+  private[sql] def addExCodeHash(ctx: CodegenContext, vars: Seq[String],
+      hashExpressions: Seq[Expression], hashVar: String): Unit = {
+    val key = wrapExpressions(vars, hashExpressions)
+    getContextObject[ExprCodeEx](ctx, "E", key) match {
+      case Some(ev) => ev.hash = Some(hashVar)
+      case None => addContextObject(ctx, "E", key,
+        ExprCodeEx(Some(hashVar), "", "", "", "", ""))
+    }
+  }
 
   private[sql] def clearContext(): Unit = synchronized {
     contextObjects.clear()
