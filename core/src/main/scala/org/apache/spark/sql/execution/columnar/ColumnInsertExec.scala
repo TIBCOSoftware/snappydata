@@ -86,17 +86,18 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     s"""
       for(int i=0;i< $numTimes; i++){
           $code
-      }""".stripMargin
+      }"""
   }
 
   /**
     * This method will be used when column count exceeds 30 to avoid
     * the 64K size limit of JVM. Most of the code which generated big codes, has been
-    * chaunked or put in an array/row to avoid huge code blocks. This will impact the performance,
-    * but will work till the store column limit of 1012.
+    * chaunked or put in an array/row to avoid huge code blocks.
+    * This will impact the performance, but code gen will not fail till store column limit of 1012.
     */
   private def doProduceWideTable(ctx: CodegenContext): String = {
     val encodingClass = classOf[ColumnEncoding].getName
+    val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
     else metricTerm(ctx, "numInsertedRows")
     schemaTerm = ctx.addReferenceObj("schema", relationSchema,
@@ -105,9 +106,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val schemaLength = relationSchema.length
     encoderArrayTerm = ctx.freshName("encoderArray")
     cursorArrayTerm = ctx.freshName("cursorArray")
-    encoderCursorTerms = relationSchema.map { _ =>
-      (ctx.freshName("encoder"), ctx.freshName("cursor"))
-    }
     numInsertions = ctx.freshName("numInsertions")
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
@@ -143,21 +141,18 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        """.stripMargin
 
     val initEncoderArray = loop(initEncoderCode, relationSchema.length)
-    val iniCursorCode = s"this.$cursorArrayTerm[i] = 0L;"
-    val iniCursorArray = loop(iniCursorCode, relationSchema.length)
 
-    ctx.addMutableState("org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder[]",
+    ctx.addMutableState(s"$encoderClass[]",
       encoderArrayTerm,
       s"""
          |this.$encoderArrayTerm =
-         | new org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder[$schemaLength];
+         | new $encoderClass[$schemaLength];
          |$initEncoderArray
         """.stripMargin)
 
     ctx.addMutableState("long[]", cursorArrayTerm,
       s"""
          |this.$cursorArrayTerm = new long[$schemaLength];
-         |$iniCursorArray
         """.stripMargin)
 
     val encoderLoopCode = s"$defaultRowSize += " +
@@ -178,6 +173,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  return false;
          |}
       """.stripMargin)
+
     s"""
        |$checkEnd; // already done
        |$batchSizeDeclaration
@@ -198,10 +194,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  $storeColumnBatch(-1, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
-       |${
-      if (numInsertedRowsMetric eq null) ""
-      else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"
-    }
+       |${if (numInsertedRowsMetric eq null) ""
+        else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
     """.stripMargin
   }
