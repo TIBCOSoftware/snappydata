@@ -367,13 +367,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(2, 300)
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 400)
-      verifyResults("query5-1", prepStatement.executeQuery, Array(200, 400), 3)
+      verifyResults("query3-1", prepStatement.executeQuery, Array(200, 400), 3)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 700)
       prepStatement.setInt(3, 600)
       prepStatement.setInt(4, 800)
-      verifyResults("query5-2", prepStatement.executeQuery, Array(600, 800), 3)
+      verifyResults("query3-2", prepStatement.executeQuery, Array(600, 800), 3)
 
       // Thread.sleep(1000000)
     } finally {
@@ -442,13 +442,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(2, 100)
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 300)
-      verifyResults("query3-1", prepStatement.executeQuery, Array(100, 200, 300), -1)
+      verifyResults("query5-1", prepStatement.executeQuery, Array(100, 200, 300), -1)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
       prepStatement.setInt(3, 700)
       prepStatement.setInt(4, 800)
-      verifyResults("query3-2", prepStatement.executeQuery, Array(600, 700, 800), -1)
+      verifyResults("query5-2", prepStatement.executeQuery, Array(600, 700, 800), -1)
 
       // Thread.sleep(1000000)
     } finally {
