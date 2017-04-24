@@ -14,7 +14,7 @@ CONNECT ConnectionURLString [ PROTOCOL Identifier ]
 
 Connects to the database indicated by the *ConnectionURLString*. You have the option of specifying a name for your connection. Use the [Set Connection](set_connection.md) command to switch between connections. If you do not name a connection, the system generates a name automatically.
 
-You also have the option of specifying a named protocol previously created with the <a href="protocol.html#rtoolsijcomref27997" class="xref" title="Specifies the protocol, as a String, for establishing connections and automatically loads the appropriate driver.">Protocol</a> command. 
+You also have the option of specifying a named protocol previously created with the <mark> TO BE CONFIRMED RowStore link [Protocol](http://rowstore.docs.snappydata.io/docs/reference/store_commands/protocol.html#rtoolsijcomref27997)</mark> command. 
 
 !!!Note
 	If the connection requires a user name and password, supply those in the connection URL string, as shown in the example. </p>

@@ -1,12 +1,8 @@
 # MEMORYANALYTICS
 
-
 A SnappyData virtual table that provides information about the overhead and memory usage of user tables and indexes.
 
-See <a href="../../data_management/memory_analytics/memory_requirements_chapter.html#concept_A244C9422D8C4BECB7EE1C387C3AA099" class="xref" title="Designing a SnappyData database also involves estimating the memory requirements for your data based on the size of the actual table values and indexes, the overhead that SnappyData requires for your data, the overall usage pattern for your data, and whether you wish to store your table row data in the JVM heap or in off-heap memory. You can estimate heap memory requirements for tables using general guidelines for SnappyData overhead. Additionally, you can load tables with representative data and then query the SnappyData SYS.MEMORYANALYTICS table to obtain details about the heap or off-heap memory required for individual tables and indexes.">Managing Tables in Memory</a>.
-
-<a id="reference_21873F7CB0454C4DBFDC7B4EDADB6E1F__table_81656C3CC60040E8BC644074A151F050"></a>
-
+See [Managing Tables in Memory](../../../concepts/tables/managing_table_in_memory/).
 
 |Column Name|Type|Length|Nullable|Contents|
 ------------ | ------------- | ------------|------------- |------------- |

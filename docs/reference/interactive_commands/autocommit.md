@@ -13,7 +13,7 @@ AUTOCOMMIT { ON | OFF }
 
 Turns the connection's auto-commit mode on or off. JDBC specifies that the default auto-commit mode is `ON`. Certain types of processing require that auto-commit mode be `OFF`.
 
-If auto-commit mode is changed from off to on when a transaction is outstanding, that work is committed when the current transaction commits, not at the time auto-commit is turned on. Use <a href="commit.html#rtoolsijcomref31510" class="xref" title="Issues a java.sql.Connection.commit request.">Commit</a> or <a href="rollback.html#rtoolsijcomref12297" class="xref" title="Issues a java.sql.Connection.rollback request.">Rollback</a> before turning on auto-commit when there is a transaction outstanding, so that all prior work is completed before the return to auto-commit mode.
+If auto-commit mode is changed from off to on when a transaction is outstanding, that work is committed when the current transaction commits, not at the time auto-commit is turned on. Use [Commit](commit.md) or [Rollback](rollback.md) before turning on auto-commit when there is a transaction outstanding, so that all prior work is completed before the return to auto-commit mode.
 
 ##Example
 

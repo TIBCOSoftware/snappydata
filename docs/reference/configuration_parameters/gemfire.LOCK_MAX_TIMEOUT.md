@@ -6,7 +6,7 @@ This is the maximum time to wait for a transaction that is committing a row that
 
 If you change this property, set it to the same value on every data store member in your distributed system.
 
-This property configures conflict detection for READ\_COMMITTED and REPEATABLE\_READ transactions. See <a href="../../developers_guide/topics/queries/transactions-isolation-levels.md#concept_830FC26DAE844CAB933FF3CEEDCB2535" class="xref" title="RowStore supports several transaction isolation levels. It does not support the SERIALIZABLE isolation level, nested transactions, or savepoints.">Supported Transaction Isolation Levels</a>.
+This property configures conflict detection for READ_COMMITTED and REPEATABLE_READ transactions. See [Supported Transaction Isolation Levels](http://rowstore.docs.snappydata.io/docs/developers_guide/topics/queries/transactions-isolation-levels.html#concept_830FC26DAE844CAB933FF3CEEDCB2535).
 
 ## Default Value
 

@@ -7,7 +7,7 @@ Specifies a default `RECOVERYDELAY` value for all tables in the cluster. If a Sn
 !!!Note 
 	SnappyData always initiates recovery for redundant, partitioned tables when a new SnappyData member joins the cluster or when a rebalance operation occurs.</p>
 
-A value of -1, the default value, indicates that no recovery is performed unless a new SnappyData member joins the cluster, or unless individual tables override the recovery delay by specifying the `RECOVERYDELAY` clause in their `CREATE TABLE` statements. See <a href="../../data_management/overview_how_pr_ha_works.md#how_pr_ha_works" class="xref" title="By default, SnappyData stores only a single copy of your partitioned table data among the table&#39;s data stores. You can configure SnappyData to maintain redundant copies of your partitioned table data for high availability.">Configuring High Availability for Partitioned Tables</a>.
+A value of -1, the default value, indicates that no recovery is performed unless a new SnappyData member joins the cluster, or unless individual tables override the recovery delay by specifying the `RECOVERYDELAY` clause in their `CREATE TABLE` statements. <mark> To Be Confirmed RowStore Docs See [Configuring High Availability for Partitioned Tables](http://rowstore.docs.snappydata.io/docs/data_management/configuring_ha_for_pr.html) </mark>.
 
 ## Default Value
 

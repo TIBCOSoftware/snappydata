@@ -1,6 +1,5 @@
 # java.sql.DriverManager.getConnection Method
 
-
 <a id="java-sql-drivermanger-get-connection__section_B1AF082A07824BB3AEC155BAB8316E48"></a>
 A Java application using the JDBC API establishes a connection to a distributed system by obtaining a *Connection* object. The standard way to obtain a *Connection* object is to call the method *DriverManager.getConnection*, which takes a String containing a connection URL. A JDBC connection URL (uniform resource locator) identifies a source of data.
 
@@ -28,7 +27,7 @@ For applications that run in a *peer-client*, the syntax of the connection URL i
 In JDBC terminology, *gemfirexd* is the *subprotocol* for connecting to a GemFire distributed system. The subprotocol is always *gemfirexd* and does not vary.
 
 `attributes`   
-Specify 0 or more connection URL attributes as detailed in <a href="../configuration/ConnectionAttributes.html#jdbc_connection_attributes" class="xref" title="You use JDBC connection properties, connection boot properties, and Java system properties to configure SnappyData members and connections.">Configuration Properties</a>.
+Specify 0 or more connection URL attributes as detailed in [Configuration Properties](../../reference/configuration_parameters/config_parameters/#configuration-properties).
 
 <a id="java-sql-drivermanger-get-connection__section_70027A7324D748D692887A4A5469C431"></a>
 

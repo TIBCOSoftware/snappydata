@@ -2,7 +2,7 @@
 
 A SnappyData virtual table that describes table indexes.
 
-See <a href="../language_ref/ref-create-index.html#create-index" class="xref" title="Creates an index on one or more columns of a table.">CREATE INDEX</a>.
+See [CREATE INDEX](../../reference/sql_reference/create-index.md).
 
 <a id="reference_21873F7CB0454C4DBFDC7B4EDADB6E1F__table_9DCAD37327BD4CCBAF98E8689F175144"></a>
 

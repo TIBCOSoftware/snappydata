@@ -4,7 +4,7 @@
 
 This property can only be used with a peer client connection; you cannot use it from a thin client.
 
-Enables statistics collection at the statement level for the associated connection. See <a href="../../manage_guide/Topics/system_performance.md#concept_D5B2E50F69C54537BBFAA73E2AAEC3DA" class="xref" title="RowStore provides statistics for analyzing system performance. Any member of a distributed system, including RowStore servers, locators, and peer clients, can collect and archive this statistical data.">Evaluating Statistics for the System and Applications</a>.
+Enables statistics collection at the statement level for the associated connection. See <mark>[Evaluating Statistics for the System and Applications](http://rowstore.docs.snappydata.io/docs/manage_guide/Topics/system_performance.html#concept_D5B2E50F69C54537BBFAA73E2AAEC3DA) TO BE CONFIRMED RowStore link</mark>.
 
 ## Default Value
 

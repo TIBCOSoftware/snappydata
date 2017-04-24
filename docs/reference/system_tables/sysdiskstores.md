@@ -3,7 +3,7 @@
 Contains information about all disk stores created in the SnappyData distributed system.
 
 <a id="reference_36E65EC061C34FB696529ECA8ABC5BFC__section_2B5C68BDEE0D46ABAA5190A805B9E5B5"></a>
-See <a href="../language_ref/ref-create-diskstore.html#create-diskstore" class="xref" title="Disk stores provide disk storage for tables and queues that need to overflow or persist (for instance when using an asynchronous write-behind listener).">CREATE DISKSTORE</a>.
+See [CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore/#create-diskstore).
 
 <a id="reference_36E65EC061C34FB696529ECA8ABC5BFC__table_799B947305974E61A5C7BEE25BB000C1"></a>
 

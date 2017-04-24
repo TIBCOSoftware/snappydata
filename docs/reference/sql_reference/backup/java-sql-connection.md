@@ -1,11 +1,11 @@
 # java.sql.Connection Interface
 
-<a id="java-sql-connection__section_DACA1A9897F84B6EA87772D5FEEAC856"></a>
+<a id="java-sql-connection-interface"></a>
 A SnappyData Connection object is not garbage-collected until all other JDBC objects created from that connection are explicitly closed or are themselves garbage-collected. Once the connection is closed, no further JDBC requests can be made against objects created from the connection. Do not explicitly close the Connection object until you no longer need it for executing statements.
 
 A session-severity or higher exception causes the connection to close and all other JDBC objects against it to be closed.
 
-<a id="java-sql-connection__section_9150048F0190468991B70B87ADC47DA7"></a>
+<a id="java-sql-connection"></a>
 
 ##java.sql.Connection.setTransactionIsolation Method
 
@@ -20,9 +20,9 @@ Changing the current isolation for the connection with *setTransactionIsolation*
 !!! Note
 		SnappyData provides atomicity and thread safety for row-level operations even in TRANSACTION\_NONE isolation level.
 
-For more details about transaction isolation, see <a href="../../developers_guide/topics/queries/transactions.html#transactions" class="xref" title="A transaction is a set of one or more SQL statements that make up a logical unit of work that you can commit or roll back, and that will be recovered in the event of a system failure. SnappyData&#39;s unique design for distributed transactions allows for linear scaling without compromising atomicity, consistency, isolation, and durability (ACID) properties.">Transactions and Concurrency</a>.
+For more details about transaction isolation, see <mark> TO BE CONFIRMED RowStore link Transactions and Concurrency </mark>. 
 
-<a id="java-sql-connection__section_C205B25369BE4992BC07C59D285AF972"></a>
+<a id="connection-functionality"></a>
 
 ##Connection Functionality Not Supported
 

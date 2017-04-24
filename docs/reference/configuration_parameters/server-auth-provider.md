@@ -9,7 +9,7 @@ Specifies the authentication scheme to use for server connections. Possible valu
 
 ## Default Value
 
-Inherits from <a href="#jdbc_connection_attributes__section_0E8C4DBE3A5F463D8341919973297906" class="xref">auth-provider</a>
+Inherits from [auth-provider](../../reference/configuration_parameters/auth-provider.md)
 
 ## Property Type
 
