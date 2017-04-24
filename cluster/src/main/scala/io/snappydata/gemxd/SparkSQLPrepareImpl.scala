@@ -31,7 +31,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.{Row, SnappySession}
-import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
+import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.types._
@@ -176,12 +176,22 @@ class SparkSQLPrepareImpl(val sql: String,
   def remainingParamLiterals(plan: LogicalPlan,
       result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
 
+    def addParamLiteral(i: Int, t: DataType): Unit = if (!result.exists(_.pos == i)) {
+      result += ParamLiteral(false, t, i)
+    }
+
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case c@Cast(ParamLiteral(Row(pos: Int), _, _), right: DataType) =>
-        if (!result.exists(_.pos == pos)) {
-          result += ParamLiteral(false, right, pos)
-        }
+      case c@Cast(ParamLiteral(Row(pos: Int), _, _), right: DataType) => addParamLiteral(pos, right)
         c
+      case cc@Cast(CaseWhen(branches, elseValue), right: DataType) =>
+        branches.foreach {
+          case (_, ParamLiteral(Row(pos: Int), _, 0)) => addParamLiteral(pos, right)
+        }
+        elseValue match {
+          case Some(ParamLiteral(Row(pos: Int), _, 0)) => addParamLiteral(pos, right)
+          case _ =>
+        }
+        cc
     }
 
     handleSubQuery(allParams(plan), allParams)
