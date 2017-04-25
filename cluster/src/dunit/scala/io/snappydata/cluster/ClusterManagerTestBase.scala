@@ -18,6 +18,8 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
+import org.apache.spark.sql.execution.ConnectionPool
+
 import scala.collection.JavaConverters._
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
@@ -269,6 +271,8 @@ object ClusterManagerTestBase extends Logging {
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stopAllNetworkServers()
+      // clear stale connection pool
+      ConnectionPool.clear()
     }
   }
 
