@@ -1138,7 +1138,7 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 ### Connect to the SnappyData cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
 
-* Use the SnappyData Driver Conneciton URL:
+* Use the SnappyData Driver Connection URL:
 
 		Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 
