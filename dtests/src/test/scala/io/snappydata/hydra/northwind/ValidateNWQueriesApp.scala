@@ -23,15 +23,15 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object ValidateNWQueriesApp {
   var conf = new SparkConf().
-    setAppName("ValidateNWQueriesApp Application")
+      setAppName("ValidateNWQueriesApp Application")
 
   def main(args: Array[String]) {
     val useThinClientSmartConnectorMode: Boolean = args(3).toBoolean
     if (useThinClientSmartConnectorMode) {
       val connectionURL = args(args.length - 1)
       conf = new SparkConf().
-        setAppName("ValidateNWQueries Application").
-        set("snappydata.Cluster.URL", connectionURL)
+          setAppName("ValidateNWQueries Application").
+          set("snappydata.Cluster.URL", connectionURL)
     }
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
@@ -43,27 +43,37 @@ object ValidateNWQueriesApp {
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
+    val numRowsValidation: Boolean = args(5).toBoolean
     val isSmokeRun: Boolean = args(4).toBoolean
     val threadID = Thread.currentThread().getId
-    val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
+    val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
+        ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
-    pw.println(s"Validate ${tableType} tables Queries Test started at : " + System.currentTimeMillis)
-    pw.println(s"dataFilesLocation : ${dataFilesLocation}")
-    NWTestUtil.validateQueries(snc, tableType, pw)
-    pw.println(s"Validate ${tableType} tables Queries Test completed successfully at : " + System.currentTimeMillis)
+    if (numRowsValidation) {
+      pw.println(s"Validate ${tableType} tables Queries Test started at : " + System
+          .currentTimeMillis)
+      pw.println(s"dataFilesLocation : ${dataFilesLocation}")
+      NWTestUtil.validateQueries(snc, tableType, pw)
+      pw.println(s"Validate ${tableType} tables Queries Test completed successfully at : " +
+          System.currentTimeMillis)
+    }
     if (fullResultSetValidation) {
       pw.println(s"createAndLoadSparkTables Test started at : " + System.currentTimeMillis)
       NWTestUtil.createAndLoadSparkTables(sqlContext)
-      println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
-      pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
-      pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at : " + System.currentTimeMillis)
+      println(s"createAndLoadSparkTables Test completed successfully at : " + System
+          .currentTimeMillis)
+      pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System
+          .currentTimeMillis)
+      pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at :" +
+          s" " + System.currentTimeMillis)
       if (isSmokeRun) {
         NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
       }
       else {
         NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
       }
-      pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully at : " + System.currentTimeMillis)
+      pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed  " +
+          s"successfully at : " + System.currentTimeMillis)
     }
     pw.close()
   }
