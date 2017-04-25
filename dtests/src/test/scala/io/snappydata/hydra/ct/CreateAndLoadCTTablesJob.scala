@@ -18,11 +18,12 @@
 package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
-import scala.util.{Failure, Success, Try}
-import com.typesafe.config.Config
-import util.TestException
 
-import org.apache.spark.sql.{SnappySession, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import scala.util.{Failure, Success, Try}
+
+import com.typesafe.config.Config
+
+import org.apache.spark.sql.{SnappySession, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 class CreateAndLoadCTTablesJob extends SnappySQLJob {
 
@@ -38,9 +39,10 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
       pw.println(s"Data files are at : ${dataFilesLocation}")
       snc.setConf("dataFilesLocation",dataFilesLocation)
       CTQueries.snc = snc
+      CTQueries.dataFilesLocation = dataFilesLocation
       CTTestUtil.dropTables(snc)
       pw.println(s"Create and load for ${tableType} tables has started...")
-      pw.flush()
+
       tableType match {
         //replicated row tables
         case "Replicated" => CTTestUtil.createReplicatedRowTables(snc)
@@ -54,23 +56,15 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
         case "ColocatedWithEvictionRow" => CTTestUtil.createColocatedRowTablesWithEviction(snc,redundancy,jobConfig.getString("persistenceMode"))
         //column tables
         case "Column" => CTTestUtil.createColumnTables(snc,redundancy)
-        case "PersistentColumn" => CTTestUtil.createPersistColumnTables(snc,jobConfig.getString("persistenceMode"))
+        case "PeristentColumn" => CTTestUtil.createPersistColumnTables(snc,jobConfig.getString("persistenceMode"))
         case "ColocatedColumn" => CTTestUtil.createColocatedColumnTables(snc,redundancy)
         case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc,redundancy)
         case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,redundancy,jobConfig.getString("persistenceMode"))
         case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,redundancy)
-        case _ =>
-          pw.println(s"Did not find any match for ${tableType} to create tables")
-          pw.close()
-          throw new TestException(s"Did not find any match for ${tableType} to create tables." +
-              s" See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesJob.out")
+        case _ => pw.println(s"Did not find any match for ${tableType} to create tables")
       }
-      pw.println("Tables are created. Now loading data.")
-      pw.flush()
       CTTestUtil.loadTables(snc);
-      println(s"Create and load for ${tableType} tables has completed successfully. " +
-          s"See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesJob.out")
-      pw.println(s"Create and load for ${tableType} tables has completed successfully")
+      pw.println(s"Create and load ${tableType} tables completed.")
       pw.close()
     } match {
       case Success(v) => pw.close()
@@ -82,4 +76,3 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }
-

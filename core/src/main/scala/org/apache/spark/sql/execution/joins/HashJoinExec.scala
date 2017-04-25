@@ -303,11 +303,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
 
-    val longLived = replicatedTableJoin
-
     val buildSideCreateMap =
       s"""$hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
-      $numKeyColumns, $longLived, scala.reflect.ClassTag$$.MODULE$$.apply(
+      $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
         $entryClass.class));
       this.$hashMapTerm = $hashMapTerm;
       int $maskTerm = $hashMapTerm.mask();
@@ -557,7 +555,6 @@ object HashedObjectCache {
       context.addTaskCompletionListener { _ =>
         if (counter.get() > 0 && counter.decrementAndGet() <= 0) {
           mapCache.invalidate(key)
-          cached._1.asInstanceOf[ObjectHashSet[T]].freeStorageMemory()
         }
       }
       cached._1.asInstanceOf[ObjectHashSet[T]]

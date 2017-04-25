@@ -16,22 +16,25 @@
  */
 package io.snappydata.cluster
 
+import java.io.File
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
+
+import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit._
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
-import io.snappydata._
+import io.snappydata.{Lead, Locator, Property, Server, ServiceManager}
+import org.slf4j.LoggerFactory
+import scala.sys.process._
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkContext}
-import org.slf4j.LoggerFactory
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 
-import scala.language.postfixOps
-import scala.sys.process._
 /**
  * Base class for tests using Snappy ClusterManager. New utility methods
  * would need to be added as and when corresponding snappy code gets added.
@@ -50,9 +53,6 @@ class ClusterManagerTestBase(s: String)
   // bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
-  // Keeping it as default for all other dunits as it can create
-  // issues like interacting with heap monitor.
-  bootProps.setProperty("spark.memory.manager", "default")
 
   var host: Host = _
   var vm0: VM = _
@@ -122,7 +122,7 @@ class ClusterManagerTestBase(s: String)
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
-      startSnappyLead(locatorPort, bootProps.clone().asInstanceOf[java.util.Properties])
+      startSnappyLead(locatorPort, bootProps)
     }
     assert(ServiceManager.currentFabricServiceInstance.status ==
         FabricService.State.RUNNING)
@@ -202,6 +202,7 @@ class ClusterManagerTestBase(s: String)
  * snappy code gets added.
  */
 object ClusterManagerTestBase extends Logging {
+  val logger = LoggerFactory.getLogger(getClass)
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   final lazy val locPort: Int = locatorPort
 
@@ -248,7 +249,7 @@ object ClusterManagerTestBase extends Logging {
       TestUtils.dropAllTables(snc)
     }
     if (testName != null) {
-      logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
+      logger.info("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
     }
   }
 
@@ -291,7 +292,7 @@ object ClusterManagerTestBase extends Logging {
         check
       }
 
-      override def description(): String = desc
+      override def description() = desc
     }
     DistributedTestBase.waitForCriterion(criterion, ms, interval,
       throwOnTimeout)
@@ -308,4 +309,5 @@ object ClusterManagerTestBase extends Logging {
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
   }
+
 }

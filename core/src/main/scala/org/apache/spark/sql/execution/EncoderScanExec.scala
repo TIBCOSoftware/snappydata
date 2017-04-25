@@ -135,7 +135,6 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
        |  final $javaTypeName $objVar = ($javaTypeName)$iterator.next();
        |  $nullCheck
        |  ${consume(ctx, input).trim}
-       |  if (shouldStop()) return;
        |}
     """.stripMargin
   }

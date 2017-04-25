@@ -65,7 +65,7 @@ class QueryTest extends SnappyFunSuite {
     df.show()
   }
 
-  test("SNAP-1159_1482") {
+  test("SNAP-1159") {
     val session = SnappyContext(sc).snappySession
     session.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key}=10")
     session.sql(s"set ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key}=1")
@@ -74,14 +74,6 @@ class QueryTest extends SnappyFunSuite {
       "(case when (id % 4) < 2 then cast((id % 4) as long) else null end) as v")
     data1.write.format("column").saveAsTable("t1")
     data2.write.format("column").saveAsTable("t2")
-
-    // SNAP-1482: check for engineering format numeric values
-    var r = session.sql("select 2.1e-2").collect()
-    assert (r(0).getDouble(0) == 0.021)
-    r = session.sql("select 2.1e+2").collect()
-    assert (r(0).getDouble(0) == 210)
-    r = session.sql("select 2.1e2").collect()
-    assert (r(0).getDouble(0) == 210)
 
     SparkSession.clearActiveSession()
     val spark = SparkSession.builder().getOrCreate()

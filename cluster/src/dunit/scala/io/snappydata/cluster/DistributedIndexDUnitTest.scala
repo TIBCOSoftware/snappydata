@@ -19,16 +19,14 @@ package io.snappydata.cluster
 import java.sql.{Connection, DriverManager}
 
 import scala.collection.mutable.ListBuffer
-
 import com.gemstone.gemfire.cache.CacheException
 import com.pivotal.gemfirexd.internal.engine.access.index.{OpenMemIndex, SortedMap2IndexScanController}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserver, GemFireXDQueryObserverAdapter, GemFireXDQueryObserverHolder}
+import com.pivotal.gemfirexd.internal.engine.{GemFireXDQueryObserverHolder, GemFireXDQueryObserverAdapter, GemFireXDQueryObserver}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.conglomerate.Conglomerate
 import com.pivotal.gemfirexd.internal.impl.sql.compile.StatementNode
-import io.snappydata.benchmark.TPCHColumnPartitionedTable
-import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import io.snappydata.test.dunit.{SerializableRunnable, AvailablePortHelper}
 
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.store.CreateIndexTest
@@ -88,7 +86,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createBaseTable(snContext, tableName)
-    getLogWriter.info("Creating indexes")
+    ClusterManagerTestBase.logger.info("Creating indexes")
     val indexOne = s"${tableName}_IdxOne"
     val indexTwo = s"${tableName}_IdxTwo"
     val indexThree = s"${tableName}_IdxThree"
@@ -134,7 +132,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snContext.setConf(io.snappydata.Property.EnableExperimentalFeatures.configEntry.key, "true")
     snContext.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createBaseTable(snContext, tableName)
-    getLogWriter.info("Creating indexes")
+    ClusterManagerTestBase.logger.info("Creating indexes")
     val indexOne = s"${tableName}_IdxOne"
     val indexTwo = s"${tableName}_IdxTwo"
     val indexThree = s"${tableName}_IdxThree"
@@ -194,7 +192,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     s.executeUpdate(s"insert into $tableName values (555, 33, 91)")
     s.executeUpdate(s"insert into $tableName values (666, 33, 91)")
 
-    getLogWriter.info("Creating indexes")
+    ClusterManagerTestBase.logger.info("Creating indexes")
     val indexOne = s"${tableName}_IdxOne"
     val indexTwo = s"${tableName}_IdxTwo"
     val indexThree = s"${tableName}_IdxThree"

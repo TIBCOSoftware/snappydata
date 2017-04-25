@@ -1,4 +1,4 @@
-### Overview
+# Overview
 SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). 
 All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  
 We therefore recommend that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
@@ -21,7 +21,7 @@ Also SnappyData can be run in three different modes, Local Mode, Embedded Mode a
 
 If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
 
-### To Create a SnappySession
+###To Create a SnappySession
 
 #### Scala 
 
@@ -275,7 +275,7 @@ $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead hostNameOfLead:8090
 ```
 
-## Managing JAR Files
+##Managing JAR Files
 
 SnappyData provides system procedures that you can use to install and manage JAR files from a client connection. These can be used to install your custom code (for example code shared across multiple jobs) in SnappyData cluster.
 
@@ -921,7 +921,7 @@ SnappyData’s streaming functionality builds on top of Spark Streaming and prim
 Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
 
-### Spark Streaming Overview
+###Spark Streaming Overview
 
 Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like **map**, **reduce**, **join** and **window**.
 

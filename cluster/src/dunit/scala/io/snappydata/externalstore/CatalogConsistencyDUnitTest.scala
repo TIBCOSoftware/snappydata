@@ -104,13 +104,10 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testHiveStoreEntryMissingForTable(): Unit = {
-    val snc = SnappyContext(sc)
-
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
+    val snc = SnappyContext(sc)
 
     createTables(snc)
 
@@ -137,13 +134,10 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testStoreDDEntryMissingForTable(): Unit = {
-    val snc = SnappyContext(sc)
-
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
+    val snc = SnappyContext(sc)
 
     createTables(snc)
 

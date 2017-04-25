@@ -222,7 +222,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final var _upperStr: UTF8String = _
   protected final var _lowerDecimal: Decimal = _
   protected final var _upperDecimal: Decimal = _
-  protected final var _count: Int = 0
+  protected final var _count: Integer = 0
 
   def sizeInBytes(cursor: Long): Long = cursor - columnData.baseOffset
 
@@ -354,7 +354,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def upperString: UTF8String = _upperStr
 
-  final def count: Int = _count
+  final def count: Integer = _count
 
   @inline protected final def updateLongStats(value: Long): Unit = {
     val lower = _lowerLong
@@ -365,7 +365,7 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperLong) {
       _upperLong = value
     }
-    updateCount()
+    updateCount
   }
 
   @inline protected final def updateDoubleStats(value: Double): Unit = {
@@ -377,7 +377,7 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperDouble) {
       _upperDouble = value
     }
-    updateCount()
+    updateCount
   }
 
   @inline protected final def updateStringStats(value: UTF8String): Unit = {
@@ -398,7 +398,7 @@ trait ColumnEncoder extends ColumnEncoding {
   }
 
   final def updateCount(): Unit = {
-    _count += 1
+    _count = _count + 1
   }
 
   @inline protected final def updateStringStatsClone(value: UTF8String): Unit = {
@@ -417,7 +417,7 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperStr = StringUtils.cloneIfRequired(value)
       }
     }
-    updateCount()
+    updateCount
   }
 
   @inline protected final def updateDecimalStats(value: Decimal): Unit = {
@@ -435,7 +435,7 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperDecimal = value
       }
     }
-    updateCount()
+    updateCount
   }
 
   def nullCount: Int

@@ -157,14 +157,9 @@ public class SnappyPrms extends BasePrms {
     public static Long useRowStore;
 
     /**
-     * (boolean) - whether thin client smart connector mode cluster needs to be started.
+     * (boolean) - whether split mode cluster needs to be started.
      */
-    public static Long useThinClientSmartConnectorMode;
-
-    /**
-     * (boolean) - whether smart connector mode cluster needs to be started.
-     */
-    public static Long useSmartConnectorMode;
+    public static Long useSplitMode;
 
     /**
      * (boolean) - whether stop mode needs to be checked before deleting the config data if already exists.
@@ -189,12 +184,12 @@ public class SnappyPrms extends BasePrms {
     public static Long enableTimeStatistics;
 
     /**
-     * (boolean) - whether to enable closedForm Estimates. Product default value will be used in case not provided.
+     * (boolean) - whether to enable closedForm Estimates. snappy hydra already sets the spark.sql.aqp.closedFormEstimates to true.
      */
     public static Long closedFormEstimates;
 
     /**
-     * (boolean) - whether to enable zeppelin Interpreter. Product default value will be used in case not provided.
+     * (boolean) - whether to enable zeppelin Interpreter. snappy hydra already sets the zeppelin.interpreter.enable to false.
      */
     public static Long zeppelinInterpreter;
 
@@ -202,11 +197,6 @@ public class SnappyPrms extends BasePrms {
      * (boolean) - whether to enable Java Flight Recorder (JFR) for collecting diagnostic and profiling data while launching server and lead members in cluster. Defaults to false if not provided.
      */
     public static Long enableFlightRecorder;
-
-    /**
-     * (boolean) - whether to enable GC options while launching server and lead members in cluster. Defaults to false if not provided.
-     */
-    public static Long enableGCFlags;
 
     /**
      * (String) log level to be applied while generating logs for snappy members. Defaults to config if not provided.
@@ -276,7 +266,7 @@ public class SnappyPrms extends BasePrms {
     public static Long executorCores;
 
     /**
-     * (String) Maximun Result Size for Driver. Product default value will be used in case not provided.
+     * (String) Maximun Result Size for Driver. Defaults to 1GB if not provided.
      */
     public static Long driverMaxResultSize;
 
@@ -306,7 +296,7 @@ public class SnappyPrms extends BasePrms {
     public static Long leadMemory;
 
     /**
-     * (String) sparkSchedulerMode. Product default value will be used in case not provided.
+     * (String) sparkSchedulerMode. Defaults to 'FAIR' if not provided.
      */
     public static Long sparkSchedulerMode;
 
@@ -321,17 +311,17 @@ public class SnappyPrms extends BasePrms {
     public static Long compressedInMemoryColumnarStorage;
 
     /**
-     * (long) columnBatchSize. Product default value will be used in case not provided
+     * (long) inMemoryColumnarStorageBatchSize
      */
-    public static Long columnBatchSize;
+    public static Long inMemoryColumnarStorageBatchSize;
 
     /**
-     * (boolean) - whether to use conserveSockets. Product default value will be used in case not provided.
+     * (boolean) - whether to use conserveSockets. Defaults to false if not provided.
      */
     public static Long conserveSockets;
 
     /**
-     * (int) number of BootStrap trials to be used in test.
+     * (int) number of BootStrap trials to be used in test
      */
     public static Long numBootStrapTrials;
 
@@ -339,13 +329,6 @@ public class SnappyPrms extends BasePrms {
      * (int) number of shuffle partitions to be used in test
      */
     public static Long shufflePartitions;
-
-    /**
-     *
-     * (String) Memory to be used for spark executor while executing spark-submit. Defaults to
-     * 1GB if not provided.
-     */
-    public static Long executorMemory;
 
     public static int getRetryCountForJob() {
         Long key = numTimesToRetry;
@@ -357,18 +340,14 @@ public class SnappyPrms extends BasePrms {
         return tasktab().intAt(key, tab().intAt(key, 120));
     }
 
-    public static String getExecutorCores() {
-        String numExecutorCores = tasktab().stringAt(executorCores, tab().stringAt(executorCores, null));
-        if (numExecutorCores == null) return "";
-        String sparkExecutorCores = " -spark.executor.cores=" + numExecutorCores;
-        return sparkExecutorCores;
+    public static int getExecutorCores() {
+        Long key = executorCores;
+        return tasktab().intAt(key, tab().intAt(key, 1));
     }
 
     public static String getDriverMaxResultSize() {
-        String maxResultSize = tasktab().stringAt(driverMaxResultSize, tab().stringAt(driverMaxResultSize, null));
-        if (maxResultSize == null) return "";
-        String sparkDriverMaxResultSize = " -spark.driver.maxResultSize=" + maxResultSize;
-        return sparkDriverMaxResultSize;
+        Long key = driverMaxResultSize;
+        return tab().stringAt(key, "1g").toLowerCase();
     }
 
     public static String getLocatorMemory() {
@@ -404,17 +383,13 @@ public class SnappyPrms extends BasePrms {
     }
 
     public static String getSparkSchedulerMode() {
-        String schedulerMode = tasktab().stringAt(sparkSchedulerMode, tab().stringAt(sparkSchedulerMode, null));
-        if (schedulerMode == null) return "";
-        String sparkSchedulerMode = " -spark.scheduler.mode=" + schedulerMode;
-        return sparkSchedulerMode;
+        Long key = sparkSchedulerMode;
+        return tab().stringAt(key, "FAIR");
     }
 
-    public static String getSparkSqlBroadcastJoinThreshold() {
-        String broadcastJoinThreshold = tasktab().stringAt(sparkSqlBroadcastJoinThreshold, tab().stringAt(sparkSqlBroadcastJoinThreshold, null));
-        if (broadcastJoinThreshold == null) return "";
-        String sparkSqlBroadcastJoinThreshold = " -spark.sql.autoBroadcastJoinThreshold=" + broadcastJoinThreshold;
-        return sparkSqlBroadcastJoinThreshold;
+    public static int getSparkSqlBroadcastJoinThreshold() {
+        Long key = sparkSqlBroadcastJoinThreshold;
+        return tasktab().intAt(key, tab().intAt(key, -1));
     }
 
     public static boolean getCompressedInMemoryColumnarStorage() {
@@ -422,18 +397,14 @@ public class SnappyPrms extends BasePrms {
         return tasktab().booleanAt(key, tab().booleanAt(key, false));
     }
 
-    public static String getColumnBatchSize() {
-        String snappyColumnBatchSize = tasktab().stringAt(columnBatchSize, tab().stringAt(columnBatchSize, null));
-        if (snappyColumnBatchSize == null) return "";
-        String columnBatchSize = " -snappydata.column.batchSize=" + snappyColumnBatchSize;
-        return columnBatchSize;
+    public static long getInMemoryColumnarStorageBatchSize() {
+        Long key = inMemoryColumnarStorageBatchSize;
+        return tasktab().longAt(key, tab().longAt(key, 10000));
     }
 
-    public static String getConserveSockets() {
-        String isConserveSockets = tasktab().stringAt(conserveSockets, tab().stringAt(conserveSockets, null));
-        if (isConserveSockets == null) return "";
-        String conserveSockets = " -conserve-sockets=" + isConserveSockets;
-        return conserveSockets;
+    public static boolean getConserveSockets() {
+        Long key = conserveSockets;
+        return tasktab().booleanAt(key, tab().booleanAt(key, false));
     }
 
     public static int getShufflePartitions() {
@@ -458,15 +429,13 @@ public class SnappyPrms extends BasePrms {
     }
 
     public static String getClosedFormEstimates() {
-        String enableClosedFormEstimates = tasktab().stringAt(closedFormEstimates, tab().stringAt(closedFormEstimates, null));
-        if (enableClosedFormEstimates == null) return "";
+        boolean enableClosedFormEstimates = tasktab().booleanAt(closedFormEstimates, tab().booleanAt(closedFormEstimates, true));
         String closedFormEstimates = " -spark.sql.aqp.closedFormEstimates=" + enableClosedFormEstimates;
         return closedFormEstimates;
     }
 
     public static String getZeppelinInterpreter() {
-        String enableZeppelinInterpreter = tasktab().stringAt(zeppelinInterpreter, tab().stringAt(zeppelinInterpreter, null));
-        if (enableZeppelinInterpreter == null) return "";
+        boolean enableZeppelinInterpreter = tasktab().booleanAt(zeppelinInterpreter, tab().booleanAt(zeppelinInterpreter, false));
         String zeppelinInterpreter = " -zeppelin.interpreter.enable=" + enableZeppelinInterpreter;
         return zeppelinInterpreter;
     }
@@ -480,19 +449,9 @@ public class SnappyPrms extends BasePrms {
         } else return "";
     }
 
-    public static String getGCOptions(String dirPath) {
-        boolean gcFlags = tasktab().booleanAt(enableGCFlags, tab().booleanAt(enableGCFlags, false));
-        if (gcFlags) {
-            String gcOptions = " -J-verbose:gc -J-Xloggc:" + dirPath + "/gc.out -J-XX:+PrintGCDetails -J-XX:+PrintGCTimeStamps  -J-XX:+PrintGCDateStamps";
-            return gcOptions;
-        } else return "";
-    }
-
-    public static String getNumBootStrapTrials() {
-        String bootStrapTrials = tasktab().stringAt(numBootStrapTrials, tab().stringAt(numBootStrapTrials, null));
-        if (bootStrapTrials == null) return "";
-        String numBootStrapTrials = " -spark.sql.aqp.numBootStrapTrials=" + bootStrapTrials;
-        return numBootStrapTrials;
+    public static int getNumBootStrapTrials() {
+        Long key = numBootStrapTrials;
+        return tasktab().intAt(key, tab().intAt(key, 100));
     }
 
     public static String getLogLevel() {
@@ -584,17 +543,6 @@ public class SnappyPrms extends BasePrms {
         Long key = streamingJobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
-
-    public static String getExecutorMemory() {
-      Long key = executorMemory;
-      String heapSize = tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
-      if (heapSize == null)
-          return "";
-      String executorMem = " --executor-memory " + heapSize;
-      return executorMem;
-
-    }
-
 
     static {
         BasePrms.setValues(SnappyPrms.class);

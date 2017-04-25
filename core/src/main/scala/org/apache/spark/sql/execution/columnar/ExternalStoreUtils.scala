@@ -24,8 +24,6 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
-import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.util.ServiceUtils
@@ -35,7 +33,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -61,8 +59,7 @@ object ExternalStoreUtils extends Logging {
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
-  // internal properties stored as hive table parameters
-  final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
+  final val EXTERNAL_DATASOURCE = "EXTERNAL_DATASOURCE"
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
@@ -141,6 +138,7 @@ object ExternalStoreUtils extends Logging {
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
     parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
     parameters.remove("serialization.format")
     table
   }
@@ -168,12 +166,10 @@ object ExternalStoreUtils extends Logging {
     sparkContext match {
       case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
       case Some(sc) =>
-        SnappyContext.getClusterMode(sc) match {
+       SnappyContext.getClusterMode(sc) match {
           case SnappyEmbeddedMode(_, _) =>
             // Already connected to SnappyData in embedded mode.
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
-          case ThinClientConnectorMode(_, url) =>
-            url + ";route-query=false"
           case SplitClusterMode(_, _) =>
             ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
           case ExternalEmbeddedMode(_, url) =>
@@ -537,61 +533,28 @@ object ExternalStoreUtils extends Logging {
     (ctx, cleanedSource)
   }
 
-  def getExternalStoreOnExecutor(parameters: java.util.Map[String, String],
+  def getExternalStoreOnExecutor(parameters : java.util.Map[String, String],
       partitions: Int, tableName: String, schema: StructType): ExternalStore = {
     val connProperties: ConnectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(None, parameters.asScala)
     new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
-  def getTableSchema(
-      tableProps: java.util.Map[String, String]): Option[StructType] =
-    getTableSchema(tableProps.asScala)
-
-  def getTableSchema(
-      tableProps: scala.collection.Map[String, String]): Option[StructType] =
-    JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
-      tableProps).map(StructType.fromString)
-
-  def getColumnMetadata(
-      schema: Option[StructType]): java.util.List[ExternalTableMetaData.Column] = {
-    schema.toList.flatMap(_.map { f =>
-      val (dataType, typeName) = f.dataType match {
-        case u: UserDefinedType[_] =>
-          (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
-        case t => (t, None)
-      }
-      val (prec, scale) = dataType match {
-        case d: DecimalType => (d.precision, d.scale)
-        case StringType => if (f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
-          val p = math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP),
-            Int.MaxValue).toInt
-          (p, -1)
-        } else (Limits.DB2_LOB_MAXWIDTH, -1)
-        case _: NumericType => (-1, 0)
-        case _ => (-1, -1)
-      }
-      val jdbcTypeOpt = GemFireXDDialect.getJDBCType(dataType).orElse(
-        JdbcUtils.getCommonJDBCType(dataType))
-      jdbcTypeOpt match {
-        case Some(jdbcType) =>
-          val (precision, width) = if (prec == -1) {
-            val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(
-              jdbcType.jdbcNullType, f.nullable)
-            if (dtd ne null) {
-              (dtd.getPrecision, dtd.getMaximumWidth)
-            } else (dataType.defaultSize, dataType.defaultSize)
-          } else (prec, prec)
-          new ExternalTableMetaData.Column(f.name, jdbcType.jdbcNullType,
-            typeName.getOrElse(jdbcType.databaseTypeDefinition),
-            precision, scale, width, f.nullable)
-        case None =>
-          val precision = if (prec == -1) dataType.defaultSize else prec
-          new ExternalTableMetaData.Column(f.name, java.sql.Types.OTHER,
-            typeName.getOrElse(dataType.simpleString),
-            precision, scale, precision, f.nullable)
-      }
-    }).asJava
+  def convertSchemaMap(tableProps: java.util.Map[String, String]): StructType = {
+    val jsonString = tableProps.asScala.get(
+      SnappyStoreHiveCatalog.HIVE_SCHEMA_NUMPARTS).map { numParts =>
+      (0 until numParts.toInt).map { index =>
+        val partProp = s"${SnappyStoreHiveCatalog.HIVE_SCHEMA_PART}.$index"
+        tableProps.asScala.get(partProp) match {
+          case Some(part) => part
+          case None => throw new AnalysisException("Could not read " +
+              "schema from metastore because it is corrupted (missing " +
+              s"part $index of the schema, $numParts parts expected).")
+        }
+        // Stick all parts back to a single schema string.
+      }.mkString
+    }
+    StructType.fromString(jsonString.get)
   }
 
   def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {

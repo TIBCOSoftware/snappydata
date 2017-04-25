@@ -18,17 +18,20 @@ package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
 import java.sql.{Blob, Connection, ResultSet, Statement}
+import java.util.UUID
+import java.util.concurrent.locks.ReentrantLock
 
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer}
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, CompactCompositeKey,
+CompactCompositeRegionKey, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
 import io.snappydata.thrift.common.BufferedBlob
 
-import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.row.PRValuesIterator
+import org.apache.spark.sql.execution.{PartitionedPhysicalScan}
 import org.apache.spark.{Logging, TaskContext}
 
 abstract class ResultSetIterator[A](conn: Connection,

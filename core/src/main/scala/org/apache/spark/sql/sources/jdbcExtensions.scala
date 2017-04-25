@@ -19,13 +19,13 @@ package org.apache.spark.sql.sources
 import java.sql.Connection
 import java.util.Properties
 
-import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
@@ -75,14 +75,11 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
 object JdbcExtendedUtils extends Logging {
 
-  // "dbtable" lower case since some other code including Spark's depends on it
   val DBTABLE_PROPERTY = "dbtable"
+  val SCHEMA_PROPERTY = "schemaddl"
+  val ALLOW_EXISTING_PROPERTY = "allowexisting"
+  val BASETABLE_PROPERTY = "basetable"
 
-  val SCHEMADDL_PROPERTY = "SCHEMADDL"
-  val ALLOW_EXISTING_PROPERTY = "ALLOWEXISTING"
-  val BASETABLE_PROPERTY = "BASETABLE"
-
-  // internal properties will be stored as Hive table parameters
   val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
 
   def executeUpdate(sql: String, conn: Connection): Unit = {
@@ -128,41 +125,6 @@ object JdbcExtendedUtils extends Logging {
       if (!field.nullable) sb.append(" NOT NULL")
     }
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
-  }
-
-  def addSplitProperty(value: String, propertyName: String,
-      options: SMap[String, String]): SMap[String, String] = {
-    // split the string into parts for size limitation in hive metastore table
-    val parts = value.grouped(3500).toSeq
-    val opts = options match {
-      case m: mutable.Map[String, String] => m
-      case _ =>
-        val m = new mutable.HashMap[String, String]
-        m ++= options
-        m
-    }
-    opts += (s"$propertyName.numParts" -> parts.size.toString)
-    parts.zipWithIndex.foreach { case (part, index) =>
-      opts += (s"$propertyName.part.$index" -> part)
-    }
-    opts
-  }
-
-  def readSplitProperty(propertyName: String,
-      options: SMap[String, String]): Option[String] = {
-    // read the split schema DDL string from hive metastore table parameters
-    options.get(s"$propertyName.numParts") map { numParts =>
-      (0 until numParts.toInt).map { index =>
-        val partProp = s"$propertyName.part.$index"
-        options.get(partProp) match {
-          case Some(part) => part
-          case None => throw new AnalysisException("Could not read " +
-              s"$propertyName from metastore because it is corrupted " +
-              s"(missing part $index, $numParts parts expected).")
-        }
-        // Stick all parts back to a single schema string.
-      }.mkString
-    }
   }
 
   def tableExistsInMetaData(table: String, conn: Connection,
@@ -267,8 +229,8 @@ object JdbcExtendedUtils extends Logging {
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
         dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
-            schemaString, JdbcExtendedUtils.SCHEMADDL_PROPERTY, options).toMap),
+          new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString) +
+              (ExternalStoreUtils.EXTERNAL_DATASOURCE -> "true")),
           schemaString, data)
 
       case _ => throw new AnalysisException(

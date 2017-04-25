@@ -41,10 +41,10 @@ package org.apache.spark.sql.execution.benchmark
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Dataset, QueryTest, Row, SparkSession}
 import org.apache.spark.util.Benchmark
+
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
@@ -68,6 +68,22 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   test("cache with randomized keys - query") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = true)
+  }
+
+  def addCaseWithCleanup(
+      benchmark: Benchmark,
+      name: String,
+      numIters: Int = 0,
+      prepare: () => Unit,
+      cleanup: () => Unit,
+      testCleanup: () => Unit)(f: Int => Unit): Unit = {
+    val timedF = (timer: Benchmark.Timer) => {
+      timer.startTiming()
+      f(timer.iteration)
+      timer.stopTiming()
+      testCleanup()
+    }
+    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 
   private def doGC(): Unit = {
@@ -193,23 +209,5 @@ object ColumnCacheBenchmark {
 
   def applySchema(df: Dataset[Row], newSchema: StructType): Dataset[Row] = {
     df.sqlContext.internalCreateDataFrame(df.queryExecution.toRdd, newSchema)
-  }
-
-  def addCaseWithCleanup(
-      benchmark: Benchmark,
-      name: String,
-      numIters: Int = 0,
-      prepare: () => Unit,
-      cleanup: () => Unit,
-      testCleanup: () => Unit,
-      testPrepare: () => Unit = () => Unit)(f: Int => Unit): Unit = {
-    val timedF = (timer: Benchmark.Timer) => {
-      testPrepare()
-      timer.startTiming()
-      f(timer.iteration)
-      timer.stopTiming()
-      testCleanup()
-    }
-    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 }

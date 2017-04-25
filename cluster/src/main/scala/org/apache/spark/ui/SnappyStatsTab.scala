@@ -20,6 +20,7 @@
 package org.apache.spark.ui
 
 import org.apache.spark.Logging
+import org.apache.spark.ui.{SparkUI, SparkUITab}
 
 /** Web UI showing storage status of all Snappy Tables */
 private[ui] class SnappyStatsTab(sparkUI: SparkUI)

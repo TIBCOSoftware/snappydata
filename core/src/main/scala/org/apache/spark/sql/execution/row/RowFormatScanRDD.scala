@@ -35,7 +35,6 @@ import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
@@ -54,8 +53,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
-    @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition])
+    @transient protected val parts: Array[Partition] = Array.empty[Partition])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -174,7 +172,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
     if (isPartitioned) {
       val ps = conn.prepareStatement(
-        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
+        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
       try {
         ps.setString(1, tableName)
         val bucketString = thePart match {
@@ -182,7 +180,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
-        ps.setInt(3, -1)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -193,10 +190,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args.map {
-        case pl: ParamLiteral => pl.value
-        case v => v
-      })
+      ExternalStoreUtils.setStatementParameters(stmt, args)
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
@@ -252,7 +246,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
-    val parts = partitionEvaluator()
     if (parts != null && parts.length > 0) {
       return parts
     }
