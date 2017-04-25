@@ -18,6 +18,9 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, ClientSharedUtils}
+import com.gemstone.gemfire.internal.util.ArrayUtils
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -115,7 +118,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         (index, ctx.freshName("minValue"), ctx.freshName("maxValue"))
     }.unzip3
 
-  private[this] val hashingClass = classOf[HashingUtil].getName
+  private[this] val hashingClass = classOf[ClientResolverUtils].getName
   private[this] val nullsMaskPrefix = "nullsMask"
   /**
    * Indicator value for "nullIndex" of a non-primitive nullable that can be
@@ -146,7 +149,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val valClassTypes = if (multiMap) valueTypes else Nil
     // check for existing class with same schema
     val (valueClass, entryClass, exists) = session.getClass(ctx,
-      valClassTypes, keyTypes, entryTypes) match {
+      valClassTypes, keyTypes, entryTypes, multiMap) match {
       case Some((v, e)) => (v, e, true)
       case None =>
         val entryClass = ctx.freshName(classPrefix)
@@ -214,7 +217,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       }
       ctx.addNewFunction(entryClass, classCode)
       session.addClass(ctx, valClassTypes, keyTypes, entryTypes,
-        valueClass, entryClass)
+        valueClass, entryClass, multiMap)
     }
 
     (entryClass, valueClass, entryVars ++ valClassVars, numNulls)
@@ -383,7 +386,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           ${generateUpdate(entryVar, Nil, valueVars, forKey = false, doCopy)}
           // insert into the map and rehash if required
           $dataTerm[$posVar] = $entryVar;
-          if ($hashMapTerm.handleNewInsert()) {
+          if ($hashMapTerm.handleNewInsert($posVar)) {
             // map was rehashed
             $maskTerm = $hashMapTerm.mask();
             $dataTerm = ($className[])$hashMapTerm.data();
@@ -633,7 +636,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |  ${generateUpdate(objVar, Nil, newKeyVars, forKey = true)}
              |  // insert into the map and rehash if required
              |  $dataTerm[$pos] = $objVar;
-             |  if ($hashMapTerm.handleNewInsert()) {
+             |  if ($hashMapTerm.handleNewInsert($pos)) {
              |    // return null to indicate map was rehashed
              |    return null;
              |  } else {
@@ -1362,9 +1365,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def hashSingleInt(colVar: String, nullVar: String,
       hashVar: String): String = {
     if (nullVar.isEmpty || nullVar == "false") {
-      s"$hashVar = $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = $hashingClass.fastHashInt($colVar);\n"
     } else {
-      s"$hashVar = ($nullVar) ? -1 : $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = ($nullVar) ? -1 : $hashingClass.fastHashInt($colVar);\n"
     }
   }
 
@@ -1379,13 +1382,13 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     if (nullVar.isEmpty || nullVar == "false") {
       s"""
         final long $longVar = $colVar;
-        $hashVar = $hashingClass.hashInt(
+        $hashVar = $hashingClass.fastHashInt(
           (int)($longVar ^ ($longVar >>> 32)));
       """
     } else {
       s"""
         final long $longVar;
-        $hashVar = ($nullVar) ? -1 : $hashingClass.hashInt(
+        $hashVar = ($nullVar) ? -1 : $hashingClass.fastHashInt(
           (int)(($longVar = ($colVar)) ^ ($longVar >>> 32)));
       """
     }

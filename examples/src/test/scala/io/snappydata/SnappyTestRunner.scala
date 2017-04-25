@@ -152,8 +152,8 @@ with Logging with Retries {
 
     def json = JSON.parseFull(jsonStr)
     val jobID = json match {
-      case Some(map: Map[String, Any]) =>
-        map.get("result").get.asInstanceOf[Map[String, Any]].get("jobId").get
+      case Some(map: Map[_, _]) =>
+        map.asInstanceOf[Map[String, Map[String, Any]]]("result")("jobId")
       case other => throw new Exception(s"bad result : $jsonStr")
     }
     println("jobID " + jobID)
@@ -169,11 +169,10 @@ with Logging with Retries {
 
       def statusjson = JSON.parseFull(jobSubmitStatus)
       statusjson match {
-        case Some(map: Map[String, Any]) => {
-          val v = map.get("status").get
+        case Some(map: Map[_, _]) =>
+          val v = map.asInstanceOf[Map[String, Any]]("status")
           println("Current status of job: " + v)
           status = v.toString
-        }
         case other => "bad Result"
       }
     }

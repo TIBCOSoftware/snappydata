@@ -27,10 +27,10 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.execution.datasources.{LogicalRelation}
-import org.apache.spark.sql.hive.{QualifiedTableName}
-import org.apache.spark.sql.jdbc.{JdbcDialect}
+import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
 
@@ -106,7 +106,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Any] = {
+      filters: Array[Filter], prunePartitions: => Int): RDD[Any] = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -120,8 +120,9 @@ abstract case class JDBCAppendableRelation(
     }
 
     readLock {
-      externalStore.getColumnBatchRDD(tableName,
+      externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
         requestedColumns.map(column => externalStore.columnPrefix + column),
+        prunePartitions,
         sqlContext.sparkSession, schema)
     }
   }
@@ -141,17 +142,17 @@ abstract case class JDBCAppendableRelation(
   def getColumnBatchParams: (Int, Int, String) = {
     val session = sqlContext.sparkSession
     val columnBatchSize = origOptions.get(
-        ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+      ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
       case Some(cb) => Integer.parseInt(cb)
       case None => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
     val columnMaxDeltaRows = origOptions.get(
-        ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+      ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
       case Some(cd) => Integer.parseInt(cd)
       case None => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
     val compressionCodec = origOptions.get(
-        ExternalStoreUtils.COMPRESSION_CODEC) match {
+      ExternalStoreUtils.COMPRESSION_CODEC) match {
       case Some(codec) => codec
       case None => ExternalStoreUtils.defaultCompressionCodec(session)
     }
@@ -275,7 +276,7 @@ abstract case class JDBCAppendableRelation(
 
 object JDBCAppendableRelation extends Logging {
 
-   private[sql] final def cachedBatchTableName(table: String): String = {
+  private[sql] final def cachedBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
       table.replace(".", "__")
     } else {

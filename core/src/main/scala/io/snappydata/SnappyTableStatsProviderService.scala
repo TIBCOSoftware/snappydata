@@ -19,11 +19,6 @@
 
 package io.snappydata
 
-import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
-import scala.language.implicitConversions
-
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.DataPolicy
 import com.gemstone.gemfire.cache.execute.FunctionService
@@ -36,10 +31,9 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer}
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import io.snappydata.Constant._
-
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
@@ -47,6 +41,11 @@ import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, JDBCSour
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.{Logging, SparkContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 object SnappyTableStatsProviderService extends Logging {
 
@@ -105,7 +104,8 @@ object SnappyTableStatsProviderService extends Logging {
         val prevTableSizeInfo = tableSizeInfo
         running = true
         try {
-          tableSizeInfo = getAggregatedTableStatsOnDemand
+          val (tableStats, indexStats) = getAggregatedStatsOnDemand
+          tableSizeInfo = tableStats
           // get members details
           fillAggregatedMemberStatsOnDemand()
         } finally {
@@ -247,14 +247,17 @@ object SnappyTableStatsProviderService extends Logging {
     }
   }
 
-  def getAggregatedTableStatsOnDemand: Map[String, SnappyRegionStats] = {
+  def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
+    Map[String, SnappyIndexStats]) = {
     val snc = this.snc
-    if (snc == null) return Map.empty
-    val serverStats = getTableStatsFromAllServers
+    if (snc == null) return (Map.empty, Map.empty)
+    val (tableStats, indexStats) = getStatsFromAllServers
+
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
-    if (!doRun) return Map.empty
+    val aggregatedStatsIndex = scala.collection.mutable.Map[String, SnappyIndexStats]()
+    if (!doRun) return (Map.empty, Map.empty)
     // val samples = getSampleTableList(snc)
-    serverStats.foreach { stat =>
+    tableStats.foreach { stat =>
       aggregatedStats.get(stat.getRegionName) match {
         case Some(oldRecord) =>
           aggregatedStats.put(stat.getRegionName, oldRecord.getCombinedStats(stat))
@@ -262,9 +265,14 @@ object SnappyTableStatsProviderService extends Logging {
           aggregatedStats.put(stat.getRegionName, stat)
       }
     }
-    Utils.immutableMap(aggregatedStats)
+
+    indexStats.foreach { stat =>
+      aggregatedStatsIndex.put(stat.getIndexName, stat)
+    }
+    (Utils.immutableMap(aggregatedStats), Utils.immutableMap(aggregatedStatsIndex))
   }
 
+  var suspendCacheInvalidation = false
   /*
   private def getSampleTableList(snc: SnappyContext): Seq[String] = {
     try {
@@ -277,7 +285,7 @@ object SnappyTableStatsProviderService extends Logging {
   }
   */
 
-  private def getTableStatsFromAllServers: Seq[SnappyRegionStats] = {
+  private def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
     if( dataServers != null && dataServers.size() > 0 ){
@@ -287,7 +295,7 @@ object SnappyTableStatsProviderService extends Logging {
         asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
         .asScala
     }
-    result.flatMap(_.getRegionStats.asScala)
+    (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }
 
 }

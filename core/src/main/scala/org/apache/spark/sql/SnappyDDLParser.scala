@@ -143,6 +143,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
+  final def FN: Rule0 = rule { keyword(Consts.FN) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }

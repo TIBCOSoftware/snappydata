@@ -30,6 +30,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
+import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
@@ -64,9 +65,17 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   override lazy val metrics: Map[String, SQLMetric] = getMetrics
 
-  private lazy val extraInformation = relation.toString
+  private lazy val extraInformation = if (relation != null) {
+    relation.toString
+  } else {
+    "<extraInformation:NULL>"
+  }
 
-  protected lazy val numPartitions: Int = dataRDD.getNumPartitions
+  protected lazy val numPartitions: Int = if (dataRDD != null) {
+    dataRDD.getNumPartitions
+  } else {
+    -1
+  }
 
   @transient val (metricAdd, metricValue): (String => String, String => String) =
     Utils.metricMethods
@@ -80,7 +89,8 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
+        .asInstanceOf[SnappySession])).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
@@ -131,7 +141,7 @@ private[sql] object PartitionedPhysicalScan {
           allFilters, schemaAttributes)
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
-        val baseTableRDD = table.buildRowBufferRDD(Array.empty,
+        val baseTableRDD = table.buildRowBufferRDD(() => Array.empty,
           a.map(_.name).toArray, f.toArray, useResultSet = false)
 
         def resolveCol(left: Attribute, right: AttributeReference) =
@@ -233,13 +243,17 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
-  override def children: Seq[SparkPlan] = basePlan :: otherPlan :: Nil
+  private val withShuffle = ShuffleExchange(HashPartitioning(
+    ClusteredDistribution(otherPartKeys)
+        .clustering, inputCode.inputRDDs().head.getNumPartitions), otherPlan)
+
+  override def children: Seq[SparkPlan] = basePlan :: withShuffle :: Nil
 
   override def requiredChildDistribution: Seq[Distribution] =
     ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
-    inputCode.inputRDDs ++ Some(otherPlan.execute())
+    inputCode.inputRDDs ++ Some(withShuffle.execute())
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
