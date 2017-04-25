@@ -108,13 +108,12 @@ note {
 /* Image Alignment - Center
 */
 img {
-    display: inline-block;
+    display: block;
     background-color: transparent;
-    border: 1px solid #ededed;
-    margin: 10px 0px 25px 25px;
-    float: center;    
+    border: none;
+    margin: 0px auto;
 }
-	
+
 /*
 Formatting for text for review/comments purpose only
 */

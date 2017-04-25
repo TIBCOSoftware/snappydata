@@ -34,12 +34,12 @@ import scala.util.Try
  * </pre>
  */
 object JDBCExample {
-  def doOperationsUsingJDBC(hostPort: String): Unit = {
+  def doOperationsUsingJDBC(clientPort: String): Unit = {
     println("****JDBCExample****")
 
     println("Initializing a JDBC connection")
     // JDBC url string to connect to SnappyData cluster
-    val url: String = s"jdbc:snappydata://$hostPort/"
+    val url: String = s"jdbc:snappydata://localhost:$clientPort/"
     val conn1 = DriverManager.getConnection(url)
 
     val stmt1 = conn1.createStatement()
@@ -114,10 +114,10 @@ object JDBCExample {
     if (args.length > 1) {
       printUsage()
     } else if (args.length == 0) {
-      println("Using localhost:1527 for JDBC connection")
-      doOperationsUsingJDBC("localhost:1527")
+      println("Using default client port 1527 for JDBC connection")
+      doOperationsUsingJDBC("1527")
     } else {
-      if (args(0).split(":").length != 2 ) {
+      if (Try(args(0).toInt).isFailure) {
         printUsage()
       } else {
         doOperationsUsingJDBC(args(0))
@@ -129,10 +129,9 @@ object JDBCExample {
 
   def printUsage(): Unit = {
     val usage: String =
-      "Usage: bin/run-example JDBCExample host:port\n" +
-          "\thost - SnappyData host that accepts JDBC connection\n" +
-          "\tport - port on which SnappyData host accepts JDBC connections\n" +
-          "If host:port is not specified default host:port is assumed to be localhost:1527"
+      "Usage: bin/run-example JDBCExample <clientPort>\n" +
+          "\n" +
+          "clientPort - client port number for SnappyData on which JDBC connections are accepted \n"
     println(usage)
   }
 }

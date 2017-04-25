@@ -1,4 +1,4 @@
-# Overview
+#Overview
 In this section, we discuss the various modes available for collocation of related data and computation.
 
 You can run the SnappyData store in the following modes:
@@ -10,7 +10,7 @@ You can run the SnappyData store in the following modes:
 * [SnappyData Smart Connector Mode](#connectormode): Allows you to work with the SnappyData store cluster from any compatible Spark distribution
  
 <a id="localmode"></a>
-## Local Mode
+##Local Mode
 
 In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.
 
@@ -159,11 +159,7 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
-<Note>Note: </Note>
-
- * <note> The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</note>
- 
- * <note> In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`</note>
+<Note>Note: The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</Note>
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
 ```scala

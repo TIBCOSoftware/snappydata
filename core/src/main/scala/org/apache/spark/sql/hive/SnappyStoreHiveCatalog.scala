@@ -23,14 +23,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -48,10 +46,9 @@ import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf, UDFFunction}
@@ -102,7 +99,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val defaultDbDefinition =
       CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
     // Initialize default database if it doesn't already exist
-    externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
+    client.createDatabase(defaultDbDefinition, ignoreIfExists = true)
     client.setCurrentDatabase(defaultName)
     formatDatabaseName(defaultName)
   }
@@ -154,21 +151,19 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
-      (LogicalRelation, CatalogTable, RelationInfo)] = {
+      (LogicalRelation, CatalogTable)] = {
     val cacheLoader = new CacheLoader[QualifiedTableName,
-        (LogicalRelation, CatalogTable, RelationInfo)]() {
-      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
+        (LogicalRelation, CatalogTable)]() {
+      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable) = {
         logDebug(s"Creating new cached data source for $in")
         val table = in.getTable(client)
+        val schemaString = getSchemaString(table.properties)
+        val userSpecifiedSchema = schemaString.map(s =>
+          DataType.fromJson(s).asInstanceOf[StructType])
         val partitionColumns = table.partitionColumns.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
-        val options = new CaseInsensitiveMap(table.storage.serdeProperties)
-        val userSpecifiedSchema = if (table.properties.contains(
-          ExternalStoreUtils.USER_SPECIFIED_SCHEMA)) {
-          ExternalStoreUtils.getTableSchema(table.properties)
-        } else None
-        val relation = JdbcExtendedUtils.readSplitProperty(
-          JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
+        val options = table.storage.serdeProperties
+        val relation = options.get(ExternalStoreUtils.EXTERNAL_DATASOURCE) match {
           case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 
@@ -193,8 +188,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation), table, RelationInfo(
-          0, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
+        (LogicalRelation(relation), table)
       }
     }
 
@@ -209,7 +203,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     SnappyStoreHiveCatalog.cachedSampleTables
   }
 
-  var relationDestroyVersion = 0
+  private var relationDestroyVersion = 0
 
   def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
@@ -293,7 +287,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  protected def registerRelationDestroy(): Unit = {
+  private def registerRelationDestroy(): Unit = {
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
@@ -398,10 +392,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def invalidateTable(tableIdent: QualifiedTableName): Unit = {
     tableIdent.invalidate()
     cachedDataSourceTables.invalidate(tableIdent)
-  }
-
-  def invalidateAll(): Unit = {
-    cachedDataSourceTables.invalidateAll()
   }
 
   def unregisterAllTables(): Unit = synchronized {
@@ -558,7 +548,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
 
-        var newOptions = new CaseInsensitiveMutableHashMap(options)
+        var newOptions = options
         options.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
           case Some(_) =>
           case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
@@ -580,20 +570,20 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         // may be too long to be stored into a single meta-store SerDe property.
         // In this case, we split the JSON string and store each part as a
         // separate SerDe property.
-        val tableSchema = userSpecifiedSchema match {
-          case Some(schema) =>
-            tableProperties.put(ExternalStoreUtils.USER_SPECIFIED_SCHEMA, "true")
-            schema
-          case None => relation.schema
+        if (userSpecifiedSchema.isDefined) {
+          val threshold = sqlConf.schemaStringLengthThreshold
+          val schemaJsonString = userSpecifiedSchema.get.json
+          // Split the JSON string.
+          val parts = schemaJsonString.grouped(threshold).toSeq
+          tableProperties.put(HIVE_SCHEMA_NUMPARTS, parts.size.toString)
+          parts.zipWithIndex.foreach { case (part, index) =>
+            tableProperties.put(s"$HIVE_SCHEMA_PART.$index", part)
+          }
         }
-        val schemaJsonString = tableSchema.json
-        // Split the JSON string.
-        JdbcExtendedUtils.addSplitProperty(schemaJsonString,
-          HIVE_SCHEMA_PROP, tableProperties)
 
         // get the tableType
         val tableType = getTableType(relation)
-        tableProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY, tableType.name)
+        tableProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY, tableType.toString)
         // add baseTable property if required
         relation match {
           case dep: DependentRelation => dep.baseTable.foreach { t =>
@@ -635,7 +625,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             outputFormat = None,
             serde = None,
             compressed = false,
-            serdeProperties = newOptions.toMap
+            serdeProperties = newOptions
           ),
           properties = tableProperties.toMap)
 
@@ -720,14 +710,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def getDataSourceTables(tableTypes: Seq[ExternalTableType],
       baseTable: Option[String] = None): Seq[QualifiedTableName] = {
-    val tables = new mutable.ArrayBuffer[QualifiedTableName](4)
+    val tables = new ArrayBuffer[QualifiedTableName](4)
     allTables().foreach { t =>
       val tableIdent = newQualifiedTableName(formatTableName(t))
       tableIdent.getTableOption(this) match {
         case Some(table) =>
           if (tableTypes.isEmpty || table.properties.get(JdbcExtendedUtils
-              .TABLETYPE_PROPERTY).exists(tableType => tableTypes.exists(_.name
-              == tableType))) {
+              .TABLETYPE_PROPERTY).exists(tableType => tableTypes.exists(_
+              .toString == tableType))) {
             if (baseTable.isEmpty || table.properties.get(
               JdbcExtendedUtils.BASETABLE_PROPERTY).contains(baseTable.get)) {
               tables += tableIdent
@@ -740,7 +730,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   private def allTables(): Seq[String] = {
-    val allTables = new mutable.ArrayBuffer[String]()
+    val allTables = new ArrayBuffer[String]()
     val currentSchemaName = this.currentSchema
     var hasCurrentDb = false
     val client = this.client
@@ -814,14 +804,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
     val qualifiedName = name.copy(database = database)
     ContextJarUtils.getDriverJar(qualifiedName.unquotedString) match {
-      case Some(_) =>
+      case Some(x) => {
         val catalogFunction = try {
           externalCatalog.getFunction(currentSchema, qualifiedName.funcName)
         } catch {
-          case _: AnalysisException => failFunctionLookup(qualifiedName.funcName)
-          case _: NoSuchPermanentFunctionException => failFunctionLookup(qualifiedName.funcName)
+          case e: AnalysisException => failFunctionLookup(qualifiedName.funcName)
+          case e: NoSuchPermanentFunctionException => failFunctionLookup(qualifiedName.funcName)
         }
         removeFromFuncJars(catalogFunction, qualifiedName)
+      }
       case _ =>
     }
     super.dropFunction(name, ignoreIfNotExists)
@@ -898,8 +889,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val catalogFunction = try {
       externalCatalog.getFunction(currentSchema, name.funcName)
     } catch {
-      case _: AnalysisException => failFunctionLookup(name.funcName)
-      case _: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
+      case e: AnalysisException => failFunctionLookup(name.funcName)
+      case e: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
     }
     // loadFunctionResources(catalogFunction.resources) // Not needed for Snappy use case
 
@@ -989,7 +980,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 object SnappyStoreHiveCatalog {
 
   val HIVE_PROVIDER = "spark.sql.sources.provider"
-  val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
+  val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
+  val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
   val cachedSampleTables: LoadingCache[QualifiedTableName,
       Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
@@ -1009,7 +1001,7 @@ object SnappyStoreHiveCatalog {
   }
 
   private[this] var relationDestroyVersion = 0
-  val relationDestroyLock = new ReentrantReadWriteLock()
+  private val relationDestroyLock = new ReentrantReadWriteLock()
   private val alterTableLock = new Object
 
   private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
@@ -1020,33 +1012,30 @@ object SnappyStoreHiveCatalog {
     try {
       val globalVersion = relationDestroyVersion
       relationDestroyVersion += 1
-      setRelationDestroyVersionOnAllMembers()
       globalVersion
     } finally {
       sync.unlock()
     }
   }
 
-  def setRelationDestroyVersionOnAllMembers(): Unit = {
-    SparkSession.getDefaultSession.foreach(session =>
-      SnappyContext.getClusterMode(session.sparkContext) match {
-        case SnappyEmbeddedMode(_, _) =>
-          val version = getRelationDestroyVersion
-          Utils.mapExecutors(session.sqlContext,
-            () => {
-              val profile: GfxdProfile =
-                GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
-              Option(profile).foreach(gp => gp.setRelationDestroyVersion(version))
-              Iterator.empty
-            }).count()
-        case _ =>
-      }
-    )
+  private def getSchemaString(
+      tableProps: scala.collection.Map[String, String]): Option[String] = {
+    tableProps.get(HIVE_SCHEMA_NUMPARTS).map { numParts =>
+      (0 until numParts.toInt).map { index =>
+        val partProp = s"$HIVE_SCHEMA_PART.$index"
+        tableProps.get(partProp) match {
+          case Some(part) => part
+          case None => throw new AnalysisException("Could not read " +
+              "schema from metastore because it is corrupted (missing " +
+              s"part $index of the schema, $numParts parts expected).")
+        }
+        // Stick all parts back to a single schema string.
+      }.mkString
+    }
   }
 
   def getSchemaStringFromHiveTable(table: Table): String =
-    JdbcExtendedUtils.readSplitProperty(HIVE_SCHEMA_PROP,
-      table.getParameters.asScala).orNull
+    getSchemaString(table.getParameters.asScala).orNull
 
   /**
    * Suspend the active SparkSession in case "function" creates new threads
@@ -1111,15 +1100,4 @@ object ExternalTableType {
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
-
-  def isTableBackedByRegion(t: Table): Boolean = {
-    val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
-    tableType match {
-      case _ if tableType == ExternalTableType.Row.name ||
-          tableType == ExternalTableType.Column.name ||
-          tableType == ExternalTableType.Sample.name ||
-          tableType == ExternalTableType.Index.name => true
-      case _ => false
-    }
-  }
 }

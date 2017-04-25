@@ -38,16 +38,7 @@ class SnappyResourceEventsDUnitTest (s: String) extends ClusterManagerTestBase(s
     super.tearDown2()
   }
 
-  def _testEvictionUp(): Unit = {
-    // Execute the job
-    runSparkJob()
-    vm0.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
-    vm1.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
-    vm2.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
-    runSparkJobAfterThresholdBreach()
-  }
-
-  def _testCriticalUp(): Unit = {
+  def testCriticalUp(): Unit = {
     // Execute the job
     runSparkJob()
     vm0.invoke(this.getClass, "raiseCriticalUpMemoryEvent")
@@ -56,11 +47,15 @@ class SnappyResourceEventsDUnitTest (s: String) extends ClusterManagerTestBase(s
     runSparkJobAfterThresholdBreach()
   }
 
-  def testDummy(): Unit = {
-    // Dummy test. Does not want to delete this class as some test codes can be reused later.
+  def testEvictionUp(): Unit = {
+    // Execute the job
+    runSparkJob()
+    vm0.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
+    vm1.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
+    vm2.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
+    runSparkJobAfterThresholdBreach()
   }
-
- }
+}
 
 object SnappyResourceEventsDUnitTest {
 

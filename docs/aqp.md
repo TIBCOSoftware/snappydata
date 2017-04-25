@@ -47,7 +47,7 @@ While a [Count-min-sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketc
 
 ## Working with Stratified Samples
 
-### Create Sample Tables
+###Create Sample Tables###
 
 You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. 
 
@@ -91,7 +91,7 @@ strataReservoirSize '50', baseTable 'baseTableName')
 ```
 
 
-### QCS (Query Column Set) and Sample Selection
+###QCS (Query Column Set) and Sample Selection###
 For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). 
 
 QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like `hour (pickup_datetime)`.
@@ -181,7 +181,7 @@ set spark.sql.aqp.behavior=$behavior;
 ```
 
 ## More Examples
-#### Example 1
+####Example 1
 Create a sample table with qcs 'medallion' 
 ```
 CREATE SAMPLE TABLE NYCTAXI_SAMPLEMEDALLION ON NYCTAXI 
@@ -205,7 +205,7 @@ snc.table(basetable).groupBy("medallion").agg( avg("trip_distance").alias("avgTr
   upper_bound("avgTripDist")).withError(.6, .90, "do_nothing").sort(col("medallion").desc).limit(100)
 ```
 
-#### Example 2
+####Example 2
 Create additional sample table with qcs 'hack_license' 
 
 ```
@@ -224,7 +224,7 @@ select  hack_license, count(*) count from NYCTAXI group by hack_license order by
 snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothing").sort(col("count").desc).limit(10)
 ```
 
-#### Example 3
+####Example 3
 Create a sample table using function "hour(pickup_datetime) as QCS
 
 ```
@@ -241,7 +241,7 @@ select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) f
 snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in_secs" -> "sum")).withError(0.6,0.90,"do_nothing").limit(10)
 ```
 
-#### Example 4
+####Example 4
 If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
 
 ```
@@ -258,7 +258,7 @@ Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(
 snc.table(basetable).groupBy("hack_license","pickup_datetime").agg(Map("trip_distance" -> "sum")).alias("daily_trips").       filter(year(col("pickup_datetime")).equalTo(2013) and month(col("pickup_datetime")).equalTo(9)).withError(0.6,0.90,"do_nothing").sort(col("sum(trip_distance)").desc).limit(10)
 ```
 
-## Sample Selection
+##Sample Selection
 
 Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:
 
@@ -273,12 +273,12 @@ Sample selection logic selects most appropriate sample, based on this relatively
 * When multiple stratified samples with a subset of QCSs match, a sample with most matching columns is used. The largest size of the sample gets selected if multiple such samples are available. 
 
 
-## High-level Accuracy Contracts (HAC)
+##High-level Accuracy Contracts (HAC)###
 SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
 
 When an error constraint is not met, the action to be taken is defined in the behavior clause. 
 
-### Behavior Clause
+###Behavior Clause
 Synopsis Data Engine has HAC support using the following behavior clause. 
 
 #### `<do_nothing>`
@@ -291,7 +291,7 @@ For aggregates that do not satisfy the error criteria, the value is replaced by 
 ![LOCAL OMIT](Images/aqp_localomit.png)
 
 
-#### `<strict>`
+#### `<strict>`#####
 If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
 ![Strict](Images/aqp_strict.png)
 
@@ -310,7 +310,7 @@ In the following example, any one of the above behavior clause can be applied.
 SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error <fraction> [CONFIDENCE <fraction>] [BEHAVIOR <behavior>]
 ```
 
-### Error Functions
+###Error Functions###
 In addition to this, SnappyData supports error functions that can be specified in the query projection. These error functions are supported for the SUM, AVG and COUNT aggregates in the projection. 
 
 The following four methods are available to be used in query projection when running approximate queries:
@@ -346,7 +346,7 @@ select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(
 snc.table(basetable).groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay), relative_error("arrivalDelay"), absolute_error("arrivalDelay"), col("Year_")).withError(0.10, .95).sort(col("Year_").asc) 
 ```
 
-### Reserved Keywords
+###Reserved Keywords ###
 Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for SnappyData.
 
 If the aggregate function is aliased in the query as `sample_<any string>`, then what you get is true answers on the sample table, and not the estimates of the base table.
@@ -360,10 +360,10 @@ sample_count returns a number of rows (true answer) in sample table of airline t
 ## Sketching 
 Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures much more useful. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
 
-### Creating TopK tables
+### Creating TopK tables###
 TopK queries are used to rank attributes to answer "best, most interesting, most important" class of questions. TopK structures store elements ranking them based on their relevance to the query. [TopK](http://stevehanov.ca/blog/index.php?id=122) queries aim to retrieve, from a potentially very large resultset, only the *k (k >= 1)* best answers.
  
-#### SQL API for creating a TopK table in SnappyData
+####SQL API for creating a TopK table in SnappyData
  
 ``` 
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
@@ -371,7 +371,7 @@ snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
 ``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest retweets value in the base table. This works for both static tables and streaming tables.
 
-#### Scala API for creating a TopK table
+####Scala API for creating a TopK table
    
 	
 	val topKOptionMap = Map(
@@ -386,14 +386,14 @@ The example above create a TopK table called MostPopularTweets, the base table f
 	  
 The code above shows how to do the same thing using the SnappyData Scala API.
   
-#### Querying the TopK table
+####Querying the TopK table
 	
 	
 	select * from topkTweets order by EstimatedValue desc 
 	
 The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most re-tweets.
 
-### Approximate TopK analytics for time series data
+### Approximate TopK analytics for time series data###
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the time stamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most re-tweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
 Here is an example of a time-based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
@@ -406,7 +406,7 @@ Here is an example of a time-based query on the TopK structure which returns the
 	
 If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the timestamp.
 
-#### SQL API for creating a TopK table in SnappyData specifying timestampColumn
+####SQL API for creating a TopK table in SnappyData specifying timestampColumn
 
 In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
  
@@ -416,7 +416,7 @@ snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
 ``` 
 The example above create a TopK table called MostPopularTweets, the base table for which is tweetStreamTable. It uses the hashtag field of tweetStreamTable as its key field and maintains the TopN hashtags that have the highest re-tweets value in the base table. This works for both static tables and streaming tables
 
-#### Scala API for creating a TopK table 
+####Scala API for creating a TopK table 
 
 ```scala
     val topKOptionMap = Map(
@@ -435,5 +435,5 @@ The code above shows how to do the same thing using the SnappyData Scala API.
 
 It is worth noting that the user has the ability to disable time as a dimension if desired. This is done by not providing the *timeInterval* attribute when creating the TopK table.
 
-## Using SDE
+##Using SDE##
 In the current release SDE queries only work for SUM, AVG and COUNT aggregations. Joins are only supported to non-samples in this release. The SnappyData SDE module will gradually expand the scope of queries that can be serviced through it. But the overarching goal here is to dramatically cut down on the load on current systems by diverting at least some queries to the sampling subsystem and increasing productivity through fast response times. 

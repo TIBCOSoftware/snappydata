@@ -98,7 +98,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       )
 
       val rdd = sc.parallelize(data, data.length).map(s =>
-        Data2(s.head.asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
+        new Data2(s(0).asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
       val dataDF = snContext.createDataFrame(rdd)
 
       dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)

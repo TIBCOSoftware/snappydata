@@ -24,14 +24,13 @@ import com.typesafe.config.Config
 import util.TestException
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SnappySession, SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SnappySession, SQLContext, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
 class ValidateCTQueriesJob extends SnappySQLJob {
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val threadID = Thread.currentThread().getId
-    val outputFile = "ValidateCTQueriesJob_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
+    val outputFile = "ValidateCTQueries_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
 
@@ -42,26 +41,18 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       snc.setConf("dataFilesLocation", dataFilesLocation)
       CTQueries.snc = snc
       pw.println(s"Validation for $tableType tables started in snappy Job")
-      val fullResultSetValidation: Boolean = jobConfig.getBoolean("fullResultSetValidation")
+      val fullResultSetValidation: Boolean = jobConfig.getString("fullResultSetValidation").toBoolean
       val sc = SparkContext.getOrCreate()
       val sqlContext = SQLContext.getOrCreate(sc)
       if (fullResultSetValidation)
         pw.println(s"Test will perform fullResultSetValidation")
       else
         pw.println(s"Test will not perform fullResultSetValidation")
-      val startTime = System.currentTimeMillis
-      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-        sqlContext)
-      val endTime = System.currentTimeMillis
-      val totalTime = (endTime - startTime) / 1000
-      pw.println(s"Total time for execution is :: ${totalTime} seconds.")
-      if(!failedQueries.isEmpty) {
-        println(s"Validation failed for ${tableType} for queries ${failedQueries}. See ${getCurrentDirectory}/${outputFile}")
-        pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
-        pw.close()
-        throw new TestException(s"Validation task failed for ${tableType}. See ${getCurrentDirectory}/${outputFile}")
+      val hasValidationFailed = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation, sqlContext)
+      if(hasValidationFailed) {
+        pw.println(s"Validation failed for ${tableType}")
+        //throw new TestException(s"Validation task failed for ${tableType}. Please check logs.")
       }
-      println(s"Validation for $tableType tables completed. See ${getCurrentDirectory}/${outputFile}")
       pw.println(s"Validation for $tableType tables completed.")
       pw.close()
     } match {

@@ -9,7 +9,7 @@ io/snappydata/hydra/ct/ctSplitMode.conf
   redundantCopies=0  persistenceMode="null" //not required for replicated table, but required for hydra config
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="Replicated"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -20,7 +20,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   redundantCopies=0  persistenceMode="async" //redundancy not required for replicated table, but required for hydra config
   tableType="PersistentReplicated"
   scriptName="ct_create_and_load_persistentReplicated_row_tables.sql"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -32,7 +32,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   tableType="PersistentReplicated"
   scriptName="ct_create_and_load_persistentReplicated_row_tables.sql"
   numVMsToStop=1
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitMode.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -42,7 +42,7 @@ io/snappydata/hydra/ct/ctSplitMode.conf
   redundantCopies=0,1,2  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PartitionedRow"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -53,7 +53,7 @@ io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PartitionedRow"
   numVMsToStop=1
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -64,7 +64,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentPartitionRow"
   scriptName="ct_create_and_load_persistentPartitioned_row_table.sql"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitMode.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -74,7 +74,7 @@ io/snappydata/hydra/ct/ctSplitMode.conf
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedRow"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -85,7 +85,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppLeadHA.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedRow"
   numVMsToStop=1
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -96,7 +96,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="EvictionRow"
   scriptName="ct_create_and_load_eviction_row_table.sql"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -107,7 +107,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedRow"
   scriptName="ct_create_and_load_persistentColocated_row_table.sql"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -118,7 +118,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedWithEvictionRow"
   scriptName="ct_create_and_load_colocatedWithEviction_row_table.sql"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 //Column tables
 io/snappydata/hydra/ct/ctSplitMode.conf
@@ -129,7 +129,7 @@ io/snappydata/hydra/ct/ctSplitMode.conf
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="Column"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -139,7 +139,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
   redundantCopies=0,1,2  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColumn"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitMode.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -149,7 +149,7 @@ io/snappydata/hydra/ct/ctSplitMode.conf
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedColumn"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -161,7 +161,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   tableType="ColocatedColumn"
   scriptName="ct_create_and_load_colocated_column_table.sql"
   numVMsToStop=1
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithScriptServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -173,7 +173,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptServerHA.conf
   tableType="PersistentColumn"
   numVMsToStop=1
   scriptName="ct_create_and_load_persistent_column_table.sql"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitMode.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -183,7 +183,7 @@ io/snappydata/hydra/ct/ctSplitMode.conf
   redundantCopies=0,1,2  persistenceMode="async"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeLeadHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -194,7 +194,7 @@ io/snappydata/hydra/ct/ctSplitModeLeadHA.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
   numVMsToStop=1
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -205,7 +205,7 @@ io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
   numVMsToStop=1
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -215,7 +215,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
   redundantCopies=0,1  persistenceMode="null"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="Column"
-  fullResultSetValidation= true
+  fullResultSetValidation= false
 
 io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppServerHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -226,4 +226,4 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppServerHA.conf
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="Column"
   numVMsToStop=1
-  fullResultSetValidation= true
+  fullResultSetValidation= false

@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import io.snappydata.Property
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
@@ -157,8 +156,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  int $defaultRowSize = 0;
        |  ${declarations.mkString("\n")}
        |  $defaultBatchSizeTerm = Math.max(
-       |    (${math.abs( if (columnBatchSize > 0) columnBatchSize else Property.ColumnBatchSize.
-            defaultValue.get)} - 8) / $defaultRowSize, 16);
+       |    (${math.abs(columnBatchSize)} - 8) / $defaultRowSize, 16);
        |  // ceil to nearest multiple of $checkFrequency since size is checked
        |  // every $checkFrequency rows
        |  $defaultBatchSizeTerm = ((($defaultBatchSizeTerm - 1) / $checkFrequency) + 1)

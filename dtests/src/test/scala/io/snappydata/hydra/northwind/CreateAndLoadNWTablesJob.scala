@@ -17,6 +17,7 @@
 package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
+import java.lang.System
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northwind

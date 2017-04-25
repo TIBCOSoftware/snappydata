@@ -41,17 +41,17 @@ class ValidateNWQueriesJob extends SnappySQLJob {
       snc.setConf("dataFilesLocation", dataFilesLocation)
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
-      pw.println(s"Validate ${tableType} tables Queries Test started at : " + System.currentTimeMillis)
+      pw.println(s"Validate ${tableType} tables Queries Test started")
       NWTestUtil.validateQueries(snc, tableType, pw)
-      pw.println(s"Validate ${tableType} tables Queries Test completed successfully at : " + System.currentTimeMillis)
+      pw.println(s"Validate ${tableType} tables Queries Test completed successfully")
       if (fullResultSetValidation) {
-        pw.println(s"createAndLoadSparkTables Test started at : " + System.currentTimeMillis)
+        pw.println(s"createAndLoadSparkTables Test started")
         NWTestUtil.createAndLoadSparkTables(sqlContext)
-        println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
-        pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System.currentTimeMillis)
-        pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at : " + System.currentTimeMillis)
+        println(s"createAndLoadSparkTables Test completed successfully")
+        pw.println(s"createAndLoadSparkTables Test completed successfully")
+        pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started")
         NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
-        pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully at : " + System.currentTimeMillis)
+        pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed successfully")
       }
       pw.close()
     } match {
