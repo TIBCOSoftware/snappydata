@@ -242,7 +242,7 @@ Refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/), for m
 
  3. When the query has completed execution, the results are sent from the SnappyData Interpreter (which is running on the Lead node) to the Apache Zeppelin server.
 
- 4. Finally, the results are displayed in the Zepplein UI. 
+ 4. Finally, the results are displayed in the Zeppelin UI. 
 
 Connecting the SnappyData Interpreter to the SnappyData cluster is represented in the below figure.
 
