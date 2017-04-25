@@ -40,7 +40,7 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
       CTQueries.snc = snc
       CTTestUtil.dropTables(snc)
       pw.println(s"Create and load for ${tableType} tables has started...")
-
+      pw.flush()
       tableType match {
         //replicated row tables
         case "Replicated" => CTTestUtil.createReplicatedRowTables(snc)
@@ -65,6 +65,8 @@ class CreateAndLoadCTTablesJob extends SnappySQLJob {
           throw new TestException(s"Did not find any match for ${tableType} to create tables." +
               s" See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesJob.out")
       }
+      pw.println("Tables are created. Now loading data.")
+      pw.flush()
       CTTestUtil.loadTables(snc);
       println(s"Create and load for ${tableType} tables has completed successfully. " +
           s"See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesJob.out")
