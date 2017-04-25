@@ -77,11 +77,12 @@ class SparkSQLPrepareImpl(val sql: String,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
     if (sessionState.questionMarkCounter > 0) {
-      val paramLiteralSet = new mutable.HashSet[ParamLiteral]()
-      val paramLiterals = allParamLiterals(analyzedPlan, paramLiteralSet)
-      val paramLiteralsAtPrepare = if (paramLiterals.size < sessionState.questionMarkCounter) {
-        remainingParamLiterals(analyzedPlan, paramLiterals).toArray.sortBy(_.pos)
-      } else paramLiterals.toArray.sortBy(_.pos)
+      val paramLiterals = new mutable.HashSet[ParamLiteral]()
+      allParamLiterals(analyzedPlan, paramLiterals)
+      if (paramLiterals.size < sessionState.questionMarkCounter) {
+        remainingParamLiterals(analyzedPlan, paramLiterals)
+      }
+      val paramLiteralsAtPrepare = paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length
       if (paramCount != sessionState.questionMarkCounter) {
         throw new UnsupportedOperationException("This query is unsupported for prepared statement")
@@ -135,67 +136,82 @@ class SparkSQLPrepareImpl(val sql: String,
     case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
   }
 
-  def allParamLiterals(plan: LogicalPlan,
-      result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
+  def handleCase(branches: Seq[(Expression, Expression)], elseValue: Option[Expression],
+      datatype: DataType, nullable: Boolean, result: mutable.HashSet[ParamLiteral]): Unit = {
+    branches.foreach {
+      case (_, ParamLiteral(Row(pos: Int), NullType, 0)) =>
+        addParamLiteral(pos, datatype, nullable, result)
+    }
+    elseValue match {
+      case Some(ParamLiteral(Row(pos: Int), NullType, 0)) =>
+        addParamLiteral(pos, datatype, nullable, result)
+      case _ =>
+    }
+  }
 
+  def addParamLiteral(position: Int, datatype: DataType, nullable: Boolean,
+      result: mutable.HashSet[ParamLiteral]): Unit = if (!result.exists(_.pos == position)) {
+    result += ParamLiteral(nullable, datatype, position)
+  }
+
+  def allParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), _, 0)) =>
-        result += ParamLiteral(left.nullable, left.dataType, pos)
+      case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), NullType, 0)) =>
+        addParamLiteral(pos, left.dataType, left.nullable, result)
         bl
-      case blc@BinaryComparison(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, 0), _)) =>
-        result += ParamLiteral(left.nullable, left.dataType, pos)
+      case blc@BinaryComparison(left: Expression,
+      Cast(ParamLiteral(Row(pos: Int), NullType, 0), _)) =>
+        addParamLiteral(pos, left.dataType, left.nullable, result)
         blc
-      case br@BinaryComparison(ParamLiteral(Row(pos: Int), _, 0), right: Expression) =>
-        result += ParamLiteral(right.nullable, right.dataType, pos)
+      case ble@BinaryComparison(left: Expression, CaseWhen(branches, elseValue)) =>
+        handleCase(branches, elseValue, left.dataType, left.nullable, result)
+        ble
+      case blce@BinaryComparison(left: Expression, Cast(CaseWhen(branches, elseValue), _)) =>
+        handleCase(branches, elseValue, left.dataType, left.nullable, result)
+        blce
+      case br@BinaryComparison(ParamLiteral(Row(pos: Int), NullType, 0), right: Expression) =>
+        addParamLiteral(pos, right.dataType, right.nullable, result)
         br
-      case brc@BinaryComparison(Cast(ParamLiteral(Row(pos: Int), _, 0), _), right: Expression) =>
-        result += ParamLiteral(right.nullable, right.dataType, pos)
+      case brc@BinaryComparison(Cast(ParamLiteral(Row(pos: Int), NullType, 0), _),
+      right: Expression) =>
+        addParamLiteral(pos, right.dataType, right.nullable, result)
         brc
-      case l@Like(left: Expression, ParamLiteral(Row(pos: Int), _, 0)) =>
-        result += ParamLiteral(left.nullable, left.dataType, pos)
+      case bre@BinaryComparison(CaseWhen(branches, elseValue), right: Expression) =>
+        handleCase(branches, elseValue, right.dataType, right.nullable, result)
+        bre
+      case brce@BinaryComparison(Cast(CaseWhen(branches, elseValue), _), right: Expression) =>
+        handleCase(branches, elseValue, right.dataType, right.nullable, result)
+        brce
+      case l@Like(left: Expression, ParamLiteral(Row(pos: Int), NullType, 0)) =>
+        addParamLiteral(pos, left.dataType, left.nullable, result)
         l
-      case lc@Like(left: Expression, Cast(ParamLiteral(Row(pos: Int), _, 0), _)) =>
-        result += ParamLiteral(left.nullable, left.dataType, pos)
+      case lc@Like(left: Expression, Cast(ParamLiteral(Row(pos: Int), NullType, 0), _)) =>
+        addParamLiteral(pos, left.dataType, left.nullable, result)
         lc
       case inlist@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
       list: Seq[Expression]) =>
         list.map {
-          case ParamLiteral(Row(pos: Int), _, 0) =>
-            result += ParamLiteral(value.nullable, value.dataType, pos)
+          case ParamLiteral(Row(pos: Int), NullType, 0) =>
+            addParamLiteral(pos, value.dataType, value.nullable, result)
           case Cast(ParamLiteral(Row(pos: Int), _, 0), _) =>
-            result += ParamLiteral(value.nullable, value.dataType, pos)
+            addParamLiteral(pos, value.dataType, value.nullable, result)
           case x => x
         }
         inlist
     }
-
     handleSubQuery(allParams(plan), allParams)
-    result
   }
 
-  def remainingParamLiterals(plan: LogicalPlan,
-      result: mutable.HashSet[ParamLiteral]): mutable.HashSet[ParamLiteral] = {
-
-    def addParamLiteral(i: Int, t: DataType): Unit = if (!result.exists(_.pos == i)) {
-      result += ParamLiteral(false, t, i)
-    }
-
+  def remainingParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
     def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case c@Cast(ParamLiteral(Row(pos: Int), _, _), right: DataType) => addParamLiteral(pos, right)
+      case c@Cast(ParamLiteral(Row(pos: Int), NullType, 0), castType: DataType) =>
+        addParamLiteral(pos, castType, false, result)
         c
-      case cc@Cast(CaseWhen(branches, elseValue), right: DataType) =>
-        branches.foreach {
-          case (_, ParamLiteral(Row(pos: Int), _, 0)) => addParamLiteral(pos, right)
-        }
-        elseValue match {
-          case Some(ParamLiteral(Row(pos: Int), _, 0)) => addParamLiteral(pos, right)
-          case _ =>
-        }
+      case cc@Cast(CaseWhen(branches, elseValue), castType: DataType) =>
+        handleCase(branches, elseValue, castType, false, result)
         cc
     }
-
     handleSubQuery(allParams(plan), allParams)
-    result
   }
 
   def handleSubQuery(plan: LogicalPlan,
