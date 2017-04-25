@@ -15,7 +15,7 @@ In this mode, you can execute all the components (client application, executors,
 
 * For development purposes only
  
-![Local Mode](../Images/SnappyLocalMode.png)
+![Local Mode](../../Images/SnappyLocalMode.png)
 
 **Example**: **Using the Local mode for developing SnappyData programs**
 

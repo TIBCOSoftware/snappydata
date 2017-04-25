@@ -9,18 +9,15 @@ Before you begin, ensure that:
 1. **Verify that your installation is working correctly**
 
 	Run the following command on your machine:
- 	```
- 	$ docker run hello-world
- 	```
+    
+	 	$ docker run hello-world
 
 2. **Start a basic cluster with one data node, one lead and one locator**
 
  	**For Linux**
-
- 	```
- 	$ docker run -itd --net=host --name snappydata snappydatainc/snappydata start all
- 	```
-    
+	
+ 		$ docker run -itd --net=host --name snappydata snappydatainc/snappydata start all
+ 	
  	**For Mac OS**
 
  	If you are using MAC OS you need to redirect the ports manually.
@@ -29,9 +26,8 @@ Before you begin, ensure that:
 
  	Run the following command to start SnappyData Cluster on Mac OS:
 
- 	```
- 	docker run -d --name=snappydata -p 4040:4040 -p 1527:1527 -p 1528:1528 snappydatainc/snappydata start all -J-Dgemfirexd.hostname-for-clients=<Machine_IP/Public_IP>
- 	```
+ 	 	docker run -d --name=snappydata -p 4040:4040 -p 1527:1527 -p 1528:1528 snappydatainc/snappydata start all -J-Dgemfirexd.hostname-for-clients=<Machine_IP/Public_IP>
+ 	
     
  	The `-J-Dgemfirexd.hostname-for-clients` parameter sets the IP Address or Host name that this server listens on for client connections.
 
@@ -40,76 +36,61 @@ Before you begin, ensure that:
 
 3. **Check the Docker Process**
 
- 	```
- 	$ docker ps -a
-	```
-
+ 	 	$ docker ps -a
+	
 4. **Check the Docker Logs**
 
  	Run the following command to view the logs of the container process.
 	 
-	```
- 	$ docker logs snappydata
- 	starting sshd service
- 	Starting sshd:
-  	[ OK ]
- 	Starting SnappyData Locator using peer discovery on: localhost[10334]
- 	Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
- 	Logs generated in /opt/snappydata/work/localhost-locator-1/snappylocator.log
-     SnappyData Locator pid: 110 status: running
-     Starting SnappyData Server using locators for peer discovery: localhost:10334
-     Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-     Logs generated in /opt/snappydata/work/localhost-server-1/snappyserver.log
-     SnappyData Server pid: 266 status: running
-     Distributed system now has 2 members.
-     Other members: localhost(110:locator)<v0>:63369
-     Starting SnappyData Leader using locators for peer discovery: localhost:10334
-     Logs generated in /opt/snappydata/work/localhost-lead-1/snappyleader.log
-     SnappyData Leader pid: 440 status: running
-     Distributed system now has 3 members.
-     Other members: 192.168.1.130(266:datastore)<v1>:47290, localhost(110:locator)<v0>:63369
- 	```
+	 	$ docker logs snappydata
+        starting sshd service
+        Starting sshd:
+        [ OK ]
+        Starting SnappyData Locator using peer discovery on: localhost[10334]
+        Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
+        Logs generated in /opt/snappydata/work/localhost-locator-1/snappylocator.log
+         SnappyData Locator pid: 110 status: running
+         Starting SnappyData Server using locators for peer discovery: localhost:10334
+         Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
+         Logs generated in /opt/snappydata/work/localhost-server-1/snappyserver.log
+         SnappyData Server pid: 266 status: running
+         Distributed system now has 2 members.
+         Other members: localhost(110:locator)<v0>:63369
+         Starting SnappyData Leader using locators for peer discovery: localhost:10334
+         Logs generated in /opt/snappydata/work/localhost-lead-1/snappyleader.log
+         SnappyData Leader pid: 440 status: running
+         Distributed system now has 3 members.
+         Other members: 192.168.1.130(266:datastore)<v1>:47290, localhost(110:locator)<v0>:63369
  	
     The query results display *Distributed system now has 3 members*.
 
 5. **Connect SnappyData with the Command Line Client**
 
-	```
-	$ docker exec -it snappydata ./bin/snappy
-	```
+		$ docker exec -it snappydata ./bin/snappy
  
 6. **Connect Client on port “1527”**
 
-	```
- 	$ snappy> connect client 'localhost:1527';
-	```
+	 	$ snappy> connect client 'localhost:1527';
 
 7. **View Connections**
 
-	```
- 	snappy> show connections;
- 	CONNECTION0* -
-  	jdbc:gemfirexd://localhost[1527]/
- 	* = current connection
- 	```
+	 	snappy> show connections;
+ 		CONNECTION0* -
+  		jdbc:gemfirexd://localhost[1527]/
+ 		* = current connection
     
 8. **Check Member Status**
 
- 	```
- 	snappy> show members;
- 	```
-
+ 		snappy> show members;
+ 	
 9. **Stop the Cluster**
 
- 	```
- 	$ docker exec -it snappydata ./sbin/snappy-stop-all.sh
- 	The SnappyData Leader has stopped.
- 	The SnappyData Server has stopped.
- 	The SnappyData Locator has stopped.
- 	```
-
+ 	 	$ docker exec -it snappydata ./sbin/snappy-stop-all.sh
+ 		The SnappyData Leader has stopped.
+ 		The SnappyData Server has stopped.
+ 		The SnappyData Locator has stopped.
+ 	
 10. **Stop SnappyData Container**
 
- 	```
- 	$ docker stop snappydata
- 	```
+ 	 	$ docker stop snappydata
+ 	

@@ -6,10 +6,15 @@ Before you start the installation, make sure your system meets the minimum syste
 The following topics are covered in this section:
 
 * [Supported Configurations](#supported_config)
+
 * [Host Machine Requirements](#host-machine)
+
 * [Increase Unicast Buffer Size on Linux Platforms](#increase_buffer)
+
 * [Disable SYN Cookies on Linux Platforms](#syn-cookies)
+
 * [Filesystem Type for Linux Platforms](#filesystem-types)
+
 * [SnappyData Dashboard Requirements](#dashboard)
 
 

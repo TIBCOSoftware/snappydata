@@ -52,7 +52,7 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
         "COLOCATE_WITH 'CUSTOMER' )")
 ```
 
-**Perform a Collocate join: **
+**Perform a Collocate join:**
 
 ```
     // Selecting orders for all customers

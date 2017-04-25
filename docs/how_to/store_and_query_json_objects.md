@@ -25,7 +25,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 ```
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
     // Read a JSON file using Spark API
-    val people = snSession.jsonFile(some_people_path)
+    val people = snSession.read.json(some_people_path)
     people.printSchema()
 ```
 
@@ -73,14 +73,6 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
         "address.lane " +
         "FROM people")
 
-    val builder = new StringBuilder
-    nameAndAddress.collect.map(row => {
-      builder.append(s"${row(0)} ,")
-      builder.append(s"${row(1)} ,")
-      builder.append(s"${row(2)} ,")
-      builder.append(s"${row(3)} ,")
-      builder.append(s"${row(4)} \n")
-    })
-    builder.toString
+nameAndAddress.toJSON.show()
 
 ```

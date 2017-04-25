@@ -12,44 +12,39 @@ You can run the examples in any of the following ways:
 
 * **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples run collocated with Spark+SnappyData Store in the same JVM. 
 
-* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
+* **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](how_to/run_spark_job_inside_the_cluster.md) section for details on how to run a job.
 
-<Note> Note: SnappyData also supports Java API. Refer to the [documentation](programming_guide/#building-snappy-applications-using-spark-api) for more details on Java API.</note>
+!!! Note
+	SnappyData also supports Java API. Refer to the [documentation](programming_guide.md#building-snappy-applications-using-spark-api) for more details on Java API.
 
 The following topics are covered in this section:
 
 * [How to Start a SnappyData Cluster](how_to/start_snappydata_cluster.md#howto-startCluster)
 
-* [How to Run Spark Job inside the Cluster](how_to/run_spark_job_inside_the_cluster.md#howto-job)
+* [How to Run Spark Job inside the Cluster](how_to/run_spark_job_inside_the_cluster.md)
 
-* [How to Access SnappyData Store from existing Spark Installation using Smart Connector](how_to/access_snappydata_store.md#howto-splitmode)
+* [How to Access SnappyData Store from existing Spark Installation using Smart Connector](how_to/access_snappydata_store.md)
 
-* [How to Create Row Tables and Run Queries](how_to/create_column_tables_and_run_queries.md#howto-row)
+* [How to Create Row Tables and Run Queries](how_to/create_column_tables_and_run_queries.md)
 
-* [How to Create Column Tables and Run Queries](how_to/create_row_tables_and_run_queries.md#howto-column)
+* [How to Create Column Tables and Run Queries](how_to/create_row_tables_and_run_queries.md)
 
-* [How to Load Data in SnappyData Tables](how_to/load_data_in_snappydata_tables.md#howto-load)
+* [How to Load Data in SnappyData Tables](how_to/load_data_in_snappydata_tables.md)
 
-* [How to perform a Collocated Join](how_to/perform_a_collocated_join.md#howto-collacatedJoin)
+* [How to perform a Collocated Join](how_to/perform_a_collocated_join.md)
 
-* [How to Connect using JDBC Driver](how_to/connect_using_jdbc_driver.md#howto-jdbc)
+* [How to Connect using JDBC Driver](how_to/connect_using_jdbc_driver.md)
 
-* [How to Store and Query JSON Objects](how_to/store_and_query_json_objects.md#howto-JSON)
+* [How to Store and Query JSON Objects](how_to/store_and_query_json_objects.md)
 
-* [How to Store and Query Objects](how_to/store_and_query_objects.md#howto-objects)
+* [How to Store and Query Objects](how_to/store_and_query_objects.md)
 
-* [How to Use Stream Processing with SnappyData](how_to/use_stream_processing.md#howto-streams)
+* [How to Use Stream Processing with SnappyData](how_to/use_stream_processing.md)
 
-* [How to Use Synopsis Data Engine to Run Approximate Queries](how_to/use_synopsis_data_engine.md#howto-sde)
+* [How to Use Synopsis Data Engine to Run Approximate Queries](how_to/use_synopsis_data_engine.md)
 
-* [How to Use Python to Create Tables and Run Queries](how_to/use_python_to_create_tables_and_run_queries.md#howto-python)
+* [How to Use Python to Create Tables and Run Queries](how_to/use_python_to_create_tables_and_run_queries.md)
 
-<mark>
+* [How to Connect using ODBC Driver](how_to/connect_using_odbc_driver.md)
 
-#EXTRA "HOW TO" TOPICS FOR GA REALEASE
-
-* How to connect to SnappyData using third party tools-
-	- Tablaeu: Steps for how to use with SnappyData
-	- Zeppelin: Steps for how to use with SnappyData (already covered in iSight?)
-
-</mark>
+* [How to Use Apache Zeppelin with SnappyData](how_to/zeppelin_with_snappydata.md)

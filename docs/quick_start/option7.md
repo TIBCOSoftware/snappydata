@@ -18,6 +18,6 @@ $ docker run hello-world
 $  docker run -it -p 4040:4040 snappydatainc/snappydata bin/spark-shell
 ```
 It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
-Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
+Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](option1.md#Start_quickStart)
 
 For more details about SnappyData docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker)

@@ -1,18 +1,18 @@
 <a id="howto-snappyShell"></a>
-## How to Use SnappyData SQL shell (snappy)
-`snappy` can be used to execute SQL on SnappyData cluster. In the background, `snappy` uses JDBC connections to execute SQL.
+## How to Use Snappy SQL shell (snappy-sql)
+`snappy-sql` can be used to execute SQL on SnappyData cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: 
-Use the `snappy` and `connect client` command on the Snappy Shell
+Use the `snappy-sql` and `connect client` command on the Snappy SQL Shell
 
 ```
-$ bin/snappy
-snappy> connect client 'locatorHostName:1527';
+$ bin/snappy-sql
+snappy> connect client '<locatorHostName>:1527';
 ```
 
- **1527** is the default port on which locatorHost listens for connections. 
+Where `<locatorHostName>` is the host name of the node on which the locator is started and **1527** is the default port on which the locator listens for connections. 
 
-**Execute SQL queries**: Once connected you can execute SQL queries using `snappy`
+**Execute SQL queries**: Once connected you can execute SQL queries using `snappy-sql`
 
 ```
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;

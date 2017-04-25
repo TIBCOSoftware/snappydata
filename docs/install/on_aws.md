@@ -5,7 +5,7 @@
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 
 #### Prerequisites
-Ensure that you have an existing AWS account with required permissions to launch EC2 resources
+Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
 
 #### Launching the Instance
 To launch the instance and start SnappyData cluster:
@@ -22,7 +22,13 @@ To launch the instance and start SnappyData cluster:
 
 6. The search result is displayed. From the search results, click **Select** to choose the AMI with the latest release version.
 
-7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/><Note> Note: You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note>
+7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
+
+	!!! Note
+
+		* You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.
+
+		* When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).
 
 8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
 
@@ -34,17 +40,17 @@ To launch the instance and start SnappyData cluster:
 
 10. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the SnappyData AMI.
 
-12. Use SSH to connect to the instance. You require:
+11. Use SSH to connect to the instance using the **ubuntu** username. You require:
 
 	* The private key file of the key pair with which the instance was launched, and 
 
-	* Details of the public hostname or IP address of the instance. 
+	* Details of the public hostname or IP address of the instance.  </br> Refer to the following documentation, for more information on [accessing an EC2 instance](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html).
 
-	<note> Note: </note>
+	!!! Note
 	
-	* <note>The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. </note>
+		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
 
-	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. </note>
+		* The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed.
 
 13. Follow the [steps described here](../install/on_premise.md) to continue. </br>
 
@@ -58,7 +64,9 @@ The `snappy-ec2` script has been derived from the `spark-ec2` script available i
 
 The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a [**.tar.gz**](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
 
-<Note> Note: The EC2 script is under development. Feel free to try it out and provide your feedback.</Note>
+!!! Note
+
+	The EC2 script is under development. Feel free to try it out and provide your feedback.
 
 
 #### Prerequisites
@@ -68,7 +76,7 @@ The scripts are available on GitHub in the [snappy-cloud-tools repository](https
 * Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 <br/>Refer to the Amazon Web Services EC2 documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
-* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/> 
+* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/>
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
 
 	For example:
@@ -89,11 +97,11 @@ Enter the command in the following format.
 `./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>`
 
 Here, `<your-key-name>` refers to the EC2 Key Pair, `<your-keyfile-path>` refers to the path to the key file and `<action>` refers to the action to be performed (for example, launch, start, stop).
- 
-By default, the script starts one instance of a locator, lead and server each.
-The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups. 
 
-The  names and details of the members are automatically derived from the provided cluster name. 
+By default, the script starts one instance of a locator, lead and server each.
+The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.
+
+The  names and details of the members are automatically derived from the provided cluster name.
 
 For example, if you launch a cluster named **my-cluster**, the locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
 
@@ -104,13 +112,13 @@ For example, using the following command, you can start a SnappyData cluster nam
 The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
 ```
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin=embedded --region=us-west-1 launch snappydata-cluster
 ```
-To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`. 
+To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedded`.
 
 ##### Specifying Properties
 
-If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuration/#configuration-files) for example on how to write these conf files.
+If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](../configuring_cluster/configuration_files.md) for example on how to write these conf files.
 
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.
 
@@ -139,18 +147,23 @@ The script also reads **snappy-env.sh**, if present in this location.
 ##### Stopping a Cluster
 
 When you stop a cluster, it shuts down the EC2 instances and any data saved on its local instance stores is lost. However, the data saved on EBS volumes, if any, is retained unless the spot-instances were used.
-````
+
+```
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
-````
+```
 
 ##### Starting a Cluster
 
 When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches SnappyData processes on them.
-````
+
+```
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
-````
-<Note>Note: The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case if they are present in the location mentioned above. So you need to ensure that every time you use start command, the number of entries in conf files are equal to the number of instances in their respective security group.
-</Note>
+```
+
+!!! Note
+
+		The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case if they are present in the location mentioned above. So you need to ensure that every time you use start command, the number of entries in conf files are equal to the number of instances in their respective security group.
+
 ##### Adding Servers to  a Cluster
 
 This is not yet fully supported via the script. You may have to manually launch an instance with `(cluster-name)-stores` group and then use launch command with --resume option.

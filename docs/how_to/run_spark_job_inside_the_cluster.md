@@ -28,14 +28,14 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>0.7</version>
+    <version>0.8</version>
 </dependency>
 ```
 **Example: SBT dependency**:
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
 ```
 
 **Running the Job**: 
