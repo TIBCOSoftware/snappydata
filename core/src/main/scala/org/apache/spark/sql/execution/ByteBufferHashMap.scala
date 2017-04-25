@@ -157,7 +157,6 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   /**
    * Double the table's size and re-hash everything.
-   * Caller must check for overloaded set before triggering a rehash.
    */
   private def handleNewInsert(): Unit = {
     _size += 1
