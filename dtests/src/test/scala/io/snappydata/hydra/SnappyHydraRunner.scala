@@ -47,7 +47,7 @@ class SnappyHydraRunner extends SnappyTestRunner {
     /*val command: String =  s"$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample" +
       s"-runbt.sh $logDir $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/nwSmoke.bt"*/
     val command: String = s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
-      s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
+        s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
     val (out, err) = executeProcess("smokeBT", command)
 
     import scala.sys.process._
@@ -63,7 +63,7 @@ class SnappyHydraRunner extends SnappyTestRunner {
     try {
       val output1: String = command1.!!
       throw new Exception(s"smokeBT Failed with below Exceptions:\n" + output1 +
-        "\nCheck the logs at " + logDir + " for more details on Exception.... ")
+          "\nCheck the logs at " + logDir + " for more details on Exception.... ")
     }
     catch {
       case r: java.lang.RuntimeException =>
@@ -78,7 +78,7 @@ class SnappyHydraRunner extends SnappyTestRunner {
     try {
       val output2: String = command2.!!
       throw new Exception(s"Result mismatch observed in smoke bt run:\n " + output2 +
-        "\nCheck the logs at " + logDir + " for more details.")
+          "\nCheck the logs at " + logDir + " for more details.")
     }
     catch {
       case r: java.lang.RuntimeException =>
