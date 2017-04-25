@@ -18,8 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -596,12 +595,8 @@ class ColumnFormatRelation(
       // SB: Now populate the index table from base table.
       df.write.insertInto(snappySession.getIndexTable(indexIdent).toString())
     } catch {
-      case e: Throwable =>
-        try {
-          snappySession.dropTable(indexIdent, ifExists = false)
-        } catch {
-          case _: Throwable =>
-        }
+      case NonFatal(e) =>
+        snappySession.dropTable(indexIdent, ifExists = true)
         throw e
     }
   }
