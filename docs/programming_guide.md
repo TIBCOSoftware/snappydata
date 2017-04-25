@@ -23,7 +23,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
 
 ### To Create a SnappySession
 
-#### Scala 
+**Scala **
 
 ```scala
  val spark: SparkSession = SparkSession
@@ -34,7 +34,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
         
  val snappy = new SnappySession(spark.sparkContext)
 ```
-#### Java
+**Java**
 
 ```Java
  SparkSession spark = SparkSession
@@ -47,7 +47,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
  SnappySession snappy = new SnappySession(spark.sparkContext());
 ```
 
-#### Python
+**Python**
 
 ```Python
  from pyspark.sql.snappy import SnappySession
@@ -59,7 +59,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
 ```
 
 ### To Create a SnappyStreamingContext
-#### Scala
+**Scala**
 
 ```scala
  val spark: SparkSession = SparkSession
@@ -69,7 +69,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
          .getOrCreate
  val snsc = new SnappyStreamingContext(spark.sparkContext, Duration(1))
 ```
-#### Java
+**Java**
 
 ```Java
  SparkSession spark = SparkSession
@@ -84,7 +84,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
  JavaSnappyStreamingContext jsnsc = new JavaSnappyStreamingContext(jsc, batchDuration);
 ```
 
-#### Python
+**Python**
 
 ```Python
  from pyspark.streaming.snappy.context import SnappyStreamingContext
@@ -107,7 +107,7 @@ The jobs are submitted to the lead node of SnappyData over REST API using a _spa
 ## SnappyData Jobs
 To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. Your job is displayed as:
  
-#### Scala
+**Scala**
 
 ```scala
 class SnappySampleJob implements SnappySQLJob {
@@ -119,7 +119,7 @@ class SnappySampleJob implements SnappySQLJob {
 }
 ```
 
-#### Java
+**Java**
 ```java
 class SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
@@ -131,7 +131,7 @@ class SnappySampleJob extends SnappySQLJob {
 
 ```
 
-#### Scala
+**Scala**
 ```scala
 class SnappyStreamingSampleJob implements SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
@@ -142,7 +142,7 @@ class SnappyStreamingSampleJob implements SnappyStreamingJob {
 }
 ```
 
-#### Java
+**Java**
 ```java
 class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
