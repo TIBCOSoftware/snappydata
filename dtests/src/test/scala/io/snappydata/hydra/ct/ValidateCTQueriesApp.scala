@@ -24,11 +24,12 @@ import org.apache.spark.{SparkContext, SparkConf}
 
 object ValidateCTQueriesApp {
   val conf = new SparkConf().setAppName("ValidateCTQueriesApp Application")
-  val sc = new SparkContext(conf)
-  val sqlContext = SQLContext.getOrCreate(sc)
-  val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
+    val sc = SparkContext.getOrCreate(conf)
+    val sqlContext = SQLContext.getOrCreate(sc)
+    val snc = SnappyContext(sc)
+
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val threadID = Thread.currentThread().getId
     val outputFile = "ValidateCTQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis + ".out"

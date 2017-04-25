@@ -25,10 +25,10 @@ import org.apache.spark.{SparkContext, SparkConf}
 object CreateAndLoadCTTablesApp {
   val conf = new SparkConf().
       setAppName("CTTestUtil Application")
-  val sc = new SparkContext(conf)
-  val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)
     snc.setConf("dataFilesLocation", dataFilesLocation)
     CTQueries.snc = snc
