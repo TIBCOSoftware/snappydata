@@ -1822,11 +1822,13 @@ public class SnappyTest implements Serializable {
                     String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
                     command = snappyJobScript + " --class " + userJob +
                             " --master spark://" + masterHost + ":" + MASTER_PORT + " " +
+                            SnappyPrms.getExecutorMemory() + " " +
                             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
                             " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs() + " " + primaryLocatorHost + ":" + primaryLocatorPort;
                 } else {
                     command = snappyJobScript + " --class " + userJob +
                             " --master spark://" + masterHost + ":" + MASTER_PORT + " --conf snappydata.store.locators=" + locatorsList + " " +
+                            SnappyPrms.getExecutorMemory() + " " +
                             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
                             " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + SnappyPrms.getUserAppArgs();
                 }
