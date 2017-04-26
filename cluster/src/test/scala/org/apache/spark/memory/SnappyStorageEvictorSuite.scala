@@ -31,13 +31,16 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   InitializeRun.setUp()
 
   val struct = (new StructType())
-      .add(StructField("col1", IntegerType, true))
-      .add(StructField("col2", IntegerType, true))
-      .add(StructField("col3", IntegerType, true))
+    .add(StructField("col1", IntegerType, true))
+    .add(StructField("col2", IntegerType, true))
+    .add(StructField("col3", IntegerType, true))
 
-  val options = Map("PARTITION_BY" -> "col1", "EVICTION_BY" -> "LRUHEAPPERCENT",
+  val options = Map("PARTITION_BY" -> "col1",
+    "EVICTION_BY" -> "LRUHEAPPERCENT",
     "OVERFLOW" -> "true", "PERSISTENCE" -> "none")
-  val coptions = Map("PARTITION_BY" -> "col1", "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
+  val coptions = Map("PARTITION_BY" -> "col1",
+    "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT",
+    "OVERFLOW" -> "true")
   val cwoptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
   val roptions = Map("EVICTION_BY" -> "LRUHEAPPERCENT", "OVERFLOW" -> "true")
 
@@ -98,14 +101,14 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     snappyMemoryManager.dropAllObjects(memoryMode)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
     val taskAttemptId = 0L
-    //artificially acquire memory
+    // artificially acquire memory
     SparkEnv.get.memoryManager.acquireExecutionMemory(500L, taskAttemptId, memoryMode)
     assert(SparkEnv.get.memoryManager.executionMemoryUsed == 500)
 
     import scala.util.control.Breaks._
 
     var rows = 0
-    try{
+    try {
       breakable {
         for (i <- 1 to 20) {
           val row = Row(i, i, i)
@@ -113,9 +116,9 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
           rows += 1
         }
       }
-    }catch{
+    } catch {
       case e: Exception => {
-        assert(memoryIncreaseDuetoEviction > 0 )
+        assert(memoryIncreaseDuetoEviction > 0)
       }
     }
     val count = snSession.sql("select * from t1").count()
@@ -135,15 +138,18 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
       val row = Row(i, i, i)
       snSession.insert("t1", row)
     })
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 500L)//based on 32 bytes value and 88 bytes entry overhead
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 500L)
+    // based on 32 bytes value and 88 bytes entry overhead
     val count = snSession.sql("select * from t1").count()
     assert(count == 6)
 
-    //@TODO Uncomment this assertion up once we set per region entry overhead and put a check before eviction
-    //assert(SparkEnv.get.memoryManager.storageMemoryUsed == 500L)
+    // @TODO Uncomment this assertion up once we set per
+    // region entry overhead and put a check before eviction
+    // assert(SparkEnv.get.memoryManager.storageMemoryUsed == 500L)
     val otherExecutorThread = new Thread(new Runnable {
       def run() {
-        //This should not hang as we are dropping the table after this thread is executed.
+        // This should not hang as we are dropping the table after
+        // this thread is executed.
         SparkEnv.get.memoryManager.acquireExecutionMemory(500L, 1L, memoryMode)
       }
     })

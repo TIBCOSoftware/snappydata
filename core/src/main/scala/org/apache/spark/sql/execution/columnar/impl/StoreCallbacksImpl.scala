@@ -66,8 +66,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   private val partitioner = new StoreHashFunction
 
-  val sizer: GemFireXDInstrumentation = GemFireXDInstrumentation.getInstance
-
   override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
     val pr = region.getPartitionedRegion
@@ -307,14 +305,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
 
   override def isSnappyStore: Boolean = true
-
-  override def getRegionOverhead(region: LocalRegion): Long = {
-    region.estimateMemoryOverhead(sizer)
-  }
-
-  override def getNumBytesForEviction: Long = {
-    SparkEnv.get.memoryManager.maxOnHeapStorageMemory
-  }
 
   override def getStoragePoolUsedMemory: Long =
     MemoryManagerCallback.memoryManager.getStoragePoolMemoryUsed()
