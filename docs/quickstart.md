@@ -238,7 +238,7 @@ scala> :q // Quit the Spark Shell
 ```
 
 <Note>  We have tested this benchmark code in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS
-t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times fatser than Spark 2.0.2 .
+t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.0.2 .
 </Note>
 
 <a id="getting-started-using-sql"></a> 
