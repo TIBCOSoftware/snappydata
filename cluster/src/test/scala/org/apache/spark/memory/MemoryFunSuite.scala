@@ -19,10 +19,11 @@ package org.apache.spark.memory
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.core.FileCleaner
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
+import org.apache.spark.SparkFunSuite
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
-class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll {
+class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     System.clearProperty("snappydata.umm.memtrace")
@@ -38,8 +39,6 @@ class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll
   }
 
 
-
-
   after {
     if (SnappyContext.globalSparkContext != null) {
       val snappySession = new SnappySession(SnappyContext.globalSparkContext)
@@ -50,31 +49,31 @@ class MemoryFunSuite extends FunSuite with BeforeAndAfter with BeforeAndAfterAll
     FileCleaner.cleanStoreFiles()
   }
 
-  //Only use if sure of the problem
-  def assertApproximate(value1: Long, value2: Long, error :Int = 2): Unit = {
+  // Only use if sure of the problem
+  def assertApproximate(value1: Long, value2: Long, error: Int = 2): Unit = {
     if (value1 == value2) return
     if (Math.abs(value1 - value2) > (value2 * error) / 100) {
       throw new java.lang.AssertionError(s"assertion " +
-          s"failed $value1 & $value2 are not within permissable limit")
+        s"failed $value1 & $value2 are not within permissable limit")
     }
   }
 
   private[memory] def createSparkSession(memoryFraction: Double,
-      storageFraction: Double,
-      sparkMemory: Long = 1000,
-      cachedBatchSize: Int = 500): SparkSession = {
+                                         storageFraction: Double,
+                                         sparkMemory: Long = 1000,
+                                         cachedBatchSize: Int = 500): SparkSession = {
     SparkSession
-        .builder
-        .appName(getClass.getName)
-        .master("local[*]")
-        .config(io.snappydata.Property.ColumnBatchSize.name, cachedBatchSize)
-        .config("spark.memory.fraction", memoryFraction)
-        .config("spark.memory.storageFraction", storageFraction)
-        .config("spark.testing.memory", sparkMemory)
-        .config("spark.testing.reservedMemory", "0")
-        .config("snappydata.store.critical-heap-percentage", "90")
-        .config("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
-         .config("spark.storage.unrollMemoryThreshold", 500)
-        .getOrCreate
+      .builder
+      .appName(getClass.getName)
+      .master("local[*]")
+      .config(io.snappydata.Property.ColumnBatchSize.name, cachedBatchSize)
+      .config("spark.memory.fraction", memoryFraction)
+      .config("spark.memory.storageFraction", storageFraction)
+      .config("spark.testing.memory", sparkMemory)
+      .config("spark.testing.reservedMemory", "0")
+      .config("snappydata.store.critical-heap-percentage", "90")
+      .config("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
+      .config("spark.storage.unrollMemoryThreshold", 500)
+      .getOrCreate
   }
 }

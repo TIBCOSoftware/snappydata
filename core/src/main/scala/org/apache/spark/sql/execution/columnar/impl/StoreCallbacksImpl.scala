@@ -22,7 +22,7 @@ import java.util.{Collections, UUID}
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
-import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
+import com.gemstone.gemfire.internal.snappy._
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
@@ -35,7 +35,7 @@ import io.snappydata.Constant
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql.catalyst.FunctionIdentifier
-import org.apache.spark.sql.catalyst.catalog.{JarResource, CatalogFunction, FunctionResource, FunctionResourceType}
+import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
@@ -50,10 +50,6 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv, SparkException}
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   private val partitioner = new StoreHashFunction
-
-  val sizer: GemFireXDInstrumentation = GemFireXDInstrumentation.getInstance
-
-
 
   override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
@@ -98,7 +94,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           val tableName = container.getQualifiedTableName
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
-          if (catalogEntry.tableType == ExternalTableType.Sample.toString &&
+          if (catalogEntry.tableType == ExternalTableType.Sample.name &&
               schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
@@ -240,15 +236,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_UDF =>
         val session = SnappyContext(null: SparkContext).snappySession
         val db = context.getDb
-        val className= context.getClassName
+        val className = context.getClassName
         val functionName = context.getFunctionName
         val jarURI = context.getjarURI()
-        val resources: Seq[FunctionResource] = Seq(new FunctionResource(JarResource, jarURI))
+        val resources: Seq[FunctionResource] = Seq(FunctionResource(JarResource, jarURI))
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating udf $functionName")
         val snappySharedState = session.sharedState.asInstanceOf[SnappySharedState]
-        val functionDefinition = new CatalogFunction(new FunctionIdentifier(functionName, Option(db)),
-        className, resources)
+        val functionDefinition = CatalogFunction(new FunctionIdentifier(
+          functionName, Option(db)), className, resources)
         snappySharedState.externalCatalog.createFunction(db, functionDefinition)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_UDF =>
@@ -294,14 +290,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
 
   override def isSnappyStore: Boolean = true
-
-  override def getRegionOverhead(region: LocalRegion): Long = {
-    region.estimateMemoryOverhead(sizer)
-  }
-
-  override def getNumBytesForEviction: Long = {
-    SparkEnv.get.memoryManager.maxOnHeapStorageMemory
-  }
 
   override def getStoragePoolUsedMemory: Long =
     MemoryManagerCallback.memoryManager.getStoragePoolMemoryUsed()
