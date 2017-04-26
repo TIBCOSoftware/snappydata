@@ -1131,12 +1131,14 @@ Depending on your Windows installation, download the required version of the Sna
 
 3. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
+<!--
 For more information, refer to the documentation on [setting up SnappyData ODBC Driver and Tableau Desktop](https://github.com/SnappyDataInc/snappydata/blob/master/docs/setting_up_odbc_driver-tableau_desktop.md).
+--->
 
 ### Connect to the SnappyData cluster 
 Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
 
-* Use the SnappyData Driver Conneciton URL:
+* Use the SnappyData Driver Connection URL:
 
 		Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 
@@ -1167,7 +1169,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 6. Extract the contents of the Zeppelin binary package. </br> 
 
 7. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
-	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<snappydata_interperter_version_number>`. </br>
+	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<snappydata_interpreter_version_number>`. </br>
     Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
 
 8. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
