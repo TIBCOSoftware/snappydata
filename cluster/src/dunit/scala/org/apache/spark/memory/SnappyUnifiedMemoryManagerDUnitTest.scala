@@ -365,7 +365,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     Thread.sleep(5000)
     vm1.invoke(restartServer(props))
-
+    Thread.sleep(5000)
     val waitAssert = new WaitAssert(10, getClass) // @TODO identify why so large error
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
