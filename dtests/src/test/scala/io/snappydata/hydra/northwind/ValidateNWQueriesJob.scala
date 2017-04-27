@@ -28,7 +28,9 @@ import scala.util.{Failure, Success, Try}
 class ValidateNWQueriesJob extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     val snc = snappySession.sqlContext
+
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+
     val tableType = jobConfig.getString("tableType")
     val outputFile = "ValidateNWQueries_" + tableType + "_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
@@ -44,6 +46,7 @@ class ValidateNWQueriesJob extends SnappySQLJob {
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
       if (numRowsValidation) {
+        // scalastyle:off println
         pw.println(s"Validate ${tableType} tables Queries Test started at : " + System
             .currentTimeMillis)
         NWTestUtil.validateQueries(snc, tableType, pw)

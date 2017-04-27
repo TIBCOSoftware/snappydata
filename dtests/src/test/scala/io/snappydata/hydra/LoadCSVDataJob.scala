@@ -21,8 +21,8 @@ import org.apache.spark.sql.{SnappySQLJob, _}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 /**
- * Created by swati on 3/8/16.
- */
+  * Created by swati on 3/8/16.
+  */
 class LoadCSVDataJob extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
 
@@ -35,6 +35,7 @@ class LoadCSVDataJob extends SnappySQLJob {
           .format("com.databricks.spark.csv") // CSV to DF package
           .option("header", "true") // Use first line of all files as header
           .load(path)
+      // scalastyle:off println
       println(s" Loading table $tableName from $path")
 
       colTblDataFrame.write.format(mode).mode(SaveMode.Append).saveAsTable(tableName)

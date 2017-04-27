@@ -22,8 +22,8 @@ import io.snappydata.SnappyTestRunner
 import org.apache.commons.io.FileUtils
 
 /**
- * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt
- */
+  * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt
+  */
 class SnappyHydraRunner extends SnappyTestRunner {
   var SNAPPYDATA_SOURCE_DIR = ""
 
@@ -44,8 +44,8 @@ class SnappyHydraRunner extends SnappyTestRunner {
     if (logDir.exists) {
       FileUtils.deleteDirectory(logDir)
     }
-    /*val command: String =  s"$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample" +
-      s"-runbt.sh $logDir $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/nwSmoke.bt"*/
+    /* val command: String =  s"$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample" +
+      s"-runbt.sh $logDir $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/nwSmoke.bt" */
     val command: String = s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
         s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
     val (out, err) = executeProcess("smokeBT", command)
@@ -67,8 +67,9 @@ class SnappyHydraRunner extends SnappyTestRunner {
     }
     catch {
       case r: java.lang.RuntimeException =>
+        // scalastyle:off println
         println("No unexpected Exceptions observed during smoke bt run.")
-      case i => throw i
+      case i: Throwable => throw i
     }
 
     val c9 = s"grep -r \'result mismatch observed\' $logDir"
@@ -83,7 +84,7 @@ class SnappyHydraRunner extends SnappyTestRunner {
     catch {
       case r: java.lang.RuntimeException =>
         println("smoke bt run is successful.")
-      case i => throw i
+      case i: Throwable => throw i
     }
   }
 }

@@ -36,7 +36,7 @@ object ValidateNWQueriesApp {
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
-    //snc.sql("set spark.sql.shuffle.partitions=6")
+    // snc.sql("set spark.sql.shuffle.partitions=6")
     val dataFilesLocation: String = args(0)
     snc.setConf("dataFilesLocation", dataFilesLocation)
     NWQueries.snc = snc
@@ -50,6 +50,7 @@ object ValidateNWQueriesApp {
         ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     if (numRowsValidation) {
+      // scalastyle:off println
       pw.println(s"Validate ${tableType} tables Queries Test started at : " + System
           .currentTimeMillis)
       pw.println(s"dataFilesLocation : ${dataFilesLocation}")

@@ -27,10 +27,11 @@ import scala.util.{Failure, Success, Try}
 class CreateAndLoadNWTablesJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesJob.out"), true));
-      Try {
+    Try {
       val snc = snSession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=23")
-        println("jobConfig.entrySet().size() : " + jobConfig.entrySet().size())
+      // scalastyle:off println
+      println("jobConfig.entrySet().size() : " + jobConfig.entrySet().size())
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
       println(s"dataFilesLocation is : ${dataFilesLocation}")
@@ -41,7 +42,8 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
       NWTestUtil.dropTables(snc)
-      pw.println(s"Create and load ${tableType} tables Test started at : " + System.currentTimeMillis)
+      pw.println(s"Create and load ${tableType} tables Test started at : " + System
+          .currentTimeMillis)
       tableType match {
         case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
         case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc)
@@ -49,7 +51,8 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
         case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
         case _ => // the default, catch-all
       }
-      pw.println(s"Create and load ${tableType} tables Test completed successfully at : " + System.currentTimeMillis)
+      pw.println(s"Create and load ${tableType} tables Test completed successfully at : " +
+          System.currentTimeMillis)
       pw.close()
     } match {
       case Success(v) => pw.close()

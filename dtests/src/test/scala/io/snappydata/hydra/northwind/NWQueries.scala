@@ -373,8 +373,8 @@ object NWQueries {
       " group by CategoryName" +
       " order by CategoryName"
 
-  //This query shows how to use UNION to merge Customers and Suppliers into one result set by
-  //identifying them as having different relationships to Northwind Traders - Customers and
+  // This query shows how to use UNION to merge Customers and Suppliers into one result set by
+  // identifying them as having different relationships to Northwind Traders - Customers and
   // Suppliers.
 
   val Q57: String = "select City, CompanyName, ContactName, 'Customers' as Relationship" +
@@ -384,8 +384,8 @@ object NWQueries {
       " from Suppliers" +
       " order by City, CompanyName"
 
-  //In the query below, we have two sub-queries in the FROM clause and each sub-query returns a
-  //single value. Because the results of the two sub-queries are basically temporary tables,
+  // In the query below, we have two sub-queries in the FROM clause and each sub-query returns a
+  // single value. Because the results of the two sub-queries are basically temporary tables,
   // we can join them like joining two real tables.
   // In the SELECT clause, we simply list the two counts.
 
@@ -395,18 +395,18 @@ object NWQueries {
       " join " +
       " (select count(SupplierID) as SuppliersCount from suppliers) as b"
 
-  //The second query below uses the two values again but this time it calculates the ratio
-  //between customers count and suppliers count. The round and concat function are used to
-  //the result.
+  // The second query below uses the two values again but this time it calculates the ratio
+  // between customers count and suppliers count. The round and concat function are used to
+  // the result.
 
   val Q59: String = "select concat(round(a.CustomersCount / b.SuppliersCount), ':1') " +
       " as Customer_vs_Supplier_Ratio " +
       " from (select count(CustomerID) as CustomersCount from customers) as a " +
       " join (select count(SupplierID) as SuppliersCount from suppliers) as b"
 
-  //This query shows how to convert order dates to the corresponding quarters. It also
-  //demonstrates how SUM function is used together with CASE statement to get sales for each
-  //quarter, where quarters are converted from OrderDate column.
+  // This query shows how to convert order dates to the corresponding quarters. It also
+  // demonstrates how SUM function is used together with CASE statement to get sales for each
+  // quarter, where quarters are converted from OrderDate column.
 
   val Q60: String = "select a.ProductName," +
       " d.CompanyName," +
@@ -490,7 +490,7 @@ object NWQueries {
     "Q57" -> Q57,
     "Q58" -> Q58,
     "Q59" -> Q59
-    //"Q60" -> Q60
+    // "Q60" -> Q60
   )
 
   def regions(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark" +
