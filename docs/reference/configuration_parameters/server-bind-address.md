@@ -1,4 +1,4 @@
-# server-bind-address](server-bind-address.md)
+# server-bind-address
 
 ## Description
 

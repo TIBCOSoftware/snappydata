@@ -1,4 +1,4 @@
-## Configuration Files
+# Configuration Files
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
 
@@ -6,7 +6,8 @@ To do so, you can copy the existing template files **servers.template**, **locat
 
 These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
-#### Configuring Locators
+<a id="configure-locators"></a>
+## Configuring Locators
 
 Locators provide discovery service for the cluster. It informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
 
@@ -20,18 +21,21 @@ In this file, you can specify:
 
 Create the configuration file (**locators**) for locators in the *SnappyData_home/conf* directory.
 
-#### Configuring Leads
+<a id="configure-leads"></a>
+## Configuring Leads
 
 Lead Nodes act as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
 
 Create the configuration file (**leads**) for leads in the *SnappyData_home/conf* directory.
 
-#### Configuring Data Servers
+<a id="configure-servers"></a>
+## Configuring Data Servers
 Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL.
 
 Create the configuration file (**servers**) for data servers in the *SnappyData_home/conf* directory.
 
-#### SnappyData Specific Properties
+<a id="snappy-properties"></a>
+## SnappyData Specific Properties
 
 The following are the few important SnappyData properties that you can configure:
 

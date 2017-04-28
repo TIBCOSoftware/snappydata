@@ -56,9 +56,31 @@ Start a rebalance operation using one of the following options:
 
 This procedure initiates rebalancing of buckets across the entire SnappyData cluster for all partitioned tables.
 
-###Managing Replication Failures 
+### Managing Replication Failures 
 SnappyData uses multiple failure detection algorithms to detect replication problems quickly. SnappyData replication design focuses on consistency, and does not allow suspect members or network-partitioned members to operate in isolation.
 
+#### Configuring suspect-member Alerts
 
-###Creating Partitioned Tables 
-You [create a partitioned table](/programming_guide#markdown_link_row_and_column_tables) on a set of servers identified by named server groups (or on the default server group if you do not specify a named server group). Clauses in the CREATE TABLE statement determine how table data is partitioned, colocated, and replicated across the server group.
+When any member of the distributed system fails, it is important for other services to detect the loss quickly and transition application clients to other members. Any peer or server in the cluster can detect a problem with another member of the cluster, which initiates "SUSPECT" processing with the membership coordinator. The membership coordinator then determines whether the suspect member should remain in the distributed system or should be removed.
+
+Use the `ack-wait-threshold` property to configure how long a SnappyData peer or server waits to receive an acknowledgment from other members that are replicating a table's data. The default value is 15 seconds; you specify a value from 0 to 2147483647 seconds. After this period, the replicating peer sends a severe alert warning to other members in the distributed system, raising a "suspect_member" alert in the cluster.
+
+To configure how long the cluster waits for this alert to be acknowledged, set the `ack-severe-alert-threshold` property. The default value is zero, which disables the property.
+
+#### How Replication Failure Occurs
+
+Failures during replication can occur in the following ways:
+
+-   A replica fails before sending an acknowledgment.
+
+    The most common failure occurs when a member process is terminated during replication. When this occurs, the TCP connection from all members is terminated, and the membership view is updated quickly to reflect the change. The member who initiated replication continues replicating to other members.
+
+    If instead of terminating, the process stays alive (but fails to respond) the initiating member waits for a period of time and then raises an alert with the distributed system membership coordinator. The membership coordinator evaluates the health of the suspect member based on heartbeats and health reports from other members in the distributed system. The coordinator may decide to evict the member from the distributed system, in which case it communicates this change in the membership view to all members. At this point, the member that initiated replication proceeds and completes replication using available peers and servers. In addition, clients connected to this member are automatically re-routed to other members.
+
+-   An "Owning" member fails.
+
+    If the designated owner of data for a certain key fails, the system automatically chooses another replica to become the owner for the key range that the failed member managed. The updating thread is blocked while this transfer takes place. If at least one replica is available, the operations always succeeds from the application's viewpoint.
+
+
+### Creating Partitioned Tables 
+You [create a partitioned table](../../pgm_guide/tables_in_snappydata.md) on a set of servers identified by named server groups (or on the default server group if you do not specify a named server group). Clauses in the CREATE TABLE statement determine how table data is partitioned, colocated, and replicated across the server group.

@@ -12,7 +12,7 @@ The `snappy `command-line tool has several options for examining and managing yo
 | `validate-disk-store`       | Off                       | [Validate a Disk Store](validating_disk_store.md)  |
 | `compact-all-disk-stores`   | On                  | [Compacting Disk Store Log Files](compacting_disk_stores.md)|
 | `compact-disk-store`        | Off                       | [Compacting Disk Store Log Files](compacting_disk_stores.md) |
-| `backup`                    | On                        | [Backing Up and Restoring Disk Stores](backup_restore_disk_store.md) |
+| `backup`                    | On                        | [Backing Up and Restoring Disk Stores](../../backup/backup_restore_disk_store.md) |
 | `list-missing-disk-stores`  | On                        | [Handling Missing Disk Stores](handling_missing_disk_stores.md)|
 | `revoke-missing-disk-store` | On                        | [Handling Missing Disk Stores](handling_missing_disk_stores.md) |
 

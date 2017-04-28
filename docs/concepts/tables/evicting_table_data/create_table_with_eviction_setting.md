@@ -25,7 +25,7 @@ Follow these steps to configure table eviction settings. Refer to CREATE TABLE f
 	If eviction with the DESTROY action is required for dependent tables, consider using a trigger or writer implementation to listen for DELETE events on the parent table. The trigger or writer should fail the DELETE operation if child rows are found to exist in the backend database.
 	The DESTROY eviction action is not supported for replicated tables.
 
-## Overflow the row data to disk. 
+## Overflow the row data to disk
 
 !!!Note
    	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table). See [Persisting Table Data to SnappyData Disk Stores]. 

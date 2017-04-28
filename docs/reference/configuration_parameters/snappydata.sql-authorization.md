@@ -1,4 +1,4 @@
-# snappydata.sql-authorization](snappydata.sql-authorization.md)
+# snappydata.sql-authorization
 
 ## Description
 

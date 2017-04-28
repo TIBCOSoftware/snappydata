@@ -1,4 +1,4 @@
-# security-log-level]
+# security-log-level
 
 ## Description
 
