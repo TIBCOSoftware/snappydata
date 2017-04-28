@@ -106,22 +106,26 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val snc = SnappyContext(sc)
     val tableName: String = "TESTTABLE"
-    snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
+    //snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
 
     snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using column " +
-      s"OPTIONS (PARTITION_BY 'col1', buckets '1',MAXPARTSIZE '200')")
+      s"OPTIONS (PARTITION_BY 'col1', buckets '1',MAXPARTSIZE '200',COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
+      s"'5000')")
 
     //Invoking validate result in each VM as a separate thread inorder to resume the code for
     // insertion of records
     invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "validateResults", netPort1)
 
-
+/*
     val rdd1 = sc.parallelize(
       (1 to 10).map(i => Data(i, i.toString, Decimal(i.toString + '.' + i))))
 
     val dataDF1 = snc.createDataFrame(rdd1)
     //Write 5 records as batch size is set to 2 it will trigger the cachebatch creation
-    dataDF1.write.insertInto(tableName)
+    dataDF1.write.insertInto(tableName)*/
+    for(i <- 1 to 10) {
+      snc.sql(s"insert into $tableName values($i,'${i+1}',${i+2})")
+    }
 
     val cnt = snc.sql(s"select * from $tableName").count()
 
@@ -177,7 +181,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       val cache = GemFireCacheImpl.getInstance()
       if (null != cache) {
         cache.setRvvSnapshotTestHook(new MyTestHook)
-        println("SJ: Waiting for test hook to notify")
         cache.waitOnRvvTestHook()
 
       } else {
@@ -188,7 +191,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       if (null == cache) {
         return;
       }
-      Thread.sleep(2000)
       val driver = "io.snappydata.jdbc.ClientDriver"
       Utils.classForName(driver).newInstance
       var url: String = null
@@ -218,6 +220,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       val rs1 = s.getResultSet
       while (rs1.next) {
         cnt1 = cnt1 + 1
+        println("Resultset from row buffer:  "+rs1.getInt(1))
       }
       println("Row count before creating the cachebatch in row buffer: " + cnt1)
       assert(cnt1 == 10)
@@ -234,6 +237,9 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
       cache.notifyRvvSnapshotTestHook()
       cache.waitOnRvvTestHook()
+
+
+
       var cnt3 = 0;
       s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
       val rs3 = s.getResultSet
@@ -241,12 +247,16 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         cnt3 = cnt3 + 1
       }
 
-      println("Row count in row buffer after destroy all entries from row buffer  : " + cnt3)
-      assert(cnt3 == 0)
+      println("Row count in row buffer after destroy all entries from row buffer but no commit  : " + cnt3)
+      assert(cnt3 == 10)
 
       cache.notifyRvvSnapshotTestHook()
-      //Thread.sleep(1000)
+
+
+      cache.waitOnRvvTestHook()
       cache.setRvvSnapshotTestHook(null)
+
+
       var cnt4 = 0;
       s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
         s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
@@ -256,16 +266,31 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       }
       println("Row count in column store after destroy all entries from row buffer " +
         "and reinitialize snapshot   : " + cnt4)
-      assert(cnt4 == 1)
+      //The number of entries in column store is 4 as after columnwise storage 3 rows will be created one for each
+      // column and 4th row is for stats
+      assert(cnt4 == 4)
+
+
 
       var cnt5 = 0;
-      s.execute(s"select * from $tableName")
+      s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
       val rs5 = s.getResultSet
       while (rs5.next) {
         cnt5 = cnt5 + 1
       }
+
+      println("Row count in row buffer after destroy all entries from row buffer " +
+        "and reinitialize snapshot   : " + cnt4)
+      assert(cnt5 == 0)
+
+      var cnt6 = 0;
+      s.execute(s"select * from $tableName")
+      val rs6 = s.getResultSet
+      while (rs6.next) {
+        cnt6 = cnt6 + 1
+      }
       println("Row count in column table : " + cnt5)
-      assert(cnt5 == 10)
+      assert(cnt6 == 10)
 
     }
 
