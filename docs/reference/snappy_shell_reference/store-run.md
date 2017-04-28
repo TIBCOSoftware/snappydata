@@ -54,7 +54,7 @@ The `-file` argument specifies the location of the SQL script file to execute. I
 
 ## Examples
 
-This command connects to a SnappyData network server running on myserver:1234 and executes commands in the <span class="ph filepath">ToursDB\_schema.sql</span> file:
+This command connects to a SnappyData network server running on myserver:1234 and executes commands in the <span class="ph filepath">ToursDB_schema.sql</span> file:
 
 ``` pre
 snappy run -file=c:\gemfirexd\quickstart\ToursDB_schema.sql

@@ -16,15 +16,15 @@ When you start a SnappyData cluster with disk stores, it is recommended that you
         # Start all local SnappyData members to waiting state, regardless of which member holds the most recent
         # disk store files:
 
-        ssh servera "snappy rowstore locator start -dir=/locator1 -sync=false -enable-network-partition-detection=true"
-        ssh serverb "snappy rowstore server start -client-port=1528 -locators=localhost[10334] -dir=/server1 -sync=false -enable-network-partition-detection=true"
-        ssh serverc "snappy rowstore server start -client-port=1529 -locators=localhost[10334] -dir=/server2 -sync=false -enable-network-partition-detection=true"
+        ssh servera "snappy locator start -dir=/locator1 -sync=false -enable-network-partition-detection=true"
+        ssh serverb "snappy server start -client-port=1528 -locators=localhost[10334] -dir=/server1 -sync=false -enable-network-partition-detection=true"
+        ssh serverc "snappy server start -client-port=1529 -locators=localhost[10334] -dir=/server2 -sync=false -enable-network-partition-detection=true"
 
         # Wait until all members have finished synchronizing and starting:
 
-        ssh servera "snappy rowstore locator wait -dir=/locator1"
-        ssh serverb "snappy rowstore server wait -dir=/server1"
-        ssh serverc "snappy rowstore server wait -dir=/server2"
+        ssh servera "snappy locator wait -dir=/locator1"
+        ssh serverb "snappy server wait -dir=/server1"
+        ssh serverc "snappy server wait -dir=/server2"
 
         # Continue any additional tasks that require access to the SnappyData members...
 

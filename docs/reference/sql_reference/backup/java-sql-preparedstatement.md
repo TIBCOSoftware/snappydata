@@ -1,9 +1,6 @@
 # java.sql.PreparedStatement Interface
 
-<a id="java-sql-preparedstatement__section_542B89D0CCAC4DA8B31D0D13D8CE33A2"></a>
 SnappyData provides all required JDBC type conversions and additionally allows use of the individual `setXXX` methods for each type as if a `setObject(Value, JDBCTypeCode)` invocation were made. This means that `setString` can be used for any built-in target type. Cursors are not supported in SnappyData; `setCursorName` method throws an unsupported feature exception.
-
-<a id="java-sql-preparedstatement__section_CC69B92DE5F947A685030EBC8609704A"></a>
 
 ##Prepared Statements and Streaming Columns
 
@@ -39,8 +36,6 @@ The stream object passed to these three methods can be either a standard Java st
 -   If the stream is stored in a column of a type other than LONG VARCHAR or LONG VARCHAR FOR BIT DATA, the entire stream must be able to fit into memory at one time. Streams stored in LONG VARCHAR and LONG VARCHAR FOR BIT DATA columns do not have this limitation.
 
 -   Streams cannot be stored in columns of the other built-in data types or columns of user-defined data types.
-
-<a id="java-sql-preparedstatement__section_59C374402CE34CE3BDDBFC6623E1B6F3"></a>
 
 ##Example
 

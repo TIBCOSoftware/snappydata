@@ -17,7 +17,7 @@ See [CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore/#create
 | TIMEINTERVAL         | BIGINT  | 10     | No       | The maximum number of milliseconds that can elapse before SnappyData asynchronously flushes data to disk.                            |
 | WRITEBUFFERSIZE      | INTEGER | 10     | No       | The size of the buffer SnappyData uses to store operations when writing to the disk store.                                           |
 | QUEUESIZE            | INTEGER | 10     | No       | The maximum number of row operations that SnappyData can asynchronously queue for writing to the disk store.                         |
-| DIR\_PATH\_SIZE      | VARCHAR | 32672  | No       | The directory names that hold disk store oplog files, and the maximum size in megabytes that each directory can store.               |
+| DIR_PATH_SIZE      | VARCHAR | 32672  | No       | The directory names that hold disk store oplog files, and the maximum size in megabytes that each directory can store.               |
 
 
 

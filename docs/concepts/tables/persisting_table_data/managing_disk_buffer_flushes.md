@@ -18,5 +18,5 @@ You can have SnappyData flush the disk buffers on every disk write. Do this by s
 Configure this property when you start a SnappyData member:
 
 ``` pre
-snappy rowstore server start -J-Dgemfire.syncWrites=true
+snappy server start -J-Dgemfire.syncWrites=true
 ```

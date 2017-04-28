@@ -7,7 +7,7 @@ Allows peers (including other locators) in a distributed system to discover each
 To start a stand-alone locator use the command:
 
 ``` pre
-snappy rowstore locator start [-J<vmarg>]* [-dir=<workingdir>] 
+snappy locator start [-J<vmarg>]* [-dir=<workingdir>] 
                    [-classpath=<classpath>]
                    [-distributed-system-id=<id>]
                    [-heap-size=<size>]
@@ -29,7 +29,7 @@ snappy rowstore locator start [-J<vmarg>]* [-dir=<workingdir>]
 ```
 
 !!! Note:
-	When starting a locator using `snappy rowstore locator start`, in addition to using the options listed above you can use any other RowStore boot properties (`-<prop-name>=<prop-value>`) on the command-line.
+	When starting a locator using `snappy locator start`, in addition to using the options listed above you can use any other SnappyData boot properties (`-<prop-name>=<prop-value>`) on the command-line.
 
 !!! CAUTION:
 	Never move the working directory for a SnappyData server or locator while the member is running.
@@ -42,24 +42,24 @@ The startup script maintains the running status of the locator in a file <span c
 To display the status of a running locator:
 
 ``` pre
-snappy rowstore locator status [ -dir=<workingdir> ]
+snappy locator status [ -dir=<workingdir> ]
 ```
 
 To stop a running locator:
 
 ``` pre
-snappy rowstore locator stop [ -dir=<workingdir> ]
+snappy locator stop [ -dir=<workingdir> ]
 ```
 
 If you started a locator from a script or batch file using the `-sync=false` option (the default), you can use the following command to wait until the locator has finished synchronization and finished starting:
 
 ``` pre
-snappy rowstore locator wait [-J<vmarg>]* [-dir=<workingdir>]
+snappy locator wait [-J<vmarg>]* [-dir=<workingdir>]
 ```
 
 The `wait` command does not return control until the locator has completed startup.
 
-The table below describes options for all of the above `snappy rowstore locator` commands. Default values are used if you do not specify an option.
+The table below describes options for all of the above `snappy locator` commands. Default values are used if you do not specify an option.
 
 
 |Option||Description|
@@ -71,7 +71,7 @@ The table below describes options for all of the above `snappy rowstore locator`
 |-heap-size|Set a fixed heap size and for the Java VM, using SnappyData default resource manager settings. If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 80% of the heap, and the eviction-heap-percentage to 80% of the critical heap. SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. </br>**Note**: The `-initial-heap` and `-max-heap` parameters, used in the earlier SQLFire product, are no longer supported. Use `-heap-size` instead.|
 |-peer-discovery-address|Address to which the locator binds for peer discovery (includes servers as well as other locators).|
 |-peer-discovery-port|Port on which the locator listens for peer discovery (includes servers as well as other locators). </br>Valid values are in the range 1-65535, with a default of 10334.|
-|-sync|Determines whether the `snappy rowstore locator` command returns immediately if the locator reaches a &quot;waiting&quot; state. A locator or server reaches the "waiting"; state on startup if the member depends on another server or locator to provide up-to-date disk store persistence files. This type of dependency can occur if the locator or server that you are starting was not the last member to shut down in the distributed system, and another member stores the most recent version of persisted data for the system. </br>Specifying `-sync=false` (the default) causes the `gfxd` command to return control immediately after the member reaches &quot;waiting&quot; state. With `-sync=true` (the default for servers), the `gfxd` command does not return control until after all dependent members have booted and the member has finished synchronizing disk stores. </br>Always use `-sync=false` (the default) when starting multiple members on the same machine, especially when executing `gfxd`commands from a shell script or batch file, so that the script file does not hang while waiting for a particular SnappyData member to start. You can use the `snappy rowstore locator wait` and/or `gfxd server wait`later in the script to verify that each server has finished synchronizing and has reached the "running"; state. </br>For example: </br> ```#!/bin/bash </br> # Start all local SnappyData members to waiting state, regardless of which member holds the most recent </br># disk store files: </br>snappy rowstore locator start -dir=/locator1 -sync=false </br> snappy rowstore server start -client-port=1528 -locators=localhost[10334] -dir=/server1 -sync=false </br>snappy rowstore server start -client-port=1529 -locators=localhost[10334] -dir=/server2 -sync=false </br> # Wait until all members have finished synchronizing and starting:</br> snappy rowstore locator wait -dir=/locator1</br>snappy rowstore server wait -dir=/server1</br>snappy rowstore server wait -dir=/server2</br># Continue any additional tasks that require access to the SnappyData members...[...]``` </br>As an alternative to using `snappy rowstore locator wait`, you can monitor the current status of SnappyData members using STATUS column in the [MEMBERS](../../reference/system_tables/members.md) system table.|
+|-sync|Determines whether the `snappy locator` command returns immediately if the locator reaches a &quot;waiting&quot; state. A locator or server reaches the "waiting"; state on startup if the member depends on another server or locator to provide up-to-date disk store persistence files. This type of dependency can occur if the locator or server that you are starting was not the last member to shut down in the distributed system, and another member stores the most recent version of persisted data for the system. </br>Specifying `-sync=false` (the default) causes the `gfxd` command to return control immediately after the member reaches &quot;waiting&quot; state. With `-sync=true` (the default for servers), the `gfxd` command does not return control until after all dependent members have booted and the member has finished synchronizing disk stores. </br>Always use `-sync=false` (the default) when starting multiple members on the same machine, especially when executing `gfxd`commands from a shell script or batch file, so that the script file does not hang while waiting for a particular SnappyData member to start. You can use the `snappy locator wait` and/or `gfxd server wait`later in the script to verify that each server has finished synchronizing and has reached the "running"; state. </br>For example: </br> ```#!/bin/bash </br> # Start all local SnappyData members to waiting state, regardless of which member holds the most recent </br># disk store files: </br>snappy locator start -dir=/locator1 -sync=false </br> snappy server start -client-port=1528 -locators=localhost[10334] -dir=/server1 -sync=false </br>snappy server start -client-port=1529 -locators=localhost[10334] -dir=/server2 -sync=false </br> # Wait until all members have finished synchronizing and starting:</br> snappy locator wait -dir=/locator1</br>snappy server wait -dir=/server1</br>snappy server wait -dir=/server2</br># Continue any additional tasks that require access to the SnappyData members...[...]``` </br>As an alternative to using `snappy locator wait`, you can monitor the current status of SnappyData members using STATUS column in the [MEMBERS](../../reference/system_tables/members.md) system table.|
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default gfxd uses the -peer-discovery-address value.|
 |-run-netserver|</br>If true then it starts a network server (see the `-client-bind-address` and `-client-port` options to specify where the server should listen) that can service thin clients (defaults to true).</br>If set to false, then the `-client-bind-address` and `-client-port` options have no affect. This option defaults to true.|
 |-client-bind-address|</br>Address to which the network controller binds for client connections. This takes effect only if `-run-netserver` option is not set to false.|
@@ -111,7 +111,7 @@ SnappyData Locator pid: 3722 status:running
 Logs generated in <XXX>/gfxdlocator.log
 ```
 
-By default `snappy rowstore locator start` starts the server process locally and uses the current working directory to store logs, locator state and the data dictionary, and uses default TCP port 10334 for peer discovery.
+By default `snappy locator start` starts the server process locally and uses the current working directory to store logs, locator state and the data dictionary, and uses default TCP port 10334 for peer discovery.
 
 A sub-directory called <span class="ph filepath">datadictionary</span> is created by default in the current working directory of the locator and contains the persistent meta-data of the DDLs required for startup by locator (for example, authentication related privileges) that have been executed in the distributed system from any of the clients or peers. This directory is necessary for a SnappyData locator to startup and function properly.
 

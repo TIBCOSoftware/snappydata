@@ -50,22 +50,22 @@ A String object representing the name pattern of the parameter names or return v
 
 Columns in the *ResultSet* returned by *getProcedureColumns* are as described by the API. Further details for some specific columns:
 
-**PROCEDURE\_CAT   **
+**PROCEDURE_CAT   **
 Always "null" in SnappyData.
 
-**PROCEDURE\_SCHEM   **
+**PROCEDURE_SCHEM   **
 Schema for a Java procedure.
 
-**PROCEDURE\_NAME **
+**PROCEDURE_NAME **
 Name of the procedure.
 
-**COLUMN\_NAME   **
+**COLUMN_NAME   **
 Name of the parameter. See column-Name-Pattern under <mark> Parameters to getProcedureColumns java-sql-databasemetadata.md To be Confirmed</mark>.
 
-**COLUMN\_TYPE   **
+**COLUMN_TYPE   **
 Short indicating what the row describes. It is always *DatabaseMetaData.procedureColumnIn* for method parameters, unless the parameter is an array. If so, it is *DatabaseMetaData.procedureColumnInOut*. It always returns *DatabaseMetaData.procedureColumnReturn* for return values.
 
-**TYPE\_NAME   **
+**TYPE_NAME   **
 SnappyData-specific name for the type.
 
 **NULLABLE**   
@@ -74,31 +74,31 @@ Always returns *DatabaseMetaData.procedureNoNulls* for primitive parameters and 
 **REMARKS**   
 String describing the java type of the method parameter.
 
-**COLUMN\_DEF   **
+**COLUMN_DEF   **
 String describing the default value for the column (may be null).
 
-**SQL\_DATA\_TYPE   **
+**SQL_DATA_TYPE   **
 Reserved by JDBC spec for future use.
 
-**SQL\_DATETIME\_SUB   **
+**SQL_DATETIME_SUB   **
 Reserved by JDBC spec for future use.
 
-**CHAR\_OCTET\_LENGTH   **
+**CHAR_OCTET_LENGTH   **
 Maximum length of binary and character based columns (or any other datatype the returned value is a NULL).
 
-**ORDINAL\_POSITION   **
+**ORDINAL_POSITION   **
 Ordinal position, starting from 1, for the input and output parameters for a procedure.
 
-**IS\_NULLABLE   **
+**IS_NULLABLE   **
 String describing the parameter's nullability (YES means parameter can include NULLs, NO means it cannot).
 
-**SPECIFIC\_NAME   **
+**SPECIFIC_NAME   **
 Name that uniquely identifies this procedure within its schema.
 
-**METHOD\_ID   **
+**METHOD_ID   **
 SnappyData-specific column.
 
-**PARAMETER\_ID   **
+**PARAMETER_ID   **
 SnappyData-specific column.
 
 <a id="java-sql-databasemetadata__section_F9F0D4197E944136B1996DEC342CCD21"></a>

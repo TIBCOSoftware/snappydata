@@ -6,10 +6,10 @@ Restricts client connections based on the security mechanism. If set to a valid 
 
 Possible values are:
 
--   USER\_ONLY\_SECURITY
--   CLEAR\_TEXT\_PASSWORD\_SECURITY
--   ENCRYPTED\_USER\_AND\_PASSWORD\_SECURITY
--   STRONG\_PASSWORD\_SUBSTITUTE\_SECURITY
+-   USER_ONLY_SECURITY
+-   CLEAR_TEXT_PASSWORD_SECURITY
+-   ENCRYPTED_USER_AND_PASSWORD_SECURITY
+-   STRONG_PASSWORD_SUBSTITUTE_SECURITY
 
 ## Default Value
 
@@ -20,7 +20,7 @@ None
 system 
 
 !!!Note 
-	You must define this property as a Java system property (for example by using -J-D*property\_name*=*property\_value* with a `snappy` utility, or by setting JAVA\_ARGS="-D*property\_name*=*property\_value*").</p>
+	You must define this property as a Java system property (for example by using -J-D*property_name*=*property_value* with a `snappy` utility, or by setting JAVA_ARGS="-D*property_name*=*property_value*").</p>
 
 ## Prefix
 

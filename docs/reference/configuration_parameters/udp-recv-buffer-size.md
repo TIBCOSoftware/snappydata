@@ -6,7 +6,7 @@ Size of the socket buffer used for incoming UDP point-to-point transmissions. If
 
 The default setting of 1048576 is higher than the default OS maximum buffer size on Unix, which should be increased to at least 1MB to provide high-volume messaging on Unix systems.
 
-Valid values are in the range 2048.. OS\_maximum.
+Valid values are in the range 2048.. OS_maximum.
 
 ## Default Value
 

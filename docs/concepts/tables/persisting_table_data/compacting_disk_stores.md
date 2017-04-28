@@ -48,7 +48,7 @@ Old log files become eligible for online compaction when their garbage content s
         ```
 
         !!!Note:
-        	This `snappy` command requires a local `gemfirexd.properties` file that contains properties to locate the distributed system. Or, specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port\_number*). </p>
+        	This `snappy` command requires a local `gemfirexd.properties` file that contains properties to locate the distributed system. Or, specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port_number*). </p>
 
 <a id="run-offline-compact"></a>
 ## Run Offline Compaction

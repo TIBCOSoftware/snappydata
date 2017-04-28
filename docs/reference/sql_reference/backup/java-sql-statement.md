@@ -1,9 +1,6 @@
 # java.sql.Statement Class
 
-<a id="java-sql-statement__section_EE5CFC94D4224D91B598B610215150A2"></a>
 SnappyData does not implement the `setEscapeProcessing` method of `java.sql.Statement`. In addition, the cancel method raises a "Feature not supported" exception.
-
-<a id="java-sql-statement__section_46C748E421E74E8EBD4462ACEB4ADB34"></a>
 
 ## ResultSet Objects
 

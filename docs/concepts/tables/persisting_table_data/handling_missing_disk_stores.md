@@ -42,7 +42,7 @@ DiskStore at straw.gemstone.com /export/straw3/users/jpearson/testGemFire/hostB/
 ```
 
 !!!Note
-	Make sure this `snappy` call can find a `gemfirexd.properties` file to locate the distributed system. Or, specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port\_number*). </p>
+	Make sure this `snappy` call can find a `gemfirexd.properties` file to locate the distributed system. Or, specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port_number*). </p>
 
 <a id="handling_missing_disk_stores__section_FDF161F935054AB190D9DB0D7930CEAA"></a>
 
@@ -73,4 +73,4 @@ revocation was successful ...
 ```
 
 !!!Note 
-	Make sure this `snappy` call can find a `gemfirexd.properties` file to locate the distributed system. Or, specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port\_number*). </p>
+	Make sure this `snappy` call can find a `gemfirexd.properties` file to locate the distributed system. Or, specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port_number*). </p>

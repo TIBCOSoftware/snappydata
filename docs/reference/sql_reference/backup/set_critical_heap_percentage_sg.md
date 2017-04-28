@@ -17,7 +17,7 @@ IN SERVER_GROUPS VARCHAR(32762)
 **PERCENTAGE**   
 The percentage of used heap space that triggers `LowMemoryException`s on the SnappyData data store.
 
-**SERVER\_GROUPS   **
+**SERVER_GROUPS   **
 A comma-separated list of server groups on which to apply the heap percentage setting. If you specify NULL, the command is distributed to all data stores (irrespective of defined server groups).
 
 ##Example

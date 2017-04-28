@@ -1,7 +1,7 @@
 # Disk Store Operation Logs
 
 
-At creation, each operation log is initialized at the disk store's MAXLOGSIZE value, with the size divided between the `crf` and `drf` files. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy rowstore server stop` or `snappy shut-down-all`).
+At creation, each operation log is initialized at the disk store's MAXLOGSIZE value, with the size divided between the `crf` and `drf` files. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy server stop` or `snappy shut-down-all`).
 
 <a id="operation_logs__section_C0B1391492394A908577C29772902A42"></a>
 After the oplog is closed, SnappyData also attempts to created a `krf` file, which contains the key names as well as the offset for the value within the crf file. Although this file is not required for startup, if it is available, it will improve startup performance by allowing SnappyData to load the entry values in the background after the entry keys are loaded. See
@@ -9,7 +9,7 @@ After the oplog is closed, SnappyData also attempts to created a `krf` file, whi
 When an operation log is full, SnappyData automatically closes it and creates a new log with the next sequence number. This is called *oplog rolling*. 
 
 !!! Note:
-   	Log compaction can change the names of the disk store files. File number sequencing is usually altered, with some existing logs removed or replaced by newer logs with higher numbering. SnappyData always starts a new log at a number higher than any existing number. </p>
+   	Log compaction can change the names of the disk store files. File number sequencing is usually altered, with some existing logs removed or replaced by newer logs with higher numbering. SnappyData always starts a new log at a number higher than any existing number. 
 
 The system rotates through all available disk directories to write its logs. The next log is always started in a directory that has not reached its configured capacity, if one exists.
 

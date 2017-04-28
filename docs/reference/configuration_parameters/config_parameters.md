@@ -16,7 +16,7 @@ You use JDBC connection properties, connection boot properties, and Java system 
 
 SnappyData configuration properties are divided into the following property types:
 
--   **Connection properties**. Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. You can define connection properties directly in the JDBC connection URL (or in the "connect" command in an interactive gfxd session). You can also define connection properties in the <span class="ph filepath">gemfirexd.properties</span> file or as Java system properties. For example, use -J-D*property\_name*=*property\_value* when you execute a `snappy` utility. Or, use the JAVA\_ARGS environment variable to define a Java system property for an interactive `snappy` session (JAVA\_ARGS="-D*property\_name*=*property\_value*"). 
+-   **Connection properties**. Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. You can define connection properties directly in the JDBC connection URL (or in the "connect" command in an interactive gfxd session). You can also define connection properties in the <span class="ph filepath">gemfirexd.properties</span> file or as Java system properties. For example, use -J-D*property_name*=*property_value* when you execute a `snappy` utility. Or, use the JAVA_ARGS environment variable to define a Java system property for an interactive `snappy` session (JAVA_ARGS="-D*property_name*=*property_value*"). 
    
 	!!! Note:
 		You must add a prefix to certain connection property names in order to specify those properties as Java system properties. See [Property Prefixes](#property-prefixes). </p>
@@ -29,7 +29,7 @@ SnappyData configuration properties are divided into the following property type
     
     -   **Client properties**. A client connection property configures features of the client connection itself, and can be used with the JDBC thin client drive (for example, using a JDBC thin client connection URL or the `connect client` command from an interactive `snappy` session).
 
--   **System properties**. Certain SnappyData configuration properties *must* be specified either as Java system properties (using -J-D*property\_name*=*property\_value* with a `snappy` utility, or setting JAVA\_ARGS="-D*property\_name*=*property\_value*" for an interactive `snappy` session). You cannot define these properties in a JDBC URL connection. Many of SnappyData system properties affect features of the SnappyData member at boot time, and can be optionally defined in the <span class="ph filepath">gemfirexd.properties</span> file. See the property description to determine whether or not a system property can be defined in <span class="ph filepath">gemfirexd.properties</span>.
+-   **System properties**. Certain SnappyData configuration properties *must* be specified either as Java system properties (using -J-D*property_name*=*property_value* with a `snappy` utility, or setting JAVA_ARGS="-D*property_name*=*property_value*" for an interactive `snappy` session). You cannot define these properties in a JDBC URL connection. Many of SnappyData system properties affect features of the SnappyData member at boot time, and can be optionally defined in the <span class="ph filepath">gemfirexd.properties</span> file. See the property description to determine whether or not a system property can be defined in <span class="ph filepath">gemfirexd.properties</span>.
 
     The names of SnappyData system properties always include the "snappydata." prefix. For example, all properties that configure LDAP server information for user authentication must be specified as Java system properties, rather than JDBC properties, when you boot a server.
 
@@ -61,7 +61,7 @@ log-file=my\u00df.log
 
 to indicate the desired property definition of `log-file=myÃ.log`.
 
-If you have edited and saved the file in a non-ASCII encoding, you can convert it to ASCII with the `native2ascii` tool included in your Oracle Java distribution. For example, you might want to do this when editing a properties file in Shift\_JIS, a popular Japanese encoding.
+If you have edited and saved the file in a non-ASCII encoding, you can convert it to ASCII with the `native2ascii` tool included in your Oracle Java distribution. For example, you might want to do this when editing a properties file in Shift_JIS, a popular Japanese encoding.
 
 <a id="jdbc_connection_attributes__section_8E297DC67DCE4C97AD5B47F069714C73"></a>
 

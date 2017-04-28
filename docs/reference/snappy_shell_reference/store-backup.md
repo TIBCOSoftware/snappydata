@@ -129,7 +129,7 @@ The backup may be incomplete. The following disk stores are not online:
 DiskStore at hostc.pivotal.com /home/user/dir3
 ```
 
-A member that fails to complete its backup is noted in this ending status message and leaves the file INCOMPLETE\_BACKUP in its highest level backup directory.
+A member that fails to complete its backup is noted in this ending status message and leaves the file INCOMPLETE_BACKUP in its highest level backup directory.
 
 <a id="directory_structure"></a>
 

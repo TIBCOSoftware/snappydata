@@ -10,7 +10,7 @@
 
 -   Back up to a directory that all members can access. Make sure the directory exists and has the proper permissions for your members to write to it and create subdirectories.
 
--   Make sure there is a `gemfirexd.properties` file for the distributed system in the directory where you will run the `snappy backup` command, or specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port\_number*). The command will back up all disk stores in the specified distributed system.
+-   Make sure there is a `gemfirexd.properties` file for the distributed system in the directory where you will run the `snappy backup` command, or specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port_number*). The command will back up all disk stores in the specified distributed system.
 
 -   In order to perform an incremental backup, you must use locators for SnappyData member discovery, rather than multicast.
 

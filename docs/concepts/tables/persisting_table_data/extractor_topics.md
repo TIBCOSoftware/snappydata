@@ -104,7 +104,7 @@ Follow these steps to extract available data from available SnappyData disk stor
 
         recoveredserver1=/Users/yozie/recovery-directory/server1,/Users/yozie/recovery-directory/server1-external-diskstores
         
-6.  Set the JAVA\_ARGS environment variable to allocate the required heap space (see [Requirements](#requirements)). For example:
+6.  Set the JAVA_ARGS environment variable to allocate the required heap space (see [Requirements](#requirements)). For example:
 
         $ export JAVA_ARGS=-Xmx2G
     
@@ -145,7 +145,7 @@ Follow these steps to extract available data from available SnappyData disk stor
 	!!!Note:
 		See [dataextractor](../../../reference/disk_store_utilities/dataextractor.md) for a full description of additional command-line options.</p>
 
-    Output from the utility is stored in two subdirectories of the working directory, named <span class="ph filepath">EXTRACTED\_FILES</span> and <span class="ph filepath">datadictionary</span>. For example:
+    Output from the utility is stored in two subdirectories of the working directory, named <span class="ph filepath">EXTRACTED_FILES</span> and <span class="ph filepath">datadictionary</span>. For example:
 
         $ ls
     	EXTRACTED_FILES/      datadictionary/       extractor.properties  locator/              server1/              server2/
@@ -204,7 +204,7 @@ Follow these steps to load the SQL and CSV files that were recovered using `data
 
         $ cd ~/recovery-directory
         $ mkdir recovery-server
-        $ snappy rowstore server start -dir=./recovery-server/
+        $ snappy server start -dir=./recovery-server/
         Starting SnappyData Server using multicast for peer discovery: 239.192.81.1[10334]
         Starting network server for SnappyData Server at address localhost/127.0.0.1[1527]
         Logs generated in /Users/yozie/recovery-directory/./recovery-server/gfxdserver.log
@@ -224,7 +224,7 @@ Follow these steps to load the SQL and CSV files that were recovered using `data
    	!!! Note: 
 		* See [dataextractloader](../../../reference/disk_store_utilities/dataextractloader.md) for a full description of additional command-line options. 
 
-        * Any errors that occur while loading data from the CSV files is recorded in the output log file, which is stored in <span class="ph filepath">EXTRACTED\_LOADER/extractor.log</span>. Errors do not prevent the loader from attempting to load further data.</p>
+        * Any errors that occur while loading data from the CSV files is recorded in the output log file, which is stored in <span class="ph filepath">EXTRACTED_LOADER/extractor.log</span>. Errors do not prevent the loader from attempting to load further data.</p>
 
 3.  Connect to the distributed system and verify that the recovered data was loaded:
 

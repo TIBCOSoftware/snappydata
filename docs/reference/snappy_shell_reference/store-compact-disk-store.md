@@ -19,7 +19,7 @@ Manual compaction can be done for online and offline disk stores. For the online
 Offline compaction runs essentially in the same way, but without the incoming CRUD operations. Also, because there is no current open log, the compaction creates a new one to get started.
 
 !!!Note:
-	You must provide all of the directories in the disk store. If no oplog max size is specified, SnappyData uses the system default.</br> Offline compaction can consume a large amount of memory. If you get a java.lang.OutOfMemory error while running this command, you made need to increase the heap size by setting the `-Xmx` and `-Xms` options in the JAVA\_ARGS environment variable. [snappy Launcher Commands](../../reference/snappy_shell_reference/store-launcher.md) provides more information about setting Java options.
+	You must provide all of the directories in the disk store. If no oplog max size is specified, SnappyData uses the system default.</br> Offline compaction can consume a large amount of memory. If you get a java.lang.OutOfMemory error while running this command, you made need to increase the heap size by setting the `-Xmx` and `-Xms` options in the JAVA_ARGS environment variable. [snappy Launcher Commands](../../reference/snappy_shell_reference/store-launcher.md) provides more information about setting Java options.
 
 </p>
 

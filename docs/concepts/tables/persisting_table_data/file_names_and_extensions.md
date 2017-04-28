@@ -15,9 +15,9 @@ File names have three parts.
 
 | Usage Identifier Values | Usage                                                                 | Examples                                                  |
 |-------------------------|-----------------------------------------------------------------------|-----------------------------------------------------------|
-| OVERFLOW                | Oplog data from overflow tables and queues only.                      | OVERFLOWoverflowDS1\_1.crf                                |
+| OVERFLOW                | Oplog data from overflow tables and queues only.                      | OVERFLOWoverflowDS1_1.crf                                |
 | BACKUP                  | Oplog data from persistent and persistent+overflow tables and queues. | BACKUPoverflowDS1.if, BACKUPGFXD-DEFAULT-DISKSTORE.if     |
-| DRLK\_IF                | Access control - locking the disk store.                              | DRLK\_IFoverflowDS1.lk, DRLK\_IFGFXD-DEFAULT-DISKSTORE.lk |
+| DRLK_IF                | Access control - locking the disk store.                              | DRLK_IFoverflowDS1.lk, DRLK_IFGFXD-DEFAULT-DISKSTORE.lk |
 
 
 
@@ -25,16 +25,16 @@ File names have three parts.
 
 | Disk Store Name Values  | Usage                                                                                                                    | Examples                                                                                                                                                                                                                                                                                        |
 |-------------------------|--------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| &lt;disk store name&gt; | Non-default disk stores.                                                                                                 | name="OVERFLOWDS1" DRLK\_IFOVERFLOWDS1.lk, name="PERSISTDS1" BACKUPPERSISTDS1\_1.crf </br>**Note**: SnappyData internally converts and uses disk store names in upper case characters, even if you specify lower case characters in the DDL statement. </p> |
-| GFXD-DEFAULT-DISKSTORE  | Default disk store name, used when persistence or overflow are specified on a table or queue but no disk store is named. | DRLK\_IFGFXD-DEFAULT-DISKSTORE.lk, BACKUPGFXD-DEFAULT-DISKSTORE\_1.crf                                                                                                                                                                                                                          |
-| GFXD-DD-DISKSTORE       | Default disk store for persisting the data dictionary.                                                                   | BACKUPGFXD-DD-DISKSTORE\_1.crf                                                                                                                                                                                                                                                                  |
+| &lt;disk store name&gt; | Non-default disk stores.                                                                                                 | name="OVERFLOWDS1" DRLK_IFOVERFLOWDS1.lk, name="PERSISTDS1" BACKUPPERSISTDS1_1.crf </br>**Note**: SnappyData internally converts and uses disk store names in upper case characters, even if you specify lower case characters in the DDL statement. </p> |
+| GFXD-DEFAULT-DISKSTORE  | Default disk store name, used when persistence or overflow are specified on a table or queue but no disk store is named. | DRLK_IFGFXD-DEFAULT-DISKSTORE.lk, BACKUPGFXD-DEFAULT-DISKSTORE_1.crf                                                                                                                                                                                                                          |
+| GFXD-DD-DISKSTORE       | Default disk store for persisting the data dictionary.                                                                   | BACKUPGFXD-DD-DISKSTORE_1.crf                                                                                                                                                                                                                                                                  |
 
 
 **Third Part of File Name: oplog Sequence Number**
 
 | oplog Sequence Number             | Usage                                           | Examples                                                                     |
 |-----------------------------------|-------------------------------------------------|------------------------------------------------------------------------------|
-| Sequence number in the format \_n | Oplog data files only. Numbering starts with 1. | OVERFLOWoverflowDS1\_1.crf, BACKUPpersistDS1\_2.crf, BACKUPpersistDS1\_3.crf |
+| Sequence number in the format _n | Oplog data files only. Numbering starts with 1. | OVERFLOWoverflowDS1_1.crf, BACKUPpersistDS1_2.crf, BACKUPpersistDS1_3.crf |
 
 <a id="file_names_and_extensions__section_4FC89D10D6304088882B2E278A889A9B"></a>
 

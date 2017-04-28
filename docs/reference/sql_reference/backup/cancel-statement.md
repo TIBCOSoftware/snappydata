@@ -11,12 +11,12 @@ SYS.CANCEL_STATEMENT(
     IN CURRENT_STATEMENT_UUID VARCHAR(1024) NOT NULL)
 ```
 
-** CURRENT\_STATEMENT\_UUID  **
-The UUID of the statement to cancel. You can obtain the CURRENT\_STATEMENT\_UUID by querying the SYS.SESSIONS table. This attribute cannot be null.
+** CURRENT_STATEMENT_UUID  **
+The UUID of the statement to cancel. You can obtain the CURRENT_STATEMENT_UUID by querying the SYS.SESSIONS table. This attribute cannot be null.
 
 ##Example
 
-Query SYS.SESSIONS to obtain the CURRENT\_STATEMENT\_UUID of the statement that you want to cancel:
+Query SYS.SESSIONS to obtain the CURRENT_STATEMENT_UUID of the statement that you want to cancel:
 
 ``` pre
 snappy> select id, session_id, current_statement_uuid, current_statement, current_statement_status from sys.sessions;

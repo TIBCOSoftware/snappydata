@@ -10,15 +10,15 @@ A session-severity or higher exception causes the connection to close and all ot
 ##java.sql.Connection.setTransactionIsolation Method
 
 
-Only java.sql.Connection.TRANSACTION\_NONE, and java.sql.Connection.TRANSACTION\_READ\_COMMITTED transaction isolation levels are available in SnappyData.
+Only java.sql.Connection.TRANSACTION_NONE, and java.sql.Connection.TRANSACTION_READ_COMMITTED transaction isolation levels are available in SnappyData.
 
-TRANSACTION\_NONE is the default isolation level.
+TRANSACTION_NONE is the default isolation level.
 
 Changing the current isolation for the connection with *setTransactionIsolation* commits the current transaction and begins a new transaction.
 
 
 !!! Note
-		SnappyData provides atomicity and thread safety for row-level operations even in TRANSACTION\_NONE isolation level.
+		SnappyData provides atomicity and thread safety for row-level operations even in TRANSACTION_NONE isolation level.
 
 For more details about transaction isolation, see <mark> TO BE CONFIRMED RowStore link Transactions and Concurrency </mark>. 
 

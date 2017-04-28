@@ -4,7 +4,7 @@
 
 Size of the socket buffer used for outgoing UDP point-to-point transmissions.
 
-Valid values are in the range 2048..OS\_maximum.
+Valid values are in the range 2048..OS_maximum.
 
 ## Default Value
 

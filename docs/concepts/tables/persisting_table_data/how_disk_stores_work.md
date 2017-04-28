@@ -53,7 +53,7 @@ You must start locators and data stores *before* starting peer clients in your d
     Disk store files include store management and access control files and the operation log, or oplog, files, consisting of one file for deletions and another for all other operations.
 
 -   **[Disk Store Operation Logs](operation_logs.md)**
-    At creation, each operation log is initialized at the disk store's MAXLOGSIZE value, with the size divided between the `crf` and `drf` files. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy rowstore server stop` or `snappy shut-down-all`).
+    At creation, each operation log is initialized at the disk store's MAXLOGSIZE value, with the size divided between the `crf` and `drf` files. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy server stop` or `snappy shut-down-all`).
 
 -   **[Factors Contributing to High Disk Throughput](disk-store-throughput.md)**
     SnappyData disk store design contains several factors that contribute to very high disk throughput. They include pooling, avoiding seeks, and buffered logging.

@@ -13,11 +13,11 @@ IN NEWPASSWORD VARCHAR(128)
 )
 ```
 
-**USER\_ID  **
+**USER_ID  **
 The name of the existing user. See <mark> TO BE CONFIRMED RowStore link[SYS.SHOW_USERS]() </mark>. Note that built-in system users are defined when you boot SnappyData members, and you cannot change those passwords except by restarting members; see <mark> TO BE CONFIRMED RowStore link [Changing a System User Password]</mark>.
 
 **OLDPASSWORD **
-The existing password of the specified USER\_ID, or a null or empty string for the old password (if an Admin user is changing the password of another user).
+The existing password of the specified USER_ID, or a null or empty string for the old password (if an Admin user is changing the password of another user).
 
 A user can change their own password by providing the correct, old password. Admin users can change any password by providing null or an empty string for the old password. If a non-empty value is provided, then it must match the old password.
 

@@ -139,7 +139,7 @@ SnappyData manages data in a flexible way that enables you to expand or contract
 
 2. When you add a new server to the cluster, you can specify the -rebalance option to move partitioned table data buckets between host members as needed to establish the best balance of data across the distributed system. (See Rebalancing Partitioned Data on SnappyData Members for more information.) Start the new server to see rebalancing in action:
 
-        $ snappy rowstore server start -dir=$HOME/server3 -locators=localhost[10101] -client-port=1530 -enable-network-partition-detection=true -rebalance
+        $ snappy server start -dir=$HOME/server3 -locators=localhost[10101] -client-port=1530 -enable-network-partition-detection=true -rebalance
         Starting SnappyData Server using locators for peer discovery: localhost[10101]
         Starting network server for SnappyData Server at address localhost/127.0.0.1[1530]
         Logs generated in /home/gpadmin/server3/snappyserver.log
@@ -193,7 +193,7 @@ SnappyData manages data in a flexible way that enables you to expand or contract
 
         snappy> exit;
 
-8. You can stop an individual SnappyData server by using the `snappy rowstore server stop` command and specifying the server directory. To shut down all data stores at once, use the `snappy shut-down-all` command:
+8. You can stop an individual SnappyData server by using the `snappy server stop` command and specifying the server directory. To shut down all data stores at once, use the `snappy shut-down-all` command:
 
         $ snappy shut-down-all -locators=localhost[10101]
         Connecting to distributed system: locators=localhost[10101]

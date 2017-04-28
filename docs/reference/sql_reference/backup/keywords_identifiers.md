@@ -15,7 +15,7 @@ Two categories of identifiers are defined in SQL-92 standard: ordinary and delim
 
 The rules mentioned here for SQL identifiers apply to all names used in SQL statements including table-name, column-name, view-name, synonym-name, constraint-name, correlation-name, index-name, trigger-name, function-name and procedure-name. There are two categories of identifiers as defined in SQL-92 standard: ordinary and delimited. The ordinary names must follow the below mentioned rules:
 
--   Can contain only unicode letters and digits, or underscore characters ( \_ )
+-   Can contain only unicode letters and digits, or underscore characters ( _ )
 -   Must begin with an alphabetic character
 -   Should have a minimum length of one byte and a maximum of 128 bytes
 -   Are case-insensitive (use delimited identifiers for case-sensitive)

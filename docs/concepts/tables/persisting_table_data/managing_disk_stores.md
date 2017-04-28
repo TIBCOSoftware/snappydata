@@ -22,7 +22,7 @@ For the complete command syntax of any `snappy` command, run `snappy <command> -
 
 ## Online SnappyData Disk Store Operations
 
-For online operations, `snappy` connects to a distributed system and sends the operation requests to the members that have disk stores. These commands do not run on offline disk stores. You must provide the command with a distributed system properties in a `gemfirexd.properties` file, or specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port\_number*).
+For online operations, `snappy` connects to a distributed system and sends the operation requests to the members that have disk stores. These commands do not run on offline disk stores. You must provide the command with a distributed system properties in a `gemfirexd.properties` file, or specify the multicast port or locator properties to connect to the cluster (for example, `-mcast-port=`*port_number*).
 
 <a id="offline-sd"></a>
 
