@@ -684,6 +684,7 @@ PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a repli
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
+OVERFLOW 'true',
 PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’, 
 DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
@@ -748,15 +749,27 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
-   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.
+   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. If not specified, it is a replicated table.
+
+	Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.
+	<!--Row tables can use the option value as `PRIMARY KEY` for `PARTITION_BY` to indicate using the primary key columns for partitioning instead of specifying them explicitly.-->
+
+	The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
    * BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
 
    * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
+   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from in-memory table, based on different criteria.
+    For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause.
 
-   * PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+    <note>Note:
+    	For column tables, you can not use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables no such defaults are set. Row tables allow all the eviction settings.</note>
+
+   * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
+	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
+
+   * PERSISTENT:  When you specify the PERSISTENT keyword, SnappyData persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
    * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
 
@@ -764,7 +777,8 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
 
-   * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br><note> Note: The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </note> </br>
+   * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br> 
+	<note> Note: The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </note> </br>
     * <note>`snappydata.column.batchSize` - explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property. </note></br>
     * <note>`snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. </note>
    
