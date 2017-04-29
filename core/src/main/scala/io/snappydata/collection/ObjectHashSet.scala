@@ -32,7 +32,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.execution
+package io.snappydata.collection
 
 import java.util.{Iterator => JIterator}
 
@@ -42,6 +42,7 @@ import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.storage.TaskResultBlockId
 import org.apache.spark.{SparkEnv, TaskContext}
 
@@ -66,7 +67,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] val taskContext = TaskContext.get()
 
   private[this] val consumer = if (taskContext ne null) {
-    new ObjectHashSetMemoryConsumer(taskContext.taskMemoryManager())
+    new ObjectHashSetMemoryConsumer(Utils.taskMemoryManager(taskContext))
   } else null
 
   if (!longLived && (taskContext ne null)) {

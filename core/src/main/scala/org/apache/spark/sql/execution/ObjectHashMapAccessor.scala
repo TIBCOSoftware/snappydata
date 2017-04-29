@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import io.snappydata.collection.ObjectHashSet
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
