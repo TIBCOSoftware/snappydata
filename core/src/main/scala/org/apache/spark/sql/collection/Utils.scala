@@ -40,6 +40,7 @@ import org.apache.commons.math3.distribution.NormalDistribution
 import org.xerial.snappy.Snappy
 
 import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
+import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -734,6 +735,9 @@ object Utils {
     case e: Expression => e.children.length
     case _ => 1
   }
+
+  def taskMemoryManager(context: TaskContext): TaskMemoryManager =
+    context.taskMemoryManager()
 
   def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
     val row = new UnsafeRow(numColumns)

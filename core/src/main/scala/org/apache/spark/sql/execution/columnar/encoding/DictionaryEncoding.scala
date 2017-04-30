@@ -20,10 +20,10 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.cache.store.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
+import io.snappydata.collection.{ByteBufferHashMap, LongKey, ObjectHashSet}
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry
-import org.apache.spark.sql.execution.{ByteBufferHashMap, LongKey, ObjectHashSet}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -65,6 +65,15 @@ abstract class DictionaryDecoderBase
   protected[this] final var intDictionary: Array[Int] = _
   protected[this] final var longDictionary: Array[Long] = _
 
+  /**
+   * Initialization will fill in the dictionaries as written by the
+   * DictionaryEncoder. For string maps it reads in the value array
+   * written using [[ByteBufferHashMap]] by the encoder expecting the
+   * size of UTF8 encoded string followed by the string contents.
+   * Long and integer dictionaries are still using the old ObjectHashSet
+   * which needs to be moved to [[ByteBufferHashMap]] once DictionaryEncoder
+   * adds support for long/integer dictionary encoding.
+   */
   override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = {
     var position = cursor
@@ -171,6 +180,14 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
 
 trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
+  /**
+   * Serialized off-heap map used for strings. This is to minimize the objects
+   * created to help GC issues in bulk inserts. The serialized map uses
+   * a single serialized array for fixed-width keys and another for values.
+   *
+   * Strings are added using [[ByteBufferHashMap.addDictionaryString]]
+   * method which returns the index of the string in the dictionary.
+   */
   private[this] final var stringMap: ByteBufferHashMap = _
 
   private[this] final var longMap: ObjectHashSet[LongIndexKey] = _

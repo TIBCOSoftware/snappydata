@@ -33,6 +33,7 @@ object TableCreationJob extends SnappySQLJob {
   var redundancy: String = _
   var persistence: Boolean = _
   var persistence_type: String = _
+  var numberOfloadStages : String = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
@@ -70,20 +71,24 @@ object TableCreationJob extends SnappySQLJob {
       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
         loadPerfPrintStream)
       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
-        isSnappy,
-        loadPerfPrintStream)
+        isSnappy, loadPerfPrintStream, numberOfloadStages.toInt)
     }
 
     TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
-      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type)
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt)
     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
-      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type)
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -135,6 +140,12 @@ object TableCreationJob extends SnappySQLJob {
       config.getString("Persistence_Type")
     } else {
       "false"
+    }
+
+    numberOfloadStages = if (config.hasPath("NumberOfLoadStages")) {
+      config.getString("NumberOfLoadStages")
+    } else {
+      "1"
     }
 
     if (!new File(tpchDataPath).exists()) {

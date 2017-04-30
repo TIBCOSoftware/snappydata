@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 
-package org.apache.spark.sql.execution
+package io.snappydata.collection
 
 import java.nio.ByteBuffer
 
@@ -50,7 +50,12 @@ import org.apache.spark.unsafe.types.UTF8String
  * is used for hash code while MSB is used for offset, so the two can
  * be reverse in actual memory layout on big-endian machines. Since there
  * is no disk storage of this map so no attempt is made to have consistent
- * endianness and thus the actual memory layout of the data.
+ * endianness or memory layout of the data.
+ *
+ * Rehash of the map (when loadFactor exceeds) moves around the above key
+ * fields to create a new array as per the new hash locations.
+ * The value fields are left untouched with the headers of keys having the
+ * offsets into value array as before the rehash.
  */
 final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     keySize: Int, private val valueSize: Int,
@@ -84,6 +89,20 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   def valueDataSize: Long = valueDataPosition - valueData.baseOffset
 
+  /**
+   * Add a new string to the map for dictionaries. The key field has the
+   * index of the value i.e. (n - 1) for nth distinct string added to the map,
+   * with the offset into the value. The string itself is stored back to back
+   * in the value portion with its size at the start being variable length.
+   * This exactly matches the end format of the dictionary encoding that
+   * stores the dictionary string back-to-back in index order and expected
+   * by DictionaryDecoders. So the encoder can use the final
+   * value serialized array as is for putting into the encoded column batch
+   * (followed by the dictionary indexes of actual values themselves).
+   *
+   * The encoded values are read in the initialization of DictionaryDecoder
+   * and put into an array, and looked up by its readUTF8String method.
+   */
   def addDictionaryString(key: UTF8String): Int = {
     val hash = key.hashCode()
     val mapKeyObject = keyData.baseObject
@@ -158,7 +177,6 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   /**
    * Double the table's size and re-hash everything.
-   * Caller must check for overloaded set before triggering a rehash.
    */
   private def handleNewInsert(): Unit = {
     _size += 1

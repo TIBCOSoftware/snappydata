@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution
 
+import io.snappydata.collection.ObjectHashSet
+
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}

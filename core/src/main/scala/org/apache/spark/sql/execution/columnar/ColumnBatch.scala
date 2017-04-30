@@ -23,10 +23,10 @@ import scala.language.implicitConversions
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, RegionEntry}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.gemstone.gnu.trove.{TIntObjectHashMap, TObjectProcedure}
 import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
 import io.snappydata.thrift.common.BufferedBlob
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
@@ -257,18 +257,17 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
   var currentUUID: String = _
   val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
-  var colBuffers: Option[TIntObjectHashMap] = None
+  var colBuffers: Option[Int2ObjectOpenHashMap[(ByteBuffer, Blob)]] = None
 
   def getColumnLob(bufferPosition: Int): ByteBuffer = {
     colBuffers match {
-      case Some(map) =>
-        map.get(bufferPosition).asInstanceOf[(ByteBuffer, Blob)]._1
+      case Some(map) => map.get(bufferPosition)._1
       case None =>
         for (i <- requiredColumns.indices) {
           ps.setString(i + 1, currentUUID)
         }
         val colIter = ps.executeQuery()
-        val bufferMap = new TIntObjectHashMap()
+        val bufferMap = new Int2ObjectOpenHashMap[(ByteBuffer, Blob)]()
         var index = 1
         while (colIter.next()) {
           val colBlob = colIter.getBlob(1)
@@ -282,7 +281,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         }
         colBuffers = Some(bufferMap)
 
-        bufferMap.get(bufferPosition).asInstanceOf[(ByteBuffer, Blob)]._1
+        bufferMap.get(bufferPosition)._1
     }
   }
 
@@ -290,15 +289,13 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     currentUUID = rs.getString(2)
     colBuffers match {
       case Some(buffers) =>
-        buffers.forEachValue(new TObjectProcedure {
-          override def execute(o: AnyRef): Boolean = {
-            val (buffer, blob) = o.asInstanceOf[(ByteBuffer, Blob)]
-            blob.free()
-            // release previous set of buffers immediately
-            UnsafeHolder.releaseIfDirectBuffer(buffer)
-            true
-          }
-        })
+        val values = buffers.values().iterator()
+        while (values.hasNext) {
+          val (buffer, blob) = values.next()
+          blob.free()
+          // release previous set of buffers immediately
+          UnsafeHolder.releaseIfDirectBuffer(buffer)
+        }
       case None =>
     }
     colBuffers = None
@@ -311,19 +308,17 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   override def close(): Unit = {
     colBuffers match {
       case Some(buffers) =>
-        buffers.forEachValue(new TObjectProcedure {
-          override def execute(o: AnyRef): Boolean = {
-            val (buffer, blob) = o.asInstanceOf[(ByteBuffer, Blob)]
-            try {
-              blob.free()
-            } catch {
-              case e: Exception => logWarning("Exception clearing Blob", e)
-            }
-            // release last set of buffers immediately
-            UnsafeHolder.releaseIfDirectBuffer(buffer)
-            true
+        val values = buffers.values().iterator()
+        while (values.hasNext) {
+          val (buffer, blob) = values.next()
+          try {
+            blob.free()
+          } catch {
+            case e: Exception => logWarning("Exception clearing Blob", e)
           }
-        })
+          // release last set of buffers immediately
+          UnsafeHolder.releaseIfDirectBuffer(buffer)
+        }
       case None =>
     }
     super.close()
