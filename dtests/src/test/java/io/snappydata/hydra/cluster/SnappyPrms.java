@@ -271,6 +271,20 @@ public class SnappyPrms extends BasePrms {
     public static Long appPropsForJobServer;
 
     /**
+     * Parameter used to get the user list of pointLookUP queries to execute concurrently using
+     * jdbc clients.
+     * (VectorsetValues of Strings) A list of values for pointLookUp queries.
+     */
+    public static Long pointLookUpQueryList;
+
+    /**
+     * Parameter used to get the user list of analytical queries to execute concurrently using
+     * jdbc clients.
+     * (VectorsetValues of Strings) A list of values for analytical queries.
+     */
+    public static Long analyticalQueryList;
+
+    /**
      * (int) number of executor cores to be used in test
      */
     public static Long executorCores;
@@ -444,6 +458,16 @@ public class SnappyPrms extends BasePrms {
     public static String getCommaSepAPPProps() {
         Long key = appPropsForJobServer;
         return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    }
+
+    public static Vector getPointLookUpQueryList() {
+        Long key = pointLookUpQueryList;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    public static Vector getAnalyticalQueryList() {
+        Long key = analyticalQueryList;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
     }
 
     public static boolean getTableDefaultDataPolicy() {
