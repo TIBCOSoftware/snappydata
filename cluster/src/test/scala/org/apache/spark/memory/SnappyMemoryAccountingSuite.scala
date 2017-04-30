@@ -92,6 +92,90 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     assert(afterDropSize < afterInsertSize)
   }
 
+  test("Test truncate table accounting for replicated table") {
+    val sparkSession = createSparkSession(1, 0, 2000000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    val options = Map.empty[String, String]
+
+    val beforeTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.createTable("t1", "row", struct, options)
+    val afterTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterTableSize > beforeTableSize)
+
+    val row = Row(100000000, 10000000, 10000000)
+    (1 to 10).map(i => snSession.insert("t1", row))
+    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.truncateTable("t1")
+    val afterTruncateSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterTruncateSize < afterInsertSize)
+  }
+
+  test("Test truncate table accounting for PR table") {
+    val sparkSession = createSparkSession(1, 0, 2000000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    val options = Map("PARTITION_BY" -> "col1",
+      "BUCKETS" -> "1",
+      "EVICTION_BY" -> "LRUHEAPPERCENT",
+      "OVERFLOW" -> "true"
+    )
+
+    val beforeTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.createTable("t1", "row", struct, options)
+    val afterTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterTableSize > beforeTableSize)
+
+    val row = Row(100000000, 10000000, 10000000)
+    (1 to 10).map(i => snSession.insert("t1", row))
+    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.truncateTable("t1")
+    val afterTruncateSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterTruncateSize < afterInsertSize)
+  }
+
+  test("Test delete all accounting for replicated table") {
+    val sparkSession = createSparkSession(1, 0, 2000000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    val options = Map.empty[String, String]
+
+    val beforeTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.createTable("t1", "row", struct, options)
+    val afterTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterTableSize > beforeTableSize)
+
+    val row = Row(100000000, 10000000, 10000000)
+    (1 to 10).map(i => snSession.insert("t1", row))
+    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.sql("delete from t1")
+    val afetrDeleteSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afetrDeleteSize < afterInsertSize)
+  }
+
+  test("Test delete all accounting for PR table") {
+    val sparkSession = createSparkSession(1, 0, 2000000L)
+    val snSession = new SnappySession(sparkSession.sparkContext)
+    LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    val options = Map("PARTITION_BY" -> "col1",
+      "BUCKETS" -> "1",
+      "EVICTION_BY" -> "LRUHEAPPERCENT",
+      "OVERFLOW" -> "true"
+    )
+
+    val beforeTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.createTable("t1", "row", struct, options)
+    val afterTableSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterTableSize > beforeTableSize)
+
+    val row = Row(100000000, 10000000, 10000000)
+    (1 to 10).map(i => snSession.insert("t1", row))
+    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    snSession.sql("delete from t1")
+    val afetrDeleteSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afetrDeleteSize < afterInsertSize)
+  }
+
   test("Test drop table accounting for row partitioned table") {
     val sparkSession = createSparkSession(1, 0, 2000000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
