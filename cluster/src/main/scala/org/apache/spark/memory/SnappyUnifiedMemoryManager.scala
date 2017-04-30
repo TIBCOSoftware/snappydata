@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.{Logging, SparkConf}
@@ -41,10 +42,18 @@ import org.apache.spark.{Logging, SparkConf}
 class SnappyUnifiedMemoryManager private[memory](
     conf: SparkConf,
     override val maxHeapMemory: Long,
-    numCores: Int) extends UnifiedMemoryManager(conf,
-  maxHeapMemory,
-  (maxHeapMemory * conf.getDouble("spark.memory.storageFraction", 0.5)).toLong,
-  numCores) with StoreUnifiedManager {
+    numCores: Int)
+  extends UnifiedMemoryManager(conf,
+    maxHeapMemory,
+    (maxHeapMemory * conf.getDouble("spark.memory.storageFraction", 0.5)).toLong,
+    numCores) with StoreUnifiedManager {
+
+  override protected[this] val maxOffHeapMemory = SnappyUnifiedMemoryManager.getMemorySize(conf)
+  // What if somebody wants to use Spark off-heap for storage
+  override protected[this] val offHeapStorageMemory = 0L
+
+  offHeapExecutionMemoryPool.incrementPoolSize(maxOffHeapMemory - offHeapStorageMemory)
+  offHeapStorageMemoryPool.incrementPoolSize(offHeapStorageMemory)
 
   val onHeapStorageRegionSize = onHeapStorageMemoryPool.poolSize
 
@@ -71,13 +80,17 @@ class SnappyUnifiedMemoryManager private[memory](
     }
   }
 
-  override def getStoragePoolSize : Long = onHeapStorageMemoryPool.poolSize
+  override def getStoragePoolSize: Long = onHeapStorageMemoryPool.poolSize +
+    offHeapStorageMemoryPool.poolSize
 
-  override def getStoragePoolMemoryUsed(): Long = onHeapStorageMemoryPool.memoryUsed
+  override def getStoragePoolMemoryUsed(): Long = onHeapStorageMemoryPool.memoryUsed +
+    offHeapStorageMemoryPool.memoryUsed
 
-  override def getExecutionPoolUsedMemory: Long = onHeapExecutionMemoryPool.memoryUsed
+  override def getExecutionPoolUsedMemory: Long = onHeapExecutionMemoryPool.memoryUsed +
+    offHeapExecutionMemoryPool.memoryUsed
 
-  override def getExecutionPoolSize : Long = onHeapExecutionMemoryPool.poolSize
+  override def getExecutionPoolSize: Long = onHeapExecutionMemoryPool.poolSize +
+    offHeapExecutionMemoryPool.poolSize
 
 
   /**
@@ -142,7 +155,8 @@ class SnappyUnifiedMemoryManager private[memory](
 
           val bytesEvictedFromStore = if (spaceToReclaim < extraMemoryNeeded) {
             val moreBytesRequired = extraMemoryNeeded - spaceToReclaim
-            evictor.evictRegionData(math.min(moreBytesRequired, memoryReclaimableFromStorage))
+            evictor.evictRegionData(math.min(moreBytesRequired, memoryReclaimableFromStorage),
+              memoryMode)
           } else {
             0L
           }
@@ -251,7 +265,7 @@ class SnappyUnifiedMemoryManager private[memory](
           // Sufficient memory could not be freed. Time to evict from SnappyData store.
           val requiredBytes = numBytes - storagePool.memoryFree
           // Evict data a little more than required based on waiting tasks
-          evictor.evictRegionData(requiredBytes * threadsWaitingForStorage.get())
+          evictor.evictRegionData(requiredBytes * threadsWaitingForStorage.get(), memoryMode)
         }
 
         threadsWaitingForStorage.decrementAndGet()
@@ -272,8 +286,6 @@ class SnappyUnifiedMemoryManager private[memory](
       }
     }
   }
-
-
 
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
@@ -325,29 +337,17 @@ class SnappyUnifiedMemoryManager private[memory](
 
   override def dropStorageMemoryForObject(name: String,
                                           memoryMode: MemoryMode,
-                                          ignoreNumBytes: Long): Long =
-    synchronized {
-      memTrace(s"Dropping memory for $name")
-      val (executionPool, storagePool, maxMemory) = memoryMode match {
-        case MemoryMode.ON_HEAP => (
-          onHeapExecutionMemoryPool,
-          onHeapStorageMemoryPool,
-          maxOnHeapStorageMemory)
-        case MemoryMode.OFF_HEAP => (
-          offHeapExecutionMemoryPool,
-          offHeapStorageMemoryPool,
-          maxOffHeapMemory)
-      }
+                                          ignoreNumBytes: Long): Long = synchronized {
+    memTrace(s"Dropping memory for $name")
+    val bytesToBeFreed = memoryForObject.getOrElse(name, 0L)
+    val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
 
-      val bytesToBeFreed = memoryForObject.getOrElse(name, 0L)
-      val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
-
-      if (numBytes > 0) {
-        super.releaseStorageMemory(numBytes, memoryMode)
-        memoryForObject.remove(name)
-      }
-      bytesToBeFreed
+    if (numBytes > 0) {
+      super.releaseStorageMemory(numBytes, memoryMode)
+      memoryForObject.remove(name)
     }
+    bytesToBeFreed
+  }
 
   // Test Hook. Not to be used anywhere else
   private[memory] def dropAllObjects(memoryMode: MemoryMode): Unit = synchronized {
@@ -362,7 +362,7 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 }
 
-private object SnappyUnifiedMemoryManager extends Logging{
+object SnappyUnifiedMemoryManager extends Logging {
 
   // Reserving 500MB data for internal tables
   private val RESERVED_SYSTEM_MEMORY_BYTES = 500 * 1024 * 1024
@@ -385,6 +385,14 @@ private object SnappyUnifiedMemoryManager extends Logging{
     testCallbacks.map(l => l.onPositiveMemoryIncreaseDueToEviction(objectName, bytes))
   }
 
+  def getMemorySize(conf: SparkConf): Long = {
+    val cache = Misc.getGemFireCacheNoThrow
+    if (cache ne null) {
+        Misc.getGemFireCache.getMemorySize
+    } else { // for local mode testing
+      conf.getLong("snappydata.store.memory.size", 0L)
+    }
+  }
 
   /**
     * Return the total amount of memory shared between execution and storage, in bytes.
@@ -397,16 +405,16 @@ private object SnappyUnifiedMemoryManager extends Logging{
     val minSystemMemory = (reservedMemory * 1.5).ceil.toLong
     if (systemMemory < minSystemMemory) {
       throw new IllegalArgumentException(s"System memory $systemMemory must " +
-          s"be at least $minSystemMemory. Please increase heap size using the --driver-memory " +
-          s"option or spark.driver.memory in Spark configuration.")
+        s"be at least $minSystemMemory. Please increase heap size using the --driver-memory " +
+        s"option or spark.driver.memory in Spark configuration.")
     }
     // SPARK-12759 Check executor memory to fail fast if memory is insufficient
     if (conf.contains("spark.executor.memory")) {
       val executorMemory = conf.getSizeAsBytes("spark.executor.memory")
       if (executorMemory < minSystemMemory) {
         throw new IllegalArgumentException(s"Executor memory $executorMemory must be at least " +
-            s"$minSystemMemory. Please increase executor memory using the " +
-            s"--executor-memory option or spark.executor.memory in Spark configuration.")
+          s"$minSystemMemory. Please increase executor memory using the " +
+          s"--executor-memory option or spark.executor.memory in Spark configuration.")
       }
     }
 

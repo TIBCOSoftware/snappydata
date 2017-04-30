@@ -22,7 +22,7 @@ import java.util.{Collections, UUID}
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
-import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
+import com.gemstone.gemfire.internal.snappy._
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
@@ -50,10 +50,6 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv, SparkException}
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   private val partitioner = new StoreHashFunction
-
-  val sizer: GemFireXDInstrumentation = GemFireXDInstrumentation.getInstance
-
-
 
   override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
@@ -294,14 +290,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def resetMemoryManager(): Unit = MemoryManagerCallback.resetMemoryManager()
 
   override def isSnappyStore: Boolean = true
-
-  override def getRegionOverhead(region: LocalRegion): Long = {
-    region.estimateMemoryOverhead(sizer)
-  }
-
-  override def getNumBytesForEviction: Long = {
-    SparkEnv.get.memoryManager.maxOnHeapStorageMemory
-  }
 
   override def getStoragePoolUsedMemory: Long =
     MemoryManagerCallback.memoryManager.getStoragePoolMemoryUsed()

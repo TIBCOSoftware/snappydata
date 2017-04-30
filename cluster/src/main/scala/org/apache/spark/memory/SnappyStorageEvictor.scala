@@ -66,7 +66,11 @@ class SnappyStorageEvictor extends Logging{
   }
 
   @throws(classOf[Exception])
-  def evictRegionData(bytesRequired: Long): Long = {
+  def evictRegionData(bytesRequired: Long, memoryMode: MemoryMode): Long = {
+    // @TODO use when regions can be stored in offheap
+    if (memoryMode.equals(MemoryMode.OFF_HEAP)){
+      return 0L
+    }
     val cache = GemFireCacheImpl.getExisting
     cache.getCachePerfStats.incEvictorJobsStarted
     var bytesEvicted: Long = 0
