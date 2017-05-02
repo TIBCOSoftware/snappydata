@@ -18,13 +18,19 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
+import org.apache.spark.sql.execution.ConnectionPool
 
+import scala.collection.JavaConverters._
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import io.snappydata._
+import java.io.File
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkContext}
@@ -265,6 +271,8 @@ object ClusterManagerTestBase extends Logging {
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stopAllNetworkServers()
+      // clear stale connection pool
+      ConnectionPool.clear()
     }
   }
 

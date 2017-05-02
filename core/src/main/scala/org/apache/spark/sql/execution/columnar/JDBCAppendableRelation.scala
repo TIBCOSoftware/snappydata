@@ -183,6 +183,7 @@ abstract case class JDBCAppendableRelation(
         sys.error(s"Table $table already exists.")
       }
     } finally {
+      conn.commit()
       conn.close()
     }
     createExternalTableForColumnBatches(table, externalStore)
@@ -248,6 +249,7 @@ abstract case class JDBCAppendableRelation(
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
       } finally {
+        conn.commit()
         conn.close()
       }
     }
