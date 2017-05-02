@@ -166,20 +166,22 @@ object ExternalStoreUtils extends Logging {
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
-      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
+          "skip-constraint-checks=true"
       case Some(sc) =>
         SnappyContext.getClusterMode(sc) match {
           case SnappyEmbeddedMode(_, _) =>
             // Already connected to SnappyData in embedded mode.
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
+                "skip-constraint-checks=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false"
           case SplitClusterMode(_, _) =>
-            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
+            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
           case LocalMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ';' + url
+            Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
           case ExternalClusterMode(_, url) =>
             throw new AnalysisException("Option 'url' not specified for cluster " +
                 url)
@@ -245,6 +247,7 @@ object ExternalStoreUtils extends Logging {
     executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
+
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
         true
       case GemFireXDClientDialect =>
