@@ -45,6 +45,7 @@ import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, ToolsCallbackInit}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.internal.CodeCompileException
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
@@ -206,11 +207,7 @@ case class SnappyHashAggregateExec(
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
-    // Code generation should never fail.
-    // If code generation is not supported (due to ImperativeAggregate)
-    // then this plan should not be created (SnappyAggregation.supportCodegen).
-    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
-        .asInstanceOf[SnappySession])).execute()
+    throw new CodeCompileException("Could should not have reached here")
   }
 
   // all the mode of aggregate expressions

@@ -21,10 +21,8 @@ import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
-
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
-
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
@@ -40,7 +38,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
@@ -572,10 +570,18 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
     Seq(StoreDataSourceStrategy, SnappyAggregation, LocalJoinStrategies)
 
   override def strategies: Seq[Strategy] =
+    if (snappySession.conf.get(SnappySession.SNAPPY_STORE_OPTIMIZATION_DISABLED,
+      "false").toBoolean) {
     Seq(SnappyStrategies,
       StoreStrategy, StreamQueryStrategy) ++
-        storeOptimizedRules ++
-        super.strategies
+      Seq(StoreDataSourceStrategy) ++
+      super.strategies
+  } else {
+    Seq(SnappyStrategies,
+      StoreStrategy, StreamQueryStrategy) ++
+      storeOptimizedRules ++
+      super.strategies
+  }
 }
 
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)

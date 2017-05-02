@@ -21,11 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
 import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
-
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -36,6 +34,7 @@ import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.internal.CodeCompileException
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
 import org.apache.spark.{Dependency, Partition, ShuffleDependency, TaskContext}
@@ -61,7 +60,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     replicatedTableJoin: Boolean)
     extends BinaryExecNode with HashJoin with BatchConsumer {
 
-  override def nodeName: String = "HashJoin"
+  override def nodeName: String = "SnappyHashJoin"
 
   @transient private var mapAccessor: ObjectHashMapAccessor = _
   @transient private var hashMapTerm: String = _
@@ -176,7 +175,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(this).execute()
+    throw new CodeCompileException("Could should not have reached here")
   }
 
   // return empty here as code of required variables is explicitly instantiated

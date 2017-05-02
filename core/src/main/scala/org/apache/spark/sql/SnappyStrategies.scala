@@ -256,7 +256,8 @@ private[sql] object JoinStrategy {
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <=
+    !conf.getConfString("snappydata.ignore.optimizatin", "false").toBoolean &&
+      plan.statistics.sizeInBytes <=
         io.snappydata.Property.HashJoinSize.get(conf)
   }
 
