@@ -862,10 +862,6 @@ task checkAll {
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  /*if (!project.hasProperty('smoke.skip')) {
-    dependsOn ":buildDtests"
-    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
-  }*/
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {
@@ -1019,7 +1015,6 @@ task precheckin {
   if (!project.hasProperty('smoke.skip')) {
     dependsOn ":buildDtests"
     dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
-    //mustRunAfter ":snappy-store:product"
   }
 }
 
