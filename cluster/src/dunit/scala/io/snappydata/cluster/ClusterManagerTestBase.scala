@@ -156,7 +156,7 @@ class ClusterManagerTestBase(s: String)
       Array[AnyRef](getClass.getName, getName)))
     if (stopNetServersInTearDown) {
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
-      stopNetworkServers
+      stopNetworkServers()
     }
     bootProps.clear()
   }

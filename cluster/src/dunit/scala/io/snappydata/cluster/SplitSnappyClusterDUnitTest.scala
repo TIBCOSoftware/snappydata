@@ -61,7 +61,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override def beforeClass(): Unit = {
     super.beforeClass()
-    startNetworkServers
+    startNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
   }
 

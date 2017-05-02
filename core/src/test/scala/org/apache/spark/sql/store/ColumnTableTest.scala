@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
-import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyEmbeddedTableStatsProviderService, Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -934,7 +934,7 @@ class ColumnTableTest
 
     val region = Misc.getRegionForTable(
       ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
-    SnappyTableStatsProviderService.getService.publishColumnTableRowCountStats()
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
         .getPRNumRowsInColumnBatches
 
