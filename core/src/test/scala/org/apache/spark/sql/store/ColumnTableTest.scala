@@ -1022,5 +1022,11 @@ class ColumnTableTest
     val df2 = snc.sql("select * from test1")
     df2.show()
 
+    snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
+    snc.sql("insert into test2 values(1,2)")
+    snc.sql("insert into test2 values(2,3)")
+    val df3 = snc.sql("select _col1 from test1")
+    df3.show()
+
   }
 }

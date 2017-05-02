@@ -116,7 +116,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   protected def start: Rule1[LogicalPlan]
 
   protected final def identifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
+    atomic(capture((CharPredicate("_") | CharPredicate.Alpha) ~ Consts.identifier.*)) ~
         delimiter ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.reservedKeywords.contains(ucase)) ~
