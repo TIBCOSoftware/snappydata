@@ -203,7 +203,8 @@ class ColumnTableTest
     logInfo("Successful")
   }
 
-
+  // TODO: Suranjan Test is invalid. Not clear from the bug why the decision
+  // to make concurrency checks false was taken
   test("Test SNAP-947") {
     val table = "APP.TEST_TABLE"
 
@@ -313,7 +314,7 @@ class ColumnTableTest
   }
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
-
+    //TODO: Suranjan URL misses the hint in connection that gfTx must not be cleared.
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
         " USING column " + optionsWithURL)
     val result = snc.sql("SELECT * FROM " + tableName)

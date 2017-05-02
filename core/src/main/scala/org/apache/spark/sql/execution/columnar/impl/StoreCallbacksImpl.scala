@@ -21,9 +21,10 @@ import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, LocalRegion}
-import com.gemstone.gemfire.internal.snappy._
+import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
@@ -31,8 +32,7 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
-import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.{SnappyTableStatsProviderService, Constant}
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql.catalyst.FunctionIdentifier
@@ -46,7 +46,7 @@ import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode, _}
 import org.apache.spark.storage.TestBlockId
-import org.apache.spark.{Logging, SparkContext, SparkEnv, SparkException}
+import org.apache.spark.{Logging, SparkContext, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -76,8 +76,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
         val row: AbstractCompactExecRow = container.newTemplateRow()
             .asInstanceOf[AbstractCompactExecRow]
+        val tc = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
         lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
         try {
+          val state: TXStateInterface = TXManagerImpl.getCurrentTXState
+          tc.setActiveTXState(state, true)
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
             TransactionController.MODE_RECORD,
@@ -108,6 +111,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             batchID, bucketID, dependents)
         } finally {
           lcc.setExecuteLocally(null, null, false, null)
+          tc.clearActiveTXState(false, true);
         }
       } catch {
         case e: Throwable => throw e

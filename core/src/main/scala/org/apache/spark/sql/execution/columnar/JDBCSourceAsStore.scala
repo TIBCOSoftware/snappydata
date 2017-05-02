@@ -19,17 +19,16 @@ package org.apache.spark.sql.execution.columnar
 import java.nio.ByteBuffer
 import java.sql.{Blob, Connection, ResultSet, Statement}
 
-import scala.language.implicitConversions
-
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
 import io.snappydata.thrift.common.BufferedBlob
-
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.{Logging, TaskContext}
+
+import scala.language.implicitConversions
 
 abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext)
@@ -89,6 +88,7 @@ abstract class ResultSetIterator[A](conn: Connection,
       case e: Exception => logWarning("Exception closing statement", e)
     }
     try {
+      conn.commit()
       conn.close()
       logDebug("closed connection for task " + context.partitionId())
     } catch {
@@ -148,22 +148,25 @@ final class ColumnBatchIterator(container: GemFireContainer,
   override protected def moveNext(): Unit = {
     while ((container ne null) && itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
-      currentBucketRegion = itr.getHostedBucketRegion
-      // get the stat row region entries only. region entries for individual columns
-      // will be fetched on demand
-      if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-        val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
-        if (key.getKeyColumn(2).getInt ==
+      if(!rl.isDestroyedOrRemoved) {
+        currentBucketRegion = itr.getHostedBucketRegion
+        // get the stat row region entries only. region entries for individual columns
+        // will be fetched on demand
+        if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
+          val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
+          if (key.getKeyColumn(2).getInt ==
             JDBCSourceAsStore.STATROW_COL_INDEX) {
-          val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
-          else baseRegion.get(key)
-          if (v ne null) {
-            val value = v.asInstanceOf[Array[Array[Byte]]]
-            currentKeyUUID = key.getKeyColumn(0)
-            currentKeyPartitionId = key.getKeyColumn(1)
-            val rowFormatter = container.getRowFormatter(value(0))
-            currentVal = rowFormatter.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION);
-            return
+            val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
+            else baseRegion.get(key)
+            if (v ne null) {
+              val value = v.asInstanceOf[Array[Array[Byte]]]
+              currentKeyUUID = key.getKeyColumn(0)
+              currentKeyPartitionId = key.getKeyColumn(1)
+              val rowFormatter = container.getRowFormatter(value(0))
+              currentVal = rowFormatter.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION);
+              return
+            }
+
           }
         }
       }
