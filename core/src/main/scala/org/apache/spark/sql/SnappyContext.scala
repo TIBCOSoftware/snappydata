@@ -1143,9 +1143,9 @@ object SnappyContext extends Logging {
     try {
       val clazz = org.apache.spark.util.Utils.classForName(
         "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
-      val method: Method = clazz.getDeclaredMethod("flushReservior")
+      val method: Method = clazz.getDeclaredMethod("flushReservoir")
+      method.setAccessible(true)
       for (s <- sampleRelations) {
-        method.setAccessible(true)
         method.invoke(s)
       }
     } catch {
