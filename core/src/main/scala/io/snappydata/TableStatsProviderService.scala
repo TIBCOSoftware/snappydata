@@ -33,7 +33,7 @@ trait TableStatsProviderService extends Logging {
 
   @volatile
   private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
-  private val membersInfo = TrieMap.empty[String, mutable.Map[String, Any]]
+  protected val membersInfo = TrieMap.empty[String, mutable.Map[String, Any]]
 
   private var _snc: Option[SnappyContext] = None
 
@@ -48,38 +48,7 @@ trait TableStatsProviderService extends Logging {
   @volatile protected var doRun: Boolean = false
   @volatile private var running: Boolean = false
 
-
-  def start(sc: SparkContext): Unit = {
-    val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
-        "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
-    doRun = true
-    Misc.getGemFireCache.getCCPTimer.schedule(
-      new SystemTimer.SystemTimerTask {
-        private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
-
-        override def run2(): Unit = {
-          try {
-            if (doRun) {
-              aggregateStats()
-            }
-          } catch {
-            case _: CancelException => // ignore
-            case e: Exception => if (!e.getMessage.contains(
-              "com.gemstone.gemfire.cache.CacheClosedException")) {
-              logger.warning(e)
-            } else {
-              logger.error(e)
-            }
-          }
-        }
-
-        override def getLoggerI18n: LogWriterI18n = {
-          logger
-        }
-      },
-      delay, delay)
-  }
-
+  def start(sc: SparkContext): Unit
   def start(sc: SparkContext, url: String): Unit
 
   protected def aggregateStats(): Unit = synchronized {
@@ -120,47 +89,11 @@ trait TableStatsProviderService extends Logging {
   }
 
   def fillAggregatedMemberStatsOnDemand(): Unit = {
-
-    val existingMembers = membersInfo.keys.toArray
-    val collector = new GfxdListResultCollector(null, true)
-    val msg = new MemberStatisticsMessage(collector)
-
-    msg.executeFunction()
-
-    val memStats = collector.getResult
-
-    val itr = memStats.iterator()
-
-    val members = mutable.Map.empty[String, mutable.Map[String, Any]]
-    while (itr.hasNext) {
-      val o = itr.next().asInstanceOf[ListResultCollectorValue]
-      val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
-      val map = mutable.HashMap.empty[String, Any]
-      val keyItr = memMap.keySet().iterator()
-
-      while (keyItr.hasNext) {
-        val key = keyItr.next()
-        map.put(key, memMap.get(key))
-      }
-      map.put("status", "Running")
-
-      val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
-      if (dssUUID != null) {
-        members.put(dssUUID.toString, map)
-      } else {
-        members.put(memMap.get("id").asInstanceOf[String], map)
-      }
-    }
-    membersInfo ++= members
-    // mark members no longer running as stopped
-    existingMembers.filterNot(members.contains).foreach(m =>
-      membersInfo(m).put("status", "Stopped"))
   }
 
   def getMembersStatsFromService: mutable.Map[String, mutable.Map[String, Any]] = {
     membersInfo
   }
-
 
   def stop(): Unit = {
     doRun = false
@@ -188,55 +121,6 @@ trait TableStatsProviderService extends Logging {
       aggregateStats()
     }
     tableSizeInfo.get(fullyQualifiedTableName)
-  }
-
-  def publishColumnTableRowCountStats(): Unit = {
-    def asSerializable[C](c: C) = c.asInstanceOf[C with Serializable]
-
-    val regions = asSerializable(Misc.getGemFireCache.getApplicationRegions.asScala)
-    for (region: LocalRegion <- regions) {
-      if (region.getDataPolicy == DataPolicy.PARTITION ||
-          region.getDataPolicy == DataPolicy.PERSISTENT_PARTITION) {
-        val table = Misc.getFullTableNameFromRegionPath(region.getFullPath)
-        val pr = region.asInstanceOf[PartitionedRegion]
-        val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
-        if (table.startsWith(Constant.INTERNAL_SCHEMA_NAME) &&
-            table.endsWith(Constant.SHADOW_TABLE_SUFFIX)) {
-          if (container != null) {
-            val bufferTable = JDBCAppendableRelation.getTableName(table)
-            val numColumnsInBaseTbl = (Misc.getMemStore.getAllContainers.asScala.find(c => {
-              c.getQualifiedTableName.equalsIgnoreCase(bufferTable)}).get.getNumColumns) - 1
-
-            val numColumnsInStatBlob = numColumnsInBaseTbl * ColumnStatsSchema.NUM_STATS_PER_COLUMN
-            val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
-              true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-            // Resetting PR Numrows in cached batch as this will be calculated every time.
-            // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-            var rowsInColumnBatch: Long = 0
-            while (itr.hasNext) {
-              val rl = itr.next().asInstanceOf[RowLocation]
-              val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
-              val x = key.getKeyColumn(2).getInt
-              val currentBucketRegion = itr.getHostedBucketRegion
-              if (x == JDBCSourceAsStore.STATROW_COL_INDEX) {
-                val v = currentBucketRegion.get(key)
-                if (v ne null) {
-                  val currentVal = v.asInstanceOf[Array[Array[Byte]]]
-                  val rowFormatter = container.
-                      getRowFormatter(currentVal(0))
-                  val statBytes = rowFormatter.getLob(currentVal, 4)
-                  val unsafeRow = new UnsafeRow(numColumnsInStatBlob);
-                  unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
-                    statBytes.length);
-                  rowsInColumnBatch += unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA);
-                }
-              }
-            }
-            pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
-          }
-        }
-      }
-    }
   }
 
   def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
@@ -276,18 +160,5 @@ trait TableStatsProviderService extends Logging {
   }
   */
 
-  protected def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
-    var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    val dataServers = GfxdMessage.getAllDataStores
-    if( dataServers != null && dataServers.size() > 0 ){
-      result = FunctionService.onMembers(dataServers)
-          .withCollector(new GfxdListResultCollector())
-          .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
-          asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
-          .asScala
-    }
-    (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
-  }
-
-
+  def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats])
 }

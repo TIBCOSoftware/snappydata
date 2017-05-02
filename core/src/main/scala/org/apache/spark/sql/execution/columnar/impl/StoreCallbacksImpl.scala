@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.{util, lang}
+import java.lang
 import java.util.{Collections, UUID}
 
 import scala.collection.JavaConverters._
@@ -179,7 +179,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   def getSnappyTableStats: AnyRef = {
     val c = SnappyTableStatsProviderService.getService.getTableSizeStats().values.asJavaCollection
-    val list: java.util.List[SnappyRegionStats] = new util.ArrayList(c.size())
+    val list: java.util.List[SnappyRegionStats] = new java.util.ArrayList(c.size())
     list.addAll(c)
     list
   }

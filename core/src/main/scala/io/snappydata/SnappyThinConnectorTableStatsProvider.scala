@@ -22,9 +22,10 @@ package io.snappydata
 import java.sql.{CallableStatement, Connection}
 import java.util.{Properties, Timer, TimerTask}
 
-import scala.collection.JavaConversions
+import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.CancelException
+import com.gemstone.gemfire.internal.ByteArrayDataInput
+import com.gemstone.gemfire.{DataSerializer, CancelException}
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 
@@ -42,6 +43,12 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     conn = JdbcUtils.createConnectionFactory(
       _url + ";route-query=false;" , new Properties())()
     getStatsStmt = conn.prepareCall("call sys.GET_SNAPPY_TABLE_STATS(?)")
+    getStatsStmt.registerOutParameter(1, java.sql.Types.BLOB)
+  }
+
+  def start(sc: SparkContext): Unit = {
+    throw new IllegalStateException("This is expected to be called for " +
+        "Embedded cluster mode only")
   }
 
   def start(sc: SparkContext, url: String): Unit = {
@@ -67,26 +74,31 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
   def executeStatsStmt(): Unit = {
     if (conn == null) initializeConnection()
-    getStatsStmt.registerOutParameter(1, java.sql.Types.BLOB)
     getStatsStmt.execute()
   }
 
-  override protected def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
+  override def getStatsFromAllServers: (Seq[SnappyRegionStats],
+      Seq[SnappyIndexStats]) = {
     try {
       executeStatsStmt()
     } catch {
       case e: Exception =>
         logWarning("SnappyThinConnectorTableStatsProvider: exception while retrieving stats " +
-            "from Snappy embedded cluster. Check whether the embedded cluster is stopped ")
+            "from Snappy embedded cluster. Check whether the embedded cluster is stopped. " +
+            "Exception: " + e.toString)
         logDebug("Exception stack trace: ", e)
         conn = null
         return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats])
     }
     val value = getStatsStmt.getBlob(1)
+    val bdi: ByteArrayDataInput = new ByteArrayDataInput
+    bdi.initialize(value.getBytes(1, value.length().asInstanceOf[Int]), null)
     val regionStats: java.util.List[SnappyRegionStats] =
-      SmartConnectorHelper.deserialize(
-        value.getBytes(1, value.length().asInstanceOf[Int])).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
-    (JavaConversions.asScalaBuffer(regionStats).toSeq, Seq.empty[SnappyIndexStats])
+    DataSerializer.readObject(bdi).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
+//      SmartConnectorHelper.deserialize(
+//        value.getBytes(1, value.length().asInstanceOf[Int])).
+//          asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
+    (regionStats.asScala.toSeq, Seq.empty[SnappyIndexStats])
   }
 
 }
