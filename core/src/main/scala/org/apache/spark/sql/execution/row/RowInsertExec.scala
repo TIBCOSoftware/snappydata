@@ -69,6 +69,7 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
                "$resolvedName", $props, true);""",
           s""" finally {
                try {
+                |$conn.commit();
                  $conn.close();
                } catch (java.sql.SQLException sqle) {
                  throw new java.io.IOException(sqle.toString(), sqle);
