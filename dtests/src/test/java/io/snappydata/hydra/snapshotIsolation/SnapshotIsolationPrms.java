@@ -35,6 +35,8 @@ public class SnapshotIsolationPrms extends SnappyPrms {
 
   public static Long duplicateSchemas;
 
+  public static Long testUniqueKeys;
+
   public static String[] getTableNames() {
     Long key = tablesList;
     Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));

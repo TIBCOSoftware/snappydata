@@ -171,7 +171,7 @@ object TestUtil {
   Returns the path for the directory where the output of resultset of queries have been saved.
   Creates a new directory, if not already existing
    */
-  protected def getQueryResultDir(dirName: String): String = {
+  def getQueryResultDir(dirName: String): String = {
     val log: File = new File(".")
     var dest: String = null
     val dirString = log.getCanonicalPath;
