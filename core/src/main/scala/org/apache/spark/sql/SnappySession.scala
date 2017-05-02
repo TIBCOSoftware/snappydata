@@ -352,6 +352,8 @@ class SnappySession(@transient private val sc: SparkContext,
     SnappySession.clearSessionCache(id)
   }
 
+  private[sql] var disableStoreOptimizations : Boolean = false
+
   def clear(): Unit = synchronized {
     clearContext()
     clearQueryData()
@@ -1780,6 +1782,7 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
         val session = key.session
+        session.disableStoreOptimizations = false
         val df = session.executeSQL(key.sqlText)
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
@@ -1788,12 +1791,11 @@ object SnappySession extends Logging {
           (null, null)
         } else {
           try {
-            session.conf.set(SNAPPY_STORE_OPTIMIZATION_DISABLED, "false")
             evaluatePlan(df, session, key)
           } catch {
             case e: CodeCompileException => {
+              session.disableStoreOptimizations = true
               val df = session.executeSQL(key.sqlText)
-              session.conf.set(SNAPPY_STORE_OPTIMIZATION_DISABLED, "true")
               evaluatePlan(df, session, key)
             }
           }

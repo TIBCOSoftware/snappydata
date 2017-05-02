@@ -570,18 +570,11 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
     Seq(StoreDataSourceStrategy, SnappyAggregation, LocalJoinStrategies)
 
   override def strategies: Seq[Strategy] =
-    if (snappySession.conf.get(SnappySession.SNAPPY_STORE_OPTIMIZATION_DISABLED,
-      "false").toBoolean) {
-    Seq(SnappyStrategies,
-      StoreStrategy, StreamQueryStrategy) ++
-      Seq(StoreDataSourceStrategy) ++
-      super.strategies
-  } else {
     Seq(SnappyStrategies,
       StoreStrategy, StreamQueryStrategy) ++
       storeOptimizedRules ++
       super.strategies
-  }
+
 }
 
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
