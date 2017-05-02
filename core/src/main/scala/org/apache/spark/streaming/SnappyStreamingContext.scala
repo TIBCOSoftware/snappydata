@@ -26,6 +26,8 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
+import org.apache.spark.sql.hive.ExternalTableType
+import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappySession}
 import org.apache.spark.streaming.dstream.DStream
@@ -116,11 +118,19 @@ class SnappyStreamingContext protected[spark](
    */
   override def start(): Unit = synchronized {
     if (getState() == StreamingContextState.INITIALIZED) {
+      registerStreamTables
       // register population of AQP tables from stream tables
       snappySession.snappyContextFunctions.aqpTablePopulator(snappySession)
     }
     super.start()
     SnappyStreamingContext.setActiveContext(self)
+  }
+
+  def registerStreamTables: Unit = {
+    // register dummy output transformations for the stream tables
+    // so that the streaming context starts
+    snappySession.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
+                 ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 
   override def stop(stopSparkContext: Boolean,
