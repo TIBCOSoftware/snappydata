@@ -129,9 +129,8 @@ final class PooledKryoSerializer(conf: SparkConf)
       BlockManagerId.getCachedBlockManagerId))
     kryo.register(classOf[StorageLevel], new ExternalizableResolverSerializer(
       StorageLevel.getCachedStorageLevel))
-    kryo.register(classOf[SLF4JLocationAwareLog], new KryoJavaSerializer())
-    kryo.register(classOf[Log4jLoggerAdapter], new KryoJavaSerializer())
-    kryo.register(classOf[NOPLogger], new KryoJavaSerializer())
+    //Explicitly register FastDatePrinter because it has transient fields which are not serialized by the
+    // FieldSerializer in the current version of kryo that we have
     kryo.register(classOf[FastDatePrinter], new KryoJavaSerializer())
 
     kryo.register(classOf[BlockAndExecutorId], new ExternalizableOnlySerializer)
@@ -153,8 +152,8 @@ final class PooledKryoSerializer(conf: SparkConf)
 
     // use Externalizable by default as last fallback, if available,
     // rather than going to FieldSerializer
-    kryo.addDefaultSerializer(classOf[Externalizable],
-      new ExternalizableSerializer)
+    kryo.addDefaultSerializer(classOf[Externalizable], new ExternalizableSerializer)
+    kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
 
     try {
       val launchTasksClass = Utils.classForName(
