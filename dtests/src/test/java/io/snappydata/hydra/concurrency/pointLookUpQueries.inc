@@ -1,7 +1,16 @@
 io.snappydata.hydra.cluster.SnappyPrms-pointLookUpQueryList =
 " SELECT SUM(Quantity) AS TotalUnits FROM Order_Details WHERE ProductID=3"
-" SELECT CompanyName, ContactName, Fax FROM Customers WHERE Fax IS NOT NULL ORDER BY CompanyName"
-" SELECT City, COUNT(EmployeeID) AS NumEmployees FROM Employees WHERE Title = 'Sales Representative' GROUP BY City HAVING COUNT(EmployeeID) > 1 ORDER BY NumEmployees"
+" SELECT CustomerID FROM Orders WHERE OrderID = 10290"
+" SELECT CategoryID FROM Categories WHERE CategoryName = 'Seafood'"
+" SELECT SupplierID FROM Products WHERE ProductID=14 AND SupplierID=6"
+" SELECT OrderID, ProductID, Quantity, UnitPrice, UnitPrice*Quantity FROM order_details WHERE OrderID = 10335"
+" SELECT distinct sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal from order_details where OrderID=10505"
+" SELECT ProductName, UnitsInStock, ReorderLevel FROM Products WHERE (ProductID = 75 AND SupplierID = 12)"
+" SELECT * from Employees where where City='London' AND Country='UK'"
+" SELECT CustomerID As CustomerID_London from Customers  where (City='London' AND Country='UK')"
+" SELECT SupplierID,CompanyName from suppliers where SupplierID=25"
+" SELECT RegionID,TerritoryDescription from territories where TerritoryID=44122"
+" "
 " SELECT CompanyName FROM Customers WHERE CustomerID = (SELECT CustomerID FROM Orders WHERE OrderID = 10290) --GEMFIREXD-PROPERTIES executionEngine=Spark"
 " SELECT ProductName, SupplierID FROM Products WHERE SupplierID IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN ('Exotic Liquids', 'Grandma Kelly''s Homestead', 'Tokyo Traders'))"
 ;
