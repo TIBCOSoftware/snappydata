@@ -21,6 +21,8 @@ import java.io.File
 import io.snappydata.SnappyTestRunner
 import org.apache.commons.io.FileUtils
 
+import scala.sys.process._
+
 /**
   * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt
   */
@@ -50,7 +52,6 @@ class SnappyHydraRunner extends SnappyTestRunner {
         s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
     val (out, err) = executeProcess("smokeBT", command)
 
-    import scala.sys.process._
     val c1 = s"grep -r Exception $logDir"
     val c2 = "grep -v  java.net.BindException"
     val c3 = "grep -v NoSuchObjectException"
@@ -60,6 +61,7 @@ class SnappyHydraRunner extends SnappyTestRunner {
     val c7 = "grep -v newDisconnectedException"
     val c8 = "grep -v CacheClosedException"
     val command1 = c1 #| c2 #| c3 #| c4 #| c5 #| c6 #| c7 #| c8
+    // TODO : handle case where the logDir path is incorrect or doesn't exists
     try {
       val output1: String = command1.!!
       throw new Exception(s"smokeBT Failed with below Exceptions:\n" + output1 +
@@ -67,8 +69,13 @@ class SnappyHydraRunner extends SnappyTestRunner {
     }
     catch {
       case r: java.lang.RuntimeException =>
-        // scalastyle:off println
-        println("No unexpected Exceptions observed during smoke bt run.")
+        if (r.getMessage().contains("Nonzero exit value: 1")) {
+          // scalastyle:off println
+          println("No unexpected Exceptions observed during smoke bt run.")
+        }
+        else {
+          throw r
+        }
       case i: Throwable => throw i
     }
 
@@ -83,7 +90,12 @@ class SnappyHydraRunner extends SnappyTestRunner {
     }
     catch {
       case r: java.lang.RuntimeException =>
-        println("smoke bt run is successful.")
+        if (r.getMessage().contains("Nonzero exit value: 1")) {
+          println("smoke bt run is successful.")
+        }
+        else {
+          throw r
+        }
       case i: Throwable => throw i
     }
   }

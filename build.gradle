@@ -846,7 +846,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task buildDtests {
-  delete "${snappyProductDir}/dtests/build-artifacts/scala-2.11/"
+  delete "${snappyProductDir}/dtests/build-artifacts/scala-${scalaBinaryVersion}/"
   dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
 }
 task checkAll {
