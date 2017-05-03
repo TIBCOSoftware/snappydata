@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{SnappyEmbeddedTableStatsProviderService, SnappyTableStatsProviderService}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
@@ -116,6 +116,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def publishColumnTableStats(): Unit = {
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
   }
 }

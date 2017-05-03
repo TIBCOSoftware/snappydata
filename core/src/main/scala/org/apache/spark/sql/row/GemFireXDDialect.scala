@@ -47,6 +47,7 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
       props: Properties): Unit = {
     if (!isLoner) {
       props.setProperty("host-data", "false")
+      props.setProperty("queryHdfs", "")
     }
   }
 }

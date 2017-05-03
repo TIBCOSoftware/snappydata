@@ -1435,6 +1435,7 @@ class SnappySession(@transient private val sc: SparkContext,
           throw sqle
         }
     } finally {
+      conn.commit()
       conn.close()
     }
   }
