@@ -527,15 +527,14 @@ private[sql] final case class ColumnTableScan(
         moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
           cursorVar, batchOrdinal, attr.dataType, notNullVar)).append('\n')
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
-          cursorVar, attr, notNullVar, weightVarName)
+          cursorVar, attr, notNullVar, weightVarName, false)
         bufferInitCode.append(bufferInit)
         ev
       } else {
         val producedCode = genCodeColumnNext(ctx, decoder, bufferVar,
           cursor, batchOrdinal, attr.dataType, notNullVar)
-        moveNextCode.append("")
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoder, bufferVar,
-          cursor, attr, notNullVar, weightVarName)
+          cursor, attr, notNullVar, weightVarName, true)
         val changedExpr = convertExprToMethodCall(ctx,
           ev, attr, index, producedCode, batchOrdinal, notNullVar)
         bufferInitCode.append(bufferInit)
@@ -754,7 +753,7 @@ private[sql] final case class ColumnTableScan(
 
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
       buffer: String, cursorVar: String, attr: Attribute,
-      notNullVar: String, weightVar: String): (ExprCode, String) = {
+      notNullVar: String, weightVar: String, wideTable : Boolean): (ExprCode, String) = {
     val col = ctx.freshName("col")
     var bufferInit = ""
     var dictionaryAssignCode = ""
@@ -779,9 +778,17 @@ private[sql] final case class ColumnTableScan(
         dictIndex = ctx.freshName("dictionaryIndex")
         ctx.addMutableState("UTF8String[]", dictionary, "")
         ctx.addMutableState("int", dictionaryLen, "")
+        if (wideTable) {
+          ctx.addMutableState("int", dictIndex, "")
+        }
         // initialize index to dictionaryLength - 1 where null value will
         // reside in case there are nulls in the current batch
-        jtDecl = s"UTF8String $col; int $dictIndex = $dictionaryLen - 1;"
+        if (wideTable) {
+          jtDecl = s"UTF8String $col; $dictIndex = $dictionaryLen - 1;"
+        } else {
+          jtDecl = s"UTF8String $col; int $dictIndex = $dictionaryLen - 1;"
+        }
+
         bufferInit =
             s"""
                |$dictionary = $decoder.getStringDictionary();

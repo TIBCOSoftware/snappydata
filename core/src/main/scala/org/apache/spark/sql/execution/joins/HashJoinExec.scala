@@ -58,7 +58,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     leftSizeInBytes: BigInt,
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
-    extends BinaryExecNode with HashJoin with BatchConsumer {
+    extends BinaryExecNode with HashJoin with BatchConsumer with NonRecursivePlans{
 
   override def nodeName: String = "SnappyHashJoin"
 
@@ -175,7 +175,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
-    throw new CodeCompileException("Could should not have reached here")
+    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
+      .asInstanceOf[SnappySession])).execute()
   }
 
   // return empty here as code of required variables is explicitly instantiated
@@ -230,6 +231,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   override def inputRDDs(): Seq[RDD[InternalRow]] = streamSideRDDs
 
   override def doProduce(ctx: CodegenContext): String = {
+    startProducing
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 

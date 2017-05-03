@@ -45,7 +45,7 @@ import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, ToolsCallbackInit}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.internal.CodeCompileException
+import org.apache.spark.sql.internal.{CodeCompileException, SQLConf}
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
@@ -66,7 +66,7 @@ case class SnappyHashAggregateExec(
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
     hasDistinct: Boolean)
-    extends UnaryExecNode with BatchConsumer {
+    extends UnaryExecNode with BatchConsumer with NonRecursivePlans{
 
   override def nodeName: String = "SnappyHashAggregate"
 
@@ -207,7 +207,8 @@ case class SnappyHashAggregateExec(
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
-    throw new CodeCompileException("Could should not have reached here")
+    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
+      .asInstanceOf[SnappySession])).execute()
   }
 
   // all the mode of aggregate expressions
@@ -223,7 +224,10 @@ case class SnappyHashAggregateExec(
     child.asInstanceOf[CodegenSupport].inputRDDs()
   }
 
+
+
   override protected def doProduce(ctx: CodegenContext): String = {
+    startProducing
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {
