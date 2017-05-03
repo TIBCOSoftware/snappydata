@@ -64,7 +64,7 @@ case class JDBCMutableRelation(
   override val needConversion: Boolean = false
 
   override def sizeInBytes: Long = {
-    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+    SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
       case Some(s) => s.getTotalSize
       case None => super.sizeInBytes
     }

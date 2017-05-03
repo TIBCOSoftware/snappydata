@@ -27,7 +27,7 @@ import scala.reflect.runtime.{universe => u}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
@@ -1055,7 +1055,6 @@ object SnappyContext extends Logging {
     }
   }
 
-
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
@@ -1069,9 +1068,8 @@ object SnappyContext extends Logging {
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
         SnappyTableStatsProviderService.start(sc)
-      case ThinClientConnectorMode(_, _) =>
-        // do nothing
-//        SnappyTableStatsProviderService.start(sc)
+      case ThinClientConnectorMode(_, url) =>
+        SnappyTableStatsProviderService.start(sc, url)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
