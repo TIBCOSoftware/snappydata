@@ -27,7 +27,7 @@ import com.gemstone.gemfire.management.internal.SystemManagementService
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyEmbeddedTableStatsProviderService, Constant, SnappyTableStatsProviderService}
 import io.snappydata.test.dunit.SerializableRunnable
 
 import org.apache.spark.sql.collection.Utils
@@ -275,12 +275,12 @@ object SnappyTableStatsProviderDUnitTest {
 
   def verifyResults(snc: SnappyContext, table: String,
       tableType: String = "C", expectedRowCount: Int = 7000): Unit = {
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
     val isColumnTable = if (tableType.equals("C")) true else false
     val isReplicatedTable = if (tableType.equals("R")) true else false
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
       isReplicatedTable, isColumnTable)
-    def actual = SnappyTableStatsProviderService.
+    def actual = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1(table)
 
     assert(actual.getRegionName == expected.getRegionName)

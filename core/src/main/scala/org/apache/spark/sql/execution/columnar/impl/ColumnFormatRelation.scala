@@ -18,8 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -211,8 +210,8 @@ abstract class BaseColumnFormatRelation(
           connProperties,
           Array.empty[Filter],
           // use same partitions as the column store (SNAP-1083)
-          partitionEvaluator
-        )
+          partitionEvaluator,
+          commitTx = false)
       case _ =>
         new SmartConnectorRowRDD(
           session,
@@ -267,6 +266,7 @@ abstract class BaseColumnFormatRelation(
         stmt.close()
         result
       } finally {
+        connection.commit()
         connection.close()
       }
     }
@@ -305,6 +305,7 @@ abstract class BaseColumnFormatRelation(
             ifExists)
         }
       } finally {
+        conn.commit()
         conn.close()
       }
     }
@@ -340,6 +341,7 @@ abstract class BaseColumnFormatRelation(
         }
       }
     } finally {
+      conn.commit()
       conn.close()
     }
     createActualTable(table, externalStore)
@@ -364,7 +366,7 @@ abstract class BaseColumnFormatRelation(
         (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
             "primary key (uuid, partitionId, columnIndex) ",
             d.getPartitionByClause("partitionId"),
-            "  DISABLE CONCURRENCY CHECKS ")
+            "  ENABLE CONCURRENCY CHECKS ")
       case _ => ("primary key (uuid)", "", "")
     }
     val colocationClause = s"COLOCATE WITH ($table)"
@@ -390,7 +392,7 @@ abstract class BaseColumnFormatRelation(
         dialect, sqlContext)
       if (!tableExists) {
         val sql =
-          s"CREATE TABLE $tableName $schemaExtensions DISABLE CONCURRENCY CHECKS"
+          s"CREATE TABLE $tableName $schemaExtensions ENABLE CONCURRENCY CHECKS"
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -413,6 +415,7 @@ abstract class BaseColumnFormatRelation(
         }
     } finally {
       if (conn != null) {
+        conn.commit()
         conn.close()
       }
     }
@@ -431,6 +434,7 @@ abstract class BaseColumnFormatRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -591,12 +595,8 @@ class ColumnFormatRelation(
       // SB: Now populate the index table from base table.
       df.write.insertInto(snappySession.getIndexTable(indexIdent).toString())
     } catch {
-      case e: Throwable =>
-        try {
-          snappySession.dropTable(indexIdent, ifExists = false)
-        } catch {
-          case _: Throwable =>
-        }
+      case NonFatal(e) =>
+        snappySession.dropTable(indexIdent, ifExists = true)
         throw e
     }
   }

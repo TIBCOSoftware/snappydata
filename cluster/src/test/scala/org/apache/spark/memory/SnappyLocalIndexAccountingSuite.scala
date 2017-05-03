@@ -119,7 +119,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     (1 to 10).map(i => snSession.insert("t1", Row(i, i, i)))
     val afterPutWithoutIndex = SparkEnv.get.memoryManager.storageMemoryUsed
     SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
-    SnappyTableStatsProviderService.getAggregatedStatsOnDemand
+    SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
     (1 to 10).map(i => snSession.insert("t1", Row(i, i, i)))
     val afterPutWitIndex = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(afterPutWitIndex > afterPutWithoutIndex)
