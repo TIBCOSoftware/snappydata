@@ -120,7 +120,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   protected def start: Rule1[LogicalPlan]
 
   protected final def identifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
+    atomic(capture( Consts.alphaUnderscore ~ Consts.identifier.*)) ~
         delimiter ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.reservedKeywords.contains(ucase)) ~
@@ -287,8 +287,9 @@ object SnappyParserConsts {
   final val lineCommentEnd = "\n\r\f" + EOI
   final val lineHintEnd = ")\n\r\f" + EOI
   final val hintValueEnd = ")*" + EOI
-  final val identifier: CharPredicate = CharPredicate.AlphaNum ++
-      CharPredicate('_')
+  final val underscore = CharPredicate('_')
+  final val identifier: CharPredicate = CharPredicate.AlphaNum ++ underscore
+  final val alphaUnderscore: CharPredicate = CharPredicate.Alpha ++ underscore
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')
   final val arithmeticOperator = CharPredicate('*', '/', '%', '&', '|', '^')
   final val exponent: CharPredicate = CharPredicate('e', 'E')
