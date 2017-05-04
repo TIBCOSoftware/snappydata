@@ -16,6 +16,10 @@
  */
 package io.snappydata.externalstore
 
+import java.io.File
+
+import org.apache.commons.io.FileUtils
+
 import scala.collection.JavaConverters._
 import scala.util.Random
 
@@ -631,6 +635,22 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(snc.sql("select count(*) from airline").count()>0)
     snc.sql("drop table airline")
   }
+
+  def testSNAP1210(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    snc.sql(s"create table t1 using com.databricks.spark.csv options(path " +
+      s"'${(getClass.getResource("/northwind/orders.csv").getPath)}', header 'true', " +
+      s"inferschema 'true')")
+    snc.sql("select * from t1").printSchema()
+    snc.sql("select * from t1").show
+    val tempPath = "/tmp/" + System.currentTimeMillis()
+
+    snc.sql("select * from t1").write.csv(tempPath)
+    assert(snc.sql("select count(*) from t1").count() > 0)
+    FileUtils.deleteDirectory(new File(tempPath))
+  }
+
 }
 
 case class TData(Key1: Int, Value: Int)
