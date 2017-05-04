@@ -29,24 +29,34 @@ BASETABLE 'string-constant', //base table name //only applicable for column_samp
 )
 [AS select_statement];
 ```
+//Jags>> above syntax text needs to be formatted. 
+
+//Jags>> Keywords are not consistent ... all keywords should use underscor as separator. e.g. STRATA_RESERVOIR_SIZE ... please add P1 ticket
+
+//Jags>> All the 'string-constant' should be substituted with something more meaningful. e.g. PARTITION_BY 'primary key' | columns ... REDUNDANCY 'Num of copies'  ... applies to partitioned tables. Redundancy '1' implies 2 copies of data. 
 
 ## Description
+//Jags>> this description is not required. This is well understood and we are not trying to explain all SQL. 
+
+//Jags>> Use this description -  Tables created using the standard SQL syntax without any of SnappyData specific extensions are created as row-oriented replicated tables. i.e. Each data server node in the cluster will host a consistent replica of the table. All tables are also registered in the Spark catalog and hence visible as DataFrames. 
+//Jags>> e.g. 'create table if not exists Table1 (a int)' is equivalent to 'create table if not exists Table1 (a int) using row'.
+//Jags>> The syntax should be 'create [temporary] table ...' ... we allow temporary tables. Need to verify correctness and confusion with spark temporary tables. 
 
 Tables contain columns and constraints, rules to which data must conform. Table-level constraints specify a column or columns. Columns have a data type and can specify column constraints (column-level constraints). The syntax of CREATE TABLE is extended to give properties to the tables that are specific to RowStore.
 
 The CREATE TABLE statement has two variants depending on whether you are specifying the column definitions and constraints (CREATE TABLE), or whether you are modeling the columns after the results of a query expression (CREATE TABLE…AS…).
 
 <a id="ddl"></a>
-## DDL Extensions to SnappyStore Tables
-The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. 
+## DDL Extensions
+Below are the SnappyData specific extensions. You will find detailed usage examples in a later section. 
 
-   * COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
+   * COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table to colocate with. The referenced table must already exist. 
 
-   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.
+   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. 
 
-   * BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
+   * BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets" to use for partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of 5 nodes and bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers will host all the data for this table. If not specified, the number of buckets defaults to 113.
 
-   * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
+   * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. 
 
    * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
 
