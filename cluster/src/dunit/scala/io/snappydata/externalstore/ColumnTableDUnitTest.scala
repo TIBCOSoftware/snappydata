@@ -16,6 +16,10 @@
  */
 package io.snappydata.externalstore
 
+import java.io.File
+
+import org.apache.commons.io.FileUtils
+
 import scala.collection.JavaConverters._
 import scala.util.Random
 
@@ -640,8 +644,11 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       s"inferschema 'true')")
     snc.sql("select * from t1").printSchema()
     snc.sql("select * from t1").show
-    snc.sql("select * from t1").write.csv("/tmp/" + System.currentTimeMillis())
+    val tempPath = "/tmp/" + System.currentTimeMillis()
+
+    snc.sql("select * from t1").write.csv(tempPath)
     assert(snc.sql("select count(*) from t1").count() > 0)
+    FileUtils.deleteDirectory(new File(tempPath))
   }
 
 }
