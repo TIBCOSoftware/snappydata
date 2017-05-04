@@ -20,9 +20,6 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.{SnappySQLJob, _}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
-/**
-  * Created by swati on 3/8/16.
-  */
 class LoadCSVDataJob extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
 
