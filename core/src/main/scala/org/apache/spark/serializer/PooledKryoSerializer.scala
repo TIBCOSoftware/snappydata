@@ -129,10 +129,6 @@ final class PooledKryoSerializer(conf: SparkConf)
       BlockManagerId.getCachedBlockManagerId))
     kryo.register(classOf[StorageLevel], new ExternalizableResolverSerializer(
       StorageLevel.getCachedStorageLevel))
-    //Explicitly register FastDatePrinter because it has transient fields which are not serialized by the
-    // FieldSerializer in the current version of kryo that we have
-    kryo.register(classOf[FastDatePrinter], new KryoJavaSerializer())
-
     kryo.register(classOf[BlockAndExecutorId], new ExternalizableOnlySerializer)
     kryo.register(classOf[StructType], StructTypeSerializer)
     kryo.register(classOf[NarrowExecutorLocalSplitDep],

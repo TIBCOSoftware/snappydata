@@ -635,12 +635,13 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def testSNAP1210(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    snc.sql(s"create table t1 using com.databricks.spark.csv options(path '${(getClass.getResource("/northwind/orders"+
-      ".csv").getPath)}', header 'true', inferschema 'true')")
+    snc.sql(s"create table t1 using com.databricks.spark.csv options(path " +
+      s"'${(getClass.getResource("/northwind/orders.csv").getPath)}', header 'true', " +
+      s"inferschema 'true')")
     snc.sql("select * from t1").printSchema()
     snc.sql("select * from t1").show
-    snc.sql("select * from t1").write.csv("/tmp/"+System.currentTimeMillis())
-    assert(snc.sql("select count(*) from t1").count()>0)
+    snc.sql("select * from t1").write.csv("/tmp/" + System.currentTimeMillis())
+    assert(snc.sql("select count(*) from t1").count() > 0)
   }
 
 }
