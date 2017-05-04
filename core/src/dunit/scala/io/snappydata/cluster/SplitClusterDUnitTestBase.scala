@@ -158,7 +158,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
-  final def testTableFormChanges(): Unit = {
+  final def _testTableFormChanges(): Unit = {
     if (!useThinClientConnector) {
       return
     }

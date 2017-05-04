@@ -175,11 +175,11 @@ object ExternalStoreUtils extends Logging {
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
                 "skip-constraint-checks=true"
           case ThinClientConnectorMode(_, url) =>
-            url + ";route-query=false"
+            url + ";route-query=false;skip-constraint-checks=true"
           case SplitClusterMode(_, _) =>
             ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
           case LocalMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
           case ExternalClusterMode(_, url) =>
@@ -247,12 +247,12 @@ object ExternalStoreUtils extends Logging {
     executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
-
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
         true
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
+        connProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {

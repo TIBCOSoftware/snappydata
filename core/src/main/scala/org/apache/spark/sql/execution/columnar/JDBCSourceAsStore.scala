@@ -39,7 +39,11 @@ abstract class ResultSetIterator[A](conn: Connection,
   protected[this] final var hasNextValue: Boolean = rs ne null
 
   if (context ne null) {
-    context.addTaskCompletionListener { _ => close() }
+    context.addTaskCompletionListener { _ => {
+      logDebug("closed connection for task from listener " + context.partitionId())
+      close()
+    }
+    }
   }
 
   override final def hasNext: Boolean = {
@@ -55,7 +59,9 @@ abstract class ResultSetIterator[A](conn: Connection,
       }
     } finally {
       if (!success) {
-        close()
+        hasNextValue = false
+        //logDebug("closed connection for task due to failure")
+        //close()
       }
     }
   }
@@ -74,7 +80,7 @@ abstract class ResultSetIterator[A](conn: Connection,
   protected def getCurrentValue: A
 
   def close() {
-    if (!hasNextValue) return
+    //if (!hasNextValue) return
     try {
       // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
       // rs.lightWeightClose()
