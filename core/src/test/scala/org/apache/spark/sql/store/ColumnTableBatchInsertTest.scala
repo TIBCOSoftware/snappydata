@@ -17,6 +17,8 @@
 package org.apache.spark.sql.store
 
 
+import scala.collection.mutable
+
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
 import org.scalatest.BeforeAndAfter
@@ -69,18 +71,34 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
         "PARTITION_BY 'Key1'," +
         "BUCKETS '1')")
 
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r = result.collect
-    assert(r.length == 0)
+    //val r = result.collect
+    //assert(r.length == 0)
 
-    val rdd = sc.parallelize(
-      (1 to 1000).map(i => TestData(i, i.toString)))
-
-    val dataDF = snc.createDataFrame(rdd)
-
+    var rdd = sc.parallelize(
+      (1 to 10).map(i => TestData(i, i.toString)))
+    var rd2 = rdd.repartition(1)
+    val dataDF = snc.createDataFrame(rd2)
     dataDF.write.insertInto(tableName)
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    val t = new Thread(new Runnable() {
+      override def run(): Unit = {
+        rdd = sc.parallelize(
+          (11 to 20).map(i => TestData(i, i.toString)))
+        rd2 = rdd.repartition(1)
+        val dataDF = snc.createDataFrame(rd2)
+        dataDF.write.insertInto(tableName)
+        val result = snc.sql("SELECT * FROM " + tableName)
+        val r2 = result.collect
+
+        assert(r2.length == 20)
+      }
+    })
+    t.start()
+    t.join()
+
     val r2 = result.collect
-    assert(r2.length == 1000)
+    assert(r2.length == 20)
     println("Successful")
   }
 
@@ -92,7 +110,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
         "USING column " +
         "options " +
         "(" +
-        "BUCKETS '100')")
+        "BUCKETS '1')")
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
@@ -178,8 +196,21 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.insertInto(tableName)
+
     val r2 = result.collect
+
+    val r3 = mutable.HashSet[Int]()
+    r2.map( i => {
+      r3.add(i.getInt(0))
+    })
+
+    (1 to 19999).map(i => {
+      if(!r3.contains(i))
+        println (s"Does not contain ${i}")
+    })
+
     assert(r2.length == 19999)
+
     println("Successful")
   }
 
@@ -209,8 +240,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
   }
 
   test("test create table as select with alias") {
-    val rowTable="rowTable";
-    val colTable="colTable";
+    val rowTable="rowTable"
+    val colTable="colTable"
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
