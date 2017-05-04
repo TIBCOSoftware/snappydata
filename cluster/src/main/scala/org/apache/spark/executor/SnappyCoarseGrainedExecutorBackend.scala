@@ -94,7 +94,7 @@ class SnappyCoarseGrainedExecutorBackend(
       // When tasks are killed, the task threads cannot be interrupted
       // as snappy may be writing to an oplog and it generates a
       // DiskAccessException. This DAE ends up closing the underlying regions.
-      executor.killAllTasks(false)
+      executor.killAllTasks(interruptThread = false)
       executor.stop()
     }
     // stop the actor system
