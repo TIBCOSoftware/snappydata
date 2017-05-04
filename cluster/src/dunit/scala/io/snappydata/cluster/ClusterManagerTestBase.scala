@@ -79,6 +79,7 @@ class ClusterManagerTestBase(s: String)
 
   val locatorNetPort: Int = 0
   val locatorNetProps = new Properties()
+  val stopNetServersInTearDown = true
 
   // SparkContext is initialized on the lead node and hence,
   // this can be used only by jobs running on Lead node
@@ -159,8 +160,10 @@ class ClusterManagerTestBase(s: String)
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
       Array[AnyRef](getClass.getName, getName)))
-    Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
-    stopNetworkServers()
+    if (stopNetServersInTearDown) {
+      Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+      stopNetworkServers()
+    }
     bootProps.clear()
   }
 
