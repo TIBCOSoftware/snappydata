@@ -3,7 +3,7 @@
 <mark> SOUBHIK TO CONFIRM/PROVIDE COLUMN TABLE INFO</mark>
 
 !!!Tip:
-	This is only supported for row tables. Support for column tables will be provided in future releases.
+	This is only supported for row tables. Support for column tables will be provided in future releases. Filtering of column tables in memory is very fast in SnappyData obviating the need for indexing in most cases. 
 
 Creates an index on one or more columns of a table.
 
