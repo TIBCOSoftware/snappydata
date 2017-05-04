@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -74,12 +74,11 @@ abstract case class JDBCAppendableRelation(
   def numBuckets: Int = -1
 
   override def sizeInBytes: Long = {
-    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+    SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
       case Some(s) => s.getTotalSize
       case None => super.sizeInBytes
     }
   }
-
 
   protected final def dialect: JdbcDialect = connProperties.dialect
 
@@ -183,6 +182,7 @@ abstract case class JDBCAppendableRelation(
         sys.error(s"Table $table already exists.")
       }
     } finally {
+      conn.commit()
       conn.close()
     }
     createExternalTableForColumnBatches(table, externalStore)
@@ -248,6 +248,7 @@ abstract case class JDBCAppendableRelation(
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
       } finally {
+        conn.commit()
         conn.close()
       }
     }

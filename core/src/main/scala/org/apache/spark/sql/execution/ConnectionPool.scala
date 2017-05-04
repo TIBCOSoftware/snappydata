@@ -138,6 +138,7 @@ object ConnectionPool {
     dialect match {
       case GemFireXDDialect | GemFireXDClientDialect =>
         conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+
       case _ =>
     }
     conn
@@ -175,8 +176,8 @@ object ConnectionPool {
     } else false
   }
 
-  /** To be invoked only on SparkContext stop. */
-  private[sql] def clear(): Unit = pools.synchronized {
+  /** To be invoked only on SparkContext stop or from tests. */
+  def clear(): Unit = pools.synchronized {
     idToPoolMap.asScala.foreach {
       case (id, dsKey) => removePoolKey(id, dsKey)
     }
