@@ -19,18 +19,23 @@ package org.apache.spark.sql
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.PreparedStatement
 
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+
+import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.benchmark.snappy.TPCH_Snappy
-import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+import io.snappydata.benchmark.snappy.tpch.{QueryExecutor, TPCH_Queries}
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
+import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.{Logging, SparkContext}
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     with Logging {
 
   override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
+  val queries2 = Array("1")
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")
@@ -48,7 +53,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
 
-  def testSnappy(): Unit = {
+  def _testSnappy(): Unit = {
     startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
 
@@ -98,6 +103,175 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       "queryValidationOnConnector", ClusterManagerTestBase.locPort)
   }
 
+  private def normalizeRow(rows: Array[Row]): Array[String] = {
+    val newBuffer: ArrayBuffer[String] = new ArrayBuffer
+    val sb = new StringBuilder
+    rows.foreach(r => {
+      r.toSeq.foreach {
+        case d: Double =>
+          // round to nearest integer if large enough else
+          // round to one decimal digit
+          if (math.abs(d) >= 1000) {
+            sb.append(math.floor(d + 0.5)).append(',')
+          } else {
+            sb.append(math.floor(d * 5.0 + 0.25) / 5.0).append(',')
+          }
+        case bd: java.math.BigDecimal =>
+          sb.append(bd.setScale(2, java.math.RoundingMode.HALF_UP)).append(',')
+        case v => sb.append(v).append(',')
+      }
+      newBuffer += sb.toString()
+      sb.clear()
+    })
+    newBuffer.sortWith(_ < _).toArray
+  }
+
+  def testTokenization_embedded(): Unit = {
+    startNetworkServersOnAllVMs()
+    val snc = SnappyContext(sc)
+
+    logInfo("CREATING TABLE IN EMBEDDED MODE")
+    TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+    Thread.sleep(20000)
+    runtpchMultipleTimes(snc)
+  }
+
+  def testTokenization_split(): Unit = {
+    startNetworkServersOnAllVMs()
+    val snc = SnappyContext(sc)
+
+    logInfo("CREATING TABLE USING SMART CONNECTOR")
+    vm3.invoke(classOf[SmartConnectorFunctions],
+      "createTablesUsingConnector", ClusterManagerTestBase.locPort)
+    Thread.sleep(20000)
+    runtpchMultipleTimes(snc)
+  }
+
+  private def removeLimitClause(query: String): String = {
+    val idxstart = query.indexOf("limit ")
+    var retquery = query
+    if (idxstart > 0) {
+      retquery = query.substring(0, idxstart)
+    }
+    retquery
+  }
+
+  private def runtpchMultipleTimes(snc: SnappyContext) = {
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
+    val results: ListBuffer[(String, String, String, Array[String],
+        Array[String], Array[String], String)] = new ListBuffer()
+
+    queries.foreach(f = qNum => {
+      println(s"Initial phase for ${qNum}")
+      var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      if (!qNum.equals("15")) {
+        val df = snc.sqlUncached(queryToBeExecuted1)
+        val res = df.collect()
+        println("*****************")
+        println(s"${qNum} - 1 ${queryToBeExecuted1} results")
+        val r1 = normalizeRow(res)
+        r1.foreach(println)
+        println("*****************")
+        snc.snappySession.clearPlanCache()
+        val df2 = snc.sqlUncached(queryToBeExecuted2)
+        val res2 = df2.collect()
+        println("*****************")
+        println(s"${qNum} - 2 ${queryToBeExecuted2} results")
+        val r2 = normalizeRow(res2)
+        r2.foreach(println)
+        println("*****************")
+        snc.snappySession.clearPlanCache()
+        val df3 = snc.sqlUncached(queryToBeExecuted3)
+        val res3 = df3.collect()
+        println("*****************")
+        println(s"${qNum} - 3 ${queryToBeExecuted3} results")
+        val r3 = normalizeRow(res3)
+        r3.foreach(println)
+        println("*****************")
+        snc.snappySession.clearPlanCache()
+        results += ((queryToBeExecuted1, queryToBeExecuted2,
+            queryToBeExecuted3, r1, r2, r3, qNum))
+      }
+    })
+
+    println(s"results size = ${results.size}")
+
+    var m = SnappySession.getPlanCache
+    var itr = SnappySession.getPlanCache.asMap().keySet().iterator
+    while(itr.hasNext) {
+      val k = itr.next.asInstanceOf[CachedKey]
+      println(s"sqlText = ${k.sqlText}")
+    }
+
+    var cached = 0
+    results.foreach(x => {
+      val q1 = x._1
+      val q2 = x._2
+      val q3 = x._3
+      val r1 = x._4
+      val r2 = x._5
+      val r3 = x._6
+      val qN = x._7
+      println(s"Final phase for ${qN}")
+      val df = snc.sql(q1)
+      val res = df.collect()
+      println("*****************")
+      println(s"${qN} - 1 ${q1} results")
+      val rs1 = normalizeRow(res)
+      rs1.foreach(println)
+      println("*****************")
+      if (!rs1.sameElements(r1)) {
+        Thread.sleep(1000000)
+        assert(false)
+      }
+      // assert(rs1.sameElements(r1))
+      val df2 = snc.sql(q2)
+      val res2 = df2.collect()
+      println("*****************")
+      println(s"${qN} - 2 ${q2} results")
+      val rs2 = normalizeRow(res2)
+      rs2.foreach(println)
+      println("*****************")
+      if (!rs2.sameElements(r2)) {
+        Thread.sleep(1000000)
+        assert(false)
+      }
+      // assert(rs2.sameElements(r2))
+      val df3 = snc.sql(q3)
+      val res3 = df3.collect()
+      println("*****************")
+      println(s"${qN} - 3 ${q3} results")
+      val rs3 = normalizeRow(res3)
+      rs3.foreach(println)
+      println("*****************")
+      if (!rs3.sameElements(r3)) {
+        Thread.sleep(1000000)
+        assert(false)
+      }
+      // assert(rs3.sameElements(r3))
+
+      m = SnappySession.getPlanCache
+      val size = SnappySession.getPlanCache.size()
+      println(s"KN: size of plan cache after ${qN}= ${size}")
+      snc.snappySession.clearPlanCache()
+      if (size == 1) {
+        cached = cached + 1
+      }
+
+    })
+    println(s"KN: number of queries cached = ${cached}")
+    println(s"KN: size of plan cache = ${SnappySession.getPlanCache.size()}")
+    m = SnappySession.getPlanCache
+    itr = SnappySession.getPlanCache.asMap().keySet().iterator
+    while(itr.hasNext) {
+      val k = itr.next.asInstanceOf[CachedKey]
+      println(s"sqlText = ${k.sqlText}")
+    }
+  }
+
+
   def _testSpark(): Unit = {
     val snc = new SQLContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = false)
@@ -105,7 +279,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     TPCHUtils.validateResult(snc, isSnappy = false)
   }
 
-  def testSnap1296_1297(): Unit = {
+  def _testSnap1296_1297(): Unit = {
     val snc = SnappyContext(sc)
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)

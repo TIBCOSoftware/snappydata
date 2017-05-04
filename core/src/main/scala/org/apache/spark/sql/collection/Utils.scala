@@ -852,7 +852,7 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       bucket = bucketSet.nextSetBit(bucket + 1)
     }
     // trim trailing comma
-    sb.setLength(sb.length - 1)
+    if (sb.nonEmpty) sb.setLength(sb.length - 1)
     sb.toString()
   }
 

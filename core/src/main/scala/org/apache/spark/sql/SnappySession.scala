@@ -342,6 +342,8 @@ class SnappySession(@transient private val sc: SparkContext,
       keyVars: Seq[String]): Option[String] = getContextObject(ctx, "H", keyVars)
 
   private[sql] def clearContext(): Unit = synchronized {
+    // println(s"clearing context")
+    // new Throwable().printStackTrace()
     contextObjects.clear()
   }
 
@@ -1707,12 +1709,12 @@ object SnappySession extends Logging {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching) {
-        key.invalidatePlan()
+        key.invalidatePlan
       }
       else {
         val params1 = getAllParamLiterals(executedPlan)
-        if (!params1.sameElements(key.pls)) {
-          key.invalidatePlan()
+        if (!(params1.sameElements(key.pls))) {
+          key.invalidatePlan
         }
       }
     }
@@ -1720,6 +1722,8 @@ object SnappySession extends Logging {
     val allbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
+
+    println(s"all bc plans = ${allbroadcastplans} ... size = ${allbroadcastplans.size}")
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
@@ -1729,8 +1733,8 @@ object SnappySession extends Logging {
             plan.childRDD.id, true)
       case _: LocalTableScanExec =>
         (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
-      case _ if allbroadcastplans.nonEmpty =>
-        (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
+      // case _ if allbroadcastplans.nonEmpty =>
+        // (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
         val rdd = executedPlan match {
           case plan: CollectLimitExec => plan.child.execute()
@@ -1753,6 +1757,12 @@ object SnappySession extends Logging {
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
     }
 
+    val allallbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
+        ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
+      mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
+
+    println(s"all all bc plans = ${allallbroadcastplans} ... size = ${allallbroadcastplans.size}")
+
     // keep references as well
     // filter unvisited literals. If the query is on a view for example the
     // modified tpch query no 15, It even picks those literal which we don't want.
@@ -1765,8 +1775,63 @@ object SnappySession extends Logging {
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
     }
+
+    // -----------------
+//    print("allLiterals = ")
+//    allLiterals.foreach(i => print(s"${i} "))
+//    println
+//    print("params1 = ")
+//    val params1tmp = getAllParamLiterals(executedPlan)
+//    params1tmp.foreach(i => print(s"${i} "))
+//    println
+//    print("key = ")
+//    key.pls.foreach(i => print(s"${i} "))
+//    println
+//    println(s"qe.logicalPlan = ${df.queryExecution.logical}")
+    println(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
+//    println(s"qe.sparkPlan = ${df.queryExecution.sparkPlan}")
+    // val ignorecaching = checkParamLiteralsInBroadcastPlans(allallbroadcastplans)
+    // -----------------
+    // This part is the defensive coding for all those cases where Tokenization
+    // support is not smart enough to deal with cases where the execution plan
+    // is modified in such a way that we cannot track those constants which
+    // need to be replaced in the subsequent execution
+    if (key != null) {
+      val nocaching = session.getContextObject[Boolean](
+        CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
+      if (nocaching /* || allallbroadcastplans.nonEmpty */) {
+        println(s"Invalidating the key because explicit nocaching")
+        key.invalidatePlan()
+      }
+      else {
+        val params1 = getAllParamLiterals(executedPlan)
+        if (allLiterals.length != params1.length || !params1.sameElements(key.pls)) {
+          println(s"Invalidating the key because nocaching " +
+              s"allLiterals.length = ${allLiterals.length}," +
+              s" params1.length = ${params1.length} and key.pls = ${key.pls.length}")
+          println(s"params1 print len=${params1.length}")
+          params1.foreach(println)
+          println(s"keypls print len=${key.pls.length}")
+          key.pls.foreach(println)
+          println(s"end")
+          key.invalidatePlan()
+        }
+        else if (params1.length != 0 ) {
+          params1.foreach(p => {
+            if (!allLiterals.exists(_.position == p.pos)) {
+              println(s"invalidating as allLiterals and params1 are different")
+              key.invalidatePlan()
+            }
+          })
+        }
+      }
+    }
+
+    if (key != null && key.valid) {
+      println(s"Not invalidating for ${key.sqlText}")
+    }
     val cdf = new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
-      localCollect, allLiterals, allbroadcastplans)
+      localCollect, allLiterals, allallbroadcastplans)
 
     // Now check if optimization plans have been applied such that
     val queryHints = session.synchronized {
@@ -1844,13 +1909,10 @@ object SnappySession extends Logging {
         case a: Alias =>
           Alias(a.child, a.name)(exprId = ExprId(0))
         case l@ListQuery(query, _) =>
-          val xx = l.copy(query =
-              query.transform(transformExprID),
+          l.copy(query = query.transformAllExpressions(normalizeExprIds),
             exprId = ExprId(0))
-          xx
         case ae: AggregateExpression =>
-          val eee = ae.copy(resultId = ExprId(0))
-          eee
+          ae.copy(resultId = ExprId(0))
       }
 
       def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
@@ -1876,7 +1938,10 @@ object SnappySession extends Logging {
       }
       val key = CachedKey(session, lp, sqlText, currentWrappedConstants)
       val evaluation = planCache.getUnchecked(key)
-      if (!key.valid) planCache.invalidate(key)
+      if (!key.valid) {
+        println(s"Invalidating plan cache for sqltext: ${key.sqlText}")
+        planCache.invalidate(key)
+      }
       var cachedDF = evaluation._1
       var queryHints = evaluation._2
 
@@ -1900,8 +1965,11 @@ object SnappySession extends Logging {
         cachedDF.reset()
       }
       if (key.valid) {
+        println(s"calling reprepare broadcast with ${currentWrappedConstants}")
         cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+        println(s"calling replace constants with ${currentWrappedConstants} and allLiterals = ${cachedDF.allLiterals.toSet}")
         CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
+        println(s"After replacing allLiterals = ${cachedDF.allLiterals.toSet}")
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {

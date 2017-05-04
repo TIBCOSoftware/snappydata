@@ -22,7 +22,10 @@ import java.sql.SQLException
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
@@ -57,10 +60,10 @@ class CachedDataFrame(df: Dataset[Row],
     extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
-   * Return true if [[collectWithHandler]] supports partition-wise separate
-   * result handling by default, else result handler is invoked for a
-   * single partition result.
-   */
+    * Return true if [[collectWithHandler]] supports partition-wise separate
+    * result handling by default, else result handler is invoked for a
+    * single partition result.
+    */
   def hasPartitionWiseHandling: Boolean = cachedRDD ne null
 
   private lazy val boundEnc = exprEnc.resolveAndBind(logicalPlan.output,
@@ -70,6 +73,9 @@ class CachedDataFrame(df: Dataset[Row],
   private lazy val queryPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
     queryExecution.executedPlan)
 
+  private lazy val lastShuffleCleanups = new Array[Future[Unit]](
+    shuffleDependencies.length)
+
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
     if (numShuffleDeps > 0) {
@@ -77,7 +83,11 @@ class CachedDataFrame(df: Dataset[Row],
         case Some(cleaner) =>
           var i = 0
           while (i < numShuffleDeps) {
-            cleaner.doCleanupShuffle(shuffleDependencies(i), blocking = false)
+            val shuffleDependency = shuffleDependencies(i)
+            cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
+            // lastShuffleCleanups(i) = Future {
+            //  cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
+            // }
             i += 1
           }
         case None =>
@@ -117,9 +127,9 @@ class CachedDataFrame(df: Dataset[Row],
 
 
   /**
-   * Wrap a Dataset action to track the QueryExecution and time cost,
-   * then report to the user-registered callback functions.
-   */
+    * Wrap a Dataset action to track the QueryExecution and time cost,
+    * then report to the user-registered callback functions.
+    */
   private def withCallback[U](name: String)(action: DataFrame => U) = {
     try {
       queryExecution.executedPlan.foreach { plan =>
@@ -179,6 +189,21 @@ class CachedDataFrame(df: Dataset[Row],
       // execution returns an Iterator[InternalRow] itself
       collectWithHandler[InternalRow, InternalRow](null, null, null,
         skipUnpartitionedDataProcessing = true)
+    }
+  }
+
+  private[sql] def waitForLastShuffleCleanup(): Unit = {
+    val numShuffles = lastShuffleCleanups.length
+    if (numShuffles > 0) {
+      var index = 0
+      while (index < numShuffles) {
+        val cleanup = lastShuffleCleanups(index)
+        if (cleanup ne null) {
+          cleanup.onComplete(identity)
+          lastShuffleCleanups(index) = null
+        }
+        index += 1
+      }
     }
   }
 
@@ -250,6 +275,9 @@ class CachedDataFrame(df: Dataset[Row],
               results(index) = resultHandler(index, r._1))
           results.iterator
       }
+      // submit cleanup job for shuffle output
+      // clearCachedShuffleDeps(sc)
+
       results
     }
 
@@ -266,20 +294,27 @@ class CachedDataFrame(df: Dataset[Row],
 
   def reprepareBroadcast(lp: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
+    println(s"All bc plans = ${allbcplans} numsuch = ${allbcplans.size}")
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
+        println(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
           case pl@ParamLiteral(_, _, p) =>
             val np = newpls.find(_.pos == p).getOrElse(pl)
-            ParamLiteral(np.value, np.dataType, p)
+            val x = ParamLiteral(np.value, np.dataType, p)
+            x.considerUnequal = true
+            x
         }
+        println(s"newbchj = ${newbchj}")
         val tmpCtx = new CodegenContext
         val parameterType = tmpCtx.getClass
         val method = newbchj.getClass.getDeclaredMethod("prepareBroadcast", parameterType)
         method.setAccessible(true)
         val bc = method.invoke(newbchj, tmpCtx)
-        refs(broadcastIndex) = bc.asInstanceOf[(Broadcast[_], String)]._1
+        println(s"replacing bc var = ${refs(broadcastIndex)} with " +
+            s"new bc = ${bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1}")
+        refs(broadcastIndex) = bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1
       }
     }
     firstAccess = false

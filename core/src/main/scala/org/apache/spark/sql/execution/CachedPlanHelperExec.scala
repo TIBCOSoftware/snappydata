@@ -62,6 +62,7 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
     var alreadyGotBroadcastNode = false
     childPlan transformDown {
       case bchj: BroadcastHashJoinExec => {
+        println(s"Got a bchj = ${bchj} and nextstagestarted = ${nextStageStarted}")
         if (!nextStageStarted) {
           // The below assertion was kept thinking that there will be just one
           // broadcasthashjoin in one stage but there can be more than one and so
@@ -83,6 +84,15 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
           }
           alreadyGotBroadcastNode = true
         }
+        bchj transformAllExpressions {
+          case pl: ParamLiteral =>
+            session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+              CachedPlanHelperExec.NOCACHING_KEY) match {
+              case Some(flag) => true
+              case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+            }
+            pl
+        }
         bchj
       }
       case cp: CachedPlanHelperExec => {
@@ -90,6 +100,13 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
       }
       cp
     }
+    // val map = session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+    //  CachedPlanHelperExec.BROADCASTS_KEY)
+//    if (map != null && map.nonEmpty) {
+//      println(s"Priniting broadcast map")
+//      println(map.iterator.foreach(println))
+//    }
+
     childPlan.produce(ctx, this)
   }
 

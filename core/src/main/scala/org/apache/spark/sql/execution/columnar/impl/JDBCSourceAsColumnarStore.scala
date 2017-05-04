@@ -503,6 +503,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
       ps.close()
     }
     val sqlText = s"SELECT $columnList FROM $resolvedName$filterWhereClause"
+     println(s"KN: pushed SQL to GemXD: $sqlText, " +
+        s"args=${if (filterWhereArgs ne null) filterWhereArgs.toSeq.toString() else "null"}")
 
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)

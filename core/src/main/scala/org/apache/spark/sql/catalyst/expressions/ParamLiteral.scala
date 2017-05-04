@@ -26,10 +26,13 @@ import org.json4s.JsonAST.JValue
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.trees.TreeNode
 import org.apache.spark.sql.types._
 
 class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     extends Literal(_value, _dataType) {
+
+  override def toString: String = s"ParamLiteral ${super.toString}"
 
   private[this] var _foldable = false
 
@@ -61,10 +64,12 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
   }
 
+  var considerUnequal = false
+
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
     case pl: ParamLiteral =>
-      pl.dataType == dataType && pl.pos == pos
+      pl.dataType == dataType && pl.pos == pos && !(pl.considerUnequal || considerUnequal)
     case _ => false
   }
 
