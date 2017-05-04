@@ -300,11 +300,11 @@ class SnappySessionState(snappySession: SnappySession)
 
   var isPreparePhase: Boolean = false
 
-  var pvs: ParameterValueSet = null
+  var pvs: Option[ParameterValueSet] = None
 
   var questionMarkCounter: Int = 0
 
-  def setPreparedQuery(preparePhase: Boolean, paramSet: ParameterValueSet): Unit = {
+  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit = {
     isPreparePhase = preparePhase
     pvs = paramSet
   }

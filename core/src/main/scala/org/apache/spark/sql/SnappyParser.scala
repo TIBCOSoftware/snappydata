@@ -182,15 +182,17 @@ class SnappyParser(session: SnappySession)
       if (session.sessionState.isPreparePhase) {
         ParamLiteral(Row(session.sessionState.questionMarkCounter), NullType, 0)
       } else {
-        assert(session.sessionState.pvs != null,
+        assert(session.sessionState.pvs.isDefined,
           "For Prepared Statement, Parameter constants are not provided")
-        if (session.sessionState.questionMarkCounter > session.sessionState.pvs.getParameterCount) {
+        if (session.sessionState.questionMarkCounter >
+            session.sessionState.pvs.get.getParameterCount) {
           assert(false, s"For Prepared Statement, Got more number of" +
               s" placeholders = $session.sessionState.questionMarkCounter than given number of parameter" +
-              s" constants = ${session.sessionState.pvs.getParameterCount}")
+              s" constants = ${session.sessionState.pvs.get.getParameterCount}")
         }
-        val dvd = session.sessionState.pvs.getParameter(session.sessionState.questionMarkCounter - 1)
-        val scalaTypeVal = CachedPlanHelperExec.setValue(dvd)
+        val dvd =
+          session.sessionState.pvs.get.getParameter(session.sessionState.questionMarkCounter - 1)
+        val scalaTypeVal = CachedPlanHelperExec.getValue(dvd)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
         val storeType = dvd.getTypeFormatId
         val storePrecision = dvd match {

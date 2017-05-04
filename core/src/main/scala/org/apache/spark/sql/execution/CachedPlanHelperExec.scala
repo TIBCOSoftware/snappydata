@@ -126,7 +126,7 @@ object CachedPlanHelperExec extends Logging {
     }
   }
 
-  def setValue(dvd: DataValueDescriptor): Any = dvd match {
+  def getValue(dvd: DataValueDescriptor): Any = dvd match {
     case i: SQLInteger => i.getInt
     case si: SQLSmallint => si.getShort
     case ti: SQLTinyint => ti.getByte

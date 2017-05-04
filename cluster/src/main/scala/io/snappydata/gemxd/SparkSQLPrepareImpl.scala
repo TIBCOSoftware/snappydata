@@ -54,7 +54,7 @@ class SparkSQLPrepareImpl(val sql: String,
 
   session.setSchema(schema)
 
-  session.setPreparedQuery(true, null)
+  session.setPreparedQuery(true, None)
 
   private[this] val sessionState: SnappySessionState = {
     val field = classOf[SnappySession].getDeclaredField("sessionState")

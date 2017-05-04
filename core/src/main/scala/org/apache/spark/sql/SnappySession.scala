@@ -1641,7 +1641,7 @@ class SnappySession(@transient private val sc: SparkContext,
       startTime: Long, endTime: Long, k: Int): DataFrame =
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
 
-  def setPreparedQuery(preparePhase: Boolean, paramSet: ParameterValueSet): Unit =
+  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     sessionState.setPreparedQuery(preparePhase, paramSet)
 }
 

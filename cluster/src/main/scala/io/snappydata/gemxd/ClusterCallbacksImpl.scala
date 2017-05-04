@@ -83,7 +83,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     if (isPreparedStatement && isPreparedPhase) {
       new SparkSQLPrepareImpl(sql, schema, ctx, v)
     } else {
-      new SparkSQLExecuteImpl(sql, schema, ctx, v, pvs)
+      new SparkSQLExecuteImpl(sql, schema, ctx, v, Option(pvs))
     }
   }
 
