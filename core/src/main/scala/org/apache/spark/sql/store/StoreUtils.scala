@@ -419,6 +419,7 @@ object StoreUtils {
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
     }).getOrElse(EMPTY_STRING))
 
+    sb.append("  ENABLE CONCURRENCY CHECKS ")
     sb.toString()
   }
 
