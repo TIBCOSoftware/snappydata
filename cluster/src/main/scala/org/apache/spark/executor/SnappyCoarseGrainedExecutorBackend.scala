@@ -91,7 +91,9 @@ class SnappyCoarseGrainedExecutorBackend(
   def exitWithoutRestart(): Unit = {
     if (executor != null) {
       // kill all the running tasks
-      // InterruptThread is set as true.
+      // When tasks are killed, the task threads cannot be interrupted
+      // as snappy may be writing to an oplog and it generates a
+      // DiskAccessException. This DAE ends up closing the underlying regions.
       executor.killAllTasks(false)
       executor.stop()
     }
