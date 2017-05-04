@@ -33,6 +33,8 @@ BASETABLE 'string-constant', //base table name //only applicable for column_samp
 
 //Jags>> Keywords are not consistent ... all keywords should use underscor as separator. e.g. STRATA_RESERVOIR_SIZE ... please add P1 ticket
 
+//Jags>> the column_definitoon and table_constraint above should link to location where we discuss all the data types. Critically important.
+
 //Jags>> All the 'string-constant' should be substituted with something more meaningful. e.g. PARTITION_BY 'primary key' | columns ... REDUNDANCY 'Num of copies'  ... applies to partitioned tables. Redundancy '1' implies 2 copies of data. 
 
 ## Description
@@ -58,17 +60,22 @@ Below are the SnappyData specific extensions. You will find detailed usage examp
 
    * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. 
 
-   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
+   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. 
 
-   * PERSISTENT:  PERSISTENT: When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   * PERSISTENT: Persists the in-memory table data to a local SnappyData disk store. i.e. each node in the cluster will persist its managed partitions to configured local disk. By default, SnappyData creates a "default" disk store on each member node. SnappyStore automatically restores the persisted table data to memory when the member is restarted.
 
-   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](create-diskstore.md).
-
-   * EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+   * DISKSTORE: The disk directories where you want to persist the table data. You can use this option to control the location where data will be stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, [refer to this document](create-diskstore.md).
 
    * OVERFLOW: Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria . Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.
 
+   * EXPIRE: use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
+
+//Jags>> Expire is not clear. Rishi or someone needs to be specify the correct semantics. Where is the action specification? do we just destroy? 
+
    * COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
+   
+   //Jags>> Shyja, please make a note that we need a separate section where we capture our memory management design. And, this ref should link to that section. Essentially, how does the Snappy storage system work? For each partition there is DeltaRowBuffer --> column store (split into multiple batches). Now, we default on a size not count ? ... Rishi, sumedh need to help. 
+   
 
    * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by COLUMN_BATCH_SIZE (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. 
 
@@ -81,7 +88,7 @@ Below are the SnappyData specific extensions. You will find detailed usage examp
 
 Refer to the [CREATE SAMPLE TABLE](create-sample-table.md) for information on the extensions applicable to sample tables.
 
-## Example: Column Table
+## Example: Column Table partitioned on a single column
 ```
  snappy>CREATE TABLE CUSTOMER ( 
         C_CUSTKEY     INTEGER NOT NULL,
@@ -95,7 +102,7 @@ Refer to the [CREATE SAMPLE TABLE](create-sample-table.md) for information on th
         USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
 ```
 
-## Example: Row Table
+## Example: Replicated, persistent Row Table
 ```
 	snappy>CREATE TABLE SUPPLIER ( 
           S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
@@ -105,10 +112,12 @@ Refer to the [CREATE SAMPLE TABLE](create-sample-table.md) for information on th
           S_PHONE STRING NOT NULL, 
           S_ACCTBAL DECIMAL(15, 2) NOT NULL,
           S_COMMENT STRING NOT NULL)
-          USING ROW OPTIONS (PERSISTENT 'asynchronous');
+          USING ROW OPTIONS (PERSISTENT);
 ```
 
-## Example: Sample Table
+//Jags>> We need a lot more examples. This section will be the most referenced one followed by SELECT ...
+
+## Example: Stratified sample Table  ... needs explanation with example
 ```
 CREATE TABLE CUSTOMER_SAMPLE ( 
         C_CUSTKEY     INTEGER NOT NULL,
@@ -123,15 +132,20 @@ CREATE TABLE CUSTOMER_SAMPLE (
     strataReservoirSize '50', baseTable 'CUSTOMER_BASE')
 ```
 
-# CREATE TABLE … AS …
-With the alternate form of the CREATE TABLE statement, you specify the column names and/or the column data types with a query. The columns in the query result are used as a model for creating the columns in the new table.
+
+## Example Create Table using Query
+
+```
+CREATE TABLE CUSTOMER_STAGING USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY') AS SELECT * FROM CUSTOMER ;
+```
+With this alternate form of the CREATE TABLE statement, you specify the column names and/or the column data types with a query. The columns in the query result are used as a model for creating the columns in the new table.
 
 If no column names are specified for the new table, then all the columns in the result of the query expression are used to create same-named columns in the new table, of the corresponding data type(s). If one or more column names are specified for the new table, the same number of columns must be present in the result of the query expression; the data types of those columns are used for the corresponding columns of the new table.
 
 Note that only the column names and datatypes from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table, and those settings need not match the settings of the queried table.
 
-## Example
+//Jags>> Definately need examples with external tables .... how to load from S3, HDFS, CSV, etc .... (maybe in 'data Loading' section)
 
-```
-CREATE TABLE CUSTOMER_STAGING USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY') AS SELECT * FROM CUSTOMER ;
-```
+//Jags>> link to section in docs where we can create tables using Spark API, loading from existing DataFrames, etc. 
+
+
