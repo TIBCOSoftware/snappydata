@@ -22,13 +22,6 @@ import java.util
 import java.util.Properties
 import java.util.concurrent.TimeoutException
 
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.concurrent.duration._
-import scala.language.postfixOps
-import scala.util.Random
-import scala.util.control.NonFatal
-
 import io.snappydata.SnappyFunSuite
 import kafka.admin.AdminUtils
 import kafka.api.Request
@@ -38,14 +31,9 @@ import kafka.server.{KafkaConfig, KafkaServer}
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.commons.lang3.RandomUtils
-import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
-import org.scalatest.concurrent.Eventually
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import twitter4j.{Status, TwitterObjectFactory}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.DataTypes._
-import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
+import org.apache.spark.sql.types.{DataTypes, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -53,6 +41,17 @@ import org.apache.spark.streaming.kafka.{KafkaCluster, KafkaUtils}
 import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext, Time}
 import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkConf}
+import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
+import org.scalatest.concurrent.Eventually
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import twitter4j.{Status, TwitterObjectFactory}
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.Random
+import scala.util.control.NonFatal
 
 
 class SnappyStreamingSuite
@@ -501,6 +500,25 @@ class SnappyStreamingSuite
     expectedValues.foreach(v => assert(r.contains(v)))
     assert(r.length > 0)
     ssnc.sql("drop table joinDataColumnTable")
+  }
+
+  test("SNAP-1411"){
+    ssnc.sql("streaming init 2secs")
+    ssnc.sql("create stream table if not exists tweetsTable" +
+      "(id long, text string, fullName string, " +
+      "country string, retweets int, hashtag string) " +
+      "using twitter_stream options (" +
+      s"consumerKey '$consumerKey', " +
+      s"consumerSecret '$consumerSecret', " +
+      s"accessToken '$accessToken', " +
+      s"accessTokenSecret '$accessTokenSecret', " +
+      "rowConverter 'org.apache.spark.sql.streaming.TweetToRowsConverter')")
+    ssnc.sql("streaming start")
+    for (a <- 1 to 3) {
+      Thread.sleep(1000)
+      ssnc.sql("select text, fullName from tweetsTable where text like '%e%'").count()
+    }
+    ssnc.sql("drop table tweetsTable")
   }
 }
 

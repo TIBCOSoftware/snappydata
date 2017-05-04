@@ -35,7 +35,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
   val numFormatter = java.text.NumberFormat.getIntegerInstance
 
   def render(request: HttpServletRequest): Seq[Node] = {
-    val uiDisplayInfo = SnappyTableStatsProviderService
+    val uiDisplayInfo = SnappyTableStatsProviderService.getService
         .getAggregatedStatsOnDemand
 
     val uiTableInfo = uiDisplayInfo._1
