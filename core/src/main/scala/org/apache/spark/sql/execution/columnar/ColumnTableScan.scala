@@ -81,6 +81,8 @@ private[sql] final case class ColumnTableScan(
 
   override val nodeName: String = "ColumnTableScan"
 
+  @transient private val MAX_CURSOR_DECLARATIONS = 30
+
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
     else super.getMetrics ++ Map(
@@ -435,7 +437,7 @@ private[sql] final case class ColumnTableScan(
     val columnBufferInitCodeBlocks = new ArrayBuffer[String]()
     val bufferInitCodeBlocks = new ArrayBuffer[String]()
 
-    val isWideSchema = output.length > 30
+    val isWideSchema = output.length > MAX_CURSOR_DECLARATIONS
     val batchConsumers = getBatchConsumers(parent)
     val columnsInput = output.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
