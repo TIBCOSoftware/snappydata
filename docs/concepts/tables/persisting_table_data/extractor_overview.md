@@ -7,7 +7,7 @@ In cases where disk store files become corrupted, or where you cannot restore di
 
 	-   Corruption of disk store file data at the hardware level, with no access to recent disk store backups.
 
-	-   Corruption of disk store file data caused by disk full conditions. See [Preventing Disk Full Errors](../../../best_practises/prevent_disk_full_errors.md).
+	-   Corruption of disk store file data caused by disk full conditions. See [Preventing Disk Full Errors](../../../best_practices/prevent_disk_full_errors.md).
 
 </p>
 See [Limitations for Data Recovery](extractor_topics.md#id_vnc_ysw_d4) to understand possible data consistency problems that can occur when using the data recovery utilities to extract and load data from disk stores.
