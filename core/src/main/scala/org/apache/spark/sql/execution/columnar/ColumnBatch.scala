@@ -148,7 +148,7 @@ final class ColumnBatchBufferIterator(region: LocalRegion,
         currentKeyUUID)
       val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
       else region.get(key)
-      value.asInstanceOf[ColumnFormatValue].getBuffer
+      value.asInstanceOf[ColumnFormatValue].getBufferRetain
     } else {
       batch.buffers(bufferPosition - 1)
     }
@@ -171,7 +171,7 @@ final class ColumnBatchBufferIterator(region: LocalRegion,
             if (v ne null) {
               currentKeyPartitionId = key.partitionId
               currentKeyUUID = key.uuid
-              currentVal = v.asInstanceOf[ColumnFormatValue].getBuffer
+              currentVal = v.asInstanceOf[ColumnFormatValue].getBufferRetain
               return
             }
           }

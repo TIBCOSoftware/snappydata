@@ -40,20 +40,22 @@ class TAQTest extends SnappyFunSuite {
       addOn: SparkConf => SparkConf = null): SparkConf =
     TAQTest.newSparkConf(addOn)
 
-  ignore("select queries with random data - insert") {
+  test("select queries with random data - insert") {
     val quoteSize = 34000000L
     val tradeSize = 5000000L
     val numDays = 1
     val numIters = 5
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true,
-      op = CreateOp.Quote)
+      op = CreateOp.Quote, runSparkCaching = false)
+    /*
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       tradeSize, numDays, queryNumber = 2, numIters, doInit = false,
       op = CreateOp.Trade)
+      */
   }
 
-  test("select queries with random data - query") {
+  ignore("select queries with random data - query") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1

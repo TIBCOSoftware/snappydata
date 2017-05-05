@@ -19,6 +19,7 @@ package org.apache.spark.memory
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappySession}
@@ -49,21 +50,20 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   test("Test UnRollMemory") {
     val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
-    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+    val memoryManager = SparkEnv.get.memoryManager
+        .asInstanceOf[SnappyUnifiedMemoryManager]
+    memoryManager.dropAllObjects(memoryMode)
+    assert(memoryManager.storageMemoryUsed == 0)
     val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_test")
-    SparkEnv.get.memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
+    memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
 
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 500)
-    assert(SparkEnv.get.memoryManager.
-      asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject("_SPARK_CACHE_")
-      == 500)
-    SparkEnv.get.memoryManager.releaseUnrollMemory(500, memoryMode)
+    assert(memoryManager.storageMemoryUsed == 500)
+    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_") == 500)
+    memoryManager.releaseUnrollMemory(500, memoryMode)
 
-    assert(SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].
-      getStoragePoolMemoryUsed() == 0)
-    assert(SparkEnv.get.memoryManager.
-      asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject("_SPARK_CACHE_") == 0)
+    assert(memoryManager.getStoragePoolMemoryUsed(MemoryMode.OFF_HEAP) +
+        memoryManager.getStoragePoolMemoryUsed(MemoryMode.ON_HEAP) == 0)
+    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_") == 0)
   }
 
 

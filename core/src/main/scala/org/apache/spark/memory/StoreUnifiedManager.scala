@@ -16,12 +16,15 @@
  */
 package org.apache.spark.memory
 
-import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
-import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import org.apache.spark.storage.BlockId
-import org.apache.spark.{Logging, SparkEnv}
+import java.nio.ByteBuffer
 
 import scala.collection.mutable
+
+import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
+
+import org.apache.spark.storage.{BlockId, TestBlockId}
+import org.apache.spark.{Logging, SparkEnv}
 
 
 trait StoreUnifiedManager {
@@ -40,12 +43,29 @@ trait StoreUnifiedManager {
   def releaseStorageMemoryForObject(objectName : String, numBytes: Long,
                                     memoryMode: MemoryMode): Unit
 
-  def getStoragePoolMemoryUsed() : Long
-  def getStoragePoolSize: Long
-  def getExecutionPoolUsedMemory: Long
-  def getExecutionPoolSize: Long
+  def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long
+  def getStoragePoolSize(memoryMode: MemoryMode): Long
+  def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long
+  def getExecutionPoolSize(memoryMode: MemoryMode): Long
+  def getOffHeapMemory(objectName: String): Long
 
+  /**
+   * Change the off-heap owner to mark it being used for storage.
+   * Passing the boolean as true allows moving ByteBuffers not allocated
+   * by [[com.gemstone.gemfire.internal.cache.store.BufferAllocator]]s
+   * to be also changed and freshly accounted.
+   */
+  def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
+      allowNonAllocator: Boolean): Unit
 
+  /**
+   * Just add to the accouting of off-heap value in storage.
+   * This will add to the storage accounting for the total active buffers
+   * in the region while total allocated are already tracked by
+   * BufferAllocator (so this will help determine the amount of
+   *   transient buffers and "garbage")
+   */
+  def accountOffHeapStoreValue(newValue: AnyRef, oldValue: AnyRef): Unit
 }
 
 /**
@@ -86,13 +106,21 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
     memoryForObject(objectName) -= numBytes
   }
 
-  override def getStoragePoolMemoryUsed(): Long = 0L
+  override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L
 
-  override def getStoragePoolSize: Long = 0L
+  override def getStoragePoolSize(memoryMode: MemoryMode): Long = 0L
 
-  override def getExecutionPoolUsedMemory: Long = 0L
+  override def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long = 0L
 
-  override def getExecutionPoolSize: Long = 0L
+  override def getExecutionPoolSize(memoryMode: MemoryMode): Long = 0L
+
+  override def getOffHeapMemory(objectName: String): Long = 0L
+
+  override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
+      allowNonAllocator: Boolean): Unit = {}
+
+  override def accountOffHeapStoreValue(newValue: AnyRef,
+      oldValue: AnyRef): Unit = {}
 }
 
 
@@ -118,19 +146,29 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {}
 
-  override def getStoragePoolMemoryUsed(): Long = 0L
+  override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L
 
-  override def getStoragePoolSize: Long = 0L
+  override def getStoragePoolSize(memoryMode: MemoryMode): Long = 0L
 
-  override def getExecutionPoolUsedMemory: Long = 0L
+  override def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long = 0L
 
-  override def getExecutionPoolSize: Long = 0L
+  override def getExecutionPoolSize(memoryMode: MemoryMode): Long = 0L
+
+  override def getOffHeapMemory(objectName: String): Long = 0L
+
+  override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
+      allowNonAllocator: Boolean): Unit = {}
+
+  override def accountOffHeapStoreValue(newValue: AnyRef,
+      oldValue: AnyRef): Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {
 
+  val storageBlockId = TestBlockId("SNAPPY_STORAGE_BLOCK_ID")
+
   val tempMemoryManager = new TempMemoryManager
-  private var snappyUnifiedManager: StoreUnifiedManager = null
+  @volatile private var snappyUnifiedManager: StoreUnifiedManager = _
   private val noOpMemoryManager : StoreUnifiedManager = new NoOpSnappyMemoryManager
 
   def resetMemoryManager(): Unit = synchronized {
@@ -153,7 +191,13 @@ object MemoryManagerCallback extends Logging {
     }
   }
 
-  def memoryManager: StoreUnifiedManager = synchronized {
+  def memoryManager: StoreUnifiedManager = {
+    val manager = snappyUnifiedManager
+    if ((manager ne null) && isCluster) manager
+    else getMemoryManager
+  }
+
+  private def getMemoryManager: StoreUnifiedManager = synchronized {
     // First check if SnappyUnifiedManager is set. If yes no need to look further.
     if (isCluster && (snappyUnifiedManager ne null)) {
       return snappyUnifiedManager

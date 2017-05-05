@@ -18,123 +18,135 @@
 package org.apache.spark.memory
 
 
-import java.util.Collections
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 import com.gemstone.gemfire.cache.RegionDestroyedException
-import com.gemstone.gemfire.internal.i18n.LocalizedStrings
-
-import scala.collection.JavaConverters._
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.control.InternalResourceManager
 import com.gemstone.gemfire.internal.cache.control.InternalResourceManager.ResourceType
-import com.gemstone.gemfire.internal.cache._
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings
+import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.Logging
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 
-class SnappyStorageEvictor extends Logging{
+class SnappyStorageEvictor extends Logging {
 
-  private def getAllRegionList: java.util.List[LocalRegion] = {
+  private def getAllRegionList(offHeap: Boolean,
+      hasOffHeap: Boolean): ArrayBuffer[LocalRegion] = {
     val cache = GemFireCacheImpl.getExisting
-    val allRegionList = new java.util.ArrayList[LocalRegion]()
+    val allRegionList = new ArrayBuffer[LocalRegion]()
     val irm: InternalResourceManager = cache.getResourceManager
-    for (listener <- irm.getResourceListeners(SnappyStorageEvictor.resourceType).asScala) {
-      if (listener.isInstanceOf[PartitionedRegion]) {
-        val pr: PartitionedRegion = listener.asInstanceOf[PartitionedRegion]
-        if (includePartitionedRegion(pr)) {
-          allRegionList.addAll(pr.getDataStore.getAllLocalBucketRegions)
+    for (listener <- irm.getResourceListeners(
+      SnappyStorageEvictor.resourceType).asScala) listener match {
+      case pr: PartitionedRegion =>
+        if (includePartitionedRegion(pr, offHeap, hasOffHeap)) {
+          allRegionList ++= pr.getDataStore.getAllLocalBucketRegions.asScala
         }
-      }
-      else if (listener.isInstanceOf[LocalRegion]) {
-        val lr: LocalRegion = listener.asInstanceOf[LocalRegion]
-        if (includeLocalRegion(lr)) {
-          allRegionList.add(lr)
+      // no off-heap local regions yet in SnappyData
+      case lr: LocalRegion =>
+        if (!offHeap && includeLocalRegion(lr)) {
+          allRegionList += lr
         }
-      }
+      case _ =>
     }
     if (SnappyStorageEvictor.MINIMUM_ENTRIES_PER_BUCKET > 0) {
-      val iter = allRegionList.iterator
-      while (iter.hasNext) {
-        val lr: LocalRegion = iter.next
-        if (lr.isInstanceOf[BucketRegion]) {
-          if ((lr.asInstanceOf[BucketRegion]).getNumEntriesInVM <=
-            SnappyStorageEvictor.MINIMUM_ENTRIES_PER_BUCKET) {
-            iter.remove
-          }
-        }
+      for (i <- (allRegionList.length - 1) to 0 by -1) allRegionList(i) match {
+        case br: BucketRegion if br.getNumEntriesInVM <= SnappyStorageEvictor
+            .MINIMUM_ENTRIES_PER_BUCKET => allRegionList.remove(i)
+        case _ =>
       }
     }
-    return allRegionList
+    allRegionList
   }
 
   @throws(classOf[Exception])
   def evictRegionData(bytesRequired: Long, memoryMode: MemoryMode): Long = {
-    // @TODO use when regions can be stored in offheap
-    if (memoryMode.equals(MemoryMode.OFF_HEAP)){
-      return 0L
-    }
     val cache = GemFireCacheImpl.getExisting
-    cache.getCachePerfStats.incEvictorJobsStarted
-    var bytesEvicted: Long = 0
+
+    val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+    // check if offHeap has been configured
+    val hasOffHeap = cache.getMemorySize > 0
+    // nothing to be done for off-heap when no storage off-heap is present
+    if (!hasOffHeap && offHeap) return 0L
+
+    val stats = cache.getCachePerfStats
+    stats.incEvictorJobsStarted()
     var totalBytesEvicted: Long = 0
-    val regionSet = getAllRegionList
-    Collections.shuffle(regionSet)
+    val regionSet = getAllRegionList(offHeap, hasOffHeap)
+    Random.shuffle(regionSet)
+    val start = CachePerfStats.getStatTime
     try {
-      while (true) {
-        cache.getCachePerfStats
-        val start: Long = CachePerfStats.getStatTime
-        if (regionSet.isEmpty) {
-          return 0;
-        }
-        val iter = regionSet.iterator
-        while (iter.hasNext) {
-          val region: LocalRegion = iter.next
+      while (regionSet.nonEmpty) {
+        for (i <- (regionSet.length - 1) to 0 by -1) {
+          val region = regionSet(i)
           try {
-            bytesEvicted =
-              (region.entries.asInstanceOf[AbstractLRURegionMap]).centralizedLruUpdateCallback
+            val bytesEvicted = region.entries.asInstanceOf[AbstractLRURegionMap]
+                .centralizedLruUpdateCallback(offHeap)
             if (bytesEvicted == 0) {
-              iter.remove
+              regionSet.remove(i)
+            } else {
+              // for off-heap don't change on-heap pool sizes assuming
+              // the on-heap eviction to be small (actual accounting of
+              //   the reduction of on-heap data would already have been
+              //   taken care of in the centralizedLruUpdateCallback)
+              if (offHeap) {
+                // off-heap is returned in MSB
+                totalBytesEvicted += (bytesEvicted >>> 32L) & 0xffffffffL
+              } else {
+                totalBytesEvicted += bytesEvicted
+              }
+              if (totalBytesEvicted >= bytesRequired) {
+                return totalBytesEvicted
+              }
             }
-            totalBytesEvicted += bytesEvicted
-            if (totalBytesEvicted >= bytesRequired) {
-              return totalBytesEvicted
-            }
-          }
-          catch {
-            case rd: RegionDestroyedException => {
+          } catch {
+            case rd: RegionDestroyedException =>
               cache.getCancelCriterion.checkCancelInProgress(rd)
-            }
-            case e: Exception => {
+            case e: Exception =>
               cache.getCancelCriterion.checkCancelInProgress(e)
               cache.getLoggerI18n.warning(LocalizedStrings.Eviction_EVICTOR_TASK_EXCEPTION,
                 Array[AnyRef](e.getMessage), e)
-            }
-          } finally {
-            cache.getCachePerfStats
-            val end: Long = CachePerfStats.getStatTime
-            cache.getCachePerfStats.incEvictWorkTime(end - start)
           }
         }
       }
     } finally {
-      cache.getCachePerfStats.incEvictorJobsCompleted
+      if (start != 0L) {
+        val end = CachePerfStats.getStatTime
+        stats.incEvictWorkTime(end - start)
+      }
+      stats.incEvictorJobsCompleted()
     }
-    return totalBytesEvicted
+    totalBytesEvicted
   }
 
-  protected def includePartitionedRegion(region: PartitionedRegion): Boolean = {
-    return (region.getEvictionAttributes.getAlgorithm.isLRUHeap
+  protected def includePartitionedRegion(region: PartitionedRegion,
+      offHeap: Boolean, hasOffHeap: Boolean): Boolean = {
+    val hasLRU = (region.getEvictionAttributes.getAlgorithm.isLRUHeap
       && (region.getDataStore != null)
       && !region.getAttributes.getEnableOffHeapMemory && !region.needsBatching())
+    if (hasOffHeap) {
+      // when off-heap is enabled then all column tables use off-heap
+      val regionPath = Misc.getFullTableNameFromRegionPath(region.getFullPath)
+      if (offHeap) hasLRU && ColumnFormatRelation.isColumnTable(regionPath)
+      else hasLRU && !ColumnFormatRelation.isColumnTable(regionPath)
+    } else {
+      assert(!offHeap,
+        "unexpected invocation for hasOffHeap=false and offHeap=true")
+      hasLRU
+    }
   }
 
   protected def includeLocalRegion(region: LocalRegion): Boolean = {
-    return (region.getEvictionAttributes.getAlgorithm.isLRUHeap
+    (region.getEvictionAttributes.getAlgorithm.isLRUHeap
       && !region.getAttributes.getEnableOffHeapMemory)
   }
-
-
 }
 
-object SnappyStorageEvictor{
+object SnappyStorageEvictor {
   val MINIMUM_ENTRIES_PER_BUCKET: Int =
     Integer.getInteger("gemfire.HeapLRUCapacityController.inlineEvictionThreshold", 0)
   val resourceType = ResourceType.HEAP_MEMORY

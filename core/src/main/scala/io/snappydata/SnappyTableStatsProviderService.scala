@@ -39,7 +39,7 @@ import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionS
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
 /*
@@ -185,8 +185,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val table = Misc.getFullTableNameFromRegionPath(region.getFullPath)
         val pr = region.asInstanceOf[PartitionedRegion]
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
-        if (table.startsWith(Constant.INTERNAL_SCHEMA_NAME) &&
-            table.endsWith(Constant.SHADOW_TABLE_SUFFIX) &&
+        if (ColumnFormatRelation.isColumnTable(table) &&
             pr.getLocalMaxMemory > 0) {
           val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
             true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]

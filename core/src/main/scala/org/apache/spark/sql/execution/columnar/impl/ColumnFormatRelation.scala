@@ -682,7 +682,18 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     } else {
       Constant.DEFAULT_SCHEMA + "__" + table
     }
-    Constant.INTERNAL_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
+    Constant.SHADOW_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
+  }
+
+  final def getTableName(columnBatchTableName: String): String = {
+    columnBatchTableName.substring(Constant.SHADOW_SCHEMA_NAME.length + 1,
+      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).replace("__", ".")
+  }
+
+  final def isColumnTable(tableName: String): Boolean = {
+    val r = tableName.startsWith(Constant.SHADOW_SCHEMA_NAME) &&
+        tableName.endsWith(Constant.SHADOW_TABLE_SUFFIX)
+    r
   }
 
   def getIndexUpdateStruct(indexEntry: ExternalTableMetaData,

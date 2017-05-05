@@ -364,8 +364,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val storageAllocator = this.storageAllocator
     // serialization header size + typeId + number of nulls
     val headerSize = ColumnFormatEntry.VALUE_HEADER_SIZE + 8L
-    val columnData = storageAllocator.allocate(ColumnEncoding.checkBufferSize(
-      headerSize + (numNullWords << 3L) + dataSize))
+    val columnData = storageAllocator.allocateForStorage(ColumnEncoding
+        .checkBufferSize(headerSize + (numNullWords << 3L) + dataSize))
     val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
     // skip serialization header which will be filled in by ColumnFormatValue

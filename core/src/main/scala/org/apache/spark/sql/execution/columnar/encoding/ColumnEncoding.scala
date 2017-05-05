@@ -19,10 +19,12 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.store.{BufferAllocator, DirectBufferAllocator, HeapBufferAllocator}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.StringUtils
 
+import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthInBytes
@@ -261,7 +263,8 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def initialize(field: StructField, initSize: Int,
       withHeader: Boolean): Long = {
-    initialize(field, initSize, withHeader, DirectBufferAllocator.instance())
+    initialize(field, initSize, withHeader,
+      GemFireCacheImpl.getCurrentBufferAllocator)
   }
 
   protected def initializeLimits(): Unit = {
@@ -396,8 +399,7 @@ trait ColumnEncoder extends ColumnEncoding {
   /** Expand the underlying bytes if required and return the new cursor */
   protected final def expand(cursor: Long, required: Int): Long = {
     val numWritten = cursor - columnBeginPosition
-    setSource(allocator.expand(columnData, cursor,
-      columnBeginPosition, required), releaseOld = false)
+    setSource(allocator.expand(columnData, required), releaseOld = false)
     columnBeginPosition + numWritten
   }
 
@@ -1045,10 +1047,15 @@ trait NotNullEncoder extends ColumnEncoder {
     if (cursor == columnEndPosition && isAllocatorFinal) {
       val columnData = this.columnData
       clearSource(newSize, releaseData = false)
+      // mark its allocation for storage
+      if (columnData.isDirect) {
+        MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
+          columnData, allowNonAllocator = false)
+      }
       columnData
     } else {
       // copy to exact size
-      val newColumnData = storageAllocator.allocate(newSize)
+      val newColumnData = storageAllocator.allocateForStorage(newSize)
       copyTo(newColumnData, srcOffset = 0, newSize)
       newColumnData.rewind()
       // reuse this columnData in next round if possible
@@ -1157,7 +1164,7 @@ trait NullableEncoder extends NotNullEncoder {
       val newSize = math.min(Int.MaxValue - 1,
         oldSize + numNullBytes - initialNullBytes).toInt
       val storageAllocator = this.storageAllocator
-      val newColumnData = storageAllocator.allocate(newSize)
+      val newColumnData = storageAllocator.allocateForStorage(newSize)
 
       // first copy the rest of the bytes skipping header and nulls
       val srcOffset = ColumnFormatEntry.VALUE_HEADER_SIZE + 8 + initialNullBytes

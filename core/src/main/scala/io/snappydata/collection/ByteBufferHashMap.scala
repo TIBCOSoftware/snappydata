@@ -255,14 +255,16 @@ final class ByteBufferData private(val buffer: ByteBuffer,
       size: Int): Boolean = {
     val baseObject = this.baseObject
     val offset = this.baseOffset + srcOffset
+    // below is ColumnEncoding.readInt and not Platform.readInt because the
+    // write is using ColumnEncoding.writeUTF8String which writes the size
+    // using former (which respects endianness)
     ColumnEncoding.readInt(baseObject, offset) == size && ByteArrayMethods
         .arrayEquals(baseObject, offset + 4, oBase, oBaseOffset, size)
   }
 
   def resize(cursor: Long, required: Int,
       allocator: BufferAllocator): ByteBufferData = {
-    val buffer = allocator.expand(this.buffer, cursor, this.baseOffset,
-      required)
+    val buffer = allocator.expand(this.buffer, required)
     val baseOffset = allocator.baseOffset(buffer)
     new ByteBufferData(buffer, allocator.baseObject(buffer), baseOffset,
       baseOffset + buffer.limit())

@@ -96,7 +96,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         ColumnBatchIterator.STATROW_COL_INDEX, uuid)
       val allocator = Misc.getGemFireCache.getBufferAllocator
       val statsLen = batch.statsData.length
-      val statsBuffer = allocator.allocate(statsLen +
+      val statsBuffer = allocator.allocateForStorage(statsLen +
           ColumnFormatEntry.VALUE_HEADER_SIZE)
       statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
       statsBuffer.put(batch.statsData, 0, statsLen)
