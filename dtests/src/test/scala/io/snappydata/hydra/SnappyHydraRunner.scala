@@ -60,7 +60,12 @@ class SnappyHydraRunner extends SnappyTestRunner {
     val c6 = "grep -v DistributedSystemDisconnectedException"
     val c7 = "grep -v newDisconnectedException"
     val c8 = "grep -v CacheClosedException"
-    val command1 = c1 #| c2 #| c3 #| c4 #| c5 #| c6 #| c7 #| c8
+    val c12 = "grep -v java.io.FileNotFoundException"
+    val c13 = "grep -v org.apache.spark.shuffle.FetchFailedException"
+    val c14 = "grep -v java.lang.reflect.InvocationTargetException"
+    val c15 = "grep -v org.apache.spark.storage.ShuffleBlockFetcherIterator." +
+        "throwFetchFailedException"
+    val command1 = c1 #| c2 #| c3 #| c4 #| c5 #| c6 #| c7 #| c8 #| c12 #| c13 #| c14 #| c15
     // TODO : handle case where the logDir path is incorrect or doesn't exists
     try {
       val output1: String = command1.!!

@@ -329,6 +329,7 @@ public class SnappyTest implements Serializable {
                 while (leadPort < 8091 || leadPort > 8099);*/
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList +
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
+            //" -spark.local.dir=" + snappyTest.getTempDir("temp") +
             " -dir=" + dirPath + clientPort + port + " -heap-size=" +
             SnappyPrms.getLeadMemory() + SnappyPrms.getSparkSqlBroadcastJoinThreshold()
             + " -spark.jobserver.port=" + leadPort + SnappyPrms.getSparkSchedulerMode()
@@ -378,6 +379,21 @@ public class SnappyTest implements Serializable {
       }
     }
     return fileContents;
+  }
+
+  protected String getTempDir(String dirName) {
+    File log = new File(".");
+    String dest = null;
+    try {
+      String dirString = log.getCanonicalPath();
+      dest = log.getCanonicalPath() + File.separator + dirName;
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while retriving destination logFile " +
+          "path  " + log + "\nError Message:" + e.getMessage());
+    }
+    File tempDir = new File(dest);
+    if (!tempDir.exists()) tempDir.mkdir();
+    return tempDir.getAbsolutePath();
   }
 
   protected static ArrayList<String> getWorkerFileContents(String userKey, ArrayList<String> fileContents) {
@@ -1761,7 +1777,7 @@ public class SnappyTest implements Serializable {
   }
 
   public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar,
-                               String jarPath, String appName) {
+      String jarPath, String appName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
