@@ -96,10 +96,10 @@ CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cleanUpSnappyProcessesOnFailure
             clientNames = locator1;
 
-hydra.Prms-totalTaskTimeSec           = 100;
-hydra.Prms-maxResultWaitSec           = 600;
+hydra.Prms-totalTaskTimeSec           = 900;
+hydra.Prms-maxResultWaitSec           = 1200;
 
-hydra.Prms-maxCloseTaskResultWaitSec  = 600;
+hydra.Prms-maxCloseTaskResultWaitSec  = 1200;
 hydra.Prms-serialExecution            = false;
 
 hydra.CachePrms-names = defaultCache;

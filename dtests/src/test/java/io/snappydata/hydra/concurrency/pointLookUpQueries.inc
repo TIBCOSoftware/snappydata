@@ -29,7 +29,7 @@ io.snappydata.hydra.cluster.SnappyPrms-pointLookUpQueryList =
 " SELECT LastName,FirstName,BirthDate,HireDate,Address FROM Employees where (City='Tacoma' AND Country='USA')"
 " SELECT TitleOfCourtesy, FirstName, LastName FROM Employees where (City='Kirkland' AND Country='USA')"
 " SELECT CONCAT(FirstName, ' ', LastName) FROM Employees where (City='Redmond' AND Country='USA')"
-" SELECT FirstName, LastName, BirthDate FROM Employees where (City='Kirkland' AND Country='USA'')"
+" SELECT FirstName, LastName, BirthDate FROM Employees where (City='Kirkland' AND Country='USA')"
 " SELECT COUNT(DISTINCT City) AS NumCities FROM Employees where (City='London' AND Country='UK')"
 " SELECT COUNT(DISTINCT EmployeeID) AS numEmployees FROM Employees where (City='London' AND Country='UK')"
 " SELECT COUNT(EmployeeID) AS totalEmployees FROM Employees where (City='London' AND Country='UK')"
