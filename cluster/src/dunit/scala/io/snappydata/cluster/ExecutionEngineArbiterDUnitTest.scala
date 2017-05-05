@@ -92,6 +92,12 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
     queryWithMultipleHint(SnappyContext())
   }
 
+  // make sure that the query with more one level of
+  // nested subquery is routed to to spark engine
+  def test_SNAP1507(): Unit = {
+    nestedSubQuery(SnappyContext())
+  }
+
   override def startNetServer: String = {
     val port = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
@@ -666,5 +672,59 @@ trait ExecutionEngineArbiterTestBase {
     conn.close()
 
     stopNetServer
+  }
+
+  def createTables_SNAP1507(snc: SnappyContext, tableType: String): Unit = {
+    snc.sql("drop table if exists TABLE1")
+    snc.sql("create table TABLE1 (" +
+        "T1_COL1 varchar(5)" +
+        ", T1_COL2 varchar(18)" +
+        ", T1_COL3 varchar(20)" +
+        ", T1_COL4 timestamp" +
+        ", T1_COL5 timestamp" +
+        ", T1_COL6 numeric(20,10)" +
+        ", T1_COL7 numeric(20,10)" +
+        " , T1_COL8 varchar(20)" +
+        s") USING $tableType OPTIONS(PARTITION_BY 'T1_COL1', PERSISTENT 'ASYNCHRONOUS')")
+
+    snc.sql("drop table if exists TABLE2")
+    snc.sql("create table TABLE2 (" +
+        "T2_COL1 varchar(5)" +
+        ", T2_COL2 varchar(18)" +
+        ", T2_COL3 varchar(20)" +
+        ", T2_COL4 timestamp" +
+        ", T2_COL5 varchar(20)" +
+        ", T2_COL6 timestamp" +
+        s") USING $tableType OPTIONS(PARTITION_BY 'T2_COL1', PERSISTENT 'ASYNCHRONOUS')")
+
+    snc.sql("drop table if exists TABLE3")
+    snc.sql("create table TABLE3 (" +
+        "T3_COL1 varchar(5)" +
+        ", T3_COL2 varchar(100)" +
+        ", T3_COL3 varchar(40)" +
+        ", T3_COL4 varchar(50)" +
+        ", T3_COL5 timestamp" +
+        ", T3_COL6 timestamp" +
+        ", T3_COL7 varchar(20)" +
+        ", T3_COL8 varchar(100)" +
+        s") USING $tableType OPTIONS(PARTITION_BY 'T3_COL1', PERSISTENT 'ASYNCHRONOUS')")
+  }
+
+  def nestedSubQuery(snc: SnappyContext): Unit = {
+    createTables_SNAP1507(snc, "COLUMN")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + startNetServer)
+
+    val query = "select T1_COL1, T1_COL2, T1_COL3, T1_COL4, T1_COL5, T1_COL6, T1_COL7," +
+        " T1_COL8 from TABLE1 as tab1 where exists (select * from " +
+        "TABLE2 as tab2 where exists (select * from " +
+        "TABLE3 as tab3 where T3_COL1 = 'HMC01'))"
+
+    runAndValidateQuery(conn, true, query)
+
+    createTables_SNAP1507(snc, "ROW")
+    runAndValidateQuery(conn, true, query)
+
+    stopNetServer()
   }
 }
