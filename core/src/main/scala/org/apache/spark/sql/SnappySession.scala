@@ -1004,7 +1004,7 @@ class SnappySession(@transient private val sc: SparkContext,
         r
     }
 
-    val plan = LogicalRelation(relation)
+    val plan = LogicalRelation(relation, metastoreTableIdentifier = Some(tableIdent))
     if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
       sessionCatalog.registerDataSourceTable(tableIdent, schema,
         Array.empty[String], source, params, relation)
