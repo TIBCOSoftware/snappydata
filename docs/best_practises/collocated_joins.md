@@ -1,2 +1,0 @@
-## Collocated joins
-

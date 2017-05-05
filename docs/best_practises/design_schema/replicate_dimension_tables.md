@@ -1,2 +1,0 @@
-# Replicate Dimension Tables 
-
