@@ -25,16 +25,13 @@ import com.typesafe.config.Config
 import org.apache.spark.sql._
 
 /**
- * Fetches already created tables. Airline table is already persisted in
- * Snappy store. Cache the airline table in Spark cache as well for
- * comparison. Sample airline table and persist it in Snappy store.
- * Run a aggregate query on column and row table and return the results.
- * This Map will be sent over REST.
- */
+  * Fetches already created tables. Airline table is already persisted in
+  * Snappy store. Cache the airline table in Spark cache as well for
+  * comparison. Sample airline table and persist it in Snappy store.
+  * Run a aggregate query on column and row table and return the results.
+  * This Map will be sent over REST.
+  */
 
-/**
- * Created by swati on 6/4/16.
- */
 object AirlineDataQueriesJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val colTable = "AIRLINE"
@@ -42,9 +39,12 @@ object AirlineDataQueriesJob extends SnappySQLJob {
     val rowTable = "AIRLINEREF"
     //    val sampleTable = "AIRLINE_SAMPLE"
     val snc = snSession.sqlContext
+
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+
     // scalastyle:off println
-    val pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
+    val pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")),
+      true));
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
       // Get the already created tables
@@ -83,7 +83,8 @@ object AirlineDataQueriesJob extends SnappySQLJob {
     while (EndTime > System.currentTimeMillis()) {
       //    while (startTime < EndTime) {
       // This Query retrives which airline had the most flights each year.
-      val query1: String = "select  count(*) flightRecCount, description AirlineName, UniqueCarrier carrierCode ,Year_ \n   " +
+      val query1: String = "select  count(*) flightRecCount, description AirlineName,  " +
+          "UniqueCarrier carrierCode ,Year_ \n   " +
           "from airline , airlineref\n   " +
           "where airline.UniqueCarrier = airlineref.code\n   " +
           "group by UniqueCarrier,description, Year_ \n   " +
@@ -95,7 +96,8 @@ object AirlineDataQueriesJob extends SnappySQLJob {
       query1ExecutionCount += 1
 
       // This query retrives which Airlines Arrive On Schedule
-      val query2: String = "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier from airline   \n" +
+      val query2: String = "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier from  " +
+          "airline   \n" +
           " group by UniqueCarrier\n" +
           "order by arrivalDelay "
       val query2Result = snc.sql(query2)
@@ -105,7 +107,8 @@ object AirlineDataQueriesJob extends SnappySQLJob {
       query2ExecutionCount += 1
 
       // This method retrives which Airlines Arrive On Schedule. JOIN with reference table.
-      val query3: String = "select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier \n" +
+      val query3: String = "select AVG(ArrDelay) arrivalDelay, description AirlineName,  " +
+          "UniqueCarrier carrier \n" +
           "from airline, airlineref \n" +
           "where airline.UniqueCarrier = airlineref.Code \n  " +
           "group by UniqueCarrier, description \n  " +
@@ -130,7 +133,8 @@ object AirlineDataQueriesJob extends SnappySQLJob {
 
 
       // This query retrives Which airline out of SanFrancisco had most delays due to weather
-      val query5: String = "SELECT sum(WeatherDelay) totalWeatherDelay, airlineref.DESCRIPTION \n  " +
+      val query5: String = "SELECT sum(WeatherDelay) totalWeatherDelay,  airlineref.DESCRIPTION " +
+          "\n  " +
           " FROM airline, airlineref \n  " +
           " WHERE airline.UniqueCarrier = airlineref.CODE" +
           " AND  Origin like '%SFO%' AND WeatherDelay > 0 \n" +
