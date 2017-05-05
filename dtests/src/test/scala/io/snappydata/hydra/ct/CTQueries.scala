@@ -22,78 +22,77 @@ import org.apache.spark.sql.{SQLContext, DataFrame, SnappyContext}
 object CTQueries {
 
   var snc: SnappyContext = _
-  var dataFilesLocation: String = _
 
-  val query1: String = "select count(*) from ORDER_DETAILS"
+  val query1: String = "select count(*) from ORDERS_DETAILS"
 
-  val query2: String = "select max(single_order_did) from ORDER_DETAILS"
+  val query2: String = "select max(single_order_did) from ORDERS_DETAILS"
 
-  val query3: String = "select min(single_order_did) from ORDER_DETAILS"
+  val query3: String = "select min(single_order_did) from ORDERS_DETAILS"
 
-  val query4: String = "select AVG(single_order_did) from ORDER_DETAILS"
+  val query4: String = "select AVG(single_order_did) from ORDERS_DETAILS"
 
   val query5: String = "select avg(single_order_did),min(single_order_did),max(single_order_did) " +
-      "from ORDER_DETAILS"
+      "from ORDERS_DETAILS"
 
-  val query6: String = "select SRC_SYS,count(*) from ORDER_DETAILS group by SRC_SYS"
+  val query6: String = "select SRC_SYS,count(*) from ORDERS_DETAILS group by SRC_SYS"
 
-  val query7: String = "select AVG(BID_PRICE),SRC_SYS from ORDER_DETAILS GROUP BY SRC_SYS"
+  val query7: String = "select AVG(BID_PRICE),SRC_SYS from ORDERS_DETAILS GROUP BY SRC_SYS"
 
-  val query8: String = "select SUM(TOTAL_EXECUTED_QTY),SRC_SYS from ORDER_DETAILS GROUP BY SRC_SYS"
+  val query8: String = "select SUM(TOTAL_EXECUTED_QTY),SRC_SYS from ORDERS_DETAILS GROUP BY SRC_SYS"
 
   val query9: String = "select SUM(TOTAL_EXECUTED_QTY),MIN(TOTAL_EXECUTED_QTY),MAX(TOTAL_EXECUTED_QTY),SRC_SYS " +
-      "from ORDER_DETAILS WHERE SRC_SYS='APFF' GROUP BY SRC_SYS"
+      "from ORDERS_DETAILS WHERE SRC_SYS='APFF' GROUP BY SRC_SYS"
 
-  val query10: String = "select count(*) from ORDER_DETAILS where Src_sys='OATC'"
+  val query10: String = "select count(*) from ORDERS_DETAILS where Src_sys='OATC'"
 
-  val query11: String = "select '5-CTFIX_ORDER' as SrcFl, a.* from ORDER_DETAILS a , ORDER_DETAILS b " +
+  val query11: String = "select '5-CTFIX_ORDER' as SrcFl, a.* from ORDERS_DETAILS a , ORDERS_DETAILS b " +
       "where a.glb_root_order_id = b.glb_root_order_id and a.trd_date >='20160413' and b.trd_date >='20160413' " +
       "and b.src_sys ='CRIO' order by a.glb_root_order_id, a.trd_datE"
 
   val query12: String = "select '4-CTFIX_ORDER' as SrcFl, a.glb_root_order_id, a.src_sys, count(*) " +
-      "from ORDER_DETAILS a , ORDER_DETAILS b " +
+      "from ORDERS_DETAILS a , ORDERS_DETAILS b " +
       "where a.glb_root_order_id = b.glb_root_order_id and a.trd_date ='20160413' " +
       "and b.trd_date ='20160413' and b.src_sys ='CRIO' " +
       "group by a.glb_root_order_id, a.src_sys order by a.glb_root_order_id, a.src_sys"
 
-  val query13: String = "select '3-CTFIX_ORDER' as SrcFl, * from ORDER_DETAILS " +
+  val query13: String = "select '3-CTFIX_ORDER' as SrcFl, * from ORDERS_DETAILS " +
       "where trd_date='20160413' and src_sys='CRIO'"
 
-  val query14: String = "select '3-CTFIX_ORDER' as SrcFl, * from ORDER_DETAILS " +
+  val query14: String = "select '3-CTFIX_ORDER' as SrcFl, * from ORDERS_DETAILS " +
       "where trd_date='20160413' and src_sys='CRIO' order by trd_date"
 
-  val query15: String = "select '5-CTFIX_ORDER' as SrcFl, * from ORDER_DETAILS " +
+  val query15: String = "select '5-CTFIX_ORDER' as SrcFl, * from ORDERS_DETAILS " +
       "where trd_date>='20160413' and glb_root_order_id in " +
-      "( select glb_root_order_id from ORDER_DETAILS where trd_date>='20160413' and src_sys='CRIO' ) " +
+      "( select glb_root_order_id from ORDERS_DETAILS where trd_date>='20160413' and src_sys='CRIO' ) " +
       "order by glb_root_order_id, trd_datE"
 
   val query16: String = "select '4-CTFIX_ORDER' as SrcFl, glb_root_order_id, src_sys, count(*) " +
-      "from ORDER_DETAILS " +
+      "from ORDERS_DETAILS " +
       "where trd_date='20160413' and glb_root_order_id in " +
-      "( select glb_root_order_id from ORDER_DETAILS where trd_date='20160413' and src_sys='CRIO') " +
+      "( select glb_root_order_id from ORDERS_DETAILS where trd_date='20160413' and src_sys='CRIO') " +
       "group by glb_root_order_id, src_sys order by glb_root_order_id, src_sys"
 
-  val query17: String = "select Event_type_cd, count(1) from ORDER_DETAILS " +
+  val query17: String = "select Event_type_cd, count(1) from ORDERS_DETAILS " +
       "where TRD_DATE between '20160401' and '20160431' group by Event_type_cd limit 1000"
 
-  val query18: String = "SELECT event_type_cd, src_sys FROM ORDER_DETAILS " +
+  val query18: String = "SELECT event_type_cd, src_sys FROM ORDERS_DETAILS " +
       "WHERE TRD_DATE = '20160416' AND sys_order_stat_cd is NULL limit 1000"
 
-  val query19: String = "SELECT ESOD.EXEC_INSTR, count(*) FROM ORDER_DETAILS ESOD " +
+  val query19: String = "SELECT ESOD.EXEC_INSTR, count(*) FROM ORDERS_DETAILS ESOD " +
       "WHERE ESOD.TRD_DATE = '20160413' AND ESOD.EVENT_TYPE_CD = 'NEW_CONF' " +
       "AND ESOD.EXEC_INSTR like '%A%' GROUP BY ESOD.EXEC_INSTR"
 
   val query20: String = "select EVENT_RCV_TS, EVENT_TS, src_sys,glb_root_src_sys_id,glb_root_order_id, " +
       "ticker_symbol,SIDE,order_qty,EVENT_TYPE_CD,product_cat_cd,cntry_cd " +
-      "from ORDER_DETAILS " +
+      "from ORDERS_DETAILS " +
       "where trd_date > '20160212' and src_sys='CAIQS' and event_ts not like '%.%' order by EVENT_RCV_TS limit 100 "
 
 
   val query21: String = "select event_type_cd,event_rcv_ts,event_ts,sent_ts " +
-      "from ORDER_DETAILS " +
+      "from ORDERS_DETAILS " +
       "where trd_date='20160413' and glb_root_order_id='15344x8c7' and sys_order_id='20151210.92597'"
 
-  val query22: String = "select count(*) from EXEC_DETAILS a LEFT JOIN ORDER_DETAILS b using (sys_root_order_id)"
+  val query22: String = "select count(*) from EXEC_DETAILS a LEFT JOIN ORDERS_DETAILS b using (sys_root_order_id)"
 
   val query23: String = "(select TRD_DATE, ROOT_FLOW_CAT, sum(Notional) as notional, count(*) as trades, sum(shares) as shares " +
       "from " +
@@ -109,7 +108,7 @@ object CTQueries {
       "and sys_order_id = glb_root_order_id and sys_src_sys_id = glb_root_src_sys_id )root_exec on " +
       "execs.trd_date=root_exec.trd_date and execs.glb_root_order_id=root_exec.glb_root_order_id left join " +
       "( select distinct TRD_DATE, glb_root_order_id,flow_cat " +
-      "from ORDER_DETAILS T " +
+      "from ORDERS_DETAILS T " +
       "where T.sys_order_id = T.glb_root_order_id " +
       "and T.sys_src_sys_id = T.glb_root_src_sys_id " +
       "and T.sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
@@ -139,7 +138,7 @@ object CTQueries {
       "and sys_order_id = glb_root_order_id and sys_src_sys_id = glb_root_src_sys_id )root_exec on " +
       "execs.trd_date=root_exec.trd_date and execs.glb_root_order_id=root_exec.glb_root_order_id left join " +
       "( select distinct TRD_DATE, glb_root_order_id,flow_cat " +
-      "from ORDER_DETAILS T " +
+      "from ORDERS_DETAILS T " +
       "where T.sys_order_id = T.glb_root_order_id " +
       "and T.sys_src_sys_id = T.glb_root_src_sys_id " +
       "and T.sys_src_sys_id in ('93', '7', '70', '115' ,'6','150','189','31','157','185','7','153','163133','80','51','139','137') " +
@@ -156,7 +155,7 @@ object CTQueries {
       "and (execs.exec_price_curr_cd = 'USD' or execs.exec_price_curr_cd = null) ) " +
       "Aggregated group by TRD_DATE, ROOT_FLOW_CAT order by TRD_DATE )"
 
-  val query24: String = "select distinct FLOW_CLASS from ORDER_DETAILS"
+  val query24: String = "select distinct FLOW_CLASS from ORDERS_DETAILS"
 
   val queries = List(
     "Q1" -> query1,
@@ -185,22 +184,24 @@ object CTQueries {
     "Q24" -> query24
   )
 
-  def order_details_data(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def orders_details_df(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .option("inferSchema", "true")
+      .option("inferSchema", "false")
       .option("nullValue", "NULL")
-      .load(s"${snc.getConf("dataFilesLocation")}/ORDER_DETAILS.dat")
+      .load(s"${snc.getConf("dataFilesLocation")}/ORDERS_DETAILS.dat")
 
-  def exec_details_data(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def exec_details_df(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
       .option("header", "true")
-      .option("inferSchema","true")
+      .option("inferSchema","false")
       .option("nullValue", "NULL")
       .load(s"${snc.getConf("dataFilesLocation")}/EXEC_DETAILS.dat")
 
   val create_diskStore_ddl = "CREATE DISKSTORE OverflowDiskStore"
 
-  val order_details_create_ddl =
-    "create table order_details" +
+  val orders_details_create_ddl =
+    "create table orders_details" +
         "(SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) ," +
         "SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128) ,SRC_SYS VARCHAR(20) ,SYS_PARENT_ORDER_ID VARCHAR(64) ," +
         "SYS_PARENT_ORDER_VER SMALLINT ,PARENT_ORDER_TRD_DATE VARCHAR(20),PARENT_ORDER_SYS_NM VARCHAR(128) ," +
@@ -299,4 +300,5 @@ object CTQueries {
         "FIX_CONTRA_BROKER_MNEMONIC VARCHAR(20),RIO_MSG_SRC VARCHAR(64),SNAPSHOT_TS TIMESTAMP,EXTERNAL_TRANS_TS TIMESTAMP," +
         "PRICE_CATEGORY VARCHAR(32),UNDERLYING_FX_RATE DECIMAL(36, 8),CONVERSION_RATE DECIMAL(36, 8)," +
         "TRANS_COMMENT VARCHAR(256),AGGRESSOR_FLAG VARCHAR(1))"
+  
 }

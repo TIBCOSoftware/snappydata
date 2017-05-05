@@ -27,7 +27,6 @@ import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.Logging
-import org.apache.spark.ui.{UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
 
 /** Page showing list of tables currently stored in the cluster */
@@ -36,7 +35,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
   val numFormatter = java.text.NumberFormat.getIntegerInstance
 
   def render(request: HttpServletRequest): Seq[Node] = {
-    val uiDisplayInfo = SnappyTableStatsProviderService
+    val uiDisplayInfo = SnappyTableStatsProviderService.getService
         .getAggregatedStatsOnDemand
 
     val uiTableInfo = uiDisplayInfo._1

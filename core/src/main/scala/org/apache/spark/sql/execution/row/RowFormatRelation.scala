@@ -149,7 +149,8 @@ class RowFormatRelation(
           pushProjections = false,
           useResultSet = false,
           connProperties,
-          handledFilters
+          handledFilters,
+          commitTx = true
         )
 
       case _ =>
@@ -244,6 +245,7 @@ class RowFormatRelation(
         stmt.close()
         result
       } finally {
+        connection.commit()
         connection.close()
       }
     }
@@ -352,11 +354,13 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
+
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), None,
-        Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
-        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
+        catalog.newQualifiedTableName(tableName), None, Array.empty[String],
+        classOf[execution.row.DefaultSource].getCanonicalName,
+        options, relation)
+      
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),

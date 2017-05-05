@@ -20,6 +20,8 @@ package io.snappydata.cluster
 import java.io.File
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
+import scala.collection.mutable
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
@@ -136,11 +138,11 @@ class QueryRoutingDUnitTest(val s: String)
     while (rs.next()) {
       cnt += 1
       cnt match {
-        case 1 => assert(9 == rs.getInt(1))
-        case 2 => assert(7 == rs.getInt(1))
-        case 3 => assert(5 == rs.getInt(1))
-        case 4 => assert(4 == rs.getInt(1))
-        case 5 => assert(1 == rs.getInt(1))
+        case 1 => assert(9 == rs.getInt(1), s"Expected 9 but found ${rs.getInt(1)}")
+        case 2 => assert(7 == rs.getInt(1),s"Expected 7 but found ${rs.getInt(1)}")
+        case 3 => assert(5 == rs.getInt(1),s"Expected 5 but found ${rs.getInt(1)}")
+        case 4 => assert(4 == rs.getInt(1),s"Expected 4 but found ${rs.getInt(1)}")
+        case 5 => assert(1 == rs.getInt(1),s"Expected 1 but found ${rs.getInt(1)}")
       }
     }
     assert(cnt == 5)
@@ -438,7 +440,8 @@ class QueryRoutingDUnitTest(val s: String)
 
       val dbmd = conn.getMetaData
       val rSet = dbmd.getTables(null, "APP", null,
-        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"))
+        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+          "EXTERNAL TABLE", "STREAM TABLE"))
       assert(rSet.next())
 
       s.execute(s"drop table $rowTable")
@@ -451,11 +454,45 @@ class QueryRoutingDUnitTest(val s: String)
       doQueries(newConn.createStatement(), newConn.getMetaData, colTable)
 
       // Ensure parquet table can be dropped (SNAP-215)
-      val tableName = "PARQUETTABLE"
+      val parquetTable = "PARQUETTABLE"
       dataDir.mkdir()
-      s.execute(s"CREATE EXTERNAL TABLE $tableName " +
+      s.execute(s"CREATE EXTERNAL TABLE APP_PARQUET.$parquetTable " +
           s"(Col1 INT, Col2 INT, Col3 INT) USING parquet OPTIONS (path '$filePath')")
-      s.execute(s"DROP TABLE $tableName")
+
+      // check meta-data
+      val schemaMd = dbmd.getSchemas
+      val results = new mutable.HashSet[String]()
+      while (schemaMd.next()) {
+        results += schemaMd.getString(1)
+      }
+      assert(results.contains("APP"))
+      assert(results.contains("APP_PARQUET"))
+      results.clear()
+
+      val tableMd = dbmd.getTables(null, "APP%", null,
+        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+          "EXTERNAL TABLE", "STREAM TABLE"))
+      while (tableMd.next()) {
+        results += tableMd.getString(2) + '.' + tableMd.getString(3)
+      }
+      // 2 for column table and 1 for parquet external table
+      assert(results.size == 3, s"Got size = ${results.size} but expected 3")
+      assert(results.contains(s"APP.$colTable"))
+      assert(results.contains(s"APP_PARQUET.$parquetTable"))
+      results.clear()
+
+      // check the columns
+      val columnsMd = dbmd.getColumns(null, "APP_PARQUET", null, null)
+      while (columnsMd.next()) {
+        results += columnsMd.getString(4)
+      }
+      assert(results.size == 3, s"Got columns = ${results.size} but expected 3")
+      assert(results.contains("COL1"), s"columns = $results")
+      assert(results.contains("COL2"))
+      assert(results.contains("COL3"))
+      results.clear()
+
+      s.execute(s"DROP TABLE APP_PARQUET.$parquetTable")
 
     } finally {
       conn.close()
@@ -514,7 +551,8 @@ class QueryRoutingDUnitTest(val s: String)
 
     // Simulates 'SHOW TABLES' of ij
     var rSet = dbmd.getTables(null, "APP", null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"))
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        "EXTERNAL TABLE", "STREAM TABLE"))
 
     var foundTable = false
     while (rSet.next()) {
@@ -526,7 +564,8 @@ class QueryRoutingDUnitTest(val s: String)
     assert(foundTable)
 
     val rSet2 = dbmd.getTables(null, INTERNAL_SCHEMA_NAME, null,
-      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"))
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
+        "EXTERNAL TABLE", "STREAM TABLE"))
 
     foundTable = false
     while (rSet2.next()) {
