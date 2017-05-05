@@ -1,4 +1,4 @@
-# Overview
+### Overview
 SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). 
 All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  
 We therefore recommend that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
@@ -21,9 +21,9 @@ Also SnappyData can be run in three different modes, Local Mode, Embedded Mode a
 
 If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
 
-###To Create a SnappySession
+### To Create a SnappySession
 
-#### Scala 
+**Scala **
 
 ```scala
  val spark: SparkSession = SparkSession
@@ -34,7 +34,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
         
  val snappy = new SnappySession(spark.sparkContext)
 ```
-#### Java
+**Java**
 
 ```Java
  SparkSession spark = SparkSession
@@ -47,7 +47,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
  SnappySession snappy = new SnappySession(spark.sparkContext());
 ```
 
-#### Python
+**Python**
 
 ```Python
  from pyspark.sql.snappy import SnappySession
@@ -59,7 +59,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
 ```
 
 ### To Create a SnappyStreamingContext
-#### Scala
+**Scala**
 
 ```scala
  val spark: SparkSession = SparkSession
@@ -69,7 +69,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
          .getOrCreate
  val snsc = new SnappyStreamingContext(spark.sparkContext, Duration(1))
 ```
-#### Java
+**Java**
 
 ```Java
  SparkSession spark = SparkSession
@@ -84,7 +84,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
  JavaSnappyStreamingContext jsnsc = new JavaSnappyStreamingContext(jsc, batchDuration);
 ```
 
-#### Python
+**Python**
 
 ```Python
  from pyspark.streaming.snappy.context import SnappyStreamingContext
@@ -107,7 +107,7 @@ The jobs are submitted to the lead node of SnappyData over REST API using a _spa
 ## SnappyData Jobs
 To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. Your job is displayed as:
  
-#### Scala
+**Scala**
 
 ```scala
 class SnappySampleJob implements SnappySQLJob {
@@ -119,7 +119,7 @@ class SnappySampleJob implements SnappySQLJob {
 }
 ```
 
-#### Java
+**Java**
 ```java
 class SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
@@ -131,7 +131,7 @@ class SnappySampleJob extends SnappySQLJob {
 
 ```
 
-#### Scala
+**Scala**
 ```scala
 class SnappyStreamingSampleJob implements SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
@@ -142,7 +142,7 @@ class SnappyStreamingSampleJob implements SnappyStreamingJob {
 }
 ```
 
-#### Java
+**Java**
 ```java
 class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
@@ -275,7 +275,7 @@ $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead hostNameOfLead:8090
 ```
 
-##Managing JAR Files
+## Managing JAR Files
 
 SnappyData provides system procedures that you can use to install and manage JAR files from a client connection. These can be used to install your custom code (for example code shared across multiple jobs) in SnappyData cluster.
 
@@ -684,6 +684,7 @@ PARTITION_BY 'PRIMARY KEY | column name', // If not specified it will be a repli
 BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
+OVERFLOW 'true',
 PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’, 
 DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
@@ -748,15 +749,20 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
-   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table. If not specified, it is a replicated table.
+   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
    * BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
 
    * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store
+   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from in-memory table, based on different criteria.
+    For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause. </br> 
+    <note>Note: For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables no such defaults are set. Row tables allow all the eviction settings.</note>
 
-   * PERSISTENT:  When you specify the PERSISTENT keyword, GemFire XD persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
+	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
+
+   * PERSISTENT:  When you specify the PERSISTENT keyword, SnappyData persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
    * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
 
@@ -764,7 +770,8 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
 
-   * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br><note> Note: The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </note> </br>
+   * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br> 
+	<note> Note: The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </note> </br>
     * <note>`snappydata.column.batchSize` - explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property. </note></br>
     * <note>`snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. </note>
    
@@ -921,7 +928,7 @@ SnappyData’s streaming functionality builds on top of Spark Streaming and prim
 Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
 
-###Spark Streaming Overview
+### Spark Streaming Overview
 
 Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like **map**, **reduce**, **join** and **window**.
 

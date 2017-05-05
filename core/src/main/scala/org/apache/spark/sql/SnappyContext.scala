@@ -27,10 +27,11 @@ import scala.reflect.runtime.{universe => u}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -1016,6 +1017,16 @@ object SnappyContext extends Logging {
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
           else SplitClusterMode(sc, url)
+      }).orElse(Property.ClusterURL.getOption(conf).collectFirst {
+        case hostPort if !hostPort.isEmpty =>
+          val p = hostPort.split(":")
+          if (p.length != 2 ) {
+            throw new SparkException("Invalid \"host:clientPort\" pattern specified")
+          }
+          val host = p(0)
+          val clientPort = p(1).toInt
+          val url = Constant.DEFAULT_THIN_CLIENT_URL + s"$host:$clientPort/"
+          ThinClientConnectorMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
@@ -1044,7 +1055,6 @@ object SnappyContext extends Logging {
     }
   }
 
-
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
@@ -1058,6 +1068,8 @@ object SnappyContext extends Logging {
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
         SnappyTableStatsProviderService.start(sc)
+      case ThinClientConnectorMode(_, url) =>
+        SnappyTableStatsProviderService.start(sc, url)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
@@ -1087,9 +1099,11 @@ object SnappyContext extends Logging {
 
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
+      SmartConnectorHelper.close()
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
+      MemoryManagerCallback.resetMemoryManager
     }
     _clusterMode = null
     _anySNContext = null
@@ -1129,9 +1143,9 @@ object SnappyContext extends Logging {
     try {
       val clazz = org.apache.spark.util.Utils.classForName(
         "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
-      val method: Method = clazz.getDeclaredMethod("flushReservior")
+      val method: Method = clazz.getDeclaredMethod("flushReservoir")
+      method.setAccessible(true)
       for (s <- sampleRelations) {
-        method.setAccessible(true)
         method.invoke(s)
       }
     } catch {
@@ -1199,6 +1213,19 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
  * the snappy cluster on demand that just remains like an external datastore.
  */
 case class SplitClusterMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
+
+/**
+ * Similar to SplitClusterMode but this will use thin client driver for making
+ * connections to Snappy cluster.
+ *
+ * This is for the two cluster mode: one is
+ * the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
+ * cluster fetching data from the snappy cluster on demand that just
+ * remains like an external datastore.
+ *
+ */
+case class ThinClientConnectorMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
 /**

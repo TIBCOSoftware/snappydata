@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import _root_.io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -27,10 +27,10 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.execution.datasources.{LogicalRelation}
-import org.apache.spark.sql.hive.{QualifiedTableName}
-import org.apache.spark.sql.jdbc.{JdbcDialect}
+import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
 
@@ -74,12 +74,11 @@ abstract case class JDBCAppendableRelation(
   def numBuckets: Int = -1
 
   override def sizeInBytes: Long = {
-    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+    SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
       case Some(s) => s.getTotalSize
       case None => super.sizeInBytes
     }
   }
-
 
   protected final def dialect: JdbcDialect = connProperties.dialect
 
@@ -106,7 +105,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter]): RDD[Any] = {
+      filters: Array[Filter], prunePartitions: => Int): RDD[Any] = {
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
@@ -120,8 +119,9 @@ abstract case class JDBCAppendableRelation(
     }
 
     readLock {
-      externalStore.getColumnBatchRDD(tableName,
+      externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
         requestedColumns.map(column => externalStore.columnPrefix + column),
+        prunePartitions,
         sqlContext.sparkSession, schema)
     }
   }
@@ -141,17 +141,17 @@ abstract case class JDBCAppendableRelation(
   def getColumnBatchParams: (Int, Int, String) = {
     val session = sqlContext.sparkSession
     val columnBatchSize = origOptions.get(
-        ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
+      ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
       case Some(cb) => Integer.parseInt(cb)
       case None => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
     val columnMaxDeltaRows = origOptions.get(
-        ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
+      ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
       case Some(cd) => Integer.parseInt(cd)
       case None => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
     val compressionCodec = origOptions.get(
-        ExternalStoreUtils.COMPRESSION_CODEC) match {
+      ExternalStoreUtils.COMPRESSION_CODEC) match {
       case Some(codec) => codec
       case None => ExternalStoreUtils.defaultCompressionCodec(session)
     }
@@ -182,6 +182,7 @@ abstract case class JDBCAppendableRelation(
         sys.error(s"Table $table already exists.")
       }
     } finally {
+      conn.commit()
       conn.close()
     }
     createExternalTableForColumnBatches(table, externalStore)
@@ -247,6 +248,7 @@ abstract case class JDBCAppendableRelation(
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
       } finally {
+        conn.commit()
         conn.close()
       }
     }
@@ -275,7 +277,7 @@ abstract case class JDBCAppendableRelation(
 
 object JDBCAppendableRelation extends Logging {
 
-   private[sql] final def cachedBatchTableName(table: String): String = {
+  private[sql] final def cachedBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
       table.replace(".", "__")
     } else {

@@ -352,6 +352,62 @@ object NWQueries {
     " group by CategoryName" +
     " order by CategoryName"
 
+  //This query shows how to use UNION to merge Customers and Suppliers into one result set by
+  //identifying them as having different relationships to Northwind Traders - Customers and
+  // Suppliers.
+
+  val Q57: String = "select City, CompanyName, ContactName, 'Customers' as Relationship" +
+    " from Customers" +
+    " union" +
+    " select City, CompanyName, ContactName, 'Suppliers'" +
+    " from Suppliers" +
+    " order by City, CompanyName"
+
+  //In the query below, we have two sub-queries in the FROM clause and each sub-query returns a
+  //single value. Because the results of the two sub-queries are basically temporary tables,
+  // we can join them like joining two real tables.
+  // In the SELECT clause, we simply list the two counts.
+
+  val Q58: String = "select a.CustomersCount, b.SuppliersCount" +
+    " from " +
+    " (select count(CustomerID) as CustomersCount from customers) as a " +
+    " join " +
+    " (select count(SupplierID) as SuppliersCount from suppliers) as b"
+
+  //The second query below uses the two values again but this time it calculates the ratio
+  //between customers count and suppliers count. The round and concat function are used to
+  //the result.
+
+  val Q59: String = "select concat(round(a.CustomersCount / b.SuppliersCount), ':1') " +
+    " as Customer_vs_Supplier_Ratio " +
+    " from (select count(CustomerID) as CustomersCount from customers) as a " +
+    " join (select count(SupplierID) as SuppliersCount from suppliers) as b"
+
+  //This query shows how to convert order dates to the corresponding quarters. It also
+  //demonstrates how SUM function is used together with CASE statement to get sales for each
+  //quarter, where quarters are converted from OrderDate column.
+
+  val Q60: String = "select a.ProductName," +
+    " d.CompanyName," +
+    " year(OrderDate) as OrderYear," +
+    " format_number(sum(case quarter(c.OrderDate) when '1'" +
+    " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 1'," +
+    " format_number(sum(case quarter(c.OrderDate) when '2'" +
+    " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 2'," +
+    " format_number(sum(case quarter(c.OrderDate) when '3'" +
+    " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 3'," +
+    " format_number(sum(case quarter(c.OrderDate) when '4'" +
+    " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 4'" +
+    " from Products a" +
+    " inner join Order_Details b on a.ProductID = b.ProductID" +
+    " inner join Orders c on c.OrderID = b.OrderID" +
+    " inner join Customers d on d.CustomerID = c.CustomerID" +
+    " where c.OrderDate between Cast('1997-01-01' as TIMESTAMP) and Cast('1997-12-31' as TIMESTAMP)" +
+    " group by a.ProductName," +
+    " d.CompanyName," +
+    " year(OrderDate)" +
+    " order by a.ProductName, d.CompanyName"
+
   val queries = List(
     "Q1" -> Q1,
     "Q2" -> Q2,
@@ -408,7 +464,11 @@ object NWQueries {
     "Q53" -> Q53,
     "Q54" -> Q54,
     "Q55" -> Q55,
-    "Q56" -> Q56
+    "Q56" -> Q56,
+    "Q57" -> Q57,
+    "Q58" -> Q58,
+    "Q59" -> Q59
+    //"Q60" -> Q60
   )
 
   def regions(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")

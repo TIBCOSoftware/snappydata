@@ -70,6 +70,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   @transient private var keyIsUniqueTerm: String = _
   @transient private var numRowsTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
+  @transient private var dictionaryArrayInit: String = _
 
   @transient val (metricAdd, _): (String => String, String => String) =
     Utils.metricMethods
@@ -303,9 +304,11 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
 
+    val longLived = replicatedTableJoin
+
     val buildSideCreateMap =
       s"""$hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
-      $numKeyColumns, scala.reflect.ClassTag$$.MODULE$$.apply(
+      $numKeyColumns, $longLived, scala.reflect.ClassTag$$.MODULE$$.apply(
         $entryClass.class));
       this.$hashMapTerm = $hashMapTerm;
       int $maskTerm = $hashMapTerm.mask();
@@ -349,14 +352,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
 
-    // check for possible optimized dictionary code path
-    val dictInit = if (DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
-      streamSideKeys)) {
-      // this array will be used at batch level for grouping if possible
-      dictionaryArrayTerm = ctx.freshName("dictionaryArray")
-      s"$entryClass[] $dictionaryArrayTerm = null;"
-    } else ""
-
     val buildTime = metricTerm(ctx, "buildTime")
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     // initialization of min/max for integral keys
@@ -386,7 +381,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       $initMinMaxVars
       final int $maskTerm = $hashMapTerm.mask();
       final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
-      $dictInit
       long $numRowsTerm = 0L;
       try {
         ${session.evaluateFinallyCode(ctx, produced)}
@@ -394,7 +388,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         $numOutputRows.${metricAdd(numRowsTerm)};
       }
     """
-
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
@@ -424,30 +417,34 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
     mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
-      numRowsTerm, nullMaskVars, initCode, checkCondition,
-      streamSideKeys, streamKeyVars, buildKeyVars, buildVars, input,
-      resultVars, dictionaryArrayTerm, joinType, buildSide)
+      numRowsTerm, nullMaskVars, initCode, checkCondition, streamSideKeys,
+      streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, input,
+      resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {
-    // check the outputs of the plan
-    val planOutput = plan.output
-    // linear search is enough instead of map create/lookup like in intersect
-    streamedPlan.output.forall(a => planOutput.exists(_.semanticEquals(a)))
+    // check for possible optimized dictionary code path;
+    // below is a loose search while actual decision will be taken as per
+    // availability of ExprCodeEx with DictionaryCode in doConsume
+    DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(streamSideKeys)
   }
 
   override def batchConsume(ctx: CodegenContext,
       plan: SparkPlan, input: Seq[ExprCode]): String = {
-    // pluck out the variables from input as per the plan output
-    val planOutput = plan.output
-    val streamedOutput = streamedPlan.output
-    val streamedInput = streamedOutput.map { a =>
-      // we expect it to exist as per the check in canConsume
-      input(planOutput.indexWhere(_.semanticEquals(a)))
-    }
-    // check for optimized dictionary code path
-    mapAccessor.initDictionaryCodeForSingleKeyCase(
-      dictionaryArrayTerm, streamedInput, streamSideKeys, streamedOutput)
+    // create an empty method to populate the dictionary array
+    // which will be actually filled with code in consume if the dictionary
+    // optimization is possible using the incoming ExprCodeEx
+    val className = mapAccessor.getClassName
+    // this array will be used at batch level for grouping if possible
+    dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+    dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
+    ctx.addNewFunction(dictionaryArrayInit,
+      s"""
+         |private $className[] $dictionaryArrayInit() {
+         |  return null;
+         |}
+         """.stripMargin)
+    s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
   }
 
   /**
@@ -555,6 +552,7 @@ object HashedObjectCache {
       context.addTaskCompletionListener { _ =>
         if (counter.get() > 0 && counter.decrementAndGet() <= 0) {
           mapCache.invalidate(key)
+          cached._1.asInstanceOf[ObjectHashSet[T]].freeStorageMemory()
         }
       }
       cached._1.asInstanceOf[ObjectHashSet[T]]
