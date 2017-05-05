@@ -20,17 +20,18 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
 import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.CachedPlanHelperExec
 import org.apache.spark.sql.sources.PutIntoTable
@@ -48,11 +49,11 @@ class SnappyParser(session: SnappySession)
   override final def input: ParserInput = _input
 
   private var paramcounter = 0
-
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
     paramcounter = 0
+    session.sessionState.questionMarkCounter = 0
     tokenize = false
   }
 
@@ -175,16 +176,55 @@ class SnappyParser(session: SnappySession)
     intervalLiteral
   }
 
+  protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
+    questionMark ~> (() => {
+      session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
+      if (session.sessionState.isPreparePhase) {
+        ParamLiteral(Row(session.sessionState.questionMarkCounter), NullType, 0)
+      } else {
+        assert(session.sessionState.pvs.isDefined,
+          "For Prepared Statement, Parameter constants are not provided")
+        if (session.sessionState.questionMarkCounter >
+            session.sessionState.pvs.get.getParameterCount) {
+          assert(false, s"For Prepared Statement, Got more number of" +
+              s" placeholders = $session.sessionState.questionMarkCounter than given number of parameter" +
+              s" constants = ${session.sessionState.pvs.get.getParameterCount}")
+        }
+        val dvd =
+          session.sessionState.pvs.get.getParameter(session.sessionState.questionMarkCounter - 1)
+        val scalaTypeVal = CachedPlanHelperExec.getValue(dvd)
+        val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
+        val storeType = dvd.getTypeFormatId
+        val storePrecision = dvd match {
+          case d: SQLDecimal => d.getDecimalValuePrecision
+          case _ => -1
+        }
+        val storeScale = dvd match {
+          case d: SQLDecimal => d.getDecimalValueScale
+          case _ => -1
+        }
+        val dataType = SnappySession.getDataType(storeType, storePrecision, storeScale)
+        paramcounter = paramcounter + 1
+        val p = ParamLiteral(catalystTypeVal, dataType, paramcounter)
+        addParamLiteralToContext(p)
+        p
+      }
+    })
+  }
+
+  def addParamLiteralToContext(p: ParamLiteral): Unit =
+    session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
+      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      case Some(list) => list += p
+      case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
+        mutable.ArrayBuffer(p))
+    }
+
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
       val p = ParamLiteral(l.value, l.dataType, paramcounter)
-      session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
-        CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
-        case Some(list) => list += p
-        case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
-          mutable.ArrayBuffer(p))
-      }
+      addParamLiteralToContext(p)
       p
     })
   }
@@ -666,7 +706,7 @@ class SnappyParser(session: SnappySession)
             isDistinct = false)
         }
     } |
-    ( ( test(tokenize) ~ paramliteral ) | literal ) |
+    ( ( test(tokenize) ~ paramliteral ) | literal | paramLiteralQuestionMark) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
