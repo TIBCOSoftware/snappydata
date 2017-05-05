@@ -56,7 +56,7 @@ class LeadImpl extends ServerImpl with Lead
     val gfCache = GemFireCacheImpl.getInstance
 
     if (gfCache == null || gfCache.isClosed) {
-      throw new Exception("GemFire Cache not initialized")
+      throw new IllegalStateException("GemFire Cache not initialized")
     }
 
     val dSys = gfCache.getDistributedSystem

@@ -24,7 +24,8 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, LocalRegion, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.cache.IsolationLevel
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -55,7 +56,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition])
+      Array.empty[Partition], var commitTx: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -171,7 +172,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       thePart: Partition): (Connection, Statement, ResultSet) = {
     val conn = ExternalStoreUtils.getConnection(tableName,
       connProperties, forExecutor = true)
-
     if (isPartitioned) {
       val ps = conn.prepareStatement(
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
@@ -188,7 +188,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         ps.close()
       }
     }
-
     val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
@@ -202,7 +201,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }
-
     val rs = stmt.executeQuery()
     /* (hangs for some reason)
     // setup context stack for lightWeightNext calls
@@ -220,7 +218,23 @@ class RowFormatScanRDD(@transient val session: SnappySession,
    */
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
+
+    if (commitTx) {
+      Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+        logDebug("Task context is : " + TaskContext.get()
+            + " attempt number is " + context.attemptNumber()
+            + " attempt ID " + context.taskAttemptId())
+        val tx = TXManagerImpl.snapshotTxState.get()
+        if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+          val txMgr = GemFireCacheImpl.getExisting.getCacheTransactionManager
+          txMgr.masqueradeAs(tx)
+          txMgr.commit()
+        }
+      }))
+    }
+
     if (pushProjections || useResultSet) {
+      // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
       new ResultSetTraversal(conn, stmt, rs, context)
     } else {
@@ -233,7 +247,13 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
-        new CompactExecRowIteratorOnScan(container, bucketIds)
+        val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
+        if (txManagerImpl.getTXState == null) {
+          txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
+        }
+
+        val txId = txManagerImpl.getTransactionId
+        new CompactExecRowIteratorOnScan(container, bucketIds, txId)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
         val ers = rs match {
@@ -269,13 +289,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         case dr => session.sessionState.getTablePartitions(dr)
       }
     } finally {
+      conn.commit()
       conn.close()
     }
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
-
+    output.writeBoolean(commitTx)
     output.writeString(tableName)
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
@@ -303,7 +324,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
-
+    commitTx = input.readBoolean()
     tableName = input.readString()
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()
@@ -360,10 +381,13 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 
   protected final var hasNextValue = true
   protected final var doMove = true
+  // transaction started by row buffer scan should be used here
+  val tx: TXStateInterface = TXManagerImpl.snapshotTxState.get()
 
+  // TODO: Suranjan If tx is null then start a GemFire Snapshot tx.
   private[execution] final val itr = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
-      bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
+      bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
       false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
   } else if (region ne null) {
     region.getDataView.getLocalEntriesIterator(
@@ -380,6 +404,12 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
       moveNext()
       doMove = false
     }
+    // commit here as row and column iteration is complete.
+    /* if (!hasNextValue && tx != null && !(tx.asInstanceOf[TXStateProxy]).isClosed()) {
+      val cache = GemFireCacheImpl.getExisting
+      cache.getCacheTransactionManager.masqueradeAs(tx)
+      cache.getCacheTransactionManager.commit()
+    } */
     hasNextValue
   }
 
@@ -393,7 +423,7 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
+    bucketIds: java.util.Set[Integer], txId: TXId)
     extends PRValuesIterator[AbstractCompactExecRow](container,
       region = null, bucketIds) {
 

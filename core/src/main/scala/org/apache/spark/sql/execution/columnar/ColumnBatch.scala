@@ -94,6 +94,7 @@ abstract class ResultSetIterator[A](conn: Connection,
       case e: Exception => logWarning("Exception closing statement", e)
     }
     try {
+      conn.commit()
       conn.close()
       logDebug("closed connection for task " + context.partitionId())
     } catch {
@@ -220,22 +221,24 @@ final class ColumnBatchIterator(container: GemFireContainer,
   override protected def moveNext(): Unit = {
     while ((container ne null) && itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
-      currentBucketRegion = itr.getHostedBucketRegion
-      // get the stat row region entries only. region entries for individual columns
-      // will be fetched on demand
-      if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-        val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
-        if (key.getKeyColumn(2).getInt ==
-            ColumnBatchIterator.STATROW_COL_INDEX) {
-          val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
-          else baseRegion.get(key)
-          if (v ne null) {
-            val value = v.asInstanceOf[Array[Array[Byte]]]
-            currentKeyUUID = key.getKeyColumn(0)
-            currentKeyPartitionId = key.getKeyColumn(1)
-            val rowFormatter = container.getRowFormatter(value(0))
-            currentVal = rowFormatter.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION)
-            return
+      if (!rl.isDestroyedOrRemoved) {
+        currentBucketRegion = itr.getHostedBucketRegion
+        // get the stat row region entries only. region entries for individual columns
+        // will be fetched on demand
+        if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
+          val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
+          if (key.getKeyColumn(2).getInt ==
+              ColumnBatchIterator.STATROW_COL_INDEX) {
+            val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
+            else baseRegion.get(key)
+            if (v ne null) {
+              val value = v.asInstanceOf[Array[Array[Byte]]]
+              currentKeyUUID = key.getKeyColumn(0)
+              currentKeyPartitionId = key.getKeyColumn(1)
+              val rowFormatter = container.getRowFormatter(value(0))
+              currentVal = rowFormatter.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION)
+              return
+            }
           }
         }
       }

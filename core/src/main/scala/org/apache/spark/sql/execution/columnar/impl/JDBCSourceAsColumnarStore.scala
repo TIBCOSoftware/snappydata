@@ -27,7 +27,7 @@ import scala.util.Random
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
@@ -394,6 +394,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
       }
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -442,6 +443,24 @@ final class ColumnarStorePartitionedRDD(
   }
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
+
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+      val tx = TXManagerImpl.snapshotTxState.get()
+      if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+        val txMgr = GemFireCacheImpl.getExisting.getCacheTransactionManager
+        txMgr.masqueradeAs(tx)
+        txMgr.commit()
+      }
+    }))
+
+    // TODO: maybe we can start tx here
+    // We can start different tx in each executor for first phase,
+    // till global snapshot is available.
+    // check if the tx is already running.
+    // val txMgr = GemFireCacheImpl.getExisting.getCacheTransactionManager
+    // txMgr.begin()
+    // who will call commit.
+    // val txId = txMgr.getTransactionId
     val bucketIds = part match {
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
@@ -540,7 +559,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _relDestroyVersion: Int = -1)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-      _filters, _partEval) {
+    _filters, _partEval, false) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
@@ -594,6 +613,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     try {
       SparkShellRDDHelper.getPartitions(tableName, conn)
     } finally {
+      conn.commit()
       conn.close()
     }
   }
