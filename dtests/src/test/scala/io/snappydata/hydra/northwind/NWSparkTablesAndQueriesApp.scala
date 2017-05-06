@@ -23,7 +23,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object NWSparkTablesAndQueriesApp {
   val conf = new SparkConf().
-    setAppName("NWSparkTablesAndQueriesApp Application")
+      setAppName("NWSparkTablesAndQueriesApp Application")
   val sc = new SparkContext(conf)
   val sqlContext = SQLContext.getOrCreate(sc)
   val snc = SnappyContext(sc)
@@ -35,23 +35,29 @@ object NWSparkTablesAndQueriesApp {
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
     NWTestUtil.dropTables(snc)
-    val pw = new PrintWriter(new FileOutputStream(new File("NWSparkTablesAndQueriesApp.out"), true));
+    // scalastyle:off println
+    val pw = new PrintWriter(new FileOutputStream(new File("NWSparkTablesAndQueriesApp.out"),
+      true));
     println("Test replicated row tables queries started")
     createAndLoadSparkTables(sqlContext)
     printResults(snc, pw)
     pw.close()
   }
 
-  private def assertJoin(snc: SnappyContext, sqlString: String, tableType: String, queryNum: String, pw: PrintWriter): Any = {
+  private def assertJoin(snc: SnappyContext, sqlString: String, tableType: String, queryNum:
+  String, pw: PrintWriter): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     val df = snc.sql(sqlString)
-    pw.println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n TableType : ${tableType} \n df.explain() : ${df.explain().toString}")
+    pw.println(s"Query ${queryNum} \n df.count for join query is :  ${df.count} \n  TableType " +
+        s": ${tableType} \n df.explain() : ${df.explain().toString}")
 
   }
 
-  private def assertQuery(snc: SnappyContext, sqlString: String, tableType: String, queryNum: String, pw: PrintWriter): Any = {
+  private def assertQuery(snc: SnappyContext, sqlString: String, tableType: String, queryNum:
+  String, pw: PrintWriter): Any = {
     val df = snc.sql(sqlString)
-    pw.println(s"\nQuery ${queryNum} \n df.count is : ${df.count} \n TableType : ${tableType} \n {df.explain() : ${df.explain().toString}")
+    pw.println(s"\nQuery ${queryNum} \n df.count is : ${df.count} \n  TableType : ${tableType} \n" +
+        s" {df.explain() : ${df.explain().toString}")
   }
 
   private def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
@@ -103,7 +109,7 @@ object NWSparkTablesAndQueriesApp {
         case "Q30" => assertJoin(snc, NWQueries.Q30, "ReplicatedTable", "Q30", pw)
         case "Q31" => assertJoin(snc, NWQueries.Q31, "ReplicatedTable", "Q31", pw)
         case "Q32" => assertJoin(snc, NWQueries.Q32, "ReplicatedTable", "Q32", pw)
-        case "Q33" => //assertJoin(snc, NWQueries.Q33, 51, "Q33")
+        case "Q33" => // assertJoin(snc, NWQueries.Q33, 51, "Q33")
         case "Q34" => assertJoin(snc, NWQueries.Q34, "ReplicatedTable", "Q34", pw)
         case "Q35" => assertJoin(snc, NWQueries.Q35, "ReplicatedTable", "Q35", pw)
         case "Q36" => assertJoin(snc, NWQueries.Q36, "ReplicatedTable", "Q36", pw)
@@ -114,7 +120,8 @@ object NWSparkTablesAndQueriesApp {
         case "Q41" => assertJoin(snc, NWQueries.Q41, "ReplicatedTable", "Q41", pw)
         case "Q42" => assertJoin(snc, NWQueries.Q42, "ReplicatedTable", "Q42", pw)
         case "Q43" => assertJoin(snc, NWQueries.Q43, "ReplicatedTable", "Q43", pw)
-        case "Q44" => assertJoin(snc, NWQueries.Q44, "ReplicatedTable", "Q44", pw) //LeftSemiJoinHash
+        case "Q44" => assertJoin(snc, NWQueries.Q44, "ReplicatedTable", "Q44", pw)
+        // LeftSemiJoinHash
         case "Q45" => assertJoin(snc, NWQueries.Q45, "ReplicatedTable", "Q45", pw)
         case "Q46" => assertJoin(snc, NWQueries.Q46, "ReplicatedTable", "Q46", pw)
         case "Q47" => assertJoin(snc, NWQueries.Q47, "ReplicatedTable", "Q47", pw)

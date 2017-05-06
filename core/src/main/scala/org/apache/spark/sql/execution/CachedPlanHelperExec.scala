@@ -16,8 +16,12 @@
  */
 package org.apache.spark.sql.execution
 
+import java.util.Calendar
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+
+import com.pivotal.gemfirexd.internal.iapi.types._
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -29,6 +33,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
+import org.apache.spark.unsafe.types.UTF8String
 
 case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: SnappySession)
     extends UnaryExecNode with CodegenSupport {
@@ -113,5 +118,32 @@ object CachedPlanHelperExec extends Logging {
     literals.foreach { case lv@LiteralValue(_, _, p) =>
       lv.value = newpls.find(_.pos == p).get.value
     }
+  }
+
+  def getValue(dvd: DataValueDescriptor): Any = dvd match {
+    case i: SQLInteger => i.getInt
+    case si: SQLSmallint => si.getShort
+    case ti: SQLTinyint => ti.getByte
+    case d: SQLDouble => d.getDouble
+    case li: SQLLongint => li.getLong
+    case bid: BigIntegerDecimal => bid.getDouble
+    case de: SQLDecimal => de.getBigDecimal
+    case r: SQLReal => r.getFloat
+    case b: SQLBoolean => b.getBoolean
+    case cl: SQLClob =>
+      val charArray = cl.getCharArray()
+      if (charArray != null) {
+        val str = String.valueOf(charArray)
+        UTF8String.fromString(str)
+      } else null
+    case lvc: SQLLongvarchar => UTF8String.fromString(lvc.getString)
+    case vc: SQLVarchar => UTF8String.fromString(vc.getString)
+    case c: SQLChar => UTF8String.fromString(c.getString)
+    case ts: SQLTimestamp => ts.getTimestamp(null)
+    case t: SQLTime => t.getTime(null)
+    case d: SQLDate =>
+      val c: Calendar = null
+      d.getDate(c)
+    case _ => dvd.getObject
   }
 }
