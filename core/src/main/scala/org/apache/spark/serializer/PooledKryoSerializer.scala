@@ -24,11 +24,8 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
-import com.esotericsoftware.kryo.serializers.{ExternalizableSerializer, JavaSerializer => KryoJavaSerializer}
+import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
-import org.apache.commons.logging.impl.SLF4JLocationAwareLog
-import org.slf4j.helpers.NOPLogger
-import org.slf4j.impl.Log4jLoggerAdapter
 
 import org.apache.spark.broadcast.TorrentBroadcast
 import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
@@ -127,10 +124,6 @@ final class PooledKryoSerializer(conf: SparkConf)
       BlockManagerId.getCachedBlockManagerId))
     kryo.register(classOf[StorageLevel], new ExternalizableResolverSerializer(
       StorageLevel.getCachedStorageLevel))
-    kryo.register(classOf[SLF4JLocationAwareLog], new KryoJavaSerializer())
-    kryo.register(classOf[Log4jLoggerAdapter], new KryoJavaSerializer())
-    kryo.register(classOf[NOPLogger], new KryoJavaSerializer())
-
     kryo.register(classOf[BlockAndExecutorId], new ExternalizableOnlySerializer)
     kryo.register(classOf[StructType], StructTypeSerializer)
     kryo.register(classOf[NarrowExecutorLocalSplitDep],
@@ -160,6 +153,11 @@ final class PooledKryoSerializer(conf: SparkConf)
     // rather than going to FieldSerializer
     kryo.addDefaultSerializer(classOf[Externalizable],
       new ExternalizableSerializer)
+
+    // use a custom default serializer factory that will honour
+    // readObject/writeObject, readResolve/writeReplace methods to fall-back
+    // to java serializer else use Kryo's FieldSerializer
+    kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
 
     kryo
   }

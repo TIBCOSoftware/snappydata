@@ -35,6 +35,7 @@ dependencies {
   }
 
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 

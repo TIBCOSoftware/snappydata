@@ -369,7 +369,6 @@ class LeadImpl extends ServerImpl with Lead
 
   def getConfig(args: Array[String]): Config = {
 
-    System.setProperty("config.trace", "substitutions")
     val notConfigurable = ConfigFactory.parseProperties(getDynamicOverrides).
         withFallback(ConfigFactory.parseResources("jobserver-overrides.conf"))
 
