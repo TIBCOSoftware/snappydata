@@ -51,21 +51,12 @@ trait StoreUnifiedManager {
 
   /**
    * Change the off-heap owner to mark it being used for storage.
-   * Passing the boolean as true allows moving ByteBuffers not allocated
+   * Passing the owner as null allows moving ByteBuffers not allocated
    * by [[com.gemstone.gemfire.internal.cache.store.BufferAllocator]]s
    * to be also changed and freshly accounted.
    */
   def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit
-
-  /**
-   * Just add to the accouting of off-heap value in storage.
-   * This will add to the storage accounting for the total active buffers
-   * in the region while total allocated are already tracked by
-   * BufferAllocator (so this will help determine the amount of
-   *   transient buffers and "garbage")
-   */
-  def accountOffHeapStoreValue(newValue: AnyRef, oldValue: AnyRef): Unit
 }
 
 /**
@@ -118,9 +109,6 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
 
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = {}
-
-  override def accountOffHeapStoreValue(newValue: AnyRef,
-      oldValue: AnyRef): Unit = {}
 }
 
 
@@ -158,9 +146,6 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
 
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = {}
-
-  override def accountOffHeapStoreValue(newValue: AnyRef,
-      oldValue: AnyRef): Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {
@@ -178,13 +163,13 @@ object MemoryManagerCallback extends Logging {
 
   private final val isCluster = {
     try {
-      val c = org.apache.spark.util.Utils.classForName(
+      org.apache.spark.util.Utils.classForName(
         "org.apache.spark.memory.SnappyUnifiedMemoryManager")
       // Class is loaded means we are running in SnappyCluster mode.
 
       true
     } catch {
-      case cnf: ClassNotFoundException =>
+      case _: ClassNotFoundException =>
         logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
             "SnappyUnifiedMemoryManager won't be used.")
         false
@@ -207,21 +192,22 @@ object MemoryManagerCallback extends Logging {
     }
 
     if (GemFireStore.getBootedInstance ne null) {
-      if (SparkEnv.get ne null) {
-        if (SparkEnv.get.memoryManager.isInstanceOf[StoreUnifiedManager]) {
-          snappyUnifiedManager = SparkEnv.get.memoryManager.asInstanceOf[StoreUnifiedManager]
-          return snappyUnifiedManager
-        } else {
-          // For testing purpose if we want to disable SnappyUnifiedManager
-          return noOpMemoryManager
+      val env = SparkEnv.get
+      if (env ne null) {
+        env.memoryManager match {
+          case unifiedManager: StoreUnifiedManager =>
+            snappyUnifiedManager = unifiedManager
+            unifiedManager
+          case _ =>
+            // For testing purpose if we want to disable SnappyUnifiedManager
+            noOpMemoryManager
         }
       } else {
-        return tempMemoryManager
+        tempMemoryManager
       }
-
     } else {
       // Till GemXD Boot Time
-      return tempMemoryManager
+      tempMemoryManager
     }
   }
 }

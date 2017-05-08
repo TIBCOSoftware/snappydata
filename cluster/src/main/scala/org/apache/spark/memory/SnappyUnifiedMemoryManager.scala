@@ -17,12 +17,12 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
 import scala.collection.mutable
 
-import com.gemstone.gemfire.internal.cache.store.{DirectBufferAllocator, SerializedDiskBuffer}
+import com.gemstone.gemfire.internal.cache.store.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -60,27 +60,15 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
       conf.getDouble("spark.memory.storageMaxFraction", 0.9)).toLong
-  private val minOffHeapEviction = math.min(math.max(10L * 1024L * 1024L,
-    (maxOffHeapStorageSize * 0.002).toLong), 100L * 1024L * 1024L)
-
-  private val maxOffHeapGarbage =
-    (math.min(maxHeapMemory, maxOffHeapMemory) * 0.01).toLong
 
   /**
-   * Keeps track of the amount of memory currently used for region data storage.
-   * This is used to determine if there is a large difference between actual
-   * memory allocated for storage purpose (i.e. tracked in [[memoryForObject]])
-   * vs actual memory that is in use by region data (i.e. this counter).
-   * If difference is large and explicit pending references release does not
-   * make enough room, then it means there are a large number of uncollected
-   * pending DirectByteBuffer references so explicit GC can be invoked.
+   * If total heap size is small enough then try and use explicit GC to
+   * release pending off-heap references before failing storage allocation.
    */
-  private val offHeapRegionStorageBytes = {
+  private val canUseExplicitGC = {
     // use explicit System.gc() only if total-heap size is not large
-    if (maxOffHeapMemory > 0 && Runtime.getRuntime.totalMemory <=
-        SnappyUnifiedMemoryManager.EXPLICIT_GC_LIMIT) {
-      new AtomicLong(0L)
-    } else null
+    maxOffHeapMemory > 0 && Runtime.getRuntime.totalMemory <=
+        SnappyUnifiedMemoryManager.EXPLICIT_GC_LIMIT
   }
 
   offHeapExecutionMemoryPool.incrementPoolSize(maxOffHeapMemory - offHeapStorageMemory)
@@ -150,31 +138,30 @@ class SnappyUnifiedMemoryManager private[memory](
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = synchronized {
     val capacity = buffer.capacity()
-    val size = capacity + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
-    val from = DirectBufferAllocator.DIRECT_OBJECT_OWNER
-    val to = DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER
-    val changeOwner = new Consumer[java.lang.Boolean] {
-      override def accept(changeFrom: java.lang.Boolean): Unit = {
-        if (changeFrom) {
+    val totalSize = capacity + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
+    val toOwner = DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER
+    val changeOwner = new Consumer[String] {
+      override def accept(fromOwner: String): Unit = {
+        if (fromOwner ne null) {
           // "from" was changed to "to"
-          val prev = memoryForObject.addTo(from, -size)
-          if (prev >= size) {
-            memoryForObject.addTo(to, size)
+          val prev = memoryForObject.addTo(fromOwner, -totalSize)
+          if (prev >= totalSize) {
+            memoryForObject.addTo(toOwner, totalSize)
           } else {
             // something went wrong with size accounting
-            memoryForObject.addTo(from, size)
+            memoryForObject.addTo(fromOwner, totalSize)
             throw new IllegalStateException(
-              s"Unexpected move of $size bytes from owner $from size=$prev")
+              s"Unexpected move of $totalSize bytes from owner $fromOwner size=$prev")
           }
         } else if (allowNonAllocator) {
           // add to storage pool
-          if (!askStoragePool(to, MemoryManagerCallback.storageBlockId, size,
-            MemoryMode.OFF_HEAP, shouldEvict = true)) {
+          if (!askStoragePool(toOwner, MemoryManagerCallback.storageBlockId,
+            totalSize, MemoryMode.OFF_HEAP, shouldEvict = true)) {
             throw DirectBufferAllocator.instance().lowMemoryException(
-              "changeToStorage", size)
+              "changeToStorage", totalSize)
           }
         } else throw new IllegalStateException(
-          s"ByteBuffer Cleaner does not match expected source $from")
+          s"ByteBuffer Cleaner does not match expected source $fromOwner")
       }
     }
     // change the owner to storage
@@ -182,42 +169,13 @@ class SnappyUnifiedMemoryManager private[memory](
       capacity, changeOwner)
   }
 
-  override def accountOffHeapStoreValue(newValue: AnyRef,
-      oldValue: AnyRef): Unit = {
-    val allocatedForStorage = this.offHeapRegionStorageBytes
-    if (allocatedForStorage ne null) {
-      val oldSize = if (oldValue ne null) oldValue match {
-        case buffer: SerializedDiskBuffer => buffer.getOffHeapSizeInBytes
-        case _ => 0L
-      } else 0L
-      if (newValue ne null) newValue match {
-        case buffer: SerializedDiskBuffer =>
-          allocatedForStorage.addAndGet(buffer.getOffHeapSizeInBytes - oldSize)
-        case _ =>
-      } else if (oldSize > 0L) {
-        allocatedForStorage.addAndGet(-oldSize)
-      }
-    }
-  }
-
-  def tryExplicitGC(): Boolean = {
+  def tryExplicitGC(): Unit = {
     // check if explicit GC should be invoked
-    val allocatedForStorage = this.offHeapRegionStorageBytes
-    if (allocatedForStorage ne null) {
-      // check if the difference between total allocations and
-      // total being actually used in region is high
-      val inUse = allocatedForStorage.get
-      val allocated = getOffHeapMemory(
-        DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
-      if ((allocated - inUse) > maxOffHeapGarbage) {
-        logInfo("Invoking explicit GC due to large number of pending " +
-            "references. Allocated=" + allocated + " inUse=" + inUse)
-        System.gc()
-        UnsafeHolder.releasePendingReferences()
-      }
-      return true
+    if (canUseExplicitGC) {
+      logInfo("Invoking explicit GC before failing storage allocation request")
+      System.gc()
     }
-    false
+    UnsafeHolder.releasePendingReferences()
   }
 
   /**
@@ -251,8 +209,7 @@ class SnappyUnifiedMemoryManager private[memory](
           offHeapExecutionMemoryPool,
           offHeapStorageMemoryPool,
           offHeapStorageMemory,
-          maxOffHeapMemory,
-          minOffHeapEviction)
+          maxOffHeapMemory, 0L)
     }
 
     /**
@@ -378,8 +335,7 @@ class SnappyUnifiedMemoryManager private[memory](
             offHeapExecutionMemoryPool,
             offHeapStorageMemoryPool,
             maxOffHeapMemory - offHeapExecutionMemoryPool.memoryUsed,
-            maxOffHeapStorageSize,
-            minOffHeapEviction)
+            maxOffHeapStorageSize, 0L)
       }
 
 

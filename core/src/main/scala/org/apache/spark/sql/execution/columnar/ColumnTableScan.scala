@@ -280,7 +280,7 @@ private[sql] final case class ColumnTableScan(
     } else ("", "")
 
     val iteratorClass = "scala.collection.Iterator"
-    val colIteratorClass = if (isEmbedded) classOf[ColumnBatchBufferIterator].getName
+    val colIteratorClass = if (isEmbedded) classOf[ColumnBatchIterator].getName
     else classOf[ColumnBatchIteratorOnRS].getName
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {

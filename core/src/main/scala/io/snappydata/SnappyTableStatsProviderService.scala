@@ -39,7 +39,7 @@ import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionS
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
 /*
@@ -192,7 +192,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           var numColumnsInTable = -1
           // Resetting PR Numrows in cached batch as this will be calculated every time.
           // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-          var rowsInColumnBatch: Long = 0
+          var rowsInColumnBatch = 0L
+          var offHeapSize = 0L
           if (container ne null) {
             // using direct region operations
             while (itr.hasNext) {
@@ -203,9 +204,15 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               }
               rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
                 numColumnsInTable)
+              re._getValue() match {
+                case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
+                case _ =>
+              }
             }
           }
-          pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
+          val stats = pr.getPrStats
+          stats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
+          stats.setOffHeapSizeInBytes(offHeapSize)
         }
       }
     }

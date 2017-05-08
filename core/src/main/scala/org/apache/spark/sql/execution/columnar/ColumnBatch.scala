@@ -19,16 +19,15 @@ package org.apache.spark.sql.execution.columnar
 import java.nio.ByteBuffer
 import java.sql.{Blob, Connection, PreparedStatement, ResultSet, Statement}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
+import com.gemstone.gemfire.cache.EntryDestroyedException
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, RegionEntry}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, CompactCompositeRegionKey, GemFireContainer}
-import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, RowLocation, SQLInteger}
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.{Logging, TaskContext}
@@ -106,25 +105,22 @@ abstract class ResultSetIterator[A](conn: Connection,
 
 object ColumnBatchIterator {
 
-  def apply(container: GemFireContainer,
-      bucketIds: java.util.Set[Integer]): ColumnBatchIterator = {
-    new ColumnBatchIterator(container, bucketIds, null)
-  }
-
   def apply(region: LocalRegion,
-      bucketIds: java.util.Set[Integer]): ColumnBatchBufferIterator = {
-    new ColumnBatchBufferIterator(region, bucketIds, batch = null)
+      bucketIds: java.util.Set[Integer],
+      context: TaskContext): ColumnBatchIterator = {
+    new ColumnBatchIterator(region, batch = null, bucketIds, context)
   }
 
-  def apply(batch: ColumnBatch): ColumnBatchBufferIterator = {
-    new ColumnBatchBufferIterator(region = null, bucketIds = null, batch)
+  def apply(batch: ColumnBatch): ColumnBatchIterator = {
+    new ColumnBatchIterator(region = null, batch, bucketIds = null,
+      context = null)
   }
 
   val STATROW_COL_INDEX: Int = -1
 }
 
-final class ColumnBatchBufferIterator(region: LocalRegion,
-    bucketIds: java.util.Set[Integer], val batch: ColumnBatch)
+final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
+    bucketIds: java.util.Set[Integer], context: TaskContext)
     extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
 
   if (region ne null) {
@@ -136,11 +132,16 @@ final class ColumnBatchBufferIterator(region: LocalRegion,
         ColumnFormatEntry.VALUE_HEADER_SIZE))
   }
 
+  if (context ne null) {
+    context.addTaskCompletionListener(_ => releaseColumns())
+  }
+
   protected var currentVal: ByteBuffer = _
-  var currentKeyPartitionId: Int = _
-  var currentKeyUUID: String = _
-  var currentBucketRegion: BucketRegion = _
-  var batchProcessed = false
+  private var currentKeyPartitionId: Int = _
+  private var currentKeyUUID: String = _
+  private var currentBucketRegion: BucketRegion = _
+  private var batchProcessed = false
+  private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
 
   def getColumnLob(bufferPosition: Int): ByteBuffer = {
     if (region ne null) {
@@ -148,14 +149,38 @@ final class ColumnBatchBufferIterator(region: LocalRegion,
         currentKeyUUID)
       val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
       else region.get(key)
-      value.asInstanceOf[ColumnFormatValue].getBufferRetain
+      if (value ne null) {
+        val columnValue = value.asInstanceOf[ColumnFormatValue]
+        val buffer = columnValue.getBufferRetain
+        if (buffer.remaining() > 0) {
+          currentColumns += columnValue
+          return buffer
+        }
+      }
+      // empty buffer indicates value removed from region
+      throw new EntryDestroyedException(s"Iteration on column=$bufferPosition " +
+          s"partition=$currentKeyPartitionId key=$key failed due to missing value")
     } else {
       batch.buffers(bufferPosition - 1)
     }
   }
 
+  def releaseColumns(): Int = {
+    val previousColumns = currentColumns
+    if ((previousColumns ne null) && previousColumns.nonEmpty) {
+      currentColumns = null
+      previousColumns.foreach(_.release())
+      previousColumns.length
+    } else 0
+  }
+
   override protected def moveNext(): Unit = {
     if (region ne null) {
+      // release previous set of values
+      val numColumns = releaseColumns()
+      if (numColumns > 0) {
+        currentColumns = new ArrayBuffer[ColumnFormatValue](numColumns)
+      }
       while (itr.hasNext) {
         val re = itr.next().asInstanceOf[RegionEntry]
         currentBucketRegion = itr.getHostedBucketRegion
@@ -169,10 +194,16 @@ final class ColumnBatchBufferIterator(region: LocalRegion,
             // NonLocalRegionEntry where RegionEntryContext arg is not required
             val v = re.getValue(currentBucketRegion)
             if (v ne null) {
-              currentKeyPartitionId = key.partitionId
-              currentKeyUUID = key.uuid
-              currentVal = v.asInstanceOf[ColumnFormatValue].getBufferRetain
-              return
+              val columnValue = v.asInstanceOf[ColumnFormatValue]
+              val buffer = columnValue.getBufferRetain
+              // empty buffer indicates value removed from region
+              if (buffer.remaining() > 0) {
+                currentKeyPartitionId = key.partitionId
+                currentKeyUUID = key.uuid
+                currentVal = buffer
+                currentColumns += columnValue
+                return
+              }
             }
           }
         }
@@ -184,71 +215,6 @@ final class ColumnBatchBufferIterator(region: LocalRegion,
     } else {
       hasNextValue = false
     }
-  }
-}
-
-final class ColumnBatchIterator(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], val batch: ColumnBatch)
-    extends PRValuesIterator[Array[Byte]](container, region = null, bucketIds) {
-
-  if (container ne null){
-    assert(!container.isOffHeap,
-      s"Unexpected byte[][] iterator call for off-heap $container")
-  }
-
-  protected var currentVal: Array[Byte] = _
-  var currentKeyUUID: DataValueDescriptor = _
-  var currentKeyPartitionId: DataValueDescriptor = _
-  var currentBucketRegion: BucketRegion = _
-  val baseRegion: LocalRegion = if (container ne null) container.getRegion else null
-  var batchProcessed = false
-
-  def getColumnLob(bufferPosition: Int): ByteBuffer = {
-    if (container ne null) {
-      val key = new CompactCompositeRegionKey(Array(
-        currentKeyUUID, currentKeyPartitionId, new SQLInteger(bufferPosition)),
-        container.getExtraTableInfo())
-      val rl = if (currentBucketRegion != null) currentBucketRegion.get(key)
-      else baseRegion.get(key)
-      val value = rl.asInstanceOf[Array[Array[Byte]]]
-      val rf = container.getRowFormatter(value(0))
-      ByteBuffer.wrap(rf.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION))
-    } else {
-      batch.buffers(bufferPosition - 1)
-    }
-  }
-
-  override protected def moveNext(): Unit = {
-    while ((container ne null) && itr.hasNext) {
-      val rl = itr.next().asInstanceOf[RowLocation]
-      if (!rl.isDestroyedOrRemoved) {
-        currentBucketRegion = itr.getHostedBucketRegion
-        // get the stat row region entries only. region entries for individual columns
-        // will be fetched on demand
-        if ((currentBucketRegion ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-          val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
-          if (key.getKeyColumn(2).getInt ==
-              ColumnBatchIterator.STATROW_COL_INDEX) {
-            val v = if (currentBucketRegion != null) currentBucketRegion.get(key)
-            else baseRegion.get(key)
-            if (v ne null) {
-              val value = v.asInstanceOf[Array[Array[Byte]]]
-              currentKeyUUID = key.getKeyColumn(0)
-              currentKeyPartitionId = key.getKeyColumn(1)
-              val rowFormatter = container.getRowFormatter(value(0))
-              currentVal = rowFormatter.getLob(value, PartitionedPhysicalScan.CT_BLOB_POSITION)
-              return
-            }
-          }
-        }
-      }
-    }
-    if ((container eq null) && !batchProcessed) {
-      currentVal = batch.statsData
-      batchProcessed = true
-      return
-    }
-    hasNextValue = false
   }
 }
 

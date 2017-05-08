@@ -25,15 +25,16 @@ import java.util.concurrent.locks.LockSupport
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.cache.{EntryOperation, Region}
+import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException, EntryOperation, Region, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
+import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.{DirectBufferAllocator, SerializedDiskBuffer}
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, DiskId, GemFireCacheImpl, InternalPartitionResolver, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, DiskEntry, DiskId, GemFireCacheImpl, InternalPartitionResolver, RegionEntry, Token}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.shared.{InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
-import com.gemstone.gemfire.internal.{DSCODE, DataSerializableFixedID, DirectByteBufferDataInput, HeapDataOutputStream}
+import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RowEncoder}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
@@ -117,11 +118,19 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
     val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN
     val currentBucketRegion = itr.getHostedBucketRegion
-    if (columnIndex == ColumnBatchIterator.STATROW_COL_INDEX) {
+    if (columnIndex == ColumnBatchIterator.STATROW_COL_INDEX &&
+        !re.isDestroyedOrRemoved) {
       val value = re.getValue(currentBucketRegion)
           .asInstanceOf[ColumnFormatValue]
-      val unsafeRow = Utils.toUnsafeRow(value.getBufferRetain, numColumns)
-      unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+      if (value ne null) {
+        val buffer = value.getBufferRetain
+        if (buffer.remaining() > 0) {
+          val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
+          val n = unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+          value.release()
+          n
+        } else 0
+      } else 0
     } else 0
   }
 
@@ -172,6 +181,9 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
           4 /* columnIndex */ + 4 /* partitionId */)
     }
   }
+
+  override def toString: String =
+    s"ColumnKey(columnIndex=$columnIndex,partitionId=$partitionId,uuid=$uuid)"
 }
 
 /**
@@ -215,6 +227,7 @@ final class ColumnFormatValue
   @volatile
   @transient private var columnBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
   @transient private var diskId: DiskId = _
+  @transient private var diskRegion: DiskRegionView = _
 
   def this(buffer: ByteBuffer) = {
     this()
@@ -224,7 +237,7 @@ final class ColumnFormatValue
   def setBuffer(buffer: ByteBuffer,
       changeOwnerToStorage: Boolean = true): Unit = synchronized {
     val columnBuffer = GemFireCacheImpl.getCurrentBufferAllocator
-        .transfer(buffer)
+        .transfer(buffer, DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
     if (changeOwnerToStorage && columnBuffer.isDirect) {
       MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
         columnBuffer, allowNonAllocator = true)
@@ -238,40 +251,105 @@ final class ColumnFormatValue
     assert(refCount == 1, s"Unexpected refCount=$refCount")
   }
 
+  /**
+   * Callers of this method should have a corresponding release method
+   * for eager release to work else off-heap object may keep around
+   * occupying system RAM until the next GC cycle. Callers may decide
+   * whether to keep the [[release]] method in a finally block to ensure
+   * its invocation, or do it only in normal paths because JVM reference
+   * collector will eventually clean it in any case.
+   */
   def getBufferRetain: ByteBuffer = {
     if (retain()) {
       columnBuffer
     } else synchronized {
+      // check if already read from disk by another thread and still valid
+      val buffer = this.columnBuffer
+      if ((buffer ne ColumnFormatEntry.VALUE_EMPTY_BUFFER) && retain()) {
+        return buffer
+      }
+
       // try to read using DiskId
       val diskId = this.diskId
       if (diskId ne null) {
-
-      } else ColumnFormatEntry.VALUE_EMPTY_BUFFER
+        try {
+          DiskEntry.Helper.getHeapValueOnDisk(diskId, diskRegion) match {
+            case v: ColumnFormatValue =>
+              // transfer the buffer from the temporary ColumnFormatValue
+              columnBuffer = v.columnBuffer
+              // restart reference count from 1
+              while (true) {
+                val refCount = SerializedDiskBuffer.refCountUpdate.get(this)
+                val updatedRefCount = if (refCount <= 0) 1 else refCount + 1
+                if (SerializedDiskBuffer.refCountUpdate.compareAndSet(
+                  this, refCount, updatedRefCount)) {
+                  return columnBuffer
+                }
+              }
+            case null | _: Token => // return empty buffer
+            case o => throw new IllegalStateException(
+              s"unexpected value in column store $o")
+          }
+        } catch {
+          case _: EntryDestroyedException | _: DiskAccessException |
+               _: RegionDestroyedException =>
+            // These exception types mean that value has disappeared from disk
+            // due to compaction or bucket has moved so return empty value.
+            // RegionDestroyedException is also ignored since background
+            // processors like gateway event processors will not expect it.
+        }
+      }
+      ColumnFormatEntry.VALUE_EMPTY_BUFFER
     }
   }
 
+  /**
+   * Get the internal data as a ByteBuffer for temporary use.
+   *
+   * USE WITH CARE ESPECIALLY TO ENSURE NO RELEASE HAPPENS WHILE USING
+   * THE BUFFER SO CALLER MUST ENSURE AT LEAST ONE [[retain]]
+   * AND NO EXPLICIT RELEASE OF THE RETURNED BUFFER (IF A DIRECT ONE).
+   */
   override def getInternalBuffer: ByteBuffer = columnBuffer
 
-  override protected def releaseBuffer(): Unit = {
+  override protected def releaseBuffer(): Unit = synchronized {
     // Remove the buffer at this point. Any further reads will need to be
     // done either using DiskId, or will return empty if no DiskId is available
     val buffer = this.columnBuffer
     if (buffer.isDirect) {
+      // make a copy of current diskId since it can get modified due to updates
+      // to RegionEntry
+      if (this.diskId ne null) {
+        this.diskId = this.diskId.copy()
+      }
       this.columnBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
       UnsafeHolder.releaseDirectBuffer(buffer)
     }
   }
 
-  override def setDiskId(id: DiskId): Unit = synchronized {
-    this.diskId = id
+  override def setDiskId(id: DiskId, dr: DiskRegionView): Unit = synchronized {
+    if (id ne null) {
+      this.diskId = id
+      // set/update diskRegion only if incoming value has been provided
+      if (dr ne null) {
+        this.diskRegion = dr
+      }
+    } else {
+      this.diskId = null
+      this.diskRegion = null
+    }
   }
 
   override def write(channel: OutputStreamChannel): Unit = {
     // write the pre-serialized buffer as is
     val buffer = getBufferRetain
+    val position = buffer.position()
     try {
+      // rewind buffer to the start for the write
+      buffer.rewind()
       write(channel, buffer)
     } finally {
+      buffer.position(position)
       release()
     }
   }
@@ -296,14 +374,12 @@ final class ColumnFormatValue
             write(channel, buffer)
 
           case hdos: HeapDataOutputStream =>
-            // ColumnFormatEntry.logger.info("SW: toData on hdos", new Throwable)
             val position = buffer.position()
             hdos.write(buffer)
             // rewind to original position
             buffer.position(position)
 
           case _ =>
-            ColumnFormatEntry.logger.info("SW: toData on non-channel, non-hdos", new Throwable)
             val allocator = GemFireCacheImpl.getCurrentBufferAllocator
             out.write(allocator.toBytes(buffer))
         }
@@ -320,11 +396,12 @@ final class ColumnFormatValue
     if (numBytes > 0) {
       val allocator = GemFireCacheImpl.getCurrentBufferAllocator
       in match {
-        case din: DirectByteBufferDataInput =>
-          // just transfer the internal buffer; higher layer will take care
-          // not to release this buffer (if direct);
+        case din: ByteBufferDataInput =>
+          // just transfer the internal buffer; higher layer (e.g. BytesAndBits)
+          // will take care not to release this buffer (if direct);
           // buffer is already positioned at start of data
-          val buffer = allocator.transfer(din.getInternalBuffer)
+          val buffer = allocator.transfer(din.getInternalBuffer,
+            DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
           if (buffer.isDirect) {
             MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
               buffer, allowNonAllocator = true)
@@ -349,14 +426,13 @@ final class ColumnFormatValue
           columnBuffer = buffer
 
         case _ =>
-          ColumnFormatEntry.logger.info("SW: fromData on a non-channel", new Throwable)
           // order is BIG_ENDIAN by default
           val bytes = new Array[Byte](numBytes +
               ColumnFormatEntry.VALUE_HEADER_SIZE)
           in.readFully(bytes, ColumnFormatEntry.VALUE_HEADER_SIZE, numBytes)
           // extra copy of empty 8-byte header too
-          val buffer = allocator.fromBytes(bytes, 0,
-            numBytes + ColumnFormatEntry.VALUE_HEADER_SIZE, true)
+          val buffer = allocator.fromBytesToStorage(bytes, 0,
+            numBytes + ColumnFormatEntry.VALUE_HEADER_SIZE)
           // owner is already marked for storage
           setBuffer(buffer, changeOwnerToStorage = false)
       }
@@ -400,8 +476,13 @@ final class ColumnFormatValue
     // (or retain/release) with capacity being valid even after releaseBuffer.
     val buffer = columnBuffer
     if (buffer.isDirect) {
-      alignedSize(buffer.capacity + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD)
+      buffer.capacity() + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
     } else 0
+  }
+
+  override def toString: String = {
+    val buffer = columnBuffer
+    s"ColumnValue[size=${buffer.limit()} $buffer diskId=$diskId diskRegion=$diskRegion]"
   }
 }
 

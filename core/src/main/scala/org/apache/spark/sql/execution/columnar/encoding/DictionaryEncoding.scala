@@ -219,7 +219,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     if (!releaseOld || (columnData eq null)) {
       // 2 byte indexes for short dictionary while 4 bytes for big dictionary
       val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
-      setSource(allocator.allocate(numBytes), releaseOld)
+      setSource(allocator.allocate(numBytes, ColumnEncoding.BUFFER_OWNER),
+        releaseOld)
     }
   }
 
@@ -423,11 +424,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override def close(): Unit = {
     super.close()
-    stringMap = null
     if ((stringMap ne null) && (stringMap.keyData ne null)) {
       stringMap.release()
-      stringMap = null
     }
+    stringMap = null
     longMap = null
     longArray = null
   }

@@ -320,8 +320,8 @@ trait ColumnEncoder extends ColumnEncoding {
           initByteSize += 8L /* typeId + nullsSize */
         }
       }
-      setSource(allocator.allocate(checkBufferSize(initByteSize)),
-        releaseOld = true)
+      setSource(allocator.allocate(checkBufferSize(initByteSize),
+        ColumnEncoding.BUFFER_OWNER), releaseOld = true)
     } else {
       // for primitive types optimistically trim to exact size
       dataType match {
@@ -329,7 +329,8 @@ trait ColumnEncoder extends ColumnEncoding {
              DateType | TimestampType | FloatType | DoubleType
           if reuseUsedSize > 0 && isAllocatorFinal &&
               reuseUsedSize != columnData.limit() =>
-          setSource(allocator.allocate(reuseUsedSize), releaseOld = true)
+          setSource(allocator.allocate(reuseUsedSize,
+            ColumnEncoding.BUFFER_OWNER), releaseOld = true)
 
         case _ => // continue to use the previous columnData
       }
@@ -399,7 +400,8 @@ trait ColumnEncoder extends ColumnEncoding {
   /** Expand the underlying bytes if required and return the new cursor */
   protected final def expand(cursor: Long, required: Int): Long = {
     val numWritten = cursor - columnBeginPosition
-    setSource(allocator.expand(columnData, required), releaseOld = false)
+    setSource(allocator.expand(columnData, required,
+      ColumnEncoding.BUFFER_OWNER), releaseOld = false)
     columnBeginPosition + numWritten
   }
 
@@ -727,6 +729,8 @@ trait ColumnEncoder extends ColumnEncoding {
 }
 
 object ColumnEncoding {
+
+  private[columnar] val BUFFER_OWNER = "ENCODER"
 
   private[columnar] val bitSetWords: Field = {
     val f = classOf[BitSet].getDeclaredField("words")

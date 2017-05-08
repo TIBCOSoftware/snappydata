@@ -74,14 +74,14 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   private var mask = _capacity - 1
 
   if (keyData eq null) {
-    val buffer = allocator.allocate(_capacity * fixedKeySize)
+    val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
     // clear the key data
     allocator.clearPostAllocate(buffer)
     keyData = new ByteBufferData(buffer, allocator)
   }
   if (valueData eq null) {
-    valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize),
-      allocator)
+    valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize,
+      "HASHMAP"), allocator)
     valueDataPosition = valueData.baseOffset
   }
 
@@ -185,7 +185,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
     val fixedKeySize = this.fixedKeySize
     val newCapacity = ObjectHashSet.checkCapacity(_capacity << 1, loadFactor)
-    val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize)
+    val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
     // clear the key data
     allocator.clearPostAllocate(newKeyBuffer)
     val newKeyData = new ByteBufferData(newKeyBuffer, allocator)
@@ -264,7 +264,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
 
   def resize(cursor: Long, required: Int,
       allocator: BufferAllocator): ByteBufferData = {
-    val buffer = allocator.expand(this.buffer, required)
+    val buffer = allocator.expand(this.buffer, required, "HASHMAP")
     val baseOffset = allocator.baseOffset(buffer)
     new ByteBufferData(buffer, allocator.baseObject(buffer), baseOffset,
       baseOffset + buffer.limit())

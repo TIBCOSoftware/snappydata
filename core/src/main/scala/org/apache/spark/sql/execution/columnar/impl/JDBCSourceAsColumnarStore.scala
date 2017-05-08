@@ -28,6 +28,7 @@ import scala.util.Random
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
@@ -339,6 +340,8 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         while (iter.hasNext) {
           iter.next()
         }
+        // release the batch buffers
+        batch.buffers.foreach(UnsafeHolder.releaseIfDirectBuffer)
       } else {
         val resolvedColumnTableName = ExternalStoreUtils.lookupName(
           columnTableName, connection.getSchema)
@@ -444,7 +447,7 @@ final class ColumnarStorePartitionedRDD(
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
 
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+    Option(context).foreach(_.addTaskCompletionListener(_ => {
       val tx = TXManagerImpl.snapshotTxState.get()
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
         val txMgr = GemFireCacheImpl.getExisting.getCacheTransactionManager
@@ -468,7 +471,7 @@ final class ColumnarStorePartitionedRDD(
     // val container = GemFireXDUtils.getGemFireContainer(tableName, true)
     // ColumnBatchIterator(container, bucketIds)
     val r = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
-    ColumnBatchIterator(r, bucketIds)
+    ColumnBatchIterator(r, bucketIds, context)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
