@@ -26,10 +26,6 @@ import org.apache.spark.sql.{SnappyJobValid, SaveMode, SnappyJobValidation}
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
-/**
- * Created by swati on 7/4/16.
- */
-
 object FileStreamingJob extends SnappyStreamingJob {
 
   override def runSnappyJob(snsc: SnappyStreamingContext, jobConfig: Config): Any = {
