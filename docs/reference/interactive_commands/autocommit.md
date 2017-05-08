@@ -18,10 +18,10 @@ If auto-commit mode is changed from off to on when a transaction is outstanding,
 ##Example
 
 ``` pre
-snappy(PEERCLIENT)> AUTOCOMMIT off;
-snappy(PEERCLIENT)> insert into airlines VALUES ('NA', 'New Airline', 0.20, 0.07, 0.6, 1.7, 20, 10, 5);
+snappy(localhost:<port number>)> AUTOCOMMIT off;
+snappy(localhost:<port number>)> insert into airlines VALUES ('NA', 'New Airline', 0.20, 0.07, 0.6, 1.7, 20, 10, 5);
 1 row inserted/updated/deleted
-snappy(PEERCLIENT)> commit;
+snappy(localhost:<port number>)> commit;
 ```
 
 

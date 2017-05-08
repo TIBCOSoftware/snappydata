@@ -16,15 +16,15 @@ Sets the largest display width for columns to the specified value. You generally
 ##Example
 
 ``` pre
-snappy(PEERCLIENT)> maximumdisplaywidth 4;
-snappy(PEERCLIENT)> VALUES 'NOW IS THE TIME!';
+snappy(localhost:<port number>)> maximumdisplaywidth 4;
+snappy(localhost:<port number>)> VALUES 'NOW IS THE TIME!';
 1
 ----
 NOW&
 
 1 row selected
-snappy(PEERCLIENT)> maximumdisplaywidth 30;
-snappy(PEERCLIENT)> VALUES 'NOW IS THE TIME!';
+snappy(localhost:<port number>)> maximumdisplaywidth 30;
+snappy(localhost:<port number>)> VALUES 'NOW IS THE TIME!';
 1
 ----------------
 NOW IS THE TIME!

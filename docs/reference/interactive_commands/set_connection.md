@@ -17,7 +17,7 @@ If there is no such connection, an error results and the current connection is u
 ##Example
 
 ``` pre
-snappy(PEERCLIENT)> set connection clientConnection;
+snappy(localhost:<port number>)> set connection clientConnection;
 snappy(CLIENTCONNECTION)> show connections;
 CLIENTCONNECTION* -     jdbc:snappydata://localhost:1527/
 PEERCLIENT -    jdbc:snappydata:

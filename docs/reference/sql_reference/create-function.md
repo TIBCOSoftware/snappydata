@@ -33,7 +33,8 @@ You can extend any one of the interfaces in the package `org.apache.spark.sql.ap
 |BOOLEAN|java.lang.Boolean|
 |SHORT|java.lang.Short|
 |BYTE|java.lang.Byte|
-
+|CHAR| java.lang.String|
+|VARCHAR|java.lang.String|
 
 ## Example
 ```

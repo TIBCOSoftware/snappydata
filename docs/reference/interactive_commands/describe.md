@@ -18,7 +18,7 @@ If the table or view is in a particular schema, qualify it with the schema name.
 ##Example
 
 ``` pre
-snappy(PEERCLIENT)> describe maps;
+snappy(localhost:<port number>)> describe maps;
 COLUMN_NAME         |TYPE_NAME|DEC&|NUM&|COLUM&|COLUMN_DEF|CHAR_OCTE&|IS_NULL&
 ------------------------------------------------------------------------------
 MAP_ID              |INTEGER  |0   |10  |10    |AUTOINCRE&|NULL      |NO
@@ -29,7 +29,7 @@ PHOTO_FORMAT        |VARCHAR  |NULL|NULL|26    |NULL      |52        |NO
 PICTURE             |BLOB     |NULL|NULL|102400|NULL      |NULL      |YES
 
 6 rows selected
-snappy(PEERCLIENT)>
+snappy(localhost:<port number>)>
 ```
 
 

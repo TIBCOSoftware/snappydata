@@ -25,7 +25,7 @@ If the [Connect](connect.md) command without the AS clause was used, you can sup
 
 
 ``` pre
-snappy(PEERCLIENT)> disconnect peerclient;
+snappy(localhost:<port number>)> disconnect peerclient;
 snappy>
 ```
 

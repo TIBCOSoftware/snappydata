@@ -76,7 +76,7 @@ If `FROM                  table-Name` is specified, only the indexes on the spec
 **Example**
 
 ``` pre
-snappy(PEERCLIENT)> show indexes in app;
+snappy(localhost:<port number>)> show indexes in app;
 TABLE_NAME          |COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
 ----------------------------------------------------------------------------
 AIRLINES            |AIRLINE             |false |3   |A   |NULL    |NULL
@@ -97,7 +97,7 @@ MAPS                |MAP_ID              |false |3   |A   |NULL    |NULL
 MAPS                |MAP_NAME            |false |3   |A   |NULL    |NULL
 
 16 rows selected
-snappy(PEERCLIENT)> show indexes from flights;
+snappy(localhost:<port number>)> show indexes from flights;
 TABLE_NAME          |COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
 ----------------------------------------------------------------------------
 FLIGHTS             |FLIGHT_ID           |false |3   |A   |NULL    |NULL
@@ -106,7 +106,7 @@ FLIGHTS             |DEST_AIRPORT        |true  |3   |A   |NULL    |NULL
 FLIGHTS             |ORIG_AIRPORT        |true  |3   |A   |NULL    |NULL
 
 4 rows selected
-snappy(PEERCLIENT)>
+snappy(localhost:<port number>)>
 ```
 
 **SHOW PROCEDURES**
@@ -118,7 +118,7 @@ If `IN                  schemaName` is specified, only procedures in the specifi
 **Example**
 
 ``` pre
-snappy(PEERCLIENT)> show procedures in syscs_util;
+snappy(localhost:<port number>)> show procedures in syscs_util;
 PROCEDURE_SCHEM     |PROCEDURE_NAME                |REMARKS
 ------------------------------------------------------------------------
 SYSCS_UTIL          |BACKUP_DATABASE               |com.pivotal.snappydata.&
@@ -148,7 +148,7 @@ SYSCS_UTIL          |SET_USER_ACCESS               |com.pivotal.snappydata.&
 SYSCS_UTIL          |UNFREEZE_DATABASE             |com.pivotal.snappydata.&
 
 27 rows selected
-snappy(PEERCLIENT)>         
+snappy(localhost:<port number>)>         
 ```
 
 **SHOW SCHEMAS**
@@ -158,9 +158,9 @@ SHOW SCHEMAS displays all of the schemas in the current connection.
 **Example**
 
 ``` pre
-snappy(PEERCLIENT)> create schema sample;
+snappy(localhost:<port number>)> create schema sample;
 0 rows inserted/updated/deleted
-snappy(PEERCLIENT)> show schemas;
+snappy(localhost:<port number>)> show schemas;
 TABLE_SCHEM
 ------------------------------
 APP
@@ -188,20 +188,20 @@ If `IN                  schemaName` is specified, only synonyms in the specified
 **Example**
 
 ``` pre
-snappy(PEERCLIENT)> SHOW SYNONYMS;
+snappy(localhost:<port number>)> SHOW SYNONYMS;
 TABLE_SCHEM         |TABLE_NAME                    |REMARKS
 ------------------------------------------------------------------------
 
 0 rows selected
-snappy(PEERCLIENT)> CREATE SYNONYM myairline FOR airlines;
+snappy(localhost:<port number>)> CREATE SYNONYM myairline FOR airlines;
 0 rows inserted/updated/deleted
-snappy(PEERCLIENT)> SHOW SYNONYMS;
+snappy(localhost:<port number>)> SHOW SYNONYMS;
 TABLE_SCHEM         |TABLE_NAME                    |REMARKS
 ------------------------------------------------------------------------
 APP                 |MYAIRLINE                     |
 
 1 row selected
-snappy(PEERCLIENT)>
+snappy(localhost:<port number>)>
 ```
 
 **SHOW TABLES**
@@ -213,7 +213,7 @@ If `IN                  schemaName` is specified, the tables in the given schema
 **Example**
 
 ``` pre
-snappy(PEERCLIENT)> show tables in app;
+snappy(localhost:<port number>)> show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |REMARKS
 ------------------------------------------------------------------------
 APP                 |AIRLINES                      |
@@ -225,7 +225,7 @@ APP                 |FLIGHTS_HISTORY               |
 APP                 |MAPS                          |
 
 7 rows selected
-snappy(PEERCLIENT)>
+snappy(localhost:<port number>)>
 ```
 
 **SHOW VIEWS**
@@ -237,9 +237,9 @@ If `IN                  schemaName` is specified, the views in the given schema 
 **Example**
 
 ``` pre
-snappy(PEERCLIENT)> create view v1 as select * from maps;
+snappy(localhost:<port number>)> create view v1 as select * from maps;
 0 rows inserted/updated/deleted
-snappy(PEERCLIENT)> show views;
+snappy(localhost:<port number>)> show views;
 TABLE_SCHEM         |TABLE_NAME                    |REMARKS
 ------------------------------------------------------------------------
 APP                 |V1                            |

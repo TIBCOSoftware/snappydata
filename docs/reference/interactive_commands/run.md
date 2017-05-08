@@ -19,7 +19,7 @@ Any changes made to the `snappy` environment by the file are visible in the envi
 ##Example
 
 ``` pre
-snappy(PEERCLIENT)> run 'ToursDB_schema.sql';
+snappy(localhost:<port number>)> run 'ToursDB_schema.sql';
 ```
 
 

@@ -18,7 +18,7 @@ Causes the `snappy` application to complete and processing to halt. Issuing this
 
 
 ``` pre
-snappy(PEERCLIENT)> disconnect peerclient;
+snappy(localhost:<port number>)> disconnect peerclient;
 snappy> exit;
 ```
 
