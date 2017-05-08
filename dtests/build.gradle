@@ -123,6 +123,19 @@ if (rootProject.hasProperty('enablePublish')) {
 
 archivesBaseName = 'snappydata-store-scala-tests'
 
+scalaTest {
+    dependsOn ':cleanScalaTest'
+    doFirst {
+        // cleanup files since scalatest plugin does not honour workingDir yet
+        cleanIntermediateFiles(project.path)
+    }
+    testOutput '/dev/tty'
+    doLast {
+        // cleanup files since scalatest plugin does not honour workingDir yet
+        cleanIntermediateFiles(project.path)
+    }
+}
+
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
   if (new File(rootDir, 'store/build.gradle').exists()) {

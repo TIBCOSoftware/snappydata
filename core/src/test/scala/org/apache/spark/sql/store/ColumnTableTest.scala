@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
-import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyEmbeddedTableStatsProviderService, Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -935,7 +935,7 @@ class ColumnTableTest
 
     val region = Misc.getRegionForTable(
       ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
         .getPRNumRowsInColumnBatches
 
@@ -1011,6 +1011,29 @@ class ColumnTableTest
 
     assert(struct == df2.schema)
     assert(df1.schema == df3.schema)
+
+  }
+
+  test("Test create table from CSV without header") {
+    snc.sql(s"create table test1 using com.databricks.spark.csv options(path '${(getClass.getResource
+    ("/northwind/orders" +
+      ".csv").getPath)}', header 'false', inferschema 'true')")
+    snc.sql("create table test2 using column options() as (select * from test1)")
+    val df2 = snc.sql("select * from test2")
+    df2.show()
+
+    snc.sql("drop table test2")
+    snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
+    snc.sql("insert into test2 values(1,2)")
+    snc.sql("insert into test2 values(2,3)")
+    val df3 = snc.sql("select _col1,__col2 from test2")
+    df3.show()
+    val struct = (new StructType())
+      .add(StructField("_COL1", IntegerType, true))
+      .add(StructField("__COL2", IntegerType, true))
+
+    df3.printSchema()
+    assert(struct == df3.schema)
 
   }
 }
