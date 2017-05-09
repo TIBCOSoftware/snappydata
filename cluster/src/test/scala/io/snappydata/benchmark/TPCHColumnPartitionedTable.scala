@@ -117,18 +117,18 @@ object TPCHColumnPartitionedTable {
     println("Created Table LINEITEM")
   }
 
-  var CREATE_PARQUET: Boolean = true // java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
+  var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
 
   def createAndPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
-      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1)
-      : Unit = {
+      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
+      isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var orderDF: DataFrame = null
     // use parquet data if available
     for (i <- 1 to numberOfLoadingStage) {
-      if (new File(s"$path/parquet_orders_$i").exists()) {
+      if (isParquet) {
         orderDF = sqlContext.read.format("parquet").load(s"$path/parquet_orders_$i")
       } else {
         val orderData = sc.textFile(s"$path/orders.tbl.$i")
@@ -192,14 +192,14 @@ object TPCHColumnPartitionedTable {
 
   def createAndPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
-      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1)
-      : Unit = {
+      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
+      isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var lineItemDF: DataFrame = null
     // use parquet data if available
     for (i <- 1 to numberOfLoadingStage) {
-      if (new File(s"$path/parquet_lineitem_$i").exists()) {
+      if (isParquet) {
         lineItemDF = sqlContext.read.format("parquet").load(s"$path/parquet_lineitem_$i")
       } else {
         val lineItemData = sc.textFile(s"$path/lineitem.tbl.$i")
@@ -264,14 +264,14 @@ object TPCHColumnPartitionedTable {
 
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
-      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1)
-      : Unit = {
+      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
+      isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var customerDF: DataFrame = null
     for (i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
-      if (new File(s"$path/parquet_customer_$i").exists()) {
+      if (isParquet) {
         customerDF = sqlContext.read.format("parquet").load(s"$path/parquet_customer_$i")
       } else {
         val customerData = sc.textFile(s"$path/customer.tbl.$i")
@@ -313,14 +313,14 @@ object TPCHColumnPartitionedTable {
 
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
-      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1)
-      : Unit = {
+      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
+      isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partDF: DataFrame = null
     for(i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
-      if (new File(s"$path/parquet_part_$i").exists()) {
+      if (isParquet) {
         partDF = sqlContext.read.format("parquet").load(s"$path/parquet_part_$i")
       } else {
         val partData = sc.textFile(s"$path/part.tbl.$i")
@@ -359,14 +359,14 @@ object TPCHColumnPartitionedTable {
 
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
-      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1)
-      : Unit = {
+      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
+      isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partSuppDF: DataFrame = null
-    for(i <- 1 to numberOfLoadingStage) {
+    for (i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
-      if (new File(s"$path/parquet_partsupp_$i").exists()) {
+      if (isParquet) {
         partSuppDF = sqlContext.read.format("parquet").load(s"$path/parquet_partsupp_$i")
       } else {
         val partSuppData = sc.textFile(s"$path/partsupp.tbl.$i")

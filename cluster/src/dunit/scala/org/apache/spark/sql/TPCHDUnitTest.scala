@@ -242,7 +242,7 @@ object TPCHUtils extends Logging {
         val expectedFile = sc.textFile(getClass.getResource(
           s"/TPCH/RESULT/Snappy_$query.out").getPath)
 
-        val queryFileName = if (isSnappy) s"Snappy_$query.out" else s"Spark_$query.out"
+        val queryFileName = if (isSnappy) s"1_Snappy_$query.out" else s"1_Spark_$query.out"
         val actualFile = sc.textFile(queryFileName)
 
         val expectedLineSet = expectedFile.collect().toList.sorted

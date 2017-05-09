@@ -34,9 +34,11 @@ object TableCreationJob extends SnappySQLJob {
   var persistence: Boolean = _
   var persistence_type: String = _
   var numberOfloadStages : String = _
+  var isParquet : Boolean = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
+    snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000");
     val isSnappy = true
 
     val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
@@ -76,19 +78,19 @@ object TableCreationJob extends SnappySQLJob {
 
     TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt)
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt)
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt)
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt)
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt)
+      numberOfloadStages.toInt, isParquet)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -104,7 +106,6 @@ object TableCreationJob extends SnappySQLJob {
     } else {
       "15"
     }
-
 
     buckets_Cust_Part_PartSupp = if (config.hasPath("Buckets_Cust_Part_PartSupp")) {
       config.getString("Buckets_Cust_Part_PartSupp")
@@ -148,10 +149,16 @@ object TableCreationJob extends SnappySQLJob {
       "1"
     }
 
-    if (!new File(tpchDataPath).exists()) {
+    isParquet = if (config.hasPath("isParquet")) {
+      config.getBoolean("isParquet")
+    } else {
+      false
+    }
+
+    /*if (!new File(tpchDataPath).exists()) {
       return SnappyJobInvalid("Incorrect tpch data path. " +
           "Specify correct location")
-    }
+    }*/
 
     SnappyJobValid()
   }
