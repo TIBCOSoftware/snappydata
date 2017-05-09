@@ -1164,7 +1164,8 @@ class SnappySession(@transient private val sc: SparkContext,
       }
       snappyContextFunctions.postRelationCreation(relation, this)
     }
-    LogicalRelation(relation)
+    LogicalRelation(relation, metastoreTableIdentifier = Some(tableIdent))
+
   }
 
   private[sql] def addBaseTableOption(baseTable: Option[_],
