@@ -21,18 +21,20 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import io.snappydata.SnappyFunSuite
 import org.apache.kafka.common.TopicPartition
+import org.apache.spark.sql.functions.{count, window}
 import org.apache.spark.sql.streaming.ProcessingTime
-import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext}
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
 import scala.collection.mutable.HashMap
 
 class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
   with BeforeAndAfter with BeforeAndAfterAll {
 
-  private implicit val formats = Serialization.formats(NoTypeHints)
+  val session = snc.sparkSession
+  import session.implicits._
 
   private var kafkaUtils: KafkaTestUtils = _
 
@@ -48,30 +50,7 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     }
   }
 
-  protected var ssnc: SnappyStreamingContext = _
-
   def framework: String = this.getClass.getSimpleName
-
-  def batchDuration: Duration = Seconds(1)
-
-  def creatingFunc(): SnappyStreamingContext = {
-    val context = new SnappyStreamingContext(sc, batchDuration)
-    context
-  }
-
-  before {
-    SnappyStreamingContext.getActive.foreach {
-      _.stop(stopSparkContext = false, stopGracefully = true)
-    }
-    ssnc = SnappyStreamingContext.getActiveOrCreate(creatingFunc)
-  }
-
-  after {
-    baseCleanup(false)
-    SnappyStreamingContext.getActive.foreach {
-      _.stop(stopSparkContext = false, stopGracefully = true)
-    }
-  }
 
   private val topicId = new AtomicInteger(0)
 
@@ -84,11 +63,7 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     kafkaUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
     kafkaUtils.sendMessages(topic, Array("1"), Some(2))
 
-    val spark = snc.sparkSession
-
-    import spark.implicits._
-
-    val reader = snc.sparkSession
+    val streamingDF = session
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
@@ -96,9 +71,10 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
       .option("maxOffsetsPerTrigger", 10)
       .option("subscribe", topic)
       .option("startingOffsets", "earliest")
+      .load
 
     /*
-    root
+    streamingDF.schema for kafka source
     |-- key: binary (nullable = true)
     |-- value: binary (nullable = true)
     |-- topic: string (nullable = true)
@@ -108,45 +84,23 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     |-- timestampType: integer (nullable = true)
     */
 
-    val kafka = reader.load()
+    val streamingQuery = streamingDF
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
       .as[(String, String)]
-    val mapped: org.apache.spark.sql.Dataset[_] = kafka.map(kv => kv._2.toInt)
-
-    val query = mapped
+      .map(kv => kv._2.toInt)
       .writeStream
       .format("console")
       .outputMode("append")
       .trigger(ProcessingTime("3 seconds"))
       .start
 
-    query.awaitTermination(timeoutMs = 15000)
+    streamingQuery.awaitTermination(timeoutMs = 15000)
   }
 
-  def partitionOffsets(partitionOffsets: Map[TopicPartition, Long]): String = {
-    val result = new HashMap[String, HashMap[Int, Long]]()
-    implicit val ordering = new Ordering[TopicPartition] {
-      override def compare(x: TopicPartition, y: TopicPartition): Int = {
-        Ordering.Tuple2[String, Int].compare((x.topic, x.partition), (y.topic, y.partition))
-      }
-    }
-    val partitions = partitionOffsets.keySet.toSeq.sorted  // sort for more determinism
-    partitions.foreach { tp =>
-      val off = partitionOffsets(tp)
-      val parts = result.getOrElse(tp.topic, new HashMap[Int, Long])
-      parts += tp.partition -> off
-      result += tp.topic -> parts
-    }
-    Serialization.write(result)
-  }
 
   test("ETL Job") {
     val topic = newTopic()
     kafkaUtils.createTopic(topic, partitions = 3)
-
-    val spark = snc.sparkSession
-
-    import spark.implicits._
 
     val partitions = Map(
       new TopicPartition(topic, 0) -> 0L,
@@ -156,7 +110,7 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
 
     val startingOffsets = partitionOffsets(partitions)
 
-    val reader = snc.sparkSession
+    val streamingDF = session
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
@@ -165,12 +119,11 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
       .option("subscribe", topic)
       .option("startingOffsets", startingOffsets)
       .option("failOnDataLoss", "false")
+      .load
 
-    val kafka = reader.load()
+    val streamingQuery = streamingDF
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
       .as[(String, String)]
-
-    val query = kafka
       .writeStream
       .format("snappy")
       .option("checkpointLocation", "/tmp")
@@ -183,17 +136,13 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     kafkaUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
     kafkaUtils.sendMessages(topic, Array("1"), Some(2))
 
-    query.awaitTermination(timeoutMs = 15000)
-    assert(113 == spark.sql("select * from snappyTable").count)
+    streamingQuery.awaitTermination(timeoutMs = 15000)
+    assert(113 == session.sql("select * from snappyTable").count)
   }
 
   test("infinite streaming aggregation") {
     val topic = newTopic()
     kafkaUtils.createTopic(topic, partitions = 3)
-
-    val spark = snc.sparkSession
-
-    import spark.implicits._
 
     val partitions = Map(
       new TopicPartition(topic, 0) -> 0L,
@@ -203,7 +152,7 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
 
     val startingOffsets = partitionOffsets(partitions)
 
-    val reader = snc.sparkSession
+    val streamingDF = session
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
@@ -212,12 +161,11 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
       .option("subscribe", topic)
       .option("startingOffsets", startingOffsets)
       .option("failOnDataLoss", "false")
+      .load
 
-    val streamFrame = reader.load()
+    val streamingQuery = streamingDF
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").groupBy("value").count()
       .as[(String, String)]
-
-    val query = streamFrame
       .writeStream
       .format("snappy")
       .option("checkpointLocation", "/tmp")
@@ -230,11 +178,166 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     kafkaUtils.sendMessages(topic, (125 to 150).map(_.toString).toArray, Some(1))
     kafkaUtils.sendMessages(topic, (100 to 124).map(_.toString).toArray, Some(2))
 
-    query.awaitTermination(timeoutMs = 40000)
+    streamingQuery.awaitTermination(timeoutMs = 40000)
 
-    assert(51 == spark.sql("select * from snappyAggrTable").count)
-    assert(2.0 == spark.sql("select avg(cnt) from snappyAggrTable").collect()(0).getDouble(0))
+    assert(51 == session.sql("select * from snappyAggrTable").count)
+    assert(2.0 == session.sql("select avg(cnt) from snappyAggrTable").collect()(0).getDouble(0))
   }
+
+  test("sliding window aggregation") {
+    val topic = newTopic()
+    kafkaUtils.createTopic(topic, partitions = 3)
+
+    val partitions = Map(
+      new TopicPartition(topic, 0) -> 0L,
+      new TopicPartition(topic, 1) -> 0L,
+      new TopicPartition(topic, 2) -> 0L
+    )
+
+    val startingOffsets = partitionOffsets(partitions)
+
+    kafkaUtils.sendMessages(topic, (100 to 150).map(_.toString).toArray, Some(0))
+    kafkaUtils.sendMessages(topic, (125 to 150).map(_.toString).toArray, Some(1))
+    kafkaUtils.sendMessages(topic, (100 to 124).map(_.toString).toArray, Some(2))
+
+    val streamingDF = session
+      .readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
+      .option("kafka.metadata.max.age.ms", "1")
+      .option("maxOffsetsPerTrigger", 10)
+      .option("subscribe", topic)
+      .option("startingOffsets", startingOffsets)
+      .option("failOnDataLoss", "false")
+      .load
+
+    val windowedAggregation = streamingDF
+      .groupBy(window($"timestamp", "1 seconds") as 'window)
+      .agg(count("*") as 'count)
+      .select($"window".getField("start") as 'window, $"count")
+
+    val streamingQuery = windowedAggregation
+      .writeStream
+      .format("snappy")
+      .option("checkpointLocation", "/tmp")
+      .outputMode("complete")
+      .queryName("snappyWindowAggrTable")
+      .start()
+
+    streamingQuery.processAllAvailable()
+    session.sql("select * from snappyWindowAggrTable").show(200)
+    streamingQuery.stop()
+  }
+
+  case class Account(accountName: String)
+
+  test("streaming DataFrame join to static DataFrame") {
+    val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
+    val dfBlackList = snc.createDataFrame(rdd)
+    // create a SnappyData table
+    snc.createTable("blacklist", "row", dfBlackList.schema, Map.empty[String, String])
+
+    import org.apache.spark.sql.snappy._
+    dfBlackList.write.putInto("blacklist") // populate the table 'blacklist'.
+
+    val topic = newTopic()
+    kafkaUtils.createTopic(topic, partitions = 3)
+
+    // Read the accounts from Kafka source
+    val acctStreamingDF = session
+      .readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
+      .option("subscribe", topic)
+      .option("startingOffsets", "earliest").load
+      .selectExpr("CAST(value AS STRING) accountName").as[(String)]
+
+    val streamingQuery = acctStreamingDF.join(dfBlackList, "accountName")
+      .writeStream
+      .outputMode("append")
+      .format("console")
+      .option("checkpointLocation", "/tmp")
+      .queryName("snappyResultTable")
+      .trigger(ProcessingTime("1 seconds"))
+      .start
+
+    kafkaUtils.sendMessages(topic, (10 to 18).map(_.toString).toArray, Some(1))
+    kafkaUtils.sendMessages(topic, (20 to 30).map(_.toString).toArray, Some(2))
+
+    streamingQuery.awaitTermination(timeoutMs = 15000)
+    assert(10 == session.sql("select * from snappyResultTable").count)
+  }
+
+  // Inner join between two streaming DataFrames/Datasets is not supported;;
+  ignore(" Unsupported - streaming DataFrame join to streaming DataFrame") {
+    val topic1 = newTopic()
+    val topic2 = newTopic()
+
+    kafkaUtils.createTopic(topic1, partitions = 3)
+    kafkaUtils.createTopic(topic2, partitions = 3)
+
+    val streamingDF1 = session
+      .readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
+      .option("subscribe", topic1)
+      .option("startingOffsets", "earliest").load
+      .selectExpr("CAST(value AS STRING) accountNo").as[(String)]
+
+    // Read the accounts from Kafka source
+    val streamingDF2 = session
+      .readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
+      .option("subscribe", topic2)
+      .option("startingOffsets", "earliest").load
+      .selectExpr("CAST(value AS STRING) accountNo").as[(String)]
+
+    val streamingQuery = streamingDF1.join(streamingDF2, "accountNo")
+      .writeStream
+      .outputMode("append")
+      .format("console")
+      .option("checkpointLocation", "/tmp")
+      .queryName("snappyResultTable")
+      .trigger(ProcessingTime("1 seconds"))
+      .start
+
+    kafkaUtils.sendMessages(topic1, (10 to 20).map(_.toString).toArray, Some(1))
+    kafkaUtils.sendMessages(topic1, (20 to 30).map(_.toString).toArray, Some(2))
+
+    kafkaUtils.sendMessages(topic2, (10 to 20).map(_.toString).toArray, Some(2))
+    kafkaUtils.sendMessages(topic2, (20 to 30).map(_.toString).toArray, Some(1))
+
+    streamingQuery.awaitTermination(timeoutMs = 15000)
+    session.sql("select * from snappyResultTable").show
+  }
+
+
+  // Unsupported operations with streaming DataFrames/Datasets -
+  
+  // Multiple streaming aggregations (i.e. a chain of aggregations on a
+  // streaming DF) are not yet supported on streaming Datasets.
+  // Limit and take first N rows are not supported on streaming Datasets.
+  // Distinct operations on streaming Datasets are not supported.
+  // Sorting operations are supported on streaming Datasets only after
+  // an aggregation and in Complete Output Mode.
+  // Outer joins between a streaming and a static Datasets are conditionally supported.
+  // Full outer join with a streaming Dataset is not supported
+  // Left outer join with a streaming Dataset on the right is not supported
+  // Right outer join with a streaming Dataset on the left is not supported
+  // Any kind of joins between two streaming Datasets are not yet supported.
+  // They are actions that will immediately run queries and return results,
+  // which does not make sense on a streaming Dataset.
+
+  // count() - Cannot return a single count from a streaming Dataset.
+  // Instead, use ds.groupBy.count() which returns a streaming Dataset containing a running count.
+  // foreach() - Instead use ds.writeStream.foreach(...).
+  // show() - Instead use the console sink.
+
+  // sorting on the input stream is not supported, as it requires keeping
+  // track of all the data received in the stream.
+  // This is therefore fundamentally hard to execute efficiently.
+
   test("SnappyForeachWriter sink") {
     val topic = newTopic()
     kafkaUtils.createTopic(topic, partitions = 3)
@@ -242,11 +345,7 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
     kafkaUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
     kafkaUtils.sendMessages(topic, Array("1"), Some(2))
 
-    val spark = snc.sparkSession
-
-    import spark.implicits._
-
-    val reader = snc.sparkSession
+    val streamingDF = session
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaUtils.brokerAddress)
@@ -254,19 +353,37 @@ class SnappyStructuredStreamingSuite extends SnappyFunSuite with Eventually
       .option("maxOffsetsPerTrigger", 10)
       .option("subscribe", topic)
       .option("startingOffsets", "earliest")
+      .load
 
-    val kafka = reader.load()
+    val streamingQuery = streamingDF
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
       .as[(String, String)]
-    val mapped: org.apache.spark.sql.Dataset[Int] = kafka.map(kv => kv._2.toInt)
-
-    val query = mapped
+      .map(kv => kv._2.toInt)
       .writeStream
       .foreach(new SnappyForeachWriter())
       .outputMode("append")
       .trigger(ProcessingTime("3 seconds"))
       .start
 
-    query.awaitTermination(timeoutMs = 15000)
+    streamingQuery.awaitTermination(timeoutMs = 15000)
+  }
+
+  private implicit val formats = Serialization.formats(NoTypeHints)
+
+  def partitionOffsets(partitionOffsets: Map[TopicPartition, Long]): String = {
+    val result = new HashMap[String, HashMap[Int, Long]]()
+    implicit val ordering = new Ordering[TopicPartition] {
+      override def compare(x: TopicPartition, y: TopicPartition): Int = {
+        Ordering.Tuple2[String, Int].compare((x.topic, x.partition), (y.topic, y.partition))
+      }
+    }
+    val partitions = partitionOffsets.keySet.toSeq.sorted // sort for more determinism
+    partitions.foreach { tp =>
+      val off = partitionOffsets(tp)
+      val parts = result.getOrElse(tp.topic, new HashMap[Int, Long])
+      parts += tp.partition -> off
+      result += tp.topic -> parts
+    }
+    Serialization.write(result)
   }
 }
