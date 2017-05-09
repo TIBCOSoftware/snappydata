@@ -331,9 +331,6 @@ class SnappyUnifiedMemoryManager private[memory](
         SnappyUnifiedMemoryManager.
           invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName, numBytes)
       }
-      if (!memoryForObject.containsKey(objectName)) {
-        memoryForObject.put(objectName, 0L)
-      }
       assertInvariants()
       assert(numBytes >= 0)
       val (executionPool, storagePool, maxMemory, maxStorageSize,
