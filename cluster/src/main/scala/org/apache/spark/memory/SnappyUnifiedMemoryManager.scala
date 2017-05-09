@@ -50,13 +50,11 @@ class SnappyUnifiedMemoryManager private[memory](
     conf: SparkConf,
     override val maxHeapMemory: Long,
     numCores: Int)
-  extends UnifiedMemoryManager(conf,
+  extends UnifiedMemoryManager(SnappyUnifiedMemoryManager.setMemorySize(conf),
     maxHeapMemory,
     (maxHeapMemory * conf.getDouble("spark.memory.storageFraction", 0.5)).toLong,
     numCores) with StoreUnifiedManager {
 
-  override protected[this] val maxOffHeapMemory: Long =
-    SnappyUnifiedMemoryManager.getMemorySize(conf)
   override protected[this] val offHeapStorageMemory: Long =
     (maxOffHeapMemory * conf.getDouble("spark.memory.storageFraction", 0.75)).toLong
 
@@ -73,12 +71,10 @@ class SnappyUnifiedMemoryManager private[memory](
         SnappyUnifiedMemoryManager.EXPLICIT_GC_LIMIT
   }
 
-  offHeapExecutionMemoryPool.incrementPoolSize(maxOffHeapMemory - offHeapStorageMemory)
-  offHeapStorageMemoryPool.incrementPoolSize(offHeapStorageMemory)
-
   private val onHeapStorageRegionSize = onHeapStorageMemoryPool.poolSize
 
-  private val maxHeapStorageSize = (maxHeapMemory * 0.9).toLong
+  private val maxHeapStorageSize = (maxHeapMemory *
+      conf.getDouble("spark.memory.storageMaxFraction", 0.9)).toLong
   // TODO: [sumedh] Not being used?
   val maxExecutionSize: Long = (maxHeapMemory * 0.75).toLong
 
@@ -236,10 +232,11 @@ class SnappyUnifiedMemoryManager private[memory](
       * and caches a large block between the attempts. This is called once per attempt.
       */
     def maybeGrowExecutionPool(extraMemoryNeeded: Long): Unit = {
+      val offHeap = memoryMode eq MemoryMode.OFF_HEAP
       if (extraMemoryNeeded > 0) {
 
-        if (SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed(MemoryMode.ON_HEAP) +
-            getExecutionPoolUsedMemory(MemoryMode.ON_HEAP))) {
+        if (!offHeap && SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed(
+          MemoryMode.ON_HEAP) + getExecutionPoolUsedMemory(MemoryMode.ON_HEAP))) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return
@@ -259,7 +256,6 @@ class SnappyUnifiedMemoryManager private[memory](
 
           val bytesEvictedFromStore = if (spaceToReclaim < extraMemoryNeeded) {
             val moreBytesRequired = extraMemoryNeeded - spaceToReclaim
-            val offHeap = memoryMode eq MemoryMode.OFF_HEAP
             val evicted = evictor.evictRegionData(math.min(moreBytesRequired +
                 minEviction, memoryReclaimableFromStorage), offHeap)
             if (offHeap) {
@@ -546,14 +542,23 @@ object SnappyUnifiedMemoryManager extends Logging {
     }
   }
 
-  def getMemorySize(conf: SparkConf): Long = {
+  /**
+   * Check for SnappyData off-heap configuration and set Spark's properties.
+   */
+  def setMemorySize(conf: SparkConf): SparkConf = {
     val cache = Misc.getGemFireCacheNoThrow
-    if (cache ne null) {
+    val memorySize = if (cache ne null) {
       cache.getMemorySize
     } else { // for local mode testing
       conf.getSizeAsBytes(Constant.STORE_PROPERTY_PREFIX +
           DistributionConfig.MEMORY_SIZE_NAME, "0b")
     }
+    if (memorySize > 0) {
+      // set Spark's off-heap properties
+      conf.set("spark.memory.offHeap.enabled", "true")
+      conf.set("spark.memory.offHeap.size", s"${memorySize}b")
+    }
+    conf
   }
 
   /**
