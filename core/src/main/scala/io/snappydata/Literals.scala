@@ -44,9 +44,9 @@ object Constant {
 
   val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
 
-  val PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
+  val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
+  val STORE_PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 

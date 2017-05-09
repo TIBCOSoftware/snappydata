@@ -103,7 +103,7 @@ object ColumnFormatEntry extends Logging {
 final class ColumnFormatKey(private[columnar] var partitionId: Int,
     private[columnar] var columnIndex: Int,
     private[columnar] var uuid: String)
-    extends GfxdDataSerializable with ColumnBatchKey {
+    extends GfxdDataSerializable with ColumnBatchKey with Serializable {
 
   // to be used only by deserialization
   def this() = this(-1, -1, "")
@@ -317,11 +317,6 @@ final class ColumnFormatValue
     // done either using DiskId, or will return empty if no DiskId is available
     val buffer = this.columnBuffer
     if (buffer.isDirect) {
-      // make a copy of current diskId since it can get modified due to updates
-      // to RegionEntry
-      if (this.diskId ne null) {
-        this.diskId = this.diskId.copy()
-      }
       this.columnBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
       UnsafeHolder.releaseDirectBuffer(buffer)
     }

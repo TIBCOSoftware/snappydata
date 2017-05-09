@@ -64,10 +64,9 @@ class SnappyStorageEvictor extends Logging {
   }
 
   @throws(classOf[Exception])
-  def evictRegionData(bytesRequired: Long, memoryMode: MemoryMode): Long = {
+  def evictRegionData(bytesRequired: Long, offHeap: Boolean): Long = {
     val cache = GemFireCacheImpl.getExisting
 
-    val offHeap = memoryMode eq MemoryMode.OFF_HEAP
     // check if offHeap has been configured
     val hasOffHeap = cache.getMemorySize > 0
     // nothing to be done for off-heap when no storage off-heap is present
@@ -76,8 +75,7 @@ class SnappyStorageEvictor extends Logging {
     val stats = cache.getCachePerfStats
     stats.incEvictorJobsStarted()
     var totalBytesEvicted: Long = 0
-    val regionSet = getAllRegionList(offHeap, hasOffHeap)
-    Random.shuffle(regionSet)
+    val regionSet = Random.shuffle(getAllRegionList(offHeap, hasOffHeap))
     val start = CachePerfStats.getStatTime
     try {
       while (regionSet.nonEmpty) {

@@ -20,8 +20,8 @@ import java.nio.ByteBuffer
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
-import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.{Logging, SparkEnv}
@@ -191,7 +191,7 @@ object MemoryManagerCallback extends Logging {
       return noOpMemoryManager
     }
 
-    if (GemFireStore.getBootedInstance ne null) {
+    if (GemFireCacheImpl.getInstance ne null) {
       val env = SparkEnv.get
       if (env ne null) {
         env.memoryManager match {

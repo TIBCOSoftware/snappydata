@@ -22,10 +22,12 @@ import java.util.function.Consumer
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.internal.cache.store.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 
 import org.apache.spark.storage.BlockId
@@ -76,12 +78,12 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val onHeapStorageRegionSize = onHeapStorageMemoryPool.poolSize
 
-  private val maxHeapStorageSize = (maxHeapMemory * 0.75).toLong
-  private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
-    (maxHeapStorageSize * 0.002).toLong), 100L * 1024L * 1024L)
-
+  private val maxHeapStorageSize = (maxHeapMemory * 0.9).toLong
   // TODO: [sumedh] Not being used?
   val maxExecutionSize: Long = (maxHeapMemory * 0.75).toLong
+
+  private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
+    (maxHeapStorageSize * 0.002).toLong), 100L * 1024L * 1024L)
 
   private[memory] val memoryForObject = {
     val map = new Object2LongOpenHashMap[String]()
@@ -174,8 +176,21 @@ class SnappyUnifiedMemoryManager private[memory](
     if (canUseExplicitGC) {
       logInfo("Invoking explicit GC before failing storage allocation request")
       System.gc()
+      System.runFinalization()
     }
     UnsafeHolder.releasePendingReferences()
+  }
+
+  private def getMinHeapEviction(required: Long): Long = {
+    // evict at least 100 entries to reduce GC cycles
+    val waitingThreads = threadsWaitingForStorage.get()
+    math.max(required * waitingThreads, math.min(minHeapEviction,
+      required * math.max(100L, waitingThreads + 1)))
+  }
+
+  private def getMinOffHeapEviction(required: Long): Long = {
+    // off-heap calculations are precise so evict exactly as much as required
+    (required * threadsWaitingForStorage.get()) - offHeapStorageMemoryPool.memoryFree
   }
 
   /**
@@ -204,12 +219,13 @@ class SnappyUnifiedMemoryManager private[memory](
           onHeapStorageMemoryPool,
           onHeapStorageRegionSize,
           maxHeapMemory,
-          minHeapEviction)
+          getMinHeapEviction(numBytes))
       case MemoryMode.OFF_HEAP => (
           offHeapExecutionMemoryPool,
           offHeapStorageMemoryPool,
           offHeapStorageMemory,
-          maxOffHeapMemory, 0L)
+          maxOffHeapMemory,
+          getMinOffHeapEviction(numBytes))
     }
 
     /**
@@ -243,9 +259,10 @@ class SnappyUnifiedMemoryManager private[memory](
 
           val bytesEvictedFromStore = if (spaceToReclaim < extraMemoryNeeded) {
             val moreBytesRequired = extraMemoryNeeded - spaceToReclaim
-            val evicted = evictor.evictRegionData(math.min(moreBytesRequired + minEviction,
-              memoryReclaimableFromStorage), memoryMode)
-            if (memoryMode eq MemoryMode.OFF_HEAP) {
+            val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+            val evicted = evictor.evictRegionData(math.min(moreBytesRequired +
+                minEviction, memoryReclaimableFromStorage), offHeap)
+            if (offHeap) {
               UnsafeHolder.releasePendingReferences()
             }
             evicted
@@ -330,12 +347,13 @@ class SnappyUnifiedMemoryManager private[memory](
             onHeapStorageMemoryPool,
             maxOnHeapStorageMemory,
             maxHeapStorageSize,
-            minHeapEviction)
+            getMinHeapEviction(numBytes))
         case MemoryMode.OFF_HEAP => (
             offHeapExecutionMemoryPool,
             offHeapStorageMemoryPool,
             maxOffHeapMemory - offHeapExecutionMemoryPool.memoryUsed,
-            maxOffHeapStorageSize, 0L)
+            maxOffHeapStorageSize,
+            getMinOffHeapEviction(numBytes))
       }
 
 
@@ -348,7 +366,8 @@ class SnappyUnifiedMemoryManager private[memory](
       }
       // don't borrow from execution for off-heap if shouldEvict=false since it
       // will try clearing references before calling with shouldEvict=true again
-      val offHeapNoEvict = !shouldEvict && (memoryMode eq MemoryMode.OFF_HEAP)
+      val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+      val offHeapNoEvict = !shouldEvict && offHeap
       if (numBytes > storagePool.memoryFree && !offHeapNoEvict) {
         // There is not enough free memory in the storage pool, so try to borrow free memory from
         // the execution pool.
@@ -369,8 +388,8 @@ class SnappyUnifiedMemoryManager private[memory](
         // return immediately for OFF_HEAP with shouldEvict=false
         if (offHeapNoEvict) return false
 
-        if (SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed(MemoryMode.ON_HEAP) +
-            getExecutionPoolUsedMemory(MemoryMode.ON_HEAP))) {
+        if (!offHeap && SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed(
+          MemoryMode.ON_HEAP) + getExecutionPoolUsedMemory(MemoryMode.ON_HEAP))) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return false
@@ -380,9 +399,8 @@ class SnappyUnifiedMemoryManager private[memory](
           // Sufficient memory could not be freed. Time to evict from SnappyData store.
           // val requiredBytes = numBytes - storagePool.memoryFree
           // Evict data a little more than required based on waiting tasks
-          evictor.evictRegionData(math.max(minEviction,
-              numBytes * (threadsWaitingForStorage.get() + 1)), memoryMode)
-          if (memoryMode eq MemoryMode.OFF_HEAP) {
+          evictor.evictRegionData(minEviction, offHeap)
+          if (offHeap) {
             UnsafeHolder.releasePendingReferences()
           }
         } else {
@@ -390,8 +408,9 @@ class SnappyUnifiedMemoryManager private[memory](
         }
 
         var couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
-        // for off-heap try harder before giving up
-        if (!couldEvictSomeData && (memoryMode eq MemoryMode.OFF_HEAP)) {
+        // for off-heap try harder before giving up since pending references
+        // may be on heap (due to unexpected exceptions) that will go away on GC
+        if (!couldEvictSomeData && offHeap) {
           tryExplicitGC()
           couldEvictSomeData = storagePool.acquireMemory(blockId, numBytes)
         }
@@ -490,8 +509,18 @@ class SnappyUnifiedMemoryManager private[memory](
 
 object SnappyUnifiedMemoryManager extends Logging {
 
-  // Reserving 500MB data for internal tables
-  private val RESERVED_SYSTEM_MEMORY_BYTES = 500 * 1024 * 1024
+  // Reserving minimum 500MB data for unaccounted data, GC headroom etc
+  private val RESERVED_SYSTEM_MEMORY_BYTES = {
+    // use 90% of heap by default subject to max of 5GB and min of 500MB
+    math.min(5L * 1024L * 1024L * 1024L,
+      math.max(getMaxHeapMemory / 10, 500L * 1024L * 1024L))
+  }
+
+  private def getMaxHeapMemory: Long = {
+    val maxMemory = Runtime.getRuntime.maxMemory()
+    if (maxMemory > 0 && maxMemory != Long.MaxValue) maxMemory
+    else Runtime.getRuntime.totalMemory()
+  }
 
   /**
    * The maximum limit of heap size till which an explicit GC will be
@@ -520,9 +549,10 @@ object SnappyUnifiedMemoryManager extends Logging {
   def getMemorySize(conf: SparkConf): Long = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache ne null) {
-        cache.getMemorySize
+      cache.getMemorySize
     } else { // for local mode testing
-      conf.getSizeAsBytes("snappydata.memory-size", "0b")
+      conf.getSizeAsBytes(Constant.STORE_PROPERTY_PREFIX +
+          DistributionConfig.MEMORY_SIZE_NAME, "0b")
     }
   }
 
@@ -531,9 +561,16 @@ object SnappyUnifiedMemoryManager extends Logging {
     * This is a direct copy from UnifiedMemorymanager with an extra check for evit fraction
     */
   private def getMaxMemory(conf: SparkConf): Long = {
-    val systemMemory = conf.getLong("spark.testing.memory", Runtime.getRuntime.maxMemory)
-    val reservedMemory = conf.getLong("spark.testing.reservedMemory",
+    val systemMemory = conf.getLong("spark.testing.memory", getMaxHeapMemory)
+    // align reserved memory with critical heap size of GemFire
+    val cache = Misc.getGemFireCacheNoThrow
+    val reservedMemory = if (cache ne null) {
+      systemMemory - cache.getResourceManager.getHeapMonitor
+          .getThresholds.getCriticalThresholdBytes
+    } else {
+      conf.getLong("spark.testing.reservedMemory",
       if (conf.contains("spark.testing")) 0 else RESERVED_SYSTEM_MEMORY_BYTES)
+    }
     val minSystemMemory = (reservedMemory * 1.5).ceil.toLong
     if (systemMemory < minSystemMemory) {
       throw new IllegalArgumentException(s"System memory $systemMemory must " +

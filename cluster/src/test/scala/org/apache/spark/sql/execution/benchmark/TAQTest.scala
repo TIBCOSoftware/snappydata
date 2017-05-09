@@ -40,20 +40,36 @@ class TAQTest extends SnappyFunSuite {
       addOn: SparkConf => SparkConf = null): SparkConf =
     TAQTest.newSparkConf(addOn)
 
-  ignore("select queries with random data - insert") {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
+    }
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
+    }
+  }
+
+  test("select queries with random data (eviction) - insert") {
     val quoteSize = 34000000L
     val tradeSize = 5000000L
     val numDays = 1
     val numIters = 5
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true,
-      op = CreateOp.Quote)
+      op = CreateOp.Quote, runSparkCaching = false)
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       tradeSize, numDays, queryNumber = 2, numIters, doInit = false,
-      op = CreateOp.Trade)
+      op = CreateOp.Trade, runSparkCaching = false)
   }
 
-  test("select queries with random data - query") {
+  test("select queries with random data (eviction) - query") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1
@@ -267,8 +283,8 @@ object TAQTest extends Logging with Assertions {
     val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")
         .setAppName("microbenchmark")
-    conf.set("snappydata.store.eviction-heap-percentage", "80")
     conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("snappydata.store.memory-size", "800m")
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
