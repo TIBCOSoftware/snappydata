@@ -79,7 +79,7 @@ class SnappyUnifiedMemoryManager private[memory](
   val maxExecutionSize: Long = (maxHeapMemory * 0.75).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
-    (maxHeapStorageSize * 0.002).toLong), 100L * 1024L * 1024L)
+    (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
 
   private[memory] val memoryForObject = {
     val map = new Object2LongOpenHashMap[String]()
@@ -570,8 +570,8 @@ object SnappyUnifiedMemoryManager extends Logging {
     // align reserved memory with critical heap size of GemFire
     val cache = Misc.getGemFireCacheNoThrow
     val reservedMemory = if (cache ne null) {
-      systemMemory - cache.getResourceManager.getHeapMonitor
-          .getThresholds.getCriticalThresholdBytes
+      (1.5 * (systemMemory - cache.getResourceManager.getHeapMonitor
+          .getThresholds.getCriticalThresholdBytes)).toLong
     } else {
       conf.getLong("spark.testing.reservedMemory",
       if (conf.contains("spark.testing")) 0 else RESERVED_SYSTEM_MEMORY_BYTES)
