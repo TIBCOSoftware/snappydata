@@ -78,7 +78,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     File file = new File(filePath);
     file.setExecutable(true);
     String fileContent = "SPARK_DIST_CLASSPATH=" + snappyPocJarPath;
-    snappyAdAnalyticsTest.writeToFile(fileContent, file);
+    snappyAdAnalyticsTest.writeToFile(fileContent, file,true);
   }
 
   /**
