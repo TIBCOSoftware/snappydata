@@ -115,7 +115,16 @@ object StoreUtils {
 
   private[sql] def getBucketPreferredLocations(region: PartitionedRegion,
       bucketId: Int): Seq[String] = {
+
     val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+    if (distMembers.isEmpty) {
+      var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
+      if (prefNode == null) {
+        prefNode = region.getOrCreateNodeForInitializedBucketRead(bucketId, true)
+      }
+      distMembers.add(prefNode)
+    }
+
     distMembers.collect {
       case m if SnappyContext.containsBlockId(m.toString) =>
         Utils.getHostExecutorId(SnappyContext.getBlockId(
