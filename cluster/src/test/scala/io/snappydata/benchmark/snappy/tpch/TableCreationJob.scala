@@ -30,19 +30,24 @@ object TableCreationJob extends SnappySQLJob {
   var buckets_Cust_Part_PartSupp: String = _
   var buckets_Nation_Region_Supp: String = _
   var nation_Region_Supp_col: Boolean = _
+  var redundancy: String = _
+  var persistence: Boolean = _
+  var persistence_type: String = _
+  var numberOfloadStages : String = _
+  var isParquet : Boolean = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
+    snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000");
     val isSnappy = true
 
     val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
     val loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
 
-    val usingOptionString =
-      s"""
-           USING row
-           OPTIONS ()"""
-
+    var usingOptionString = " USING row OPTIONS ()"
+    if(persistence){
+      usingOptionString = s" USING row OPTIONS (PERSISTENT '${persistence_type}')"
+    }
 
     snc.dropTable("NATION", ifExists = true)
     snc.dropTable("REGION", ifExists = true)
@@ -68,20 +73,24 @@ object TableCreationJob extends SnappySQLJob {
       TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
         loadPerfPrintStream)
       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
-        isSnappy,
-        loadPerfPrintStream)
+        isSnappy, loadPerfPrintStream, numberOfloadStages.toInt)
     }
 
     TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
-      buckets_Order_Lineitem, loadPerfPrintStream)
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
-      buckets_Order_Lineitem, loadPerfPrintStream)
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream)
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
+      numberOfloadStages.toInt, isParquet)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -97,7 +106,6 @@ object TableCreationJob extends SnappySQLJob {
     } else {
       "15"
     }
-
 
     buckets_Cust_Part_PartSupp = if (config.hasPath("Buckets_Cust_Part_PartSupp")) {
       config.getString("Buckets_Cust_Part_PartSupp")
@@ -117,10 +125,40 @@ object TableCreationJob extends SnappySQLJob {
       false
     }
 
-    if (!new File(tpchDataPath).exists()) {
+    redundancy = if (config.hasPath("Redundancy")) {
+      config.getString("Redundancy")
+    } else {
+      "0"
+    }
+
+    persistence = if (config.hasPath("Persistence")) {
+      config.getBoolean("Persistence")
+    } else {
+      false
+    }
+
+    persistence_type = if (config.hasPath("Persistence_Type")) {
+      config.getString("Persistence_Type")
+    } else {
+      "false"
+    }
+
+    numberOfloadStages = if (config.hasPath("NumberOfLoadStages")) {
+      config.getString("NumberOfLoadStages")
+    } else {
+      "1"
+    }
+
+    isParquet = if (config.hasPath("isParquet")) {
+      config.getBoolean("isParquet")
+    } else {
+      false
+    }
+
+    /*if (!new File(tpchDataPath).exists()) {
       return SnappyJobInvalid("Incorrect tpch data path. " +
           "Specify correct location")
-    }
+    }*/
 
     SnappyJobValid()
   }

@@ -199,6 +199,8 @@ shadowJar {
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
   // avoid conflict with upstream spark-unsafe
   relocate 'org.apache.spark.unsafe', 'io.snappydata.org.apache.spark.unsafe'
+  // relocate fastutil for possible conflicts with user dependencies
+  relocate 'it.unimi.dsi.fastutil', 'io.snappydata.it.unimi.dsi.fastutil'
 
   mergeServiceFiles()
   exclude 'log4j.properties'

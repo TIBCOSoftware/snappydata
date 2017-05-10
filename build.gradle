@@ -591,8 +591,6 @@ task generateSources {
 }
 
 task product(type: Zip) {
-  dependsOn ':snappy-store:gemfirexd-client:shadowJar'
-  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
@@ -802,6 +800,8 @@ distZip {
 
 // use the task below to prepare final release bits
 task distProduct {
+  dependsOn ':snappy-store:gemfirexd-client:shadowJar'
+  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn product, distTar, distZip
 }
 
@@ -840,11 +840,17 @@ task cleanAll {
 }
 task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
+  dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
   dependsOn distTar, distZip
   mustRunAfter cleanAll
 }
+task buildDtests {
+  delete "${snappyProductDir}/dtests/build-artifacts/scala-${scalaBinaryVersion}/"
+  dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
+}
 task checkAll {
+  dependsOn ':snappy-spark:scalaStyle'
   if (project.hasProperty('store')) {
     dependsOn ':snappy-store:check'
   }
@@ -1007,6 +1013,10 @@ task publishDocs(type:Exec) {
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports
   dependsOn ':snappy-spark:scalaStyle', docs
+  if (!project.hasProperty('smoke.skip')) {
+    dependsOn ":buildDtests"
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+  }
 }
 
 if (project.hasProperty('trackBuildTime') ) {

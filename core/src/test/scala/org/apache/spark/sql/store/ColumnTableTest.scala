@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
-import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyEmbeddedTableStatsProviderService, Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -203,7 +203,8 @@ class ColumnTableTest
     logInfo("Successful")
   }
 
-
+  // TODO: Suranjan Test is invalid. Not clear from the bug why the decision
+  // to make concurrency checks false was taken
   test("Test SNAP-947") {
     val table = "APP.TEST_TABLE"
 
@@ -212,7 +213,7 @@ class ColumnTableTest
     // check that default concurrency checks is set to false for column table.
     snc.sql(s"create table $table (col1 int) using column" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -220,7 +221,7 @@ class ColumnTableTest
 
     snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -313,7 +314,7 @@ class ColumnTableTest
   }
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
-
+    //TODO: Suranjan URL misses the hint in connection that gfTx must not be cleared.
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
         " USING column " + optionsWithURL)
     val result = snc.sql("SELECT * FROM " + tableName)
@@ -934,7 +935,7 @@ class ColumnTableTest
 
     val region = Misc.getRegionForTable(
       ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
         .getPRNumRowsInColumnBatches
 
@@ -1010,6 +1011,29 @@ class ColumnTableTest
 
     assert(struct == df2.schema)
     assert(df1.schema == df3.schema)
+
+  }
+
+  test("Test create table from CSV without header") {
+    snc.sql(s"create table test1 using com.databricks.spark.csv options(path '${(getClass.getResource
+    ("/northwind/orders" +
+      ".csv").getPath)}', header 'false', inferschema 'true')")
+    snc.sql("create table test2 using column options() as (select * from test1)")
+    val df2 = snc.sql("select * from test2")
+    df2.show()
+
+    snc.sql("drop table test2")
+    snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
+    snc.sql("insert into test2 values(1,2)")
+    snc.sql("insert into test2 values(2,3)")
+    val df3 = snc.sql("select _col1,__col2 from test2")
+    df3.show()
+    val struct = (new StructType())
+      .add(StructField("_COL1", IntegerType, true))
+      .add(StructField("__COL2", IntegerType, true))
+
+    df3.printSchema()
+    assert(struct == df3.schema)
 
   }
 }

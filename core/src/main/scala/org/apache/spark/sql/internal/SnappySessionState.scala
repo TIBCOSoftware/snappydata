@@ -17,20 +17,21 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.Properties
+import java.util.{Calendar, Properties}
+import javassist.bytecode.stackmap.TypeData.NullType
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.{CatalystConf, InternalRow}
+import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, EmptyRow, Expression, Literal, ParamLiteral, PredicateHelper, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -45,7 +46,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.{DataType, DecimalType}
+import org.apache.spark.sql.types.DecimalType
 import org.apache.spark.streaming.Duration
 import org.apache.spark.{Partition, SparkConf}
 
@@ -81,7 +82,6 @@ class SnappySessionState(snappySession: SnappySession)
       datasources.PreWriteCheck(conf, catalog),
       PrePutCheck)
   }
-
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
@@ -295,6 +295,17 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+
+  var isPreparePhase: Boolean = false
+
+  var pvs: Option[ParameterValueSet] = None
+
+  var questionMarkCounter: Int = 0
+
+  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit = {
+    isPreparePhase = preparePhase
+    pvs = paramSet
+  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
@@ -503,16 +514,16 @@ trait SQLAltName[T] extends AltName[T] {
       case Some(_) => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
       case None => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[Option[T]]]).get
     }
-
   }
 
   private def get(conf: SQLConf, name: String,
       defaultValue: String): T = {
     configEntry.entry.defaultValue match {
-      case Some(_) => configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
-      case None => configEntry.valueConverter[Option[T]](conf.getConfString(name, defaultValue)).get
+      case Some(_) => configEntry.valueConverter[T](
+        conf.getConfString(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.getConfString(name, defaultValue)).get
     }
-
   }
 
   def get(conf: SQLConf): T = if (altName == null) {
@@ -527,6 +538,12 @@ trait SQLAltName[T] extends AltName[T] {
     } else {
       get(conf, altName, configEntry.defaultValueString)
     }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {

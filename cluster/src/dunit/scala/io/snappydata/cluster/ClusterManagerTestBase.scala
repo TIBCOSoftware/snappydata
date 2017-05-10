@@ -18,13 +18,19 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
+import org.apache.spark.sql.execution.ConnectionPool
 
+import scala.collection.JavaConverters._
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import io.snappydata._
+import java.io.File
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkContext}
@@ -38,7 +44,7 @@ import scala.sys.process._
  *
  * @author hemant
  */
-class ClusterManagerTestBase(s: String)
+abstract class ClusterManagerTestBase(s: String)
     extends DistributedTestBase(s) with Serializable {
 
   import ClusterManagerTestBase._
@@ -73,6 +79,7 @@ class ClusterManagerTestBase(s: String)
 
   val locatorNetPort: Int = 0
   val locatorNetProps = new Properties()
+  val stopNetServersInTearDown = true
 
   // SparkContext is initialized on the lead node and hence,
   // this can be used only by jobs running on Lead node
@@ -153,8 +160,10 @@ class ClusterManagerTestBase(s: String)
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
       Array[AnyRef](getClass.getName, getName)))
-    Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
-    stopNetworkServers()
+    if (stopNetServersInTearDown) {
+      Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+      stopNetworkServers()
+    }
     bootProps.clear()
   }
 
@@ -265,6 +274,8 @@ object ClusterManagerTestBase extends Logging {
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stopAllNetworkServers()
+      // clear stale connection pool
+      ConnectionPool.clear()
     }
   }
 

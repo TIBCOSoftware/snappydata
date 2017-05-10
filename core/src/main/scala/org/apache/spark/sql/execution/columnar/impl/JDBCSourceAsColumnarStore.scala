@@ -27,7 +27,9 @@ import scala.util.Random
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{TXStateProxy, TXManagerImpl, GemFireCacheImpl, AbstractRegion, LocalRegion, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
@@ -59,7 +61,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   @transient
   protected lazy val rand = new Random
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(
+  private lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
 
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
@@ -85,9 +87,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         val stmt = connection.prepareStatement(rowInsertStr)
         var columnIndex = 1
         val uuid = batchId.getOrElse(UUID.randomUUID().toString)
+        var blobs: Array[ClientBlob] = null
         try {
           // add the columns
-          batch.buffers.foreach(buffer => {
+          blobs = batch.buffers.map(buffer => {
             stmt.setString(1, uuid)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, columnIndex)
@@ -95,6 +98,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             stmt.setBlob(4, blob)
             columnIndex += 1
             stmt.addBatch()
+            blob
           })
           // add the stat row
           stmt.setString(1, uuid)
@@ -120,7 +124,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               case _: Exception => // Do nothing
             }
 
-            for (idx <- 1 to batch.buffers.size) {
+            for (idx <- 1 to batch.buffers.length) {
               try {
                 deletestmt.setString(1, uuid)
                 deletestmt.setInt(2, idx)
@@ -131,6 +135,17 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             }
             deletestmt.close()
             throw e;
+        } finally {
+          // free the blobs
+          if (blobs != null) {
+            for (blob <- blobs) {
+              try {
+                blob.free()
+              } catch {
+                case _: Exception => // ignore
+              }
+            }
+          }
         }
       }
     }
@@ -146,7 +161,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     istr
   }
 
-  protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
+  private def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
     if (!insertStrings.contains(tableName)) {
       val s = insertStrings.getOrElse(tableName,
         s"insert into $tableName values(?,?,?,?)")
@@ -318,6 +333,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
       }
     } finally {
+      connection.commit();
       connection.close()
     }
   }
@@ -366,7 +382,25 @@ final class ColumnarStorePartitionedRDD(
   }
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
+
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+      val tx = TXManagerImpl.snapshotTxState.get()
+      if (tx != null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/) {
+        GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+        GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+      }
+    }
+    ))
+
     val container = GemFireXDUtils.getGemFireContainer(tableName, true)
+    // TODO: maybe we can start tx here
+    // We can start different tx in each executor for first phase, till global snapshot is available.
+    // check if the tx is already running.
+    //GemFireCacheImpl.getInstance().getCacheTransactionManager.begin()
+    //GemFireCacheImpl.getInstance().getCacheTransactionManager.
+    // who will call commit.
+    //val txId = GemFireCacheImpl.getInstance().getCacheTransactionManager.getTransactionId;
+    val txId = null
     val bucketIds = part match {
       case p: MultiBucketExecutorPartition => p.buckets
       case _ => java.util.Collections.singleton(Int.box(part.index))
@@ -462,7 +496,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _relDestroyVersion: Int = -1)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-      _filters, _partEval) {
+    _filters, _partEval, false) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
@@ -516,6 +550,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     try {
       SparkShellRDDHelper.getPartitions(tableName, conn)
     } finally {
+      conn.commit()
       conn.close()
     }
   }

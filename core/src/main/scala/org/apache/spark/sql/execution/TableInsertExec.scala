@@ -98,7 +98,7 @@ abstract class TableInsertExec(override val child: SparkPlan,
             assert(numBuckets == rdd.getNumPartitions)
             new DelegateRDD(sparkContext, rdd,
               Array.tabulate(numBuckets)(
-                StoreUtils.getBucketPreferredLocations(region, _)))
+                StoreUtils.getBucketPreferredLocations(region, _, forWrite = true)))
           }
       }
     } else {

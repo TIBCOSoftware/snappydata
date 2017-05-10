@@ -19,12 +19,12 @@ package org.apache.spark.memory
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.{Logging, SparkConf}
-import sun.misc.SharedSecrets
-import com.gemstone.gemfire.internal.offheap.OffHeapStorage
 
 /**
   * When there is request for execution or storage memory, critical up and eviction up

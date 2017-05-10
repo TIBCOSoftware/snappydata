@@ -24,6 +24,9 @@ import scala.reflect.ClassTag
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
+
+import io.snappydata.collection.ObjectHashSet
+
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -34,7 +37,6 @@ import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.internal.CodeCompileException
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
 import org.apache.spark.{Dependency, Partition, ShuffleDependency, TaskContext}
