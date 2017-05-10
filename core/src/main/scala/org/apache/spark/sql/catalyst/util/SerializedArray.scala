@@ -38,6 +38,7 @@ final class SerializedArray(_skipBytes: Int = 4)
    */
   override def pointTo(baseObject: AnyRef, baseOffset: Long,
       sizeInBytes: Int): Unit = {
+    assert(skipBytes >= 4, s"skipBytes ($skipBytes) should be >= 4")
     // Read the number of elements from the first 4 bytes or if skipBytes
     // is set to something other than default of 4, then adjust it to find
     // the position where number of elements is written.

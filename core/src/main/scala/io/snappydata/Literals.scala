@@ -72,7 +72,7 @@ object Constant {
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
 
   // Internal Column table store schema
   final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
@@ -205,7 +205,7 @@ object Property extends Enumeration {
         "the unit (in bytes) that will be used to split the data into chunks " +
         "for efficient storage and retrieval. It can also be set for each table " +
         s"using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
-        "create table DDL.", Some(24 * 1024 * 1024))
+        "create table DDL.", Some(32 * 1024 * 1024))
 
   val ColumnMaxDeltaRows = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
     "The maximum number of rows that can be in the delta buffer of a column table. " +
@@ -223,7 +223,7 @@ object Property extends Enumeration {
         s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
-    "The join would be converted into a hash join if the table is of size less" +
+    "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
