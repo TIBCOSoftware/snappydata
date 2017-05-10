@@ -16,7 +16,7 @@
  */
 package io.snappydata.externalstore
 
-import java.sql.{DriverManager, Connection, SQLException}
+import java.sql.{Connection, DriverManager, SQLException}
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -109,8 +109,10 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
 
     createTables(snc)
 
@@ -142,8 +144,10 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
 
     createTables(snc)
 
