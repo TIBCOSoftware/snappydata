@@ -6,10 +6,11 @@ io/snappydata/hydra/concurrency/nwPointLookUpConcTest.conf
   E=snappyClientA snappyClientAHosts=10 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Column"
-  fullResultSetValidation = true
-  useThinClientSmartConnectorMode = false
+  runPLQueries = true
+  runAnalyticalQueries = false
+  runMixedQueries = false
 
-/*io/snappydata/hydra/concurrency/nwAnalyticalConcTest.conf
+io/snappydata/hydra/concurrency/nwAnalyticalConcTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -17,8 +18,9 @@ io/snappydata/hydra/concurrency/nwPointLookUpConcTest.conf
   E=snappyClientA snappyClientAHosts=10 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Column"
-  fullResultSetValidation = true
-  useThinClientSmartConnectorMode = false
+  runPLQueries = false
+  runAnalyticalQueries = true
+  runMixedQueries = false
 
 io/snappydata/hydra/concurrency/nwMixedConcTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -28,5 +30,6 @@ io/snappydata/hydra/concurrency/nwMixedConcTest.conf
   E=snappyClientA snappyClientAHosts=10 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   tableType="Column"
-  fullResultSetValidation = true
-  useThinClientSmartConnectorMode = false*/
+  runPLQueries = false
+  runAnalyticalQueries = false
+  runMixedQueries = true

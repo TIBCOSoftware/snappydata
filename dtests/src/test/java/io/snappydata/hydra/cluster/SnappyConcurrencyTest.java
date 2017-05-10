@@ -45,9 +45,9 @@ public class SnappyConcurrencyTest extends SnappyTest {
     } catch (SQLException se) {
       throw new TestException("Got exception while executing select query.", se);
     }
-    StructTypeImpl sti = ResultSetHelper.getStructType(rs);
+    /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
     List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
-    Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());
+    Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());*/
     closeConnection(conn);
   }
 
@@ -60,9 +60,9 @@ public class SnappyConcurrencyTest extends SnappyTest {
     ResultSet rs = conn.createStatement().executeQuery(query);
     SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
     SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
-    StructTypeImpl sti = ResultSetHelper.getStructType(rs);
+    /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
     List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
-    Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());
+    Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());*/
     closeConnection(conn);
   }
 

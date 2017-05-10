@@ -79,13 +79,21 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
             io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.northwind.CreateAndLoadNWTablesJob
-            io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "dataFilesLocation=${dataFilesLocation},tableType=${tableType}"
+            io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer =
+            "dataFilesLocation=${dataFilesLocation},tableType=${tableType}"
             io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
             threadGroups = snappyThreads
             ;
 
 CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = validateNumQueriesExecuted
             threadGroups = snappyThreads;
+
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
+            io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.concurrency.ValidateConcurrentQueriesJob
+            io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "dataFilesLocation=${dataFilesLocation},tableType=${tableType},runPLQueries=${runPLQueries},runAnalyticalQueries=${runAnalyticalQueries},runMixedQueries=${runMixedQueries}"
+            io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
+            threadGroups = snappyThreads
+            ;
 
 CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
             threadGroups = snappyThreads;
