@@ -185,11 +185,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
   }
 
-
-
-
-
-
 }
   object ValidateMVCCDUnitTest {
 
@@ -211,13 +206,13 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
       override def waitOnTestLock(): Unit = {
         lockForTest.synchronized {
-          lockForTest.wait()
+          lockForTest.wait(60000)
         }
       }
 
       override def waitOnOperationLock(): Unit = {
         operationLock.synchronized {
-          operationLock.wait()
+          operationLock.wait(60000)
         }
       }
     }
