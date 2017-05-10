@@ -213,7 +213,7 @@ class ColumnTableTest
     // check that default concurrency checks is set to false for column table.
     snc.sql(s"create table $table (col1 int) using column" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -221,7 +221,7 @@ class ColumnTableTest
 
     snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 

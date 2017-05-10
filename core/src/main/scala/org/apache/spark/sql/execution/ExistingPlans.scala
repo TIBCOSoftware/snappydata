@@ -194,7 +194,8 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
     preAction()
     val callSite = sqlContext.sparkContext.getCallSite()
-    CachedDataFrame.withNewExecutionId(sqlContext.sparkSession, callSite,
+    CachedDataFrame.withNewExecutionId(sqlContext.sparkSession,
+      callSite.shortForm, callSite.longForm,
       child.treeString(verbose = true), SparkPlanInfo.fromSparkPlan(child)) {
       child.executeCollect()
     }

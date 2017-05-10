@@ -1713,13 +1713,14 @@ object SnappySession extends Logging {
   }
 
   private def evaluatePlan(df: DataFrame,
-      session: SnappySession, key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
+      session: SnappySession, sqlText: String,
+      key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
       case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
       case plan => plan
     }
 
-    if (key != null) {
+    if (key ne null) {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching) {
@@ -1781,7 +1782,7 @@ object SnappySession extends Logging {
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
     }
-    val cdf = new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
+    val cdf = new CachedDataFrame(df, sqlText, cachedRDD, shuffleDeps, rddId,
       localCollect, allLiterals, allbroadcastplans)
 
     // Now check if optimization plans have been applied such that
@@ -1806,7 +1807,7 @@ object SnappySession extends Logging {
         if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
           (null, null)
         } else {
-          evaluatePlan(df, session, key)
+          evaluatePlan(df, session, key.sqlText, key)
         }
       }
     }
@@ -1899,7 +1900,7 @@ object SnappySession extends Logging {
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
-        val evaluation = evaluatePlan(df, session)
+        val evaluation = evaluatePlan(df, session, sqlText)
         // default is enable caching
         if (!java.lang.Boolean.getBoolean("DISABLE_PLAN_CACHING")) {
           if (queryHints eq null) {
@@ -1928,11 +1929,13 @@ object SnappySession extends Logging {
     } catch {
       case e: UncheckedExecutionException => e.getCause match {
         case ee: EntryExistsException => new CachedDataFrame(
-          ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
+          ee.getOldValue.asInstanceOf[DataFrame], sqlText, null,
+          Array.empty, -1, false)
         case t => throw t
       }
       case ee: EntryExistsException => new CachedDataFrame(
-        ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
+        ee.getOldValue.asInstanceOf[DataFrame], sqlText, null,
+        Array.empty, -1, false)
     }
   }
 

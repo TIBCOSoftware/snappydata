@@ -7,6 +7,12 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+Release 0.9
+
+- New Features/Fixed Issues
+
+  [SNAP-1481] SQL Tab on UI, Description column now displays actual SQL Query string executed
+  instead of handler description text.
 
 Release 0.8
 
