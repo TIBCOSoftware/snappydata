@@ -273,7 +273,7 @@ final class ColumnFormatValue
       val diskId = this.diskId
       if (diskId ne null) {
         try {
-          DiskEntry.Helper.getHeapValueOnDisk(diskId, diskRegion) match {
+          DiskEntry.Helper.getValueOnDisk(diskId, diskRegion) match {
             case v: ColumnFormatValue =>
               // transfer the buffer from the temporary ColumnFormatValue
               columnBuffer = v.columnBuffer
