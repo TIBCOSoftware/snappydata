@@ -310,7 +310,7 @@ trait ColumnEncoder extends ColumnEncoding {
     }
     if ((columnData eq null) || (columnData.limit() < (baseSize + defSize))) {
       var initByteSize = 0L
-      if (reuseUsedSize > baseSize) {
+      if (reuseUsedSize > baseSize + defSize) {
         initByteSize = reuseUsedSize
       } else {
         initByteSize = defSize.toLong * initSize + baseSize
