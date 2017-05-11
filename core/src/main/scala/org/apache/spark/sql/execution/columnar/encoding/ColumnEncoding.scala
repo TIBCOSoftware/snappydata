@@ -308,17 +308,18 @@ trait ColumnEncoder extends ColumnEncoding {
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
-    if (columnData eq null) {
-      var initByteSize: Long = 0L
-      if (reuseUsedSize > 0) {
+    var baseSize: Long = numNullBytes
+    if (withHeader) {
+      // add header size for serialized form to avoid a copy in Oplog layer
+      baseSize += ColumnFormatEntry.VALUE_HEADER_SIZE
+      baseSize += 8L /* typeId + nullsSize */
+    }
+    if ((columnData eq null) || (columnData.limit() < (baseSize + defSize))) {
+      var initByteSize = 0L
+      if (reuseUsedSize > baseSize) {
         initByteSize = reuseUsedSize
       } else {
-        initByteSize = defSize.toLong * initSize + numNullBytes
-        if (withHeader) {
-          // add header size for serialized form to avoid a copy in Oplog layer
-          initByteSize += ColumnFormatEntry.VALUE_HEADER_SIZE
-          initByteSize += 8L /* typeId + nullsSize */
-        }
+        initByteSize = defSize.toLong * initSize + baseSize
       }
       setSource(allocator.allocate(checkBufferSize(initByteSize),
         ColumnEncoding.BUFFER_OWNER), releaseOld = true)
@@ -1145,11 +1146,12 @@ trait NullableEncoder extends NotNullEncoder {
     // trim trailing empty words
     val numWords = getNumNullWords
     // maximum number of null words that can be allowed to go waste in storage
-    val maxWastedWords = 50
+    val maxWastedWords = 8
     // check if the number of words to be written matches the space that
     // was left at initialization; as an optimization allow for larger
-    // space left at initialization when one full data copy can be avoided
-    val baseOffset = columnBeginPosition
+    // space left at initialization when one full data copy can be avoided;
+    // add serialization header which will be filled in by ColumnFormatValue
+    val baseOffset = columnBeginPosition + ColumnFormatEntry.VALUE_HEADER_SIZE
     if (initialNumWords == numWords) {
       writeNulls(columnBytes, baseOffset + 8, numWords)
       super.finish(cursor)
@@ -1164,9 +1166,8 @@ trait NullableEncoder extends NotNullEncoder {
       // make space (or shrink) for writing nulls at the start
       val numNullBytes = numWords << 3
       val initialNullBytes = initialNumWords << 3
-      val oldSize = cursor - baseOffset
-      val newSize = math.min(Int.MaxValue - 1,
-        oldSize + numNullBytes - initialNullBytes).toInt
+      val oldSize = cursor - baseOffset + ColumnFormatEntry.VALUE_HEADER_SIZE
+      val newSize = checkBufferSize(oldSize + numNullBytes - initialNullBytes)
       val storageAllocator = this.storageAllocator
       val newColumnData = storageAllocator.allocateForStorage(newSize)
 
