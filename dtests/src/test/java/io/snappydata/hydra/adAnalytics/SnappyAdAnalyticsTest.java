@@ -297,7 +297,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   protected void generateAndPublish(Vector generatorAndPublisher) {
     ProcessBuilder pb = null;
-    String dest = kafkaLogDir + sep + "generateAdImpress.log";
+    String dest = kafkaLogDir + sep + "generatorAndPublisher.log";
     File logFile = new File(dest);
     for (int i = 0; i < generatorAndPublisher.size(); i++) {
       String processName= (String)generatorAndPublisher.elementAt(i);
