@@ -260,7 +260,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def initialize(field: StructField, initSize: Int,
       withHeader: Boolean): Long = {
-    initialize(field, initSize, withHeader, DirectBufferAllocator)
+    initialize(field, initSize, withHeader, HeapBufferAllocator)
   }
 
   protected def initializeLimits(): Unit = {

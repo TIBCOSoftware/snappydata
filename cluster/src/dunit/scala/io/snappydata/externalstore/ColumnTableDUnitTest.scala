@@ -521,7 +521,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())
 
-    assert(r.length == 10012)
+    assert(r.length == 10012, s"Unexpected elements ${r.length}, expected=10012")
 
     println("startSparkJob6 " + region.size())
     println("startSparkJob6 " + shadowRegion.size())
@@ -581,7 +581,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())
 
-    assert(r.length == 10012)
+    assert(r.length == 10012, s"Unexpected elements ${r.length}, expected=10012")
 
     println("startSparkJob7 " + region.size())
     println("startSparkJob7 " + shadowRegion.size())

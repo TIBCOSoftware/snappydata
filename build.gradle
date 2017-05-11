@@ -224,7 +224,7 @@ subprojects {
       args = params.split(',') as List
     }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs '-Xmx2g', '-XX:MaxPermSize=512m'
+    jvmArgs '-Xmx2g'
   }
 
   task scalaTest(type: Test) {
@@ -235,12 +235,12 @@ subprojects {
     minHeapSize '4g'
     maxHeapSize '4g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     // for benchmarking
     // minHeapSize '12g'
     // maxHeapSize '12g'
     // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
-    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
 
     testLogging.exceptionFormat = 'full'
 
@@ -278,7 +278,7 @@ subprojects {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     testLogging.exceptionFormat = 'full'
 
     include '**/*.class'
@@ -303,10 +303,10 @@ subprojects {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
     maxParallelForks = 1
-    minHeapSize '2g'
-    maxHeapSize '2g'
+    minHeapSize '1536m'
+    maxHeapSize '1536m'
 
-    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m',
+    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
