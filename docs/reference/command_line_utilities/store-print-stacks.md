@@ -19,7 +19,7 @@ The table describes options for `snappy print-stacks`. If no multicast or locato
 |Option|Description|
 |-|-|
 |-all-threads|By default this command attempts to remove idle SnappyData threads from the stack dump. Include `-all-threads` to include idle threads in the dump.|
-|[<filename>]|An optional filename to store the stack dumps. See also [SYS.DUMP_STACKS](../../reference/inbuilt/dump-stacks.md) for information about appending stack dump information to the SnappyData log file.|
+|[<filename>]|An optional filename to store the stack dumps. See also [SYS.DUMP_STACKS](../../reference/inbuilt_system_procedures/dump-stacks.md) for information about appending stack dump information to the SnappyData log file.|
 |-mcast-port|Multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead).</br>Valid values are in the range 0–65535, with a default value of 10334.|
 |-mcast-address|Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
@@ -88,6 +88,6 @@ Connecting to distributed system: mcast=/239.192.81.1:10334
 1 stack dumps written to gfxd-stack-dump.txt
 ```
 
-See also [SYS.DUMP_STACKS](../../reference/inbuilt/dump-stacks.md) for information about appending stack dump information to the SnappyData log file.
+See also [SYS.DUMP_STACKS](../../reference/inbuilt_system_procedures/dump-stacks.md) for information about appending stack dump information to the SnappyData log file.
 
 

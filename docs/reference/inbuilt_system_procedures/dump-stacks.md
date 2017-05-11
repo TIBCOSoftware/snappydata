@@ -2,7 +2,7 @@
 
 Writes thread stacks, locks, and transaction states to the SnappyData log file. You can write stack information either for the current SnappyData member or for all SnappyData members in the distributed system.
 
-See also [print-stacks](../snappy_shell_reference/store-print-stacks.md) for information about writing thread stacks to standard out or to a specified file.
+See also [print-stacks](../command_line_utilities/store-print-stacks.md) for information about writing thread stacks to standard out or to a specified file.
 
 ##Syntax
 
@@ -24,6 +24,6 @@ snappy> call sys.dump_stacks('false');
 Statement executed.
 ```
 
-See [print-stacks](../snappy_shell_reference/store-print-stacks.md) for an example of the partial thread stack output.
+See [print-stacks](../command_line_utilities/store-print-stacks.md) for an example of the partial thread stack output.
 
 

@@ -44,35 +44,35 @@ The launcher honors the current CLASSPATH environment variable and adds it to th
 
 The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the <mark> TO VERIFY `GFXD_JAVA`</mark> environment variable to point to the desired Java executable. (note the supported JRE versions in [Supported Configurations and System Requirements](../../sys_requirement.md).
 
--   **[backup](../../reference/snappy_shell_reference/store-backup.md)**
+-   **[backup](../../reference/command_line_utilities/store-backup.md)**
     Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
 
--   **[compact-all-disk-stores](../../reference/snappy_shell_reference/store-compact-all-disk-stores.md)**
+-   **[compact-all-disk-stores](../../reference/command_line_utilities/store-compact-all-disk-stores.md)**
     Perform online compaction of SnappyData disk stores.
 
--   **[compact-disk-store](../../reference/snappy_shell_reference/store-compact-disk-store.md)**
+-   **[compact-disk-store](../../reference/command_line_utilities/store-compact-disk-store.md)**
     Perform offline compaction of a single SnappyData disk store.
 
--   **[list-missing-disk-stores](../../reference/snappy_shell_reference/store-list-missing-disk-stores.md)**
+-   **[list-missing-disk-stores](../../reference/command_line_utilities/store-list-missing-disk-stores.md)**
     Lists all disk stores with the most recent data for which other members are waiting.
 
--   **[locator](../../reference/snappy_shell_reference/store-locator.md)**
+-   **[locator](../../reference/command_line_utilities/store-locator.md)**
     Allows peers (including other locators) in a distributed system to discover each other without the need to hard-code anything about other peers.
 
--   **[print-stacks](../../reference/snappy_shell_reference/store-print-stacks.md)**
+-   **[print-stacks](../../reference/command_line_utilities/store-print-stacks.md)**
     Prints a stack dump of SnappyData member processes.
 
--   **[revoke-missing-disk-store](../../reference/snappy_shell_reference/store-revoke-missing-disk-stores.md)**
+-   **[revoke-missing-disk-store](../../reference/command_line_utilities/store-revoke-missing-disk-stores.md)**
     Instruct SnappyData members to stop waiting for a disk store to become available.
 
--   **[run](../../reference/snappy_shell_reference/store-run.md)**
+-   **[run](../../reference/command_line_utilities/store-run.md)**
     Connects to a SnappyData distributed system and executes the contents of a SQL command file. All commands in the specified file must be compatible with the interactive gfxd shell.
 
--   **[server](../../reference/snappy_shell_reference/store-server.md)**
+-   **[server](../../reference/command_line_utilities/store-server.md)**
     A SnappyData server is the main server side component in a SnappyData system that provides connectivity to other servers, peers, and clients in the cluster. It can host data. A server is started using the *server* utility of the *gfxd* launcher.
 
--   **[show-disk-store-metadata](../../reference/snappy_shell_reference/store-show-disk-store-metadata.md)**
+-   **[show-disk-store-metadata](../../reference/command_line_utilities/store-show-disk-store-metadata.md)**
     Display the disk store metadata for a specified disk store directory.
 
--   **[version](../../reference/snappy_shell_reference/store-version.md)**
+-   **[version](../../reference/command_line_utilities/store-version.md)**
     Prints information about the SnappyData product version.

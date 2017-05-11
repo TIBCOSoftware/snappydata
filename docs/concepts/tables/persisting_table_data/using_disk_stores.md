@@ -34,7 +34,7 @@ Consider these guidelines when designing disk stores:
 
 -   You may choose to parallelize disk access for oplog and overflow files using by targeting disk store files to multiple logical disk partitions.
 
--   SnappyData disk store files must be highly available. Back up disk store files on a regular schedule, either by copying the files while the system is offline, or by using the [backup](../../../reference/snappy_shell_reference/store-backup.md) command to perform online backups.
+-   SnappyData disk store files must be highly available. Back up disk store files on a regular schedule, either by copying the files while the system is offline, or by using the [backup](../../../reference/command_line_utilities/store-backup.md) command to perform online backups.
 
 SnappyData peers in the cluster manage their local disk stores using the properties you specify in the [CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore.md) statement.
 

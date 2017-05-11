@@ -16,20 +16,21 @@ Sets the largest display width for columns to the specified value. You generally
 ##Example
 
 ``` pre
-snappy(localhost:<port number>)> maximumdisplaywidth 4;
-snappy(localhost:<port number>)> VALUES 'NOW IS THE TIME!';
-1
-----
-NOW&
+snappy(localhost:<port number>)>maximumdisplaywidth 4;
+snappy(localhost:<port number>)> Insert into AIRLINEREF values('A-1','NOW IS THE TIME');
+1 row inserted/updated/deleted
+snappy(localhost:<port number>)> Select * from AIRLINEREF where code='A-1';
+CODE|DES&
+------------------
+A-1 |NOW&
 
-1 row selected
 snappy(localhost:<port number>)> maximumdisplaywidth 30;
-snappy(localhost:<port number>)> VALUES 'NOW IS THE TIME!';
-1
-----------------
-NOW IS THE TIME!
-
-1 row selected
+snappy(localhost:<port number>)> Insert into AIRLINEREF values('A-2','NOW IS THE TIME');
+1 row inserted/updated/deleted
+snappy(localhost:<port number>)>Select * from AIRLINEREF where code='A-2';
+CODE           |DESCRIPTION    
+-------------------------------
+A-2            |NOW IS THE TIME
 ```
 
 
