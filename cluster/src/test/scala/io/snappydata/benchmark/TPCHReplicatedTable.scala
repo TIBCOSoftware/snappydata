@@ -119,18 +119,21 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateSupplierTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStage : Int = 1)
+      : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
-    val supplierData = sc.textFile(s"$path/supplier.tbl")
-    val supplierReadings = supplierData.map(s => s.split('|')).map(s => TPCHTableSchema
-        .parseSupplierRow(s))
-    val supplierDF = sqlContext.createDataFrame(supplierReadings)
-    if (isSnappy) {
-      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.dropTable("SUPPLIER", ifExists = true)
-      snappyContext.sql(
-        """CREATE TABLE SUPPLIER (
+    for(i <- 1 to numberOfLoadingStage) {
+      val supplierData = sc.textFile(s"$path/supplier.tbl.$i")
+      val supplierReadings = supplierData.map(s => s.split('|')).map(s => TPCHTableSchema
+          .parseSupplierRow(s))
+      val supplierDF = sqlContext.createDataFrame(supplierReadings)
+      if (isSnappy) {
+        if (i == 1) {
+          val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+          snappyContext.dropTable("SUPPLIER", ifExists = true)
+          snappyContext.sql(
+            """CREATE TABLE SUPPLIER (
             S_SUPPKEY INTEGER NOT NULL PRIMARY KEY,
             S_NAME VARCHAR(25) NOT NULL,
             S_ADDRESS VARCHAR(40) NOT NULL,
@@ -139,13 +142,15 @@ object TPCHReplicatedTable {
             S_ACCTBAL DECIMAL(15,2) NOT NULL,
             S_COMMENT VARCHAR(101) NOT NULL
          ) """ + usingOptionString
-      )
-      println("Created Table SUPPLIER")
-      supplierDF.write.insertInto("SUPPLIER")
-    } else {
-      supplierDF.createOrReplaceTempView("SUPPLIER")
-      sqlContext.cacheTable("SUPPLIER")
-      sqlContext.table("SUPPLIER").count()
+          )
+          println("Created Table SUPPLIER")
+        }
+        supplierDF.write.insertInto("SUPPLIER")
+      } else {
+        supplierDF.createOrReplaceTempView("SUPPLIER")
+        sqlContext.cacheTable("SUPPLIER")
+        sqlContext.table("SUPPLIER").count()
+      }
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {

@@ -62,7 +62,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   @transient
   protected lazy val rand = new Random
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(
+  private lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
 
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
@@ -88,9 +88,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         val stmt = connection.prepareStatement(rowInsertStr)
         var columnIndex = 1
         val uuid = batchId.getOrElse(UUID.randomUUID().toString)
+        var blobs: Array[ClientBlob] = null
         try {
           // add the columns
-          batch.buffers.foreach(buffer => {
+          blobs = batch.buffers.map(buffer => {
             stmt.setString(1, uuid)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, columnIndex)
@@ -98,6 +99,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             stmt.setBlob(4, blob)
             columnIndex += 1
             stmt.addBatch()
+            blob
           })
           // add the stat row
           stmt.setString(1, uuid)
@@ -123,7 +125,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               case _: Exception => // Do nothing
             }
 
-            for (idx <- 1 to batch.buffers.size) {
+            for (idx <- 1 to batch.buffers.length) {
               try {
                 deletestmt.setString(1, uuid)
                 deletestmt.setInt(2, idx)
@@ -134,6 +136,17 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             }
             deletestmt.close()
             throw e;
+        } finally {
+          // free the blobs
+          if (blobs != null) {
+            for (blob <- blobs) {
+              try {
+                blob.free()
+              } catch {
+                case _: Exception => // ignore
+              }
+            }
+          }
         }
       }
     }
@@ -149,7 +162,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     istr
   }
 
-  protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
+  private def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
     if (!insertStrings.contains(tableName)) {
       val s = insertStrings.getOrElse(tableName,
         s"insert into $tableName values(?,?,?,?)")
