@@ -31,11 +31,9 @@ import org.junit.Assert
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SnappySession, SnappyContext, ThinClientConnectorMode, SplitClusterMode, AnalysisException}
+import org.apache.spark.sql.{SnappyContext, SplitClusterMode, ThinClientConnectorMode}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
-
-import org.apache.log4j.{Level, Logger}
 
 case class OrderData(ref: Int, description: String, amount: Long)
 /**
@@ -268,8 +266,8 @@ trait SplitClusterDUnitTestObject extends Logging {
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
       mode match {
-        case SplitClusterMode(_, _) => //expected
-        case _ => assert(false , "cluster mode is " + mode)
+        case SplitClusterMode(_, _) => // expected
+        case _ => assert(false, "cluster mode is " + mode)
       }
       snc
     } else {
@@ -291,8 +289,8 @@ trait SplitClusterDUnitTestObject extends Logging {
 
       val mode = SnappyContext.getClusterMode(snc.sparkContext)
       mode match {
-        case ThinClientConnectorMode(_, _) => //expected
-        case _ => assert(false , "cluster mode is " + mode)
+        case ThinClientConnectorMode(_, _) => // expected
+        case _ => assert(false, "cluster mode is " + mode)
       }
       snc
     }
@@ -307,7 +305,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     1 to 1000 foreach { _ =>
       data += Array.fill(3)(Random.nextInt())
     }
-    val rdd = context.parallelize(data, data.length).map(s =>
+    val rdd = context.parallelize(data, 8).map(s =>
       Data(s(0), Integer.toString(s(1)),
         Decimal(s(2).toString + '.' + math.abs(s(0)))))
 
@@ -398,7 +396,7 @@ trait SplitClusterDUnitTestObject extends Logging {
         Data(rnd1, Integer.toString(rnd2), Decimal(drnd1.toString + '.' +
             drnd2)), dec(1), ts(math.abs(rnd1) % 5))
     }
-    val rdd = context.parallelize(data, data.length)
+    val rdd = context.parallelize(data, 8)
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, props)

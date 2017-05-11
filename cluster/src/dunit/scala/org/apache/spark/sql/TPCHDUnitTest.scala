@@ -162,49 +162,28 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
         Array[String], Array[String], String)] = new ListBuffer()
 
     queries.foreach(f = qNum => {
-      println(s"Initial phase for ${qNum}")
       var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
       var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
       var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
       if (!qNum.equals("15")) {
         val df = snc.sqlUncached(queryToBeExecuted1)
         val res = df.collect()
-        println("*****************")
-        println(s"${qNum} - 1 ${queryToBeExecuted1} results")
         val r1 = normalizeRow(res)
-        r1.foreach(println)
-        println("*****************")
         snc.snappySession.clearPlanCache()
         val df2 = snc.sqlUncached(queryToBeExecuted2)
         val res2 = df2.collect()
-        println("*****************")
-        println(s"${qNum} - 2 ${queryToBeExecuted2} results")
         val r2 = normalizeRow(res2)
-        r2.foreach(println)
-        println("*****************")
         snc.snappySession.clearPlanCache()
         val df3 = snc.sqlUncached(queryToBeExecuted3)
         val res3 = df3.collect()
-        println("*****************")
-        println(s"${qNum} - 3 ${queryToBeExecuted3} results")
         val r3 = normalizeRow(res3)
-        r3.foreach(println)
-        println("*****************")
         snc.snappySession.clearPlanCache()
         results += ((queryToBeExecuted1, queryToBeExecuted2,
             queryToBeExecuted3, r1, r2, r3, qNum))
       }
     })
 
-    println(s"results size = ${results.size}")
-
     var m = SnappySession.getPlanCache
-    var itr = SnappySession.getPlanCache.asMap().keySet().iterator
-    while(itr.hasNext) {
-      val k = itr.next.asInstanceOf[CachedKey]
-      println(s"sqlText = ${k.sqlText}")
-    }
-
     var cached = 0
     results.foreach(x => {
       val q1 = x._1
@@ -214,61 +193,30 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       val r2 = x._5
       val r3 = x._6
       val qN = x._7
-      println(s"Final phase for ${qN}")
       val df = snc.sql(q1)
       val res = df.collect()
-      println("*****************")
-      println(s"${qN} - 1 ${q1} results")
       val rs1 = normalizeRow(res)
-      rs1.foreach(println)
-      println("*****************")
-      if (!rs1.sameElements(r1)) {
-        Thread.sleep(1000000)
-        assert(false)
-      }
-      // assert(rs1.sameElements(r1))
+      assert(rs1.sameElements(r1))
       val df2 = snc.sql(q2)
       val res2 = df2.collect()
-      println("*****************")
-      println(s"${qN} - 2 ${q2} results")
       val rs2 = normalizeRow(res2)
-      rs2.foreach(println)
-      println("*****************")
-      if (!rs2.sameElements(r2)) {
-        Thread.sleep(1000000)
-        assert(false)
-      }
-      // assert(rs2.sameElements(r2))
+      assert(rs2.sameElements(r2))
       val df3 = snc.sql(q3)
       val res3 = df3.collect()
-      println("*****************")
-      println(s"${qN} - 3 ${q3} results")
       val rs3 = normalizeRow(res3)
-      rs3.foreach(println)
-      println("*****************")
-      if (!rs3.sameElements(r3)) {
-        Thread.sleep(1000000)
-        assert(false)
-      }
-      // assert(rs3.sameElements(r3))
+      assert(rs3.sameElements(r3))
 
       m = SnappySession.getPlanCache
       val size = SnappySession.getPlanCache.size()
-      println(s"KN: size of plan cache after ${qN}= ${size}")
       snc.snappySession.clearPlanCache()
       if (size == 1) {
         cached = cached + 1
       }
 
     })
-    println(s"KN: number of queries cached = ${cached}")
-    println(s"KN: size of plan cache = ${SnappySession.getPlanCache.size()}")
+    logInfo(s"Number of queries cached = ${cached}")
+    logInfo(s"Size of plan cache = ${SnappySession.getPlanCache.size()}")
     m = SnappySession.getPlanCache
-    itr = SnappySession.getPlanCache.asMap().keySet().iterator
-    while(itr.hasNext) {
-      val k = itr.next.asInstanceOf[CachedKey]
-      println(s"sqlText = ${k.sqlText}")
-    }
   }
 
 
@@ -416,7 +364,7 @@ object TPCHUtils extends Logging {
         val expectedFile = sc.textFile(getClass.getResource(
           s"/TPCH/RESULT/Snappy_$query.out").getPath)
 
-        val queryFileName = if (isSnappy) s"Snappy_$query.out" else s"Spark_$query.out"
+        val queryFileName = if (isSnappy) s"1_Snappy_$query.out" else s"1_Spark_$query.out"
         val actualFile = sc.textFile(queryFileName)
 
         val expectedLineSet = expectedFile.collect().toList.sorted

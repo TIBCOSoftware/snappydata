@@ -1708,13 +1708,14 @@ object SnappySession extends Logging {
   }
 
   private def evaluatePlan(df: DataFrame,
-      session: SnappySession, key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
+      session: SnappySession, sqlText: String,
+      key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
       case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
       case plan => plan
     }
 
-    if (key != null) {
+    if (key ne null) {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching) {
@@ -1732,7 +1733,7 @@ object SnappySession extends Logging {
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
 
-    println(s"all bc plans = ${allbroadcastplans} ... size = ${allbroadcastplans.size}")
+    logDebug(s"all bc plans = ${allbroadcastplans} ... size = ${allbroadcastplans.size}")
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
@@ -1770,8 +1771,6 @@ object SnappySession extends Logging {
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
 
-    println(s"all all bc plans = ${allallbroadcastplans} ... size = ${allallbroadcastplans.size}")
-
     // keep references as well
     // filter unvisited literals. If the query is on a view for example the
     // modified tpch query no 15, It even picks those literal which we don't want.
@@ -1785,22 +1784,8 @@ object SnappySession extends Logging {
       allLiterals.foreach(_.collectedForPlanCaching = true)
     }
 
-    // -----------------
-//    print("allLiterals = ")
-//    allLiterals.foreach(i => print(s"${i} "))
-//    println
-//    print("params1 = ")
-//    val params1tmp = getAllParamLiterals(executedPlan)
-//    params1tmp.foreach(i => print(s"${i} "))
-//    println
-//    print("key = ")
-//    key.pls.foreach(i => print(s"${i} "))
-//    println
-//    println(s"qe.logicalPlan = ${df.queryExecution.logical}")
-    println(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
-//    println(s"qe.sparkPlan = ${df.queryExecution.sparkPlan}")
-    // val ignorecaching = checkParamLiteralsInBroadcastPlans(allallbroadcastplans)
-    // -----------------
+    logDebug(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
+
     // This part is the defensive coding for all those cases where Tokenization
     // support is not smart enough to deal with cases where the execution plan
     // is modified in such a way that we cannot track those constants which
@@ -1809,26 +1794,23 @@ object SnappySession extends Logging {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching /* || allallbroadcastplans.nonEmpty */) {
-        println(s"Invalidating the key because explicit nocaching")
+        logDebug(s"Invalidating the key because explicit nocaching")
         key.invalidatePlan()
       }
       else {
         val params1 = getAllParamLiterals(executedPlan)
         if (allLiterals.length != params1.length || !params1.sameElements(key.pls)) {
-          println(s"Invalidating the key because nocaching " +
+          logDebug(s"Invalidating the key because nocaching " +
               s"allLiterals.length = ${allLiterals.length}," +
               s" params1.length = ${params1.length} and key.pls = ${key.pls.length}")
-          println(s"params1 print len=${params1.length}")
-          params1.foreach(println)
-          println(s"keypls print len=${key.pls.length}")
-          key.pls.foreach(println)
-          println(s"end")
           key.invalidatePlan()
         }
         else if (params1.length != 0 ) {
           params1.foreach(p => {
             if (!allLiterals.exists(_.position == p.pos)) {
-              println(s"invalidating as allLiterals and params1 are different")
+              logDebug(s"No plan caching for sql ${key.sqlText} as " +
+                  s"part execution of query has happened like in scalar subqueries" +
+                  s" or plans with broadcast hashjoins")
               key.invalidatePlan()
             }
           })
@@ -1837,10 +1819,10 @@ object SnappySession extends Logging {
     }
 
     if (key != null && key.valid) {
-      println(s"Not invalidating for ${key.sqlText}")
+      logDebug(s"Plan caching will be used for sql ${key.sqlText}")
     }
-    val cdf = new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
-      localCollect, allLiterals, allallbroadcastplans)
+    val cdf = new CachedDataFrame(df, sqlText, cachedRDD, shuffleDeps, rddId,
+      localCollect, allLiterals, allbroadcastplans)
 
     // Now check if optimization plans have been applied such that
     val queryHints = session.synchronized {
@@ -1864,7 +1846,7 @@ object SnappySession extends Logging {
         if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
           (null, null)
         } else {
-          evaluatePlan(df, session, key)
+          evaluatePlan(df, session, key.sqlText, key)
         }
       }
     }
@@ -1948,7 +1930,7 @@ object SnappySession extends Logging {
       val key = CachedKey(session, lp, sqlText, currentWrappedConstants)
       val evaluation = planCache.getUnchecked(key)
       if (!key.valid) {
-        println(s"Invalidating plan cache for sqltext: ${key.sqlText}")
+        logDebug(s"Invalidating cached plan for sql: ${key.sqlText}")
         planCache.invalidate(key)
       }
       var cachedDF = evaluation._1
@@ -1957,7 +1939,7 @@ object SnappySession extends Logging {
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
-        val evaluation = evaluatePlan(df, session)
+        val evaluation = evaluatePlan(df, session, sqlText)
         // default is enable caching
         if (!java.lang.Boolean.getBoolean("DISABLE_PLAN_CACHING")) {
           if (queryHints eq null) {
@@ -1973,12 +1955,13 @@ object SnappySession extends Logging {
         cachedDF.clearCachedShuffleDeps(session.sparkContext)
         cachedDF.reset()
       }
+      cachedDF.queryString = sqlText
       if (key.valid) {
-        println(s"calling reprepare broadcast with ${currentWrappedConstants}")
+        logDebug(s"calling reprepare broadcast with new constants ${currentWrappedConstants}")
         cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
-        println(s"calling replace constants with ${currentWrappedConstants} and allLiterals = ${cachedDF.allLiterals.toSet}")
+        logDebug(s"calling replace constants with new constants ${currentWrappedConstants}" +
+            s" in Literal values = ${cachedDF.allLiterals.toSet}")
         CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
-        println(s"After replacing allLiterals = ${cachedDF.allLiterals.toSet}")
       }
       // set the query hints as would be set at the end of un-cached sql()
       session.synchronized {
@@ -1989,11 +1972,13 @@ object SnappySession extends Logging {
     } catch {
       case e: UncheckedExecutionException => e.getCause match {
         case ee: EntryExistsException => new CachedDataFrame(
-          ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
+          ee.getOldValue.asInstanceOf[DataFrame], sqlText, null,
+          Array.empty, -1, false)
         case t => throw t
       }
       case ee: EntryExistsException => new CachedDataFrame(
-        ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
+        ee.getOldValue.asInstanceOf[DataFrame], sqlText, null,
+        Array.empty, -1, false)
     }
   }
 
@@ -2093,5 +2078,5 @@ private final class Expr(val name: String, val e: Expression) {
   }
 
   override def hashCode: Int = ClientResolverUtils.fastHashLong(
-    name.hashCode.toLong << 32 | e.semanticHash().toLong)
+    name.hashCode.toLong << 32L | (e.semanticHash() & 0xffffffffL))
 }

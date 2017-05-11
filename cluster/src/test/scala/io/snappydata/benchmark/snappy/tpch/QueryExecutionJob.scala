@@ -36,6 +36,7 @@ object QueryExecutionJob extends SnappySQLJob {
   var isSnappy: Boolean = true
   var warmUp: Integer = _
   var runsForAverage: Integer = _
+  var threadNumber: Integer = _
 
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
@@ -54,8 +55,8 @@ object QueryExecutionJob extends SnappySQLJob {
 
     for (i <- 1 to 1) {
       for (query <- queries) {
-        QueryExecutor.execute(query, "Snappy_" + query, snc, isResultCollection, isSnappy, i,
-          isDynamic, warmUp, runsForAverage, avgPrintStream)
+        QueryExecutor.execute(query, "Snappy_" + query, snc, isResultCollection, isSnappy,
+          threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
       }
     }
     avgPrintStream.close()
@@ -125,6 +126,13 @@ object QueryExecutionJob extends SnappySQLJob {
       return SnappyJobInvalid("Specify number of  iterations of which average result is " +
           "calculated")
     }
+
+    threadNumber = if (config.hasPath("threadNumber")) {
+      config.getInt("threadNumber")
+    } else {
+      1
+    }
+
     SnappyJobValid()
   }
 }

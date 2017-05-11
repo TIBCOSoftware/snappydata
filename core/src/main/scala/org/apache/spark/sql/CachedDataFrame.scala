@@ -38,21 +38,21 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Literal, LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
-import org.apache.spark.sql.execution.{CachedPlanHelperExec, CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec, _}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
 import org.apache.spark.{Logging, NarrowDependency, ShuffleDependency, SparkContext, SparkEnv, SparkException, TaskContext}
 
-class CachedDataFrame(df: Dataset[Row],
+class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
@@ -69,9 +69,18 @@ class CachedDataFrame(df: Dataset[Row],
   private lazy val boundEnc = exprEnc.resolveAndBind(logicalPlan.output,
     sparkSession.sessionState.analyzer)
 
-  private lazy val queryExecutionString = queryExecution.toString
-  private lazy val queryPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
-    queryExecution.executedPlan)
+  private lazy val queryExecutionString = queryExecution.toString()
+
+  def queryPlanInfo: SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
+    plan = queryExecution.executedPlan transformAllExpressions {
+      case pl@ParamLiteral(_v, _dt, _p) =>
+        val x = allLiterals.find(_.position == _p)
+        val v = x match {
+          case Some(LiteralValue(_, _, _)) => x.get.value
+          case None => _v
+        }
+        Literal(v, _dt)
+    })
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
@@ -219,9 +228,13 @@ class CachedDataFrame(df: Dataset[Row],
     if (!hasLocalCallSite) {
       sc.setCallSite(callSite)
     }
+    val trimSize = 100
+    val queryShortForm = if (queryString.length > trimSize) {
+      queryString.substring(0, trimSize) + "..."
+    } else queryString
 
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
-      sparkSession, callSite, queryExecutionString, queryPlanInfo) {
+      sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
       val executedPlan = queryExecution.executedPlan match {
         case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
         case plan => plan
@@ -439,7 +452,7 @@ object CachedDataFrame
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
   def withNewExecutionId[T](sparkSession: SparkSession,
-      callSite: CallSite, queryExecutionStr: String,
+      queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
       queryPlanInfo: SparkPlanInfo)(body: => T): T = {
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
@@ -448,7 +461,7 @@ object CachedDataFrame
       sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
       val r = try {
         sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
-          executionId, callSite.shortForm, callSite.longForm, queryExecutionStr,
+          executionId, queryShortForm, queryLongForm, queryExecutionStr,
           queryPlanInfo, System.currentTimeMillis()))
         try {
           body

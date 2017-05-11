@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import io.snappydata.collection.ObjectHashSet
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -28,7 +29,6 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Exp
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
 
 /**
@@ -1311,10 +1311,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     case StringType if !multiMap =>
       // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
-      val platformClass = classOf[Platform].getName
       val bytes = ctx.freshName("stringBytes")
       s"""byte[] $bytes;
-        if ($stringVar.getBaseOffset() == $platformClass.BYTE_ARRAY_OFFSET
+        if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
             && ($bytes = (byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
           $colVar = $bytes;
         } else {
@@ -1324,8 +1323,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     case StringType if doCopy =>
       // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
-      val platformClass = classOf[Platform].getName
-      s"""if ($stringVar.getBaseOffset() == $platformClass.BYTE_ARRAY_OFFSET
+      s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
             && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
           $colVar = $stringVar;
         } else {
@@ -1442,19 +1440,18 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // strings are stored as raw byte arrays
       case StringType if !multiMap =>
         val byteMethodsClass = classOf[ByteArrayMethods].getName
-        val platformClass = classOf[Platform].getName
         if (thisVar.isEmpty) {
           // left side is a UTF8String while right side is byte array
           s"""$thisColVar.numBytes() == $otherCol.length
             && $byteMethodsClass.arrayEquals($thisColVar.getBaseObject(),
                $thisColVar.getBaseOffset(), $otherCol,
-               $platformClass.BYTE_ARRAY_OFFSET, $otherCol.length)"""
+               Platform.BYTE_ARRAY_OFFSET, $otherCol.length)"""
         } else {
           // both sides are raw byte arrays
           s"""$thisColVar.length == $otherCol.length
             && $byteMethodsClass.arrayEquals($thisColVar,
-               $platformClass.BYTE_ARRAY_OFFSET, $otherCol,
-               $platformClass.BYTE_ARRAY_OFFSET, $otherCol.length)"""
+               Platform.BYTE_ARRAY_OFFSET, $otherCol,
+               Platform.BYTE_ARRAY_OFFSET, $otherCol.length)"""
         }
       case _ => s"$thisColVar.equals($otherCol)"
     }

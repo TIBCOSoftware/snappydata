@@ -25,6 +25,7 @@ import scala.reflect.ClassTag
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
+import io.snappydata.collection.ObjectHashSet
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
