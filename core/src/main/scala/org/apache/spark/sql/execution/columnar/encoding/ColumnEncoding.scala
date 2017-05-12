@@ -309,6 +309,7 @@ trait ColumnEncoder extends ColumnEncoding {
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
+<<<<<<< HEAD
     var baseSize: Long = numNullBytes
     if (withHeader) {
       // add header size for serialized form to avoid a copy in Oplog layer
@@ -318,6 +319,19 @@ trait ColumnEncoder extends ColumnEncoding {
     if ((columnData eq null) || (columnData.limit() < (baseSize + defSize))) {
       var initByteSize = 0L
       if (reuseUsedSize > baseSize) {
+||||||| merged common ancestors
+    if (columnData eq null) {
+      var initByteSize: Long = 0L
+      if (reuseUsedSize > 0) {
+=======
+    var baseSize: Long = numNullBytes
+    if (withHeader) {
+      baseSize += 8L /* typeId + nullsSize */
+    }
+    if ((columnData eq null) || (columnData.limit() < (baseSize + defSize))) {
+      var initByteSize = 0L
+      if (reuseUsedSize > baseSize + defSize) {
+>>>>>>> origin/master
         initByteSize = reuseUsedSize
       } else {
         initByteSize = defSize.toLong * initSize + baseSize
@@ -1167,8 +1181,17 @@ trait NullableEncoder extends NotNullEncoder {
       // make space (or shrink) for writing nulls at the start
       val numNullBytes = numWords << 3
       val initialNullBytes = initialNumWords << 3
+<<<<<<< HEAD
       val oldSize = cursor - baseOffset + ColumnFormatEntry.VALUE_HEADER_SIZE
       val newSize = checkBufferSize(oldSize + numNullBytes - initialNullBytes)
+||||||| merged common ancestors
+      val oldSize = cursor - baseOffset
+      val newSize = math.min(Int.MaxValue - 1,
+        oldSize + numNullBytes - initialNullBytes).toInt
+=======
+      val oldSize = cursor - baseOffset
+      val newSize = checkBufferSize(oldSize + numNullBytes - initialNullBytes)
+>>>>>>> origin/master
       val storageAllocator = this.storageAllocator
       val newColumnData = storageAllocator.allocateForStorage(newSize)
 
