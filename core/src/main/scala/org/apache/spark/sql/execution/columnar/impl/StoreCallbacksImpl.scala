@@ -303,7 +303,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
-    // off-heap will be cleared via DirectBufferAllocator
+    // off-heap will be cleared via ManagedDirectBufferAllocator
     MemoryManagerCallback.memoryManager.
       dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
 

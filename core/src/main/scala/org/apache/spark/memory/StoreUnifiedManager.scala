@@ -21,6 +21,7 @@ import java.nio.ByteBuffer
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
@@ -52,8 +53,7 @@ trait StoreUnifiedManager {
   /**
    * Change the off-heap owner to mark it being used for storage.
    * Passing the owner as null allows moving ByteBuffers not allocated
-   * by [[com.gemstone.gemfire.internal.cache.store.BufferAllocator]]s
-   * to be also changed and freshly accounted.
+   * by [[BufferAllocator]]s to be also changed and freshly accounted.
    */
   def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit

@@ -19,7 +19,7 @@ package io.snappydata.collection
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.internal.cache.store.BufferAllocator
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding

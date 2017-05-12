@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.internal.cache.store.BufferAllocator
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{ByteBufferHashMap, LongKey, ObjectHashSet}
 

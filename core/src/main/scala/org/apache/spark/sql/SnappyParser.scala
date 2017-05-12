@@ -186,8 +186,9 @@ class SnappyParser(session: SnappySession)
           "For Prepared Statement, Parameter constants are not provided")
         if (session.sessionState.questionMarkCounter >
             session.sessionState.pvs.get.getParameterCount) {
-          assert(false, s"For Prepared Statement, Got more number of" +
-              s" placeholders = $session.sessionState.questionMarkCounter than given number of parameter" +
+          assert(assertion = false, s"For Prepared Statement, Got more number of" +
+              s" placeholders = ${session.sessionState.questionMarkCounter}" +
+              s" than given number of parameter" +
               s" constants = ${session.sessionState.pvs.get.getParameterCount}")
         }
         val dvd =

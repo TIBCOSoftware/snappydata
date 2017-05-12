@@ -29,10 +29,9 @@ import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException,
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
-import com.gemstone.gemfire.internal.cache.store.{DirectBufferAllocator, SerializedDiskBuffer}
+import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, SerializedDiskBuffer}
 import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, DiskEntry, DiskId, GemFireCacheImpl, InternalPartitionResolver, RegionEntry, Token}
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.gemstone.gemfire.internal.shared.{InputStreamChannel, OutputStreamChannel, Version}
+import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RowEncoder}
@@ -237,7 +236,7 @@ final class ColumnFormatValue
   def setBuffer(buffer: ByteBuffer,
       changeOwnerToStorage: Boolean = true): Unit = synchronized {
     val columnBuffer = GemFireCacheImpl.getCurrentBufferAllocator
-        .transfer(buffer, DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
+        .transfer(buffer, ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
     if (changeOwnerToStorage && columnBuffer.isDirect) {
       MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
         columnBuffer, allowNonAllocator = true)
@@ -318,7 +317,7 @@ final class ColumnFormatValue
     val buffer = this.columnBuffer
     if (buffer.isDirect) {
       this.columnBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
-      UnsafeHolder.releaseDirectBuffer(buffer)
+      ManagedDirectBufferAllocator.instance().release(buffer)
     }
   }
 
@@ -396,7 +395,7 @@ final class ColumnFormatValue
           // will take care not to release this buffer (if direct);
           // buffer is already positioned at start of data
           val buffer = allocator.transfer(din.getInternalBuffer,
-            DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
+            ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
           if (buffer.isDirect) {
             MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
               buffer, allowNonAllocator = true)
@@ -413,7 +412,7 @@ final class ColumnFormatValue
           do {
             if (channel.read(buffer) == 0) {
               // wait for a bit before retrying
-              LockSupport.parkNanos(100L)
+              LockSupport.parkNanos(ClientSharedUtils.PARK_NANOS_FOR_READ_WRITE)
             }
           } while (buffer.hasRemaining)
           // move to the start of data
@@ -471,7 +470,7 @@ final class ColumnFormatValue
     // (or retain/release) with capacity being valid even after releaseBuffer.
     val buffer = columnBuffer
     if (buffer.isDirect) {
-      buffer.capacity() + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
+      buffer.capacity() + ManagedDirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
     } else 0
   }
 

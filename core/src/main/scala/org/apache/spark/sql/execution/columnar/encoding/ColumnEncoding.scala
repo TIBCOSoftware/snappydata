@@ -20,7 +20,8 @@ import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.gemstone.gemfire.internal.cache.store.{BufferAllocator, DirectBufferAllocator, HeapBufferAllocator}
+import com.gemstone.gemfire.internal.cache.store.{HeapBufferAllocator, ManagedDirectBufferAllocator}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, HeapBufferAllocator}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.StringUtils
 
@@ -762,7 +763,7 @@ object ColumnEncoding {
   }
 
   def getAllocator(buffer: ByteBuffer): BufferAllocator =
-    if (buffer.isDirect) DirectBufferAllocator.instance()
+    if (buffer.isDirect) ManagedDirectBufferAllocator.instance()
     else HeapBufferAllocator.instance()
 
   def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
