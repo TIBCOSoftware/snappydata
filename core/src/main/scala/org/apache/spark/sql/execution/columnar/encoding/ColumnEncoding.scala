@@ -304,15 +304,16 @@ trait ColumnEncoder extends ColumnEncoding {
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
-    if (columnData eq null) {
-      var initByteSize: Long = 0L
-      if (reuseUsedSize > 0) {
+    var baseSize: Long = numNullBytes
+    if (withHeader) {
+      baseSize += 8L /* typeId + nullsSize */
+    }
+    if ((columnData eq null) || (columnData.limit() < (baseSize + defSize))) {
+      var initByteSize = 0L
+      if (reuseUsedSize > baseSize + defSize) {
         initByteSize = reuseUsedSize
       } else {
-        initByteSize = defSize.toLong * initSize + numNullBytes
-        if (withHeader) {
-          initByteSize += 8L /* typeId + nullsSize */
-        }
+        initByteSize = defSize.toLong * initSize + baseSize
       }
       setSource(allocator.allocate(checkBufferSize(initByteSize)),
         releaseOld = true)
@@ -1129,7 +1130,7 @@ trait NullableEncoder extends NotNullEncoder {
     // trim trailing empty words
     val numWords = getNumNullWords
     // maximum number of null words that can be allowed to go waste in storage
-    val maxWastedWords = 50
+    val maxWastedWords = 8
     // check if the number of words to be written matches the space that
     // was left at initialization; as an optimization allow for larger
     // space left at initialization when one full data copy can be avoided
@@ -1149,8 +1150,7 @@ trait NullableEncoder extends NotNullEncoder {
       val numNullBytes = numWords << 3
       val initialNullBytes = initialNumWords << 3
       val oldSize = cursor - baseOffset
-      val newSize = math.min(Int.MaxValue - 1,
-        oldSize + numNullBytes - initialNullBytes).toInt
+      val newSize = checkBufferSize(oldSize + numNullBytes - initialNullBytes)
       val storageAllocator = this.storageAllocator
       val newColumnData = storageAllocator.allocate(newSize)
 
