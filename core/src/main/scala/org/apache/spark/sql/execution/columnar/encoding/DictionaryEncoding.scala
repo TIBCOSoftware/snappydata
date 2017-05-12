@@ -225,6 +225,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       withHeader: Boolean, allocator: ColumnAllocator): Long = {
     assert(withHeader, "DictionaryEncoding not supported without header")
 
+    setAllocator(allocator)
     Utils.getSQLDataType(field.dataType) match {
       case StringType =>
         if (stringMap eq null) {
@@ -246,7 +247,6 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         longArray = new TLongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
     }
-    setAllocator(allocator)
     initializeLimits()
     initializeNulls(initSize)
     // start with the short dictionary having 2 byte indexes
@@ -407,7 +407,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     // lastly copy the index bytes
     val position = columnData.position()
     columnData.position((cursor - baseOffset).toInt)
-    copyTo(columnData, 0, numIndexBytes)
+    copyTo(columnData, srcOffset = 0, numIndexBytes)
     columnData.position(position)
 
     // reuse this index data in next round if possible
