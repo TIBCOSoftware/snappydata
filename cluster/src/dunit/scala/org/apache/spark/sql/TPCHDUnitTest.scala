@@ -35,7 +35,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     with Logging {
 
   override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
-  val queries2 = Array("1")
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")
@@ -53,7 +52,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
 
-  def _testSnappy(): Unit = {
+  def testSnappy(): Unit = {
     startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
 
@@ -227,7 +226,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     TPCHUtils.validateResult(snc, isSnappy = false)
   }
 
-  def _testSnap1296_1297(): Unit = {
+  def testSnap1296_1297(): Unit = {
     val snc = SnappyContext(sc)
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)

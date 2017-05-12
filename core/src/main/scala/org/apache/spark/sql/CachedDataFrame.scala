@@ -307,7 +307,6 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   def reprepareBroadcast(lp: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
-    println(s"All bc plans = ${allbcplans} numsuch = ${allbcplans.size}")
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
         println(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
