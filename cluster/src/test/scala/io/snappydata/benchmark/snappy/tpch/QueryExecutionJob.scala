@@ -42,7 +42,8 @@ object QueryExecutionJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
 
-    val avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Snappy_Average.out"))
+    val avgFileStream: FileOutputStream = new FileOutputStream(
+            new File(s"${threadNumber}_Snappy_Average.out"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
 
     for (prop <- sqlSparkProperties) {
@@ -55,7 +56,7 @@ object QueryExecutionJob extends SnappySQLJob {
 
     for (i <- 1 to 1) {
       for (query <- queries) {
-        QueryExecutor.execute(query, "Snappy_" + query, snc, isResultCollection, isSnappy,
+        QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
           threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
       }
     }

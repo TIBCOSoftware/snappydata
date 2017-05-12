@@ -210,9 +210,9 @@ object TPCHUtils extends Logging {
 
     val buckets_Order_Lineitem = "5"
     val buckets_Cust_Part_PartSupp = "5"
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath,
+    TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath,
       isSnappy, buckets_Order_Lineitem, null)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath,
+    TPCHColumnPartitionedTable.createPopulateLineItemTable(snc, tpchDataPath,
       isSnappy, buckets_Order_Lineitem, null)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath,
       isSnappy, buckets_Cust_Part_PartSupp, null)
@@ -312,8 +312,6 @@ object TPCHUtils extends Logging {
 //    queries.foreach(query => TPCH_Snappy.execute(query, snc,
 //      isResultCollection, isSnappy, warmup = warmup,
 //      runsForAverage = runsForAverage, avgPrintStream = System.out))
-    queries.foreach(query => QueryExecutor.execute(query, "Snappy_" + query + fileName, snc,
-      isResultCollection, isSnappy, isDynamic = isDynamic, warmup = warmup,
-      runsForAverage = runsForAverage, avgPrintStream = System.out))
+    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection, isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage, avgPrintStream = System.out))
   }
 }
