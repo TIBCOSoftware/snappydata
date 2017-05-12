@@ -338,7 +338,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
 
-  def testMemoryAfterRecovery_ColumnTable(): Unit = {
+  def IGNORE_testMemoryAfterRecovery_ColumnTable(): Unit = {
 
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
@@ -374,7 +374,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
 
-  def testMemoryAfterRecovery_RowTable(): Unit = {
+  def IGNORE_testMemoryAfterRecovery_RowTable(): Unit = {
 
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
