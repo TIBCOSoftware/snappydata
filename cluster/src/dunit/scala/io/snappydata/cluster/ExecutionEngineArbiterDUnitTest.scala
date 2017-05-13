@@ -119,14 +119,14 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
 
             // scalastyle:off println
             if (queryText.equals(query)) {
-              println("SKSK callback getting invoked for follwoing query" +
+              println("callback getting invoked for following query" +
                   query + " queryText :" + queryText)
               if (executeOnSpark) {
-                println("SKSK callback getting invoked for follwoing query : asserting spark")
+                println("callback getting invoked for following query : asserting spark")
                 assert(engine == ExecutionEngine.SPARK)
               }
               else {
-                println("SKSK callback getting invoked for follwoing query : asserting store")
+                println("callback getting invoked for following query : asserting store")
                 assert(engine == ExecutionEngine.STORE)
               }
             }
