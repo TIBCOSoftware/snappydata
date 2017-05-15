@@ -133,6 +133,25 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info("SnappyContext stopped successfully");
   }
 
+  public static void initTest() {
+    HostDescription hd = TestConfig.getInstance().getMasterDescription()
+        .getVmDescription().getHostDescription();
+    String gemfireHome = hd.getGemFireHome() + sep;
+    String productDir = gemfireHome + ".." + sep + "snappy" + sep;
+    String productConfDirPath = productDir + "conf" + sep;
+    String productLibsDir = productDir + "lib" + sep;
+    String productSbinDir = productDir + "sbin" + sep;
+    String productBinDir = productDir + "bin" + sep;
+    String SnappyShellPath = productBinDir + "snappy-sql";
+    String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
+    String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
+    String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
+    String dtestsScriptLocation = dtestsResourceLocation + "scripts" + sep;
+    String dtestsDataLocation = dtestsResourceLocation + "data" + sep;
+    String quickstartScriptLocation = productDir + "quickstart" + sep + "scripts" + sep;
+    String quickstartDataLocation = productDir + "quickstart" + sep + "data" + sep;
+  }
+
   public static synchronized void HydraTask_initializeSnappyTest() {
     if (snappyTest == null) {
       snappyTest = new SnappyTest();
@@ -217,7 +236,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public String getScriptLocation(String scriptName) {
+  public static String getScriptLocation(String scriptName) {
     String scriptPath = null;
     if (new File(scriptName).exists()) return scriptName;
     scriptPath = productSbinDir + scriptName;
@@ -1480,7 +1499,7 @@ public class SnappyTest implements Serializable {
     return primaryLocatorPort;
   }
 
-  public void executeProcess(ProcessBuilder pb, File logFile) {
+  public static void executeProcess(ProcessBuilder pb, File logFile) {
     Process p = null;
     try {
       pb.redirectErrorStream(true);
@@ -1777,7 +1796,7 @@ public class SnappyTest implements Serializable {
   }
 
   public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar,
-      String jarPath, String appName) {
+                               String jarPath, String appName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
@@ -2276,11 +2295,12 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSparkCluster() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("stop-all.sh"));
+      initTest();
+      ProcessBuilder pb = new ProcessBuilder(getScriptLocation("stop-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
       File logFile = new File(dest);
-      snappyTest.executeProcess(pb, logFile);
+      executeProcess(pb, logFile);
       SnappyBB.getBB().getSharedCounters().zero(SnappyBB.sparkClusterStarted);
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
@@ -2354,11 +2374,12 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSnappyCluster() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
+      initTest();
+      ProcessBuilder pb = new ProcessBuilder(getScriptLocation("snappy-stop-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
-      snappyTest.executeProcess(pb, logFile);
+      executeProcess(pb, logFile);
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
       throw new TestException(s, e);

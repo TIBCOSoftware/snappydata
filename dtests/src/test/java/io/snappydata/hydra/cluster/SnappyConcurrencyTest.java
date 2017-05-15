@@ -39,11 +39,17 @@ public class SnappyConcurrencyTest extends SnappyTest {
     Connection conn = getLocatorConnection();
     ResultSet rs;
     try {
+      Log.getLogWriter().info("SS - Executing query : " + query);
       rs = conn.createStatement().executeQuery(query);
       SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
-      SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numpointLookUpQueriesExecuted);
+      int numQueries = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
+      Log.getLogWriter().info("SS - numQueriesExecuted : " +  numQueries);
+      SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numPointLookUpQueriesExecuted);
+      int numPointLookUpQueries = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB
+          .numPointLookUpQueriesExecuted);
+      Log.getLogWriter().info("SS - numPointLookUpQueriesExecuted : " +  numPointLookUpQueries);
     } catch (SQLException se) {
-      throw new TestException("Got exception while executing select query.", se);
+      throw new TestException("Got exception while executing pointLookUp query:" + query, se);
     }
     /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
     List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
@@ -57,9 +63,19 @@ public class SnappyConcurrencyTest extends SnappyTest {
     String query = null;
     int queryNum = new Random().nextInt(queryVect.size());
     query = (String) queryVect.elementAt(queryNum);
-    ResultSet rs = conn.createStatement().executeQuery(query);
-    SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
-    SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
+    ResultSet rs;
+    try {
+      Log.getLogWriter().info("SS - Executing query : " + query);
+      rs = conn.createStatement().executeQuery(query);
+      SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
+      int numQueries = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
+      Log.getLogWriter().info("SS - numQueriesExecuted : " + numQueries);
+      SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
+      int numAggregationQueries = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
+      Log.getLogWriter().info("SS - numAggregationQueriesExecuted : " + numAggregationQueries);
+    } catch (SQLException se) {
+      throw new TestException("Got exception while executing Analytical query:" + query, se);
+    }
     /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
     List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
     Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());*/
@@ -68,12 +84,13 @@ public class SnappyConcurrencyTest extends SnappyTest {
 
   public static void validateNumQueriesExecuted() throws SQLException {
     int numQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
-    int numpointLookUpQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numpointLookUpQueriesExecuted);
+    int numpointLookUpQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB
+        .numPointLookUpQueriesExecuted);
     int numAggregationQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numAggregationQueriesExecuted);
-    Log.getLogWriter().info("Total number of queries executed : " + numQueriesExecuted);
-    Log.getLogWriter().info("Total number of pointLookUp queries executed : " +
+    Log.getLogWriter().info("SS - Total number of queries executed : " + numQueriesExecuted);
+    Log.getLogWriter().info("SS - Total number of pointLookUp queries executed : " +
         numpointLookUpQueriesExecuted);
-    Log.getLogWriter().info("Total number of analytical queries executed : " + numAggregationQueriesExecuted);
+    Log.getLogWriter().info("SS - Total number of analytical queries executed : " + numAggregationQueriesExecuted);
   }
 
 }

@@ -33,7 +33,7 @@ THREADGROUP snappyClientAThreads
             totalThreads = fcn "(${${E}Hosts} * ${${E}VMsPerHost} *  ${${E}ThreadsPerVM}) " ncf
             totalVMs     = fcn "(${${E}Hosts} * ${${E}VMsPerHost})" ncf
             clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${E}\",
-                                ${${D}Hosts}, true)" ncf;
+                                ${${E}Hosts}, true)" ncf;
 
 THREADGROUP snappyThreads
             totalThreads = 1
@@ -95,11 +95,11 @@ CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             threadGroups = snappyThreads
             ;
 
-CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
-            threadGroups = snappyThreads;
+ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
+            clientNames = locator1;
 
-CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_deleteSnappyConfig
-            threadGroups = snappyThreads;
+ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_deleteSnappyConfig
+            clientNames = locator1;
 
 ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cleanUpSnappyProcessesOnFailure
             clientNames = locator1;

@@ -74,6 +74,6 @@ public class SnappyBB extends Blackboard {
   public static int queryCounter;
   public static int numServers;
   public static int numQueriesExecuted;
-  public static int numpointLookUpQueriesExecuted;
+  public static int numPointLookUpQueriesExecuted;
   public static int numAggregationQueriesExecuted;
 }
