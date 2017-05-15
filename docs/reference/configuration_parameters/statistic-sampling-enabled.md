@@ -8,7 +8,7 @@ Turning statistics sampling off saves on resources, but it also takes away poten
 
 ## Default Value
 
-false
+true
 
 ## Property Type
 
