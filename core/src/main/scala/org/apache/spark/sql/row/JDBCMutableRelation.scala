@@ -28,7 +28,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.execution.row.RowInsertExec
+import org.apache.spark.sql.execution.row.RowDMLExec
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -177,7 +177,13 @@ case class JDBCMutableRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowInsertExec(child, upsert = false, Seq.empty, Seq.empty, -1,
+    RowDMLExec(child, upsert = false, delete = false, Seq.empty, Seq.empty, -1,
+      schema, Some(this), onExecutor = false, table, connProperties)
+  }
+
+  override def getDeletePlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    RowDMLExec(child, upsert = false, delete = true, Seq.empty, Seq.empty, -1,
       schema, Some(this), onExecutor = false, table, connProperties)
   }
 

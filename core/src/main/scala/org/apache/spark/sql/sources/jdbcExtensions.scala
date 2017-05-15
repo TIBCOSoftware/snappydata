@@ -304,6 +304,24 @@ object JdbcExtendedUtils extends Logging {
     sql.toString()
   }
 
+  /**
+   * Returns the SQL for prepare to insert or put rows into a table.
+   */
+  def getDeleteString(table: String, rddSchema: StructType): String = {
+    val sql = new StringBuilder()
+    sql.append(s"DELETE FROM $table WHERE ")
+    var fieldsLeft = rddSchema.fields.length
+    rddSchema.fields.foreach { field =>
+      sql.append(field.name).append('=').append('?')
+      if (fieldsLeft > 1) sql.append(" AND ")
+      fieldsLeft -= 1
+    }
+
+    sql.toString()
+  }
+
+
+
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
       schema: StructType, resolvedName: String, upsert: Boolean): Int = {
     val session = sparkSession.asInstanceOf[SnappySession]

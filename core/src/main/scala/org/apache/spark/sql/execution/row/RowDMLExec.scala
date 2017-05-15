@@ -21,7 +21,7 @@ import java.sql.{Connection, PreparedStatement}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.{SparkPlan, TableInsertExec}
+import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -29,11 +29,11 @@ import org.apache.spark.sql.types.{StructField, StructType}
 /**
  * Generated code plan for bulk insertion into a row table.
  */
-case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
+case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
     partitionColumns: Seq[String], _partitionExpressions: Seq[Expression],
     _numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
     onExecutor: Boolean, resolvedName: String, connProps: ConnectionProperties)
-    extends TableInsertExec(_child, partitionColumns, _partitionExpressions,
+    extends TableExec(_child, partitionColumns, _partitionExpressions,
       _numBuckets, tableSchema, relation, onExecutor) {
 
   private[sql] var statementRef = -1
@@ -60,11 +60,15 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
       val conn = ctx.freshName("connection")
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       ctx.addMutableState(connectionClass, conn, "")
-      val rowInsertStr = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
-        tableSchema, upsert)
+      val rowDMLStr = if (delete) {
+        JdbcExtendedUtils.getDeleteString(resolvedName, tableSchema)
+      } else {
+        JdbcExtendedUtils.getInsertOrPutString(resolvedName,
+          tableSchema, upsert)
+      }
       (
           s"""final $statementClass $stmt = $conn.prepareStatement(
-              "$rowInsertStr");""",
+              "$rowDMLStr");""",
           s"""$conn = $utilsClass.MODULE$$.getConnection(
                "$resolvedName", $props, true);""",
           s""" finally {
@@ -124,4 +128,16 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
        |}
     """.stripMargin
   }
+
+  override def nodeName: String = {
+    if(upsert) {
+      "RowUpsert"
+    } else if (delete) {
+      "RowDelete"
+    } else {
+      "RowInsert"
+    }
+  }
+
+  override def simpleString: String = nodeName + tableSchema.mkString(",")
 }

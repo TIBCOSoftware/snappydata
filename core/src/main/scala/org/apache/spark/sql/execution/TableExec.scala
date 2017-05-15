@@ -36,7 +36,7 @@ import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClie
 /**
  * Common methods for bulk inserts into column and row tables.
  */
-abstract class TableInsertExec(override val child: SparkPlan,
+abstract class TableExec(override val child: SparkPlan,
     partitionColumns: Seq[String], val partitionExpressions: Seq[Expression],
     val numBuckets: Int, relationSchema: StructType,
     relation: Option[DestroyRelation], onExecutor: Boolean)

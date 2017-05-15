@@ -633,7 +633,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
         case _ => agg
       }
 
-    case t: TableInsertExec =>
+    case t: TableExec =>
       if (t.partitioned &&
           t.child.outputPartitioning.numPartitions != t.numBuckets) {
         // force shuffle when inserting into a table with different partitions

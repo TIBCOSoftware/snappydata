@@ -41,7 +41,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
-import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
+import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowDMLExec}
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter, JdbcExtendedUtils}
@@ -247,7 +247,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               otherRDDs = Seq.empty, numBuckets = -1,
               partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
               baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs)
-            val insertPlan = RowInsertExec(tableScan, upsert = true,
+            val insertPlan = RowDMLExec(tableScan, upsert = true, delete = false,
               Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
               resolvedName = null, connProperties)
             // now generate the code with the help of WholeStageCodegenExec
