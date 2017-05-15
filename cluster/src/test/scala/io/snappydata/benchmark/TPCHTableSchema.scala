@@ -112,7 +112,7 @@ object TPCHTableSchema {
   }
 
   case class StreamMessageOrderObject(
-      o_orderkey: Int,
+      o_orderkey: Long,
       o_custkey: Int,
       o_orderstatus: String,
       o_totalprice: Double,
@@ -142,7 +142,7 @@ object TPCHTableSchema {
 
   def parseOrderRow(s: Array[String]): StreamMessageOrderObject = {
     StreamMessageOrderObject(
-      s(0).toInt,
+      s(0).toLong,
       s(1).toInt,
       s(2),
       s(3).toDouble,
@@ -155,7 +155,7 @@ object TPCHTableSchema {
   }
 
   case class StreamMessageLineItemObject(
-      l_orderkey: Int,
+      l_orderkey: Long,
       l_partkey: Int,
       l_suppkey: Int,
       l_linenumber: Int,
@@ -198,7 +198,7 @@ object TPCHTableSchema {
 
   def parseLineItemRow(s: Array[String]): StreamMessageLineItemObject = {
     StreamMessageLineItemObject(
-      s(0).toInt,
+      s(0).toLong,
       s(1).toInt,
       s(2).toInt,
       s(3).toInt,
