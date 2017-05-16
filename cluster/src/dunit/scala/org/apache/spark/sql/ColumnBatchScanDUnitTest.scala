@@ -38,7 +38,7 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // reduce the batch size to ensure that multiple are created
 
     snc.sql(s"create table if not exists airline ($ddlStr) " +
-        s" using column options (Buckets '2', COLUMN_BATCH_SIZE '4')")
+        s" using column options (Buckets '2', COLUMN_BATCH_SIZE '400')")
 
     import snc.implicits._
 
