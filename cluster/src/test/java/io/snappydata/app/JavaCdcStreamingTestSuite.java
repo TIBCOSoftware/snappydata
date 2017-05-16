@@ -49,7 +49,8 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
         .format("snappystore")
         .option("sink", ProcessEvents.class.getName())
         .option("checkpointLocation",
-            Utils.createTempDir(System.getProperty("java.io.tmpdir"), "tmg-spark" )
+            Utils.createTempDir("/data/wrk/w/snappydata/build-artifacts/scala-2.11/" +
+                "snappy/work/localhost-lead-1", "tmg-spark" )
             .getCanonicalPath())
         .option("tableName", tableName)
         .start();
@@ -60,7 +61,8 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
     private static Logger log = Logger.getLogger(ProcessEvents.class.getName());
 
     @Override
-    public void process(SnappySession snappySession, Properties sinkProps, Dataset<Row> df) {
+    public void process(SnappySession snappySession, Properties sinkProps,
+        long batchId, Dataset<Row> df) {
 
       /*
         NOTES:
@@ -78,7 +80,7 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
       String sqlsrvTable = sinkProps.getProperty("tableName").toUpperCase();
       String table = sqlsrvTable.substring(sqlsrvTable.indexOf("DBO_") + 4,
           sqlsrvTable.indexOf("_CT"));
-      log.info("SB: Processing for " + table);
+      log.info("SB: Processing for " + table + " batchId " + batchId);
 
       /* --------------[ Preferred Way ] ----------------
 
@@ -188,26 +190,45 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
     Collections.addAll(newArgs, args);
 
     BiPredicate<String, String> idxOf = (a, b) -> a.indexOf(b) > 0 || b.indexOf(a) > 0;
-    if(!contains(args, "-driver", idxOf)) {
-      newArgs.add("-driver=com.microsoft.sqlserver.jdbc.SQLServerDriver");
+    if(!contains(args, "driver", idxOf)) {
+      newArgs.add("driver=com.microsoft.sqlserver.jdbc.SQLServerDriver");
     }
-    if(!contains(args, "-url", idxOf)) {
-      newArgs.add("-url=jdbc:sqlserver://snappydb16.westus.cloudapp.azure.com:1433");
+    if(!contains(args, "url", idxOf)) {
+      newArgs.add("url=jdbc:sqlserver://snappydb16.westus.cloudapp.azure.com:1433");
     }
-    if(!contains(args, "-user", idxOf)) {
-      newArgs.add("-user=sqldb");
+    if(!contains(args, "user", idxOf)) {
+      newArgs.add("user=sqldb");
     }
-    if(!contains(args, "-password", idxOf)) {
-      newArgs.add("-password=snappydata#msft1");
-    }
-
-    if(!contains(args, "-snappyurl", idxOf)) {
-      newArgs.add("-snappyurl=localhost:1527");
+    if(!contains(args, "password", idxOf)) {
+      newArgs.add("password=snappydata#msft1");
     }
 
-    if(!contains(args, "-tables", idxOf)) {
-      newArgs.add("-tables=tengb.cdc.dbo_customer_CT");
+    if(!contains(args, "snappydata.Cluster.URL", idxOf)) {
+      newArgs.add("snappydata.Cluster.URL=localhost:1527");
     }
+
+    if(!contains(args, "tables", idxOf)) {
+      newArgs.add("tables=tengb.cdc.dbo_customer_CT");
+    }
+
+    if(!contains(args, "databaseName", idxOf)) {
+      newArgs.add("databaseName=tengb");
+    }
+
+    if(!contains(args, "pollInternal", idxOf)) {
+      newArgs.add("pollInternal=30"); // poll for CDC events once every 30 seconds
+    }
+
+    if(!contains(args, "conflate", idxOf)) {
+      newArgs.add("conflate=true"); // conflate the events
+    }
+
+    if(!contains(args, "fullMode", idxOf)) {
+      // clears the recorded state
+      // and starts from begining of the table.
+      newArgs.add("fullMode=false");
+    }
+
     return (String[]) newArgs.toArray(new String[newArgs.size()]);
   }
 

@@ -25,7 +25,8 @@ import org.apache.spark.sql.streaming.OutputMode
 import org.apache.spark.util.Utils
 
 trait SnappyStreamSink {
-  def process(snappySession: SnappySession, sinkProps: Properties, df: Dataset[Row]): Unit
+  def process(snappySession: SnappySession, sinkProps: Properties,
+      batchId: Long, df: Dataset[Row]): Unit
 }
 
 class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister {
@@ -38,7 +39,7 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
     val props = new Properties()
     parameters.foreach { case (k, v) => props.setProperty(k, v) }
     val cc = Utils.classForName(parameters("sink")).newInstance()
-    SnappyStoreSink(sqlContext, props,
+    SnappyStoreSink(sqlContext.asInstanceOf[SnappyContext].snappySession, props,
       cc.asInstanceOf[SnappyStreamSink])
   }
 
@@ -46,11 +47,11 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
   def shortName(): String = "snappystore"
 }
 
-case class SnappyStoreSink(sqlContext: SQLContext,
+case class SnappyStoreSink(snappySession: SnappySession,
     properties: Properties, sink: SnappyStreamSink) extends Sink {
 
   @Override
   def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
-    sink.process(sqlContext.asInstanceOf[SnappyContext].snappySession, properties, data)
+    sink.process(snappySession, properties, batchId, data)
   }
 }

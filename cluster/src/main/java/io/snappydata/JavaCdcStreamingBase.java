@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.BiConsumer;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.Dataset;
@@ -33,12 +34,8 @@ import org.apache.spark.sql.streaming.StreamingQuery;
 public abstract class JavaCdcStreamingBase {
 
   private final String extraClassPath;
-  private final String driver;
-  private final String url;
-  private final String user;
   private final ArrayList<String> tables = new ArrayList<>();
   private final Map<String, String> extraConfProps;
-  private String snappydataURL;
 
   public JavaCdcStreamingBase(String[] args, Map<String, String> extraConfProps) throws Exception {
     if (args.length < 6) {
@@ -52,13 +49,9 @@ public abstract class JavaCdcStreamingBase {
       this.initProps.setProperty(arg[0], arg[1]);
     }
 
-    this.extraClassPath = initProps.getProperty("-extraClassPath") != null ? initProps
-        .getProperty("-extraClassPath") : "";
-    this.driver = initProps.getProperty("-driver");
-    this.url = initProps.getProperty("-url");
-    this.user = initProps.getProperty("-user");
-    Collections.addAll(this.tables, initProps.getProperty("-tables").split(","));
-    this.snappydataURL = initProps.getProperty("-snappyurl");
+    this.extraClassPath = initProps.getProperty("extraClassPath");
+
+    Collections.addAll(this.tables, initProps.getProperty("tables").split(","));
 
     this.extraConfProps = extraConfProps;
   }
@@ -74,20 +67,33 @@ public abstract class JavaCdcStreamingBase {
   protected abstract SparkConf extraConf(SparkConf conf);
 
   protected SnappySession connect() throws ClassNotFoundException {
-    Class.forName(this.driver);
-    SparkConf conf = new SparkConf().
-        setAppName(this.getClass().getName()).
-        setJars(extraClassPath.split(File.pathSeparator)).
-        set("spark.driver.extraClassPath", extraClassPath).
-        set("spark.executor.extraClassPath", extraClassPath).
-        set("snappydata.Cluster.URL", snappydataURL);
+    Class.forName(initProps.getProperty("driver"));
+    final SparkConf conf = new SparkConf().
+        setAppName(this.getClass().getName());
+    if (extraClassPath != null) {
+      conf.setJars(extraClassPath.split(File.pathSeparator))
+          .set("spark.driver.extraClassPath", extraClassPath)
+          .set("spark.executor.extraClassPath", extraClassPath);
+    }
+
+    initProps.forEach((k, v) -> {
+      String keyStr = k.toString();
+      if (keyStr.startsWith("snappydata.") || keyStr.startsWith("spark.")) {
+        conf.set(keyStr, v.toString());
+      }
+      // special handling until case of this property is changed to all lower case.
+      else if (keyStr.toLowerCase().startsWith("snappydata.Cluster.URL".toLowerCase())) {
+        conf.set("snappydata.Cluster.URL", v.toString());
+      }
+    });
+
     //    set("snappydata.store.locators", "localhost[10334]");
 
-    conf = extraConf(conf);
-    conf = conf.setIfMissing("spark.master", "local[12]");
+    SparkConf newConf = extraConf(conf);
+    newConf.setIfMissing("spark.master", "local[12]");
     snappySpark = new SnappySession(SparkSession.
         builder().
-        config(conf).
+        config(newConf).
         getOrCreate().sparkContext());
     return snappySpark;
   }
@@ -99,16 +105,13 @@ public abstract class JavaCdcStreamingBase {
     ArrayList<StreamingQuery> activeQueries = new ArrayList<>(tables.size());
     for (String tab : tables) {
       DataStreamReader conf = snappySpark.readStream()
-          .format("jdbcStream")
-          .option("partition.1", "clientid > 1 and clientid < 100")
-          .option("driver", driver)
-          .option("url", url)
-          .option("dbtable", tab)
-//          .option("dbtable", "(select top 100000 * from " + tab + ") x")
-          .option("user", user)
-          .option("password", initProps.getProperty("-password"))
-          .option("pollInternal", "30")  // poll for CDC events once every 30 seconds
-          .option("conflate", "true"); // conflate the events
+          .format("jdbcStream");
+
+      initProps.forEach((k, v) -> {
+        conf.option(k.toString(), v.toString());
+      });
+      conf.option("dbtable", tab);
+
       for (Map.Entry<String, String> e : extraConfProps.entrySet()) {
         conf.option(e.getKey(), e.getValue());
       }

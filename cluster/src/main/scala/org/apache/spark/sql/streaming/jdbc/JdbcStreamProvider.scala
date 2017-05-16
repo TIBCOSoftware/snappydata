@@ -19,6 +19,9 @@ package org.apache.spark.sql.streaming.jdbc
 import java.sql.DriverManager
 import java.util.Properties
 
+import scala.util.Try
+
+import org.apache.spark.Logging
 import org.apache.spark.sql.{DataFrame, DataFrameReader, SQLContext}
 import org.apache.spark.sql.execution.streaming.{Offset, Source}
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSourceProvider}
@@ -57,39 +60,80 @@ class JdbcStreamProvider extends StreamSourceProvider with DataSourceRegister {
   override def shortName(): String = "jdbcStream"
 }
 
-case class LSN(lsn: Any) extends Offset
+case class LSN(lsn: String) extends Offset
 
 case class JDBCSource(@transient sqlContext: SQLContext,
-    parameters: Map[String, String]) extends Source {
-
-  private var lastOffset: Option[LSN] = {
-    Some(LSN("0x000005ad0001cda000cd"))
-    //None
-  }
-
-  private val connProps = {
-    val props = new Properties()
-    parameters.foreach { case (k, v) =>
-      props.setProperty(k, v)
-    }
-    props
-  }
+    parameters: Map[String, String]) extends Source with Logging {
 
   private val partitioner = {
-    parameters("partition.1")
+    parameters.get("partitionBy")
   }
 
   private val dbtable = parameters("dbtable")
 
-  private val offsetCol = parameters("offsetColumn")
+  private val offsetCol = parameters("jdbc.offsetColumn")
 
-  private val offsetToStrFunc = parameters("offsetToStrFunc")
+  private val offsetToStrFunc = parameters("jdbc.offsetToStrFunc")
 
-  private val strToOffsetFunc = parameters("strToOffsetFunc")
+  private val strToOffsetFunc = parameters("jdbc.strToOffsetFunc")
 
-  private val offsetIncFunc = parameters("offsetIncFunc")
+  private val offsetIncFunc = parameters("jdbc.offsetIncFunc")
 
-  private val getNextOffset = parameters.getOrElse("getNextOffset", null)
+  private val getNextOffset = parameters.get("jdbc.getNextOffset")
+
+  private val streamStateTable = "SNAPPY_JDBC_STREAM_CONTEXT"
+
+  private val srcControlConn = {
+    val connProps = parameters.foldLeft(new Properties()) {
+      case (prop, (k, v)) if !k.toLowerCase.startsWith("snappydata.cluster.") =>
+        prop.setProperty(k, v)
+        prop
+      case (p, _) => p
+    }
+    DriverManager.getConnection(parameters("url"), connProps)
+  }
+
+  def createContextTableIfNotExist() = {
+    val rs = srcControlConn.getMetaData.getTables(null, null, streamStateTable, null)
+    if (!rs.next()) {
+      logInfo(s"$streamStateTable table not found. creating ..")
+      if (!srcControlConn.createStatement().execute(s"create table $streamStateTable(" +
+          " tableName varchar(200) primary key," +
+          " lastOffset varchar(100)" +
+          ")")) {
+        logWarning(s"$streamStateTable couldn't be created on the jdbc source $this")
+      }
+    }
+  }
+
+  createContextTableIfNotExist()
+
+  private lazy val stateTableUpdate = srcControlConn.prepareStatement(s"update $streamStateTable " +
+      s" set lastOffset = ? where tableName = ?")
+
+  private var lastOffset: Option[LSN] = {
+    val rs = srcControlConn.createStatement().executeQuery("select lastOffset from " +
+        s"$streamStateTable where tableName = '$dbtable'")
+    try {
+      if (rs.next()) {
+        if (parameters.getOrElse("fullMode", "false").toBoolean) {
+          val rowsEffected = srcControlConn.createStatement().executeUpdate("delete from " +
+              s"$streamStateTable where tableName = '$dbtable'")
+          if (rowsEffected != 0) {
+            logInfo(s"cleared the last known state for $dbtable recorded offset ${rs.getString(1)}")
+          }
+          None
+        }
+        else {
+          Some(LSN(rs.getString(1)))
+        }
+      } else {
+        None
+      }
+    } finally {
+      rs.close()
+    }
+  }
 
   private def reader =
     parameters.foldLeft(sqlContext.sparkSession.read)({
@@ -101,10 +145,10 @@ case class JDBCSource(@transient sqlContext: SQLContext,
 
   private def getNextOffsetQuery(l: LSN): String = {
     getNextOffset match {
-      case null =>
+      case None =>
         s"(select $offsetToStrFunc(min($offsetCol)) nxtOffset from $dbtable " +
             s" where $offsetCol > $offsetIncFunc($strToOffsetFunc('${l.lsn}'))) getNextOffset "
-      case query => val replaceQ = query
+      case Some(query) => val replaceQ = query
             .replaceAll("\\$table", dbtable)
             .replaceAll("\\$currentOffset", l.lsn.toString)
         s"( $replaceQ ) getNextOffset"
@@ -119,10 +163,17 @@ case class JDBCSource(@transient sqlContext: SQLContext,
     val nextBatch = execute(
       lastOffset.fold(s"(select $offsetToStrFunc(min($offsetCol)) newOffset from $dbtable) " +
           s"getFirstOffset ")(getNextOffsetQuery))
-    nextBatch.collect()(0).get(0) match {
-      case null =>
-      case max =>
-        lastOffset = Some(LSN(max))
+    val row = nextBatch.collect()(0)
+    if (!row.isNullAt(0)) {
+      lastOffset = Some(LSN(row.getString(0)))
+      stateTableUpdate.setString(1, lastOffset.get.lsn)
+      stateTableUpdate.setString(2, dbtable)
+      val rowsEffected = stateTableUpdate.executeUpdate()
+      if (rowsEffected == 0) {
+        val rowsInserted = srcControlConn.createStatement().executeUpdate(s"insert into " +
+            s"$streamStateTable values ('$dbtable', '${lastOffset.get.lsn}') ")
+        assert(rowsInserted == 1)
+      }
     }
 
     lastOffset
