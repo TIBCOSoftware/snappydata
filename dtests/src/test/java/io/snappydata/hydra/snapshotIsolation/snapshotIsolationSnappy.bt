@@ -6,7 +6,7 @@ io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_Replicated
   redundantCopies=1  persistenceMode="sync"
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby/"
   derbyDataLocation="/export/shared/QA_DATA/northWind_1G"
-  tableType="Column"
+  tableType="ReplicateRow"
 
 io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_PartitionedTable.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -16,7 +16,7 @@ io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_Partitione
   redundantCopies=1  persistenceMode="sync"
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby/"
   derbyDataLocation="/export/shared/QA_DATA/northWind_1G"
-  tableType="Column"
+  tableType="PartitionedRow"
 
 io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_ColumnTable.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -36,5 +36,5 @@ io/snappydata/hydra/snapshotIsolation/testSnapshotForSelectWithInsert_ColocatedT
   redundantCopies=1  persistenceMode="sync"
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby/"
   derbyDataLocation="/export/shared/QA_DATA/northWind_1G"
-  tableType="Column"
+  tableType="ColocatedColumn"
 
