@@ -657,6 +657,7 @@ trait ColumnEncoder extends ColumnEncoding {
     if (writeNumElements) {
       writeIntUnchecked(position + skipBytes - 4, numElements)
     }
+    updateCount()
     position + fixedWidth
   }
 
