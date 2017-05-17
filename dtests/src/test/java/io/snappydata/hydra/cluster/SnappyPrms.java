@@ -442,12 +442,20 @@ public class SnappyPrms extends BasePrms {
 
   public static String getLocatorMemory() {
     Long key = locatorMemory;
-    return tab().stringAt(key, "1G");
+    String locatorHeapSize = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+        null));
+    if (locatorHeapSize == null) return "";
+    locatorHeapSize = " -heap-size=" + locatorHeapSize;
+    return locatorHeapSize;
   }
 
   public static String getServerMemory() {
     Long key = serverMemory;
-    return tab().stringAt(key, "4G");
+    String serverHeapSize = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+        null));
+    if (serverHeapSize == null) return "";
+    serverHeapSize = " -heap-size=" + serverHeapSize;
+    return serverHeapSize;
   }
 
   public static String getCriticalHeapPercentage() {
@@ -471,7 +479,11 @@ public class SnappyPrms extends BasePrms {
 
   public static String getLeadMemory() {
     Long key = leadMemory;
-    return tab().stringAt(key, "1G");
+    String leadHeapSize = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+        null));
+    if (leadHeapSize == null) return "";
+    leadHeapSize = " -heap-size=" + leadHeapSize;
+    return leadHeapSize;
   }
 
   public static String getSparkSchedulerMode() {

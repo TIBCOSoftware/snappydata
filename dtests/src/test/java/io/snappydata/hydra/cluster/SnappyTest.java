@@ -158,6 +158,28 @@ public class SnappyTest implements Serializable {
     }
   }
 
+
+  public static void initSnappyArtifacts() {
+    snappyTest = new SnappyTest();
+    HostDescription hd = TestConfig.getInstance().getMasterDescription()
+        .getVmDescription().getHostDescription();
+    char sep = hd.getFileSep();
+    String gemfireHome = hd.getGemFireHome() + sep;
+    String productDir = gemfireHome + ".." + sep + "snappy" + sep;
+    String productConfDirPath = productDir + "conf" + sep;
+    String productLibsDir = productDir + "lib" + sep;
+    String productSbinDir = productDir + "sbin" + sep;
+    String productBinDir = productDir + "bin" + sep;
+    String SnappyShellPath = productBinDir + "snappy-sql";
+    String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
+    String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.11" + sep + "libs" + sep;
+    String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
+    String dtestsScriptLocation = dtestsResourceLocation + "scripts" + sep;
+    String dtestsDataLocation = dtestsResourceLocation + "data" + sep;
+    String quickstartScriptLocation = productDir + "quickstart" + sep + "scripts" + sep;
+    String quickstartDataLocation = productDir + "quickstart" + sep + "data" + sep;
+  }
+
   protected String getStoreTestsJar() {
     String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
         hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
@@ -317,7 +339,7 @@ public class SnappyTest implements Serializable {
       case SERVER:
         locatorsList = getLocatorsList("locators");
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" +
-            dirPath + clientPort + port + " -heap-size=" + SnappyPrms.getServerMemory()
+            dirPath + clientPort + port + SnappyPrms.getServerMemory()
             + SnappyPrms.getConserveSockets() +
             " -J-Dgemfirexd.table-default-partitioned=" +
             SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
@@ -326,6 +348,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             " -J-XX:+DisableExplicitGC" +
+            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
             SnappyPrms.getGCOptions(dirPath) + " " +
             SnappyPrms.getServerLauncherProps() +
             " -classpath=" + getStoreTestsJar();
@@ -343,7 +366,7 @@ public class SnappyTest implements Serializable {
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList +
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
             //" -spark.local.dir=" + snappyTest.getTempDir("temp") +
-            " -dir=" + dirPath + clientPort + port + " -heap-size=" +
+            " -dir=" + dirPath + clientPort + port +
             SnappyPrms.getLeadMemory() + SnappyPrms.getSparkSqlBroadcastJoinThreshold()
             + " -spark.jobserver.port=" + leadPort + SnappyPrms.getSparkSchedulerMode()
             + /*" -spark.sql.inMemoryColumnarStorage.compressed="
@@ -351,6 +374,7 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getColumnBatchSize() + SnappyPrms.getConserveSockets() +
             " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() +
             " -J-XX:+DisableExplicitGC" + SnappyPrms.getTimeStatistics() +
+            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
             SnappyPrms.getLogLevel() + SnappyPrms.getNumBootStrapTrials() +
             SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
             " -classpath=" + getStoreTestsJar() +
@@ -2315,6 +2339,7 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSparkCluster() {
     File log = null;
     try {
+      initSnappyArtifacts();
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("stop-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
@@ -2393,6 +2418,7 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSnappyCluster() {
     File log = null;
     try {
+      initSnappyArtifacts();
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";

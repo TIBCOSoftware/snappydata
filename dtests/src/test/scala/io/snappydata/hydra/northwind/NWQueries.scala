@@ -412,13 +412,13 @@ object NWQueries {
       " d.CompanyName," +
       " year(OrderDate) as OrderYear," +
       " format_number(sum(case quarter(c.OrderDate) when '1'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) \"Qtr_1\"," +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_1, " +
       " format_number(sum(case quarter(c.OrderDate) when '2'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) \"Qtr_2\"," +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_2, " +
       " format_number(sum(case quarter(c.OrderDate) when '3'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) \"Qtr_3\"," +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_3, " +
       " format_number(sum(case quarter(c.OrderDate) when '4'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) \"Qtr_4\"" +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_4 " +
       " from Products a" +
       " inner join Order_Details b on a.ProductID = b.ProductID" +
       " inner join Orders c on c.OrderID = b.OrderID" +
