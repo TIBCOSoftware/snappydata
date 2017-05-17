@@ -412,13 +412,13 @@ object NWQueries {
       " d.CompanyName," +
       " year(OrderDate) as OrderYear," +
       " format_number(sum(case quarter(c.OrderDate) when '1'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 1'," +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_1, " +
       " format_number(sum(case quarter(c.OrderDate) when '2'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 2'," +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_2, " +
       " format_number(sum(case quarter(c.OrderDate) when '3'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 3'," +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_3, " +
       " format_number(sum(case quarter(c.OrderDate) when '4'" +
-      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 4'" +
+      " then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) as Qtr_4 " +
       " from Products a" +
       " inner join Order_Details b on a.ProductID = b.ProductID" +
       " inner join Orders c on c.OrderID = b.OrderID" +
@@ -489,8 +489,8 @@ object NWQueries {
     "Q56" -> Q56,
     "Q57" -> Q57,
     "Q58" -> Q58,
-    "Q59" -> Q59
-    // "Q60" -> Q60
+    "Q59" -> Q59,
+    "Q60" -> Q60
   )
 
   def regions(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark" +
