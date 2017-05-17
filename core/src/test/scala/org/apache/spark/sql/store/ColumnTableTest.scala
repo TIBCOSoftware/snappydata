@@ -18,6 +18,8 @@ package org.apache.spark.sql.store
 
 import java.sql.DriverManager
 
+import com.pivotal.gemfirexd.TestUtil
+
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
@@ -34,7 +36,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SnappySession, SparkSession, TableNotFoundException}
+import org.apache.spark.sql._
 
 /**
   * Tests for column tables in GFXD.
@@ -1036,4 +1038,41 @@ class ColumnTableTest
     assert(struct == df3.schema)
 
   }
+
+  test("Test loading json data to column table") {
+    val some_people_path = s"${(getClass.getResource("/person.json").getPath)}"
+    println(some_people_path)
+    // Read a JSON file using Spark API
+    val people = snc.read.json(some_people_path)
+
+    //Drop the table if it exists.
+    snc.dropTable("people", ifExists = true)
+
+    //Create a columnar table with the Json DataFrame schema
+    snc.createTable(tableName = "people",
+      provider = "column",
+      schema = people.schema,
+      options = Map.empty[String,String],
+      allowExisting = false)
+
+    // Write the created DataFrame to the columnar table.
+    people.write.insertInto("people")
+
+
+    val nameAndAddress = snc.sql("SELECT " +
+      "name, " +
+      "address.city, " +
+      "address.state, " +
+      "address.district, " +
+      "address.lane " +
+      "FROM people")
+    nameAndAddress.toJSON.show(truncate = false)
+    assert(nameAndAddress.count() ==2)
+    val rows:Array[String] = nameAndAddress.toJSON.collect()
+
+    assert(rows(0) =="{\"NAME\":\"Yin\",\"CITY\":\"Columbus\",\"STATE\":\"Ohio\",\"DISTRICT\":\"Pune\"}")
+    assert(rows(1) == "{\"NAME\":\"Michael\",\"STATE\":\"California\",\"LANE\":\"15\"}")
+
+  }
+
 }
