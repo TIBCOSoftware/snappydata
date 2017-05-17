@@ -16,16 +16,15 @@
  */
 package org.apache.spark.sql.streaming.jdbc
 
-import java.sql.DriverManager
+import java.sql.{DriverManager, ResultSet}
 import java.util.Properties
 
-import scala.util.Try
-
 import org.apache.spark.Logging
-import org.apache.spark.sql.{DataFrame, DataFrameReader, SQLContext}
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.execution.streaming.{Offset, Source}
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSourceProvider}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{DateType, NumericType, StringType, StructType, TimestampType}
+import org.apache.spark.sql.{DataFrame, SQLContext}
 
 class JdbcStreamProvider extends StreamSourceProvider with DataSourceRegister {
   @Override
@@ -65,10 +64,6 @@ case class LSN(lsn: String) extends Offset
 case class JDBCSource(@transient sqlContext: SQLContext,
     parameters: Map[String, String]) extends Source with Logging {
 
-  private val partitioner = {
-    parameters.get("partitionBy")
-  }
-
   private val dbtable = parameters("dbtable")
 
   private val offsetCol = parameters("jdbc.offsetColumn")
@@ -83,6 +78,17 @@ case class JDBCSource(@transient sqlContext: SQLContext,
 
   private val streamStateTable = "SNAPPY_JDBC_STREAM_CONTEXT"
 
+  private val partitioner = parameters.get("partitionBy").fold(
+    parameters.get(s"$dbtable.partitionBy"))(Some(_))
+
+  private val partitioningQuery = parameters.get("partitioningQuery").fold(
+    parameters.get(s"$dbtable.partitioningQuery"))(Some(_))
+
+  private val reader =
+    parameters.foldLeft(sqlContext.sparkSession.read)({
+      case (r, (k, v)) => r.option(k, v)
+    })
+
   private val srcControlConn = {
     val connProps = parameters.foldLeft(new Properties()) {
       case (prop, (k, v)) if !k.toLowerCase.startsWith("snappydata.cluster.") =>
@@ -93,28 +99,14 @@ case class JDBCSource(@transient sqlContext: SQLContext,
     DriverManager.getConnection(parameters("url"), connProps)
   }
 
-  def createContextTableIfNotExist() = {
-    val rs = srcControlConn.getMetaData.getTables(null, null, streamStateTable, null)
-    if (!rs.next()) {
-      logInfo(s"$streamStateTable table not found. creating ..")
-      if (!srcControlConn.createStatement().execute(s"create table $streamStateTable(" +
-          " tableName varchar(200) primary key," +
-          " lastOffset varchar(100)" +
-          ")")) {
-        logWarning(s"$streamStateTable couldn't be created on the jdbc source $this")
-      }
-    }
-  }
-
   createContextTableIfNotExist()
 
   private lazy val stateTableUpdate = srcControlConn.prepareStatement(s"update $streamStateTable " +
       s" set lastOffset = ? where tableName = ?")
 
-  private var lastOffset: Option[LSN] = {
-    val rs = srcControlConn.createStatement().executeQuery("select lastOffset from " +
-        s"$streamStateTable where tableName = '$dbtable'")
-    try {
+  private val lastPersistedOffset: Option[LSN] = {
+    tryExecuteQuery("select lastOffset from " +
+        s"$streamStateTable where tableName = '$dbtable'") { rs =>
       if (rs.next()) {
         if (parameters.getOrElse("fullMode", "false").toBoolean) {
           val rowsEffected = srcControlConn.createStatement().executeUpdate("delete from " +
@@ -130,29 +122,17 @@ case class JDBCSource(@transient sqlContext: SQLContext,
       } else {
         None
       }
-    } finally {
-      rs.close()
     }
   }
 
-  private def reader =
-    parameters.foldLeft(sqlContext.sparkSession.read)({
-      case (r, (k, v)) => r.option(k, v)
-    })
+  private var lastOffset: Option[LSN] = lastPersistedOffset
 
-  private def execute(query: String) = reader.jdbc(parameters("url"), query, new Properties())
-
-
-  private def getNextOffsetQuery(l: LSN): String = {
-    getNextOffset match {
-      case None =>
-        s"(select $offsetToStrFunc(min($offsetCol)) nxtOffset from $dbtable " +
-            s" where $offsetCol > $offsetIncFunc($strToOffsetFunc('${l.lsn}'))) getNextOffset "
-      case Some(query) => val replaceQ = query
-            .replaceAll("\\$table", dbtable)
-            .replaceAll("\\$currentOffset", l.lsn.toString)
-        s"( $replaceQ ) getNextOffset"
-    }
+  private lazy val cachedPartitions = partitioningQuery match {
+    case Some(q) if partitioner.nonEmpty =>
+      determinePartitions(
+        s"( ${q.replaceAll("\\$partitionBy", partitioner.get)} ) getUniqueValuesForCaching",
+        partitioner.get)
+    case _ => Array.empty[String]
   }
 
   /**
@@ -160,12 +140,138 @@ case class JDBCSource(@transient sqlContext: SQLContext,
    * Returns `None` if this source has never received any data.
    */
   override def getOffset: Option[Offset] = {
-    val nextBatch = execute(
-      lastOffset.fold(s"(select $offsetToStrFunc(min($offsetCol)) newOffset from $dbtable) " +
-          s"getFirstOffset ")(getNextOffsetQuery))
-    val row = nextBatch.collect()(0)
-    if (!row.isNullAt(0)) {
-      lastOffset = Some(LSN(row.getString(0)))
+    def fetch(rs: ResultSet) = {
+      if (rs.next() && rs.getString(1) != null) {
+        Some(LSN(rs.getString(1)))
+      } else {
+        None
+      }
+    }
+
+    lastOffset match {
+      case None =>
+        val newlsn = tryExecuteQuery(
+          s"select $offsetToStrFunc(min($offsetCol)) newOffset from $dbtable")(fetch)
+        saveOffsetState(newlsn)
+      case Some(offset) =>
+        // while picking the nextoffset by the user defined query if no offset gets fetched
+        // pick the builtin way of finding the next offset.
+        tryExecuteQuery(getNextOffsetQuery())(fetch) match {
+          case None =>
+            val nextOffset = tryExecuteQuery(getNextOffsetQuery(true))(fetch)
+            if(nextOffset.nonEmpty) {
+              alertUser(s"No rows found using the user query for getNextOffset," +
+                  s" lastoffset -> ${lastOffset.get.lsn}")
+            }
+            saveOffsetState(nextOffset)
+          case o@Some(_) => saveOffsetState(o)
+        }
+    }
+
+    lastOffset
+  }
+
+  @Override
+  def getBatch(start: Option[Offset], end: Offset): DataFrame = {
+
+    def lsn(o: Offset) = o.asInstanceOf[LSN].lsn
+
+    def getPartitions(query: String) = partitioner match {
+      case _ if cachedPartitions.nonEmpty => cachedPartitions
+      case Some(col) =>
+        val uniqueValQuery = query.replace("select * from",
+          s"select distinct($col) parts from ").replace("getBatch", "getUniqueValuesFromBatch")
+        determinePartitions(uniqueValQuery, col)
+      case None => Array.empty[String]
+    }
+
+    start match {
+      case None => lastPersistedOffset match {
+        case None =>
+          execute(s"(select * from $dbtable " +
+              s" where $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
+        case Some(offset) =>
+          alertUser(s"Resuming source [${parameters("url")}] [$dbtable] " +
+              s"from persistent offset -> $offset ")
+          execute(s"(select * from $dbtable " +
+              s" where $offsetCol > $strToOffsetFunc('${offset.lsn}') " +
+              s" and $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
+      }
+      case Some(begin) =>
+        execute(s"(select * from $dbtable " +
+            s" where $offsetCol > $strToOffsetFunc('${lsn(begin)}') " +
+            s" and $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
+    }
+  }
+
+  private def determinePartitions(query: String, partCol: String): Array[String] = {
+    val uniqueVals = execute(query)
+    val partitionField = uniqueVals.schema.fields(0)
+    // just one partition so sortWithinPartitions is enough
+    val sorted = uniqueVals.sortWithinPartitions(partitionField.name).collect()
+    val parallelism = sqlContext.sparkContext.defaultParallelism
+    val slide = sorted.length / parallelism
+    if (slide > 0) {
+      val converter = CatalystTypeConverters.createToScalaConverter(partitionField.dataType)
+      sorted.sliding(slide, slide).map { a =>
+        partitionField.dataType match {
+          case _: NumericType =>
+            s"$partCol >= ${a(0)(0)} and $partCol < ${a(a.length - 1)(0)}"
+          case _@(StringType | DateType | TimestampType) =>
+            s"$partCol >= '${a(0)(0)}' and $partCol < '${a(a.length - 1)(0)}'"
+        }
+      }.toArray
+    } else {
+      Array.empty[String]
+    }
+  }
+
+  private def createContextTableIfNotExist() = {
+    val rs = srcControlConn.getMetaData.getTables(null, null, streamStateTable, null)
+    if (!rs.next()) {
+      logInfo(s"$streamStateTable table not found. creating ..")
+      if (!srcControlConn.createStatement().execute(s"create table $streamStateTable(" +
+          " tableName varchar(200) primary key," +
+          " lastOffset varchar(100)" +
+          ")")) {
+        logWarning(s"$streamStateTable couldn't be created on the jdbc source $this")
+      }
+    }
+  }
+
+  private def execute(query: String,
+      partitions: String => Array[String] = _ => Array.empty) = partitions(query) match {
+    case parts if parts.nonEmpty =>
+      reader.jdbc(parameters("url"), query, parts, new Properties())
+    case _ =>
+      reader.jdbc(parameters("url"), query, new Properties())
+  }
+
+  private def tryExecuteQuery[T](query: String)(f: ResultSet => T) = {
+    val rs = srcControlConn.createStatement().executeQuery(query)
+    try {
+      f(rs)
+    } finally {
+      rs.close()
+    }
+  }
+
+
+  private def getNextOffsetQuery(forceMin: Boolean = false): String = {
+    if (getNextOffset.isEmpty || forceMin) {
+      s"select $offsetToStrFunc(min($offsetCol)) nxtOffset from $dbtable " +
+          s" where $offsetCol > $offsetIncFunc($strToOffsetFunc('${lastOffset.get.lsn}'))"
+    } else {
+      getNextOffset.get
+          .replaceAll("\\$table", dbtable)
+          .replaceAll("\\$currentOffset", lastOffset.get.lsn)
+    }
+  }
+
+  private def saveOffsetState(newlsn: Option[LSN]) = if (newlsn.nonEmpty) {
+    try {
+      lastOffset = newlsn
+      // update the state table at source.
       stateTableUpdate.setString(1, lastOffset.get.lsn)
       stateTableUpdate.setString(2, dbtable)
       val rowsEffected = stateTableUpdate.executeUpdate()
@@ -174,24 +280,14 @@ case class JDBCSource(@transient sqlContext: SQLContext,
             s"$streamStateTable values ('$dbtable', '${lastOffset.get.lsn}') ")
         assert(rowsInserted == 1)
       }
+    } catch {
+      case e: Exception =>
     }
-
-    lastOffset
   }
 
-  @Override
-  def getBatch(start: Option[Offset], end: Offset): DataFrame = {
-    def lsn(o: Offset) = o.asInstanceOf[LSN].lsn
-
-    start match {
-      case None =>
-        execute(s"(select * from $dbtable " +
-            s" where $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ")
-      case Some(begin) =>
-        execute(s"(select * from $dbtable " +
-            s" where $offsetCol > $strToOffsetFunc('${lsn(begin)}') " +
-            s" and $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ")
-    }
+  private def alertUser(msg: => String): Unit = {
+    println(msg)
+    logInfo(msg)
   }
 
   /** Returns the schema of the data from this source */

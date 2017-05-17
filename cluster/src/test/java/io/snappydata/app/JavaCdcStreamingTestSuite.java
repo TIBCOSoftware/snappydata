@@ -211,6 +211,17 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
       newArgs.add("tables=tengb.cdc.dbo_customer_CT");
     }
 
+    if(!contains(args, "tengb.cdc.dbo_customer_CT.partitionBy", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.partitionBy=convert(varchar(20), C_CustKey)");
+    }
+
+/*
+    if(!contains(args, "tengb.cdc.dbo_customer_CT.partitioningQuery", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.partitioningQuery=" +
+          "select distinct $partitionBy as parts from customer");
+    }
+*/
+
     if(!contains(args, "databaseName", idxOf)) {
       newArgs.add("databaseName=tengb");
     }
