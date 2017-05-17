@@ -254,7 +254,7 @@ public class SnapshotIsolationTest extends SnappyTest {
             ("dmlThreads");
         for(int n : dmlThreads){
           if(hasDuplicateSchemas)
-            replayOpsInDerby(i + "_" + getMyTid());
+            replayOpsInDerby(n + "_" + getMyTid());
           else
             replayOpsInDerby(String.valueOf(i));
         }
@@ -310,6 +310,7 @@ public class SnapshotIsolationTest extends SnappyTest {
       Log.getLogWriter().info("Blocking snappy Ops.");
       getCounterLock();
       SnapshotIsolationBB.getBB().getSharedCounters().increment(SnapshotIsolationBB.BlockOps);
+      Log.getLogWriter().info("Pausing derby Op.");
       SnapshotIsolationBB.getBB().getSharedCounters().increment(SnapshotIsolationBB.PauseDerby);
       releaseCounterLock();
       ResultSet snappyRS;
@@ -350,7 +351,6 @@ public class SnapshotIsolationTest extends SnappyTest {
       }else
         derbyRS = dConn.createStatement().executeQuery(query);
       Log.getLogWriter().info("Executed query on derby.");
-      Log.getLogWriter().info("Pausing derby Op.");
       SnapshotIsolationBB.getBB().getSharedCounters().decrement(SnapshotIsolationBB.BlockOps);
       StructTypeImpl sti = ResultSetHelper.getStructType(derbyRS);
       List<Struct> derbyList = ResultSetHelper.asList(derbyRS, sti, true);
@@ -466,7 +466,7 @@ public class SnapshotIsolationTest extends SnappyTest {
           if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads")) {
             selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
             for (int selectTid : selectThreads) {
-              String stmt = updateStmt.replace("app", "app_"+selectTid);
+              String stmt = updateStmt.replace("app", "app_" + selectTid);
               replayOpsInDerby(getMyTid() + "_" + selectTid);
               dConn = getDerbyConnection();
               PreparedStatement derbyPS = dConn.prepareStatement(stmt);
@@ -534,7 +534,7 @@ public class SnapshotIsolationTest extends SnappyTest {
               String stmt = deleteStmt.replace("app", "app_" + selectTid);
               replayOpsInDerby(getMyTid() + "_" + selectTid);
               dConn = getDerbyConnection();
-              PreparedStatement derbyPS = dConn.prepareStatement(deleteStmt);
+              PreparedStatement derbyPS = dConn.prepareStatement(stmt);
               //derbyPS.setInt(1,getMyTid());
               Log.getLogWriter().info("Deleting in derby with statement : " + deleteStmt);
               rowCount = derbyPS.executeUpdate();
@@ -722,8 +722,20 @@ public class SnapshotIsolationTest extends SnappyTest {
       waitForBarrier(numThreadsPerformingSelect);
       query = (String)SnapshotIsolationBB.getBB().getSharedMap().get("query");
       Log.getLogWriter().info("Executing " + query + " on snappy.");
-      ResultSet snappyRS = conn.createStatement().executeQuery(query);
-      Log.getLogWriter().info("Executed query on snappy.");
+      ResultSet snappyRS;
+      try {
+        snappyRS = conn.createStatement().executeQuery(query);
+        Log.getLogWriter().info("Executed query on snappy.");
+      } catch(SQLException se){
+        if(se.getSQLState().equals("21000")){
+          //retry select query with routing
+          Log.getLogWriter().info("Got exception while executing select query, retrying with " +
+              "executionEngine as spark.");
+          String query1 = query +  " --GEMFIREXD-PROPERTIES executionEngine=Spark";
+          snappyRS = conn.createStatement().executeQuery(query1);
+          Log.getLogWriter().info("Executed query on snappy.");
+        }else throw new SQLException(se);
+      }
       //notify to have dml ops started
       SnapshotIsolationBB.getBB().getSharedCounters().decrement(SnapshotIsolationBB.BlockOps);
       StructTypeImpl sti = ResultSetHelper.getStructType(snappyRS);
