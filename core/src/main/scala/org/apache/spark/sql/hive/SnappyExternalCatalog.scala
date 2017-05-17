@@ -82,7 +82,9 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       case he: HiveException if isDisconnectException(he) =>
         // stale JDBC connection
         Hive.closeCurrent()
-        client = client.newSession()
+        SnappyStoreHiveCatalog.suspendActiveSession {
+          client = client.newSession()
+        }
         function
     }
   }

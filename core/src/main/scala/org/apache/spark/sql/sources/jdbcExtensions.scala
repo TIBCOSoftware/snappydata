@@ -16,21 +16,21 @@
  */
 package org.apache.spark.sql.sources
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.Connection
 import java.util.Properties
 
+import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.DataSource
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
-import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappySession}
+import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, SnappySession, SparkSession}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -44,8 +44,9 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
   /**
    * Retrieve the jdbc / sql type for a given datatype.
+   *
    * @param dataType The datatype (e.g. [[StringType]])
-   * @param md The metadata
+   * @param md       The metadata
    * @return The new JdbcType if there is an override for this DataType
    */
   def getJDBCType(dataType: DataType, md: Metadata): Option[JdbcType] =
@@ -75,11 +76,14 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
 object JdbcExtendedUtils extends Logging {
 
+  // "dbtable" lower case since some other code including Spark's depends on it
   val DBTABLE_PROPERTY = "dbtable"
-  val SCHEMA_PROPERTY = "schemaddl"
-  val ALLOW_EXISTING_PROPERTY = "allowexisting"
-  val BASETABLE_PROPERTY = "basetable"
 
+  val SCHEMADDL_PROPERTY = "SCHEMADDL"
+  val ALLOW_EXISTING_PROPERTY = "ALLOWEXISTING"
+  val BASETABLE_PROPERTY = "BASETABLE"
+
+  // internal properties will be stored as Hive table parameters
   val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
 
   def executeUpdate(sql: String, conn: Connection): Unit = {
@@ -127,6 +131,41 @@ object JdbcExtendedUtils extends Logging {
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
   }
 
+  def addSplitProperty(value: String, propertyName: String,
+      options: SMap[String, String]): SMap[String, String] = {
+    // split the string into parts for size limitation in hive metastore table
+    val parts = value.grouped(3500).toSeq
+    val opts = options match {
+      case m: mutable.Map[String, String] => m
+      case _ =>
+        val m = new mutable.HashMap[String, String]
+        m ++= options
+        m
+    }
+    opts += (s"$propertyName.numParts" -> parts.size.toString)
+    parts.zipWithIndex.foreach { case (part, index) =>
+      opts += (s"$propertyName.part.$index" -> part)
+    }
+    opts
+  }
+
+  def readSplitProperty(propertyName: String,
+      options: SMap[String, String]): Option[String] = {
+    // read the split schema DDL string from hive metastore table parameters
+    options.get(s"$propertyName.numParts") map { numParts =>
+      (0 until numParts.toInt).map { index =>
+        val partProp = s"$propertyName.part.$index"
+        options.get(partProp) match {
+          case Some(part) => part
+          case None => throw new AnalysisException("Could not read " +
+              s"$propertyName from metastore because it is corrupted " +
+              s"(missing part $index, $numParts parts expected).")
+        }
+        // Stick all parts back to a single schema string.
+      }.mkString
+    }
+  }
+
   def tableExistsInMetaData(table: String, conn: Connection,
       dialect: JdbcDialect): Boolean = {
     // using the JDBC meta-data API
@@ -142,7 +181,7 @@ object JdbcExtendedUtils extends Logging {
       val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()
     } catch {
-      case t: java.sql.SQLException => false
+      case _: java.sql.SQLException => false
     }
   }
 
@@ -229,8 +268,8 @@ object JdbcExtendedUtils extends Logging {
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
         dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(options + (SCHEMA_PROPERTY -> schemaString) +
-              (ExternalStoreUtils.EXTERNAL_DATASOURCE -> "true")),
+          new CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
+            schemaString, JdbcExtendedUtils.SCHEMADDL_PROPERTY, options).toMap),
           schemaString, data)
 
       case _ => throw new AnalysisException(
@@ -240,106 +279,54 @@ object JdbcExtendedUtils extends Logging {
   }
 
   /**
-   * Returns a PreparedStatement that inserts a row into table via conn.
+   * Returns the SQL for prepare to insert or put rows into a table.
    */
-  def insertStatement(conn: Connection, table: String,
-      rddSchema: StructType, upsert: Boolean): PreparedStatement = {
+  def getInsertOrPutString(table: String, rddSchema: StructType,
+      upsert: Boolean): String = {
     val sql = new StringBuilder()
-    if (!upsert) {
-      sql.append(s"INSERT INTO $table (")
-    } else {
+    if (upsert) {
       sql.append(s"PUT INTO $table (")
+    } else {
+      sql.append(s"INSERT INTO $table (")
     }
     var fieldsLeft = rddSchema.fields.length
     rddSchema.fields.foreach { field =>
       sql.append(field.name)
       if (fieldsLeft > 1) sql.append(',') else sql.append(')')
-      fieldsLeft = fieldsLeft - 1
+      fieldsLeft -= 1
     }
     sql.append(" VALUES (")
     fieldsLeft = rddSchema.fields.length
     while (fieldsLeft > 0) {
       sql.append('?')
       if (fieldsLeft > 1) sql.append(',') else sql.append(')')
-      fieldsLeft = fieldsLeft - 1
+      fieldsLeft -= 1
     }
-    conn.prepareStatement(sql.toString())
+    sql.toString()
   }
 
-  /**
-   * Saves a partition of a DataFrame to the JDBC database.  This is done in
-   * a single database transaction in order to avoid repeatedly inserting
-   * data as much as possible.
-   *
-   * It is still theoretically possible for rows in a DataFrame to be
-   * inserted into the database more than once if a stage somehow fails after
-   * the commit occurs but before the stage can return successfully.
-   *
-   * This is not a closure inside saveTable() because apparently cosmetic
-   * implementation changes elsewhere might easily render such a closure
-   * non-Serializable.  Instead, we explicitly close over all variables that
-   * are used.
-   */
-  def savePartition(
-      getConnection: () => Connection,
-      table: String,
-      iterator: Iterator[InternalRow],
-      rddSchema: Array[DataType],
-      tableSchema: StructType,
-      dialect: JdbcDialect,
-      batchSize: Int,
-      upsert: Boolean): Unit = {
-    if (iterator.hasNext) {
-      val conn = getConnection()
-      var committed = false
-      try {
-        val stmt = insertStatement(conn, table, tableSchema, upsert)
-        try {
-          CodeGeneration.executeUpdate(table, stmt, iterator,
-            multipleRows = true, batchSize, rddSchema, dialect)
-        } finally {
-          stmt.close()
-        }
-        conn.commit()
-        committed = true
-      } finally {
-        if (!committed) {
-          // The stage must fail.  We got here through an exception path, so
-          // let the exception through unless rollback() or close() want to
-          // tell the user about another problem.
-          conn.rollback()
-          conn.close()
-        } else {
-          // The stage must succeed.  We cannot propagate any exception
-          // close() might throw.
-          try {
-            conn.close()
-          } catch {
-            case e: Exception =>
-              logWarning("Transaction succeeded, but closing failed", e)
-          }
-        }
-      }
+  def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
+      schema: StructType, resolvedName: String, upsert: Boolean): Int = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val sessionState = session.sessionState
+    val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
+    val encoder = RowEncoder(schema)
+    val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
+      rows.map(encoder.toRow)), schema)
+    val plan = if (upsert) {
+      PutIntoTable(
+        table = UnresolvedRelation(tableIdent),
+        child = ds.logicalPlan)
+    } else {
+      InsertIntoTable(
+        table = UnresolvedRelation(tableIdent),
+        partition = Map.empty[String, Option[String]],
+        child = ds.logicalPlan,
+        overwrite = false,
+        ifNotExists = false)
     }
-  }
-
-  /**
-   * Saves the RDD to the database in a single transaction.
-   */
-  def saveTable(
-      df: DataFrame,
-      table: String,
-      tableSchema: StructType,
-      connProperties: ConnectionProperties,
-      upsert: Boolean = false): Unit = {
-    val getConnection: () => Connection = ExternalStoreUtils.getConnector(
-      table, connProperties, forExecutor = true)
-    val batchSize = connProperties.connProps.getProperty("batchsize",
-      "1000").toInt
-    val rddSchema = df.schema.fields.map(_.dataType)
-    df.queryExecution.toRdd.foreachPartition { iterator =>
-      savePartition(getConnection, table, iterator, rddSchema, tableSchema,
-        connProperties.dialect, batchSize, upsert)
-    }
+    session.sessionState.executePlan(plan).executedPlan.executeCollect()
+        // always expect to create a TableInsertExec
+        .foldLeft(0)(_ + _.getInt(0))
   }
 }

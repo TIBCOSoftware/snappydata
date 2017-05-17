@@ -17,25 +17,24 @@
 package org.apache.spark.sql.store
 
 import java.sql.DriverManager
-import java.util
 
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
-import io.snappydata.{SnappyTableStatsProviderService, SnappyFunSuite}
 import io.snappydata.core.{Data, TestData, TestData2}
+import io.snappydata.{SnappyEmbeddedTableStatsProviderService, Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SparkSession, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SnappySession, SparkSession, TableNotFoundException}
 
 /**
   * Tests for column tables in GFXD.
@@ -204,7 +203,8 @@ class ColumnTableTest
     logInfo("Successful")
   }
 
-
+  // TODO: Suranjan Test is invalid. Not clear from the bug why the decision
+  // to make concurrency checks false was taken
   test("Test SNAP-947") {
     val table = "APP.TEST_TABLE"
 
@@ -213,7 +213,7 @@ class ColumnTableTest
     // check that default concurrency checks is set to false for column table.
     snc.sql(s"create table $table (col1 int) using column" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -221,7 +221,7 @@ class ColumnTableTest
 
     snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -314,7 +314,7 @@ class ColumnTableTest
   }
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
-
+    //TODO: Suranjan URL misses the hint in connection that gfTx must not be cleared.
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
         " USING column " + optionsWithURL)
     val result = snc.sql("SELECT * FROM " + tableName)
@@ -726,24 +726,35 @@ class ColumnTableTest
   }
 
   private def testRowBufferEviction(tableName: String): Unit = {
-    val props = Map("BUCKETS" -> "1")
+    val props = Map("BUCKETS" -> "1", "PARTITION_BY" -> "col1")
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
       Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
+    val snc = new SnappySession(sc)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 50)
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.insertInto(tableName)
     assert(snc.sql(s"select * from $tableName").collect().length == 5)
 
     val conn = DriverManager.getConnection("jdbc:snappydata:;query-routing=false")
-    val rs = conn.createStatement().executeQuery("select count (*) from " +
-        tableName)
-    if (rs.next()) {
-      // The row buffer should not have more than 2 rows as the batch size is 3
-      assert(rs.getInt(1) <= 2)
-    }
-
+    val stmt = conn.createStatement()
+    var rs = stmt.executeQuery(s"select count (*) from $tableName")
+    assert(rs.next())
+    // The row buffer should not have more than 2 rows with small batch size
+    assert(rs.getInt(1) <= 2)
+    assert(!rs.next())
     rs.close()
+
+    // also check with the insert API
+    snc.truncateTable(tableName)
+    snc.insert(tableName, dataDF.collect(): _*)
+    rs = stmt.executeQuery(s"select count (*) from $tableName")
+    assert(rs.next())
+    assert(rs.getInt(1) <= 2)
+    assert(!rs.next())
+    rs.close()
+
     conn.close()
   }
 
@@ -900,38 +911,37 @@ class ColumnTableTest
     // scalastyle:on println
   }
 
-  test("Check cachedBatch num rows") {
-    System.setProperty("snappydata.testForceFlush", "true")
+  test("Check columnBatch num rows") {
     val data = (1 to 200) map (i => Seq(i, +i, +i))
+    val snc = new SnappySession(sc)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 100)
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     val parDF = dataDF.repartition(1)
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
-        " USING column ")
-    try {
-      parDF.write.insertInto(tableName)
-    } finally {
-      System.clearProperty("snappydata.testForceFlush")
-    }
+        " USING column")
+    parDF.write.insertInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
 
-    val r = result.collect
+    val r = result.collect()
     assert(r.length === 200)
 
     val rowBuffer = Misc.getRegionForTable(("APP." + tableName).toUpperCase, true)
-    logInfo(rowBuffer.asInstanceOf[PartitionedRegion].getPrStats
-        .getDataStoreEntryCount.toString)
+    val rowBufferCount = rowBuffer.asInstanceOf[PartitionedRegion].getPrStats
+        .getDataStoreEntryCount
 
     val region = Misc.getRegionForTable(
-      JDBCAppendableRelation.cachedBatchTableName(tableName).toUpperCase, true)
-    SnappyTableStatsProviderService.publishColumnTableRowCountStats()
+      ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
-        .getPRNumRowsInCachedBatches
+        .getPRNumRowsInColumnBatches
 
-    assert(entries == 200)
+    assert(entries > 180)
+    assert(rowBufferCount !== 0)
+    assert(entries + rowBufferCount === 200)
     logInfo("Successful")
   }
 
@@ -1001,6 +1011,29 @@ class ColumnTableTest
 
     assert(struct == df2.schema)
     assert(df1.schema == df3.schema)
+
+  }
+
+  test("Test create table from CSV without header") {
+    snc.sql(s"create table test1 using com.databricks.spark.csv options(path '${(getClass.getResource
+    ("/northwind/orders" +
+      ".csv").getPath)}', header 'false', inferschema 'true')")
+    snc.sql("create table test2 using column options() as (select * from test1)")
+    val df2 = snc.sql("select * from test2")
+    df2.show()
+
+    snc.sql("drop table test2")
+    snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
+    snc.sql("insert into test2 values(1,2)")
+    snc.sql("insert into test2 values(2,3)")
+    val df3 = snc.sql("select _col1,__col2 from test2")
+    df3.show()
+    val struct = (new StructType())
+      .add(StructField("_COL1", IntegerType, true))
+      .add(StructField("__COL2", IntegerType, true))
+
+    df3.printSchema()
+    assert(struct == df3.schema)
 
   }
 }

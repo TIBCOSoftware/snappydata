@@ -1,4 +1,4 @@
-#Overview
+# Overview
 In this section, we discuss the various modes available for collocation of related data and computation.
 
 You can run the SnappyData store in the following modes:
@@ -10,7 +10,7 @@ You can run the SnappyData store in the following modes:
 * [SnappyData Smart Connector Mode](#connectormode): Allows you to work with the SnappyData store cluster from any compatible Spark distribution
  
 <a id="localmode"></a>
-##Local Mode
+## Local Mode
 
 In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.
 
@@ -38,14 +38,14 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>0.7</version>
+    <version>0.8</version>
 </dependency>
 ```
 **Example: SBT dependency**
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
 
 ```
 **Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program
@@ -63,7 +63,7 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.7"
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 ```bash
-./bin/spark-shell --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+./bin/spark-shell --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
 
 
@@ -89,7 +89,7 @@ In this mode, one can write Spark programs using jobs. For more details, refer t
 bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 ```
 
-Also, you can use [SnappyShell](howto/#how-to-use-snappy-sql-shell-snappy-sql) to create and query tables.
+Also, you can use [SnappySQL](howto/#howto-snappyShell) to create and query tables.
 
 You can either [start SnappyData members](install.md) using the `snappy-start-all.sh` script or you can start them individually.
 
@@ -157,9 +157,13 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 ***_In the Local mode_***
 ```bash
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
-<Note>Note: The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</Note>
+<Note>Note: </Note>
+
+ * <note> The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</note>
+ 
+ * <note> In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`</note>
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
 ```scala
@@ -169,7 +173,7 @@ $scala > val snSession = new SnappySession(spark.sparkContext)
 
 ***_Using external cluster manager_***
 ```bash
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.7-s_2.11"
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
 The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 

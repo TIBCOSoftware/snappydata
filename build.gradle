@@ -62,7 +62,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '0.7'
+  version = '0.8'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -106,9 +106,10 @@ allprojects {
     jettyVersion = '9.2.16.v20160414'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.0'
+    thriftVersion = '0.9.3'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.3'
+    snappyStoreVersion = '1.5.4'
     pulseVersion = '1.5.1'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -118,6 +119,7 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
+    sparkJobServerVersion = '0.6.2.3'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -222,7 +224,7 @@ subprojects {
       args = params.split(',') as List
     }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs '-Xmx2g', '-XX:MaxPermSize=512m'
+    jvmArgs '-Xmx2g'
   }
 
   task scalaTest(type: Test) {
@@ -233,12 +235,12 @@ subprojects {
     minHeapSize '4g'
     maxHeapSize '4g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     // for benchmarking
     // minHeapSize '12g'
     // maxHeapSize '12g'
     // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
-    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
 
     testLogging.exceptionFormat = 'full'
 
@@ -276,7 +278,7 @@ subprojects {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     testLogging.exceptionFormat = 'full'
 
     include '**/*.class'
@@ -301,10 +303,10 @@ subprojects {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
     maxParallelForks = 1
-    minHeapSize '1g'
-    maxHeapSize '1g'
+    minHeapSize '1536m'
+    maxHeapSize '1536m'
 
-    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m',
+    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
@@ -589,8 +591,6 @@ task generateSources {
 }
 
 task product(type: Zip) {
-  dependsOn ':snappy-store:gemfirexd-client:shadowJar'
-  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
@@ -626,11 +626,6 @@ task product(type: Zip) {
 
     // copy all runtime dependencies of snappy-cluster, itself and AQP
     def targets = targetProject.configurations.runtime
-    if (new File(rootDir, 'store/build.gradle').exists()) {
-      // exclude client jar and dependencies since client shadow jar is copied
-      targets = targetProject.configurations.runtime -
-          project(':snappy-store:gemfirexd-client').configurations.runtime
-    }
     copy {
       from(targets) {
         // exclude antlr4 explicitly (runtime is still included)
@@ -638,6 +633,12 @@ task product(type: Zip) {
         exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
+        // exclude other test jars
+        exclude '**junit*.jar'
+        exclude '**mockito*.jar'
+        exclude '**hamcrest-core*.jar'
+        exclude '**test-interface*.jar'
+        exclude '**scalacheck*.jar'
         if (rootProject.hasProperty('hadoop-provided')) {
           exclude 'hadoop-*.jar'
         }
@@ -715,14 +716,6 @@ task product(type: Zip) {
         into "${rootProject.buildDir}/distributions"
         include clientProject.shadowJar.archiveName
       }
-      // Copy the JDBC client jar to jars directory
-      // (its constituent jars are specifically excluded)
-      copy {
-        from clientProject.shadowJar.destinationDir
-        into "${snappyProductDir}/jars"
-        include clientProject.shadowJar.archiveName
-      }
-      delete "${snappyProductDir}/jars/${clientProject.jar.archiveName}"
     }
     // copy AQP jar from maven repo if project not present
     if (!hasAQPProject) {
@@ -787,8 +780,8 @@ distributions {
 }
 distTar {
   dependsOn product
-  // also package pulse and VSD
-  dependsOn ':packagePulse', ':packageVSD'
+  // also package VSD
+  dependsOn ':packageVSD'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
@@ -797,8 +790,8 @@ distTar {
 
 distZip {
   dependsOn product
-  // also package pulse and VSD
-  dependsOn ':packagePulse', ':packageVSD'
+  // also package VSD
+  dependsOn ':packageVSD'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
@@ -807,6 +800,8 @@ distZip {
 
 // use the task below to prepare final release bits
 task distProduct {
+  dependsOn ':snappy-store:gemfirexd-client:shadowJar'
+  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn product, distTar, distZip
 }
 
@@ -845,11 +840,17 @@ task cleanAll {
 }
 task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
+  dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
   dependsOn distTar, distZip
   mustRunAfter cleanAll
 }
+task buildDtests {
+  delete "${snappyProductDir}/dtests/build-artifacts/scala-${scalaBinaryVersion}/"
+  dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
+}
 task checkAll {
+  dependsOn ':snappy-spark:scalaStyle'
   if (project.hasProperty('store')) {
     dependsOn ':snappy-store:check'
   }
@@ -1012,6 +1013,10 @@ task publishDocs(type:Exec) {
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports
   dependsOn ':snappy-spark:scalaStyle', docs
+  if (!project.hasProperty('smoke.skip')) {
+    dependsOn ":buildDtests"
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+  }
 }
 
 if (project.hasProperty('trackBuildTime') ) {

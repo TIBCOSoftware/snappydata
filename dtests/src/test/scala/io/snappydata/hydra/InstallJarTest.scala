@@ -28,8 +28,10 @@ class InstallJarTest extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName"))), true)
+    val pw: PrintWriter = new PrintWriter(new FileOutputStream (new File(jobConfig.getString
+    ("logFileName"))), true)
     Try {
+      // scalastyle:off println
       pw.println("****** InstallJarTest started ******")
       val currentDirectory: String = new File(".").getCanonicalPath
       val numServers: Int = jobConfig.getString("numServers").toInt
@@ -41,7 +43,8 @@ class InstallJarTest extends SnappySQLJob {
       case Success(v) => pw.close()
         s"See ${getCurrentDirectory}/${jobConfig.getString("logFileName")}"
       case Failure(e) =>
-        pw.println("Exception occurred while executing the job " + "\nError Message:" + e.getMessage)
+        pw.println("Exception occurred while executing the job " + "\nError Message:" +  e
+            .getMessage)
         pw.close();
         throw e;
     }

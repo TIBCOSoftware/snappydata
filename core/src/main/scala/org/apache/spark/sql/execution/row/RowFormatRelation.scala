@@ -16,12 +16,12 @@
  */
 package org.apache.spark.sql.execution.row
 
-import java.sql.Connection
-
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
@@ -32,13 +32,13 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.columnar.impl.SparkShellRowRDD
+import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.hive.{ConnectorCatalog, RelationInfo, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 
@@ -66,56 +66,78 @@ class RowFormatRelation(
       _context)
     with PartitionedDataSourceScan
     with RowPutRelation with ParentRelation with DependentRelation {
-  val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
+
+  private val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def toString: String = s"RowFormatRelation[$table]"
 
-  override val connectionType = ExternalStoreUtils.getConnectionType(dialect)
+  override val connectionType: ConnectionType.Value =
+    ExternalStoreUtils.getConnectionType(dialect)
 
-  final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
+  private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
+    table, schema, upsert = true)
 
   private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
 
-  @transient private[this] lazy val region: LocalRegion =
+  @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
+  @transient lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
   private[this] def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
-    val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
-    val td = container.getTableDescriptor
-    if (td ne null) {
-      val baseColumns = td.getColumnNamesArray
-      val im = container.getIndexManager
-      if ((im ne null) && (im.getIndexConglomerateDescriptors ne null)) {
-        val itr = im.getIndexConglomerateDescriptors.iterator()
-        while (itr.hasNext) {
-          // first column of index has to be present in filter to be usable
-          val indexCols = itr.next().getIndexDescriptor.baseColumnPositions()
-          cols += baseColumns(indexCols(0) - 1)
-        }
-      }
-      // also add primary key
-      val primaryKey = td.getPrimaryKey
-      if (primaryKey ne null) {
-        // first column of primary key has to be present in filter to be usable
-        val pkCols = primaryKey.getKeyColumns
-        if (pkCols.nonEmpty) {
-          cols += baseColumns(pkCols(0) - 1)
-        }
-      }
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        cols ++= relInfo.indexCols
+
+      case _ =>
+        val indexCols = new Array[String](1)
+        GfxdSystemProcedures.getIndexColumns(indexCols, region)
+        Option(indexCols(0)).foreach(icols => cols ++= icols.split(":"))
+        cols
     }
-    cols
   }
 
-  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
-    filters.filter(ExternalStoreUtils.unhandledFilter(_, indexedColumns))
+  private[this] def pushdownPKColumns(filters: Array[Filter]): Array[String] = {
+    def getEqualToColumns(filters: Array[Filter]): ArrayBuffer[String] = {
+      val list = new ArrayBuffer[String](4)
+      filters.foreach {
+        case EqualTo(col, _) => list += col
+        case In(col, _) => list += col
+        case And(left, right) => list ++= getEqualToColumns(Array(left, right))
+        case _ =>
+      }
+      list
+    }
+
+    // all columns of primary key have to be present in filter to be usable
+    val equalToColumns = getEqualToColumns(filters)
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        if (relInfo.pkCols.forall(equalToColumns.contains)) return relInfo.pkCols
+      case _ =>
+        val cols = new Array[String](1)
+        GfxdSystemProcedures.getPKColumns(cols, region)
+        var pkCols = Array.empty[String]
+        if (cols(0) != null) {
+          pkCols = cols(0).split(":")
+        }
+        if (pkCols.forall(equalToColumns.contains)) return pkCols
+    }
+    Array.empty[String]
+  }
+
+
+  override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
+    filters.filter(ExternalStoreUtils.unhandledFilter(_,
+      indexedColumns ++ pushdownPKColumns(filters)))
+  }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
-    val isPartitioned = region.getPartitionAttributes != null
+    val isPartitioned = (numBuckets != 1)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
@@ -127,50 +149,71 @@ class RowFormatRelation(
           pushProjections = false,
           useResultSet = false,
           connProperties,
-          handledFilters
+          handledFilters,
+          commitTx = true
         )
 
       case _ =>
-        new SparkShellRowRDD(
+        new SmartConnectorRowRDD(
           session,
           resolvedName,
           isPartitioned,
           requiredColumns,
           connProperties,
-          handledFilters
+          handledFilters,
+          _partEval = () => relInfo.partitions,
+          relInfo.embdClusterRelDestroyVersion
         )
     }
     (rdd, Nil)
   }
 
-  override lazy val numBuckets: Int = {
-    region match {
-      case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
-      case _ => 1
+  def relInfo: RelationInfo = {
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
+        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
+      case _ =>
+         new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+           Array.empty[String], Array.empty[Partition], -1)
     }
   }
 
-  override def partitionColumns: Seq[String] = {
-    region match {
-      case pr: PartitionedRegion =>
-        val resolver = pr.getPartitionResolver
-            .asInstanceOf[GfxdPartitionByExpressionResolver]
-        val parColumn = resolver.getColumnNames
-        parColumn.toSeq
-      case _ => Seq.empty[String]
+  override lazy val (numBuckets, partitionColumns) = {
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) =>
+        (relInfo.numBuckets, relInfo.partitioningCols)
+      case _ => region match {
+        case pr: PartitionedRegion =>
+          val resolver = pr.getPartitionResolver
+              .asInstanceOf[GfxdPartitionByExpressionResolver]
+          val parColumn = resolver.getColumnNames
+          (pr.getTotalNumberOfBuckets, parColumn.toSeq)
+        case _ => (1, Seq.empty[String])
+      }
     }
   }
 
-  /**
-   * If the row is already present, it gets updated otherwise it gets
-   * inserted into the table represented by this relation
-   *
-   * @param data the DataFrame to be upserted
-   * @return number of rows upserted
-   */
-  def put(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, table, schema,
-      connProperties, upsert = true)
+  override def getInsertPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    val partitionExpressions = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    RowInsertExec(child, upsert = false, partitionColumns,
+      partitionExpressions, numBuckets, schema, Some(this), onExecutor = false,
+      resolvedName, connProperties)
+  }
+
+  override def getPutPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    val partitionExpressions = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    RowInsertExec(child, upsert = true, partitionColumns,
+      partitionExpressions, numBuckets, schema, Some(this),
+      onExecutor = false, resolvedName, connProperties)
   }
 
   /**
@@ -188,16 +231,23 @@ class RowFormatRelation(
     }
     val connProps = connProperties.connProps
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
-    val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP)
-    try {
-      val stmt = connection.prepareStatement(putStr)
-      val result = CodeGeneration.executeUpdate(table, stmt,
-        rows, numRows > 1, batchSize, schema.fields, dialect)
-      stmt.close()
-      result
-    } finally {
-      connection.close()
+    // use bulk insert using put plan for large number of rows
+    if (numRows > (batchSize * 4)) {
+      JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+        table, upsert = true)
+    } else {
+      val connection = ConnectionPool.getPoolConnection(table, dialect,
+        connProperties.poolProps, connProps, connProperties.hikariCP)
+      try {
+        val stmt = connection.prepareStatement(putStr)
+        val result = CodeGeneration.executeUpdate(table, stmt,
+          rows, numRows > 1, batchSize, schema.fields, dialect)
+        stmt.close()
+        result
+      } finally {
+        connection.commit()
+        connection.close()
+      }
     }
   }
 
@@ -279,7 +329,7 @@ final class DefaultSource extends MutableRelationProvider {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
-    val partitions = ExternalStoreUtils.getTotalPartitions(
+    ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
@@ -287,9 +337,8 @@ final class DefaultSource extends MutableRelationProvider {
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
     // val dependentRelations = parameters.remove(ExternalStoreUtils.DEPENDENT_RELATIONS)
-    val sc = sqlContext.sparkContext
-    val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(Some(sc), parameters)
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(
+      Some(sqlContext.sparkSession), parameters)
 
     StoreUtils.validateConnProps(parameters)
     val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf)
@@ -305,24 +354,23 @@ final class DefaultSource extends MutableRelationProvider {
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
-      data match {
-        case Some(plan) =>
-          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan))
-        case None =>
-      }
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
-        catalog.newQualifiedTableName(tableName), None,
-        Array.empty[String], classOf[execution.row.DefaultSource].getCanonicalName,
-        options - JdbcExtendedUtils.SCHEMA_PROPERTY, relation)
+        catalog.newQualifiedTableName(tableName), None, Array.empty[String],
+        classOf[execution.row.DefaultSource].getCanonicalName,
+        options, relation)
+      
+      data match {
+        case Some(plan) =>
+          relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
+            overwrite = false)
+        case None =>
+      }
       success = true
       relation
     } finally {
       if (!success && !relation.tableExists) {
-        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-        catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(relation.table),
-          Some(relation))
         // destroy the relation
         relation.destroy(ifExists = true)
       }

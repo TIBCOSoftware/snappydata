@@ -29,6 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecuto
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
@@ -50,13 +51,15 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv}
 class SparkSQLExecuteImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
-    senderVersion: Version) extends SparkSQLExecute with Logging {
+    senderVersion: Version,
+    pvs: Option[ParameterValueSet]) extends SparkSQLExecute with Logging {
 
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
 
   if (Thread.currentThread().getContextClassLoader != null) {
-    val loader = SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader)
+    val loader = SnappyUtils.getSnappyStoreContextLoader(
+      SparkSQLExecuteImpl.getContextOrCurrentClassLoader)
     Thread.currentThread().setContextClassLoader(loader)
   }
 
@@ -64,6 +67,8 @@ class SparkSQLExecuteImpl(val sql: String,
       .getSnappySessionForConnection(ctx.getConnId)
 
   session.setSchema(schema)
+
+  session.setPreparedQuery(false, pvs)
 
   private[this] val df = session.sql(sql)
 
@@ -87,18 +92,6 @@ class SparkSQLExecuteImpl(val sql: String,
     QueryHint.ColumnsAsClob.toString) match {
     case Some(v) => Utils.parseColumnsAsClob(v)
     case None => (false, Set.empty[String])
-  }
-
-  private def handleLocalExecution(srh: SnappyResultHolder,
-      size: Int): Unit = {
-    // prepare SnappyResultHolder with all data and create new one
-    if (size > 0) {
-      val bytes = new Array[Byte](size + 1)
-      // byte 1 will indicate that the metainfo is being packed too
-      bytes(0) = if (srh.hasMetadata) 0x1 else 0x0
-      hdos.sendTo(bytes, 1)
-      srh.fromSerializedData(bytes, bytes.length, null)
-    }
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,
@@ -142,7 +135,7 @@ class SparkSQLExecuteImpl(val sql: String,
         if (dosSize > GemFireXDUtils.DML_MAX_CHUNK_SIZE) {
           if (isLocalExecution) {
             // prepare SnappyResultHolder with all data and create new one
-            handleLocalExecution(srh, dosSize)
+            SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
             srh = new SnappyResultHolder(this)
           } else {
@@ -177,7 +170,7 @@ class SparkSQLExecuteImpl(val sql: String,
       blockReadSuccess = true
 
       if (isLocalExecution) {
-        handleLocalExecution(srh, hdos.size())
+        SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
       }
       msg.lastResult(srh)
 
@@ -189,17 +182,8 @@ class SparkSQLExecuteImpl(val sql: String,
     }
   }
 
-  override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit = {
-    val numBytes = hdos.size
-    if (numBytes > 0) {
-      InternalDataSerializer.writeArrayLength(numBytes + 1, out)
-      // byte 1 will indicate that the metainfo is being packed too
-      out.writeByte(if (hasMetadata) 0x1 else 0x0)
-      hdos.sendTo(out)
-    } else {
-      InternalDataSerializer.writeArrayLength(0, out)
-    }
-  }
+  override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =
+    SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
 
   private lazy val (tableNames, nullability) = getTableNamesAndNullability
 
@@ -319,13 +303,38 @@ class SparkSQLExecuteImpl(val sql: String,
       case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
     }
   }
-
-  def getContextOrCurrentClassLoader: ClassLoader =
-    Option(Thread.currentThread().getContextClassLoader)
-        .getOrElse(getClass.getClassLoader)
 }
 
 object SparkSQLExecuteImpl {
+  def getContextOrCurrentClassLoader: ClassLoader =
+    Option(Thread.currentThread().getContextClassLoader)
+        .getOrElse(getClass.getClassLoader)
+
+  def handleLocalExecution(srh: SnappyResultHolder,
+      hdos: GfxdHeapDataOutputStream): Unit = {
+    val size = hdos.size()
+    // prepare SnappyResultHolder with all data and create new one
+    if (size > 0) {
+      val bytes = new Array[Byte](size + 1)
+      // byte 1 will indicate that the metainfo is being packed too
+      bytes(0) = if (srh.hasMetadata) 0x1 else 0x0
+      hdos.sendTo(bytes, 1)
+      srh.fromSerializedData(bytes, bytes.length, null)
+    }
+  }
+
+  def serializeRows(out: DataOutput, hasMetadata: Boolean,
+      hdos: GfxdHeapDataOutputStream): Unit = {
+    val numBytes = hdos.size
+    if (numBytes > 0) {
+      InternalDataSerializer.writeArrayLength(numBytes + 1, out)
+      // byte 1 will indicate that the metainfo is being packed too
+      out.writeByte(if (hasMetadata) 0x1 else 0x0)
+      hdos.sendTo(out)
+    } else {
+      InternalDataSerializer.writeArrayLength(0, out)
+    }
+  }
 
   lazy val STRING_AS_CLOB: Boolean = System.getProperty(
     Constant.STRING_AS_CLOB_PROP, "false").toBoolean
@@ -417,8 +426,8 @@ object SparkSQLExecuteImpl {
               dvd.setValue(json)
             case StoredFormatIds.SQL_BLOB_ID =>
               // all complex types too work with below because all of
-              // Array, Map, Struct (as well as Binary itself) store data
-              // in the same way in UnsafeRow (offsetAndWidth)
+              // Array, Map, Struct (as well as Binary itself) transport
+              // data in the same way in UnsafeRow (offsetAndWidth)
               dvd.setValue(row.getBinary(index))
             case other => throw new GemFireXDRuntimeException(
               s"SparkSQLExecuteImpl: unexpected typeFormatId $other")

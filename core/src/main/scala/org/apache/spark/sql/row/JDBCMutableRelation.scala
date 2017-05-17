@@ -25,10 +25,13 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
+import org.apache.spark.sql.execution.row.RowInsertExec
+import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -50,6 +53,7 @@ case class JDBCMutableRelation(
     extends BaseRelation
     with PrunedUnsafeFilteredScan
     with InsertableRelation
+    with PlanInsertableRelation
     with RowInsertableRelation
     with UpdatableRelation
     with DeletableRelation
@@ -60,15 +64,15 @@ case class JDBCMutableRelation(
   override val needConversion: Boolean = false
 
   override def sizeInBytes: Long = {
-    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+    SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
       case Some(s) => s.getTotalSize
       case None => super.sizeInBytes
     }
   }
 
-  val driver = Utils.registerDriverUrl(connProperties.url)
+  val driver: String = Utils.registerDriverUrl(connProperties.url)
 
-  protected final def dialect = connProperties.dialect
+  protected final def dialect: JdbcDialect = connProperties.dialect
 
   // create table in external store once upfront
   var tableSchema: String = _
@@ -80,13 +84,15 @@ case class JDBCMutableRelation(
 
   var tableExists: Boolean = _
 
-  final lazy val schemaFields = Utils.schemaFields(schema)
+  final lazy val schemaFields: Map[String, StructField] =
+    Utils.schemaFields(schema)
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
-  protected final val connFactory = JdbcUtils.createConnectionFactory(
-    new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
+  protected final val connFactory: () => Connection =
+    JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
+      connProperties.connProps.asScala.toMap))
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -148,14 +154,12 @@ case class JDBCMutableRelation(
         }
     } finally {
       if (conn != null) {
+        conn.commit()
         conn.close()
       }
     }
     tableSchema
   }
-
-  final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
-    connProperties, forExecutor = true)
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
@@ -171,28 +175,22 @@ case class JDBCMutableRelation(
     (rdd, Nil)
   }
 
-  final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
+  final lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
+    table, schema, upsert = false)
+
+  override def getInsertPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    RowInsertExec(child, upsert = false, Seq.empty, Seq.empty, -1,
+      schema, Some(this), onExecutor = false, table, connProperties)
+  }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    // use the normal DataFrameWriter which will create an InsertIntoTable plan
+    // that will use the getInsertPlan above (in StoreStrategy)
+    data.write.mode(if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+        .insertInto(table)
   }
 
-  def insert(data: DataFrame, mode: SaveMode): Unit = {
-    createTable(mode)
-    insert(data)
-  }
-
-  def insert(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, table, schema, connProperties)
-  }
-
-  // TODO: should below all be executed from driver or some random executor?
-  // At least the insert can be split into batches and modelled as an RDD.
-  // UPDATE: It seems that GemXD putAll should be overall better than
-  // ParallelCollectionRDD that has heavier messaging and less of safety
-  // for non-transactional operations.
-  // In future with multiple driver impl this should avoid bottleneck.
-  // For best efficiency this can avoid prepared statement rather use putAll.
   override def insert(rows: Seq[Row]): Int = {
     val numRows = rows.length
     if (numRows == 0) {
@@ -201,16 +199,23 @@ case class JDBCMutableRelation(
     }
     val connProps = connProperties.connProps
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
-    val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP)
-    try {
-      val stmt = connection.prepareStatement(rowInsertStr)
-      val result = CodeGeneration.executeUpdate(table, stmt,
-        rows, numRows > 1, batchSize, schema.fields, dialect)
-      stmt.close()
-      result
-    } finally {
-      connection.close()
+    // use bulk insert using insert plan for large number of rows
+    if (numRows > (batchSize * 4)) {
+      JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+        table, upsert = false)
+    } else {
+      val connection = ConnectionPool.getPoolConnection(table, dialect,
+        connProperties.poolProps, connProps, connProperties.hikariCP)
+      try {
+        val stmt = connection.prepareStatement(rowInsertStr)
+        val result = CodeGeneration.executeUpdate(table, stmt,
+          rows, numRows > 1, batchSize, schema.fields, dialect)
+        stmt.close()
+        result
+      } finally {
+        connection.commit()
+        connection.close()
+      }
     }
   }
 
@@ -224,6 +229,7 @@ case class JDBCMutableRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -259,6 +265,7 @@ case class JDBCMutableRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -276,6 +283,7 @@ case class JDBCMutableRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -290,6 +298,7 @@ case class JDBCMutableRelation(
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
       } finally {
+        conn.commit()
         conn.close()
       }
     }
@@ -301,6 +310,7 @@ case class JDBCMutableRelation(
       JdbcExtendedUtils.truncateTable(conn, table, dialect)
     }
     finally {
+      conn.commit()
       conn.close()
     }
   }
@@ -341,6 +351,7 @@ case class JDBCMutableRelation(
           throw se
         }
     } finally {
+      conn.commit()
       conn.close()
     }
   }

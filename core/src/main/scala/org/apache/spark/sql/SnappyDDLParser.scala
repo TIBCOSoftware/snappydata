@@ -17,27 +17,25 @@
 
 package org.apache.spark.sql
 
-import java.io.File
-import java.util.Date
 
 import scala.collection.mutable.ArrayBuffer
+import java.io.File
+import java.util.Date
 import scala.util.Try
 
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
+import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.plans.{logical, QueryPlan}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.catalyst.catalog.BucketSpec
@@ -146,6 +144,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
+  final def FN: Rule0 = rule { keyword(Consts.FN) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -310,13 +309,11 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def dropTable: Rule1[LogicalPlan] = rule {
-    DROP ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~>
-        ((ifExists: Any, tableIdent: TableIdentifier) => DropTable(tableIdent,
-          ifExists.asInstanceOf[Option[Boolean]].isDefined))
+    DROP ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~> DropTable
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
-    TRUNCATE ~ TABLE ~ tableIdentifier ~> TruncateTable
+    TRUNCATE ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~> TruncateTable
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
@@ -677,25 +674,27 @@ private[sql] case class CreateMetastoreTableUsingSelect(
   }
 }
 
-private[sql] case class DropTable(
-    tableIdent: TableIdentifier,
-    ifExists: Boolean) extends ExecuteCommand {
-
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.dropTable(catalog.newQualifiedTableName(tableIdent), ifExists)
-    Seq.empty
-  }
-}
-
-private[sql] case class TruncateTable(
+private[sql] case class DropTable(ifExists: Any,
     tableIdent: TableIdentifier) extends ExecuteCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    snc.truncateTable(catalog.newQualifiedTableName(tableIdent))
+    snc.dropTable(catalog.newQualifiedTableName(tableIdent),
+      ifExists.asInstanceOf[Option[Boolean]].isDefined)
+    Seq.empty
+  }
+}
+
+private[sql] case class TruncateTable(ifExists: Any,
+    tableIdent: TableIdentifier) extends ExecuteCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
+      ifExists.asInstanceOf[Option[Boolean]].isDefined,
+      ignoreIfUnsupported = false)
     Seq.empty
   }
 }

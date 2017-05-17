@@ -39,6 +39,7 @@ import org.apache.commons.math3.distribution.NormalDistribution
 import org.xerial.snappy.Snappy
 
 import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
+import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
@@ -66,9 +67,9 @@ object Utils {
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
 
   // 1 - (1 - 0.95) / 2 = 0.975
-  final val Z95Percent = new NormalDistribution().
+  final val Z95Percent: Double = new NormalDistribution().
       inverseCumulativeProbability(0.975)
-  final val Z95Squared = Z95Percent * Z95Percent
+  final val Z95Squared: Double = Z95Percent * Z95Percent
 
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
     var index = start
@@ -276,7 +277,7 @@ object Utils {
     val sc = sqlContext.sparkContext
     val cleanedF = sc.clean(f)
     new ExecutorLocalRDD[T](sc,
-      (context: TaskContext, part: ExecutorLocalPartition) => cleanedF())
+      (_: TaskContext, _: ExecutorLocalPartition) => cleanedF())
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
@@ -710,7 +711,7 @@ object Utils {
     }
   }
 
-  def metricMethods(sc: SparkContext): (String => String, String => String) = {
+  def metricMethods: (String => String, String => String) = {
     if (usingEnhancedSpark) {
       (v => s"addLong($v)", v => s"$v.longValue()")
     } else {
@@ -733,6 +734,9 @@ object Utils {
     case e: Expression => e.children.length
     case _ => 1
   }
+
+  def taskMemoryManager(context: TaskContext): TaskMemoryManager =
+    context.taskMemoryManager()
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,

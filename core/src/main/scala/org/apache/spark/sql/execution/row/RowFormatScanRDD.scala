@@ -20,21 +20,24 @@ import java.lang.reflect.Field
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.GregorianCalendar
 
+import com.gemstone.gemfire.cache.IsolationLevel
+
 import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, NonLocalRegionEntry, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedResultSet}
 import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
@@ -53,7 +56,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private val filters: Array[Filter] = Array.empty[Filter],
-    @transient protected val parts: Array[Partition] = Array.empty[Partition])
+    @transient protected val partitionEvaluator: () => Array[Partition] = () =>
+    Array.empty[Partition] ,var commitTx: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
@@ -169,10 +173,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       thePart: Partition): (Connection, Statement, ResultSet) = {
     val conn = ExternalStoreUtils.getConnection(tableName,
       connProperties, forExecutor = true)
-
     if (isPartitioned) {
       val ps = conn.prepareStatement(
-        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
+        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
       try {
         ps.setString(1, tableName)
         val bucketString = thePart match {
@@ -180,23 +183,25 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
+        ps.setInt(3, -1)
         ps.executeUpdate()
       } finally {
         ps.close()
       }
     }
-
     val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args)
+      ExternalStoreUtils.setStatementParameters(stmt, args.map {
+        case pl: ParamLiteral => pl.value
+        case v => v
+      })
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }
-
     val rs = stmt.executeQuery()
     /* (hangs for some reason)
     // setup context stack for lightWeightNext calls
@@ -214,7 +219,22 @@ class RowFormatScanRDD(@transient val session: SnappySession,
    */
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
+
+    if (commitTx) {
+      Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+        logDebug(" task context is : " + TaskContext.get() + " attempt number is " + context.attemptNumber()
+        +" attempt ID " + context.taskAttemptId())
+        val tx = TXManagerImpl.snapshotTxState.get()
+        if (tx != null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/) {
+          GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+          GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+        }
+      }
+      ))
+    }
+
     if (pushProjections || useResultSet) {
+      // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
       new ResultSetTraversal(conn, stmt, rs, context)
     } else {
@@ -227,7 +247,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
-        new CompactExecRowIteratorOnScan(container, bucketIds)
+        val txManagerImpl: TXManagerImpl = GemFireCacheImpl.getInstance().getCacheTransactionManager
+        if (txManagerImpl.getTXState == null)
+          txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
+
+        val txId = txManagerImpl.getTransactionId
+        new CompactExecRowIteratorOnScan(container, bucketIds, txId)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
         val ers = rs match {
@@ -246,6 +271,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def getPartitions: Array[Partition] = {
     // use incoming partitions if provided (e.g. for collocated tables)
+    val parts = partitionEvaluator()
     if (parts != null && parts.length > 0) {
       return parts
     }
@@ -262,13 +288,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         case dr => session.sessionState.getTablePartitions(dr)
       }
     } finally {
+      conn.commit()
       conn.close()
     }
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
-
+    output.writeBoolean(commitTx)
     output.writeString(tableName)
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
@@ -296,7 +323,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
-
+    commitTx = input.readBoolean()
     tableName = input.readString()
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()
@@ -353,10 +380,17 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 
   protected final var hasNextValue = true
   protected final var doMove = true
+  // transaction started by row buffer scan should be used here
+  val tx = TXManagerImpl.snapshotTxState.get()
 
-  protected final val itr = container.getEntrySetIteratorForBucketSet(
-    bucketIds.asInstanceOf[java.util.Set[Integer]], null, null, 0,
-    false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  //TODO: Suranjan If tx is null then start a GemFire Snapshot tx.
+  protected final val itr = if (container ne null) {
+    container.getEntrySetIteratorForBucketSet(
+      bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
+      false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+  } else {
+    null
+  }
 
   protected def currentVal: T
 
@@ -367,6 +401,11 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
       moveNext()
       doMove = false
     }
+    // commit here as row and column iteration is complete.
+    /*if (!hasNextValue && tx != null && !(tx.asInstanceOf[TXStateProxy]).isClosed()) {
+      GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+      GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+    }*/
     hasNextValue
   }
 
@@ -380,7 +419,7 @@ abstract class PRValuesIterator[T](val container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer])
+    bucketIds: java.util.Set[Integer], txId: TXId)
     extends PRValuesIterator[AbstractCompactExecRow](container, bucketIds) {
 
   override protected val currentVal: AbstractCompactExecRow = container

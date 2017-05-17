@@ -16,7 +16,7 @@
  */
 package io.snappydata.externalstore
 
-import java.sql.{DriverManager, Connection, SQLException}
+import java.sql.{Connection, DriverManager, SQLException}
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -88,7 +88,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     try {
       // make sure that the column buffer does not exist
       routeQueryDisabledConn.createStatement().executeQuery(
-        "select * from " + ColumnFormatRelation.cachedBatchTableName("column_table1"))
+        "select * from " + ColumnFormatRelation.columnBatchTableName("column_table1"))
     } catch {
       case se: SQLException if (se.getSQLState.equals("42X05")) =>
       case unknown: Throwable => throw unknown
@@ -104,10 +104,15 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testHiveStoreEntryMissingForTable(): Unit = {
+    val snc = SnappyContext(sc)
+
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    val snc = SnappyContext(sc)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
 
     createTables(snc)
 
@@ -134,17 +139,22 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testStoreDDEntryMissingForTable(): Unit = {
+    val snc = SnappyContext(sc)
+
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    val snc = SnappyContext(sc)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
 
     createTables(snc)
 
     // drop column_table1 from store DD
     val routeQueryDisabledConn = getClientConnection(netPort1, false)
     routeQueryDisabledConn.createStatement().execute("drop table " +
-        ColumnFormatRelation.cachedBatchTableName("column_table1"))
+        ColumnFormatRelation.columnBatchTableName("column_table1"))
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore

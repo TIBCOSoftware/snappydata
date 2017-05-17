@@ -17,34 +17,44 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
+import java.sql.SQLException
 
+import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
-import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
-import org.apache.spark.sql.execution.{CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Logging, NarrowDependency, ShuffleDependency, SparkContext, SparkEnv, SparkException, TaskContext}
 
-class CachedDataFrame(df: Dataset[Row],
+class CachedDataFrame(df: Dataset[Row], val queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
-    val rddId: Int, val hasLocalCollectProcessing: Boolean)
-    extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) {
+    val rddId: Int, val hasLocalCollectProcessing: Boolean,
+    val allLiterals: Array[LiteralValue] = Array.empty,
+    val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty)
+    extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
    * Return true if [[collectWithHandler]] supports partition-wise separate
@@ -56,7 +66,7 @@ class CachedDataFrame(df: Dataset[Row],
   private lazy val boundEnc = exprEnc.resolveAndBind(logicalPlan.output,
     sparkSession.sessionState.analyzer)
 
-  private lazy val queryExecutionString = queryExecution.toString
+  private lazy val queryExecutionString = queryExecution.toString()
   private lazy val queryPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
     queryExecution.executedPlan)
 
@@ -75,6 +85,37 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
+  private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
+
+  private lazy val unsafe = UnsafeHolder.getUnsafe
+  private lazy val rdd_partitions_ = {
+    val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
+    _f.setAccessible(true)
+    unsafe.objectFieldOffset(_f)
+  }
+
+  @tailrec
+  private def clearPartitions(rdd: Seq[RDD[_]]): Unit = {
+    val children = rdd.flatMap(r => if (r != null) {
+      r.dependencies.map {
+        case d: NarrowDependency[_] => d.rdd
+        case s: ShuffleDependency[_, _, _] => s.rdd
+      }
+    } else None)
+
+    rdd.foreach {
+      case null =>
+      case r: RDD[_] =>
+        // f.set(r, null)
+        unsafe.putObject(r, rdd_partitions_, null)
+    }
+    if (children.isEmpty) {
+      return
+    }
+    clearPartitions(children)
+  }
+
+
   /**
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
@@ -91,10 +132,37 @@ class CachedDataFrame(df: Dataset[Row],
         end - start)
       result
     } catch {
+      case se: SparkException =>
+        val (isCatalogStale, sqlexception) = staleCatalogError(se)
+        if (isCatalogStale) {
+          val snSession = SparkSession.getActiveSession.get.asInstanceOf[SnappySession]
+          snSession.sessionCatalog.invalidateAll()
+          SnappySession.clearAllCache()
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          logInfo("Operation needs to be retried ", se)
+          throw sqlexception
+        } else {
+          sparkSession.listenerManager.onFailure(name, queryExecution, se)
+          throw se
+        }
       case e: Exception =>
         sparkSession.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
+  }
+
+  private def staleCatalogError(se: SparkException): (Boolean, SQLException) = {
+    var cause = se.getCause
+    while (cause != null) {
+      cause match {
+        case sqle: SQLException
+          if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+          return (true, sqle)
+        case _ =>
+          cause = cause.getCause
+      }
+    }
+    (false, null)
   }
 
   override def collect(): Array[Row] = {
@@ -126,10 +194,15 @@ class CachedDataFrame(df: Dataset[Row],
     if (!hasLocalCallSite) {
       sc.setCallSite(callSite)
     }
+    val trimSize = 100
+    val queryShortForm = if (queryString.length > trimSize) {
+      queryString.substring(0, trimSize) + "..."
+    } else queryString
+
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
-      sparkSession, callSite, queryExecutionString, queryPlanInfo) {
+      sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
       val executedPlan = queryExecution.executedPlan match {
-        case WholeStageCodegenExec(plan) => plan
+        case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
         case plan => plan
       }
       val results = executedPlan match {
@@ -159,7 +232,8 @@ class CachedDataFrame(df: Dataset[Row],
               plan.executeCollect().iterator.map(converter))._1))
           }
 
-        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutedCommand) =>
+        case plan@(_: ExecutedCommandExec | _: LocalTableScanExec
+                   | _: ExecutedCommand | _: ExecutePlan) =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             plan.executeCollect().iterator.asInstanceOf[Iterator[R]]
@@ -171,9 +245,11 @@ class CachedDataFrame(df: Dataset[Row],
           }
 
         case _ =>
-          val numPartitions = cachedRDD.getNumPartitions
+          val rdd = if (cachedRDD ne null) cachedRDD
+          else df.queryExecution.executedPlan.execute()
+          val numPartitions = rdd.getNumPartitions
           val results = new Array[R](numPartitions)
-          sc.runJob(cachedRDD, processPartition, 0 until numPartitions,
+          sc.runJob(rdd, processPartition, 0 until numPartitions,
             (index: Int, r: (U, Int)) =>
               results(index) = resultHandler(index, r._1))
           results.iterator
@@ -188,6 +264,29 @@ class CachedDataFrame(df: Dataset[Row],
         sc.clearCallSite()
       }
     }
+  }
+
+  var firstAccess = true
+
+  def reprepareBroadcast(lp: LogicalPlan,
+      newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
+    if (allbcplans.nonEmpty && !firstAccess) {
+      allbcplans.foreach { case (bchj, refs) =>
+        val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
+        val newbchj = bchj.transformAllExpressions {
+          case pl@ParamLiteral(_, _, p) =>
+            val np = newpls.find(_.pos == p).getOrElse(pl)
+            ParamLiteral(np.value, np.dataType, p)
+        }
+        val tmpCtx = new CodegenContext
+        val parameterType = tmpCtx.getClass
+        val method = newbchj.getClass.getDeclaredMethod("prepareBroadcast", parameterType)
+        method.setAccessible(true)
+        val bc = method.invoke(newbchj, tmpCtx)
+        refs(broadcastIndex) = bc.asInstanceOf[(Broadcast[_], String)]._1
+      }
+    }
+    firstAccess = false
   }
 }
 
@@ -309,7 +408,7 @@ object CachedDataFrame
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
   def withNewExecutionId[T](sparkSession: SparkSession,
-      callSite: CallSite, queryExecutionStr: String,
+      queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
       queryPlanInfo: SparkPlanInfo)(body: => T): T = {
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
@@ -318,7 +417,7 @@ object CachedDataFrame
       sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
       val r = try {
         sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
-          executionId, callSite.shortForm, callSite.longForm, queryExecutionStr,
+          executionId, queryShortForm, queryLongForm, queryExecutionStr,
           queryPlanInfo, System.currentTimeMillis()))
         try {
           body
@@ -447,7 +546,7 @@ object CachedDataFrame
         totalParts).toInt)
       val sc = session.sparkContext
       sc.runJob(rdd, processPartition, p, (index: Int, r: (U, Int)) => {
-        results(index) = (resultHandler(index, r._1), r._2)
+        results(partsScanned + index) = (resultHandler(index, r._1), r._2)
         numResults += r._2
       })
 

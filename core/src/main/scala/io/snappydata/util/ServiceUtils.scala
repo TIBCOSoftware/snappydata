@@ -87,7 +87,7 @@ object ServiceUtils {
     val locatorServers = scala.collection.mutable.HashMap[DistributedMember, String]()
     locators.asScala.foreach(locator =>
       locatorServers.put(locator,
-        if (ClientSharedUtils.USE_THRIFT_AS_DEFAULT) advisor.getThriftServers(locator)
+        if (ClientSharedUtils.isThriftDefault) advisor.getThriftServers(locator)
         else advisor.getDRDAServers(locator)))
     locatorServers
   }
@@ -100,11 +100,10 @@ object ServiceUtils {
 
     "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
-          "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1) + "/"
+          "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl + "/")
   }
 
   def clearStaticArtifacts(): Unit = {
-
   }
 }

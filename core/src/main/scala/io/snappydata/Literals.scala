@@ -18,6 +18,7 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
 /**
@@ -29,6 +30,8 @@ import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
+
+  val DEFAULT_THIN_CLIENT_URL = "jdbc:snappydata://"
 
   val SNAPPY_URL_PREFIX = "snappydata://"
 
@@ -66,12 +69,10 @@ object Constant {
   val keyBypassSampleOperator = "aqp.debug.byPassSampleOperator"
   val defaultBehaviorAsDO_NOTHING = "spark.sql.aqp.defaultBehaviorAsDO_NOTHING"
 
-  val COLUMN_MIN_BATCH_SIZE: Int = 200
-
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
 
   // Internal Column table store schema
   final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
@@ -161,15 +162,12 @@ object Property extends Enumeration {
       Some(propertyName.substring(Constant.SPARK_SNAPPY_PREFIX.length))
     } else None
   }
-  val CachedBatchSize = Val[Long](s"${Constant.PROPERTY_PREFIX}cachedBatchSize",
-    "Controls the size of batches for columnar caching in SnappyData's column tables.",
-    Some(10000), Constant.SPARK_PREFIX)
 
   val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +
         "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
 
-  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcastPort",
     "[Deprecated] The multicast port configured in the SnappyData cluster " +
         "when locators are not being used. This mode is no longer supported.",
     None, Constant.SPARK_PREFIX)
@@ -178,29 +176,54 @@ object Property extends Enumeration {
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
+  val ClusterURL = Val[String](s"${Constant.PROPERTY_PREFIX}Cluster.URL",
+     "Host and client port combination in the form [host:clientPort]. This " +
+     "is used by smart connector to connect to SnappyData cluster using " +
+     "JDBC driver. This will be used to form a JDBC URL of the form " +
+     "\"jdbc:snappydata://host:clientPort/\". It is recommended that hostname " +
+     "and client port of the locator be specified for this.",
+     None, Constant.SPARK_PREFIX)
+
   val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetaStoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+  val MetaStoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbUrl",
     "An explicit JDBC URL to use for external meta-data storage. " +
         "Normally this is set to use the SnappyData store by default and " +
         "should not be touched unless there are special requirements. " +
         "Use with caution since an incorrect configuration can result in " +
         "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
 
-  val MetaStoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+  val MetaStoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbDriver",
     s"Explicit JDBC driver class for ${MetaStoreDBURL.name} setting.",
     None, Constant.SPARK_PREFIX)
 
-  val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}columnBatchSize",
+  val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
         "the unit (in bytes) that will be used to split the data into chunks " +
-        "for efficient storage and retrieval.", Some(32 * 1024 * 1024))
+        "for efficient storage and retrieval. It can also be set for each table " +
+        s"using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
+        "create table DDL.", Some(32 * 1024 * 1024))
+
+  val ColumnMaxDeltaRows = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
+    "The maximum number of rows that can be in the delta buffer of a column table. " +
+        s"The size of delta buffer is already limited by $ColumnBatchSize but " +
+        "this allows a lower limit on number of rows for better scan performance. " +
+        "So the delta buffer will be rolled into the column store whichever of " +
+        s"$ColumnBatchSize and this property is hit first. It can also be set for " +
+        s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
+        s"create table DDL else this setting is used for the create table.", Some(10000))
+
+  val CompressionCodec = SQLVal[String](s"${Constant.PROPERTY_PREFIX}compression.codec",
+    "The compression codec to use when creating column batches for binary and " +
+        "complex type columns. Possible values: none, snappy, gzip, lzo. It can " +
+        s"also be set as ${ExternalStoreUtils.COMPRESSION_CODEC} option in " +
+        s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
-    "The join would be converted into a hash join if the table is of size less" +
+    "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
@@ -209,10 +232,10 @@ object Property extends Enumeration {
         "optimizer choice during query planning. Default is turned off.",
     Some(false), Constant.SPARK_PREFIX)
 
-  val FlushReservoirThreshold = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
+  val FlushReservoirThreshold = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
     "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +
         " on baset table of size more than flushReservoirThreshold." +
-        " Default value is 10,000.", Some(10000L))
+        " Default value is 10,000.", Some(10000))
 
   val NumBootStrapTrials = SQLVal[Int](s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
     "Number of bootstrap trials to do for calculating error bounds. Default value is 100.",
@@ -296,7 +319,7 @@ object QueryHint extends Enumeration {
 
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
-   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+   * as CLOBs in JSON format for routed JDBC/ODBC queries rather
    * than as serialized blobs to display better in external tools.
    *
    * Possible values are 'true/1' or 'false/0'

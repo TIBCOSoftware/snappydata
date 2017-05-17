@@ -19,23 +19,21 @@ package org.apache.spark.sql.store
 import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
+import org.apache.spark.Partition
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedUtils}
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
-import org.apache.spark.{Logging, Partition}
 
 
-object StoreUtils extends Logging {
+object StoreUtils {
 
   val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
   val REPLICATE = ExternalStoreUtils.REPLICATE
@@ -92,8 +90,8 @@ object StoreUtils extends Logging {
     REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
     GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
-    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.USE_COMPRESSION,
-    ExternalStoreUtils.RELATION_FOR_SAMPLE, ExternalStoreUtils.EXTERNAL_DATASOURCE)
+    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS,
+    ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE)
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
@@ -102,9 +100,8 @@ object StoreUtils extends Logging {
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
-  // with all the optimizations under SNAP-1135, RDD-bucket delinking is
-  // largely not required (max 5-10% advantage in the best case) since
-  // without the delinking exchange on one side can be avoided where possible
+  // private property to indicate One-to-one mapping of partitions to buckets
+  // which is enabled per-query using `LinkPartitionsToBuckets` rule
   private[sql] val PROPERTY_PARTITION_BUCKET_LINKED = "linkPartitionsToBuckets"
 
   def lookupName(tableName: String, schema: String): String = {
@@ -114,6 +111,27 @@ object StoreUtils extends Logging {
       } else tableName
     }
     lookupName
+  }
+
+  private[sql] def getBucketPreferredLocations(region: PartitionedRegion,
+      bucketId: Int, forWrite: Boolean): Seq[String] = {
+    if (forWrite) {
+      val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).toString
+      SnappyContext.getBlockId(primary) match {
+        case Some(b) => Seq(Utils.getHostExecutorId(b.blockId))
+        case None => Seq.empty
+      }
+    } else {
+      val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+      val members = new mutable.ArrayBuffer[String](2)
+      distMembers.foreach { m =>
+        SnappyContext.getBlockId(m.toString) match {
+          case Some(b) => members += Utils.getHostExecutorId(b.blockId)
+          case None =>
+        }
+      }
+      members
+    }
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
@@ -127,16 +145,10 @@ object StoreUtils extends Logging {
       val numPartitions = region.getTotalNumberOfBuckets
 
       (0 until numPartitions).map { p =>
-        val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
-        val prefNodes = distMembers.collect {
-          case m if SnappyContext.containsBlockId(m.toString) =>
-            Utils.getHostExecutorId(SnappyContext.getBlockId(
-              m.toString).get.blockId)
-        }
+        val prefNodes = getBucketPreferredLocations(region, p, forWrite = false)
         val buckets = new mutable.ArrayBuffer[Int](1)
         buckets += p
-        new MultiBucketExecutorPartition(p, buckets, numPartitions,
-          prefNodes.toSeq)
+        new MultiBucketExecutorPartition(p, buckets, numPartitions, prefNodes)
       }.toArray[Partition]
     }
   }
@@ -407,10 +419,11 @@ object StoreUtils extends Logging {
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
     }).getOrElse(EMPTY_STRING))
 
+    sb.append("  ENABLE CONCURRENCY CHECKS ")
     sb.toString()
   }
 
-  def getPartitioningColumn(
+  def getPartitioningColumns(
       parameters: mutable.Map[String, String]): Seq[String] = {
     parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
@@ -419,7 +432,9 @@ object StoreUtils extends Logging {
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.forall(v => {
-      if (!ddlOptions.contains(v.toString.toUpperCase)) {
+      val u = Utils.toUpperCase(v)
+      if (!u.startsWith(JdbcExtendedUtils.SCHEMADDL_PROPERTY) &&
+          !ddlOptions.contains(u)) {
         throw new AnalysisException(
           s"Unknown options $v specified while creating table ")
       }

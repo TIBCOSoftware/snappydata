@@ -18,26 +18,29 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
 
-final class BooleanBitSetEncoding
-    extends BooleanBitSetEncodingBase with NotNullColumn
+trait BooleanBitSetEncoding extends ColumnEncoding {
 
-final class BooleanBitSetEncodingNullable
-    extends BooleanBitSetEncodingBase with NullableColumn
+  override final def typeId: Int = 4
 
-abstract class BooleanBitSetEncodingBase extends ColumnEncoding {
+  override final def supports(dataType: DataType): Boolean =
+    dataType == BooleanType
+}
+
+final class BooleanBitSetDecoder
+    extends BooleanBitSetDecoderBase with NotNullDecoder
+
+final class BooleanBitSetDecoderNullable
+    extends BooleanBitSetDecoderBase with NullableDecoder
+
+abstract class BooleanBitSetDecoderBase
+    extends ColumnDecoder with BooleanBitSetEncoding {
 
   private[this] var byteCursor = 0L
   private[this] var currentWord = 0L
 
-  override final def typeId: Int = 3
-
-  override final def supports(dataType: DataType): Boolean =
-    dataType == BooleanType
-
-  override def initializeDecoding(columnBytes: AnyRef,
+  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = {
-    val cursor = super.initializeDecoding(columnBytes, field)
-    // read the count but its not used since CachedBatch has numRows
+    // read the count but its not used since ColumnBatch has numRows
     ColumnEncoding.readInt(columnBytes, cursor)
     byteCursor = cursor + 4
     // return current bit index as the cursor so that is used and

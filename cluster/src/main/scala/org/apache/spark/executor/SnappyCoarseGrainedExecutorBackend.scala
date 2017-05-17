@@ -19,7 +19,7 @@ package org.apache.spark.executor
 import java.net.URL
 import java.nio.ByteBuffer
 
-import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ExecutorInitiator
 
 import org.apache.spark.deploy.SparkHadoopUtil
@@ -73,8 +73,7 @@ class SnappyCoarseGrainedExecutorBackend(
       notifyDriver: Boolean = true): Unit = {
     exitWithoutRestart()
     // See if the VM is going down
-    GemFireStore.getBootingInstance.getGemFireCache.getCancelCriterion.
-        checkCancelInProgress(null)
+    Misc.checkIfCacheClosing(null)
     // Executor may fail to connect to the driver because of
     // https://issues.apache.org/jira/browse/SPARK-9820 and
     // https://issues.apache.org/jira/browse/SPARK-8592. To overcome such
@@ -92,8 +91,10 @@ class SnappyCoarseGrainedExecutorBackend(
   def exitWithoutRestart(): Unit = {
     if (executor != null) {
       // kill all the running tasks
-      // InterruptThread is set as true.
-      executor.killAllTasks(true)
+      // When tasks are killed, the task threads cannot be interrupted
+      // as snappy may be writing to an oplog and it generates a
+      // DiskAccessException. This DAE ends up closing the underlying regions.
+      executor.killAllTasks(interruptThread = false)
       executor.stop()
     }
     // stop the actor system

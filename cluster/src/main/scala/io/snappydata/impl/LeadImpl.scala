@@ -30,7 +30,7 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireStore, ServerGroupUtils}
+import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
@@ -42,7 +42,8 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
 
-class LeadImpl extends ServerImpl with Lead with Logging {
+class LeadImpl extends ServerImpl with Lead
+    with ProtocolOverrides with Logging {
 
   self =>
 
@@ -80,7 +81,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   }.toSet
 
   var _directApiInvoked: Boolean = false
-
+  var isTestSetup = false
   def directApiInvoked: Boolean = _directApiInvoked
 
   private var remoteInterpreterServerClass: Class[_] = _
@@ -91,6 +92,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
     _directApiInvoked = true
 
+    isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
+    bootProperties.remove("isTest")
     try {
 
       val locator = {
@@ -125,7 +128,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         }
         conf.set(key, v)
       })
-      // set spark ui port to 5050 that is snappy's default. 
+      // set spark ui port to 5050 that is snappy's default
       conf.set("spark.ui.port",
         bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
 
@@ -338,7 +341,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
     val jobServerEnabled = Property.JobServerEnabled.getProperty(
       bootProperties).toBoolean
-    if (_directApiInvoked) {
+    if (_directApiInvoked && !isTestSetup) {
       assert(jobServerEnabled,
         "JobServer must have been enabled with lead.start(..) invocation")
     }
@@ -366,7 +369,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   def getConfig(args: Array[String]): Config = {
 
-    System.setProperty("config.trace", "loads")
     val notConfigurable = ConfigFactory.parseProperties(getDynamicOverrides).
         withFallback(ConfigFactory.parseResources("jobserver-overrides.conf"))
 
@@ -379,7 +381,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
     val finalConf = snappyDefaults.withFallback(builtIn).resolve()
 
-    logInfo("Passing JobServer with config " + finalConf.root.render())
+    logDebug("Passing JobServer with config " + finalConf.root.render())
 
     finalConf
   }

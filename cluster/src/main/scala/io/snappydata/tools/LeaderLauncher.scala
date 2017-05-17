@@ -42,11 +42,17 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   @throws[Exception]
   override protected def getFabricServiceInstance: FabricService = ServiceManager.getLeadInstance
 
-  def initStartupArgs(args: ArrayBuffer[String]): Array[String] = {
+  def initStartupArgs(args: ArrayBuffer[String],
+      exitOnEmptyArgs: Boolean = true): Array[String] = {
 
-    if (args.length == 0) {
-      usage()
-      System.exit(1)
+    if (args.isEmpty) {
+      if (exitOnEmptyArgs) {
+        usage()
+        System.exit(1)
+      } else {
+        assert(assertion = false, LocalizedMessages.res.getTextMessage(
+          "SD_ZERO_ARGS"))
+      }
     }
 
     def changeOrAppend(attr: String, value: String, overwrite: Boolean = false) = {

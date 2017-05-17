@@ -17,19 +17,23 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.Properties
+import java.util.{Calendar, Properties}
+import javassist.bytecode.stackmap.TypeData.NullType
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
+
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Property
-import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, OptionalConfigEntry, TypedConfigBuilder}
+
+import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -39,11 +43,12 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.{PartitioningUtils, DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
+import org.apache.spark.sql.types.DecimalType
 import org.apache.spark.streaming.Duration
 import org.apache.spark.{Partition, SparkConf}
 
@@ -59,7 +64,7 @@ class SnappySessionState(snappySession: SnappySession)
   protected lazy val snappySharedState: SnappySharedState =
     snappySession.snappySharedState.asInstanceOf[SnappySharedState]
 
-  protected lazy val metadataHive = snappySharedState.metadataHive.newSession()
+  private[internal] lazy val metadataHive = snappySharedState.metadataHive.newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -79,7 +84,6 @@ class SnappySessionState(snappySession: SnappySession)
       datasources.PreWriteCheck(conf, catalog),
       PrePutCheck)
   }
-
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
@@ -99,7 +103,32 @@ class SnappySessionState(snappySession: SnappySession)
 
       modified :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
-          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets)
+          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets) :+
+          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
+    }
+  }
+
+  // copy of ConstantFolding that will turn a constant up/down cast into
+  // a static value.
+  object ParamLiteralFolding extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case p: ParamLiteral => p.markFoldable(true)
+        p
+    } transform {
+      case q: LogicalPlan => q transformExpressionsDown {
+        // ignore leaf ParamLiteral & Literal
+        case p: ParamLiteral => p
+        case l: Literal => l
+        // Wrap expressions that are foldable.
+        case e if e.foldable =>
+          // lets mark child params foldable false so that nested expression doesn't
+          // attempt to wrap.
+          e.foreach {
+            case p: ParamLiteral => p.markFoldable(false)
+            case _ =>
+          }
+          DynamicFoldableExpression(e)
+      }
     }
   }
 
@@ -120,11 +149,10 @@ class SnappySessionState(snappySession: SnappySession)
           }
         case c@(LogicalRelation(_, _, _) |
                 LogicalDStreamPlan(_, _)) =>
-          transformed match {
-            case true => transformed = false
-              WindowLogicalPlan(duration, slide, c, transformed = true)
-            case _ => c
-          }
+          if (transformed) {
+            transformed = false
+            WindowLogicalPlan(duration, slide, c, transformed = true)
+          } else c
       }
     }
   }
@@ -140,7 +168,11 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
-        case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
+        case _: InsertIntoTable | _: PutIntoTable =>
+          // disable for inserts/puts to avoid exchanges
+          snappySession.linkPartitionsToBuckets(flag = true)
+        case PhysicalOperation(_, _, LogicalRelation(
+        _: IndexColumnFormatRelation, _, _)) =>
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
@@ -194,15 +226,28 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog = new SnappyStoreHiveCatalog(
-    snappySharedState.externalCatalog,
-    snappySession,
-    metadataHive,
-    snappySession.sharedState.globalTempViewManager,
-    functionResourceLoader,
-    functionRegistry,
-    conf,
-    newHadoopConf())
+  override lazy val catalog = {
+    SnappyContext.getClusterMode(snappySession.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        new SnappyConnectorCatalog(
+          snappySharedState.externalCatalog,
+          snappySession,
+          metadataHive,
+          functionResourceLoader,
+          functionRegistry,
+          conf,
+          newHadoopConf())
+      case _ =>
+        new SnappyStoreHiveCatalog(
+          snappySharedState.externalCatalog,
+          snappySession,
+          metadataHive,
+          functionResourceLoader,
+          functionRegistry,
+          conf,
+          newHadoopConf())
+    }
+  }
 
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
@@ -213,6 +258,7 @@ class SnappySessionState(snappySession: SnappySession)
     EnsureRequirements(snappySession.sessionState.conf),
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
+    InsertCachedPlanHelper(snappySession),
     ReuseExchange(snappySession.sessionState.conf))
 
   override def executePlan(plan: LogicalPlan): QueryExecution = {
@@ -251,6 +297,17 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+
+  var isPreparePhase: Boolean = false
+
+  var pvs: Option[ParameterValueSet] = None
+
+  var questionMarkCounter: Int = 0
+
+  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit = {
+    isPreparePhase = preparePhase
+    pvs = paramSet
+  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
@@ -459,16 +516,16 @@ trait SQLAltName[T] extends AltName[T] {
       case Some(_) => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
       case None => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[Option[T]]]).get
     }
-
   }
 
   private def get(conf: SQLConf, name: String,
       defaultValue: String): T = {
     configEntry.entry.defaultValue match {
-      case Some(_) => configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
-      case None => configEntry.valueConverter[Option[T]](conf.getConfString(name, defaultValue)).get
+      case Some(_) => configEntry.valueConverter[T](
+        conf.getConfString(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.getConfString(name, defaultValue)).get
     }
-
   }
 
   def get(conf: SQLConf): T = if (altName == null) {
@@ -483,6 +540,12 @@ trait SQLAltName[T] extends AltName[T] {
     } else {
       get(conf, altName, configEntry.defaultValueString)
     }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {
@@ -540,10 +603,11 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     _, _), _, child, _, _) if l.resolved && child.resolved =>
       r.insertableRelation(child.output) match {
         case Some(ir) =>
-          val relation = LogicalRelation(ir.asInstanceOf[BaseRelation],
+          val br = ir.asInstanceOf[BaseRelation]
+          val relation = LogicalRelation(br,
             l.expectedOutputAttributes, l.catalogTable)
-          castAndRenameChildOutput(i.copy(table = relation),
-            relation.output)
+          castAndRenameChildOutputForPut(i.copy(table = relation),
+            relation.output, br, null, child)
         case None =>
           throw new AnalysisException(s"$l requires that the query in the " +
               "SELECT clause of the INSERT INTO/OVERWRITE statement " +
@@ -556,7 +620,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(_: RowInsertableRelation, _, _) =>
+        case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
           // First, make sure the data to be inserted have the same number of
           // fields with the schema of the relation.
           val expectedOutput = l.output
@@ -565,31 +629,31 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
                 "SELECT clause of the PUT INTO statement " +
                 "generates the same number of columns as its schema.")
           }
-          castAndRenameChildOutputForPut(p, expectedOutput, l, child)
+          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
 
         case _ => p
       }
 
     // other cases handled like in PreprocessTableInsertion
-    case i@InsertIntoTable(table, partition, child, _, _)
+    case i@InsertIntoTable(table, _, child, _, _)
       if table.resolved && child.resolved => table match {
       case relation: CatalogRelation =>
         val metadata = relation.catalogTable
-        preprocess(i, metadata.identifier.quotedString,
+        preProcess(i, relation = null, metadata.identifier.quotedString,
           metadata.partitionColumnNames)
       case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
         val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preprocess(i, tblName, h.partitionSchema.map(_.name))
-      case LogicalRelation(_: InsertableRelation, _, identifier) =>
+        preProcess(i, h, tblName, h.partitionSchema.map(_.name))
+      case LogicalRelation(ir: InsertableRelation, _, identifier) =>
         val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preprocess(i, tblName, Nil)
-      case other => i
+        preProcess(i, ir, tblName, Nil)
+      case _ => i
     }
-
   }
 
-  private def preprocess(
+  private def preProcess(
       insert: InsertIntoTable,
+      relation: BaseRelation,
       tblName: String,
       partColNames: Seq[String]): InsertIntoTable = {
 
@@ -629,13 +693,16 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       }
       castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
 
-//      expectedColumns.map(castAndRenameChildOutput(insert, _, null, child))
-//          .getOrElse(insert)
+//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+//        child)).getOrElse(insert)
     } else {
       // All partition columns are dynamic because because the InsertIntoTable
       // command does not explicitly specify partitioning columns.
       castAndRenameChildOutput(insert, expectedColumns)
           .copy(partition = partColNames.map(_ -> None).toMap)
+//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+//        child)).getOrElse(insert).copy(partition = partColNames
+//          .map(_ -> None).toMap)
     }
   }
 
@@ -647,6 +714,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   def castAndRenameChildOutputForPut[T <: LogicalPlan](
       plan: T,
       expectedOutput: Seq[Attribute],
+      relation: BaseRelation,
       newRelation: LogicalRelation,
       child: LogicalPlan): T = {
     val newChildOutput = expectedOutput.zip(child.output).map {
@@ -655,14 +723,21 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
             expected.name == actual.name) {
           actual
         } else {
-          Alias(Cast(actual, expected.dataType), expected.name)()
+          // avoid unnecessary copy+cast when inserting DECIMAL types
+          // into column table
+          actual.dataType match {
+            case _: DecimalType
+              if expected.dataType.isInstanceOf[DecimalType] &&
+                  relation.isInstanceOf[PlanInsertableRelation] => actual
+            case _ => Alias(Cast(actual, expected.dataType), expected.name)()
+          }
         }
     }
 
     if (newChildOutput == child.output) {
       plan match {
         case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
-        case i: InsertIntoTable => plan
+        case _: InsertIntoTable => plan
       }
     } else plan match {
       case p: PutIntoTable => p.copy(table = newRelation,
@@ -720,7 +795,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
           // OK
         }
 
-      case PutIntoTable(table, query) =>
+      case PutIntoTable(table, _) =>
         throw Utils.analysisException(s"$table does not allow puts.")
 
       case _ => // OK

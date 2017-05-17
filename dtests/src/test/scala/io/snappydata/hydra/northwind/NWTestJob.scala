@@ -24,9 +24,10 @@ import org.apache.spark.sql._
 import scala.util.{Failure, Success, Try}
 
 object NWTestJob extends SnappySQLJob {
-  var regions, categories, shippers, employees, customers, orders, order_details, products, suppliers, territories, employee_territories: DataFrame = null
+  var regions, categories, shippers, employees, customers, orders, order_details, products,
+  suppliers, territories, employee_territories: DataFrame = null
 
-  def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+  def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSnappyJob.out"), true));
@@ -36,42 +37,42 @@ object NWTestJob extends SnappySQLJob {
       val dataLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataLocation)
       NWQueries.snc = snc
-      println(s"SS - dataLocation is : ${dataLocation}")
       NWQueries.dataFilesLocation = dataLocation
       regions = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/regions.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/regions.csv")
       categories = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/categories.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/categories.csv")
       shippers = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/shippers.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/shippers.csv")
       employees = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/employees.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/employees.csv")
       customers = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/customers.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/customers.csv")
       orders = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/orders.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/orders.csv")
       order_details = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/order-details.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/order-details.csv")
       products = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/products.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/products.csv")
       suppliers = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/suppliers.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/suppliers.csv")
       territories = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/territories.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/territories.csv")
       employee_territories = snc.read.format("com.databricks.spark.csv")
-        .option("header", "true")
-        .load(s"$dataLocation/employee-territories.csv")
+          .option("header", "true")
+          .load(s"$dataLocation/employee-territories.csv")
       NWTestUtil.dropTables(snc)
+      // scalastyle:off println
       println("Test replicated row tables queries started")
       NWTestUtil.createAndLoadReplicatedTables(snc)
       NWTestUtil.validateQueries(snc, "Replicated Row Table", pw)

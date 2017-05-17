@@ -18,16 +18,17 @@ package org.apache.spark.jdbc
 
 import java.io.{IOException, ObjectOutputStream}
 
+
+import scala.collection.mutable
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.util.Utils
 
-import scala.collection.mutable
-
 class ConnectionConf(val connProps: ConnectionProperties) extends Serializable {
 
+  // noinspection ScalaUnusedSymbol
   @throws(classOf[IOException])
   private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
     oos.defaultWriteObject()
@@ -46,20 +47,20 @@ class ConnectionConfBuilder(session: SnappySession) {
 
   /**
    * Set the URL for connection. For SnappyData you can skip setting this.
-    * SnappyData will automatically set the URL based on the cluster
+   * SnappyData will automatically set the URL based on the cluster
    * @param url URL for JDBC connection
    */
-  def setURL(url: String) : ConnectionConfBuilder = {
+  def setURL(url: String): ConnectionConfBuilder = {
     connSettings.put(URL, url)
     this
   }
 
   /**
    * Set the driver for the connection. For SnappyData no need to set this.
-    * SnappyData will automatically set the driver based on the cluster
+   * SnappyData will automatically set the driver based on the cluster
    * @param driver driver for the connection
    */
-  def setDriver(driver: String) : ConnectionConfBuilder = {
+  def setDriver(driver: String): ConnectionConfBuilder = {
     connSettings.put(DRIVER, driver)
     this
   }
@@ -67,9 +68,10 @@ class ConnectionConfBuilder(session: SnappySession) {
   /**
    * Snappy supports two ConnectionPool implementation "Tomcat" and "Hikari".
    * Set either of the two . Default is Tomcat.
+   *
    * @param provider provider name
    */
-  def setPoolProvider(provider: String) : ConnectionConfBuilder = {
+  def setPoolProvider(provider: String): ConnectionConfBuilder = {
     connSettings.put(poolProvider, provider)
     this
   }
@@ -79,11 +81,11 @@ class ConnectionConfBuilder(session: SnappySession) {
    * For detailed list for Hikari refer
    * https://github.com/brettwooldridge/HikariCP/wiki/Configuration
    * For detailed list for Tomcat refer
-   * https://people.apache.org/~fhanik/jdbc-pool/jdbc-pool.html
+   * https://tomcat.apache.org/tomcat-8.0-doc/jdbc-pool.html
    *
    * Even if you don't mention any properties it defaults it to some sensible values
    *
-   * @param prop property name
+   * @param prop  property name
    * @param value property value
    */
   def setPoolConf(prop: String, value: String) : ConnectionConfBuilder = {
@@ -96,14 +98,14 @@ class ConnectionConfBuilder(session: SnappySession) {
    * For detailed list for Hikari refer
    * https://github.com/brettwooldridge/HikariCP/wiki/Configuration
    * For detailed list for Tomcat refer
-   * https://people.apache.org/~fhanik/jdbc-pool/jdbc-pool.html
+   * https://tomcat.apache.org/tomcat-8.0-doc/jdbc-pool.html
    *
    * Even if you don't mention any properties it defaults it to some sensible values
    *
    * @param props map of key-value
    */
-  def setPoolConfs(props: Map[String, String]) : ConnectionConfBuilder = {
-    if (props != null && !props.isEmpty) {
+  def setPoolConfs(props: Map[String, String]): ConnectionConfBuilder = {
+    if (props != null && props.nonEmpty) {
       props.map(e => poolSettings.put(e._1, e._2))
     }
     this
@@ -111,10 +113,11 @@ class ConnectionConfBuilder(session: SnappySession) {
 
   /**
    * Sets any additional information in connection setting
-   * @param prop property name
+   *
+   * @param prop  property name
    * @param value property value
    */
-  def setConf(prop: String, value: String) : ConnectionConfBuilder = {
+  def setConf(prop: String, value: String): ConnectionConfBuilder = {
     connSettings.put(prop, value)
     this
   }
@@ -125,13 +128,12 @@ class ConnectionConfBuilder(session: SnappySession) {
    * ConnectionConf
    */
   def build(): ConnectionConf = {
-    if (poolSettings.size > 0){
-      val sb = new StringBuilder()
-      val poolProperties = poolSettings.map( x => (s"${x._1}=${x._2}")).mkString(",")
+    if (poolSettings.nonEmpty) {
+      val poolProperties = poolSettings.map(x => s"${x._1}=${x._2}").mkString(",")
       connSettings.put("poolProperties", poolProperties)
     }
 
-    val connProps = ExternalStoreUtils.validateAndGetAllProps(Some(session.sparkContext),
+    val connProps = ExternalStoreUtils.validateAndGetAllProps(Some(session),
       new CaseInsensitiveMutableHashMap(connSettings))
     new ConnectionConf(connProps)
   }
