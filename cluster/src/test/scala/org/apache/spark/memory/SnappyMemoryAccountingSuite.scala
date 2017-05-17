@@ -17,6 +17,7 @@
 
 package org.apache.spark.memory
 
+import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
@@ -238,7 +239,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         println(s"RowCount2 = $rows")
       }
     } catch {
-      case e: Exception => {
+      case e: LowMemoryException => {
         println(s"RowCount3 in exception = $rows")
         assert(memoryIncreaseDuetoEviction > 0)
       }
