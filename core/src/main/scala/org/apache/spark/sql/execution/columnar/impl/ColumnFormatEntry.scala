@@ -201,6 +201,10 @@ final class ColumnPartitionResolver
     Int.box(key.asInstanceOf[ColumnFormatKey].partitionId)
   }
 
+  override def getPartitioningColumnsCount: Int = 1
+
+  override def getMasterTable(rootMaster: Boolean): String = null
+
   override def getDDLString: String =
     s"PARTITIONER '${classOf[ColumnPartitionResolver].getName}'"
 

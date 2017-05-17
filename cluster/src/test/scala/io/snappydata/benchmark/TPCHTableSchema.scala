@@ -19,7 +19,7 @@ package io.snappydata.benchmark
 
 import java.sql.Date
 
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.StructType
 
 
 object TPCHTableSchema {
@@ -31,13 +31,7 @@ object TPCHTableSchema {
   )
 
   def newRegionSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("r_regionkey") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("r_name") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("r_comment") => new StructField(d.name, d.dataType, true)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parseRegionRow(s: Array[String]): StreamMessageRegionObject = {
@@ -56,14 +50,7 @@ object TPCHTableSchema {
   )
 
   def newNationSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("n_nationkey") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("n_name") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("n_regionkey") => new StructField(d.name, d.dataType, false)
-        case e if e.name.equals("n_comment") => new StructField(e.name, e.dataType, true)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parseNationRow(s: Array[String]): StreamMessageNationObject = {
@@ -86,17 +73,7 @@ object TPCHTableSchema {
   )
 
   def newSupplierSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("s_suppkey") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("s_name") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("s_address") => new StructField(d.name, d.dataType, false)
-        case e if e.name.equals("s_nationkey") => new StructField(e.name, e.dataType, false)
-        case f if f.name.equals("s_phone") => new StructField(f.name, f.dataType, false)
-        case g if g.name.equals("s_acctbal") => new StructField(g.name, g.dataType, false)
-        case i if i.name.equals("s_comment") => new StructField(i.name, i.dataType, false)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parseSupplierRow(s: Array[String]): StreamMessageSupplierObject = {
@@ -125,19 +102,7 @@ object TPCHTableSchema {
 
 
   def newOrderSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("o_orderkey") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("o_custkey") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("o_orderstatus") => new StructField(d.name, d.dataType, false)
-        case e if e.name.equals("o_totalprice") => new StructField(e.name, e.dataType, false)
-        case f if f.name.equals("o_orderdate") => new StructField(f.name, f.dataType, false)
-        case g if g.name.equals("o_orderpriority") => new StructField(g.name, g.dataType, false)
-        case h if h.name.equals("o_clerk") => new StructField(h.name, h.dataType, false)
-        case i if i.name.equals("o_shippriority") => new StructField(i.name, i.dataType, false)
-        case j if j.name.equals("o_comment") => new StructField(j.name, j.dataType, false)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parseOrderRow(s: Array[String]): StreamMessageOrderObject = {
@@ -174,26 +139,7 @@ object TPCHTableSchema {
   )
 
   def newLineItemSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("l_orderkey") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("l_partkey") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("l_suppkey") => new StructField(d.name, d.dataType, false)
-        case e if e.name.equals("l_linenumber") => new StructField(e.name, e.dataType, false)
-        case f if f.name.equals("l_quantity") => new StructField(f.name, f.dataType, false)
-        case g if g.name.equals("l_extendedprice") => new StructField(g.name, g.dataType, false)
-        case i if i.name.equals("l_discount") => new StructField(i.name, i.dataType, false)
-        case j if j.name.equals("l_tax") => new StructField(j.name, j.dataType, false)
-        case k if k.name.equals("l_returnflag") => new StructField(k.name, k.dataType, false)
-        case l if l.name.equals("l_linestatus") => new StructField(l.name, l.dataType, false)
-        case m if m.name.equals("l_shipdate") => new StructField(m.name, m.dataType, false)
-        case n if n.name.equals("l_commitdate") => new StructField(n.name, n.dataType, false)
-        case o if o.name.equals("l_receiptdate") => new StructField(o.name, o.dataType, false)
-        case p if p.name.equals("l_shipinstruct") => new StructField(p.name, p.dataType, false)
-        case q if q.name.equals("l_shipmode") => new StructField(q.name, q.dataType, false)
-        case s if s.name.equals("l_comment") => new StructField(s.name, s.dataType, false)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parseLineItemRow(s: Array[String]): StreamMessageLineItemObject = {
@@ -230,19 +176,7 @@ object TPCHTableSchema {
   )
 
   def newPartSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("p_partkey") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("p_name") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("p_mfgr") => new StructField(d.name, d.dataType, false)
-        case e if e.name.equals("p_brand") => new StructField(e.name, e.dataType, false)
-        case f if f.name.equals("p_type") => new StructField(f.name, f.dataType, false)
-        case g if g.name.equals("p_size") => new StructField(g.name, g.dataType, false)
-        case i if i.name.equals("p_container") => new StructField(i.name, i.dataType, false)
-        case j if j.name.equals("p_retailprice") => new StructField(j.name, j.dataType, false)
-        case k if k.name.equals("p_comment") => new StructField(k.name, k.dataType, false)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parsePartRow(s: Array[String]): StreamMessagePartObject = {
@@ -268,15 +202,7 @@ object TPCHTableSchema {
   )
 
   def newPartSuppSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("ps_partkey") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("ps_suppkey") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("ps_availqty") => new StructField(d.name, d.dataType, false)
-        case e if e.name.equals("ps_supplycost") => new StructField(e.name, e.dataType, false)
-        case f if f.name.equals("ps_comment") => new StructField(f.name, f.dataType, false)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parsePartSuppRow(s: Array[String]): StreamMessagePartSuppObject = {
@@ -301,18 +227,7 @@ object TPCHTableSchema {
   )
 
   def newCustomerSchema(schema: StructType): StructType = {
-    new StructType(schema.map { a =>
-      a match {
-        case b if b.name.equals("C_CUSTKEY") => new StructField(b.name, b.dataType, false)
-        case c if c.name.equals("C_NAME") => new StructField(c.name, c.dataType, false)
-        case d if d.name.equals("C_ADDRESS") => new StructField(d.name, d.dataType, false)
-        case e if e.name.equals("C_NATIONKEY") => new StructField(e.name, e.dataType, false)
-        case f if f.name.equals("C_PHONE") => new StructField(f.name, f.dataType, false)
-        case g if g.name.equals("C_ACCTBAL") => new StructField(g.name, g.dataType, false)
-        case i if i.name.equals("C_MKTSEGMENT") => new StructField(i.name, i.dataType, false)
-        case j if j.name.equals("C_COMMENT") => new StructField(j.name, j.dataType, false)
-      }
-    }.toArray)
+    new StructType(schema.map(_.copy(nullable = false)).toArray)
   }
 
   def parseCustomerRow(s: Array[String]): StreamMessageCustomerObject = {
@@ -333,6 +248,6 @@ object TPCHTableSchema {
     val year = splittedDate(0)
     val month = splittedDate(1)
     val day = splittedDate(2)
-    new Date((year.toInt - 1900), (month.toInt - 1), day.toInt)
+    new Date(year.toInt - 1900, month.toInt - 1, day.toInt)
   }
 }
