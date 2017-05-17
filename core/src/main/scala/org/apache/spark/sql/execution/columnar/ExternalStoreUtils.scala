@@ -64,6 +64,9 @@ object ExternalStoreUtils extends Logging {
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
+  val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
+    COLUMN_MAX_DELTA_ROWS, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
       schema + '.' + tableName
@@ -238,8 +241,10 @@ object ExternalStoreUtils extends Logging {
     val connProps = new Properties()
     val executorConnProps = new Properties()
     parameters.foreach { kv =>
-      connProps.setProperty(kv._1, kv._2)
-      executorConnProps.setProperty(kv._1, kv._2)
+      if (!ddlOptions.contains(Utils.toUpperCase(kv._1))) {
+        connProps.setProperty(kv._1, kv._2)
+        executorConnProps.setProperty(kv._1, kv._2)
+      }
     }
     connProps.remove("poolProperties")
     executorConnProps.remove("poolProperties")
