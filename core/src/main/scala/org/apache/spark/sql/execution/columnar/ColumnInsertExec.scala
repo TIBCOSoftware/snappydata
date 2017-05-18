@@ -684,7 +684,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     }
     storeColumnBatchArgs = s"$batchSizeTerm, ${batchFunctionCall.toString()}"
     s"""
-       |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&
+       |if ($columnBatchSize > 0 &&($batchSizeTerm & $checkMask) == 0 &&
        |    $batchSizeTerm > 0) {
        |  // check if batch size has exceeded max allowed
        |  long $sizeTerm = 0L;

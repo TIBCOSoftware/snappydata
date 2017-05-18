@@ -166,6 +166,7 @@ trait ColumnBatchRowsBuffer {
   def appendRow(row: InternalRow): Unit
 
   def endRows(): Unit
+
 }
 
 /**
@@ -237,6 +238,7 @@ case class CallbackColumnInsert(_schema: StructType)
     s"""
        |if (this.$rowsBuffer == null) {
        |  this.$rowsBuffer = new $rowsBufferClass() {
+       |
        |    public void startRows(int bucketId) throws java.io.IOException {
        |      // set the bucketId
        |      $bucketIdTerm = bucketId;
