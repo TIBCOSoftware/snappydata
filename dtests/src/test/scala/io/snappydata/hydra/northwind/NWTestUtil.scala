@@ -272,7 +272,7 @@ object NWTestUtil {
         case "Q57" => assertJoin(snc, NWQueries.Q57, 120, "Q57", tableType, pw)
         case "Q58" => assertJoin(snc, NWQueries.Q58, 1, "Q58", tableType, pw)
         case "Q59" => assertJoin(snc, NWQueries.Q59, 1, "Q59", tableType, pw)
-        // case "Q60" => assertJoin(snc, NWQueries.Q60, 947, "Q60", tableType, pw)
+        case "Q60" => assertJoin(snc, NWQueries.Q60, 947, "Q60", tableType, pw)
         // scalastyle:off println
         case _ => println("OK")
         // scalastyle:on println
@@ -402,8 +402,8 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q59" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q59, "Q59",
           tableType, pw, sqlContext)
-        // case "Q60" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q60,"Q60",
-        // tableType, pw, sqlContext)
+        case "Q60" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q60, "Q60",
+          tableType, pw, sqlContext)
         // scalastyle:off println
         case _ => println("OK")
       }

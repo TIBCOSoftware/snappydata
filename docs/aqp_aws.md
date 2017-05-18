@@ -205,15 +205,20 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 *	<Note> The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.</Note>
 	
 * <Note> You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.</Note>
+
 * <Note> Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
 </Note>
+
+* <Note> If the Secret Access Key contains any special characters or slash, it causes the Spark job to fail. When you create the Secret Access Key, ensure that it only contains alpha-numeric characters.
+</Note> </br>
+
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
 
 ```
 %sql
 DROP TABLE IF EXISTS <table_name> ;
-CREATE EXTERNAL TABLE <table_name> USING parquet OPTIONS(path '<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@<bucket_Name>/<folder_name>');
+CREATE EXTERNAL TABLE <table_name> USING parquet OPTIONS(path 's3a://<AWS_ACCESS_KEY_ID>:<AWS_SECRET_ACCESS_KEY>@<bucket_Name>/<folder_name>');
 ```
 
 The values are:
@@ -306,7 +311,9 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 ## Creating Notebooks - Try it Yourself!
 
 1. Log on to Apache Zeppelin, create a notebook and insert a new paragraph.
+
 2. Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
+
 3. Download a dataset you want to use and create tables as mentioned below
 
 ### Examples of Queries and Results
