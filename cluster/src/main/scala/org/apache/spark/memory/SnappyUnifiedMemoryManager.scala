@@ -99,8 +99,9 @@ class SnappyUnifiedMemoryManager private[memory](
       numCores)
 
     MemoryManagerCallback.tempMemoryManager.memoryForObject.map { entry =>
-      acquireStorageMemoryForObject(entry._1, MemoryManagerCallback.storageBlockId,
-        entry._2, MemoryMode.ON_HEAP, null, shouldEvict = false)
+      val (objectName, mode) = entry._1
+      acquireStorageMemoryForObject(objectName, MemoryManagerCallback.storageBlockId,
+        entry._2, mode, null, shouldEvict = false)
     }
   }
 

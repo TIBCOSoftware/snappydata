@@ -264,12 +264,12 @@ final class ColumnFormatValue
    */
   def getBufferRetain: ByteBuffer = {
     if (retain()) {
-      columnBuffer
+      columnBuffer.duplicate()
     } else synchronized {
       // check if already read from disk by another thread and still valid
       val buffer = this.columnBuffer
       if ((buffer ne ColumnFormatEntry.VALUE_EMPTY_BUFFER) && retain()) {
-        return buffer
+        return buffer.duplicate()
       }
 
       // try to read using DiskId
@@ -286,7 +286,7 @@ final class ColumnFormatValue
                 val updatedRefCount = if (refCount <= 0) 1 else refCount + 1
                 if (SerializedDiskBuffer.refCountUpdate.compareAndSet(
                   this, refCount, updatedRefCount)) {
-                  return columnBuffer
+                  return columnBuffer.duplicate()
                 }
               }
             case null | _: Token => // return empty buffer
@@ -313,7 +313,7 @@ final class ColumnFormatValue
    * THE BUFFER SO CALLER MUST ENSURE AT LEAST ONE [[retain]]
    * AND NO EXPLICIT RELEASE OF THE RETURNED BUFFER (IF A DIRECT ONE).
    */
-  override def getInternalBuffer: ByteBuffer = columnBuffer
+  override def getInternalBuffer: ByteBuffer = columnBuffer.duplicate()
 
   override protected def releaseBuffer(): Unit = synchronized {
     // Remove the buffer at this point. Any further reads will need to be
@@ -341,13 +341,12 @@ final class ColumnFormatValue
   override def write(channel: OutputStreamChannel): Unit = {
     // write the pre-serialized buffer as is
     val buffer = getBufferRetain
-    val position = buffer.position()
     try {
-      // rewind buffer to the start for the write
+      // rewind buffer to the start for the write;
+      // no need to change position back since this is a duplicate ByteBuffer
       buffer.rewind()
       write(channel, buffer)
     } finally {
-      buffer.position(position)
       release()
     }
   }
@@ -372,10 +371,7 @@ final class ColumnFormatValue
             write(channel, buffer)
 
           case hdos: HeapDataOutputStream =>
-            val position = buffer.position()
             hdos.write(buffer)
-            // rewind to original position
-            buffer.position(position)
 
           case _ =>
             val allocator = GemFireCacheImpl.getCurrentBufferAllocator

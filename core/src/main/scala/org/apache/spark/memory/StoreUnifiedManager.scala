@@ -67,7 +67,7 @@ trait StoreUnifiedManager {
   */
 class TempMemoryManager extends StoreUnifiedManager with Logging{
 
-  val memoryForObject = new mutable.HashMap[String, Long]()
+  val memoryForObject = new mutable.HashMap[(String, MemoryMode), Long]()
 
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
@@ -75,11 +75,12 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = synchronized {
-    logDebug(s"Acquiring mem [TEMP] for $objectName $numBytes")
-    if (!memoryForObject.contains(objectName)) {
-      memoryForObject(objectName) = 0L
+    val key = objectName -> memoryMode
+    logDebug(s"Acquiring mem [TEMP] for $key $numBytes")
+    if (!memoryForObject.contains(key)) {
+      memoryForObject.put(key, 0L)
     }
-    memoryForObject(objectName) += numBytes
+    memoryForObject(key) += numBytes
     true
   }
 
@@ -87,14 +88,14 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
       objectName: String,
       memoryMode: MemoryMode,
       ignoreNumBytes : Long): Long = synchronized {
-    memoryForObject.remove(objectName).getOrElse(0L)
+    memoryForObject.remove(objectName -> memoryMode).getOrElse(0L)
   }
 
   override def releaseStorageMemoryForObject(
       objectName: String,
       numBytes: Long,
       memoryMode: MemoryMode): Unit = synchronized {
-    memoryForObject(objectName) -= numBytes
+    memoryForObject(objectName -> memoryMode) -= numBytes
   }
 
   override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L

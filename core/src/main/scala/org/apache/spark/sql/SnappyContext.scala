@@ -1103,7 +1103,7 @@ object SnappyContext extends Logging {
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
-      MemoryManagerCallback.resetMemoryManager
+      MemoryManagerCallback.resetMemoryManager()
     }
     _clusterMode = null
     _anySNContext = null
