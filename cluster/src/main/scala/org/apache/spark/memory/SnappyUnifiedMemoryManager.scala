@@ -81,10 +81,26 @@ class SnappyUnifiedMemoryManager private[memory](
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
 
-  private[memory] val memoryForObject = {
-    val map = new Object2LongOpenHashMap[String]()
-    map.defaultReturnValue(0L)
-    map
+  @volatile private var _memoryForObjectMap: Object2LongOpenHashMap[String] = _
+
+  private[memory] def memoryForObject: Object2LongOpenHashMap[String] = {
+    val memoryMap = _memoryForObjectMap
+    if (memoryMap eq null) synchronized {
+      val memoryMap = _memoryForObjectMap
+      if (memoryMap eq null) {
+        _memoryForObjectMap = new Object2LongOpenHashMap[String]()
+        _memoryForObjectMap.defaultReturnValue(0L)
+        // transfer the memory map from tempMemoryManager on first use
+        MemoryManagerCallback.tempMemoryManager.memoryForObject.map { entry =>
+          val (objectName, mode) = entry._1
+          acquireStorageMemoryForObject(objectName,
+            MemoryManagerCallback.storageBlockId, entry._2, mode, null,
+            shouldEvict = false)
+        }
+        MemoryManagerCallback.tempMemoryManager.memoryForObject.clear()
+        _memoryForObjectMap
+      } else memoryMap
+    } else memoryMap
   }
 
   val threadsWaitingForStorage = new AtomicInteger()
@@ -97,12 +113,6 @@ class SnappyUnifiedMemoryManager private[memory](
     this(conf,
       SnappyUnifiedMemoryManager.getMaxMemory(conf),
       numCores)
-
-    MemoryManagerCallback.tempMemoryManager.memoryForObject.map { entry =>
-      val (objectName, mode) = entry._1
-      acquireStorageMemoryForObject(objectName, MemoryManagerCallback.storageBlockId,
-        entry._2, mode, null, shouldEvict = false)
-    }
   }
 
   override def getStoragePoolMemoryUsed(
