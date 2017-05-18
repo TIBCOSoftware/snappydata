@@ -42,9 +42,9 @@ public class SnappyConcurrencyTest extends SnappyTest {
     String query = null;
     Connection conn = getLocatorConnection();
     ResultSet rs;
-    long startTime;
-    long endTime = System.currentTimeMillis() + totalTaskTime;
-    do {
+    long startTime = System.currentTimeMillis();
+    long endTime = startTime + totalTaskTime*1000;
+    while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
         query = queryVect.elementAt(queryNum);
@@ -57,12 +57,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
         int numPointLookUpQueries = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB
             .numPointLookUpQueriesExecuted);
         Log.getLogWriter().info("SS - numPointLookUpQueriesExecuted : " + numPointLookUpQueries);
-        startTime = System.currentTimeMillis();
       } catch (SQLException se) {
         throw new TestException("Got exception while executing pointLookUp query:" + query, se);
       }
-    } while (startTime < endTime);
-
+    }
     /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
     List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
     Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());*/
@@ -75,13 +73,13 @@ public class SnappyConcurrencyTest extends SnappyTest {
     long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
     Log.getLogWriter().info("SS - totalTaskTime : " + totalTaskTime);
     String query = null;
-    int queryNum = new Random().nextInt(queryVect.size());
-    query = (String) queryVect.elementAt(queryNum);
     ResultSet rs;
-    long startTime;
-    long endTime = System.currentTimeMillis() + totalTaskTime;
-    do {
+    long startTime = System.currentTimeMillis();
+    long endTime = startTime + totalTaskTime*1000;
+    while (endTime > System.currentTimeMillis()) {
       try {
+        int queryNum = new Random().nextInt(queryVect.size());
+        query = (String) queryVect.elementAt(queryNum);
         Log.getLogWriter().info("SS - Executing query : " + query);
         rs = conn.createStatement().executeQuery(query);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
@@ -90,11 +88,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
         int numAggregationQueries = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
         Log.getLogWriter().info("SS - numAggregationQueriesExecuted : " + numAggregationQueries);
-        startTime = System.currentTimeMillis();
       } catch (SQLException se) {
         throw new TestException("Got exception while executing Analytical query:" + query, se);
       }
-    } while (startTime < endTime);
+    }
     /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
     List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
     Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());*/
