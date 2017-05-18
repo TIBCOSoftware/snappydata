@@ -85,6 +85,13 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     Log.getLogWriter().info("Done performing insert operation.");
   }
 
+  /*
+   Hydra task to execute select queries
+  */
+  public static void HydraTask_executeQueries() {
+    testHookInstance.executeQuery();
+  }
+
   public void executeQuery() {
     try {
       Connection conn = getLocatorConnection();
