@@ -31,7 +31,6 @@ class TPCHSuite extends SnappyFunSuite with BeforeAndAfterAll  {
 
   ignore("Test TPCH") {
     val snc = SnappyContext(sc)
-    snc.conf.setConfString(SQLConf.COLUMN_BATCH_SIZE.key, "10000")
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "104857600")
     Property.HashJoinSize.set(snc.conf, 1L * 1024 * 1024 * 1024)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
