@@ -200,7 +200,7 @@ For a comprehensive list of command options, simply run `./snappy-ec2` in the co
 SnappyData provides you with predefined buckets which contain datasets. When data is loaded, the table reads from the files available at the specified external location (AWS S3). 
 
 
-<Note> Note:</Note>
+<Note> Notes:</Note>
 
 *	<Note> The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.</Note>
 	
@@ -209,7 +209,7 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 * <Note> Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
 </Note>
 
-* <Note> If the Secret Access Key contains any special characters or slash, it causes the Spark job to fail. When you create the Secret Access Key, ensure that it only contains alpha-numeric characters.
+* <Note> If the Secret Access Key contains a slash, it causes the Spark job to fail. When you create the Secret Access Key, ensure that it only contains alpha-numeric characters.
 </Note> 
 
 * <Note>	When reading or writing CSV/Parquet to and from S3, the *ConnectionPoolTimeoutException* error may be reported. To avoid this error, in the Spark context, set the value of the `fs.s3a.connection.maximum` property to a number greater than the possible number of partitions. </br> For example, `snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000")`</br>
