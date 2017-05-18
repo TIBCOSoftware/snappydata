@@ -209,23 +209,23 @@ select distinct b.ShipName, b.ShipAddress, b.ShipCity, b.ShipRegion, b.ShipPosta
 
 --This query is commented due to SNAP-1434
 
-   --  select a.ProductName,
-   --      d.CompanyName,
-   --      year(OrderDate) as OrderYear,
-   --      format_number(sum(case quarter(c.OrderDate) when '1'
-   --          then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 1',
-   --      format_number(sum(case quarter(c.OrderDate) when '2'
-   --          then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 2',
-   --      format_number(sum(case quarter(c.OrderDate) when '3'
-   --          then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 3',
-   --      format_number(sum(case quarter(c.OrderDate) when '4'
-   --          then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) 'Qtr 4'
-   --  from Products a
-   --  inner join Order_Details b on a.ProductID = b.ProductID
-   --  inner join Orders c on c.OrderID = b.OrderID
-   --  inner join Customers d on d.CustomerID = c.CustomerID
-   --  where c.OrderDate between Cast('1997-01-01' as TIMESTAMP) and Cast('1997-12-31' as TIMESTAMP)
-   --  group by a.ProductName,
-   --      d.CompanyName,
-   --      year(OrderDate)
-   --  order by a.ProductName, d.CompanyName;
+     select a.ProductName,
+         d.CompanyName,
+         year(OrderDate) as OrderYear,
+         format_number(sum(case quarter(c.OrderDate) when '1'
+             then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) "Qtr_1",
+         format_number(sum(case quarter(c.OrderDate) when '2'
+             then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) "Qtr_2",
+         format_number(sum(case quarter(c.OrderDate) when '3'
+             then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) "Qtr_3",
+         format_number(sum(case quarter(c.OrderDate) when '4'
+             then b.UnitPrice*b.Quantity*(1-b.Discount) else 0 end), 0) "Qtr_4"
+     from Products a
+     inner join Order_Details b on a.ProductID = b.ProductID
+     inner join Orders c on c.OrderID = b.OrderID
+     inner join Customers d on d.CustomerID = c.CustomerID
+     where c.OrderDate between Cast('1997-01-01' as TIMESTAMP) and Cast('1997-12-31' as TIMESTAMP)
+     group by a.ProductName,
+         d.CompanyName,
+         year(OrderDate)
+     order by a.ProductName, d.CompanyName;
