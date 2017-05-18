@@ -207,13 +207,15 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 * <Note> You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.</Note>
 * <Note> Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
 </Note>
+* <Note> If the Secret Access Key contains any special characters or slash, it causes the Spark job to fail. When you create the Secret Access Key, ensure that it only contains alpha-numeric characters.
+</Note>
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
 
 ```
 %sql
 DROP TABLE IF EXISTS <table_name> ;
-CREATE EXTERNAL TABLE <table_name> USING parquet OPTIONS(path '<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@<bucket_Name>/<folder_name>');
+CREATE EXTERNAL TABLE <table_name> USING parquet OPTIONS(path 's3a://<AWS_ACCESS_KEY_ID>:<AWS_SECRET_ACCESS_KEY>@<bucket_Name>/<folder_name>');
 ```
 
 The values are:
