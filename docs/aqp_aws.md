@@ -210,8 +210,11 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 </Note>
 
 * <Note> If the Secret Access Key contains any special characters or slash, it causes the Spark job to fail. When you create the Secret Access Key, ensure that it only contains alpha-numeric characters.
-</Note> </br>
+</Note> 
 
+* <Note>	When reading or writing CSV/Parquet to and from S3, the *ConnectionPoolTimeoutException* error may be reported. To avoid this error, in the Spark context, set the value of the `fs.s3a.connection.maximum` property to a number greater than the possible number of partitions. </br> For example, `snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000")`</br>
+
+</Note> 
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
 
