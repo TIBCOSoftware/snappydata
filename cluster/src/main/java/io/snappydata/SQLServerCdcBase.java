@@ -26,7 +26,7 @@ public abstract class SQLServerCdcBase extends JavaCdcStreamingBase {
         "  select __$start_lsn, sum(count(1)) over (order by __$start_lsn) runningCount" +
         "  from $table where __$start_lsn > master.dbo.fn_cdc_hexstrtobin('$currentOffset')" +
         "  group by __$start_lsn" +
-        ") x where runningCount <= 50000");
+        ") x where runningCount <= $maxEvents");
     return extraProps;
   }
 }

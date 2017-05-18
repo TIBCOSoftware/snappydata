@@ -26,11 +26,9 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
     super(args, null);
   }
 
-  private SnappySession session;
-
   public static void main(String[] args) throws Exception {
     JavaCdcStreamingTestSuite _this = new JavaCdcStreamingTestSuite(fillDefaults(args));
-    _this.session = _this.connect();
+    _this.connect();
     ProcessEvents p = new ProcessEvents();
     _this.startJob();
   }
@@ -50,8 +48,8 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
         .option("sink", ProcessEvents.class.getName())
         .option("checkpointLocation",
             Utils.createTempDir("/data/wrk/w/snappydata/build-artifacts/scala-2.11/" +
-                "snappy/work/localhost-lead-1", "tmg-spark" )
-            .getCanonicalPath())
+                "snappy/work/localhost-lead-1", "tmg-spark")
+                .getCanonicalPath())
         .option("tableName", tableName)
         .start();
   }
@@ -190,64 +188,110 @@ public class JavaCdcStreamingTestSuite extends SQLServerCdcBase {
     Collections.addAll(newArgs, args);
 
     BiPredicate<String, String> idxOf = (a, b) -> a.indexOf(b) > 0 || b.indexOf(a) > 0;
-    if(!contains(args, "driver", idxOf)) {
+    if (!contains(args, "driver", idxOf)) {
       newArgs.add("driver=com.microsoft.sqlserver.jdbc.SQLServerDriver");
     }
-    if(!contains(args, "url", idxOf)) {
+    if (!contains(args, "url", idxOf)) {
       newArgs.add("url=jdbc:sqlserver://snappydb16.westus.cloudapp.azure.com:1433");
     }
-    if(!contains(args, "user", idxOf)) {
+    if (!contains(args, "user", idxOf)) {
       newArgs.add("user=sqldb");
     }
-    if(!contains(args, "password", idxOf)) {
+    if (!contains(args, "password", idxOf)) {
       newArgs.add("password=snappydata#msft1");
     }
 
-    if(!contains(args, "snappydata.Cluster.URL", idxOf)) {
+    if (!contains(args, "snappydata.Cluster.URL", idxOf)) {
       newArgs.add("snappydata.Cluster.URL=localhost:1527");
     }
 
-    if(!contains(args, "tables", idxOf)) {
+    if (!contains(args, "tables", idxOf)) {
       newArgs.add("tables=tengb.cdc.dbo_customer_CT");
+    }
+
+    if (!contains(args, "databaseName", idxOf)) {
+      newArgs.add("databaseName=tengb");
+    }
+
+    if (!contains(args, "pollInternal", idxOf)) {
+      newArgs.add("pollInternal=30"); // poll for CDC events once every 30 seconds
+    }
+
+    if (!contains(args, "conflate", idxOf)) {
+      newArgs.add("conflate=true"); // conflate the events
+    }
+
+    if (!contains(args, "fullMode", idxOf)) {
+      // clears the recorded state
+      // and starts from begining of the table.
+      newArgs.add("fullMode=false");
+    }
+
+    if (!contains(args, "maxEvents", idxOf)) {
+      newArgs.add("maxEvents=50000"); // poll for CDC events once every 30 seconds
     }
 
     if(!contains(args, "tengb.cdc.dbo_customer_CT.partitionBy", idxOf)) {
       newArgs.add("tengb.cdc.dbo_customer_CT.partitionBy=convert(varchar(20), C_CustKey)");
     }
 
+    // --------------------------------------------
+    // below are more for tuning purposes.
+    // --------------------------------------------
+    if (!contains(args, "tengb.cdc.dbo_customer_CT.partitionByQuery", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.partitionByQuery=" +
+          "select distinct C_CustKey from $getBatch");
+    }
 /*
-    if(!contains(args, "tengb.cdc.dbo_customer_CT.partitioningQuery", idxOf)) {
-      newArgs.add("tengb.cdc.dbo_customer_CT.partitioningQuery=" +
+    // example-1
+    if (!contains(args, "tengb.cdc.dbo_customer_CT.partitionByQuery", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.partitionByQuery=" +
+          "ordered:select distinct C_CustKey from $getBatch order by 1");
+    }
+
+    // example-2
+    if (!contains(args, "tengb.cdc.dbo_customer_CT.partitionByQuery", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.partitionByQuery=" +
+          "ranged:select min(C_CustKey) lowerInclusive, max(C_CustKey) upperInclusive " +
+          "from (" +
+          "  select C_CustKey, ntile($parallelism) over (order by C_CustKey) rank " +
+          "  from ( " +
+          "     select distinct C_CustKey from customer" +
+          "  ) uniqueKeys " +
+          ") rankedTable " +
+          "group by rank");
+    }
+
+    // example-1
+    if(!contains(args, "tengb.cdc.dbo_customer_CT.cachePartitioningValuesFrom", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.cachePartitioningValuesFrom=" +
           "select distinct $partitionBy as parts from customer");
+    }
+
+    // example-2
+    if(!contains(args, "tengb.cdc.dbo_customer_CT.cachePartitioningValuesFrom", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.cachePartitioningValuesFrom=" +
+          "ordered:select distinct $partitionBy as parts from customer order by $partitionBy ");
+    }
+
+    // example-3
+    if(!contains(args, "tengb.cdc.dbo_customer_CT.cachePartitioningValuesFrom", idxOf)) {
+      newArgs.add("tengb.cdc.dbo_customer_CT.cachePartitioningValuesFrom=" +
+          "ranged: select min($partitionBy) lowerBoundInclusive, " +
+          " max($partitionBy) upperBoundInclusive FROM " +
+          "(select distinct $partitionBy as parts, category from customer) uniqueValues " +
+          "group by category");
     }
 */
 
-    if(!contains(args, "databaseName", idxOf)) {
-      newArgs.add("databaseName=tengb");
-    }
-
-    if(!contains(args, "pollInternal", idxOf)) {
-      newArgs.add("pollInternal=30"); // poll for CDC events once every 30 seconds
-    }
-
-    if(!contains(args, "conflate", idxOf)) {
-      newArgs.add("conflate=true"); // conflate the events
-    }
-
-    if(!contains(args, "fullMode", idxOf)) {
-      // clears the recorded state
-      // and starts from begining of the table.
-      newArgs.add("fullMode=false");
-    }
-
-    return (String[]) newArgs.toArray(new String[newArgs.size()]);
+    return (String[])newArgs.toArray(new String[newArgs.size()]);
   }
 
   private static boolean contains(String[] list,
       String search,
       BiPredicate<String, String> eval) {
-    for(String a: list) {
-      if(eval.test(a, search)) {
+    for (String a : list) {
+      if (eval.test(a, search)) {
         return true;
       }
     }

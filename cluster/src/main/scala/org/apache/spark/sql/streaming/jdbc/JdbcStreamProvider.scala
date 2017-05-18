@@ -66,7 +66,7 @@ case class JDBCSource(@transient sqlContext: SQLContext,
 
   private val dbtable = parameters("dbtable")
 
-  private val offsetCol = parameters("jdbc.offsetColumn")
+  private val offsetColumn = parameters("jdbc.offsetColumn")
 
   private val offsetToStrFunc = parameters("jdbc.offsetToStrFunc")
 
@@ -74,15 +74,24 @@ case class JDBCSource(@transient sqlContext: SQLContext,
 
   private val offsetIncFunc = parameters("jdbc.offsetIncFunc")
 
-  private val getNextOffset = parameters.get("jdbc.getNextOffset")
+  private val getNextOffset = getParam("jdbc.getNextOffset")
+
+  private val maxEvents = getParam("maxEvents")
 
   private val streamStateTable = "SNAPPY_JDBC_STREAM_CONTEXT"
 
-  private val partitioner = parameters.get("partitionBy").fold(
-    parameters.get(s"$dbtable.partitionBy"))(Some(_))
+  private val partitioner = getParam("partitionBy")
 
-  private val partitioningQuery = parameters.get("partitioningQuery").fold(
-    parameters.get(s"$dbtable.partitioningQuery"))(Some(_))
+  type PartitionQueryType = (String, Boolean, Boolean) // (query, isPreOrdered, isPreRanged)
+
+  private val partitionByQuery: Option[PartitionQueryType] = getParam("partitionByQuery") match {
+    case Some(q) if q.startsWith("ordered:") => Some((q.substring("ordered:".length), true, false))
+    case Some(q) if q.startsWith("ranged:") => Some((q.substring("ranged:".length), false, true))
+    case Some(q) => Some((q, false, false))
+    case None => None
+  }
+
+  private val cachePartitioningValuesFrom = getParam("cachePartitioningValuesFrom")
 
   private val reader =
     parameters.foldLeft(sqlContext.sparkSession.read)({
@@ -127,7 +136,7 @@ case class JDBCSource(@transient sqlContext: SQLContext,
 
   private var lastOffset: Option[LSN] = lastPersistedOffset
 
-  private lazy val cachedPartitions = partitioningQuery match {
+  private lazy val cachedPartitions = cachePartitioningValuesFrom match {
     case Some(q) if partitioner.nonEmpty =>
       determinePartitions(
         s"( ${q.replaceAll("\\$partitionBy", partitioner.get)} ) getUniqueValuesForCaching",
@@ -151,7 +160,7 @@ case class JDBCSource(@transient sqlContext: SQLContext,
     lastOffset match {
       case None =>
         val newlsn = tryExecuteQuery(
-          s"select $offsetToStrFunc(min($offsetCol)) newOffset from $dbtable")(fetch)
+          s"select $offsetToStrFunc(min($offsetColumn)) newOffset from $dbtable")(fetch)
         saveOffsetState(newlsn)
       case Some(offset) =>
         // while picking the nextoffset by the user defined query if no offset gets fetched
@@ -159,7 +168,7 @@ case class JDBCSource(@transient sqlContext: SQLContext,
         tryExecuteQuery(getNextOffsetQuery())(fetch) match {
           case None =>
             val nextOffset = tryExecuteQuery(getNextOffsetQuery(true))(fetch)
-            if(nextOffset.nonEmpty) {
+            if (nextOffset.nonEmpty) {
               alertUser(s"No rows found using the user query for getNextOffset," +
                   s" lastoffset -> ${lastOffset.get.lsn}")
             }
@@ -178,6 +187,17 @@ case class JDBCSource(@transient sqlContext: SQLContext,
 
     def getPartitions(query: String) = partitioner match {
       case _ if cachedPartitions.nonEmpty => cachedPartitions
+      // if partition by column name have a query, assume it will yeild
+      // predefined ranges per row.
+      case Some(col) if partitionByQuery.nonEmpty =>
+        val parallelism = sqlContext.sparkContext.defaultParallelism
+        val (rangeQuery, isPreOrdered, isAlreadyRanged) = partitionByQuery.map { case (q, o, r) =>
+          (q.replace("\\$getBatch", query).replace("$parallelism", parallelism.toString),
+              o, r)
+        }.get
+        determinePartitions(s"( $rangeQuery ) getRanges", col,
+          ordered = isPreOrdered,
+          ranged = isAlreadyRanged)
       case Some(col) =>
         val uniqueValQuery = query.replace("select * from",
           s"select distinct($col) parts from ").replace("getBatch", "getUniqueValuesFromBatch")
@@ -189,40 +209,62 @@ case class JDBCSource(@transient sqlContext: SQLContext,
       case None => lastPersistedOffset match {
         case None =>
           execute(s"(select * from $dbtable " +
-              s" where $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
+              s" where $offsetColumn <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
         case Some(offset) =>
           alertUser(s"Resuming source [${parameters("url")}] [$dbtable] " +
               s"from persistent offset -> $offset ")
           execute(s"(select * from $dbtable " +
-              s" where $offsetCol > $strToOffsetFunc('${offset.lsn}') " +
-              s" and $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
+              s" where $offsetColumn > $strToOffsetFunc('${offset.lsn}') " +
+              s" and $offsetColumn <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
       }
       case Some(begin) =>
         execute(s"(select * from $dbtable " +
-            s" where $offsetCol > $strToOffsetFunc('${lsn(begin)}') " +
-            s" and $offsetCol <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
+            s" where $offsetColumn > $strToOffsetFunc('${lsn(begin)}') " +
+            s" and $offsetColumn <= $strToOffsetFunc('${lsn(end)}') ) getBatch ", getPartitions)
     }
   }
 
-  private def determinePartitions(query: String, partCol: String): Array[String] = {
+  private def determinePartitions(query: String,
+      partCol: String,
+      ordered: Boolean = false,
+      ranged: Boolean = false): Array[String] = {
     val uniqueVals = execute(query)
     val partitionField = uniqueVals.schema.fields(0)
-    // just one partition so sortWithinPartitions is enough
-    val sorted = uniqueVals.sortWithinPartitions(partitionField.name).collect()
-    val parallelism = sqlContext.sparkContext.defaultParallelism
-    val slide = sorted.length / parallelism
-    if (slide > 0) {
-      val converter = CatalystTypeConverters.createToScalaConverter(partitionField.dataType)
-      sorted.sliding(slide, slide).map { a =>
+    val sorted = if (ordered) {
+      logDebug(s"Assuming already ordered in determining partitions. query -> $query")
+      // already ordered
+      uniqueVals.collect()
+    } else {
+      // just one partition so sortWithinPartitions is enough
+      uniqueVals.sortWithinPartitions(partitionField.name).collect()
+    }
+
+    if (ranged) {
+      val parallelism = sqlContext.sparkContext.defaultParallelism
+      val slide = sorted.length / parallelism
+      if (slide > 0) {
+        sorted.sliding(slide, slide).map { a =>
+          partitionField.dataType match {
+            case _: NumericType =>
+              s"$partCol >= ${a(0)(0)} and $partCol < ${a(a.length - 1)(0)}"
+            case _@(StringType | DateType | TimestampType) =>
+              s"$partCol >= '${a(0)(0)}' and $partCol < '${a(a.length - 1)(0)}'"
+          }
+        }.toArray
+      } else {
+        Array.empty[String]
+      }
+    } else {
+      logDebug(s"Assuming already ranged in determining partitions. query -> $query")
+      // expect both inclusive ranges in 1st and 2nd column
+      sorted.map { row =>
         partitionField.dataType match {
           case _: NumericType =>
-            s"$partCol >= ${a(0)(0)} and $partCol < ${a(a.length - 1)(0)}"
+            s"$partCol >= ${row(0)} and $partCol <= ${row(1)}"
           case _@(StringType | DateType | TimestampType) =>
-            s"$partCol >= '${a(0)(0)}' and $partCol < '${a(a.length - 1)(0)}'"
+            s"$partCol >= '${row(0)}' and $partCol <= '${row(0)}'"
         }
-      }.toArray
-    } else {
-      Array.empty[String]
+      }
     }
   }
 
@@ -248,6 +290,7 @@ case class JDBCSource(@transient sqlContext: SQLContext,
   }
 
   private def tryExecuteQuery[T](query: String)(f: ResultSet => T) = {
+    logDebug(s"Executing -> $query")
     val rs = srcControlConn.createStatement().executeQuery(query)
     try {
       f(rs)
@@ -259,12 +302,10 @@ case class JDBCSource(@transient sqlContext: SQLContext,
 
   private def getNextOffsetQuery(forceMin: Boolean = false): String = {
     if (getNextOffset.isEmpty || forceMin) {
-      s"select $offsetToStrFunc(min($offsetCol)) nxtOffset from $dbtable " +
-          s" where $offsetCol > $offsetIncFunc($strToOffsetFunc('${lastOffset.get.lsn}'))"
+      s"select $offsetToStrFunc(min($offsetColumn)) nxtOffset from $dbtable " +
+          s" where $offsetColumn > $offsetIncFunc($strToOffsetFunc('${lastOffset.get.lsn}'))"
     } else {
-      getNextOffset.get
-          .replaceAll("\\$table", dbtable)
-          .replaceAll("\\$currentOffset", lastOffset.get.lsn)
+      getNextOffset.map(substituteQueryVariables).get
     }
   }
 
@@ -289,6 +330,29 @@ case class JDBCSource(@transient sqlContext: SQLContext,
     println(msg)
     logInfo(msg)
   }
+
+  private def getParam(p: String): Option[String] = {
+    def returnIfNotNull(v: String) = if (v != null && v.length > 0) Some(v) else None
+
+    parameters.get(s"$dbtable.$p").fold(
+      parameters.get(p).flatMap(returnIfNotNull))(returnIfNotNull)
+  }
+
+  private def substituteQueryVariables(q: String): String = q.replaceAll("\\$table", dbtable)
+      .replaceAll("\\$offsetColumn", offsetColumn)
+      .replaceAll("\\$offsetToStrFunc", offsetToStrFunc)
+      .replaceAll("\\$offsetIncFunc", offsetIncFunc)
+      .replaceAll("\\$strToOffsetFunc", strToOffsetFunc)
+      .replaceAll("\\$maxEvents", maxEvents.getOrElse {
+        if (q.indexOf("$maxEvents") > 0) throw new Exception("maxEvents undefined in the args")
+        else ""
+      })
+      .replaceAll("\\$currentOffset", lastOffset.map(_.lsn).getOrElse {
+        if (q.indexOf("$currentOffset") > 0)
+          throw new Exception("Offset not found while replacing query variables")
+        else ""
+      })
+
 
   /** Returns the schema of the data from this source */
   override def schema: StructType = {
