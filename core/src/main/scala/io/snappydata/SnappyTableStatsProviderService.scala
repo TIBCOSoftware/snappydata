@@ -165,12 +165,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
-    if( dataServers != null && dataServers.size() > 0 ){
-      result = FunctionService.onMembers(dataServers)
-          .withCollector(new GfxdListResultCollector())
-          .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
-          asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
-          .asScala
+    try {
+      if (dataServers != null && dataServers.size() > 0) {
+        result = FunctionService.onMembers(dataServers)
+            .withCollector(new GfxdListResultCollector())
+            .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
+            asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
+            .asScala
+      }
+    }
+    catch {
+      case e: Exception => log.warn(e.getMessage, e)
     }
     (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }
