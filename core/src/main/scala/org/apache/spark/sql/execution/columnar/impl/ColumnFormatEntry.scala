@@ -475,7 +475,7 @@ final class ColumnFormatValue
   }
 
   override def toString: String = {
-    val buffer = columnBuffer
+    val buffer = columnBuffer.duplicate()
     s"ColumnValue[size=${buffer.limit()} $buffer diskId=$diskId diskRegion=$diskRegion]"
   }
 }
