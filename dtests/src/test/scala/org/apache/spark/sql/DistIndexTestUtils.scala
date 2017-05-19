@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql
 
 import java.io._
@@ -10,14 +26,16 @@ import org.apache.spark.util.Benchmark
 object DistIndexTestUtils {
 
   def benchmark(qNum: String, tableSizes: Map[String, Long], snc: SnappyContext, pw: PrintWriter,
-                fos: FileOutputStream)
+      fos: FileOutputStream): Unit
   = {
 
     val qryProvider = new TPCH with SnappyAdapter
     val query = qNum.toInt
+
     def executor(str: String) = snc.sql(str)
 
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
+    // scalastyle:off println
     pw.println(s"$qNum size $size")
     val b = new Benchmark(s"JoinOrder optimization", size, minNumIters = 5, output = Some(fos))
 
@@ -55,7 +73,7 @@ object DistIndexTestUtils {
       "12", "13", "14", "15", "16", "17", "18", "19",
       "20", "21", "22")
 
-    //TPCHUtils.createAndLoadTables(snc, true)
+    // TPCHUtils.createAndLoadTables(snc, true)
 
     val existing = snc.getConf(io.snappydata.Property.EnableExperimentalFeatures.name)
     snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, "true")
@@ -85,19 +103,17 @@ object DistIndexTestUtils {
     snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, existing)
   }
 
-  def executeQueriesForBenchmarkResults(snc: SnappyContext, pw: PrintWriter, fos: FileOutputStream): Unit = {
+  def executeQueriesForBenchmarkResults(snc: SnappyContext, pw: PrintWriter, fos:
+  FileOutputStream): DataFrame = {
+
     val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
       "12", "13", "14", "15", "16", "17", "18", "19",
       "20", "21", "22")
-    /*
-        val queries = Array("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11",
-          "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19",
-          "q20", "q21", "q22")
-    */
 
-    //TPCHUtils.createAndLoadTables(snc, true)
+    // TPCHUtils.createAndLoadTables(snc, true)
 
-    snc.sql(s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
+    snc.sql(
+      s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
              options (COLOCATE_WITH 'customer')
           """)
 
@@ -115,10 +131,6 @@ object DistIndexTestUtils {
 
     tableSizes.foreach(pw.println)
     queries.foreach(q => benchmark(q, tableSizes, snc, pw, fos))
-    /*queries.foreach(q => {
-      TPCH_Snappy.queryExecution(q, snc, false, false)
-    pw.println("**** Executed query : " + q )
-    })*/
     snc.sql(s"DROP INDEX idx_orders_cust")
     snc.sql(s"DROP INDEX idx_lineitem_part")
   }

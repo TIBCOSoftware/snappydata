@@ -18,6 +18,8 @@ package org.apache.spark.sql.store
 
 import java.sql.DriverManager
 
+import com.pivotal.gemfirexd.TestUtil
+
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
@@ -34,7 +36,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, SaveMode, SnappySession, SparkSession, TableNotFoundException}
+import org.apache.spark.sql._
 
 /**
   * Tests for column tables in GFXD.
@@ -213,7 +215,7 @@ class ColumnTableTest
     // check that default concurrency checks is set to false for column table.
     snc.sql(s"create table $table (col1 int) using column" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -221,7 +223,7 @@ class ColumnTableTest
 
     snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')" )
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == false)
+    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -1013,4 +1015,64 @@ class ColumnTableTest
     assert(df1.schema == df3.schema)
 
   }
+
+  test("Test create table from CSV without header") {
+    snc.sql(s"create table test1 using com.databricks.spark.csv options(path '${(getClass.getResource
+    ("/northwind/orders" +
+      ".csv").getPath)}', header 'false', inferschema 'true')")
+    snc.sql("create table test2 using column options() as (select * from test1)")
+    val df2 = snc.sql("select * from test2")
+    df2.show()
+
+    snc.sql("drop table test2")
+    snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
+    snc.sql("insert into test2 values(1,2)")
+    snc.sql("insert into test2 values(2,3)")
+    val df3 = snc.sql("select _col1,__col2 from test2")
+    df3.show()
+    val struct = (new StructType())
+      .add(StructField("_COL1", IntegerType, true))
+      .add(StructField("__COL2", IntegerType, true))
+
+    df3.printSchema()
+    assert(struct == df3.schema)
+
+  }
+
+  test("Test loading json data to column table") {
+    val some_people_path = s"${(getClass.getResource("/person.json").getPath)}"
+    println(some_people_path)
+    // Read a JSON file using Spark API
+    val people = snc.read.json(some_people_path)
+
+    //Drop the table if it exists.
+    snc.dropTable("people", ifExists = true)
+
+    //Create a columnar table with the Json DataFrame schema
+    snc.createTable(tableName = "people",
+      provider = "column",
+      schema = people.schema,
+      options = Map.empty[String,String],
+      allowExisting = false)
+
+    // Write the created DataFrame to the columnar table.
+    people.write.insertInto("people")
+
+
+    val nameAndAddress = snc.sql("SELECT " +
+      "name, " +
+      "address.city, " +
+      "address.state, " +
+      "address.district, " +
+      "address.lane " +
+      "FROM people")
+    nameAndAddress.toJSON.show(truncate = false)
+    assert(nameAndAddress.count() ==2)
+    val rows:Array[String] = nameAndAddress.toJSON.collect()
+
+    assert(rows(0) =="{\"NAME\":\"Yin\",\"CITY\":\"Columbus\",\"STATE\":\"Ohio\",\"DISTRICT\":\"Pune\"}")
+    assert(rows(1) == "{\"NAME\":\"Michael\",\"STATE\":\"California\",\"LANE\":\"15\"}")
+
+  }
+
 }

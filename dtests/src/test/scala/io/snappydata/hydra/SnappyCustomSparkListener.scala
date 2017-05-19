@@ -20,6 +20,7 @@ import org.apache.spark.scheduler._
 
 class SnappyCustomSparkListener extends SparkListener {
   override def onJobStart(jobStart: SparkListenerJobStart) {
+    // scalastyle:off println
     println(s"Job started with ${jobStart.stageInfos.size} stages: $jobStart")
   }
 
@@ -36,6 +37,9 @@ class SnappyCustomSparkListener extends SparkListener {
   }
 
   override def onStageCompleted(stageCompleted: SparkListenerStageCompleted): Unit = {
-    println(s"Stage ${stageCompleted.stageInfo.stageId} completed with ${stageCompleted.stageInfo.numTasks} tasks.")
+    println(s"Stage ${stageCompleted.stageInfo.stageId} completed with  ${
+      stageCompleted
+          .stageInfo.numTasks
+    } tasks.")
   }
 }

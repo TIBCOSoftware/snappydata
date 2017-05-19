@@ -16,14 +16,16 @@
  */
 package org.apache.spark.sql.execution
 
+import java.util.Calendar
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+import com.pivotal.gemfirexd.internal.iapi.types._
+
 import org.apache.spark.Logging
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, LiteralValue, ParamLiteral, SortOrder}
@@ -31,6 +33,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
+import org.apache.spark.unsafe.types.UTF8String
 
 case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: SnappySession)
     extends UnaryExecNode with CodegenSupport {
@@ -56,12 +59,12 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
       case None => session.addContextObject(REFERENCES_KEY,
         ArrayBuffer[ArrayBuffer[Any]](ctx.references))
     }
-    // keep a map of the first broadcasthashjoinexec plan and the corresponding ref array
+    // keep a map of the first BroadcastHashJoinExec plan and the corresponding ref array
     // collect the broadcasthashjoins in this wholestage and the references array
     var nextStageStarted = false
     var alreadyGotBroadcastNode = false
     childPlan transformDown {
-      case bchj: BroadcastHashJoinExec => {
+      case bchj: BroadcastHashJoinExec =>
         if (!nextStageStarted) {
           // The below assertion was kept thinking that there will be just one
           // broadcasthashjoin in one stage but there can be more than one and so
@@ -71,8 +74,8 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
           if (alreadyGotBroadcastNode) {
             session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
               CachedPlanHelperExec.NOCACHING_KEY) match {
-              case Some(flag) => true
               case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+              case Some(_) =>
             }
           }
           session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
@@ -84,11 +87,9 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
           alreadyGotBroadcastNode = true
         }
         bchj
-      }
-      case cp: CachedPlanHelperExec => {
+      case cp: CachedPlanHelperExec =>
         nextStageStarted = true
-      }
-      cp
+        cp
     }
     childPlan.produce(ctx, this)
   }
@@ -101,10 +102,10 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
 
 object CachedPlanHelperExec extends Logging {
 
-  val REFERENCES_KEY    = "TokenizationReferences"
-  val BROADCASTS_KEY    = "TokenizationBroadcasts"
+  val REFERENCES_KEY = "TokenizationReferences"
+  val BROADCASTS_KEY = "TokenizationBroadcasts"
   val WRAPPED_CONSTANTS = "TokenizedConstants"
-  val NOCACHING_KEY    =  "TokenizationNoCaching"
+  val NOCACHING_KEY = "TokenizationNoCaching"
 
   private[sql] def allLiterals(allReferences: Seq[Seq[Any]]): Array[LiteralValue] = {
     allReferences.flatMap(_.collect {
@@ -116,7 +117,33 @@ object CachedPlanHelperExec extends Logging {
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
     literals.foreach { case lv@LiteralValue(_, _, p) =>
       lv.value = newpls.find(_.pos == p).get.value
-      val y = newpls.find(_.pos == p).get.value
     }
+  }
+
+  def getValue(dvd: DataValueDescriptor): Any = dvd match {
+    case i: SQLInteger => i.getInt
+    case si: SQLSmallint => si.getShort
+    case ti: SQLTinyint => ti.getByte
+    case d: SQLDouble => d.getDouble
+    case li: SQLLongint => li.getLong
+    case bid: BigIntegerDecimal => bid.getDouble
+    case de: SQLDecimal => de.getBigDecimal
+    case r: SQLReal => r.getFloat
+    case b: SQLBoolean => b.getBoolean
+    case cl: SQLClob =>
+      val charArray = cl.getCharArray()
+      if (charArray != null) {
+        val str = String.valueOf(charArray)
+        UTF8String.fromString(str)
+      } else null
+    case lvc: SQLLongvarchar => UTF8String.fromString(lvc.getString)
+    case vc: SQLVarchar => UTF8String.fromString(vc.getString)
+    case c: SQLChar => UTF8String.fromString(c.getString)
+    case ts: SQLTimestamp => ts.getTimestamp(null)
+    case t: SQLTime => t.getTime(null)
+    case d: SQLDate =>
+      val c: Calendar = null
+      d.getDate(c)
+    case _ => dvd.getObject
   }
 }

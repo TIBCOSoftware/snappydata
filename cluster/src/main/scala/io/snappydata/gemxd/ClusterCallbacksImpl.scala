@@ -21,6 +21,7 @@ import java.util.{Iterator => JIterator}
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.internal.shared.Version
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
@@ -77,7 +78,14 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
-      v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, schema, ctx, v)
+      v: Version, isPreparedStatement: Boolean, isPreparedPhase: Boolean,
+      pvs: ParameterValueSet): SparkSQLExecute = {
+    if (isPreparedStatement && isPreparedPhase) {
+      new SparkSQLPrepareImpl(sql, schema, ctx, v)
+    } else {
+      new SparkSQLExecuteImpl(sql, schema, ctx, v, Option(pvs))
+    }
+  }
 
   override def readDataType(in: ByteArrayDataInput): AnyRef = {
     // read the DataType

@@ -33,6 +33,8 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -43,10 +45,8 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId}
-import org.apache.spark.sql.catalyst.expressions.{Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral}
-import org.apache.spark.sql.catalyst.expressions.{PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -63,7 +63,7 @@ import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionS
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -171,6 +171,12 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def sqlUncached(sqlText: String): DataFrame =
     snappyContextFunctions.sql(super.sql(sqlText))
+
+  private[sql] final def prepareSQL(sqlText: String): LogicalPlan = {
+    val logical = sessionState.sqlParser.parsePlan(sqlText)
+    SparkSession.setActiveSession(this)
+    sessionState.analyzer.execute(logical)
+  }
 
   private[sql] final def executeSQL(sqlText: String): DataFrame = {
     try {
@@ -1634,6 +1640,9 @@ class SnappySession(@transient private val sc: SparkContext,
   def queryApproxTSTopK(topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame =
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
+
+  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
+    sessionState.setPreparedQuery(preparePhase, paramSet)
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -1697,13 +1706,14 @@ object SnappySession extends Logging {
   }
 
   private def evaluatePlan(df: DataFrame,
-      session: SnappySession, key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
+      session: SnappySession, sqlText: String,
+      key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
       case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
       case plan => plan
     }
 
-    if (key != null) {
+    if (key ne null) {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching) {
@@ -1765,7 +1775,7 @@ object SnappySession extends Logging {
 
       allLiterals.foreach(_.collectedForPlanCaching = true)
     }
-    val cdf = new CachedDataFrame(df, cachedRDD, shuffleDeps, rddId,
+    val cdf = new CachedDataFrame(df, sqlText, cachedRDD, shuffleDeps, rddId,
       localCollect, allLiterals, allbroadcastplans)
 
     // Now check if optimization plans have been applied such that
@@ -1790,7 +1800,7 @@ object SnappySession extends Logging {
         if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
           (null, null)
         } else {
-          evaluatePlan(df, session, key)
+          evaluatePlan(df, session, key.sqlText, key)
         }
       }
     }
@@ -1883,7 +1893,7 @@ object SnappySession extends Logging {
       // if null has been returned, then evaluate
       if (cachedDF eq null) {
         val df = session.executeSQL(sqlText)
-        val evaluation = evaluatePlan(df, session)
+        val evaluation = evaluatePlan(df, session, sqlText)
         // default is enable caching
         if (!java.lang.Boolean.getBoolean("DISABLE_PLAN_CACHING")) {
           if (queryHints eq null) {
@@ -1912,11 +1922,13 @@ object SnappySession extends Logging {
     } catch {
       case e: UncheckedExecutionException => e.getCause match {
         case ee: EntryExistsException => new CachedDataFrame(
-          ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
+          ee.getOldValue.asInstanceOf[DataFrame], sqlText, null,
+          Array.empty, -1, false)
         case t => throw t
       }
       case ee: EntryExistsException => new CachedDataFrame(
-        ee.getOldValue.asInstanceOf[DataFrame], null, Array.empty, -1, false)
+        ee.getOldValue.asInstanceOf[DataFrame], sqlText, null,
+        Array.empty, -1, false)
     }
   }
 
@@ -1990,6 +2002,23 @@ object SnappySession extends Logging {
 
     session.asInstanceOf[SnappySession]
   }
+
+  // One-to-One Mapping with SparkSQLPrepareImpl.getSQLType
+  def getDataType(storeType: Int, precision: Int, scale: Int): DataType = storeType match {
+    case StoredFormatIds.SQL_INTEGER_ID => IntegerType
+    case StoredFormatIds.SQL_CLOB_ID => StringType
+    case StoredFormatIds.SQL_LONGINT_ID => LongType
+    case StoredFormatIds.SQL_TIMESTAMP_ID => TimestampType
+    case StoredFormatIds.SQL_DATE_ID => DateType
+    case StoredFormatIds.SQL_DOUBLE_ID => DoubleType
+    case StoredFormatIds.SQL_DECIMAL_ID => DecimalType(precision, scale)
+    case StoredFormatIds.SQL_REAL_ID => FloatType
+    case StoredFormatIds.SQL_BOOLEAN_ID => BooleanType
+    case StoredFormatIds.SQL_SMALLINT_ID => ShortType
+    case StoredFormatIds.SQL_TINYINT_ID => ByteType
+    case StoredFormatIds.SQL_BLOB_ID => BinaryType
+    case _ => StringType
+  }
 }
 
 private final class Expr(val name: String, val e: Expression) {
@@ -1999,5 +2028,5 @@ private final class Expr(val name: String, val e: Expression) {
   }
 
   override def hashCode: Int = ClientResolverUtils.fastHashLong(
-    name.hashCode.toLong << 32 | e.semanticHash().toLong)
+    name.hashCode.toLong << 32L | (e.semanticHash() & 0xffffffffL))
 }
