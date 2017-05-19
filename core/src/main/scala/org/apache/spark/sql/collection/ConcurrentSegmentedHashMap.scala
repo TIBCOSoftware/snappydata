@@ -156,7 +156,13 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     try {
       added = seg.changeValue(k, hash, change, isLocal = true)
     } finally {
-      lock.unlock()
+      var beforeResult: AnyRef = null
+      try {
+        beforeResult = seg.beforeSegmentEnd()
+      } finally {
+        lock.unlock()
+        seg.segmentEnd(beforeResult)
+      }
     }
     if (added != null && added.booleanValue()) _size.incrementAndGet()
 
@@ -263,21 +269,24 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
               }
             }
           } finally {
-            if (lockedState) {
-              addNumToSize()
-              lock.unlock()
+            var beforeResult: AnyRef = null
+            try {
+              beforeResult = seg.beforeSegmentEnd()
+            } finally {
+              if (lockedState) {
+                addNumToSize()
+                lock.unlock()
+              }
+              // invoke the segmentEnd method outside of the segment lock
+              seg.segmentEnd(beforeResult)
             }
           }
-          // invoke the segmentEnd method outside of the segment lock
-          change.segmentEnd(seg)
         }
       }
       // pick up another set of keys+values
       iter.setSlice(0, MAX_BULK_INSERT_SIZE)
       for (b <- groupedKeys) if (b != null) b.clear()
       for (b <- groupedHashes) if (b != null) b.clear()
-
-
     }
 
     rowCount
