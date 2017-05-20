@@ -17,8 +17,7 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.{Calendar, Properties}
-import javassist.bytecode.stackmap.TypeData.NullType
+import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
@@ -233,6 +232,7 @@ class SnappySessionState(snappySession: SnappySession)
           snappySharedState.externalCatalog,
           snappySession,
           metadataHive,
+          snappySession.sharedState.globalTempViewManager,
           functionResourceLoader,
           functionRegistry,
           conf,
@@ -242,6 +242,7 @@ class SnappySessionState(snappySession: SnappySession)
           snappySharedState.externalCatalog,
           snappySession,
           metadataHive,
+          snappySession.sharedState.globalTempViewManager,
           functionResourceLoader,
           functionRegistry,
           conf,

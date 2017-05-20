@@ -98,7 +98,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       }
     }
 
-    val (unhandledPredicates, pushedFilters, _) =
+    val (unhandledPredicates, pushedFilters) =
       selectFilters(relation.relation, candidatePredicates)
 
     // A set of column attributes that are only referenced by pushed down

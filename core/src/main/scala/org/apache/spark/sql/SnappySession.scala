@@ -19,13 +19,6 @@
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -44,8 +37,8 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -56,7 +49,6 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTabl
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
-import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
@@ -71,6 +63,7 @@ import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
@@ -1425,7 +1418,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(sparkContext), new mutable.HashMap[String, String])
+      Some(this), new mutable.HashMap[String, String])
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
@@ -1860,9 +1853,9 @@ object SnappySession extends Logging {
           AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
         case a: Alias =>
           Alias(a.child, a.name)(exprId = ExprId(0))
-        case l@ListQuery(query, _) =>
-          val xx = l.copy(query =
-              query.transform(transformExprID),
+        case l@ListQuery(plan, _) =>
+          val xx = l.copy(plan =
+              plan.transform(transformExprID),
             exprId = ExprId(0))
           xx
         case ae: AggregateExpression =>

@@ -59,7 +59,7 @@ object StoreStrategy extends Strategy {
 
     case logical.InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
     _, _), part, query, overwrite, false) if part.isEmpty =>
-      val preAction = if (overwrite) () => p.truncate() else () => ()
+      val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
     case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>

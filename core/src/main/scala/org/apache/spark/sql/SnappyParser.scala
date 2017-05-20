@@ -809,11 +809,6 @@ class SnappyParser(session: SnappySession)
         With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2, None)))))
   }
 
-  override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | desc
-  }
-
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     (INSERT ~ INTO | PUT ~ INTO | DELETE ~ FROM | UPDATE) ~ tableIdentifier ~
         ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,

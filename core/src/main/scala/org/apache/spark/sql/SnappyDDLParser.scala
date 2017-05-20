@@ -616,7 +616,7 @@ case class CreateTableUsingAsSelect(
     bucketSpec: Option[BucketSpec],
     mode: SaveMode,
     options: Map[String, String],
-    query: LogicalPlan) extends logical.Command {
+    query: LogicalPlan) extends Command {
 
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
   override lazy val resolved: Boolean = query.resolved
