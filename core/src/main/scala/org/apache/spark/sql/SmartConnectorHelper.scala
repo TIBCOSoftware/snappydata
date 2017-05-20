@@ -17,22 +17,17 @@
 package org.apache.spark.sql
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
-import java.sql.{SQLException, CallableStatement, Connection}
-import java.util.Properties
+import java.sql.{CallableStatement, Connection, SQLException}
 
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.Property
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
-
-import org.apache.spark.sql.catalyst.catalog.CatalogFunction
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.{ExternalTableType, RelationInfo, QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.{Partition, Logging, SparkContext}
+import org.apache.spark.{Logging, Partition}
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
@@ -62,11 +57,11 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   def initializeConnection(): Unit = {
     conn = SmartConnectorHelper.getConn()
-    createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
+    createSnappyTblStmt = conn.prepareCall(createSnappyTblString)
     dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
     createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)
     dropSnappyIdxStmt = conn.prepareCall(dropSnappyIdxString)
-    getMetaDataStmt  = conn.prepareCall(getMetaDataStmtString)
+    getMetaDataStmt = conn.prepareCall(getMetaDataStmtString)
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
   }
@@ -206,7 +201,8 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
         val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(1, Seq.empty[String], indexCols, pkCols, partitions, embdClusterRelDestroyVersion))
+        (t, new RelationInfo(1, Seq.empty[String], indexCols, pkCols,
+          partitions, embdClusterRelDestroyVersion))
       }
     } else {
       // external tables (with source as csv, parquet etc.)
@@ -217,13 +213,20 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   private def executeMetaDataStatement(tableName: String): Unit = {
     getMetaDataStmt.setString(1, tableName)
-    getMetaDataStmt.registerOutParameter(2, java.sql.Types.BLOB) /*Hive table object*/
-    getMetaDataStmt.registerOutParameter(3, java.sql.Types.INTEGER) /*bucket count*/
-    getMetaDataStmt.registerOutParameter(4, java.sql.Types.VARCHAR) /*partitioning columns*/
-    getMetaDataStmt.registerOutParameter(5, java.sql.Types.VARCHAR) /*index columns*/
-    getMetaDataStmt.registerOutParameter(6, java.sql.Types.CLOB) /*bucket to server or replica to server mapping*/
-    getMetaDataStmt.registerOutParameter(7, java.sql.Types.INTEGER) /*relation destroy version*/
-    getMetaDataStmt.registerOutParameter(8, java.sql.Types.VARCHAR) /*primary key columns*/
+    // Hive table object
+    getMetaDataStmt.registerOutParameter(2, java.sql.Types.BLOB)
+    // bucket count
+    getMetaDataStmt.registerOutParameter(3, java.sql.Types.INTEGER)
+    // partitioning columns
+    getMetaDataStmt.registerOutParameter(4, java.sql.Types.VARCHAR)
+    // index columns
+    getMetaDataStmt.registerOutParameter(5, java.sql.Types.VARCHAR)
+    // bucket to server or replica to server mapping
+    getMetaDataStmt.registerOutParameter(6, java.sql.Types.CLOB)
+    // relation destroy version
+    getMetaDataStmt.registerOutParameter(7, java.sql.Types.INTEGER)
+    // primary key columns
+    getMetaDataStmt.registerOutParameter(8, java.sql.Types.VARCHAR)
     getMetaDataStmt.execute
   }
 
@@ -262,15 +265,15 @@ object SmartConnectorHelper {
   private lazy val connFactory = {
     clusterMode match {
       case ThinClientConnectorMode(_, url) =>
-        JdbcUtils.createConnectionFactory(
-          url + ";route-query=false;" , new Properties())
+        val jdbcOptions = new JDBCOptions(url + ";route-query=false;", "", Map.empty)
+        JdbcUtils.createConnectionFactory(jdbcOptions)()
       case _ =>
         throw new AnalysisException("Not expected to be called for " + clusterMode)
     }
   }
 
   def getConn(): Connection = {
-    conn.set(connFactory())
+    conn.set(connFactory)
     conn.get()
   }
 

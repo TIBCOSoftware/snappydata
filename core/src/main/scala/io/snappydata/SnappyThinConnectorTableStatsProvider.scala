@@ -20,18 +20,16 @@
 package io.snappydata
 
 import java.sql.{CallableStatement, Connection}
-import java.util.{Properties, Timer, TimerTask}
-
-import scala.collection.JavaConverters._
+import java.util.{Timer, TimerTask}
 
 import com.gemstone.gemfire.internal.ByteArrayDataInput
-import com.gemstone.gemfire.{DataSerializer, CancelException}
+import com.gemstone.gemfire.{CancelException, DataSerializer}
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
-
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.SmartConnectorHelper
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
+
+import scala.collection.JavaConverters._
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
@@ -40,8 +38,8 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   private var _url: String = null
 
   def initializeConnection(): Unit = {
-    conn = JdbcUtils.createConnectionFactory(
-      _url + ";route-query=false;" , new Properties())()
+    val jdbcOptions = new JDBCOptions(_url + ";route-query=false;", "", Map.empty)
+    conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     getStatsStmt = conn.prepareCall("call sys.GET_SNAPPY_TABLE_STATS(?)")
     getStatsStmt.registerOutParameter(1, java.sql.Types.BLOB)
   }
@@ -95,10 +93,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     bdi.initialize(value.getBytes(1, value.length().asInstanceOf[Int]), null)
     val regionStats: java.util.List[SnappyRegionStats] =
     DataSerializer.readObject(bdi).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
-//      SmartConnectorHelper.deserialize(
-//        value.getBytes(1, value.length().asInstanceOf[Int])).
-//          asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
-    (regionStats.asScala.toSeq, Seq.empty[SnappyIndexStats])
+    (regionStats.asScala, Seq.empty[SnappyIndexStats])
   }
 
 }
