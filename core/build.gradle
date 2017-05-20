@@ -56,11 +56,12 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   } else {
-    compile("io.snappydata:snappy-spark-unsafe_${scalaBinaryVersion}:${snappySparkVersion}") {
-      exclude(group: 'org.scala-lang', module: 'scala-library')
-      exclude(group: 'org.scala-lang', module: 'scala-reflect')
-      exclude(group: 'io.snappydata', module: 'snappy-spark-tags_' + scalaBinaryVersion)
-    }
+
+//    compile("io.snappydata:snappy-spark-unsafe_${scalaBinaryVersion}:${snappySparkVersion}") {
+//      exclude(group: 'org.scala-lang', module: 'scala-library')
+//      exclude(group: 'org.scala-lang', module: 'scala-reflect')
+//      exclude(group: 'io.snappydata', module: 'snappy-spark-tags_' + scalaBinaryVersion)
+//    }
     provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}") {
       exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     }
