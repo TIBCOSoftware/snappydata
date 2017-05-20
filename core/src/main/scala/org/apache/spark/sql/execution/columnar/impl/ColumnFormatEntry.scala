@@ -254,6 +254,8 @@ final class ColumnFormatValue
     assert(refCount == 1, s"Unexpected refCount=$refCount")
   }
 
+  def isDirect: Boolean = columnBuffer.isDirect
+
   /**
    * Callers of this method should have a corresponding release method
    * for eager release to work else off-heap object may keep around
@@ -262,7 +264,7 @@ final class ColumnFormatValue
    * its invocation, or do it only in normal paths because JVM reference
    * collector will eventually clean it in any case.
    */
-  def getBufferRetain: ByteBuffer = {
+  override def getBufferRetain: ByteBuffer = {
     if (retain()) {
       columnBuffer.duplicate()
     } else synchronized {
@@ -306,14 +308,7 @@ final class ColumnFormatValue
     }
   }
 
-  /**
-   * Get the internal data as a ByteBuffer for temporary use.
-   *
-   * USE WITH CARE ESPECIALLY TO ENSURE NO RELEASE HAPPENS WHILE USING
-   * THE BUFFER SO CALLER MUST ENSURE AT LEAST ONE [[retain]]
-   * AND NO EXPLICIT RELEASE OF THE RETURNED BUFFER (IF A DIRECT ONE).
-   */
-  override def getInternalBuffer: ByteBuffer = columnBuffer.duplicate()
+  override def needsRelease: Boolean = columnBuffer.isDirect
 
   override protected def releaseBuffer(): Unit = synchronized {
     // Remove the buffer at this point. Any further reads will need to be
@@ -491,9 +486,8 @@ final class ColumnFormatEncoder extends RowEncoder {
     row.setColumn(1, new SQLVarchar(batchKey.uuid))
     row.setColumn(2, new SQLInteger(batchKey.partitionId))
     row.setColumn(3, new SQLInteger(batchKey.columnIndex))
-    // TODO: SW: release of this in BlobChunk.write
-    row.setColumn(4, new SQLBlob(new ClientBlob(
-      batchValue.getBufferRetain, false)))
+    // set value reference which will be released after thrift write
+    row.setColumn(4, new SQLBlob(new ClientBlob(batchValue)))
     row
   }
 
@@ -504,7 +498,7 @@ final class ColumnFormatEncoder extends RowEncoder {
     val batchValue = new ColumnFormatValue()
     // transfer buffer from BufferedBlob as is, or copy for others
     row(3).getObject match {
-      case blob: BufferedBlob => batchValue.setBuffer(blob.getAsBuffer)
+      case blob: BufferedBlob => batchValue.setBuffer(blob.getAsLastChunk.chunk)
       case blob: Blob => batchValue.setBuffer(ByteBuffer.wrap(
         blob.getBytes(1, blob.length().toInt)))
     }

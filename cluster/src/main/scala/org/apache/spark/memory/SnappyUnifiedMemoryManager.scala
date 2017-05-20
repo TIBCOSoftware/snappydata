@@ -144,6 +144,8 @@ class SnappyUnifiedMemoryManager private[memory](
     else 0L
   }
 
+  override def hasOffHeap: Boolean = tungstenMemoryMode == MemoryMode.OFF_HEAP
+
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = synchronized {
     val capacity = buffer.capacity()

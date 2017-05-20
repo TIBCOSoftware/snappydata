@@ -241,7 +241,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         while (colIter.next()) {
           val colBlob = colIter.getBlob(1)
           val colBuffer = colBlob match {
-            case blob: BufferedBlob => blob.getAsBuffer
+            case blob: BufferedBlob => blob.getAsLastChunk.chunk
             case blob => ByteBuffer.wrap(blob.getBytes(
               1, blob.length().asInstanceOf[Int]))
           }

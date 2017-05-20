@@ -278,7 +278,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |}
       """.stripMargin)
     val closeEncodersFunction = ctx.freshName("closeEncoders")
-    ctx.addNewFunction("closeEncoders",
+    ctx.addNewFunction(closeEncodersFunction,
       s"""
          |private void $closeEncodersFunction() {
          |  $closeEncoders
