@@ -19,17 +19,14 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Cast, Literal, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, SortDirection}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -128,15 +125,15 @@ abstract class BaseColumnFormatRelation(
     // RDDs needn't have to care for orderless hashing scheme at invocation point.
     val (pruningExpressions, fields) = partitionColumns.map { pc =>
       filters.collectFirst {
-          case EqualTo(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
-            (v, schema(a))
-          case EqualNullSafe(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
-            (v, schema(a))
+          case org.apache.spark.sql.sources.EqualTo(a: String, v@ParamLiteral(_, _, _))
+            if pc.equalsIgnoreCase(a) => (v, schema(a))
+          case org.apache.spark.sql.sources.EqualNullSafe(a: String, v@ParamLiteral(_, _, _))
+            if pc.equalsIgnoreCase(a) => (v, schema(a))
       }
     }.filter(_.nonEmpty).map(_.get).unzip
 
     val pcFields = StructType(fields).toAttributes
-    val mutableRow = new SpecificMutableRow(pcFields.map(_.dataType))
+    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
     val bucketIdGeneration = UnsafeProjection.create(
       HashPartitioning(pcFields, numBuckets)
           .partitionIdExpression :: Nil, pcFields)
