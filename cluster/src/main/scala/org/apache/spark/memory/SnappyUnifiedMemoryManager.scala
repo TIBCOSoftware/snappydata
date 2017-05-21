@@ -144,7 +144,7 @@ class SnappyUnifiedMemoryManager private[memory](
     else 0L
   }
 
-  override def hasOffHeap: Boolean = tungstenMemoryMode == MemoryMode.OFF_HEAP
+  override def hasOffHeap: Boolean = tungstenMemoryMode eq MemoryMode.OFF_HEAP
 
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = synchronized {
@@ -517,9 +517,9 @@ object SnappyUnifiedMemoryManager extends Logging {
 
   // Reserving minimum 500MB data for unaccounted data, GC headroom etc
   private val RESERVED_SYSTEM_MEMORY_BYTES = {
-    // use 90% of heap by default subject to max of 5GB and min of 500MB
+    // use 95% of heap by default subject to max of 5GB and min of 500MB
     math.min(5L * 1024L * 1024L * 1024L,
-      math.max(getMaxHeapMemory / 10, 500L * 1024L * 1024L))
+      math.max(getMaxHeapMemory * 95 / 100, 500L * 1024L * 1024L))
   }
 
   private def getMaxHeapMemory: Long = {
