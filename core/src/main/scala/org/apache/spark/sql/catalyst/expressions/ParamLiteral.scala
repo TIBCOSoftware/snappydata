@@ -64,12 +64,10 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     31 * (31 * Objects.hashCode(dataType)) + Objects.hashCode(pos)
   }
 
-  var considerUnequal = false
-
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
     case pl: ParamLiteral =>
-      pl.dataType == dataType && pl.pos == pos && !(pl.considerUnequal || considerUnequal)
+      pl.dataType == dataType && pl.pos == pos
     case _ => false
   }
 

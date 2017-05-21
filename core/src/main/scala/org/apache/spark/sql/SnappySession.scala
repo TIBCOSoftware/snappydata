@@ -1719,12 +1719,12 @@ object SnappySession extends Logging {
       val nocaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
       if (nocaching) {
-        key.invalidatePlan
+        key.invalidatePlan()
       }
       else {
         val params1 = getAllParamLiterals(executedPlan)
-        if (!(params1.sameElements(key.pls))) {
-          key.invalidatePlan
+        if (!params1.sameElements(key.pls)) {
+          key.invalidatePlan()
         }
       }
     }
@@ -1733,7 +1733,7 @@ object SnappySession extends Logging {
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
 
-    logDebug(s"all bc plans = ${allbroadcastplans} ... size = ${allbroadcastplans.size}")
+    // logDebug(s"all bc plans = ${allbroadcastplans} ... size = ${allbroadcastplans.size}")
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
@@ -1809,8 +1809,7 @@ object SnappySession extends Logging {
           params1.foreach(p => {
             if (!allLiterals.exists(_.position == p.pos)) {
               logDebug(s"No plan caching for sql ${key.sqlText} as " +
-                  s"part execution of query has happened like in scalar subqueries" +
-                  s" or plans with broadcast hashjoins")
+                  s"literals and expected parameters are not having the same positions")
               key.invalidatePlan()
             }
           })
@@ -1957,8 +1956,8 @@ object SnappySession extends Logging {
       }
       cachedDF.queryString = sqlText
       if (key.valid) {
-        logDebug(s"calling reprepare broadcast with new constants ${currentWrappedConstants}")
-        cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
+        // logDebug(s"calling reprepare broadcast with new constants ${currentWrappedConstants}")
+        // cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
         logDebug(s"calling replace constants with new constants ${currentWrappedConstants}" +
             s" in Literal values = ${cachedDF.allLiterals.toSet}")
         CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)

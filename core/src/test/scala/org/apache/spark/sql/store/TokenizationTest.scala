@@ -491,7 +491,7 @@ class TokenizationTest
   test("Test broadcast hash joins and scalar sub-queries - 2") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     // val th = 10L * 1024 * 1024 * 1024
-    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=-1")
     val ddlStr = "(YearI INT," + // NOT NULL
         "MonthI INT," + // NOT NULL
         "DayOfMonth INT," + // NOT NULL
@@ -535,16 +535,6 @@ class TokenizationTest
         "USING column options()")
 
     airlineDF.write.insertInto(colTableName)
-
-//    snc.sql(s"select Y.distance, Y.dest, X.distance, X.dest from " +
-//        s" (select distance, dest, count(*) " +
-//        s" from $colTableName where taxiin > 20 or taxiout > 20" +
-//        s" group by dest, distance) X " +
-//        s" right outer join " +
-//        s"(select distance, dest, count(*) " +
-//        s" from $colTableName where taxiin > 10 or taxiout > 10" +
-//        s" group by dest, distance) Y" +
-//        s" on X.dest = Y.dest and X.distance = Y.distance").collect().foreach(println)
 
     var df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
         s"dest, avg(arrDelay) arrivalDelay from $colTableName " +

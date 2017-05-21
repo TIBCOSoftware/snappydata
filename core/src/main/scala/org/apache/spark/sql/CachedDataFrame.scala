@@ -60,16 +60,16 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
-    * Return true if [[collectWithHandler]] supports partition-wise separate
-    * result handling by default, else result handler is invoked for a
-    * single partition result.
-    */
+   * Return true if [[collectWithHandler]] supports partition-wise separate
+   * result handling by default, else result handler is invoked for a
+   * single partition result.
+   */
   def hasPartitionWiseHandling: Boolean = cachedRDD ne null
 
   private lazy val boundEnc = exprEnc.resolveAndBind(logicalPlan.output,
     sparkSession.sessionState.analyzer)
 
-  private lazy val queryExecutionString = queryExecution.toString()
+  def queryExecutionString: String = queryExecution.toString()
 
   def queryPlanInfo: SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
     plan = queryExecution.executedPlan transformAllExpressions {
@@ -136,9 +136,9 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
 
   /**
-    * Wrap a Dataset action to track the QueryExecution and time cost,
-    * then report to the user-registered callback functions.
-    */
+   * Wrap a Dataset action to track the QueryExecution and time cost,
+   * then report to the user-registered callback functions.
+   */
   private def withCallback[U](name: String)(action: DataFrame => U) = {
     try {
       queryExecution.executedPlan.foreach { plan =>
@@ -305,6 +305,8 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   var firstAccess = true
 
+  // Plan caching involving broadcast will be revisited.
+  /*
   def reprepareBroadcast(lp: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
     if (allbcplans.nonEmpty && !firstAccess) {
@@ -331,6 +333,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     }
     firstAccess = false
   }
+  */
 }
 
 final class AggregatePartialDataIterator(
