@@ -30,7 +30,7 @@ import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, SerializedDiskBuffer}
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, DiskEntry, DiskId, GemFireCacheImpl, InternalPartitionResolver, RegionEntry, Token}
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
@@ -38,6 +38,7 @@ import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RowEncoder
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLVarchar}
+import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 import io.snappydata.thrift.common.BufferedBlob
@@ -188,8 +189,14 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
 /**
  * Partition resolver for the column store.
  */
-final class ColumnPartitionResolver
+final class ColumnPartitionResolver(tableName: TableName)
     extends InternalPartitionResolver[ColumnFormatKey, ColumnFormatValue] {
+
+  private val regionPath = tableName.getFullTableNameAsRegionPath
+
+  private lazy val region = Misc.getRegionByPath(regionPath)
+      .asInstanceOf[PartitionedRegion]
+  private lazy val rootMasterRegion = ColocationHelper.getLeaderRegionName(region)
 
   override def getName: String = "ColumnPartitionResolver"
 
@@ -203,7 +210,10 @@ final class ColumnPartitionResolver
 
   override def getPartitioningColumnsCount: Int = 1
 
-  override def getMasterTable(rootMaster: Boolean): String = null
+  override def getMasterTable(rootMaster: Boolean): String = {
+    val master = if (rootMaster) rootMasterRegion else region.getColocatedWithRegion
+    if (master ne null) master.getFullPath else null
+  }
 
   override def getDDLString: String =
     s"PARTITIONER '${classOf[ColumnPartitionResolver].getName}'"

@@ -22,7 +22,6 @@ import java.nio.{ByteBuffer, ByteOrder}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, HeapBufferAllocator}
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.StringUtils
 
 import org.apache.spark.memory.MemoryManagerCallback
@@ -238,7 +237,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def storageAllocator: BufferAllocator = {
     if (finalAllocator ne null) finalAllocator
     else {
-      finalAllocator = Misc.getGemFireCache.getBufferAllocator
+      finalAllocator = GemFireCacheImpl.getCurrentBufferAllocator
       finalAllocator
     }
   }

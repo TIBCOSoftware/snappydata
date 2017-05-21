@@ -24,13 +24,13 @@ import scala.annotation.meta.param
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
-import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
 
@@ -111,14 +111,14 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       region.putAll(keyValues)
     } catch {
       // TODO: test this code
-      case e: Exception =>
+      case NonFatal(e) =>
         // delete the base entry first
         val key = new ColumnFormatKey(partitionId,
           ColumnBatchIterator.STATROW_COL_INDEX, uuid)
         try {
           region.destroy(key)
         } catch {
-          case _: Exception => // ignore
+          case NonFatal(_) => // ignore
         }
         // delete the column entries
         batch.buffers.indices.foreach { index =>
@@ -126,10 +126,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           try {
             region.destroy(key)
           } catch {
-            case _: Exception => // ignore
+            case NonFatal(_) => // ignore
           }
         }
-        throw e;
+        throw e
     }
   }
 
@@ -172,7 +172,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           stmt.close()
         } catch {
           // TODO: test this code
-          case e: Exception =>
+          case NonFatal(e) =>
             val deletestmt = connection.prepareStatement(
               s"delete from $tableName where partitionId = $partitionId " +
                   s" and uuid = ? and columnIndex = ? ")
@@ -182,7 +182,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               deletestmt.setInt(2, -1)
               deletestmt.executeUpdate()
             } catch {
-              case _: Exception => // Do nothing
+              case NonFatal(_) => // Do nothing
             }
 
             for (idx <- 1 to batch.buffers.length) {
@@ -191,11 +191,11 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
                 deletestmt.setInt(2, idx)
                 deletestmt.executeUpdate()
               } catch {
-                case _: Exception => // Do nothing
+                case NonFatal(_) => // Do nothing
               }
             }
             deletestmt.close()
-            throw e;
+            throw e
         } finally {
           // free the blobs
           if (blobs != null) {
@@ -203,7 +203,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               try {
                 blob.free()
               } catch {
-                case _: Exception => // ignore
+                case NonFatal(_) => // ignore
               }
             }
           }
@@ -432,8 +432,7 @@ final class ColumnarStorePartitionedRDD(
             allPartitions
           } else {
             val pr = region.asInstanceOf[PartitionedRegion]
-            import scala.collection.JavaConverters._
-            val distMembers = pr.getRegionAdvisor.getBucketOwners(bucketId).asScala
+            val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
             val prefNodes = distMembers.collect {
               case m if SnappyContext.containsBlockId(m.toString) =>
                 Utils.getHostExecutorId(SnappyContext.getBlockId(
@@ -451,9 +450,12 @@ final class ColumnarStorePartitionedRDD(
     Option(context).foreach(_.addTaskCompletionListener(_ => {
       val tx = TXManagerImpl.snapshotTxState.get()
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
-        val txMgr = GemFireCacheImpl.getExisting.getCacheTransactionManager
-        txMgr.masqueradeAs(tx)
-        txMgr.commit()
+        val cache = Misc.getGemFireCacheNoThrow
+        if (cache ne null) {
+          val txMgr = cache.getCacheTransactionManager
+          txMgr.masqueradeAs(tx)
+          txMgr.commit()
+        }
       }
     }))
 
@@ -496,7 +498,7 @@ final class ColumnarStorePartitionedRDD(
   }
 }
 
- final class SmartConnectorColumnRDD(
+final class SmartConnectorColumnRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var requiredColumns: Array[String],
@@ -516,13 +518,16 @@ final class ColumnarStorePartitionedRDD(
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(resolvedTableName,
       split.index, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
     // fetch the stats
-    val (statement, rs) = helper.executeQuery(conn, tableName, split, fetchStatsQuery, relDestroyVersion)
-    val itr = new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs, context, fetchColQuery)
+    val (statement, rs) = helper.executeQuery(conn, tableName, split,
+      fetchStatsQuery, relDestroyVersion)
+    val itr = new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs,
+      context, fetchColQuery)
 
     if (context ne null) {
-      context.addTaskCompletionListener { _ => {
+      context.addTaskCompletionListener { _ =>
         val txid = SparkShellRDDHelper.snapshotTxId.get()
-        if ((txid ne null) && !txid.equals("null") /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/ ) {
+        if ((txid ne null) && !txid.equals("null")
+        /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
           val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
           ps.setString(1, txid)
           ps.executeUpdate()
@@ -530,7 +535,6 @@ final class ColumnarStorePartitionedRDD(
           ps.close()
           SparkShellRDDHelper.snapshotTxId.set(null)
         }
-      }
       }
     }
     itr
@@ -582,22 +586,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
     _filters, _partEval, _commitTx) {
-
-/*  override def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext) = {
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      logDebug("smart connector task context is : " + TaskContext.get() + " attempt number is " + context.attemptNumber()
-          + " attempt ID " + context.taskAttemptId())
-      val txid = SparkShellRDDHelper.snapshotTxId.get()
-      val connection = conn.get
-      if (txid ne null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/ ) {
-        val ps = connection.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(${txid})")
-        ps.executeQuery()
-        logInfo(s"SKSK The txid being committed is $txid")
-        ps.close()
-        SparkShellRDDHelper.snapshotTxId.set(null)
-      }
-    }))
-  }*/
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {

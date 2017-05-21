@@ -21,6 +21,7 @@ import java.sql.{Blob, Connection, PreparedStatement, ResultSet, Statement}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.EntryDestroyedException
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, RegionEntry}
@@ -44,10 +45,10 @@ abstract class ResultSetIterator[A](conn: Connection,
   protected[this] final var hasNextValue: Boolean = rs ne null
 
   if (context ne null) {
-    context.addTaskCompletionListener { _ => {
-      logDebug("closed connection for task from listener " + context.partitionId())
+    val partitionId = context.partitionId()
+    context.addTaskCompletionListener { _ =>
+      logDebug(s"closed connection for task from listener $partitionId")
       close()
-    }
     }
   }
 
@@ -65,8 +66,6 @@ abstract class ResultSetIterator[A](conn: Connection,
     } finally {
       if (!success) {
         hasNextValue = false
-        //logDebug("closed connection for task due to failure")
-        //close()
       }
     }
   }
@@ -85,25 +84,29 @@ abstract class ResultSetIterator[A](conn: Connection,
   protected def getCurrentValue: A
 
   def close() {
-    //if (!hasNextValue) return
+    // if (!hasNextValue) return
     try {
-      // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
-      // rs.lightWeightClose()
-      rs.close()
+      if (rs ne null) {
+        // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
+        // rs.lightWeightClose()
+        rs.close()
+      }
     } catch {
-      case e: Exception => logWarning("Exception closing resultSet", e)
+      case NonFatal(e) => logWarning("Exception closing resultSet", e)
     }
     try {
-      stmt.close()
+      if (stmt ne null) {
+        stmt.close()
+      }
     } catch {
-      case e: Exception => logWarning("Exception closing statement", e)
+      case NonFatal(e) => logWarning("Exception closing statement", e)
     }
     try {
       conn.commit()
       conn.close()
       logDebug("closed connection for task " + context.partitionId())
     } catch {
-      case e: Exception => logWarning("Exception closing connection", e)
+      case NonFatal(e) => logWarning("Exception closing connection", e)
     }
     hasNextValue = false
   }
@@ -230,9 +233,9 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     context: TaskContext,
     fetchColQuery: String)
     extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
-  var currentUUID: String = _
-  val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
-  var colBuffers: Option[Int2ObjectOpenHashMap[(ByteBuffer, Blob)]] = None
+  private var currentUUID: String = _
+  private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
+  private var colBuffers: Option[Int2ObjectOpenHashMap[(ByteBuffer, Blob)]] = None
 
   def getColumnLob(bufferPosition: Int): ByteBuffer = {
     colBuffers match {
@@ -255,7 +258,6 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           index = index + 1
         }
         colBuffers = Some(bufferMap)
-
         bufferMap.get(bufferPosition)._1
     }
   }
@@ -271,7 +273,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           // release previous set of buffers immediately
           UnsafeHolder.releaseIfDirectBuffer(buffer)
         }
-      case None =>
+      case _ =>
     }
     colBuffers = None
     val statsData = rs.getBlob(1)
@@ -289,12 +291,12 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           try {
             blob.free()
           } catch {
-            case e: Exception => logWarning("Exception clearing Blob", e)
+            case NonFatal(e) => logWarning("Exception clearing Blob", e)
           }
           // release last set of buffers immediately
           UnsafeHolder.releaseIfDirectBuffer(buffer)
         }
-      case None =>
+      case _ =>
     }
     super.close()
   }
