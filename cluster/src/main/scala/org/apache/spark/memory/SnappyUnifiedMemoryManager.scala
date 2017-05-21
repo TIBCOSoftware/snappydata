@@ -576,16 +576,19 @@ object SnappyUnifiedMemoryManager extends Logging {
     * This is a direct copy from UnifiedMemorymanager with an extra check for evit fraction
     */
   private def getMaxMemory(conf: SparkConf): Long = {
-    val systemMemory = conf.getLong("spark.testing.memory", getMaxHeapMemory)
+    var systemMemory = conf.getLong("spark.testing.memory", getMaxHeapMemory)
     // align reserved memory with critical heap size of GemFire
     val cache = Misc.getGemFireCacheNoThrow
-    val reservedMemory = if (cache ne null) {
-      (1.5 * (systemMemory - cache.getResourceManager.getHeapMonitor
-          .getThresholds.getCriticalThresholdBytes)).toLong
-    } else {
-      conf.getLong("spark.testing.reservedMemory",
-      if (conf.contains("spark.testing")) 0 else RESERVED_SYSTEM_MEMORY_BYTES)
-    }
+    var reservedMemory = if (cache ne null) {
+      val thresholds = cache.getResourceManager.getHeapMonitor.getThresholds
+      if (thresholds.getCriticalThreshold > 0.1f) {
+        systemMemory = thresholds.getMaxMemoryBytes
+        // add a 30% cushion for GC
+        ((systemMemory - thresholds.getCriticalThresholdBytes) * 1.3).toLong
+      } else RESERVED_SYSTEM_MEMORY_BYTES
+    } else RESERVED_SYSTEM_MEMORY_BYTES
+    reservedMemory = conf.getLong("spark.testing.reservedMemory",
+      if (conf.contains("spark.testing")) 0 else reservedMemory)
     val minSystemMemory = (reservedMemory * 1.5).ceil.toLong
     if (systemMemory < minSystemMemory) {
       throw new IllegalArgumentException(s"System memory $systemMemory must " +
@@ -603,7 +606,7 @@ object SnappyUnifiedMemoryManager extends Logging {
     }
 
     val usableMemory = systemMemory - reservedMemory
-    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.90)
+    val memoryFraction = conf.getDouble("spark.memory.fraction", 1.0)
     val totalMemory = (usableMemory * memoryFraction).toLong
     logInfo(s"Total memory allocated for execution and storage pool is $totalMemory")
     totalMemory
