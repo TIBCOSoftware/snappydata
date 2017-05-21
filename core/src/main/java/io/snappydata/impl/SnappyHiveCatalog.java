@@ -34,6 +34,8 @@ import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException;
+import com.pivotal.gemfirexd.internal.iapi.services.sanity.SanityManager;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
@@ -385,11 +387,41 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");
 
-      try {
-        HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
-        SnappyHiveCatalog.this.hmClients.set(hmc);
-      } catch (MetaException me) {
-        throw new IllegalStateException(me);
+      final short numRetries = 3;
+      short count = 0;
+      while (true) {
+        try {
+          HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
+          SnappyHiveCatalog.this.hmClients.set(hmc);
+          return;
+        } catch (MetaException me) {
+          Throwable t = me.getCause();
+          boolean noDataStoreFound = t instanceof StandardException &&
+              ((StandardException)t).getSQLState().equals(SQLState.NO_DATASTORE_FOUND);
+          // wait for some time if no data store found error is thrown due
+          // to region not being initialized
+          if (count < numRetries && noDataStoreFound) {
+            try {
+              SanityManager.DEBUG_PRINT("Info", "No datastore found while " +
+                  "initializing Hive metastore client. Will retry " +
+                  "initialization after 500 milliseconds. Exception received is " + t);
+              if (SanityManager.isFineEnabled) {
+                SanityManager.DEBUG_PRINT("Info", "Exception stacktrace:", me);
+              }
+              count++;
+              Thread.sleep(500);
+            } catch (InterruptedException ie) {
+              throw new IllegalStateException(me);
+            }
+          } else if (noDataStoreFound) { // num retries exhausted
+            throw new IllegalStateException("Hive metastore client " +
+                "initialization failed. If lead node fails to start due to this, " +
+                "you may start the lead using 'sbin/snappy-leads.sh start' command ", me);
+          }
+          else {
+            throw new IllegalStateException(me);
+          }
+        }
       }
     }
 
