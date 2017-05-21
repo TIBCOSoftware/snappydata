@@ -124,6 +124,13 @@ object StoreUtils {
       }
     } else {
       val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+      if (distMembers.isEmpty) {
+        var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
+        if (prefNode == null) {
+          prefNode = region.getOrCreateNodeForInitializedBucketRead(bucketId, true)
+        }
+        distMembers.add(prefNode)
+      }
       val members = new mutable.ArrayBuffer[String](2)
       distMembers.foreach { m =>
         SnappyContext.getBlockId(m.toString) match {

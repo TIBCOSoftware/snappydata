@@ -213,30 +213,30 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     (conn, stmt, rs)
   }
 
+
+  def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext) = {
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+      val tx = TXManagerImpl.snapshotTxState.get()
+      if (tx != null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/) {
+        GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
+        GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+      }
+    }
+    ))
+  }
   /**
    * Runs the SQL query against the JDBC driver.
    */
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
-
-    if (commitTx) {
-      Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-        logDebug("Task context is : " + TaskContext.get()
-            + " attempt number is " + context.attemptNumber()
-            + " attempt ID " + context.taskAttemptId())
-        val tx = TXManagerImpl.snapshotTxState.get()
-        if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
-          val txMgr = GemFireCacheImpl.getExisting.getCacheTransactionManager
-          txMgr.masqueradeAs(tx)
-          txMgr.commit()
-        }
-      }))
-    }
-
     if (pushProjections || useResultSet) {
       // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
-      new ResultSetTraversal(conn, stmt, rs, context)
+      val itr = new ResultSetTraversal(conn, stmt, rs, context)
+      if (commitTx) {
+        commitTxBeforeTaskCompletion(Option(conn), context)
+      }
+      itr
     } else {
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
@@ -253,7 +253,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         }
 
         val txId = txManagerImpl.getTransactionId
-        new CompactExecRowIteratorOnScan(container, bucketIds, txId)
+        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId)
+        if (commitTx) {
+          commitTxBeforeTaskCompletion(None, context)
+        }
+        itr
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
         val ers = rs match {
@@ -261,7 +265,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: ProxyResultSet =>
             resultSetField.get(p).asInstanceOf[EmbedResultSet]
         }
-        new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
+        val itr = new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
+        if (commitTx) {
+          commitTxBeforeTaskCompletion(Option(conn), context)
+        }
+        itr
       }
     }
   }
@@ -382,9 +390,7 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
   protected final var hasNextValue = true
   protected final var doMove = true
   // transaction started by row buffer scan should be used here
-  val tx: TXStateInterface = TXManagerImpl.snapshotTxState.get()
-
-  // TODO: Suranjan If tx is null then start a GemFire Snapshot tx.
+  val tx = TXManagerImpl.snapshotTxState.get()
   private[execution] final val itr = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
@@ -404,12 +410,6 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
       moveNext()
       doMove = false
     }
-    // commit here as row and column iteration is complete.
-    /* if (!hasNextValue && tx != null && !(tx.asInstanceOf[TXStateProxy]).isClosed()) {
-      val cache = GemFireCacheImpl.getExisting
-      cache.getCacheTransactionManager.masqueradeAs(tx)
-      cache.getCacheTransactionManager.commit()
-    } */
     hasNextValue
   }
 
