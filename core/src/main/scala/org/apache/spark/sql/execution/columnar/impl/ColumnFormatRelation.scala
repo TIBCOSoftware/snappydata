@@ -77,6 +77,7 @@ abstract class BaseColumnFormatRelation(
     with PartitionedDataSourceScan
     with RowInsertableRelation {
 
+
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
   override val connectionType: ConnectionType.Value =
@@ -222,7 +223,8 @@ abstract class BaseColumnFormatRelation(
           filters,
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          relInfo.embdClusterRelDestroyVersion
+          relInfo.embdClusterRelDestroyVersion,
+          _commitTx = false
         )
     }
   }

@@ -16,7 +16,6 @@
  */
 package io.snappydata.cluster
 
-import java.io.File
 import java.net.URL
 import java.util
 
@@ -34,6 +33,7 @@ import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
+import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
@@ -45,7 +45,7 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  */
 object ExecutorInitiator extends Logging {
 
-  val SNAPPY_MEMORY_MANAGER = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
+  val SNAPPY_MEMORY_MANAGER: String = classOf[SnappyUnifiedMemoryManager].getName
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
