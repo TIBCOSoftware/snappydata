@@ -175,6 +175,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s" from $tableName2 " +
           s" where ol_2_int_id = 100 " +
           s") " +
+          s" limit 20" +
           s""
       verifyResults("query1-1", stmt.executeQuery(qry), Array(100),
         -1) // TODO pass a number than -1
@@ -200,7 +201,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s") " +
           s" limit 20" +
           s""
-      verifyResults("query2-1", stmt.executeQuery(qry), Array(100, 200, 300), 1)
+      verifyResults("query2-1", stmt.executeQuery(qry), Array(100, 200, 300), 0)
 
       val qry2 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
           s" from $tableName1 " +
@@ -212,14 +213,52 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s") " +
           s" limit 20" +
           s""
-      verifyResults("query2-2", stmt.executeQuery(qry2), Array(600, 700, 800), 1)
+      verifyResults("query2-2", stmt.executeQuery(qry2), Array(600, 700, 800), 0)
     } finally {
       stmt.close()
       conn.close()
     }
   }
 
-  ignore("Tokenization test with IN SubQuery") {
+  def query2snc(tableName1: String, tableName2: String, serverHostPort: String, iter: Int): Unit = {
+    val qry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
+        s" from $tableName1 " +
+        s" where ol_1_int_id < 500 " +
+        s" and ol_1_int2_id in (" +
+        s"select ol_2_int_id " +
+        s" from $tableName2 " +
+        s" where ol_2_int_id in (100, 200, 300) " +
+        s") " +
+        s" limit 20" +
+        s""
+    println(s"Iter ${iter} QUERY = ${qry}")
+    val df1 = snc.sql(qry)
+    val res1 = df1.collect()
+    println(s"Iter ${iter} with query = ${qry}")
+    res1.foreach(println)
+    println(s"Iter ${iter} query end and res1 size = ${res1.length}")
+    assert(res1.length == 3)
+
+    val qry2 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
+        s" from $tableName1 " +
+        s" where ol_1_int_id < 900 " +
+        s" and ol_1_int2_id in (" +
+        s"select ol_2_int_id " +
+        s" from $tableName2 " +
+        s" where ol_2_int_id in (600, 700, 800) " +
+        s") " +
+        s" limit 20" +
+        s""
+    val df2 = snc.sql(qry2)
+    val res2 = df2.collect()
+    println(s"Iter ${iter} with query2 = ${qry2}")
+    res2.foreach(println)
+    println(s"Iter ${iter} query2 end with res size = ${res2.length}")
+    assert(!(res1.sameElements(res2)))
+    assert(res2.length == 3)
+  }
+
+  test("Tokenization test with IN SubQuery") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
@@ -239,7 +278,10 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       // println("network server started")
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
-      query1(tableName1, tableName2, serverHostPort)
+      // As part of fix to SNAP-1478 thie below query should be enabled
+      // and verified.
+      // query1(tableName1, tableName2, serverHostPort)
+      (0 to 5).foreach(i => query2snc(tableName1, tableName2, serverHostPort, i))
       query2(tableName1, tableName2, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
