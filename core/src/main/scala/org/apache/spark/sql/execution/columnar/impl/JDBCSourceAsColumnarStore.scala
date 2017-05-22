@@ -367,8 +367,6 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             val batchID = Some(batchId.getOrElse(region.newJavaUUID().toString))
             doSnappyInsert(resolvedColumnTableName, batch, batchID,
               partitionId, maxDeltaRows)
-            // doGFXDInsert(resolvedColumnTableName, batch, batchID, partitionId,
-            //  maxDeltaRows)(connection)
 
           case _ =>
             doGFXDInsert(resolvedColumnTableName, batch, batchId, partitionId,

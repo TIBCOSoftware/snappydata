@@ -499,7 +499,9 @@ final class ColumnFormatEncoder extends RowEncoder {
     row.setColumn(1, new SQLVarchar(batchKey.uuid))
     row.setColumn(2, new SQLInteger(batchKey.partitionId))
     row.setColumn(3, new SQLInteger(batchKey.columnIndex))
-    // set value reference which will be released after thrift write
+    // set value reference which will be released after thrift write;
+    // this written blob does not include the serialization header
+    // unlike in fromRow which does include it
     row.setColumn(4, new SQLBlob(new ClientBlob(batchValue)))
     row
   }
@@ -508,14 +510,18 @@ final class ColumnFormatEncoder extends RowEncoder {
       container: GemFireContainer): java.util.Map.Entry[AnyRef, AnyRef] = {
     val batchKey = new ColumnFormatKey(uuid = row(0).getString,
       partitionId = row(1).getInt, columnIndex = row(2).getInt)
-    val batchValue = new ColumnFormatValue()
     // transfer buffer from BufferedBlob as is, or copy for others
-    row(3).getObject match {
-      case blob: BufferedBlob => batchValue.setBuffer(
-        blob.getAsLastChunk.chunk, writeSerializationHeader = false)
-      case blob: Blob => batchValue.setBuffer(ByteBuffer.wrap(
-        blob.getBytes(1, blob.length().toInt)), writeSerializationHeader = false)
+    val columnBuffer = row(3).getObject match {
+      case blob: BufferedBlob => blob.getAsLastChunk.chunk
+      case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
     }
+    // the incoming blob includes the serialization header to avoid
+    // a copy when transferring to ColumnFormatValue, so just move to
+    // the start of data
+    columnBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+    // set the buffer into ColumnFormatValue
+    val batchValue = new ColumnFormatValue()
+    batchValue.setBuffer(columnBuffer, writeSerializationHeader = false)
     new java.util.AbstractMap.SimpleEntry[AnyRef, AnyRef](batchKey, batchValue)
   }
 }

@@ -255,8 +255,6 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
               1, blob.length().asInstanceOf[Int]))
           }
           colBlob.free()
-          // skip serialization header
-          colBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
           buffers.put(index, colBuffer)
           index += 1
         }
@@ -287,8 +285,6 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         1, blob.length().asInstanceOf[Int]))
     }
     statsBlob.free()
-    // skip serialization header
-    statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
     // 0th index is the stats buffer to free on next() or close()
     colBuffers.put(0, statsBuffer)
     statsBuffer
