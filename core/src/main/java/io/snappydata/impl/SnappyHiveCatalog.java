@@ -30,8 +30,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException;
@@ -39,6 +42,7 @@ import com.pivotal.gemfirexd.internal.iapi.services.sanity.SanityManager;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
+import io.snappydata.LocalizedMessages;
 import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
@@ -394,32 +398,35 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
           SnappyHiveCatalog.this.hmClients.set(hmc);
           return;
-        } catch (MetaException me) {
-          Throwable t = me.getCause();
-          boolean noDataStoreFound = t instanceof StandardException &&
-              ((StandardException)t).getSQLState().equals(SQLState.NO_DATASTORE_FOUND);
-          // wait for some time if no data store found error is thrown due
-          // to region not being initialized
+        } catch (Exception ex) {
+          Throwable t = ex;
+          boolean noDataStoreFound = false;
+          while (t != null && !noDataStoreFound) {
+            noDataStoreFound = (t instanceof SQLException) &&
+                SQLState.NO_DATASTORE_FOUND.startsWith(
+                    ((SQLException)t).getSQLState());
+            t = t.getCause();
+          }
+          // wait for some time and retry if no data store found error
+          // is thrown due to region not being initialized
           if (count < numRetries && noDataStoreFound) {
             try {
-              SanityManager.DEBUG_PRINT("Info", "No datastore found while " +
-                  "initializing Hive metastore client. Will retry " +
-                  "initialization after 500 milliseconds. Exception received is " + t);
-              if (SanityManager.isFineEnabled) {
-                SanityManager.DEBUG_PRINT("Info", "Exception stacktrace:", me);
+              Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                  "SnappyHiveCatalog.HMSQuery.initHMC: No datastore found " +
+                      "while initializing Hive metastore client. " +
+                      "Will retry initialization after 500 milliseconds. " +
+                      "Exception received is " + t);
+              if (Misc.getI18NLogWriter().fineEnabled()) {
+                Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                    "Exception stacktrace:", ex);
               }
               count++;
               Thread.sleep(500);
             } catch (InterruptedException ie) {
-              throw new IllegalStateException(me);
+              throw new IllegalStateException(ex);
             }
-          } else if (noDataStoreFound) { // num retries exhausted
-            throw new IllegalStateException("Hive metastore client " +
-                "initialization failed. If lead node fails to start due to this, " +
-                "you may start the lead using 'sbin/snappy-leads.sh start' command ", me);
-          }
-          else {
-            throw new IllegalStateException(me);
+          } else {
+            throw new IllegalStateException(ex);
           }
         }
       }
