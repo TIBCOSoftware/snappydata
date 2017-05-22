@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
-import java.sql.{Blob, Connection, PreparedStatement, ResultSet, Statement}
+import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -174,7 +174,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
-  def releaseColumns(): Int = {
+  private def releaseColumns(): Int = {
     val previousColumns = currentColumns
     if ((previousColumns ne null) && previousColumns.nonEmpty) {
       currentColumns = null
@@ -232,20 +232,20 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     stmt: Statement, rs: ResultSet,
     context: TaskContext,
     fetchColQuery: String)
-    extends ResultSetIterator[Array[Byte]](conn, stmt, rs, context) {
+    extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
   private var currentUUID: String = _
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
-  private var colBuffers: Option[Int2ObjectOpenHashMap[(ByteBuffer, Blob)]] = None
+  private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
+    new Int2ObjectOpenHashMap[ByteBuffer](requiredColumns.length + 1)
 
   def getColumnLob(bufferPosition: Int): ByteBuffer = {
     colBuffers match {
-      case Some(map) => map.get(bufferPosition)._1
-      case None =>
+      case buffers if buffers.size() > 1 => buffers.get(bufferPosition)
+      case buffers =>
         for (i <- requiredColumns.indices) {
           ps.setString(i + 1, currentUUID)
         }
         val colIter = ps.executeQuery()
-        val bufferMap = new Int2ObjectOpenHashMap[(ByteBuffer, Blob)]()
         var index = 1
         while (colIter.next()) {
           val colBlob = colIter.getBlob(1)
@@ -254,50 +254,48 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
             case blob => ByteBuffer.wrap(blob.getBytes(
               1, blob.length().asInstanceOf[Int]))
           }
-          bufferMap.put(index, (colBuffer, colBlob))
-          index = index + 1
+          colBlob.free()
+          // skip serialization header
+          colBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+          buffers.put(index, colBuffer)
+          index += 1
         }
-        colBuffers = Some(bufferMap)
-        bufferMap.get(bufferPosition)._1
+        buffers.get(bufferPosition)
     }
   }
 
-  override protected def getCurrentValue: Array[Byte] = {
-    currentUUID = rs.getString(2)
-    colBuffers match {
-      case Some(buffers) =>
-        val values = buffers.values().iterator()
-        while (values.hasNext) {
-          val (buffer, blob) = values.next()
-          blob.free()
-          // release previous set of buffers immediately
-          UnsafeHolder.releaseIfDirectBuffer(buffer)
-        }
-      case _ =>
+  private def releaseColumns(): Unit = {
+    val buffers = colBuffers
+    if (!buffers.isEmpty) {
+      val values = buffers.values().iterator()
+      while (values.hasNext) {
+        // release previous set of buffers immediately
+        UnsafeHolder.releaseIfDirectBuffer(values.next())
+      }
     }
-    colBuffers = None
-    val statsData = rs.getBlob(1)
-    val statsBytes = statsData.getBytes(1, statsData.length().asInstanceOf[Int])
-    statsData.free()
-    statsBytes
+  }
+
+  override protected def getCurrentValue: ByteBuffer = {
+    currentUUID = rs.getString(2)
+    releaseColumns()
+    // create a new map instead of clearing old one to help young gen GC
+    colBuffers = new Int2ObjectOpenHashMap[ByteBuffer](requiredColumns.length + 1)
+    val statsBlob = rs.getBlob(1)
+    val statsBuffer = statsBlob match {
+      case blob: BufferedBlob => blob.getAsLastChunk.chunk
+      case blob => ByteBuffer.wrap(blob.getBytes(
+        1, blob.length().asInstanceOf[Int]))
+    }
+    statsBlob.free()
+    // skip serialization header
+    statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+    // 0th index is the stats buffer to free on next() or close()
+    colBuffers.put(0, statsBuffer)
+    statsBuffer
   }
 
   override def close(): Unit = {
-    colBuffers match {
-      case Some(buffers) =>
-        val values = buffers.values().iterator()
-        while (values.hasNext) {
-          val (buffer, blob) = values.next()
-          try {
-            blob.free()
-          } catch {
-            case NonFatal(e) => logWarning("Exception clearing Blob", e)
-          }
-          // release last set of buffers immediately
-          UnsafeHolder.releaseIfDirectBuffer(buffer)
-        }
-      case _ =>
-    }
+    releaseColumns()
     super.close()
   }
 }

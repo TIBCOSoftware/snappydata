@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
@@ -28,7 +29,8 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
@@ -71,6 +73,18 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       closeOnSuccess = true, onExecutor = true)
   }
 
+  private def createStatsBuffer(statsData: Array[Byte],
+      allocator: BufferAllocator): ByteBuffer = {
+    val statsLen = statsData.length
+    val statsBuffer = allocator.allocateForStorage(statsLen +
+        ColumnFormatEntry.VALUE_HEADER_SIZE)
+    statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+    statsBuffer.put(statsData, 0, statsLen)
+    // move to start for ColumnFormatValue to write the serialization header
+    statsBuffer.rewind()
+    statsBuffer
+  }
+
   /**
    * Insert the base entry and n column entries in Snappy. Insert the base entry
    * in the end to ensure that the partial inserts of a cached batch are ignored
@@ -97,13 +111,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       val key = new ColumnFormatKey(partitionId,
         ColumnBatchIterator.STATROW_COL_INDEX, uuid)
       val allocator = Misc.getGemFireCache.getBufferAllocator
-      val statsLen = batch.statsData.length
-      val statsBuffer = allocator.allocateForStorage(statsLen +
-          ColumnFormatEntry.VALUE_HEADER_SIZE)
-      statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
-      statsBuffer.put(batch.statsData, 0, statsLen)
-      // move to start for ColumnFormatValue to write the serialization header
-      statsBuffer.rewind()
+      val statsBuffer = createStatsBuffer(batch.statsData, allocator)
       val value = new ColumnFormatValue(statsBuffer)
       keyValues.put(key, value)
 
@@ -165,7 +173,13 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           stmt.setString(1, uuid)
           stmt.setInt(2, partitionId)
           stmt.setInt(3, ColumnBatchIterator.STATROW_COL_INDEX)
-          stmt.setBytes(4, batch.statsData.clone)
+          val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+          val statsBuffer = createStatsBuffer(batch.statsData, allocator)
+          // write the serialization header then rewind
+          ColumnFormatEntry.writeValueSerializationHeader(statsBuffer,
+            batch.statsData.length)
+          statsBuffer.rewind()
+          stmt.setBlob(4, new ClientBlob(statsBuffer, true))
           stmt.addBatch()
 
           stmt.executeBatch()
@@ -511,7 +525,7 @@ final class SmartConnectorColumnRDD(
         with KryoSerializable {
 
   override def compute(split: Partition,
-      context: TaskContext): Iterator[Array[Byte]] = {
+      context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
     val resolvedTableName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)

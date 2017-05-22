@@ -26,11 +26,11 @@ import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException, EntryOperation, Region, RegionDestroyedException}
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, SerializedDiskBuffer}
-import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
@@ -248,16 +248,19 @@ final class ColumnFormatValue
   }
 
   def setBuffer(buffer: ByteBuffer,
-      changeOwnerToStorage: Boolean = true): Unit = synchronized {
+      changeOwnerToStorage: Boolean = true,
+      writeSerializationHeader: Boolean = true): Unit = synchronized {
     val columnBuffer = GemFireCacheImpl.getCurrentBufferAllocator
         .transfer(buffer, ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
     if (changeOwnerToStorage && columnBuffer.isDirect) {
       MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
         columnBuffer, allowNonAllocator = true)
     }
-    // write the serialization header and move ahead to start of data
-    ColumnFormatEntry.writeValueSerializationHeader(columnBuffer,
-      buffer.remaining() - ColumnFormatEntry.VALUE_HEADER_SIZE)
+    if (writeSerializationHeader) {
+      // write the serialization header and move ahead to start of data
+      ColumnFormatEntry.writeValueSerializationHeader(columnBuffer,
+        buffer.remaining() - ColumnFormatEntry.VALUE_HEADER_SIZE)
+    }
     this.columnBuffer = columnBuffer
     // reference count is required to be 1 at this point
     val refCount = this.refCount
@@ -508,9 +511,10 @@ final class ColumnFormatEncoder extends RowEncoder {
     val batchValue = new ColumnFormatValue()
     // transfer buffer from BufferedBlob as is, or copy for others
     row(3).getObject match {
-      case blob: BufferedBlob => batchValue.setBuffer(blob.getAsLastChunk.chunk)
+      case blob: BufferedBlob => batchValue.setBuffer(
+        blob.getAsLastChunk.chunk, writeSerializationHeader = false)
       case blob: Blob => batchValue.setBuffer(ByteBuffer.wrap(
-        blob.getBytes(1, blob.length().toInt)))
+        blob.getBytes(1, blob.length().toInt)), writeSerializationHeader = false)
     }
     new java.util.AbstractMap.SimpleEntry[AnyRef, AnyRef](batchKey, batchValue)
   }
