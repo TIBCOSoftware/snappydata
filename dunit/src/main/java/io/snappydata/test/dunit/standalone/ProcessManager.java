@@ -124,14 +124,18 @@ public class ProcessManager {
   }
 
   public synchronized void killVMs() {
+    killVMs(false);
+  }
+
+  public synchronized void killVMs(boolean force) {
     for(ProcessHolder process : processes.values()) {
       if(process != null) {
         //TODO - stop it gracefully? Why bother
-        process.kill();
+        process.kill(force);
       }
     }
   }
-  
+
   public synchronized void bounce(int vmNum) {
     if(!processes.containsKey(vmNum)) {
       throw new IllegalStateException("No such process " + vmNum);
@@ -255,9 +259,16 @@ public class ProcessManager {
     }
 
     public void kill() {
+      this.kill(false);
+    }
+
+    public void kill(boolean force) {
       this.killed = true;
-      process.destroy();
-      
+      if (force) {
+        this.process.destroyForcibly();
+      } else {
+        this.process.destroy();
+      }
     }
 
     public Process getProcess() {

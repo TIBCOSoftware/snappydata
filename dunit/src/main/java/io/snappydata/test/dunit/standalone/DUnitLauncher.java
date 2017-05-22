@@ -118,7 +118,7 @@ public class DUnitLauncher {
   static final String RMI_PORT_PARAM = "gemfire.DUnitLauncher.RMI_PORT";
   public static final String VM_NUM_PARAM = "gemfire.DUnitLauncher.VM_NUM";
 
-  private static final String LAUNCHED_PROPERTY = "gemfire.DUnitLauncher.LAUNCHED";
+  public static final String LAUNCHED_PROPERTY = "gemfire.DUnitLauncher.LAUNCHED";
 
   private DUnitLauncher() {
   }
@@ -153,9 +153,16 @@ public class DUnitLauncher {
       }
     }
   }
-  
+
+  public static void resetVMs() {
+    ProcessManager pm = processManager;
+    if (pm != null) {
+      pm.killVMs(true);
+    }
+  }
+
   /**
-   * Test it see if the eclise dunit environment is launched.
+   * Test to see if the eclipse dunit environment is launched.
    */
   public static boolean isLaunched() {
     return Boolean.getBoolean(LAUNCHED_PROPERTY);
@@ -186,7 +193,7 @@ public class DUnitLauncher {
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       public void run() {
-        processManager.killVMs();
+        processManager.killVMs(true);
       }
     });
     

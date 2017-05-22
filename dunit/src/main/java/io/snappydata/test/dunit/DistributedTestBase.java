@@ -17,6 +17,7 @@
 package io.snappydata.test.dunit;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -31,14 +32,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.PrivilegedAction;
 import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.gemstone.gemfire.SystemFailure;
 import com.gemstone.gemfire.admin.internal.AdminDistributedSystemImpl;
 import com.gemstone.gemfire.cache.CacheException;
 import com.gemstone.gemfire.cache.TimeoutException;
@@ -57,6 +54,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.internal.MethodSorter;
+
+import static io.snappydata.test.dunit.standalone.DUnitLauncher.LAUNCHED_PROPERTY;
 
 /**
  * This class is the superclass of all distributed unit tests.
@@ -106,6 +105,10 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   protected static boolean beforeClassDone;
   /** this stores the last test method in the current class for afterClass */
   protected static String lastTest;
+
+  private static final long TEST_TIMEOUT = 10 * 60 * 1000; // 25 minutes
+  protected Timer timer = new Timer(getName() + "_Killer");
+  protected TimerTask tt;
 
   // common static initialization (currently changes working directory)
   public static final class InitializeRun {
@@ -737,6 +740,49 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
       }
     }
     System.out.println("\n\n[setup] START TEST " + getClass().getSimpleName() + "." + testName + "\n\n");
+
+    addTimer();
+  }
+
+  private void addTimer() {
+    // Cancel earlier task, if any.
+    if (this.tt != null) {
+      this.tt.cancel();
+    }
+    this.tt = new TimerTask() {
+      @Override
+      public void run() {
+        // TODO Can check if the task is already cancelled.
+
+        // stopClusters();
+
+        getLogWriter().warn(getName() + " took too long to complete. Terminating...");
+        SystemFailure.emergencyClose();
+        DUnitLauncher.resetVMs();
+
+        System.setProperty(LAUNCHED_PROPERTY, "FALSE");
+        this.cancel();
+      }
+    };
+
+    this.timer.schedule(this.tt, TEST_TIMEOUT);
+  }
+
+  public void stopClusters() {
+    try {
+      String home = System.getenv("APACHE_SPARK_HOME");
+      if (home != null) {
+        getLogWriter().info("Stopping Spark cluster...");
+        Runtime.getRuntime().exec(home + "/sbin/stop-all.sh");
+      }
+      home = System.getenv("SNAPPY_HOME");
+      if (home != null) {
+        getLogWriter().info("Stopping Snappy cluster...");
+        Runtime.getRuntime().exec(home + "/sbin/snappy-stop-all.sh");
+      }
+    } catch (IOException ioe) {
+      getLogWriter().warn("Error shutting down the external cluster ", ioe);
+    }
   }
 
   /**
@@ -785,6 +831,10 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
       afterClass();
       beforeClassDone = false;
       lastTest = null;
+    }
+
+    if (this.tt != null) {
+      this.tt.cancel();
     }
   }
 
