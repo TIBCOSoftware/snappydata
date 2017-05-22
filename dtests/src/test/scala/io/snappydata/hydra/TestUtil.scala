@@ -85,13 +85,14 @@ object TestUtil {
   PrintWriter,sqlContext: SQLContext, validationFailed: Boolean): Boolean = {
     var hasValidationFailed = validationFailed
 
-    val snappyQueryFileName = s"Snappy_${queryNum}.csv"
-    val snappyDest: String = getQueryResultDir("snappyQueryFiles") + File.separator + snappyQueryFileName
+    val snappyQueryFileName = s"Snappy_${queryNum}"
+    val snappyDest: String = getQueryResultDir("snappyQueryFiles") + File.separator +
+        snappyQueryFileName
     pw.println(snappyDest)
     val snappyFile: File = new java.io.File(snappyDest)
     var snappyDF = snc.sql(sqlString)
 
-    val sparkQueryFileName = s"Spark_${queryNum}.csv"
+    val sparkQueryFileName = s"Spark_${queryNum}"
     val sparkDest: String = getQueryResultDir("sparkQueryFiles") + File.separator + sparkQueryFileName
     pw.println(sparkDest)
     val sparkFile: File = new java.io.File(sparkDest)
@@ -101,16 +102,18 @@ object TestUtil {
       if (!snappyFile.exists()) {
         val snap_col1 = snappyDF.schema.fieldNames(0)
         val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
-        snappyDF = snappyDF.coalesce(1).orderBy(snap_col1, snap_col: _*)
-        writeResultSetToCsv(snappyDF, snappyFile)
-        pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
+        snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
+        SnappyTestUtils.writeToFile(snappyDF,snappyDest,snc)
+        //writeResultSetToCsv(snappyDF, snappyFile)
+        pw.println(s"${queryNum} Result Collected in file ${snappyDest}")
       }
       if (!sparkFile.exists()) {
         val col1 = sparkDF.schema.fieldNames(0)
         val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-        sparkDF = sparkDF.coalesce(1).orderBy(col1, col: _*)
-        writeResultSetToCsv(sparkDF, sparkFile)
-        pw.println(s"${queryNum} Result Collected in file $sparkQueryFileName")
+        sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+        SnappyTestUtils.writeToFile(sparkDF,sparkDest,snc)
+        //writeResultSetToCsv(sparkDF, sparkFile)
+        pw.println(s"${queryNum} Result Collected in file ${sparkDest}")
       }
       hasValidationFailed = compareFiles(snappyFile,sparkFile,pw,hasValidationFailed)
     } catch {
@@ -179,7 +182,8 @@ object TestUtil {
       val logDir = log.listFiles.filter(_.getName.equals("snappyleader.log"))
       if (!logDir.isEmpty) {
         val leaderLogFile: File = logDir.iterator.next()
-        if (leaderLogFile.exists()) dest = dirString + File.separator + ".." + File.separator + ".." + File.separator + dirName
+        if (leaderLogFile.exists())
+          dest = dirString + File.separator + ".." + File.separator + ".." + File.separator + dirName
       }
       else dest = dirString + File.separator + ".." + File.separator + dirName
     }
@@ -198,24 +202,26 @@ object TestUtil {
   Boolean = {
     var hasValidationFailed = validationFailed
 
-    val snappyQueryFileName = s"Snappy_${queryNum}.csv"
+    val snappyQueryFileName = s"Snappy_${queryNum}"
     val snappyDest: String = getQueryResultDir("snappyQueryFiles") + File.separator + snappyQueryFileName
     pw.println(snappyDest)
     val snappyFile: File = new java.io.File(snappyDest)
     var snappyDF = snc.sql(sqlString)
 
     pw.println(goldenFileDest)
-    val goldenFileName = goldenFileDest + File.separator + s"Spark_$queryNum.csv"
-    val sortedGoldenFile: File = new java.io.File(goldenFileDest + File.separator + s"Sorted_$queryNum.csv")
+    val goldenFileName = goldenFileDest + File.separator + s"Spark_$queryNum"
+    val sortedGoldenDest = goldenFileDest + File.separator + s"Sorted_$queryNum"
+    val sortedGoldenFile: File = new java.io.File(sortedGoldenDest)
     val goldenFile: File = new java.io.File(goldenFileName)
 
     try {
       if (!snappyFile.exists()) {
         val snap_col1 = snappyDF.schema.fieldNames(0)
         val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
-        snappyDF = snappyDF.coalesce(1).orderBy(snap_col1, snap_col: _*)
-        writeResultSetToCsv(snappyDF, snappyFile)
-        pw.println(s"${queryNum} Result Collected in file $snappyQueryFileName")
+        snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
+        SnappyTestUtils.writeToFile(snappyDF,snappyDest,snc)
+        //writeResultSetToCsv(snappyDF, snappyFile)
+        pw.println(s"${queryNum} Result Collected in file $snappyDest")
       }
       if (!goldenFile.exists()) {
         pw.println(s"Did not find any golden file for query $queryNum")
@@ -227,9 +233,10 @@ object TestUtil {
             .load(goldenFileName)
         val col1 = goldenDF.schema.fieldNames(0)
         val col = goldenDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-        goldenDF = goldenDF.coalesce(1).orderBy(col1, col: _*)
-        writeResultSetToCsv(goldenDF, sortedGoldenFile)
-        pw.println(s"${queryNum} Result Collected in file ${sortedGoldenFile.getName}")
+        goldenDF = goldenDF.repartition(1).sortWithinPartitions(col1, col: _*)
+        SnappyTestUtils.writeToFile(goldenDF,sortedGoldenDest,snc)
+        //writeResultSetToCsv(goldenDF, sortedGoldenFile)
+        pw.println(s"${queryNum} Result Collected in file ${sortedGoldenDest}")
       } else {
         pw.println(s"zero results in query $queryNum.")
       }
@@ -249,8 +256,10 @@ object TestUtil {
   def compareFiles(snappyFile: File, sparkFile: File,pw: PrintWriter,validationFailed: Boolean):
   Boolean = {
     var hasValidationFailed = validationFailed
-    val expectedLineSet = Source.fromFile(sparkFile).getLines()
-    val actualLineSet = Source.fromFile(snappyFile).getLines()
+    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
+    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines()
 
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
