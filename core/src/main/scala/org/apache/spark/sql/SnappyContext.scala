@@ -1011,7 +1011,10 @@ object SnappyContext extends Logging {
         case s if !s.isEmpty =>
           val url = "locators=" + s + ";mcast-port=0"
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SplitClusterMode(sc, url)
+//          else SplitClusterMode(sc, url)
+          else throw new SparkException(
+          s"Invalid configuration parameter ${Property.Locators}. " +
+              s"Use paramater ${Property.ClusterURL} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s

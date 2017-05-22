@@ -34,16 +34,20 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")
+  override val stopNetServersInTearDown = false
 
   protected val productDir =
     SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
     super.beforeClass()
+    startNetworkServersOnAllVMs()
     vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
   }
 
   override def afterClass(): Unit = {
+    Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+    ClusterManagerTestBase.stopNetworkServers()
     super.afterClass()
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
@@ -57,7 +61,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     if ((System.currentTimeMillis() % 2) == 0) {
       logInfo("CREATING TABLE USING SMART CONNECTOR")
       vm3.invoke(classOf[SmartConnectorFunctions],
-        "createTablesUsingConnector", ClusterManagerTestBase.locPort)
+        "createTablesUsingConnector", locatorNetPort)
     } else {
       logInfo("CREATING TABLE IN EMBEDDED MODE")
       TPCHUtils.createAndLoadTables(snc, isSnappy = true)
@@ -66,7 +70,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     TPCHUtils.validateResult(snc, isSnappy = true)
 
     vm3.invoke(classOf[SmartConnectorFunctions],
-      "queryValidationOnConnector", ClusterManagerTestBase.locPort)
+      "queryValidationOnConnector", locatorNetPort)
   }
 
   /*
