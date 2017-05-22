@@ -150,8 +150,8 @@ object ConcTestUtils {
           tableType, pw, sqlContext)
         case "Q51" => SnappyTestUtils.assertQueryFullResultSet(snc, NWPLQueries.Q51, "Q51",
           tableType, pw, sqlContext)
-        case "Q52" => SnappyTestUtils.assertQueryFullResultSet(snc, NWPLQueries.Q52, "Q52",
-          tableType, pw, sqlContext)
+        /* case "Q52" => SnappyTestUtils.assertQueryFullResultSet(snc, NWPLQueries.Q52, "Q52",
+          tableType, pw, sqlContext) */
         // scalastyle:off println
         case _ => println("OK")
         // scalastyle:on println

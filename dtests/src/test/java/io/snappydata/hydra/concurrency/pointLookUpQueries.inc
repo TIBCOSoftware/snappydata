@@ -50,5 +50,7 @@ io.snappydata.hydra.cluster.SnappyPrms-pointLookUpQueryList =
 " SELECT ContactName,ContactTitle,Address from suppliers where SupplierID=29"
 " SELECT SupplierID,CompanyName from suppliers where SupplierID=20"
 " SELECT RegionID,TerritoryDescription from territories where TerritoryID=44122"
-" SELECT ProductName, SupplierID FROM Products WHERE (SupplierID IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN ('Exotic Liquids', 'Grandma Kelly''s Homestead', 'Tokyo Traders')) AND ProductID=14)"
+/* " SELECT ProductName, SupplierID FROM Products WHERE (SupplierID IN (SELECT SupplierID FROM
+Suppliers WHERE CompanyName IN ('Exotic Liquids', 'Grandma Kelly''s Homestead', 'Tokyo Traders'))
+ AND ProductID=14)" */
 ;
