@@ -48,7 +48,8 @@ trait StoreUnifiedManager {
   def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long
   def getExecutionPoolSize(memoryMode: MemoryMode): Long
   def getOffHeapMemory(objectName: String): Long
-
+  def hasOffHeap: Boolean
+  def logStats(): Unit
   /**
    * Change the off-heap owner to mark it being used for storage.
    * Passing the owner as null allows moving ByteBuffers not allocated
@@ -90,6 +91,10 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
   override def getExecutionPoolSize(memoryMode: MemoryMode): Long = 0L
 
   override def getOffHeapMemory(objectName: String): Long = 0L
+
+  override def hasOffHeap: Boolean = false
+
+  override def logStats(): Unit = logInfo("No stats for NoOpSnappyMemoryManager")
 
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = {}

@@ -123,7 +123,7 @@ object StoreUtils {
         case None => Seq.empty
       }
     } else {
-      val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+      val distMembers = getBucketOwnersForRead(bucketId, region)
       val members = new mutable.ArrayBuffer[String](2)
       distMembers.foreach { m =>
         SnappyContext.getBlockId(m.toString) match {
@@ -133,6 +133,19 @@ object StoreUtils {
       }
       members
     }
+  }
+
+  private[sql] def getBucketOwnersForRead(bucketId: Int,
+      region: PartitionedRegion): mutable.Set[InternalDistributedMember] = {
+    val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+    if (distMembers.isEmpty) {
+      var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
+      if (prefNode == null) {
+        prefNode = region.getOrCreateNodeForInitializedBucketRead(bucketId, true)
+      }
+      distMembers.add(prefNode)
+    }
+    distMembers
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,

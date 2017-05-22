@@ -43,6 +43,10 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def changeValue(k: K, hash: Int, change: ChangeValue[K, V], isLocal: Boolean): java.lang.Boolean
 
+  def beforeSegmentEnd(): AnyRef = null
+
+  def segmentEnd(beforeResult: AnyRef): Unit = {}
+
   // This flag is toggled only under write lock of clear
   var valid: Boolean = true
 }
@@ -56,8 +60,6 @@ trait ChangeValue[K, V] {
   def mergeValue(k: K, v: V): V
 
   def mergeValueNoNull(k: K, v: V): (V, Boolean, Boolean)
-
-  def segmentEnd(segment: SegmentMap[K, V]) {}
 
   def segmentAbort(segment: SegmentMap[K, V]): Boolean = false
 }
