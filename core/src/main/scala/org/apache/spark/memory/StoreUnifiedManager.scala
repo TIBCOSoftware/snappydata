@@ -19,13 +19,12 @@ package org.apache.spark.memory
 import java.nio.ByteBuffer
 
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
-
 import org.apache.spark.storage.{BlockId, TestBlockId}
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.util.Utils
+import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
 
 trait StoreUnifiedManager {
@@ -59,60 +58,7 @@ trait StoreUnifiedManager {
       allowNonAllocator: Boolean): Unit
 }
 
-/**
-  * This class will store all the memory usage for GemFireXD boot up time when SparkEnv
-  * is not initialised.
-  * This class will not actually allocate any memory.
-  * It is just a temp account holder till SnappyUnifiedManager is started.
-  */
-class TempMemoryManager extends StoreUnifiedManager with Logging{
-
-  val memoryForObject = new mutable.HashMap[(String, MemoryMode), Long]()
-
-  override def acquireStorageMemoryForObject(objectName: String,
-      blockId: BlockId,
-      numBytes: Long,
-      memoryMode: MemoryMode,
-      buffer: UMMMemoryTracker,
-      shouldEvict: Boolean): Boolean = synchronized {
-    val key = objectName -> memoryMode
-    logDebug(s"Acquiring mem [TEMP] for $key $numBytes")
-    if (!memoryForObject.contains(key)) {
-      memoryForObject.put(key, 0L)
-    }
-    memoryForObject(key) += numBytes
-    true
-  }
-
-  override def dropStorageMemoryForObject(
-      objectName: String,
-      memoryMode: MemoryMode,
-      ignoreNumBytes : Long): Long = synchronized {
-    memoryForObject.remove(objectName -> memoryMode).getOrElse(0L)
-  }
-
-  override def releaseStorageMemoryForObject(
-      objectName: String,
-      numBytes: Long,
-      memoryMode: MemoryMode): Unit = synchronized {
-    memoryForObject(objectName -> memoryMode) -= numBytes
-  }
-
-  override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L
-
-  override def getStoragePoolSize(memoryMode: MemoryMode): Long = 0L
-
-  override def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long = 0L
-
-  override def getExecutionPoolSize(memoryMode: MemoryMode): Long = 0L
-
-  override def getOffHeapMemory(objectName: String): Long = 0L
-
-  override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
-      allowNonAllocator: Boolean): Unit = {}
-}
-
-
+// @TODO Change No-Op MemoryManager to point to Spark's inbuilt MemoryManager
 class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
 
   override def acquireStorageMemoryForObject(objectName: String,
@@ -153,19 +99,37 @@ object MemoryManagerCallback extends Logging {
 
   val storageBlockId = TestBlockId("SNAPPY_STORAGE_BLOCK_ID")
 
-  val tempMemoryManager = new TempMemoryManager
+  val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
+
+  val numCores = 1
+  // This memory manager will be used while GemXD is booting up and SparkEnv is not ready.
+  lazy val tempMemoryManager = {
+    try {
+      val conf = new SparkConf()
+      Utils.classForName(ummClass)
+        .getConstructor(classOf[SparkConf], classOf[Int], classOf[Boolean])
+        .newInstance(conf, Int.box(numCores), Boolean.box(true)).asInstanceOf[StoreUnifiedManager]
+      // We dont need execution memory during GemXD boot. Hence passing num core as 1
+    } catch {
+      case _: ClassNotFoundException =>
+        logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
+          "SnappyUnifiedMemoryManager won't be used.")
+       new NoOpSnappyMemoryManager
+    }
+  }
+
   @volatile private var snappyUnifiedManager: StoreUnifiedManager = _
   private val noOpMemoryManager : StoreUnifiedManager = new NoOpSnappyMemoryManager
 
   def resetMemoryManager(): Unit = synchronized {
-    tempMemoryManager.memoryForObject.clear()
     snappyUnifiedManager = null // For local mode testing
   }
 
+
+
   private final val isCluster = {
     try {
-      org.apache.spark.util.Utils.classForName(
-        "org.apache.spark.memory.SnappyUnifiedMemoryManager")
+      org.apache.spark.util.Utils.classForName(ummClass)
       // Class is loaded means we are running in SnappyCluster mode.
 
       true
