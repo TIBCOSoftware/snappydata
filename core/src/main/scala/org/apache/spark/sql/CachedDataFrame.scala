@@ -93,6 +93,8 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           var i = 0
           while (i < numShuffleDeps) {
             val shuffleDependency = shuffleDependencies(i)
+            // Cleaning the  shuffle artifacts synchronously which might not
+            // desired for performance. Ticket SNAP-
             cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
             // lastShuffleCleanups(i) = Future {
             //  cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
@@ -311,7 +313,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
-        println(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
+        logDebug(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
           case pl@ParamLiteral(_, _, p) =>
@@ -320,13 +322,12 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
             x.considerUnequal = true
             x
         }
-        println(s"newbchj = ${newbchj}")
         val tmpCtx = new CodegenContext
         val parameterType = tmpCtx.getClass
         val method = newbchj.getClass.getDeclaredMethod("prepareBroadcast", parameterType)
         method.setAccessible(true)
         val bc = method.invoke(newbchj, tmpCtx)
-        println(s"replacing bc var = ${refs(broadcastIndex)} with " +
+        logDebug(s"replacing bc var = ${refs(broadcastIndex)} with " +
             s"new bc = ${bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1}")
         refs(broadcastIndex) = bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1
       }
