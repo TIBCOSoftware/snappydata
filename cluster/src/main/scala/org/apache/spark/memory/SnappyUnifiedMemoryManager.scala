@@ -180,6 +180,39 @@ class SnappyUnifiedMemoryManager private[memory](
 
   override def hasOffHeap: Boolean = tungstenMemoryMode eq MemoryMode.OFF_HEAP
 
+  override def logStats(): Unit = synchronized {
+    val memoryLog = new StringBuilder
+    val separator = "\n\t\t"
+    memoryLog.append("MemoryManager stats:")
+    memoryLog.append(separator).append("Storage Used = ")
+        .append(onHeapStorageMemoryPool.memoryUsed)
+        .append(" (size=").append(onHeapStorageMemoryPool.poolSize).append(')')
+    memoryLog.append(separator).append("Execution Used = ")
+        .append(onHeapExecutionMemoryPool.memoryUsed)
+        .append(" (size=").append(onHeapExecutionMemoryPool.poolSize).append(')')
+    if (hasOffHeap) {
+      memoryLog.append(separator).append("OffHeap Size = ")
+          .append(Utils.bytesToString(maxOffHeapMemory))
+          .append(" (").append(maxOffHeapMemory).append(')')
+      memoryLog.append(separator).append("OffHeap Storage Used = ")
+          .append(offHeapStorageMemoryPool.memoryUsed)
+          .append(" (size=").append(offHeapStorageMemoryPool.poolSize).append(')')
+      memoryLog.append(separator).append("OffHeap Execution Pool = ")
+          .append(offHeapExecutionMemoryPool.memoryUsed)
+          .append(" (size=").append(offHeapExecutionMemoryPool.poolSize).append(')')
+    }
+    val memoryForObject = this.memoryForObject
+    if (!memoryForObject.isEmpty) {
+      memoryLog.append("\n\t").append("Objects:\n")
+      val objects = memoryForObject.entrySet().iterator()
+      while (objects.hasNext) {
+        val o = objects.next()
+        memoryLog.append(separator).append(o.getKey).append(" = ").append(o.getValue)
+      }
+    }
+    logInfo(memoryLog.toString())
+  }
+
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = synchronized {
     val capacity = buffer.capacity()
@@ -439,7 +472,11 @@ class SnappyUnifiedMemoryManager private[memory](
           // Sufficient memory could not be freed. Time to evict from SnappyData store.
           // val requiredBytes = numBytes - storagePool.memoryFree
           // Evict data a little more than required based on waiting tasks
-          evictor.evictRegionData(minEviction, offHeap)
+          val evicted = evictor.evictRegionData(minEviction, offHeap)
+          if (SnappyUnifiedMemoryManager.testCallbacks.nonEmpty) {
+            SnappyUnifiedMemoryManager.testCallbacks.foreach(
+              _.onEviction(objectName, evicted))
+          }
           if (offHeap) {
             UnsafeHolder.releasePendingReferences()
           }
@@ -456,7 +493,7 @@ class SnappyUnifiedMemoryManager private[memory](
         }
         if (!couldEvictSomeData) {
           logWarning(s"Could not allocate memory for $blockId of " +
-            s"$objectName. Memory pool size " + storagePool.memoryUsed)
+            s"$objectName size=$numBytes. Memory pool size " + storagePool.memoryUsed)
         } else {
           memoryForObject.addTo(objectName, numBytes)
           logDebug(s"Allocated memory for $blockId of " +
@@ -609,7 +646,7 @@ object SnappyUnifiedMemoryManager extends Logging {
       val thresholds = cache.getResourceManager.getHeapMonitor.getThresholds
       if (thresholds.getCriticalThreshold > 0.1f) {
         systemMemory = thresholds.getMaxMemoryBytes
-        // add a 30% cushion for GC
+        // add a 30% cushion for GC before CRITICAL_UP is reached
         ((systemMemory - thresholds.getCriticalThresholdBytes) * 1.3).toLong
       } else RESERVED_SYSTEM_MEMORY_BYTES
     } else RESERVED_SYSTEM_MEMORY_BYTES
@@ -638,9 +675,10 @@ object SnappyUnifiedMemoryManager extends Logging {
 }
 
 // Test listeners. Should not be used in production code.
-class MemoryEventListener{
+abstract class MemoryEventListener {
   def onStorageMemoryAcquireSuccess(objectName : String, bytes : Long) : Unit = {}
   def onStorageMemoryAcquireFailure(objectName : String, bytes : Long) : Unit = {}
+  def onEviction(objectName: String, evicted: Long): Unit = {}
   def onPositiveMemoryIncreaseDueToEviction(objectName : String, bytes : Long) : Unit = {}
   def onExecutionMemoryAcquireSuccess(taskAttemptId : Long, bytes : Long) : Unit = {}
   def onExecutionMemoryAcquireFailure(taskAttemptId : Long, bytes : Long) : Unit = {}

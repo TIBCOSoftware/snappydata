@@ -332,6 +332,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def hasOffHeap: Boolean =
     MemoryManagerCallback.memoryManager.hasOffHeap
+
+  override def logMemoryStats(): Unit =
+    MemoryManagerCallback.memoryManager.logStats()
 }
 
 trait StoreCallback extends Serializable {

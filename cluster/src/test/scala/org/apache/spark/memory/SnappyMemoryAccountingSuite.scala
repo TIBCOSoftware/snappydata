@@ -17,15 +17,17 @@
 
 package org.apache.spark.memory
 
-import com.gemstone.gemfire.cache.LowMemoryException
+import java.sql.SQLException
+
+import scala.actors.Futures._
+
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
-
-import scala.actors.Futures._
 
 
 class SnappyMemoryAccountingSuite extends MemoryFunSuite {
@@ -219,11 +221,11 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     // artificially acquire memory
     SparkEnv.get.memoryManager.acquireExecutionMemory(5000L, taskAttemptId, memoryMode)
 
-    var memoryIncreaseDuetoEviction = 0L
+    var totalEvictedBytes = 0L
 
     val memoryEventListener = new MemoryEventListener {
-      override def onPositiveMemoryIncreaseDueToEviction(objectName: String, bytes: Long): Unit = {
-        memoryIncreaseDuetoEviction += bytes
+      override def onEviction(objectName: String, evictedBytes: Long): Unit = {
+        totalEvictedBytes += evictedBytes
       }
     }
     SnappyUnifiedMemoryManager.addMemoryEventListener(memoryEventListener)
@@ -241,10 +243,9 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         println(s"RowCount2 = $rows")
       }
     } catch {
-      case e: LowMemoryException => {
+      case sqle: SQLException if sqle.getSQLState == "XCL54" =>
         println(s"RowCount3 in exception = $rows")
-        assert(memoryIncreaseDuetoEviction > 0)
-      }
+        assert(totalEvictedBytes > 0)
     }
     // scalastyle:on
     val count = snSession.sql("select * from t1").count()

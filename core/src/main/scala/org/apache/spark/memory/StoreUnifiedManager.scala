@@ -50,7 +50,7 @@ trait StoreUnifiedManager {
   def getExecutionPoolSize(memoryMode: MemoryMode): Long
   def getOffHeapMemory(objectName: String): Long
   def hasOffHeap: Boolean
-
+  def logStats(): Unit
   /**
    * Change the off-heap owner to mark it being used for storage.
    * Passing the owner as null allows moving ByteBuffers not allocated
@@ -111,6 +111,16 @@ class TempMemoryManager extends StoreUnifiedManager with Logging{
 
   override def hasOffHeap: Boolean = false
 
+  override def logStats(): Unit = synchronized {
+    val memoryLog = new StringBuilder
+    val separator = "\n\t\t"
+    memoryLog.append("TempMemoryManager stats:")
+    for ((n, v) <- memoryForObject) {
+      memoryLog.append(separator).append(n).append(" = ").append(v)
+    }
+    logInfo(memoryLog.toString())
+  }
+
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = {}
 }
@@ -149,6 +159,8 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
   override def getOffHeapMemory(objectName: String): Long = 0L
 
   override def hasOffHeap: Boolean = false
+
+  override def logStats(): Unit = logInfo("No stats for NoOpSnappyMemoryManager")
 
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = {}
