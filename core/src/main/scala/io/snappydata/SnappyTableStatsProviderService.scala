@@ -22,6 +22,7 @@ package io.snappydata
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.collection.JavaConverters._
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.DataPolicy
@@ -177,7 +178,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
     catch {
-      case e: Exception => log.warn(e.getMessage, e)
+      case NonFatal(e) => log.warn(e.getMessage, e)
     }
     (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }
