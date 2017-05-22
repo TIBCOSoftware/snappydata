@@ -285,7 +285,7 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       taskAttemptId: Long,
       memoryMode: MemoryMode): Long = synchronized {
-    logDebug(s"Acquiring [SNAP] memory for $taskAttemptId $numBytes")
+    logDebug(s"Acquiring [SNAP] memory for $taskAttemptId = $numBytes")
     assertInvariants()
     assert(numBytes >= 0)
     val (executionPool, storagePool, storageRegionSize, maxMemory,
@@ -497,7 +497,7 @@ class SnappyUnifiedMemoryManager private[memory](
         } else {
           memoryForObject.addTo(objectName, numBytes)
           logDebug(s"Allocated memory for $blockId of " +
-            s"$objectName. Memory pool size " + storagePool.memoryUsed)
+            s"$objectName size=$numBytes. Memory pool size " + storagePool.memoryUsed)
         }
         couldEvictSomeData
       } else {
@@ -513,7 +513,7 @@ class SnappyUnifiedMemoryManager private[memory](
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = {
-    logDebug(s"Acquiring [SNAP] memory for $objectName $numBytes $shouldEvict")
+    logDebug(s"Acquiring [SNAP] memory for $objectName = $numBytes (evict=$shouldEvict)")
     if (buffer ne null) {
       if (buffer.freeMemory() > numBytes) {
         buffer.incMemoryUsed(numBytes)
@@ -534,8 +534,8 @@ class SnappyUnifiedMemoryManager private[memory](
   override def releaseStorageMemoryForObject(objectName: String,
                                              numBytes: Long,
                                              memoryMode: MemoryMode): Unit = synchronized {
-    logDebug(s"releasing [SNAP] memory for $objectName $numBytes")
-    if (memoryForObject.addTo(objectName, -numBytes) != 0L) {
+    logDebug(s"releasing [SNAP] memory for $objectName = $numBytes")
+    if (memoryForObject.addTo(objectName, -numBytes) >= 0L) {
       super.releaseStorageMemory(numBytes, memoryMode)
     } else {
       // objectName was not present
@@ -543,21 +543,15 @@ class SnappyUnifiedMemoryManager private[memory](
     }
   }
 
-  override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit = synchronized {
+  override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit =
     releaseStorageMemoryForObject(SPARK_CACHE, numBytes, memoryMode)
-    logDebug(s"releasing [SNAP] memory for $SPARK_CACHE $numBytes")
-    if (memoryForObject.containsKey(SPARK_CACHE)) {
-      memoryForObject.addTo(SPARK_CACHE, -numBytes)
-      super.releaseStorageMemory(numBytes, memoryMode)
-    }
-  }
 
   override def dropStorageMemoryForObject(name: String,
                                           memoryMode: MemoryMode,
                                           ignoreNumBytes: Long): Long = synchronized {
-    logDebug(s"Dropping memory for $name")
     val bytesToBeFreed = memoryForObject.getLong(name)
     val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
+    logDebug(s"Dropping memory for $name = $numBytes (registered=$bytesToBeFreed)")
 
     if (numBytes > 0) {
       super.releaseStorageMemory(numBytes, memoryMode)
