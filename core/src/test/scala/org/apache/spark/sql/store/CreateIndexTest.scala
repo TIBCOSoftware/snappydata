@@ -595,7 +595,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val index31 = s"${table3}_IdxOne"
 
     val snContext = context.get
-    Property.ColumnBatchSize.set(snContext.conf, 30)
+    // Property.ColumnBatchSize.set(snContext.conf, 30)
 
     createBase3Tables(snContext, table1, table2, table3)
 
