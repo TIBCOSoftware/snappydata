@@ -30,16 +30,12 @@ class SmartConnectorFunctions {
 object SmartConnectorFunctions {
 
   def queryValidationOnConnector(locatorNetPort: Int): Unit = {
-    // Test setting locators property via environment variable.
-    // Also enables checking for "spark." or "snappydata." prefix in key.
-//    System.setProperty("snappydata.store.locators", s"localhost:$locatorPort")
     val hostName = InetAddress.getLocalHost.getHostName
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-//        .set("snappydata.store.locators", s"localhost:$locatorNetPort")
         .set("snappydata.Cluster.URL", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)
@@ -49,16 +45,12 @@ object SmartConnectorFunctions {
     TPCHUtils.validateResult(snc, true)
   }
   def createTablesUsingConnector(locatorNetPort: Int): Unit = {
-    // Test setting locators property via environment variable.
-    // Also enables checking for "spark." or "snappydata." prefix in key.
     val hostName = InetAddress.getLocalHost.getHostName
-//    System.setProperty("snappydata.store.locators", s"localhost:$locatorNetPort")
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-//        .set("snappydata.store.locators", s"localhost:$locatorNetPort")
         .set("snappydata.Cluster.URL", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)
@@ -75,16 +67,12 @@ object SmartConnectorFunctions {
     value
   }
   def nwQueryValidationOnConnector(locatorNetPort: Int, tableType: String): Unit = {
-    // Test setting locators property via environment variable.
-    // Also enables checking for "spark." or "snappydata." prefix in key.
-//    System.setProperty("snappydata.store.locators", s"localhost:$locatorNetPort")
     val hostName = InetAddress.getLocalHost.getHostName
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.extraClassPath",
           SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-//        .set("snappydata.store.locators", s"localhost:$locatorNetPort")
         .set("snappydata.Cluster.URL", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)

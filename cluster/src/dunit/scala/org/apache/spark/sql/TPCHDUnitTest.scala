@@ -30,28 +30,33 @@ import org.apache.spark.{Logging, SparkContext}
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     with Logging {
 
-  override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
+  override val locatorNetPort: Int = TPCHUtils.locatorNetPort
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")
+  override val stopNetServersInTearDown = false
 
   protected val productDir =
     SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
-    super.beforeClass()
     vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    super.beforeClass()
+    startNetworkServersOnAllVMs()
   }
 
   override def afterClass(): Unit = {
-    super.afterClass()
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+    try {
+      vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+      Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+      ClusterManagerTestBase.stopNetworkServers()
+    } finally {
+      super.afterClass()
+    }
   }
 
   def testSnappy(): Unit = {
-    startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
-    val clientPort = locatorNetPort
 
     // create table randomly either using smart connector or
     // from embedded mode
@@ -59,7 +64,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       logInfo("CREATING TABLE USING SMART CONNECTOR")
 
       vm3.invoke(classOf[SmartConnectorFunctions],
-        "createTablesUsingConnector", clientPort)
+        "createTablesUsingConnector", locatorNetPort)
     } else {
       logInfo("CREATING TABLE IN EMBEDDED MODE")
       TPCHUtils.createAndLoadTables(snc, isSnappy = true)
@@ -68,7 +73,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     TPCHUtils.validateResult(snc, isSnappy = true)
 
     vm3.invoke(classOf[SmartConnectorFunctions],
-      "queryValidationOnConnector", clientPort)
+      "queryValidationOnConnector", locatorNetPort)
   }
 
   /*
@@ -78,16 +83,14 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       This needs to make fullproof.
   */
   def _testSnappy_Tokenization(): Unit = {
-    startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
-    val clientPort = locatorNetPort
 
     // create table randomly either using smart connector or
     // from embedded mode
     if ((System.currentTimeMillis() % 2) == 0) {
       logInfo("CREATING TABLE USING SMART CONNECTOR")
       vm3.invoke(classOf[SmartConnectorFunctions],
-        "createTablesUsingConnector", clientPort)
+        "createTablesUsingConnector", locatorNetPort)
     } else {
       logInfo("CREATING TABLE IN EMBEDDED MODE")
       TPCHUtils.createAndLoadTables(snc, isSnappy = true)
@@ -98,7 +101,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     TPCHUtils.validateResult(snc, isSnappy = true, isTokenization = true )
 
     vm3.invoke(classOf[SmartConnectorFunctions],
-      "queryValidationOnConnector", clientPort)
+      "queryValidationOnConnector", locatorNetPort)
   }
 
   def _testSpark(): Unit = {
@@ -110,10 +113,8 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   def testSnap1296_1297(): Unit = {
     val snc = SnappyContext(sc)
-    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
-    val conn = getANetConnection(netPort1)
+    val conn = getANetConnection(locatorNetPort)
     val prepStatement = conn.prepareStatement(TPCH_Snappy.getQuery10)
     verifyResultSnap1296_1297(prepStatement)
     prepStatement.close()
@@ -191,6 +192,8 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 }
 
 object TPCHUtils extends Logging {
+
+  val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
