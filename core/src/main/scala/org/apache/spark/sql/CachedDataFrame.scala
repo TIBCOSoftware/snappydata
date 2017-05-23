@@ -22,7 +22,10 @@ import java.sql.SQLException
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
@@ -35,21 +38,21 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Literal, LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
-import org.apache.spark.sql.execution.{CachedPlanHelperExec, CollectLimitExec, LocalTableScanExec, PartitionedPhysicalScan, SQLExecution, SparkPlanInfo, WholeStageCodegenExec, _}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
 import org.apache.spark.{Logging, NarrowDependency, ShuffleDependency, SparkContext, SparkEnv, SparkException, TaskContext}
 
-class CachedDataFrame(df: Dataset[Row],
+class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
@@ -66,9 +69,21 @@ class CachedDataFrame(df: Dataset[Row],
   private lazy val boundEnc = exprEnc.resolveAndBind(logicalPlan.output,
     sparkSession.sessionState.analyzer)
 
-  private lazy val queryExecutionString = queryExecution.toString
-  private lazy val queryPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
-    queryExecution.executedPlan)
+  def queryExecutionString: String = queryExecution.toString()
+
+  def queryPlanInfo: SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
+    plan = queryExecution.executedPlan transformAllExpressions {
+      case pl@ParamLiteral(_v, _dt, _p) =>
+        val x = allLiterals.find(_.position == _p)
+        val v = x match {
+          case Some(LiteralValue(_, _, _)) => x.get.value
+          case None => _v
+        }
+        Literal(v, _dt)
+    })
+
+  private lazy val lastShuffleCleanups = new Array[Future[Unit]](
+    shuffleDependencies.length)
 
   private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
@@ -77,7 +92,13 @@ class CachedDataFrame(df: Dataset[Row],
         case Some(cleaner) =>
           var i = 0
           while (i < numShuffleDeps) {
-            cleaner.doCleanupShuffle(shuffleDependencies(i), blocking = false)
+            val shuffleDependency = shuffleDependencies(i)
+            // Cleaning the  shuffle artifacts synchronously which might not
+            // desired for performance. Ticket SNAP-
+            cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
+            // lastShuffleCleanups(i) = Future {
+            //  cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
+            // }
             i += 1
           }
         case None =>
@@ -182,6 +203,21 @@ class CachedDataFrame(df: Dataset[Row],
     }
   }
 
+  private[sql] def waitForLastShuffleCleanup(): Unit = {
+    val numShuffles = lastShuffleCleanups.length
+    if (numShuffles > 0) {
+      var index = 0
+      while (index < numShuffles) {
+        val cleanup = lastShuffleCleanups(index)
+        if (cleanup ne null) {
+          cleanup.onComplete(identity)
+          lastShuffleCleanups(index) = null
+        }
+        index += 1
+      }
+    }
+  }
+
   def collectWithHandler[U: ClassTag, R: ClassTag](
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
       resultHandler: (Int, U) => R,
@@ -194,9 +230,13 @@ class CachedDataFrame(df: Dataset[Row],
     if (!hasLocalCallSite) {
       sc.setCallSite(callSite)
     }
+    val trimSize = 100
+    val queryShortForm = if (queryString.length > trimSize) {
+      queryString.substring(0, trimSize) + "..."
+    } else queryString
 
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
-      sparkSession, callSite, queryExecutionString, queryPlanInfo) {
+      sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
       val executedPlan = queryExecution.executedPlan match {
         case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
         case plan => plan
@@ -250,6 +290,9 @@ class CachedDataFrame(df: Dataset[Row],
               results(index) = resultHandler(index, r._1))
           results.iterator
       }
+      // submit cleanup job for shuffle output
+      // clearCachedShuffleDeps(sc)
+
       results
     }
 
@@ -264,26 +307,34 @@ class CachedDataFrame(df: Dataset[Row],
 
   var firstAccess = true
 
+  // Plan caching involving broadcast will be revisited.
+  /*
   def reprepareBroadcast(lp: LogicalPlan,
       newpls: mutable.ArrayBuffer[ParamLiteral]): Unit = {
     if (allbcplans.nonEmpty && !firstAccess) {
       allbcplans.foreach { case (bchj, refs) =>
+        logDebug(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
           case pl@ParamLiteral(_, _, p) =>
             val np = newpls.find(_.pos == p).getOrElse(pl)
-            ParamLiteral(np.value, np.dataType, p)
+            val x = ParamLiteral(np.value, np.dataType, p)
+            x.considerUnequal = true
+            x
         }
         val tmpCtx = new CodegenContext
         val parameterType = tmpCtx.getClass
         val method = newbchj.getClass.getDeclaredMethod("prepareBroadcast", parameterType)
         method.setAccessible(true)
         val bc = method.invoke(newbchj, tmpCtx)
-        refs(broadcastIndex) = bc.asInstanceOf[(Broadcast[_], String)]._1
+        logDebug(s"replacing bc var = ${refs(broadcastIndex)} with " +
+            s"new bc = ${bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1}")
+        refs(broadcastIndex) = bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1
       }
     }
     firstAccess = false
   }
+  */
 }
 
 final class AggregatePartialDataIterator(
@@ -404,7 +455,7 @@ object CachedDataFrame
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
   def withNewExecutionId[T](sparkSession: SparkSession,
-      callSite: CallSite, queryExecutionStr: String,
+      queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
       queryPlanInfo: SparkPlanInfo)(body: => T): T = {
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
@@ -413,7 +464,7 @@ object CachedDataFrame
       sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
       val r = try {
         sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
-          executionId, callSite.shortForm, callSite.longForm, queryExecutionStr,
+          executionId, queryShortForm, queryLongForm, queryExecutionStr,
           queryPlanInfo, System.currentTimeMillis()))
         try {
           body

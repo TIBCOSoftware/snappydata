@@ -167,12 +167,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
-    if( dataServers != null && dataServers.size() > 0 ){
-      result = FunctionService.onMembers(dataServers)
-          .withCollector(new GfxdListResultCollector())
-          .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
-          asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
-          .asScala
+    try {
+      if (dataServers != null && dataServers.size() > 0) {
+        result = FunctionService.onMembers(dataServers)
+            .withCollector(new GfxdListResultCollector())
+            .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
+            asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
+            .asScala
+      }
+    }
+    catch {
+      case e: Exception => log.warn(e.getMessage, e)
     }
     (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }
@@ -206,16 +211,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               val x = key.getKeyColumn(2).getInt
               val currentBucketRegion = itr.getHostedBucketRegion
               if (x == JDBCSourceAsStore.STATROW_COL_INDEX) {
-                val v = currentBucketRegion.get(key)
-                if (v ne null) {
-                  val currentVal = v.asInstanceOf[Array[Array[Byte]]]
-                  val rowFormatter = container.
-                      getRowFormatter(currentVal(0))
-                  val statBytes = rowFormatter.getLob(currentVal, 4)
-                  val unsafeRow = new UnsafeRow(numColumnsInStatBlob)
-                  unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
-                    statBytes.length)
-                  rowsInColumnBatch += unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+                currentBucketRegion.get(key) match {
+                  case currentVal: Array[Array[Byte]] =>
+                    val rowFormatter = container.
+                        getRowFormatter(currentVal(0))
+                    val statBytes = rowFormatter.getLob(currentVal, 4)
+                    val unsafeRow = new UnsafeRow(numColumnsInStatBlob)
+                    unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
+                      statBytes.length)
+                    rowsInColumnBatch += unsafeRow.getInt(
+                      ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+                  case _ =>
                 }
               }
             }
