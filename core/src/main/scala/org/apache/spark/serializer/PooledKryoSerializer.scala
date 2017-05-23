@@ -75,8 +75,8 @@ final class PooledKryoSerializer(conf: SparkConf)
     val kryo = super.newKryo()
 
     // specific serialization implementations in Spark and commonly used classes
-    kryo.register(classOf[UnsafeRow], new KryoSerializableSerializer)
-    kryo.register(classOf[UTF8String], new KryoSerializableSerializer)
+    kryo.register(classOf[UnsafeRow])
+    kryo.register(classOf[UTF8String])
     kryo.register(classOf[UpdateBlockInfo], new ExternalizableOnlySerializer)
     kryo.register(classOf[CompressedMapStatus], new ExternalizableOnlySerializer)
     kryo.register(classOf[HighlyCompressedMapStatus],
