@@ -234,9 +234,9 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     fetchColQuery: String)
     extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
   private var currentUUID: String = _
-  private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
   private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
     new Int2ObjectOpenHashMap[ByteBuffer](requiredColumns.length + 1)
+  private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
   def getColumnLob(bufferPosition: Int): ByteBuffer = {
     colBuffers match {
@@ -264,7 +264,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   private def releaseColumns(): Unit = {
     val buffers = colBuffers
-    if (!buffers.isEmpty) {
+    // not null check in case constructor itself fails due to low memory
+    if ((buffers ne null) && !buffers.isEmpty) {
       val values = buffers.values().iterator()
       while (values.hasNext) {
         // release previous set of buffers immediately
