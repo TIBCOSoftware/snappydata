@@ -34,7 +34,7 @@ import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, 
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RowEncoder}
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLVarchar}
@@ -103,7 +103,7 @@ object ColumnFormatEntry extends Logging {
 final class ColumnFormatKey(private[columnar] var partitionId: Int,
     private[columnar] var columnIndex: Int,
     private[columnar] var uuid: String)
-    extends GfxdDataSerializable with ColumnBatchKey with Serializable {
+    extends GfxdDataSerializable with ColumnBatchKey with RegionKey with Serializable {
 
   // to be used only by deserialization
   def this() = this(-1, -1, "")
@@ -181,6 +181,33 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
           4 /* columnIndex */ + 4 /* partitionId */)
     }
   }
+
+  override def nCols(): Int = 3
+
+  override def getKeyColumn(index: Int): DataValueDescriptor = index match {
+    case 0 => new SQLVarchar(uuid)
+    case 1 => new SQLInteger(partitionId)
+    case 2 => new SQLInteger(columnIndex)
+  }
+
+  override def getKeyColumns(keys: Array[DataValueDescriptor]): Unit = {
+    keys(0) = new SQLVarchar(uuid)
+    keys(1) = new SQLInteger(partitionId)
+    keys(2) = new SQLInteger(columnIndex)
+  }
+
+  override def getKeyColumns(keys: Array[AnyRef]): Unit = {
+    keys(0) = uuid
+    keys(1) = Int.box(partitionId)
+    keys(2) = Int.box(columnIndex)
+  }
+
+  override def setRegionContext(region: LocalRegion): Unit = {}
+
+  override def beforeSerializationWithValue(
+      valueIsToken: Boolean): KeyWithRegionContext = this
+
+  override def afterDeserializationWithValue(v: AnyRef): Unit = {}
 
   override def toString: String =
     s"ColumnKey(columnIndex=$columnIndex,partitionId=$partitionId,uuid=$uuid)"
@@ -507,7 +534,7 @@ final class ColumnFormatEncoder extends RowEncoder {
   }
 
   override def fromRow(row: Array[DataValueDescriptor],
-      container: GemFireContainer): java.util.Map.Entry[AnyRef, AnyRef] = {
+      container: GemFireContainer): java.util.Map.Entry[RegionKey, AnyRef] = {
     val batchKey = new ColumnFormatKey(uuid = row(0).getString,
       partitionId = row(1).getInt, columnIndex = row(2).getInt)
     // transfer buffer from BufferedBlob as is, or copy for others
@@ -522,6 +549,11 @@ final class ColumnFormatEncoder extends RowEncoder {
     // set the buffer into ColumnFormatValue
     val batchValue = new ColumnFormatValue()
     batchValue.setBuffer(columnBuffer, writeSerializationHeader = false)
-    new java.util.AbstractMap.SimpleEntry[AnyRef, AnyRef](batchKey, batchValue)
+    new java.util.AbstractMap.SimpleEntry[RegionKey, AnyRef](batchKey, batchValue)
   }
+
+  override def fromRowToKey(key: Array[DataValueDescriptor],
+      container: GemFireContainer): RegionKey =
+    new ColumnFormatKey(uuid = key(0).getString,
+      partitionId = key(1).getInt, columnIndex = key(2).getInt)
 }

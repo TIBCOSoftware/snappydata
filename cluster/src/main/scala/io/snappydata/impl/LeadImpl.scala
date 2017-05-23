@@ -29,7 +29,6 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -235,10 +234,12 @@ class LeadImpl extends ServerImpl with Lead
 
   @throws[SQLException]
   override def stop(shutdownCredentials: Properties): Unit = {
+    /* (sample reservoir region is now persistent by default)
     val servers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null)
     if (servers.size() > 0) {
       SnappyContext.flushSampleTables()
     }
+    */
 
     assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")

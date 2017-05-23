@@ -52,7 +52,8 @@ class SnappyUnifiedMemoryManager private[memory](
     numCores: Int)
   extends UnifiedMemoryManager(SnappyUnifiedMemoryManager.setMemorySize(conf),
     maxHeapMemory,
-    (maxHeapMemory * conf.getDouble("spark.memory.storageFraction", 0.5)).toLong,
+    (maxHeapMemory * conf.getDouble("spark.memory.storageFraction",
+      SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
     numCores) with StoreUnifiedManager {
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
@@ -579,6 +580,8 @@ object SnappyUnifiedMemoryManager extends Logging {
       math.max(getMaxHeapMemory / 20, 500L * 1024L * 1024L))
   }
 
+  private val DEFAULT_STORAGE_FRACTION = 0.5
+
   private def getMaxHeapMemory: Long = {
     val maxMemory = Runtime.getRuntime.maxMemory()
     if (maxMemory > 0 && maxMemory != Long.MaxValue) maxMemory
@@ -625,6 +628,9 @@ object SnappyUnifiedMemoryManager extends Logging {
       conf.set("spark.memory.offHeap.enabled", "true")
       conf.set("spark.memory.offHeap.size", s"${memorySize}b")
     }
+    if (!conf.contains("spark.memory.storageFraction")) {
+      conf.set("spark.memory.storageFraction", DEFAULT_STORAGE_FRACTION.toString)
+    }
     conf
   }
 
@@ -640,8 +646,7 @@ object SnappyUnifiedMemoryManager extends Logging {
       val thresholds = cache.getResourceManager.getHeapMonitor.getThresholds
       if (thresholds.getCriticalThreshold > 0.1f) {
         systemMemory = thresholds.getMaxMemoryBytes
-        // add a 30% cushion for GC before CRITICAL_UP is reached
-        ((systemMemory - thresholds.getCriticalThresholdBytes) * 1.3).toLong
+        systemMemory - thresholds.getCriticalThresholdBytes
       } else RESERVED_SYSTEM_MEMORY_BYTES
     } else RESERVED_SYSTEM_MEMORY_BYTES
     reservedMemory = conf.getLong("spark.testing.reservedMemory",
@@ -663,7 +668,8 @@ object SnappyUnifiedMemoryManager extends Logging {
     }
 
     val usableMemory = systemMemory - reservedMemory
-    val memoryFraction = conf.getDouble("spark.memory.fraction", 1.0)
+    // add a cushion for GC before CRITICAL_UP is reached
+    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.92)
     (usableMemory * memoryFraction).toLong
   }
 }
