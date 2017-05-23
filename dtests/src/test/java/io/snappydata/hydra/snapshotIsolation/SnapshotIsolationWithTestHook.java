@@ -1,20 +1,22 @@
 package io.snappydata.hydra.snapshotIsolation;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 
-import com.gemstone.gemfire.cache.query.Struct;
-import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
+import com.pivotal.gemfirexd.internal.engine.Misc;
+import hydra.HostHelper;
 import hydra.Log;
-import sql.sqlutil.ResultSetHelper;
+import hydra.PortHelper;
+import io.snappydata.Server;
+import io.snappydata.ServerManager;
+import io.snappydata.hydra.cluster.SnappyTest;
 import util.TestException;
-import util.TestHelper;
 
 public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
 
@@ -27,10 +29,36 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     }
   }
 
-  public void initializeTestHook()
-  {
+  public void initializeTestHook() {
     ScanTestHook testHook = new ScanTestHook();
-    GemFireCacheImpl.getInstance().setRowScanTestHook(testHook);
+    String addr = HostHelper.getHostAddress();
+    int port = PortHelper.getRandomPort();
+    String endpoint = addr + ":" + port;
+    Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
+    Properties serverProps = new Properties();
+    String locatorsList = SnappyTest.getLocatorsList("locators");
+    serverProps.setProperty("locators", locatorsList);
+    serverProps.setProperty("mcast-port", "0");
+    Server server = ServerManager.getServerInstance();
+    try {
+      server.start(serverProps);
+    } catch (SQLException se) {
+      throw new TestException("Error starting server.", se);
+    }
+    String url = "jdbc:snappydata:";
+    String driver =  "io.snappydata.jdbc.EmbeddedDriver";
+    loadDriver(driver);
+    try {
+      Properties props = new Properties();
+      props.setProperty("mcast-port", "0");
+      Connection conn = DriverManager.getConnection(url,props);
+      Log.getLogWriter().info("Obtained connection");
+      createTables(conn,false);
+      saveTableMetaDataToBB(conn);
+      Misc.getGemFireCache().setRowScanTestHook(testHook);
+    } catch (SQLException se) {
+      throw new TestException("Got Exception while getting connection.", se);
+    }
   }
 
   /*
@@ -42,18 +70,24 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
 
   public void performInsertUsingTestHook() {
     try {
-      Connection conn = getLocatorConnection();
+      String url = "jdbc:snappydata:";
+      Connection conn = DriverManager.getConnection(url);
       GemFireCacheImpl.getInstance().waitOnScanTestHook();
-      performInsert(conn);
+      int numRowsInserted = (int)SnapshotIsolationBB.getBB().getSharedCounters().read
+          (SnapshotIsolationBB.numRowsInserted);
+      Log.getLogWriter().info("Number of rows before insert " + numRowsInserted);
+      int insertCount = doInsert(conn);
       GemFireCacheImpl.getInstance().notifyRowScanTestHook();
-    }catch(SQLException se){
+      SnapshotIsolationBB.getBB().getSharedCounters().add(SnapshotIsolationBB.numRowsInserted,
+          insertCount);
+      Log.getLogWriter().info("Number of rows after insert " + (numRowsInserted + insertCount));
+    } catch (SQLException se) {
       Log.getLogWriter().info(" Got Exception while inserting.");
       throw new TestException("Got exception while inserting", se);
     }
   }
 
-  public void performInsert(Connection conn) throws SQLException {
-    Connection dConn = null;
+  public int doInsert(Connection conn) throws SQLException {
     String[] dmlTable = SnapshotIsolationPrms.getDMLTables();
     int rand = new Random().nextInt(dmlTable.length);
     String tableName = dmlTable[rand];
@@ -61,28 +95,17 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     if (testUniqueKeys)
       row = row + "," + getMyTid();
     Log.getLogWriter().info("Selected row is : " + row);
-    PreparedStatement snappyPS, derbyPS = null;
+    PreparedStatement snappyPS = null;
     String insertStmt = SnapshotIsolationPrms.getInsertStmts()[rand];
     snappyPS = getPreparedStatement(conn, null, tableName, insertStmt, row);
-
     Log.getLogWriter().info("Inserting in snappy with statement : " + insertStmt + " with values("
         + row + ")");
     int rowCount = snappyPS.executeUpdate();
     Log.getLogWriter().info("Inserted " + rowCount + " row in snappy.");
     snappyPS.close();
 
-    if (hasDerbyServer) {
-      dConn = getDerbyConnection();
-      derbyPS = getPreparedStatement(dConn, null, tableName, insertStmt, row);
-      Log.getLogWriter().info("Inserting in derby with statement : " + insertStmt + " with " +
-          "values(" + row + ")");
-      rowCount = derbyPS.executeUpdate();
-      Log.getLogWriter().info("Inserted " + rowCount + " row in derby.");
-      derbyPS.close();
-    }
-    if (dConn != null)
-      closeDiscConnection(dConn, true);
     Log.getLogWriter().info("Done performing insert operation.");
+    return rowCount;
   }
 
   /*
@@ -94,12 +117,16 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
 
   public void executeQuery() {
     try {
-      Connection conn = getLocatorConnection();
-      Connection dConn = null;
+      String url = "jdbc:snappydata:";
+      Connection conn = DriverManager.getConnection(url);
+
+      int rowCnt = 0, numRowsInserted = 0;
       String query = SnapshotIsolationPrms.getSelectStmts();
       ResultSet snappyRS;
       Log.getLogWriter().info("Executing " + query + " on snappy.");
       try {
+        numRowsInserted = (int)SnapshotIsolationBB.getBB().getSharedCounters().read
+            (SnapshotIsolationBB.numRowsInserted);
         snappyRS = conn.createStatement().executeQuery(query);
         Log.getLogWriter().info("Executed query on snappy.");
       } catch (SQLException se) {
@@ -112,26 +139,12 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
           Log.getLogWriter().info("Executed query on snappy.");
         } else throw new SQLException(se);
       }
-      ResultSet derbyRS = null;
-      if (hasDerbyServer) {
-        dConn = getDerbyConnection();
-        //run select query in derby
-        Log.getLogWriter().info("Executing " + query + " on derby.");
-        derbyRS = dConn.createStatement().executeQuery(query);
-        Log.getLogWriter().info("Executed query on derby.");
-      }
-
-      StructTypeImpl sti = ResultSetHelper.getStructType(derbyRS);
-      List<Struct> derbyList = ResultSetHelper.asList(derbyRS, sti, true);
-      StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
-      List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
-
-      compareResultSets(derbyList, snappyList);
+      while(snappyRS.next())
+        rowCnt += 1;
       snappyRS.close();
-      derbyRS.close();
-      if (dConn != null) {
-        closeDiscConnection(dConn, true);
-      }
+      if(rowCnt != numRowsInserted)
+        throw new TestException("Select query has different row count. Number of rows from query " +
+            "is " + rowCnt + " but expected number of rows are " + numRowsInserted);
       closeConnection(conn);
     } catch (SQLException se) {
       throw new TestException("Got exception while executing select query.", se);
@@ -145,18 +158,21 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     public void notifyOperationLock() {
       synchronized (operationLock) {
         operationLock.notify();
+        Log.getLogWriter().info("Got notified for OperationLock");
       }
     }
 
     public void notifyTestLock() {
       synchronized (lockForTest) {
         lockForTest.notify();
+        Log.getLogWriter().info("Got notified for TestLock");
       }
     }
 
     public void waitOnTestLock() {
       try {
         synchronized (lockForTest) {
+          Log.getLogWriter().info("Waiting for TestLock");
           lockForTest.wait();
         }
       } catch (InterruptedException ex) {
@@ -167,6 +183,7 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     public void waitOnOperationLock() {
       try {
         synchronized (operationLock) {
+          Log.getLogWriter().info("Waiting for OperationLock");
           operationLock.wait();
         }
       } catch (InterruptedException ex) {
