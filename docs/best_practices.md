@@ -21,9 +21,10 @@ The following topics are covered in this section:
 -->
 
 ## Overview
-This section presents advice on the optimal way to use SnappyData. It also gives you practical advice to assist you in storing and retrieving your data.
+This section presents advice on the optimal way to use SnappyData. It also gives you practical advice to assist you in configuring SnappyData and efficiently analysing your data.
 
 ## Architectural Considerations
+
 To determine the configuration that is best suited for your environment some experimentation and testing is required involving representative data and workload.
 
 Before we start, we have to make some assumptions; otherwise, there are just too many parameters to deal with.
@@ -33,20 +34,23 @@ Before we start, we have to make some assumptions; otherwise, there are just too
 2. Concurrency:  <mark>Short running queries or long running queries.</mark>
 
 ## Forecasting, Capacity planning, and Management
-The first rule to observe when planning is to know that no one size fits all capacity planning. An attempt at that will only end in a customized disaster.
 
-The better solution is to create a plan that is best suitable for your environment.
-
-Capacity planning has been a critical component of successful implementations. Good understanding of capacity management is required as resource utilization explodes as business users, analysts, and data scientists continuously analyze and use newly found data.
+The first rule to observe when planning is to know that no one size fits all capacity planning, as different customers have different requirement and the best solution is to create a plan that is most suitable for your environment. Therefore, capacity planning has been a critical component of successful implementations.
 
 Capacity planning involves:
 
 * The volume of your data
+
 * The retention policy of the data (how much you hang on to)
+
 * The kinds of workloads you have (data science is CPU intensive, whereas generalized analytics is heavy on I/O)
+
 * The storage mechanism for the data (whether you’re using compression, containers, etc.)
-* How many nodes are needed
+
+* How many nodes are required
+
 * The capacity of each node in terms of CPU
+
 * The capacity of each node in terms of memory
 
 ### 1. Management of cores
@@ -54,7 +58,7 @@ Capacity planning involves:
 Number of cores = Concurrent tasks as executor can run 
 
 #### Cores recommendation 
-We recommend using 2 * number of cores on a machine. If you are starting 3 servers on a machine, divide 2* number of cores between those machines. 
+We recommend using **2 X number of cores** on a machine. If you are starting 3 servers on a machine, divide 2 X number of cores between those machines.
 
 `spark-executor-cores` is same for all servers.
 
@@ -62,28 +66,32 @@ Concurrency is fair scheduled.
 
 #### Number of tasks per node
 
-First, let's figure out the # of tasks per node.
+First, let's figure out the number of tasks per node.
 
-Usually, count 1 core per task. If the job is not too heavy on CPU, then the number of tasks can be greater than the number of cores.
+Usually, the count is 1 core per task. If the job is not too heavy on the CPU, the number of tasks can be greater than the number of cores.
 
 Example: 12 cores, jobs use ~75% of CPU
 
-Let's assign free slots= 14 (slightly > # of cores is a good rule of thumb), maxMapTasks=8, maxReduceTasks=6.
+Let's assign free slots= 14 (slightly greater than the number of cores is a good rule of thumb), 
 
-### 2. Off-heap and On-heap
-SnappyData supports two distinct data eviction policies -
+maxMapTasks=8, maxReduceTasks=6.
+
+### 2. Off-Heap and On-Heap
+
+SnappyData supports two distinct data eviction policies
 Memory management is the process of allocating new objects and removing unused objects, to make space for those new object allocations. Java objects reside in an area called the heap. The heap is created when the JVM starts up and may increase or decrease in size while the application runs.
 
-When the heap becomes full, garbage is collected. During the garbage collection objects that are no longer used are cleared, thus making space for new objects.
+When the heap becomes full, garbage is collected. During the garbage collection, objects that are no longer used are cleared, thus making space for new objects.
 
 The JVM allocates Java heap memory from the OS and then manages the heap for the Java application. When an application creates a new object, the JVM sub-allocates a contiguous area of heap memory to store it. An object in the heap that is referenced by any other object is "live," and remains in the heap as long as it continues to be referenced. Objects that are no longer referenced are garbage and can be cleared out of the heap to reclaim the space they occupy. The JVM performs a garbage collection (GC) to remove these objects, reorganizing the objects remaining in the heap.
 
 <mark>Column table data is on off-heap. Row table data on-heap.
 
-Temporary memory for execution will also be off-heap. There are settings to control. On heap limited by JVM size. Off-heap grows until system memory is exhausted. 
+Temporary memory for execution will also be off-heap. There are settings to control. On-Heap is limited by JVM size. Off-heap grows until system memory is exhausted. 
 </mark>
 
 Off-Heap memory allows your cache to overcome lengthy JVM Garbage Collection (GC) pauses when working with large heap sizes by caching data outside of main Java Heap space, but still in RAM.
+
 On-heap caching is useful for scenarios when you do a lot of cache reads on server nodes that work with cache entries in the binary form or invoke cache entries' deserialization. For instance, this might happen when a distributed computation or deployed service gets some data from caches for further processing.
 
 The heap size can be controlled with the following properties:
