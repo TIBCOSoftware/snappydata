@@ -17,4 +17,4 @@
 package org.apache.spark.sql.internal
 
 
-class CodeCompileException(msg : String) extends Exception(msg) {}
+class CodeGenerationException(msg : String) extends Exception(msg) {}

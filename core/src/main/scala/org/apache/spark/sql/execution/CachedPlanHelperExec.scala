@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
-import org.apache.spark.sql.internal.CodeCompileException
+import org.apache.spark.sql.internal.CodeGenerationException
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -120,7 +120,7 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
     if (shouldExecute) {
       childPlan.execute()
     } else {
-      throw new CodeCompileException("Could should not have reached here")
+      throw new CodeGenerationException("Code generation failed for some of the child plans")
     }
   }
 }

@@ -57,7 +57,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.{CodeCompileException, PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.internal.{CodeGenerationException, PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -1849,8 +1849,9 @@ object SnappySession extends Logging {
           try {
             evaluatePlan(df, session, key.sqlText, key)
           } catch {
-            case e: CodeCompileException => {
+            case e: CodeGenerationException => {
               session.disableStoreOptimizations = true
+              logInfo("Snappy Code generation failed. Falling back to Spark plans ")
               val df = session.executeSQL(key.sqlText)
               evaluatePlan(df, session, key.sqlText, key)
             }
@@ -1871,8 +1872,6 @@ object SnappySession extends Logging {
       advisers.next().addProfileChangeListener(bucketProfileListener)
     }
   }
-
-  val SNAPPY_STORE_OPTIMIZATION_DISABLED = "false"
 
   class CachedKey(
       val session: SnappySession, val lp: LogicalPlan,

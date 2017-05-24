@@ -47,7 +47,6 @@ import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, ToolsCallbackInit}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.internal.{CodeCompileException, SQLConf}
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
@@ -68,7 +67,7 @@ case class SnappyHashAggregateExec(
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
     hasDistinct: Boolean)
-    extends UnaryExecNode with BatchConsumer with NonRecursivePlans{
+    extends UnaryExecNode with BatchConsumer with NonRecursivePlans {
 
   override def nodeName: String = "SnappyHashAggregate"
 
