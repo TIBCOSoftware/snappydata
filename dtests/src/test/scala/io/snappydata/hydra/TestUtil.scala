@@ -86,14 +86,14 @@ object TestUtil {
     var hasValidationFailed = validationFailed
 
     val snappyQueryFileName = s"Snappy_${queryNum}"
-    val snappyDest: String = getQueryResultDir("snappyQueryFiles") + File.separator +
+    val snappyDest: String = SnappyTestUtils.getTempDir("snappyQueryFiles") + File.separator +
         snappyQueryFileName
     pw.println(snappyDest)
     val snappyFile: File = new java.io.File(snappyDest)
     var snappyDF = snc.sql(sqlString)
 
     val sparkQueryFileName = s"Spark_${queryNum}"
-    val sparkDest: String = getQueryResultDir("sparkQueryFiles") + File.separator + sparkQueryFileName
+    val sparkDest: String = SnappyTestUtils.getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
     pw.println(sparkDest)
     val sparkFile: File = new java.io.File(sparkDest)
     var sparkDF = sqlContext.sql(sqlString)
@@ -203,7 +203,7 @@ object TestUtil {
     var hasValidationFailed = validationFailed
 
     val snappyQueryFileName = s"Snappy_${queryNum}"
-    val snappyDest: String = getQueryResultDir("snappyQueryFiles") + File.separator + snappyQueryFileName
+    val snappyDest: String = SnappyTestUtils.getTempDir("snappyQueryFiles") + File.separator + snappyQueryFileName
     pw.println(snappyDest)
     val snappyFile: File = new java.io.File(snappyDest)
     var snappyDF = snc.sql(sqlString)
