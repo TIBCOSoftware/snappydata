@@ -237,10 +237,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     try {
       for (i <- 1 to 100) {
         val row = Row(100000000, 10000000, 10000000)
-        println(s"RowCount1 = $rows")
         snSession.insert("t1", row)
         rows += 1
-        println(s"RowCount2 = $rows")
       }
     } catch {
       case sqle: SQLException if sqle.getSQLState == "XCL54" =>
