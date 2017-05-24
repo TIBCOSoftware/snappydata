@@ -117,6 +117,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     assert(index == results.length)
     rs.close()
 
+    // scalastyle:off println
+    println(s"cachemapsize = ${cacheMapSize} and .size = ${cacheMap.size()}")
+    // scalastyle:on println
     assert( cacheMap.size() == cacheMapSize || -1 == cacheMapSize)
   }
 
@@ -442,13 +445,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(2, 100)
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 300)
-      verifyResults("query5-1", prepStatement.executeQuery, Array(100, 200, 300), -1)
+      verifyResults("query5-1", prepStatement.executeQuery, Array(100, 200, 300), 3)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
       prepStatement.setInt(3, 700)
       prepStatement.setInt(4, 800)
-      verifyResults("query5-2", prepStatement.executeQuery, Array(600, 700, 800), -1)
+      verifyResults("query5-2", prepStatement.executeQuery, Array(600, 700, 800), 3)
 
       // Thread.sleep(1000000)
     } finally {
@@ -481,7 +484,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query2(tableName1, tableName2)
       query3(tableName1, tableName2)
       // query4(tableName1, tableName2) // TODO - Enable with SNAP-1478
-      // query5(tableName1, tableName2) // TODO - Enable with SNAP-1478
+      query5(tableName1, tableName2)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
