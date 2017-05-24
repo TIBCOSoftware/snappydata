@@ -86,12 +86,10 @@ object StoreUtils {
   val MAP_TYPE = 14
   val STRUCT_TYPE = 15
 
-  val ddlOptions = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
+  val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
     REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
-    GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
-    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS,
-    ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE)
+    GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
@@ -123,6 +121,13 @@ object StoreUtils {
       }
     } else {
       val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+      if (distMembers.isEmpty) {
+        var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
+        if (prefNode == null) {
+          prefNode = region.getOrCreateNodeForInitializedBucketRead(bucketId, true)
+        }
+        distMembers.add(prefNode)
+      }
       val members = new mutable.ArrayBuffer[String](2)
       distMembers.foreach { m =>
         SnappyContext.getBlockId(m.toString) match {

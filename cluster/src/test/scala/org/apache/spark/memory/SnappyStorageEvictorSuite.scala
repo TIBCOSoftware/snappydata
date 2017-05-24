@@ -127,7 +127,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   }
 
   test("Test eviction when storage memory has borrowed some memory from execution") {
-    val sparkSession = createSparkSession(1, 0.5, 1000)
+    val sparkSession = createSparkSession(1, 0.5, 1500)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, options)
@@ -150,7 +150,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
       def run() {
         // This should not hang as we are dropping the table after
         // this thread is executed.
-        SparkEnv.get.memoryManager.acquireExecutionMemory(500L, 1L, memoryMode)
+        SparkEnv.get.memoryManager.acquireExecutionMemory(750L, 1L, memoryMode)
       }
     })
     otherExecutorThread.start()
