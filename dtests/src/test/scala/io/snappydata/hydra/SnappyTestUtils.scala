@@ -65,7 +65,7 @@ object SnappyTestUtils {
       "header", false).save(dest)
   }
 
-  protected def getTempDir(dirName: String): String = {
+  def getTempDir(dirName: String): String = {
     val log: File = new File(".")
     var dest: String = null
     val dirString = log.getCanonicalPath;
