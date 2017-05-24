@@ -17,7 +17,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   dataFilesLocation="/export/shared/QA_DATA/ct"
-  redundantCopies=0  persistenceMode="async" //redundancy not required for replicated table, but required for hydra config
+  redundantCopies=0  persistenceMode="sync" //redundancy not required for replicated table, but required for hydra config
   tableType="PersistentReplicated"
   scriptName="ct_create_and_load_persistentReplicated_row_tables.sql"
   fullResultSetValidation= true
@@ -27,7 +27,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0  persistenceMode="async"
+  redundantCopies=0  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentReplicated"
   scriptName="ct_create_and_load_persistentReplicated_row_tables.sql"
@@ -49,7 +49,7 @@ io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=1  persistenceMode="async"
+  redundantCopies=1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PartitionedRow"
   numVMsToStop=1
@@ -60,7 +60,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0,1  persistenceMode="async"
+  redundantCopies=0,1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentPartitionRow"
   scriptName="ct_create_and_load_persistentPartitioned_row_table.sql"
@@ -103,7 +103,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0,1  persistenceMode="async"
+  redundantCopies=0,1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedRow"
   scriptName="ct_create_and_load_persistentColocated_row_table.sql"
@@ -114,7 +114,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScript.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0,1  persistenceMode="async"
+  redundantCopies=0,1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedWithEvictionRow"
   scriptName="ct_create_and_load_colocatedWithEviction_row_table.sql"
@@ -136,7 +136,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkApp.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0,1,2  persistenceMode="async"
+  redundantCopies=0,1,2  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColumn"
   fullResultSetValidation= true
@@ -168,7 +168,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptServerHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=1,2  persistenceMode="async"
+  redundantCopies=1,2  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColumn"
   numVMsToStop=1
@@ -180,7 +180,7 @@ io/snappydata/hydra/ct/ctSplitMode.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0,1,2  persistenceMode="async"
+  redundantCopies=0,1,2  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
   fullResultSetValidation= true
@@ -190,7 +190,7 @@ io/snappydata/hydra/ct/ctSplitModeLeadHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=0,1  persistenceMode="async"
+  redundantCopies=0,1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
   numVMsToStop=1
@@ -201,7 +201,7 @@ io/snappydata/hydra/ct/ctSplitModeServerHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=1,2  persistenceMode="async"
+  redundantCopies=1,2  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="PersistentColocatedColumn"
   numVMsToStop=1
