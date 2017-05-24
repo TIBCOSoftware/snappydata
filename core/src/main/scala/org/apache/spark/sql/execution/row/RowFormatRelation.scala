@@ -162,7 +162,8 @@ class RowFormatRelation(
           connProperties,
           handledFilters,
           _partEval = () => relInfo.partitions,
-          relInfo.embdClusterRelDestroyVersion
+          relInfo.embdClusterRelDestroyVersion,
+          _commitTx=true
         )
     }
     (rdd, Nil)

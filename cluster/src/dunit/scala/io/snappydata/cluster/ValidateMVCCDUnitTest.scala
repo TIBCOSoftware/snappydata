@@ -27,6 +27,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
   // set default batch size for this test
   bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "4")
+  var errorInThread:Throwable = null
 
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 
@@ -101,6 +102,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
   }
 
   def testMVCCForColumnTable(): Unit = {
+    errorInThread = null
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -129,10 +131,15 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val cnt = snc.sql(s"select * from $tableName").count()
 
-    assert(cnt == 10)
+    assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
     invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", netPort1)
+
+    if (errorInThread != null) {
+
+      throw errorInThread
+    }
     println("Successful")
 
   }
@@ -140,8 +147,14 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
   def invokeMethodInVm(vM: VM, classType: Class[ValidateMVCCDUnitTest], methodName: String, netPort1: Int): Unit = {
 
     new Thread {
+
       override def run: Unit = {
-        vM.invoke(classType, methodName, netPort1)
+        try {
+          vM.invoke(classType, methodName, netPort1)
+        } catch {
+          case e: Throwable =>
+            errorInThread = e
+        }
       }
     }.start()
 
@@ -150,6 +163,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
 
   def testMVCCForColumnTableWithRollback(): Unit = {
+    errorInThread = null
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -178,9 +192,13 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val cnt = snc.sql(s"select * from $tableName").count()
 
-    assert(cnt == 10)
+    assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
     invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", netPort1)
+    if (errorInThread != null) {
+
+      throw errorInThread
+    }
     println("Successful")
 
   }
@@ -228,7 +246,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         return;
       }
 
-      println("SJ: Got notification from test hook")
+      println("Got notification from test hook")
       if (null == cache) {
         return;
       }
@@ -252,7 +270,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       }
 
       println("Row count before creating the cachebatch: " + cnt)
-      assert(cnt == 10)
+      assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
 
 
 
@@ -264,7 +282,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         println("Resultset from row buffer:  "+rs1.getInt(1))
       }
       println("Row count before creating the cachebatch in row buffer: " + cnt1)
-      assert(cnt1 == 10)
+      assert(cnt1 == 10,s"Expected row count is 10 while actual row count is $cnt1")
 
       var cnt2 = 0;
       s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
@@ -274,7 +292,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         cnt2 = cnt2 + 1
       }
       println("Row count before creating the cachebatch in column store: " + cnt2)
-      assert(cnt2 == 0)
+      assert(cnt2 == 0,s"Expected row count is 0 while actual row count is $cnt2")
 
       cache.notifyRvvSnapshotTestHook()
       cache.waitOnRvvTestHook()
@@ -289,7 +307,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       }
 
       println("Row count in row buffer after destroy all entries from row buffer but no commit  : " + cnt3)
-      assert(cnt3 == 10)
+      assert(cnt3 == 10,s"Expected row count is 10 while actual row count is $cnt3")
 
       cache.notifyRvvSnapshotTestHook()
 
@@ -309,7 +327,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         "and reinitialize snapshot   : " + cnt4)
       //The number of entries in column store is 4 as after columnwise storage 3 rows will be created one for each
       // column and 4th row is for stats
-      assert(cnt4 == 4)
+      assert(cnt4 == 4,s"Expected Count is 4 but actual count is $cnt4")
 
 
 
@@ -321,8 +339,8 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       }
 
       println("Row count in row buffer after destroy all entries from row buffer " +
-        "and reinitialize snapshot   : " + cnt4)
-      assert(cnt5 == 0)
+        "and reinitialize snapshot   : " + cnt5)
+      assert(cnt5 == 0,s"Expected row count is 0 while actual row count is $cnt5")
 
       var cnt6 = 0;
       s.execute(s"select * from $tableName")
@@ -330,8 +348,8 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       while (rs6.next) {
         cnt6 = cnt6 + 1
       }
-      println("Row count in column table : " + cnt5)
-      assert(cnt6 == 10)
+      println("Row count in column table : " + cnt6)
+      assert(cnt6 == 10,s"Expected row count is 10 while actual row count is $cnt6")
 
     }
 
@@ -372,7 +390,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       }
 
       println("Row count before creating the cachebatch: " + cnt)
-      assert(cnt == 10)
+      assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
 
 
 
@@ -384,7 +402,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         println("Resultset from row buffer:  "+rs1.getInt(1))
       }
       println("Row count before creating the cachebatch in row buffer: " + cnt1)
-      assert(cnt1 == 10)
+      assert(cnt1 == 10,s"Expected row count is 10 while actual row count is $cnt1")
 
       var cnt2 = 0;
       s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
@@ -394,7 +412,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         cnt2 = cnt2 + 1
       }
       println("Row count before creating the cachebatch in column store: " + cnt2)
-      assert(cnt2 == 0)
+      assert(cnt2 == 0,s"Expected row count is 0 while actual row count is $cnt2")
 
       cache.notifyRvvSnapshotTestHook()
 
@@ -407,7 +425,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       }
 
       println("Row count in row buffer after destroy all entries from row buffer but no commit  : " + cnt3)
-      assert(cnt3 == 10)
+      assert(cnt3 == 10,s"Expected row count is 10 while actual row count is $cnt3")
 
 
       var cnt4 = 0;
@@ -421,7 +439,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         "and reinitialize snapshot   : " + cnt4)
       //The number of entries in column store is 4 as after columnwise storage 3 rows will be created one for each
       // column and 4th row is for stats
-      assert(cnt4 == 0)
+      assert(cnt4 == 0,s"Expected row count is 0 while actual row count is $cnt4")
 
 
     }

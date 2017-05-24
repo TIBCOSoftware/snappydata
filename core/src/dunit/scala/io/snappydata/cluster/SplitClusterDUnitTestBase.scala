@@ -156,6 +156,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
+
   // snap-1505 is filed to enable this test
   final def DISABLEDtestTableFormChanges(): Unit = {
     if (!useThinClientConnector) {
