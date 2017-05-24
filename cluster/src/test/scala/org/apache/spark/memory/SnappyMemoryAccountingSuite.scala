@@ -442,12 +442,10 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.insert("t1", row)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
-    val afterDelete = SparkEnv.get.memoryManager.storageMemoryUsed
     // we need to wait for atleast OLD_ENTRIES_CLEANER_TIME_INTERVAL
-    ClusterManagerTestBase.waitForCriterion((afterDelete == afterCreateTable),
+    ClusterManagerTestBase.waitForCriterion((SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
       s"The memory after delete is not same even after waiting for oldEntryRemoval",
       2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
-    assert(afterDelete == afterCreateTable)
     snSession.dropTable("t1")
   }
 
@@ -477,8 +475,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
     // we need to wait for atleast OLD_ENTRIES_CLEANER_TIME_INTERVAL
-    val afterDelete = SparkEnv.get.memoryManager.storageMemoryUsed
-    ClusterManagerTestBase.waitForCriterion((afterDelete == afterCreateTable),
+    ClusterManagerTestBase.waitForCriterion((SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
       s"The memory after delete is not same even after waiting for oldEntryRemoval",
       2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
     //assert(afterDelete == afterCreateTable)
