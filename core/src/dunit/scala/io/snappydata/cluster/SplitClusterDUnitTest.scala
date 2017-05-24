@@ -79,8 +79,6 @@ class SplitClusterDUnitTest(s: String)
   // properties for this, so fails with just "snappydata." prefix
   override protected val locatorProperty = "spark.snappydata.store.locators"
 
-  override protected val useThinClientConnector = false
-
   override protected def locatorClientPort = { testObject.locatorNetPort }
 
   override def beforeClass(): Unit = {
