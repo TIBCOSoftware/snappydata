@@ -20,6 +20,7 @@ package org.apache.spark.memory
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 import org.apache.spark.SparkEnv
@@ -441,9 +442,11 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.insert("t1", row)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
-    // we need to wait for atleast OLD_ENTRIES_CLEANER_TIME_INTERVAL
-    Thread.sleep(Misc.getGemFireCache.getOldEntryRemovalPerid)
     val afterDelete = SparkEnv.get.memoryManager.storageMemoryUsed
+    // we need to wait for atleast OLD_ENTRIES_CLEANER_TIME_INTERVAL
+    ClusterManagerTestBase.waitForCriterion((afterDelete == afterCreateTable),
+      s"The memory after delete is not same even after waiting for oldEntryRemoval",
+      2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
     assert(afterDelete == afterCreateTable)
     snSession.dropTable("t1")
   }
@@ -474,9 +477,11 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
     // we need to wait for atleast OLD_ENTRIES_CLEANER_TIME_INTERVAL
-    Thread.sleep(Misc.getGemFireCache.getOldEntryRemovalPerid)
     val afterDelete = SparkEnv.get.memoryManager.storageMemoryUsed
-    assert(afterDelete == afterCreateTable)
+    ClusterManagerTestBase.waitForCriterion((afterDelete == afterCreateTable),
+      s"The memory after delete is not same even after waiting for oldEntryRemoval",
+      2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
+    //assert(afterDelete == afterCreateTable)
     snSession.dropTable("t1")
   }
 
