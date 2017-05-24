@@ -82,14 +82,20 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val keyStatsSection = clustersStatsTitle ++ clusterDetails
 
     val membersStatsDetails = {
-      val membersStatsTitle = createTitleNode(SnappyDashboardPage.membersStatsTitle, SnappyDashboardPage.membersStatsTitleTooltip)
+      val countsMap = mutable.Map.empty[String, Int]
+      countsMap += ("total" -> clusterStatsMap.getOrElse("numMembers",0).toString.toInt)
+      countsMap += ("locators" -> clusterStatsMap.getOrElse("numLocators",0).toString.toInt)
+      countsMap += ("leads" -> clusterStatsMap.getOrElse("numLeads",0).toString.toInt)
+      countsMap += ("servers" -> clusterStatsMap.getOrElse("numDataServers",0).toString.toInt)
+
+      val membersStatsTitle = createTitleNode(SnappyDashboardPage.membersStatsTitle, SnappyDashboardPage.membersStatsTitleTooltip, countsMap)
       val membersStatsTable = memberStats(clusterMembers)
 
       membersStatsTitle ++ membersStatsTable
     }
 
     val sparkConnectorsStatsDetails = {
-      val sparkConnectorsStatsTitle = createTitleNode(SnappyDashboardPage.sparkConnectorsStatsTitle, SnappyDashboardPage.sparkConnectorsStatsTitleTooltip)
+      val sparkConnectorsStatsTitle = createTitleNode(SnappyDashboardPage.sparkConnectorsStatsTitle, SnappyDashboardPage.sparkConnectorsStatsTitleTooltip, sparkConnectors.size)
       val sparkConnectorsStatsTable = connectorStats(sparkConnectors)
 
       if(sparkConnectors.size > 0)
@@ -99,14 +105,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     }
 
     val tablesStatsDetails = {
-      val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle, SnappyDashboardPage.tablesStatsTitleTooltip)
+      val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle, SnappyDashboardPage.tablesStatsTitleTooltip, tableBuff.size)
       val tablesStatsTable = tableStats(tableBuff)
 
       tablesStatsTitle ++ tablesStatsTable
     }
 
     val indexStatsDetails = {
-      val indexStatsTitle = createTitleNode(SnappyDashboardPage.indexStatsTitle, SnappyDashboardPage.indexStatsTitleTooltip)
+      val indexStatsTitle = createTitleNode(SnappyDashboardPage.indexStatsTitle, SnappyDashboardPage.indexStatsTitleTooltip, indexBuff.size)
       val indexStatsTable = indexStats(indexBuff)
 
       if(indexBuff.size > 0)
@@ -191,14 +197,42 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def createTitleNode(title:String, tooltip:String): Seq[Node] = {
     <div class="row-fluid">
       <div class="span12">
-        <h4 style="vertical-align: bottom; display: inline-block;">
+        <h4 style="vertical-align: bottom; display: inline-block;" data-toggle="tooltip" data-placement="top" title={tooltip}>
           {title}
-          {UIUtils.tooltip(tooltip, "bottom")}
         </h4>
       </div>
     </div>
   }
 
+  private def createTitleNode(title:String, tooltip:String, count:Integer): Seq[Node] = {
+    <div class="row-fluid">
+      <div class="span12">
+        <h4 style="vertical-align: bottom; display: inline-block;" data-toggle="tooltip" data-placement="top" title={tooltip}>
+          {title}
+        </h4>
+        <div style="font-weight: bold; display: inline-block; line-height: 20px; margin: 10px 0; font-size: 17.5px;">( {count} )</div>
+      </div>
+    </div>
+  }
+
+  private def createTitleNode(title:String, tooltip:String, countMap:mutable.Map[String, Int]): Seq[Node] = {
+    <div class="row-fluid">
+      <div class="span12">
+        <h4 style="vertical-align: bottom; display: inline-block;" data-toggle="tooltip" data-placement="top" title={tooltip}>
+          {title}
+        </h4>
+        <div style="font-weight: bold; display: inline-block; line-height: 20px; margin: 10px 0; font-size: 17.5px;">({
+          <a data-toggle="tooltip" data-placement="top" title={
+            "Locators: " + countMap.getOrElse("locators", 0).toString.toInt +
+            " | Leads: " + countMap.getOrElse("leads", 0).toString.toInt +
+            " | Data Servers: " + countMap.getOrElse("servers", 0).toString.toInt
+          }>
+            {countMap.getOrElse("total", 0).toString.toInt}
+          </a>
+          })</div>
+      </div>
+    </div>
+  }
 
   private def clusterStats(clusterDetails:mutable.Map[String, Any]): Seq[Node] = {
 
