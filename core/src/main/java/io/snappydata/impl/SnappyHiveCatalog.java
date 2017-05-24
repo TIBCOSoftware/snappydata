@@ -385,7 +385,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");
 
-      final short numRetries = 3;
+      final short numRetries = 40;
       short count = 0;
       while (true) {
         try {
@@ -408,14 +408,14 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
                   "SnappyHiveCatalog.HMSQuery.initHMC: No datastore found " +
                       "while initializing Hive metastore client. " +
-                      "Will retry initialization after 500 milliseconds. " +
+                      "Will retry initialization after 3 seconds. " +
                       "Exception received is " + t);
               if (Misc.getI18NLogWriter().fineEnabled()) {
                 Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
                     "Exception stacktrace:", ex);
               }
               count++;
-              Thread.sleep(500);
+              Thread.sleep(3000);
             } catch (InterruptedException ie) {
               throw new IllegalStateException(ex);
             }
