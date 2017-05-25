@@ -50,7 +50,7 @@ private[sql] trait SnappyStrategies {
   }
 
   def isDisabled(): Boolean = {
-    snappySession.disableStoreOptimizations
+    snappySession.sessionState.disableStoreOptimizations
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */

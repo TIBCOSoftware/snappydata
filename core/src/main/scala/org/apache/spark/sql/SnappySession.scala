@@ -360,7 +360,6 @@ class SnappySession(@transient private val sc: SparkContext,
     SnappySession.clearSessionCache(id)
   }
 
-  private[sql] var disableStoreOptimizations : Boolean = false
 
   def clear(): Unit = synchronized {
     clearContext()
@@ -1838,7 +1837,7 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
         val session = key.session
-        session.disableStoreOptimizations = false
+        session.sessionState.disableStoreOptimizations = false
         val df = session.executeSQL(key.sqlText)
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
@@ -1850,7 +1849,7 @@ object SnappySession extends Logging {
             evaluatePlan(df, session, key.sqlText, key)
           } catch {
             case e: CodeGenerationException => {
-              session.disableStoreOptimizations = true
+              session.sessionState.disableStoreOptimizations = true
               logInfo("Snappy Code generation failed. Falling back to Spark plans ")
               val df = session.executeSQL(key.sqlText)
               evaluatePlan(df, session, key.sqlText, key)
