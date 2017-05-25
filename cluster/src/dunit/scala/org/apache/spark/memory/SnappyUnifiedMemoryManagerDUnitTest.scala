@@ -338,7 +338,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
 
-  def testMemoryAfterRecovery_ColumnTable(): Unit = {
+  def _testMemoryAfterRecovery_ColumnTable(): Unit = {
 
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
@@ -361,9 +361,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
-
-    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     Thread.sleep(10000)
+    vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
+
     vm1.invoke(restartServer(props))
     Thread.sleep(5000)
     val waitAssert = new WaitAssert(10, getClass) // @TODO identify why so large error

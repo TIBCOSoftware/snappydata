@@ -81,7 +81,7 @@ class SnappyUnifiedMemoryManager private[memory](
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
 
-  @volatile private var _memoryForObjectMap: Object2LongOpenHashMap[(String, MemoryMode)] = _
+  @volatile private[memory] var _memoryForObjectMap: Object2LongOpenHashMap[(String, MemoryMode)] = _
 
   private[memory] def memoryForObject: Object2LongOpenHashMap[(String, MemoryMode)] =
     synchronized {
