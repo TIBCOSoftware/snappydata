@@ -423,7 +423,6 @@ public class SnappyTest implements Serializable {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         String value = (String) SnappyBB.getBB().getSharedMap().get(key);
         fileContents.add(value);
       }
@@ -451,7 +450,6 @@ public class SnappyTest implements Serializable {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         String value = (String) SnappyBB.getBB().getSharedMap().get(key);
         fileContents.add(value);
       }
@@ -464,7 +462,6 @@ public class SnappyTest implements Serializable {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         File value = (File) SnappyBB.getBB().getSharedMap().get(key);
         dirList.add(value);
       }
@@ -487,7 +484,6 @@ public class SnappyTest implements Serializable {
     Set<String> locatorHostPortList = new LinkedHashSet<>();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         String value = (String) SnappyBB.getBB().getSharedMap().get(key);
         locatorHostPortList.add(value);
       }
@@ -1975,10 +1971,7 @@ public class SnappyTest implements Serializable {
       Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
       for (String key : keys) {
         if (key.startsWith(logFilekey)) {
-
-
           String logFilename = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
-          Log.getLogWriter().info("Key Found...." + logFilename);
           snappyJobLogFiles.add(logFilename);
         }
       }
