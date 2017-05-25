@@ -56,31 +56,13 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   } else {
-    provided("org.apache.spark:spark-unsafe_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.scala-lang', module: 'scala-library')
-      exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    }
-    provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    }
-    provided("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    }
-    provided("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    }
-    provided("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    }
-    provided("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    }
-    provided("org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    }
-    provided("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}") {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    }
+    provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
+    provided("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
+    provided("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    provided("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+    provided("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
+    provided("org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}")
+    provided("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
 
     provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   }
@@ -114,15 +96,9 @@ dependencies {
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests") {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-  }
-  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests") {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-  }
-  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests") {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-  }
+  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
 
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
