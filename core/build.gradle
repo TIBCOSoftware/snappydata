@@ -201,6 +201,8 @@ shadowJar {
   relocate 'org.apache.spark.unsafe', 'io.snappydata.org.apache.spark.unsafe'
   // relocate fastutil for possible conflicts with user dependencies
   relocate 'it.unimi.dsi.fastutil', 'io.snappydata.it.unimi.dsi.fastutil'
+  // relocate the guava's com.google packages
+  relocate 'com.google', 'io.snappydata.com.google'
 
   mergeServiceFiles()
   exclude 'log4j.properties'
