@@ -26,15 +26,15 @@ import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException, EntryOperation, Region, RegionDestroyedException}
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, SerializedDiskBuffer}
-import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RowEncoder}
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLVarchar}
@@ -103,7 +103,7 @@ object ColumnFormatEntry extends Logging {
 final class ColumnFormatKey(private[columnar] var partitionId: Int,
     private[columnar] var columnIndex: Int,
     private[columnar] var uuid: String)
-    extends GfxdDataSerializable with ColumnBatchKey with Serializable {
+    extends GfxdDataSerializable with ColumnBatchKey with RegionKey with Serializable {
 
   // to be used only by deserialization
   def this() = this(-1, -1, "")
@@ -182,6 +182,33 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
     }
   }
 
+  override def nCols(): Int = 3
+
+  override def getKeyColumn(index: Int): DataValueDescriptor = index match {
+    case 0 => new SQLVarchar(uuid)
+    case 1 => new SQLInteger(partitionId)
+    case 2 => new SQLInteger(columnIndex)
+  }
+
+  override def getKeyColumns(keys: Array[DataValueDescriptor]): Unit = {
+    keys(0) = new SQLVarchar(uuid)
+    keys(1) = new SQLInteger(partitionId)
+    keys(2) = new SQLInteger(columnIndex)
+  }
+
+  override def getKeyColumns(keys: Array[AnyRef]): Unit = {
+    keys(0) = uuid
+    keys(1) = Int.box(partitionId)
+    keys(2) = Int.box(columnIndex)
+  }
+
+  override def setRegionContext(region: LocalRegion): Unit = {}
+
+  override def beforeSerializationWithValue(
+      valueIsToken: Boolean): KeyWithRegionContext = this
+
+  override def afterDeserializationWithValue(v: AnyRef): Unit = {}
+
   override def toString: String =
     s"ColumnKey(columnIndex=$columnIndex,partitionId=$partitionId,uuid=$uuid)"
 }
@@ -248,16 +275,19 @@ final class ColumnFormatValue
   }
 
   def setBuffer(buffer: ByteBuffer,
-      changeOwnerToStorage: Boolean = true): Unit = synchronized {
+      changeOwnerToStorage: Boolean = true,
+      writeSerializationHeader: Boolean = true): Unit = synchronized {
     val columnBuffer = GemFireCacheImpl.getCurrentBufferAllocator
         .transfer(buffer, ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
     if (changeOwnerToStorage && columnBuffer.isDirect) {
       MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
         columnBuffer, allowNonAllocator = true)
     }
-    // write the serialization header and move ahead to start of data
-    ColumnFormatEntry.writeValueSerializationHeader(columnBuffer,
-      buffer.remaining() - ColumnFormatEntry.VALUE_HEADER_SIZE)
+    if (writeSerializationHeader) {
+      // write the serialization header and move ahead to start of data
+      ColumnFormatEntry.writeValueSerializationHeader(columnBuffer,
+        buffer.remaining() - ColumnFormatEntry.VALUE_HEADER_SIZE)
+    }
     this.columnBuffer = columnBuffer
     // reference count is required to be 1 at this point
     val refCount = this.refCount
@@ -496,22 +526,34 @@ final class ColumnFormatEncoder extends RowEncoder {
     row.setColumn(1, new SQLVarchar(batchKey.uuid))
     row.setColumn(2, new SQLInteger(batchKey.partitionId))
     row.setColumn(3, new SQLInteger(batchKey.columnIndex))
-    // set value reference which will be released after thrift write
+    // set value reference which will be released after thrift write;
+    // this written blob does not include the serialization header
+    // unlike in fromRow which does include it
     row.setColumn(4, new SQLBlob(new ClientBlob(batchValue)))
     row
   }
 
   override def fromRow(row: Array[DataValueDescriptor],
-      container: GemFireContainer): java.util.Map.Entry[AnyRef, AnyRef] = {
+      container: GemFireContainer): java.util.Map.Entry[RegionKey, AnyRef] = {
     val batchKey = new ColumnFormatKey(uuid = row(0).getString,
       partitionId = row(1).getInt, columnIndex = row(2).getInt)
-    val batchValue = new ColumnFormatValue()
     // transfer buffer from BufferedBlob as is, or copy for others
-    row(3).getObject match {
-      case blob: BufferedBlob => batchValue.setBuffer(blob.getAsLastChunk.chunk)
-      case blob: Blob => batchValue.setBuffer(ByteBuffer.wrap(
-        blob.getBytes(1, blob.length().toInt)))
+    val columnBuffer = row(3).getObject match {
+      case blob: BufferedBlob => blob.getAsLastChunk.chunk
+      case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
     }
-    new java.util.AbstractMap.SimpleEntry[AnyRef, AnyRef](batchKey, batchValue)
+    // the incoming blob includes the serialization header to avoid
+    // a copy when transferring to ColumnFormatValue, so just move to
+    // the start of data
+    columnBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+    // set the buffer into ColumnFormatValue
+    val batchValue = new ColumnFormatValue()
+    batchValue.setBuffer(columnBuffer, writeSerializationHeader = false)
+    new java.util.AbstractMap.SimpleEntry[RegionKey, AnyRef](batchKey, batchValue)
   }
+
+  override def fromRowToKey(key: Array[DataValueDescriptor],
+      container: GemFireContainer): RegionKey =
+    new ColumnFormatKey(uuid = key(0).getString,
+      partitionId = key(1).getInt, columnIndex = key(2).getInt)
 }

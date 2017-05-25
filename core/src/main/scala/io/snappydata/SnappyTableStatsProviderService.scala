@@ -24,7 +24,6 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.CancelException
-import com.gemstone.gemfire.cache.DataPolicy
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
@@ -185,8 +184,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
     val regions = asSerializable(Misc.getGemFireCache.getApplicationRegions.asScala)
     for (region: LocalRegion <- regions) {
-      if (region.getDataPolicy == DataPolicy.PARTITION ||
-          region.getDataPolicy == DataPolicy.PERSISTENT_PARTITION) {
+      if (region.getDataPolicy.withPartitioning()) {
         val table = Misc.getFullTableNameFromRegionPath(region.getFullPath)
         val pr = region.asInstanceOf[PartitionedRegion]
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
