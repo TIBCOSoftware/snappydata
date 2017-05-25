@@ -25,12 +25,17 @@ Commands can span multiple lines without using any special escape character for 
 
 `snappy` treats any command that it does not recognize as a SQL command that is passed to the underlying connection. This means that any syntactic errors in `snappy` commands are handed to the SQL engine and generally result in SQL parsing errors.
 
--   **[autocommit](../../reference/interactive_commands/autocommit.md)**
+<!---   **[autocommit](../../reference/interactive_commands/autocommit.md)**
     Turns the connection's auto-commit mode on or off.
 
 -   **[commit](../../reference/interactive_commands/commit.md)**
     Issues a *java.sql.Connection.commit* request.
 
+-   **[rollback](../../reference/interactive_commands/rollback.md)**
+    Issues a *java.sql.Connection.rollback* request. 
+    
+-->
+    
 -   **[connect client](../../reference/interactive_commands/connect_client.md)**
     Using the JDBC SnappyData thin client driver, connects to a SnappyData member indicated by the *host:port* values.
 
@@ -49,9 +54,6 @@ Commands can span multiple lines without using any special escape character for 
 -   **[MaximumDisplayWidth](../../reference/interactive_commands/maximumdisplaywidth.md)**
     Sets the largest display width for columns to the specified value.
 
--   **[rollback](../../reference/interactive_commands/rollback.md)**
-    Issues a *java.sql.Connection.rollback* request.
-
 -   **[run](../../reference/interactive_commands/run.md)**
     Treats the value of the string as a valid file name, and redirects `snappy` processing to read from that file until it ends or an exit command is executed.
 
@@ -63,5 +65,3 @@ Commands can span multiple lines without using any special escape character for 
 
 -   **[wait for](../../reference/interactive_commands/wait_for.md)**
     Displays the results of a previously started asynchronous command.
-
-

@@ -2,7 +2,8 @@
 
 Update the value of one or more columns.
 
-Note: Currently not supported on column tables.
+!!! Note: 
+	Currently not supported on column tables.
 
 ## Syntax
 

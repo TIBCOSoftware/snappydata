@@ -25,8 +25,9 @@ SnappyData configuration properties are divided into the following property type
 
     -   **Boot properties**. A boot connection property configures features of a SnappyData member, and can only be applied with the first connection that starts a SnappyData member. You can specify boot properties when you start a SnappyData member using the FabricServer API or snappy command, when you make the first connection to an embedded SnappyData member with the JDBC embedded driver, or when you use the `connect peer` command from an interactive `snappy` session to start a peer client. Boot properties have no effect when they are specified on connections to a member after the member has started. Boot properties have no effect when they are specified on a thin client connection.
 
+<!--
     -   For example, the [server-groups](server-groups.md) property configures a data store's server groups when the data store boots. If you specify `server-groups` on any subsequent connection to the data store, the server group configuration is not changed.
-    
+-->    
     -   **Client properties**. A client connection property configures features of the client connection itself, and can be used with the JDBC thin client drive (for example, using a JDBC thin client connection URL or the `connect client` command from an interactive `snappy` session).
 
 -   **System properties**. Certain SnappyData configuration properties *must* be specified either as Java system properties (using -J-D*property_name*=*property_value* with a `snappy` utility, or setting JAVA_ARGS="-D*property_name*=*property_value*" for an interactive `snappy` session). You cannot define these properties in a JDBC URL connection. Many of SnappyData system properties affect features of the SnappyData member at boot time, and can be optionally defined in the <span class="ph filepath">gemfirexd.properties</span> file. See the property description to determine whether or not a system property can be defined in <span class="ph filepath">gemfirexd.properties</span>.
@@ -171,17 +172,11 @@ Below is the list to all the configuration properties and links for each propert
 
 - [max-wait-time-reconnect](max-wait-time-reconnect.md)
 
-- [mcast-address](mcast-address.md)
-
 - [mcast-flow-control](mcast-flow-control.md)
-
-- [mcast-port](mcast-port.md)
 
 - [mcast-recv-buffer-size](mcast-recv-buffer-size.md)
 
 - [mcast-send-buffer-size](mcast-send-buffer-size.md)
-
-- [mcast-ttl](mcast-ttl.md)
 
 - [member-timeout](member-timeout.md)
 
@@ -208,8 +203,6 @@ Below is the list to all the configuration properties and links for each propert
 - [server-auth-provider](server-auth-provider.md)
 
 - [server-bind-address](server-bind-address.md)
-
-- [server-groups](server-groups.md)
 
 - [shutdown](shutdown.md)
 
@@ -333,3 +326,9 @@ Below is the list to all the configuration properties and links for each propert
 
 - [user](user.md)
 
+<!--
+[mcast-address](mcast-address.md) 
+[mcast-port](mcast-port.md) 
+[mcast-ttl](mcast-ttl.md) 
+[server-groups](server-groups.md) 
+-->

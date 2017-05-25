@@ -22,6 +22,24 @@ locators=hostName1[port1],name2[port2]
 !!! Note
 	On multi-homed hosts, this last notation uses the default address. If you use bind addresses for your locators, explicitly specify the addresses in the locators list - do not use just the hostname. 
 
+## Usage:
+To start multiple locators in a cluster modify the following files: 
+
+- **conf/locators**
+
+        localhost -peer-discovery-address=localhost -peer-discovery-port=3241 -locators=localhost:3242
+        localhost -peer-discovery-address=localhost -peer-discovery-port=3242 -locators=localhost:3241
+
+- **conf/servers**
+
+	    localhost -locators=localhost:3241,localhost:3242
+
+
+- **conf/leads**
+
+	    localhost -locators=localhost:3241,localhost:3242
+
+
 ## Default Value
 
 not set

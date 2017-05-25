@@ -152,15 +152,15 @@ pages:
 # -- Topic - Best Practices
 - 'Best practices': 'best_practices.md'
 - 'Best practices':
-    - 'Using Index': 'best_practices/using_index.md'
-    - 'Using Collocated Joins': 'best_practices/collocated_joins.md'
-#    - 'Using Char or Varchar string': 'best_practices/char_varchar_string.md'
-    - 'Physical designing with SnappyData': 'best_practices/physical_design.md'
-    - 'Using Row vs Column Tables': 'best_practices/use_row_column_table.md'
-    - 'Right Affinity Mode to Use': 'best_practices/affinity_mode_to_use.md'
-    - 'Capacity Planning': 'best_practices/capacity_planning.md'
+#    - 'Using Index': 'best_practices/using_index.md'
+#    - 'Using Collocated Joins': 'best_practices/collocated_joins.md'
+##    - 'Using Char or Varchar string': 'best_practices/char_varchar_string.md'
+#    - 'Physical designing with SnappyData': 'best_practices/physical_design.md'
+#    - 'Using Row vs Column Tables': 'best_practices/use_row_column_table.md'
+#    - 'Right Affinity Mode to Use': 'best_practices/affinity_mode_to_use.md'
+#    - 'Capacity Planning': 'best_practices/capacity_planning.md'
     - 'Preventing Disk Full Errors': 'best_practices/prevent_disk_full_errors.md'
-    - 'Design Database and Schema': 'best_practices/design_schema.md'
+#    - 'Design Database and Schema': 'best_practices/design_schema.md'
 #    - 'Design Database and Schema': 
 #        - 'Physical Design': 'best_practices/design_schema/physical_design.md'
 #        - 'Using Row and Column Table': 'best_practices/design_schema/row_column_table.md'
@@ -218,8 +218,8 @@ pages:
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'pgm_guide/user_defined_function.md' 
 # -- Topic - Montioring Dashboard
 - 'Managing and Monitoring': 'monitoring.md'
-- 'Managing and Monitoring': 
-    - 'Topics to Decide': 'monitoring/monitor.md'
+#- 'Managing and Monitoring': 
+#    - 'Topics to Decide': 'monitoring/monitor.md'
 # -- Topic - Troubleshooting
 - 'Troubleshooting and Analysis': 'troubleshooting.md'
 - 'Troubleshooting and Analysis': 
@@ -366,10 +366,10 @@ pages:
         - 'max-wait-time-reconnect': 'reference/configuration_parameters/max-wait-time-reconnect.md'
         - 'mcast-address': 'reference/configuration_parameters/mcast-address.md'
         - 'mcast-flow-control': 'reference/configuration_parameters/mcast-flow-control.md'
-        - 'mcast-port': 'reference/configuration_parameters/mcast-port.md'
+#        - 'mcast-port': 'reference/configuration_parameters/mcast-port.md'
         - 'mcast-recv-buffer-size': 'reference/configuration_parameters/mcast-recv-buffer-size.md'
         - 'mcast-send-buffer-size': 'reference/configuration_parameters/mcast-send-buffer-size.md'
-        - 'mcast-ttl': 'reference/configuration_parameters/mcast-ttl.md'
+#        - 'mcast-ttl': 'reference/configuration_parameters/mcast-ttl.md'
         - 'member-timeout': 'reference/configuration_parameters/member-timeout.md'
         - 'membership-port-range': 'reference/configuration_parameters/membership-port-range.md'
         - 'password': 'reference/configuration_parameters/password.md'
@@ -383,7 +383,7 @@ pages:
         - 'security-peer-verifymember-timeout': 'reference/configuration_parameters/security-peer-verifymember-timeout.md'
         - 'server-auth-provider': 'reference/configuration_parameters/server-auth-provider.md'
         - 'server-bind-address': 'reference/configuration_parameters/server-bind-address.md'
-        - 'server-groups': 'reference/configuration_parameters/server-groups.md'
+#        - 'server-groups': 'reference/configuration_parameters/server-groups.md'
         - 'shutdown': 'reference/configuration_parameters/shutdown.md'
         - 'single-hop-enabled': 'reference/configuration_parameters/single-hop-enabled.md'
         - 'skip-constraint-checks': 'reference/configuration_parameters/skip-constraint-checks.md'

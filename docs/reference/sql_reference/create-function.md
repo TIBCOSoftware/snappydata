@@ -18,7 +18,7 @@ You can extend any one of the interfaces in the package `org.apache.spark.sql.ap
 	For input/output types: </br> The framework always returns the Java types to the UDFs. So, if you are writing `scala.math.BigDecimal` as an input type or output type, an exception is reported. You can use `java.math.BigDecimal` in the SCALA code.
 
 
-### Return Types to UDF Program Type Mapping
+** Return Types to UDF Program Type Mapping**
 
 | SnappyData Type | UDF Type |
 | --- | --- |

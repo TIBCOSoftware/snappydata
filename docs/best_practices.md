@@ -27,13 +27,13 @@ This section presents advice on the optimal way to use SnappyData. It also gives
 
 To determine the configuration that is best suited for your environment some experimentation and testing is required involving representative data and workload.
 
-Before we start, we have to make some assumptions; otherwise, there are just too many parameters to deal with.
+Before we start, we have to make some assumptions:
 
 1. Data will be in memory: <mark>How much in memory.</mark>
 
 2. Concurrency:  <mark>Short running queries or long running queries.</mark>
 
-## Forecasting, Capacity planning, and Management
+## Capacity Planning
 
 The first rule to observe when planning is to know that no one size fits all capacity planning, as different customers have different requirement and the best solution is to create a plan that is most suitable for your environment. Therefore, capacity planning has been a critical component of successful implementations.
 
@@ -53,7 +53,7 @@ Capacity planning involves:
 
 * The capacity of each node in terms of memory
 
-### 1. Management of cores
+### Management of cores
 
 Number of cores = Concurrent tasks as executor can run 
 
@@ -76,7 +76,7 @@ Let's assign free slots= 14 (slightly greater than the number of cores is a good
 
 maxMapTasks=8, maxReduceTasks=6.
 
-### 2. Off-Heap and On-Heap
+### Off-Heap and On-Heap
 
 SnappyData supports two distinct data eviction policies
 Memory management is the process of allocating new objects and removing unused objects, to make space for those new object allocations. Java objects reside in an area called the heap. The heap is created when the JVM starts up and may increase or decrease in size while the application runs.
@@ -104,7 +104,7 @@ For example, -heap-size=1024m. </br>If you use the -heap-size option, by default
 
 <mark>Follow up with rishi/sumedh to find out exact settings for offheap and on heap and also recommendations.</mark>
 
-### 3. HA considerations -
+### HA Considerations
 Tables can have redundant copies. So you need to decide how many redundant copies you want. In the case of server HA, there is always another server that can provide you data.
 
 **Lead HA** - A secondary lead. Becomes primary when the first one dies. Currently, the running query is not re-tried and has to be resubmitted. But the future queries will be taken care of. 
@@ -119,12 +119,12 @@ Adding a data server is supported from the snappy-shell. The new data server joi
 Removing a data server is supported from the snappy-shell. 	
 When a server is removed and if there is redundancy, the partitions on the removed server are automatically retried on the other servers where they are hosted. The running jobs pass eventually. Jobs running on the server are automatically restarted by the lead node.
 
-### 4. Encoding of column tables
+### Encoding of column tables
 We have dictionary encoding.
 
 <mark>Hemant will check if integers are delta encoded. We are not efficient as parquet.</mark>
 
-### 5. Concurrency
+### Concurrency
 Within SnappyData, multiple “jobs” may be running concurrently if they were submitted by different threads. This is common if your application is serving requests over the network. SnappyData includes a fair scheduler to schedule resources within each SnappyContext.
 
 **Fair scheduler**: 
@@ -133,14 +133,14 @@ When a query is executed, the query is routed to the lead node which then commun
 
 <mark>The Fair Scheduler contains the following configuration</mark>
 
-## Sizing process
+## Sizing Process
 Size recommendation based on queries and data is being taken care of by Volume testing. 
 
 <mark>Hemant to follow up! Will have to talk about how much data he would like to be only on disk.<mark>
 
 ## GC settings 
 
-<mark>Hemant to follow up!</mark>
+<mark>Hemant to follow up</mark>
 
 **Lead sizing** 
 Lead (better to have it on a single node) does not need memory for data but it should have enough memory to collect query results. To handle this, blocks of results are pushed on disk. select * from a table can cause lead OOM. 
@@ -154,9 +154,13 @@ Not compute heavy. Not memory heavy.
 ## Database design (schema definition):
 
 ### Table structure
+
 ### Redundancy
+
 ### Row table/column table/replicated tables
+
 ### Persistent
+
 ### Overflow configuration
 
 ## RECOVERY/RESTART
@@ -165,14 +169,19 @@ ORDER OF RESTART
 ## Affinity Mode to Use
 The real labor of the big data resource involved collecting and organizing complex data so that the resource would be ready for your query.
 
-## Loading data from external repositories
+## Loading data from External Repositories
 
 ## Back up and Restore
 
+<mark>
 ASSESS 
+
 PLAN 
+
 DESIGN 
+
 IMPLEMENT
+</mark>
 
 <mark>Jags Comment </mark>
 
