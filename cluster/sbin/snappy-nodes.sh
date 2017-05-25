@@ -92,14 +92,16 @@ if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
 fi
 
+default_loc_port=10334
+
 function readalllocators { 
   retVal=
   while read loc || [[ -n "${loc}" ]]; do
     [[ -z "$(echo $loc | grep ^[^#] | grep -v ^$ )"  ]] && continue
     if [ -n "$(echo $loc | grep peer-discovery-port)" ]; then
-      retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*peer-discovery-port *= *\([^ ]*\).*#\1:\2#g")"
+      retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*peer-discovery-port\s*=\s*\([^ ]*\).*#\1:\2#g")"
     else
-      retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*#\1:10334#g")"
+      retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*#\1:$default_loc_port#g")"
     fi
   done < "${SPARK_CONF_DIR}/locators" 
   echo ${retVal#","}
@@ -108,7 +110,7 @@ function readalllocators {
 if [ -f "${SPARK_CONF_DIR}/locators" ]; then
   LOCATOR_ARGS="-locators="$(readalllocators)
 else
-  LOCATOR_ARGS="-locators=localhost[10334]"
+  LOCATOR_ARGS="-locators=localhost[$default_loc_port]"
 fi
 
 MEMBERS_FILE="$SPARK_HOME/work/members.txt"
@@ -132,7 +134,7 @@ function execute() {
       if [[ "${componentType}" == "locator" && -z "$(echo  $args $"${@// /\\ }" | grep 'start-locator=')" ]]; then
         port=$(echo $args | grep -woP "peer-discovery-port=.*?[^ ]" | sed 's#peer-discovery-port=##g')
         if [ -z "$port" ]; then
-          port=10334
+          port=$default_loc_port
         fi
         args="${args} -start-locator=$host:$port"
       fi
