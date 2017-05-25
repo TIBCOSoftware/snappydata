@@ -602,12 +602,20 @@ object SplitSnappyClusterDUnitTest
     val testDF = snc.range(10000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar" +
         "(10))) as sym")
     testDF.write.insertInto("snappyTable")
+    // TODO: Fix this. Sleep added to make sure that stats are
+    // generated on the embedded cluster and the smart connector
+    // mode is able to get those. Ideally if table stats are not
+    // present connector should send the table name and
+    // get those from embedded side
+    Thread.sleep(21000)
     val stats = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000000, stats.getRowCount)
     for (i <- 1 to 100) {
       snc.sql(s"insert into snappyTable values($i,'Test$i')")
     }
+    // TODO: Fix this. See the above comment about fixing stats issue
+    Thread.sleep(21000)
     val stats1 = SnappyTableStatsProviderService.getService.
         getAggregatedStatsOnDemand._1("APP.SNAPPYTABLE")
     Assert.assertEquals(10000100, stats1.getRowCount)

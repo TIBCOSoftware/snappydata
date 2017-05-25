@@ -147,7 +147,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
     logInfo("CREATING TABLE USING SMART CONNECTOR")
     vm3.invoke(classOf[SmartConnectorFunctions],
-      "createTablesUsingConnector", ClusterManagerTestBase.locPort)
+      "createTablesUsingConnector", locatorNetPort)
     Thread.sleep(20000)
     runtpchMultipleTimes(snc)
   }
