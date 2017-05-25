@@ -36,7 +36,7 @@ object SmartConnectorFunctions {
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-        .set("snappydata.Cluster.URL", s"localhost:$locatorNetPort")
+        .set("snappydata.connection", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
@@ -51,7 +51,7 @@ object SmartConnectorFunctions {
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-        .set("snappydata.Cluster.URL", s"localhost:$locatorNetPort")
+        .set("snappydata.connection", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
@@ -73,7 +73,7 @@ object SmartConnectorFunctions {
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.extraClassPath",
           SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-        .set("snappydata.Cluster.URL", s"localhost:$locatorNetPort")
+        .set("snappydata.connection", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)

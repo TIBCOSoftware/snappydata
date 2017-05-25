@@ -1014,13 +1014,13 @@ object SnappyContext extends Logging {
 //          else SplitClusterMode(sc, url)
           else throw new SparkException(
           s"Invalid configuration parameter ${Property.Locators}. " +
-              s"Use paramater ${Property.ClusterURL} for smart connector mode")
+              s"Use paramater ${Property.SnappyConnection} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
           else SplitClusterMode(sc, url)
-      }).orElse(Property.ClusterURL.getOption(conf).collectFirst {
+      }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
           val p = hostPort.split(":")
           if (p.length != 2 ) {

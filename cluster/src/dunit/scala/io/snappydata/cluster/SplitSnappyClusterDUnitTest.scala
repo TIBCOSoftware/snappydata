@@ -537,7 +537,7 @@ object SplitSnappyClusterDUnitTest
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("spark.testing.reservedMemory", "0")
         .set("spark.sql.autoBroadcastJoinThreshold", "-1")
-        .set("snappydata.Cluster.URL", connectionURL)
+        .set("snappydata.connection", connectionURL)
     conf.getAll.foreach(println)
 
     val sc = SparkContext.getOrCreate(conf)
