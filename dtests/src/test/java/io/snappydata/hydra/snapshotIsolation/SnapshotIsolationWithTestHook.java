@@ -20,6 +20,8 @@ import util.TestException;
 
 public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
 
+  final ScanTestHook testHook = new ScanTestHook();
+
   public static SnapshotIsolationWithTestHook testHookInstance;
 
   public static void HydraTask_initializeTestHook() {
@@ -30,7 +32,6 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
   }
 
   public void initializeTestHook() {
-    ScanTestHook testHook = new ScanTestHook();
     String addr = HostHelper.getHostAddress();
     int port = PortHelper.getRandomPort();
     String endpoint = addr + ":" + port;
@@ -72,6 +73,7 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     try {
       String url = "jdbc:snappydata:";
       Connection conn = DriverManager.getConnection(url);
+      waitForBarrier(2);
       GemFireCacheImpl.getInstance().waitOnScanTestHook();
       int numRowsInserted = (int)SnapshotIsolationBB.getBB().getSharedCounters().read
           (SnapshotIsolationBB.numRowsInserted);
@@ -108,6 +110,32 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     return rowCount;
   }
 
+  public int doBatchInsert() {
+    int batchSize = 100;
+    try {
+      Connection conn = getLocatorConnection();
+      String[] dmlTable = SnapshotIsolationPrms.getDMLTables();
+      int n = new Random().nextInt(dmlTable.length);
+      String tableName = dmlTable[n];
+      PreparedStatement snappyPS = null;
+      String insertStmt = SnapshotIsolationPrms.getInsertStmts()[n];
+      Log.getLogWriter().info("Performing batch insert on table " + tableName + " with batch size: " +
+          batchSize);
+      for (int i = 0; i < batchSize; i++) {
+        String row = getRowFromCSV(tableName, n);
+        if (testUniqueKeys)
+          row = row + "," + getMyTid();
+        snappyPS = getPreparedStatement(conn, snappyPS, tableName, insertStmt, row);
+        snappyPS.addBatch();
+      }
+      Log.getLogWriter().info("Executing batch insert in snappy");
+      int updateCnt[] =  snappyPS.executeBatch();
+      Log.getLogWriter().info("Inserted " + updateCnt.length + " rows.");
+    }catch(SQLException se){
+      throw new TestException("Got exception while performing batch insert.",se);
+    }
+    return batchSize;
+  }
   /*
    Hydra task to execute select queries
   */
@@ -116,10 +144,12 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
   }
 
   public void executeQuery() {
+
     try {
       String url = "jdbc:snappydata:";
       Connection conn = DriverManager.getConnection(url);
-
+      waitForBarrier(2);
+      Thread.sleep(500);
       int rowCnt = 0, numRowsInserted = 0;
       String query = SnapshotIsolationPrms.getSelectStmts();
       ResultSet snappyRS;
@@ -148,6 +178,8 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
       closeConnection(conn);
     } catch (SQLException se) {
       throw new TestException("Got exception while executing select query.", se);
+    } catch(InterruptedException ie){
+      throw new TestException("Got exception in sleep.", ie);
     }
   }
 
@@ -158,22 +190,22 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     public void notifyOperationLock() {
       synchronized (operationLock) {
         operationLock.notify();
-        Log.getLogWriter().info("Got notified for OperationLock");
+        Log.getLogWriter().info("Notification sent to select");
       }
     }
 
     public void notifyTestLock() {
       synchronized (lockForTest) {
         lockForTest.notify();
-        Log.getLogWriter().info("Got notified for TestLock");
+        Log.getLogWriter().info("Notification sent to insert");
       }
     }
 
     public void waitOnTestLock() {
       try {
         synchronized (lockForTest) {
-          Log.getLogWriter().info("Waiting for TestLock");
-          lockForTest.wait();
+          Log.getLogWriter().info("Insert statement is waiting");
+          lockForTest.wait(20000);
         }
       } catch (InterruptedException ex) {
         ex.printStackTrace();
@@ -183,8 +215,8 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     public void waitOnOperationLock() {
       try {
         synchronized (operationLock) {
-          Log.getLogWriter().info("Waiting for OperationLock");
-          operationLock.wait();
+          Log.getLogWriter().info("Select statement waiting");
+          operationLock.wait(20000);
         }
       } catch (InterruptedException ex) {
         ex.printStackTrace();
