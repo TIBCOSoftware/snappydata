@@ -19,19 +19,16 @@ package org.apache.spark.sql
 import java.nio.ByteBuffer
 import java.sql.SQLException
 
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.cache.LowMemoryException
+import com.gemstone.gemfire.internal.ByteBufferDataOutput
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.util.NonEvictingByteBufferDataOutput
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-
 import org.apache.spark.io.CompressionCodec
+import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
@@ -47,7 +44,14 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark.{Logging, NarrowDependency, ShuffleDependency, SparkContext, SparkEnv, SparkException, TaskContext}
+import org.apache.spark._
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
@@ -360,15 +364,15 @@ object CachedDataFrame
   override def read(kryo: Kryo, input: Input): Unit = {}
 
   private def flushBufferOutput(bufferOutput: Output, position: Int,
-      output: Output, codec: CompressionCodec): Unit = {
+      output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
     if (position > 0) {
       val compressedBytes = Utils.codecCompress(codec,
         bufferOutput.getBuffer, position)
       val len = compressedBytes.length
       // write the uncompressed length too
-      output.writeVarInt(position, true)
-      output.writeVarInt(len, true)
-      output.writeBytes(compressedBytes, 0, len)
+      output.write(position)
+      output.write(len)
+      output.write(compressedBytes, 0, len)
       bufferOutput.clear()
     }
   }
@@ -378,7 +382,9 @@ object CachedDataFrame
     var count = 0
     val buffer = new Array[Byte](4 << 10) // 4K
     // final output is written to this buffer
-    val output = new Output(4 << 10, -1)
+    val output = new NonEvictingByteBufferDataOutput(4 << 10,
+      DirectBufferAllocator.instance(),
+      null)
     // holds intermediate bytes which are compressed and flushed to output
     val maxOutputBufferSize = 64 << 10 // 64K
     // can't enforce maxOutputBufferSize due to a row larger than that limit
@@ -397,14 +403,29 @@ object CachedDataFrame
       count += 1
     }
     flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
-    if (count > 0) {
-      if (output.position() == output.getBuffer.length) {
-        new PartitionResult(output.getBuffer, count)
+
+    try {
+      if (count > 0) {
+        val finalBuffer = output.getBufferRetain
+        finalBuffer.flip
+        val memSize = finalBuffer.limit()
+        // Ask UMM before getting the array to heap.
+        // Taking unroll memory as this cleaned up on task completion.
+        // On connector mode also this should account to the overall memory usage
+        if (!SparkEnv.get.memoryManager.acquireUnrollMemory(
+          MemoryManagerCallback.cachedDFBlockId,
+          memSize,
+          MemoryMode.ON_HEAP)) {
+          throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
+            java.util.Collections.emptySet())
+        }
+
+        new PartitionResult(ClientSharedUtils.toBytes(finalBuffer), count)
       } else {
-        new PartitionResult(output.toBytes, count)
+        new PartitionResult(Array.empty, 0)
       }
-    } else {
-      new PartitionResult(Array.empty, 0)
+    } finally {
+        output.release
     }
   }
 

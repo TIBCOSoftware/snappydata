@@ -313,7 +313,7 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       taskAttemptId: Long,
       memoryMode: MemoryMode): Long = synchronized {
-    logDebug(s"Acquiring $managerId memory for $taskAttemptId = $numBytes")
+    logDebug(s"Acquiring $managerId $memoryMode memory for $taskAttemptId = $numBytes")
     assertInvariants()
     assert(numBytes >= 0)
     val (executionPool, storagePool, storageRegionSize, maxMemory,
@@ -407,6 +407,15 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes, taskAttemptId, maybeGrowExecutionPool, computeMaxExecutionPoolSize)
   }
 
+  override def acquireUnrollMemory(
+                                    blockId: BlockId,
+                                    numBytes: Long,
+                                    memoryMode: MemoryMode): Boolean = synchronized {
+    logDebug(s"Acquiring $numBytes bytes from UnRollMemory from $managerId, mode = $memoryMode")
+    val evictionEnabled = !blockId.equals(MemoryManagerCallback.cachedDFBlockId)
+    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null,
+      shouldEvict = evictionEnabled)
+  }
 
   override def acquireStorageMemory(
       blockId: BlockId,
@@ -549,7 +558,8 @@ class SnappyUnifiedMemoryManager private[memory](
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = {
-    logDebug(s"Acquiring $managerId memory for $objectName = $numBytes (evict=$shouldEvict)")
+    logDebug(s"Acquiring $managerId $memoryMode memory " +
+      s"for $objectName = $numBytes (evict=$shouldEvict)")
     if (buffer ne null) {
       if (buffer.freeMemory() > numBytes) {
         buffer.incMemoryUsed(numBytes)

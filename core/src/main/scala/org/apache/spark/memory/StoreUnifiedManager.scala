@@ -119,6 +119,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 object MemoryManagerCallback extends Logging {
 
   val storageBlockId = TestBlockId("SNAPPY_STORAGE_BLOCK_ID")
+  val cachedDFBlockId = TestBlockId("SNAPPY_CACHED_DF_BLOCK_ID")
 
   val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
 

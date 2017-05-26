@@ -17,17 +17,21 @@
 
 package org.apache.spark.memory
 
+import java.nio.charset.StandardCharsets
 import java.sql.SQLException
 
-import scala.actors.Futures._
+import com.gemstone.gemfire.cache.LowMemoryException
 
+import scala.actors.Futures._
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-
 import org.apache.spark.SparkEnv
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
+import org.apache.spark.unsafe.types.UTF8String
 
 
 class SnappyMemoryAccountingSuite extends MemoryFunSuite {
@@ -581,6 +585,35 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val count = snSession.sql("select * from t1").count()
     assert(count == 500)
     snSession.dropTable("t1")
+  }
+
+
+  test("CachedDataFrame accounting") {
+    val sparkSession = createSparkSession(1, 0, 1000)
+    //val snSession = new SnappySession(sparkSession.sparkContext)
+
+    val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
+    val converter = UnsafeProjection.create(fieldTypes)
+
+    val row = new SpecificMutableRow(fieldTypes)
+    row.setLong(0, 0)
+    row.update(1, UTF8String.fromString("Hello"))
+    row.update(2, "World".getBytes(StandardCharsets.UTF_8))
+
+    val unsafeRow: UnsafeRow = converter.apply(row)
+
+    /*SparkEnv.get.memoryManager.
+      asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)*/
+    // assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0 )
+    SparkEnv.get.memoryManager
+      .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 800, memoryMode)
+
+    try {
+      CachedDataFrame(null, Seq(unsafeRow).iterator)
+      assert(false , "Should not have obtained memory")
+    } catch {
+      case lme : LowMemoryException => //Success
+    }
   }
 
 
