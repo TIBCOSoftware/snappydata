@@ -47,6 +47,9 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
     rowCount = ctx.freshName("rowCount")
     result = ctx.freshName("result")
     ctx.addMutableState("int", result, s"$result = -1;")
+    val numInsertedRowsMetric = if (onExecutor) null
+    else metricTerm(ctx, "numInsertedRows")
+    val numInsertions = ctx.freshName("numInsertions")
     val connectionClass = classOf[Connection].getName
     val statementClass = classOf[PreparedStatement].getName
     val utilsClass = ExternalStoreUtils.getClass.getName
@@ -95,7 +98,10 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
        |  $stmtCode
        |  $childProduce
        |  if ($rowCount > 0) {
-       |    $result += $stmt.executeBatch().length;
+       |    final int $numInsertions = $stmt.executeBatch().length;
+       |    $result += $numInsertions;
+       |    ${if (numInsertedRowsMetric eq null) ""
+              else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |  }
        |  $stmt.close();
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
@@ -112,6 +118,9 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
     val structFieldClass = classOf[StructField].getName
     val batchSize = connProps.executorConnProps
         .getProperty("batchsize", "1000").toInt
+    val numInsertedRowsMetric = if (onExecutor) null
+    else metricTerm(ctx, "numInsertedRows")
+    val numInsertions = ctx.freshName("numInsertions")
     s"""
        |final $structFieldClass[] $schemaFields = $schemaTerm.fields();
        |${CodeGeneration.genStmtSetters(tableSchema.fields,
@@ -119,7 +128,10 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
        |$rowCount++;
        |$stmt.addBatch();
        |if (($rowCount % $batchSize) == 0) {
-       |  $result += $stmt.executeBatch().length;
+       |  final int $numInsertions = $stmt.executeBatch().length;
+       |  $result += $numInsertions;
+       |  ${if (numInsertedRowsMetric eq null) ""
+            else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |  $rowCount = 0;
        |}
     """.stripMargin

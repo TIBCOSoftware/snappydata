@@ -40,7 +40,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val pageHeaderText : String  = SnappyDashboardPage.pageHeaderText
 
     var clusterStatsMap = scala.collection.mutable.HashMap.empty[String, Any]
-    clusterStatsMap += ("status" -> SnappyDashboardPage.status.normal)
+    clusterStatsMap += ("status" -> SnappyDashboardPage.Status.normal)
     clusterStatsMap += ("numMembers" -> 0)
     clusterStatsMap += ("numLeads" -> 0)
     clusterStatsMap += ("numLocators" -> 0)
@@ -164,7 +164,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   }
 
-  private def createPageTitleNode(title:String): Seq[Node] = {
+  private def createPageTitleNode(title: String): Seq[Node] = {
 
     val sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss")
     val lastUpdatedOn = sdf.format(new Date())
@@ -179,7 +179,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def createTitleNode(title:String, tooltip:String): Seq[Node] = {
+  private def createTitleNode(title: String, tooltip: String): Seq[Node] = {
     <div class="row-fluid">
       <div class="span12">
         <h4 style="vertical-align: bottom; display: inline-block;">
@@ -191,7 +191,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   }
 
 
-  private def clusterStats(clusterDetails:mutable.Map[String, Any]): Seq[Node] = {
+  private def clusterStats(clusterDetails: mutable.Map[String, Any]): Seq[Node] = {
 
     val status = clusterDetails.getOrElse("status", "")
     val statusNode = {
@@ -258,7 +258,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def memberStats(membersBuf: mutable.Map[String,mutable.Map[String, Any]]): Seq[Node] = {
+  private def memberStats(membersBuf: mutable.Map[String, mutable.Map[String, Any]]): Seq[Node] = {
     <div>
       <table class="table table-bordered table-condensed table-striped">
         <thead>
@@ -337,7 +337,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def connectorStats(sparkConnectors: mutable.Map[String,mutable.Map[String, Any]]): Seq[Node] = {
+  private def connectorStats(sparkConnectors: mutable.Map[String,
+      mutable.Map[String, Any]]): Seq[Node] = {
     <div>
       <table class="table table-bordered table-condensed table-striped">
         <thead>
@@ -451,7 +452,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   }
 
 
-  private def memberRow(memberDetails:mutable.Map[String, Any]): Seq[Node] = {
+  private def memberRow(memberDetails: mutable.Map[String, Any]): Seq[Node] = {
 
     val status = memberDetails.getOrElse("status","")
     val statusImgUri = if(status.toString.toLowerCase.equals("running")) {
@@ -537,7 +538,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </tr>
   }
 
-  private def connectorRow(memberDetails:mutable.Map[String, Any]): Seq[Node] = {
+  private def connectorRow(memberDetails: mutable.Map[String, Any]): Seq[Node] = {
 
     val nameOrId = {
       if(memberDetails.getOrElse("name","NA").equals("NA")
@@ -652,7 +653,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 object SnappyDashboardPage{
   val pageHeaderText = "SnappyData Dashboard"
 
-  object status {
+  object Status {
     val normal = "Normal"
     val warning = "Warning"
     val error = "Error"

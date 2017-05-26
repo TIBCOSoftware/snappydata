@@ -25,21 +25,18 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success}
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{Literal, LiteralValue, ParamLiteral, UnsafeProjection, UnsafeRow}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
@@ -73,7 +70,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   def queryPlanInfo: SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
     queryExecution.executedPlan transformAllExpressions {
-      case pl@ParamLiteral(_v, _dt, _p) =>
+      case ParamLiteral(_v, _dt, _p) =>
         val x = allLiterals.find(_.position == _p)
         val v = x match {
           case Some(LiteralValue(_, _, _)) => x.get.value
@@ -318,7 +315,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
         logDebug(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
-          case pl@ParamLiteral(_, _, p) =>
+          case ParamLiteral(_, _, p) =>
             val np = newpls.find(_.pos == p).getOrElse(pl)
             val x = ParamLiteral(np.value, np.dataType, p)
             x.considerUnequal = true
@@ -330,8 +327,8 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
         method.setAccessible(true)
         val bc = method.invoke(newbchj, tmpCtx)
         logDebug(s"replacing bc var = ${refs(broadcastIndex)} with " +
-            s"new bc = ${bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1}")
-        refs(broadcastIndex) = bc.asInstanceOf[Tuple2[Broadcast[_], String]]._1
+            s"new bc = ${bc.asInstanceOf[(Broadcast[_], String)]._1}")
+        refs(broadcastIndex) = bc.asInstanceOf[(Broadcast[_], String)]._1
       }
     }
     firstAccess = false

@@ -16,14 +16,11 @@
  */
 package org.apache.spark.serializer
 
-import java.io.{Serializable => JavaSerializable, ObjectOutputStream, ObjectInputStream}
-import java.lang.reflect.Method
+import java.io.{ObjectInputStream, ObjectOutputStream, Serializable => JavaSerializable}
 
-import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.factories.SerializerFactory
-import com.esotericsoftware.kryo.serializers.{JavaSerializer => KryoJavaSerializer, FieldSerializer =>
-KryoFieldSerializer}
-import com.esotericsoftware.kryo.{Serializer => KryoClassSerializer}
+import com.esotericsoftware.kryo.serializers.{FieldSerializer => KryoFieldSerializer, JavaSerializer => KryoJavaSerializer}
+import com.esotericsoftware.kryo.{Kryo, Serializer => KryoClassSerializer}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 
 /**
@@ -37,29 +34,30 @@ class SnappyKryoSerializerFactory extends SerializerFactory {
   override def makeSerializer(kryo: Kryo, clazz: Class[_]): KryoClassSerializer[_] = {
     if (isJavaSerializerRequired(clazz)) return new KryoJavaSerializer()
     val fieldSerializer: KryoFieldSerializer[Nothing] = new KryoFieldSerializer(kryo, clazz)
-    return fieldSerializer;
+    fieldSerializer
   }
 
   private def isJavaSerializerRequired(clazz: Class[_]): Boolean = {
 
     if (classOf[JavaSerializable].isAssignableFrom(clazz)) {
-      return (hasInheritableReadWriteMethods(clazz, "writeReplace", classOf[AnyRef]) ||
-        hasInheritableReadWriteMethods(clazz, "readResolve", classOf[AnyRef]) ||
-        hasInheritableReadWriteMethods(clazz, "readObject", Void.TYPE, classOf[ObjectInputStream]) ||
-        hasInheritableReadWriteMethods(clazz, "writeObject", Void.TYPE, classOf[ObjectOutputStream]))
+      hasInheritableReadWriteMethods(clazz, "writeReplace", classOf[AnyRef]) ||
+          hasInheritableReadWriteMethods(clazz, "readResolve", classOf[AnyRef]) ||
+          hasInheritableReadWriteMethods(clazz, "readObject",
+            Void.TYPE, classOf[ObjectInputStream]) ||
+          hasInheritableReadWriteMethods(clazz, "writeObject",
+            Void.TYPE, classOf[ObjectOutputStream])
     } else {
-      return false
+      false
     }
-
   }
 
   private def hasInheritableReadWriteMethods(clazz: Class[_], methodName: String,
-           returnType: Class[_], parameterTypes: Class[_]*): Boolean = {
+      returnType: Class[_], parameterTypes: Class[_]*): Boolean = {
     try {
-      return (ClientSharedUtils.getAnyMethod(clazz, methodName, returnType,
-        parameterTypes: _*) != null)
+      ClientSharedUtils.getAnyMethod(clazz, methodName, returnType,
+        parameterTypes: _*) != null
     } catch {
-      case nsme: NoSuchMethodException => return false;
+      case _: NoSuchMethodException => false;
     }
   }
 }
