@@ -104,7 +104,7 @@ case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
        |    final int $numOperations = $stmt.executeBatch().length;
        |    $result += $numOperations;
        |    ${if (numOpRowsMetric eq null) ""
-            else s"$numOpRowsMetric.${metricAdd(numOperations)};"}
+              else s"$numOpRowsMetric.${metricAdd(numOperations)};"}
        |  }
        |  $stmt.close();
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}

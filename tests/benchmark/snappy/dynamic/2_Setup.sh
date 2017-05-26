@@ -20,7 +20,7 @@ EOF
 echo "******************Created conf/leads*********************"
 
 cat > $SnappyData/conf/locators << EOF
-$locator -client-bind-address=$locator -dir=$locatorDir
+$locator -client-bind-address=$locator $locatorProperties -dir=$locatorDir
 EOF
 echo "******************Created conf/locators******************"
 

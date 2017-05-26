@@ -69,6 +69,8 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
+  private[sql] var disableStoreOptimizations : Boolean = false
+
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
