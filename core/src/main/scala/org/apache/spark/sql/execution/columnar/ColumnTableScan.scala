@@ -759,6 +759,7 @@ private[sql] final case class ColumnTableScan(
     val col = ctx.freshName("col")
     var bufferInit = ""
     var dictionaryAssignCode = ""
+    var stringAssignCode = ""
     var assignCode = ""
     var dictionary = ""
     var dictIndex = ""
@@ -786,9 +787,9 @@ private[sql] final case class ColumnTableScan(
         // initialize index to dictionaryLength - 1 where null value will
         // reside in case there are nulls in the current batch
         if (wideTable) {
-          jtDecl = s"UTF8String $col; $dictIndex = $dictionaryLen - 1;"
+          jtDecl = s"UTF8String $col = null; $dictIndex = $dictionaryLen - 1;"
         } else {
-          jtDecl = s"UTF8String $col; int $dictIndex = $dictionaryLen - 1;"
+          jtDecl = s"UTF8String $col = null; int $dictIndex = $dictionaryLen - 1;"
         }
 
         bufferInit =
@@ -801,10 +802,10 @@ private[sql] final case class ColumnTableScan(
         val nullCheckAddon =
           if (notNullVar != null) s"if ($notNullVar < 0) $nullVar = $col == null;\n"
           else ""
-        assignCode =
+        stringAssignCode =
             s"($dictionary != null ? $dictionary[$dictIndex] " +
-                s": $decoder.readUTF8String($buffer, $cursorVar));\n" +
-                s"$nullCheckAddon"
+                s": $decoder.readUTF8String($buffer, $cursorVar));\n"
+        assignCode = stringAssignCode + s"$nullCheckAddon"
 
         s"$dictionaryAssignCode\n$col = $assignCode;"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
@@ -859,7 +860,7 @@ private[sql] final case class ColumnTableScan(
               if ($notNullVar == 0) {
                 $nullVar = true;
               } else {
-                $dictionaryAssignCode
+                $col = $stringAssignCode;
                 $nullVar = $decoder.wasNull();
               }
             }
