@@ -56,6 +56,8 @@ abstract class ClusterManagerTestBase(s: String)
   // bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
+  bootProps.setProperty("spark.executor.cores",
+    math.min(8, Runtime.getRuntime.availableProcessors()).toString)
   // Keeping it as default for all other dunits as it can create
   // issues like interacting with heap monitor.
   bootProps.setProperty("spark.memory.manager", "default")
