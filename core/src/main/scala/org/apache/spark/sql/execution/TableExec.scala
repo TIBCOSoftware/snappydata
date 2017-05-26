@@ -73,10 +73,12 @@ abstract class TableExec(override val child: SparkPlan,
     } else UnspecifiedDistribution :: Nil
   }
 
+  protected def opType: String = "Inserted"
+
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
-    else Map("numInsertedRows" -> SQLMetrics.createMetric(sparkContext,
-      "number of inserted rows"))
+    else Map(s"num${opType}Rows" -> SQLMetrics.createMetric(sparkContext,
+      s"number of ${opType.toLowerCase} rows"))
   }
 
   override protected def doExecute(): RDD[InternalRow] = {

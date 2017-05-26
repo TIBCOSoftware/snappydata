@@ -1,2 +1,0 @@
-org.apache.spark.sql.streaming.jdbc.JdbcStreamProvider
-org.apache.spark.sql.streaming.jdbc.SnappyStoreSinkProvider

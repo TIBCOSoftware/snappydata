@@ -47,6 +47,8 @@ case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
     rowCount = ctx.freshName("rowCount")
     result = ctx.freshName("result")
     ctx.addMutableState("int", result, s"$result = -1;")
+    val numOpRowsMetric = if (onExecutor) null else metricTerm(ctx, s"num${opType}Rows")
+    val numOperations = ctx.freshName("numOperations")
     val connectionClass = classOf[Connection].getName
     val statementClass = classOf[PreparedStatement].getName
     val utilsClass = ExternalStoreUtils.getClass.getName
@@ -99,7 +101,10 @@ case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
        |  $stmtCode
        |  $childProduce
        |  if ($rowCount > 0) {
-       |    $result += $stmt.executeBatch().length;
+       |    final int $numOperations = $stmt.executeBatch().length;
+       |    $result += $numOperations;
+       |    ${if (numOpRowsMetric eq null) ""
+            else s"$numOpRowsMetric.${metricAdd(numOperations)};"}
        |  }
        |  $stmt.close();
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
@@ -116,6 +121,8 @@ case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
     val structFieldClass = classOf[StructField].getName
     val batchSize = connProps.executorConnProps
         .getProperty("batchsize", "1000").toInt
+    val numOpRowsMetric = if (onExecutor) null else metricTerm(ctx, s"num${opType}Rows")
+    val numOperations = ctx.freshName("numOperations")
     s"""
        |final $structFieldClass[] $schemaFields = $schemaTerm.fields();
        |${CodeGeneration.genStmtSetters(tableSchema.fields,
@@ -123,20 +130,29 @@ case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
        |$rowCount++;
        |$stmt.addBatch();
        |if (($rowCount % $batchSize) == 0) {
-       |  $result += $stmt.executeBatch().length;
+       |    final int $numOperations = $stmt.executeBatch().length;
+       |    $result += $numOperations;
+       |    ${if (numOpRowsMetric eq null) ""
+            else s"$numOpRowsMetric.${metricAdd(numOperations)};"}
        |  $rowCount = 0;
        |}
     """.stripMargin
   }
 
-  override def nodeName: String = {
-    if(upsert) {
-      "RowUpsert"
-    } else if (delete) {
-      "RowDelete"
-    } else {
-      "RowInsert"
-    }
+  override def opType: String = if (upsert) {
+    "Upserted"
+  } else if (delete) {
+    "Deleted"
+  } else {
+    "Inserted"
+  }
+
+  override def nodeName: String = if (upsert) {
+    "RowUpsert"
+  } else if (delete) {
+    "RowDelete"
+  } else {
+    "RowInsert"
   }
 
   override def simpleString: String = nodeName + tableSchema.mkString(",")
