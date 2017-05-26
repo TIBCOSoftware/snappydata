@@ -233,7 +233,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       case StringType =>
         if (stringMap eq null) {
           // assume some level of compression with dictionary encoding
-          val mapSize = 1024
+          val mapSize = math.min(math.max(initSize >>> 1, 128), 1024)
           // keySize is 4 since need to store dictionary index
           stringMap = new ByteBufferHashMap(mapSize, 0.6, 4,
             StringType.defaultSize, allocator)
@@ -244,7 +244,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         }
       case t =>
         // assume some level of compression with dictionary encoding
-        val mapSize = if (longMap ne null) longMap.size else 1024
+        val mapSize = if (longMap ne null) longMap.size
+        else math.min(math.max(initSize >>> 1, 128), 1024)
         longMap = new ObjectHashSet[LongIndexKey](mapSize, 0.6, 1, false)
         longArray = new TLongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
