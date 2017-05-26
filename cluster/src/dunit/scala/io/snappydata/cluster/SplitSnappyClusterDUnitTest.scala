@@ -29,6 +29,7 @@ import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import io.snappydata.util.TestUtils
 import org.junit.Assert
 
 import org.apache.spark.sql._
@@ -536,6 +537,7 @@ object SplitSnappyClusterDUnitTest
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.cores", TestUtils.defaultCores.toString)
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
           .set("spark.testing.reservedMemory", "0")
@@ -560,6 +562,7 @@ object SplitSnappyClusterDUnitTest
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.cores", TestUtils.defaultCores.toString)
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
           .set("spark.testing.reservedMemory", "0")
