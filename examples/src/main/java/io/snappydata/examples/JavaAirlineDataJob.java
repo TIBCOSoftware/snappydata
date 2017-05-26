@@ -33,7 +33,7 @@ import org.apache.spark.sql.types.StructType;
  * `$ sbin/start-all.sh`
  * <p/>
  * `$./bin/spark-submit --class io.snappydata.examples.JavaAirlineDataJob \
- * --master spark://<hostname>:7077 --conf snappydata.store.locators=localhost:10334 \
+ * --master spark://<hostname>:7077 --conf snappydata.connection=localhost:10334 \
  * $SNAPPY_HOME/examples/jars/quickstart.jar`
  *
  */
