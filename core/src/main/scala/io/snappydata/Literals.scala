@@ -179,7 +179,7 @@ object Property extends Enumeration {
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
-  val ClusterURL = Val[String](s"${Constant.PROPERTY_PREFIX}Cluster.URL",
+  val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +

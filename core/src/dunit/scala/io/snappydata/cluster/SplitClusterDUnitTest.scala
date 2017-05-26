@@ -77,12 +77,6 @@ class SplitClusterDUnitTest(s: String)
   override protected val productDir =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
-  // see comments in SNAP-606 about Apache Spark filtering out "spark.*"
-  // properties for this, so fails with just "snappydata." prefix
-  override protected val locatorProperty = "spark.snappydata.store.locators"
-
-  override protected val useThinClientConnector = false
-
   override protected def locatorClientPort = { testObject.locatorNetPort }
 
   override def beforeClass(): Unit = {

@@ -1011,13 +1011,16 @@ object SnappyContext extends Logging {
         case s if !s.isEmpty =>
           val url = "locators=" + s + ";mcast-port=0"
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SplitClusterMode(sc, url)
+//          else SplitClusterMode(sc, url)
+          else throw new SparkException(
+          s"Invalid configuration parameter ${Property.Locators}. " +
+              s"Use paramater ${Property.SnappyConnection} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
           else SplitClusterMode(sc, url)
-      }).orElse(Property.ClusterURL.getOption(conf).collectFirst {
+      }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
           val p = hostPort.split(":")
           if (p.length != 2 ) {
@@ -1099,7 +1102,6 @@ object SnappyContext extends Logging {
 
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
-      SmartConnectorHelper.close()
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
