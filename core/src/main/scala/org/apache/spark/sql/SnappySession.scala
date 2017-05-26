@@ -25,7 +25,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -36,7 +35,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -59,7 +57,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.internal.{CodeGenerationException, PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -361,6 +359,7 @@ class SnappySession(@transient private val sc: SparkContext,
   def clearPlanCache(): Unit = synchronized {
     SnappySession.clearSessionCache(id)
   }
+
 
   def clear(): Unit = synchronized {
     clearContext()
@@ -1839,6 +1838,7 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
         val session = key.session
+        session.sessionState.disableStoreOptimizations = false
         val df = session.executeSQL(key.sqlText)
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
@@ -1846,7 +1846,16 @@ object SnappySession extends Logging {
         if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
           (null, null)
         } else {
-          evaluatePlan(df, session, key.sqlText, key)
+          try {
+            evaluatePlan(df, session, key.sqlText, key)
+          } catch {
+            case e: CodeGenerationException => {
+              session.sessionState.disableStoreOptimizations = true
+              logInfo("Snappy Code generation failed. Falling back to Spark plans ")
+              val df = session.executeSQL(key.sqlText)
+              evaluatePlan(df, session, key.sqlText, key)
+            }
+          }
         }
       }
     }
