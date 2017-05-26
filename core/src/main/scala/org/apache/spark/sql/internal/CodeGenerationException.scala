@@ -14,23 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.cluster
-
-import org.apache.spark.sql.SnappySession
-
-class ThinConnectorSnappyDUnitTest(s: String)
-    extends SplitSnappyClusterDUnitTest(s) {
-
-  override protected val useThinClientConnector = true
-
-  override def testColumnTableStatsInSplitMode(): Unit = {
-    val snc = new SnappySession(sc)
-  }
-
-  override def testColumnTableStatsInSplitModeWithHA(): Unit = {
-    val snc = new SnappySession(sc)
-  }
-
-}
+package org.apache.spark.sql.internal
 
 
+class CodeGenerationException(msg : String) extends Exception(msg) {}

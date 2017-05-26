@@ -27,7 +27,6 @@ import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 import org.apache.spark.SparkEnv
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
@@ -241,8 +240,10 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     try {
       for (i <- 1 to 100) {
         val row = Row(100000000, 10000000, 10000000)
+        println(s"RowCount1 = $rows")
         snSession.insert("t1", row)
         rows += 1
+        println(s"RowCount2 = $rows")
       }
     } catch {
       case sqle: SQLException if sqle.getSQLState == "XCL54" =>
@@ -587,7 +588,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.dropTable("t1")
   }
 
-
   test("CachedDataFrame accounting") {
     val sparkSession = createSparkSession(1, 0, 1000)
 
@@ -611,8 +611,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
       case lme : LowMemoryException => //Success
     }
   }
-
-
 
   // @TODO Place holder for column partitioned tables. Enable them after Sumedh's changes
 

@@ -16,13 +16,10 @@
  */
 package org.apache.spark.sql.execution
 
+
 import java.util.Calendar
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
 import com.pivotal.gemfirexd.internal.iapi.types._
-
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -33,6 +30,10 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
+import org.apache.spark.sql.internal.CodeGenerationException
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.unsafe.types.UTF8String
 
 case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: SnappySession)
@@ -109,7 +110,19 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode], row: ExprCode): String =
     parent.doConsume(ctx, input, row)
 
-  override protected def doExecute(): RDD[InternalRow] = childPlan.execute()
+  override protected def doExecute(): RDD[InternalRow] = {
+    // This does not handle nested aggregates or joins. Should we handle ?
+    val repeatSeq = childPlan.collect {
+      case p: NonRecursivePlans => !p.producedForPlanInstance
+      case _ => true
+    }
+    val shouldExecute = repeatSeq.reduce((a , b) => a && b)
+    if (shouldExecute) {
+      childPlan.execute()
+    } else {
+      throw new CodeGenerationException("Code generation failed for some of the child plans")
+    }
+  }
 }
 
 object CachedPlanHelperExec extends Logging {

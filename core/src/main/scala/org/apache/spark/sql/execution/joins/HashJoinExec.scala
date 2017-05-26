@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
 import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
+
 import io.snappydata.collection.ObjectHashSet
 
 import org.apache.spark.annotation.DeveloperApi
@@ -60,9 +60,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     leftSizeInBytes: BigInt,
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
-    extends BinaryExecNode with HashJoin with BatchConsumer {
+    extends BinaryExecNode with HashJoin with BatchConsumer with NonRecursivePlans{
 
-  override def nodeName: String = "HashJoin"
+  override def nodeName: String = "SnappyHashJoin"
 
   @transient private var mapAccessor: ObjectHashMapAccessor = _
   @transient private var hashMapTerm: String = _
@@ -176,7 +176,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
+      .asInstanceOf[SnappySession])).execute()
   }
 
   // return empty here as code of required variables is explicitly instantiated
@@ -231,6 +232,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   override def inputRDDs(): Seq[RDD[InternalRow]] = streamSideRDDs
 
   override def doProduce(ctx: CodegenContext): String = {
+    startProducing
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 

@@ -31,7 +31,7 @@ object CreateAndLoadNWTablesSparkApp {
       val connectionURL = args(args.length - 1)
       conf = new SparkConf().
           setAppName("CreateAndLoadNWTablesSpark Application").
-          set("snappydata.Cluster.URL", connectionURL)
+          set("snappydata.connection", connectionURL)
     }
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)

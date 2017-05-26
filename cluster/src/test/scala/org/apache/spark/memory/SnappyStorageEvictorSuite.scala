@@ -58,12 +58,12 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
 
     assert(memoryManager.storageMemoryUsed == 500)
-    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_" -> memoryMode) == 500)
+    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_") == 500)
     memoryManager.releaseUnrollMemory(500, memoryMode)
 
     assert(memoryManager.getStoragePoolMemoryUsed(MemoryMode.OFF_HEAP) +
         memoryManager.getStoragePoolMemoryUsed(MemoryMode.ON_HEAP) == 0)
-    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_" -> memoryMode) == 0)
+    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_") == 0)
   }
 
 

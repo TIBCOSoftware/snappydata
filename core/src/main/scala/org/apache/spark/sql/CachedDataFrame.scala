@@ -22,11 +22,12 @@ import java.sql.SQLException
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
-import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.rdd.RDD
@@ -44,7 +45,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import org.apache.spark._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -318,7 +318,13 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
         logDebug(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
+<<<<<<< HEAD
           case pl @ ParamLiteral(v, dt, p) =>
+||||||| merged common ancestors
+          case pl@ParamLiteral(_, _, p) =>
+=======
+          case ParamLiteral(_, _, p) =>
+>>>>>>> master
             val np = newpls.find(_.pos == p).getOrElse(pl)
             val x = ParamLiteral(np.value, np.dataType, p)
             x.considerUnequal = true

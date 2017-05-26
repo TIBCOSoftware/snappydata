@@ -64,8 +64,8 @@ object SmartConnectorExample {
         .appName("SmartConnectorExample")
         // It can be any master URL
         .master("local[4]")
-        // snappydata.store.locators property enables the application to interact with SnappyData store
-        .config("snappydata.store.locators", "localhost:10334")
+        // snappydata.connection property enables the application to interact with SnappyData store
+        .config("snappydata.connection", "localhost:1527")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
