@@ -343,8 +343,7 @@ class SnappyUnifiedMemoryManager private[memory](
       val offHeap = memoryMode eq MemoryMode.OFF_HEAP
       if (extraMemoryNeeded > 0) {
 
-        if (!offHeap && SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed(
-          MemoryMode.ON_HEAP) + getExecutionPoolUsedMemory(MemoryMode.ON_HEAP))) {
+        if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return
@@ -406,16 +405,6 @@ class SnappyUnifiedMemoryManager private[memory](
     executionPool.acquireMemory(
       numBytes, taskAttemptId, maybeGrowExecutionPool, computeMaxExecutionPoolSize)
   }
-
-/*  override def acquireUnrollMemory(
-                                    blockId: BlockId,
-                                    numBytes: Long,
-                                    memoryMode: MemoryMode): Boolean = synchronized {
-    logDebug(s"Acquiring $numBytes bytes from UnRollMemory from $managerId, mode = $memoryMode")
-    val evictionEnabled = !blockId.equals(MemoryManagerCallback.cachedDFBlockId)
-    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null,
-      shouldEvict = evictionEnabled)
-  }*/
 
   override def acquireStorageMemory(
       blockId: BlockId,
@@ -506,12 +495,11 @@ class SnappyUnifiedMemoryManager private[memory](
         // @TODO Commenting the below code as it causes strange behaviour. Memory
         // allocation fails here , but somehow the query does not get cancelled.
 
-        /* if (!offHeap && SnappyMemoryUtils.isCriticalUp(getStoragePoolMemoryUsed(
-          MemoryMode.ON_HEAP) + getExecutionPoolUsedMemory(MemoryMode.ON_HEAP))) {
+         if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return false
-        } */
+        }
 
         if (shouldEvict) {
           // Sufficient memory could not be freed. Time to evict from SnappyData store.
