@@ -51,8 +51,6 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   val currenyLocatorPort = ClusterManagerTestBase.locPort
 
-  override protected val locatorProperty = "snappydata.store.locators"
-
   override protected val productDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
@@ -79,20 +77,20 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def testCollocatedJoinInSplitModeRowTable(): Unit = {
     testObject.createRowTableForCollocatedJoin()
-    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
+    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+
         "PR_TABLE1" :+ "PR_TABLE2" :+ Int.box(locatorClientPort))
   }
 
   def testCollocatedJoinInSplitModeColumnTable(): Unit = {
     testObject.createColumnTableForCollocatedJoin()
-    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty :+
+    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+
         "PR_TABLE3" :+ "PR_TABLE4" :+
         Int.box(locatorClientPort))
   }
   def testColumnTableStatsInSplitMode(): Unit = {
-    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
-    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "5" :+ Int.box(locatorClientPort))
   }
 
@@ -137,7 +135,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "splitModeTableCreate",
-      startArgs :+ locatorProperty :+
+      startArgs :+
           Int.box(locatorClientPort))
 
     assert(getShadowRegionSize(tblBatchSizeSmall) > 10,
@@ -177,7 +175,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testColumnTableStatsInSplitModeWithHA(): Unit = {
-    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ locatorProperty :+
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
     val props = bootProps
     val port = currenyLocatorPort
@@ -200,7 +198,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm1.invoke(restartServer)
 
     // Test using using 5 buckets
-    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+ port.toString :+
+    vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "5" :+ Int.box(locatorClientPort))
     vm0.invoke(classOf[ClusterManagerTestBase], "stopAny")
     var stats2 = SnappyTableStatsProviderService.getService.
@@ -217,7 +215,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     val snc = SnappyContext(sc)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "splitModeCreateTableUsingCTAS",
-      startArgs :+ locatorProperty :+
+      startArgs :+
           Int.box(locatorClientPort))
 
     val count = snc.sql("select * from customer").count()
@@ -240,15 +238,13 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "createUDFInSplitMode",
-      startArgs :+ locatorProperty
-          :+ Int.box(locatorClientPort))
+      startArgs :+ Int.box(locatorClientPort))
 
     testObject.verifyUDFInEmbeddedMode()
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyUDFInSplitMode",
-      startArgs :+ locatorProperty
-          :+ Int.box(locatorClientPort))
+      startArgs :+ Int.box(locatorClientPort))
   }
 
 }
@@ -337,11 +333,11 @@ object SplitSnappyClusterDUnitTest
 
   // scalastyle:off println
   def createUDFInSplitMode(locatorPort: Int,
-      prop: Properties, locatorProp: String,
+      prop: Properties,
       locatorClientPort: Int): Unit = {
 
     val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorProp, locatorClientPort)
+      locatorClientPort)
 
     // create a udf in split mode
     val udfText = "public class IntegerUDF2 implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
@@ -378,9 +374,9 @@ object SplitSnappyClusterDUnitTest
   }
 
   def verifyUDFInSplitMode(locatorPort: Int,
-      prop: Properties, locatorProp: String,
+      prop: Properties,
       locatorClientPort: Int): Unit = {
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort, locatorProp,
+    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
       locatorClientPort)
 
     // function that was dropped in embedded mode
@@ -508,10 +504,10 @@ object SplitSnappyClusterDUnitTest
 
 
   def checkCollocatedJoins(locatorPort: Int, prop: Properties,
-      locatorProp: String, table1: String, table2: String,
+       table1: String, table2: String,
       locatorClientPort: Int): Unit = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorProp, locatorClientPort)
+      locatorClientPort)
 
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
@@ -523,11 +519,10 @@ object SplitSnappyClusterDUnitTest
    * Returns the SnappyContext for external(compute) Spark cluster connected to
    * SnappyData cluster using the locator property
    */
-  override def getSnappyContextForConnector(locatorPort: Int, locatorProp: String,
+  override def getSnappyContextForConnector(locatorPort: Int,
       locatorClientPort: Int): SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
     //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
-    System.clearProperty(locatorProp)
     val connectionURL = s"localhost:$locatorClientPort"
     logInfo(s"URL for connector is $connectionURL")
     val conf = new SparkConf()
@@ -559,13 +554,13 @@ object SplitSnappyClusterDUnitTest
   // scalastyle:on println
 
   def splitModeTableCreate(locatorPort: Int,
-      prop: Properties, locatorProp: String,
+      prop: Properties,
       locatorClientPort: Int): Unit = {
     val tblBatchSize200K = "tblBatchSizeBig_split"
 
     val tblBatchSize200 = "tblBatchSizeSmall_split"
 
-    val snc = getSnappyContextForConnector(locatorPort, locatorProp,
+    val snc = getSnappyContextForConnector(locatorPort,
       locatorClientPort)
     snc.sql(s"CREATE TABLE $tblBatchSize200(Key1 INT ,Value STRING) " +
         "USING column " +
@@ -592,9 +587,9 @@ object SplitSnappyClusterDUnitTest
   }
 
   def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
-      locatorProp: String, buckets: String,
+       buckets: String,
       locatorClientPort: Int): Unit = {
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort, locatorProp,
+    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
       locatorClientPort)
     snc.sql("drop table if exists snappyTable")
     snc.sql(s"create table snappyTable (id bigint not null, sym varchar(10) not null) using " +
@@ -623,9 +618,9 @@ object SplitSnappyClusterDUnitTest
   }
 
   def splitModeCreateTableUsingCTAS(locatorPort: Int,
-      prop: Properties, locatorProp: String,
+      prop: Properties,
       locatorClientPort: Int): Unit = {
-    val snc = getSnappyContextForConnector(locatorPort, locatorProp,
+    val snc = getSnappyContextForConnector(locatorPort,
       locatorClientPort)
     val customerFile: String = getClass.getResource("/customer.csv").getPath
 
@@ -680,11 +675,11 @@ object SplitSnappyClusterDUnitTest
 
   var connectorSnc: SnappyContext = null
   override def createDropTablesInSplitMode(locatorPort: Int,
-      prop: Properties, locatorProp: String,
+      prop: Properties,
       locatorClientPort: Int,
       tableType: String): Unit = {
     if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
-      connectorSnc = getSnappyContextForConnector(locatorPort, locatorProp,
+      connectorSnc = getSnappyContextForConnector(locatorPort,
         locatorClientPort)
     }
     // row table
@@ -712,10 +707,10 @@ object SplitSnappyClusterDUnitTest
   }
 
   override def verifyTableFormInSplitMOde(locatorPort: Int,
-      prop: Properties, locatorProp: String,
+      prop: Properties,
       locatorClientPort: Int): Unit = {
     if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
-      connectorSnc = getSnappyContextForConnector(locatorPort, locatorProp,
+      connectorSnc = getSnappyContextForConnector(locatorPort,
         locatorClientPort)
     }
     var resultDF = connectorSnc.sql("select * from t1 order by col1")
