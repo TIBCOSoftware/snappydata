@@ -202,7 +202,7 @@ shadowJar {
   // relocate fastutil for possible conflicts with user dependencies
   relocate 'it.unimi.dsi.fastutil', 'io.snappydata.it.unimi.dsi.fastutil'
   // relocate the guava's com.google packages
-  relocate 'com.google', 'io.snappydata.com.google'
+  relocate 'com.google.common', 'io.snappydata.com.google.common'
 
   mergeServiceFiles()
   exclude 'log4j.properties'
