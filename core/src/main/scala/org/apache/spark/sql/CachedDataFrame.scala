@@ -22,10 +22,10 @@ import java.sql.SQLException
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
-import com.gemstone.gemfire.internal.ByteBufferDataOutput
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
+import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
-import com.gemstone.gemfire.internal.util.NonEvictingByteBufferDataOutput
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
@@ -363,6 +363,8 @@ object CachedDataFrame
 
   override def read(kryo: Kryo, input: Input): Unit = {}
 
+  val owner = "CACHED_DF_FINAL_RESULT_BYTES"
+
   private def flushBufferOutput(bufferOutput: Output, position: Int,
       output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
     if (position > 0) {
@@ -370,8 +372,8 @@ object CachedDataFrame
         bufferOutput.getBuffer, position)
       val len = compressedBytes.length
       // write the uncompressed length too
-      output.write(position)
-      output.write(len)
+      output.writeInt(position)
+      output.writeInt(len)
       output.write(compressedBytes, 0, len)
       bufferOutput.clear()
     }
@@ -382,9 +384,10 @@ object CachedDataFrame
     var count = 0
     val buffer = new Array[Byte](4 << 10) // 4K
     // final output is written to this buffer
-    val output = new NonEvictingByteBufferDataOutput(4 << 10,
+    val output = new ByteBufferDataOutput(4 << 10,
       DirectBufferAllocator.instance(),
-      null)
+      null,
+      ManagedDirectBufferAllocator.CACHED_DATA_FRAME_RESULTOUTPUT_OWNER)
     // holds intermediate bytes which are compressed and flushed to output
     val maxOutputBufferSize = 64 << 10 // 64K
     // can't enforce maxOutputBufferSize due to a row larger than that limit
@@ -402,30 +405,51 @@ object CachedDataFrame
       row.writeToStream(bufferOutput, buffer)
       count += 1
     }
-    flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
 
+    flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
+    var memSize = 0L
+    var enoughMemory = true
     try {
       if (count > 0) {
         val finalBuffer = output.getBufferRetain
         finalBuffer.flip
-        val memSize = finalBuffer.limit()
+        memSize = finalBuffer.limit()
         // Ask UMM before getting the array to heap.
-        // Taking unroll memory as this cleaned up on task completion.
-        // On connector mode also this should account to the overall memory usage
-        if (!SparkEnv.get.memoryManager.acquireUnrollMemory(
-          MemoryManagerCallback.cachedDFBlockId,
-          memSize,
-          MemoryMode.ON_HEAP)) {
+        // Taking unroll memory as this memory is cleaned up on task completion.
+        // On connector mode also this should account to the overall memory usage.
+        // We will ensure that sufficient memory is available by reserving
+        // two times as Kryo serialization will expand its buffer accordingly.
+
+        if (!MemoryManagerCallback.memoryManager.
+          acquireStorageMemoryForObject(
+            objectName = owner,
+            blockId = MemoryManagerCallback.cachedDFBlockId,
+            numBytes = 2 * memSize,
+            memoryMode = MemoryMode.ON_HEAP,
+            buffer = null,
+            shouldEvict = false)) {
+          enoughMemory = false
           throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
             java.util.Collections.emptySet())
         }
 
-        new PartitionResult(ClientSharedUtils.toBytes(finalBuffer), count)
+        val bytes = ClientSharedUtils.toBytes(finalBuffer)
+        new PartitionResult(bytes, count)
       } else {
         new PartitionResult(Array.empty, 0)
       }
     } finally {
-        output.release
+      // Not handling DirectByteBuffer case which gives a OOM exception.
+      // Assumption is most of the big workload will use off-heap
+      bufferOutput.clear()
+      output.release
+      if (enoughMemory) {
+        MemoryManagerCallback.memoryManager.
+          releaseStorageMemoryForObject(
+            objectName = owner,
+            numBytes = 2 * memSize,
+            memoryMode = MemoryMode.ON_HEAP)
+      }
     }
   }
 
@@ -508,17 +532,18 @@ object CachedDataFrame
     if (dataLen == 0) return Iterator.empty
 
     val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
-    val input = new Input(data, offset, dataLen)
+    val input = new ByteArrayDataInput
+    input.initialize(data, offset, dataLen, null)
     val dataLimit = offset + dataLen
-    var decompressedLen = input.readVarInt(true)
-    var inputLen = input.readVarInt(true)
+    var decompressedLen = input.readInt()
+    var inputLen = input.readInt()
     val inputPosition = input.position()
     val bufferInput = new Input(Utils.codecDecompress(codec, data,
       inputPosition, inputLen, decompressedLen))
     input.setPosition(inputPosition + inputLen)
 
     new Iterator[UnsafeRow] {
-      private var sizeOfNextRow = bufferInput.readVarInt(true)
+      private var sizeOfNextRow = bufferInput.readInt(true)
 
       override def hasNext: Boolean = sizeOfNextRow >= 0
 
@@ -531,15 +556,15 @@ object CachedDataFrame
 
         sizeOfNextRow = if (newPosition < decompressedLen) {
           bufferInput.setPosition(newPosition)
-          bufferInput.readVarInt(true)
+          bufferInput.readInt(true)
         } else if (input.position() < dataLimit) {
-          decompressedLen = input.readVarInt(true)
-          inputLen = input.readVarInt(true)
+          decompressedLen = input.readInt()
+          inputLen = input.readInt()
           val inputPosition = input.position()
           bufferInput.setBuffer(Utils.codecDecompress(codec, data,
             inputPosition, inputLen, decompressedLen))
           input.setPosition(inputPosition + inputLen)
-          bufferInput.readVarInt(true)
+          bufferInput.readInt(true)
         } else -1
         row
       }

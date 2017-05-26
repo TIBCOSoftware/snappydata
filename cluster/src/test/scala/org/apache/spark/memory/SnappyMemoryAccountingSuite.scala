@@ -590,7 +590,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
   test("CachedDataFrame accounting") {
     val sparkSession = createSparkSession(1, 0, 1000)
-    //val snSession = new SnappySession(sparkSession.sparkContext)
 
     val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
     val converter = UnsafeProjection.create(fieldTypes)
@@ -602,9 +601,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     val unsafeRow: UnsafeRow = converter.apply(row)
 
-    /*SparkEnv.get.memoryManager.
-      asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)*/
-    // assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0 )
     SparkEnv.get.memoryManager
       .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 800, memoryMode)
 

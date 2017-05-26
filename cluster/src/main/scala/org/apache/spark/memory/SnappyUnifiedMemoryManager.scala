@@ -407,7 +407,7 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes, taskAttemptId, maybeGrowExecutionPool, computeMaxExecutionPoolSize)
   }
 
-  override def acquireUnrollMemory(
+/*  override def acquireUnrollMemory(
                                     blockId: BlockId,
                                     numBytes: Long,
                                     memoryMode: MemoryMode): Boolean = synchronized {
@@ -415,7 +415,7 @@ class SnappyUnifiedMemoryManager private[memory](
     val evictionEnabled = !blockId.equals(MemoryManagerCallback.cachedDFBlockId)
     acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null,
       shouldEvict = evictionEnabled)
-  }
+  }*/
 
   override def acquireStorageMemory(
       blockId: BlockId,
