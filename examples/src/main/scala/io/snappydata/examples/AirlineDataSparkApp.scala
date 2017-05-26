@@ -43,7 +43,7 @@ import org.apache.spark.{SparkContext, SparkConf}
  *
  * <p/>
  * `$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
- * --master spark://<hostname>:7077 --conf snappydata.store.locators=localhost:10334 \
+ * --master spark://<hostname>:7077 --conf snappydata.connection=localhost:1527 \
  * $SNAPPY_HOME/examples/jars/quickstart.jar`
  *
  *
