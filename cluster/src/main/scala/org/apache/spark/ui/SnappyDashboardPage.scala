@@ -235,14 +235,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def createTitleNode(title:String, tooltip:String, countList:Array[mutable.Map[String, Any]]): Seq[Node] = {
     var total = 0;
-    var tootltipDetails = "";
+    var tooltipDetails = "";
     for(i <- 0 until countList.length){
       val ele = countList(i)
       total = total + ele.getOrElse("value", 0).toString.toInt
-      if(tootltipDetails.isEmpty)
-        tootltipDetails += ele.getOrElse("displayText", 0).toString + ": " + ele.getOrElse("value", 0).toString.toInt
+      if(tooltipDetails.isEmpty)
+        tooltipDetails += ele.getOrElse("displayText", 0).toString + ": " + ele.getOrElse("value", 0).toString.toInt
       else
-        tootltipDetails += " | " + ele.getOrElse("displayText", 0).toString + ": " + ele.getOrElse("value", 0).toString.toInt
+        tooltipDetails += " | " + ele.getOrElse("displayText", 0).toString + ": " + ele.getOrElse("value", 0).toString.toInt
     }
 
     <div class="row-fluid">
@@ -251,7 +251,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           {title}
         </h4>
         <div style="font-weight: bold; display: inline-block; line-height: 20px; margin: 10px 0; font-size: 17.5px;">({
-          <a data-toggle="tooltip" data-placement="top" title={tootltipDetails}>{total}</a>
+          <a data-toggle="tooltip" data-placement="top" title={tooltipDetails}>{total}</a>
           })</div>
       </div>
     </div>
@@ -329,67 +329,82 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("statusTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("status")}
               </span>
             </th>
-            <th style="text-align:center;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("nameOrIdTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("nameOrId")}
               </span>
             </th>
-            <!-- <th style="text-align:center;">
+            <!-- <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("hostTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("host")}
               </span>
             </th> -->
-            <th style="text-align:center;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("memberType")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("cpuUsageTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("cpuUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("memoryUsageTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <!-- <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemoryToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("storageMemoryUsed")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemorySizeToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("storageMemoryPoolSize")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemoryToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("executionMemoryUsed")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemorySizeToolTip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("executionMemoryPoolSize")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("usedMemory")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("totalMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("totalMemory")}
               </span>
+            </th> -->
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("heapMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("heapMemory")}
+              </span>
             </th>
-            <th style="text-align:center; width: 100px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("offHeapMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("offHeapMemory")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
+              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("jvmHeapMemoryTooltip")} style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("jvmHeapMemory")}
+              </span>
+            </th>
+            <th style="text-align:center; width: 100px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("clientsTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("clients")}
               </span>
@@ -408,27 +423,27 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("nameOrIdTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("nameOrId")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("cpuUsageTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("cpuUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("memoryUsageTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("memoryUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("usedMemory")}
               </span>
             </th>
-            <th style="text-align:center; width: 150px;">
+            <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("totalMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("totalMemory")}
               </span>
@@ -448,32 +463,32 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("nameTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("name")}
               </span>
             </th>
-            <th style="text-align:center;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("storageModelTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("storageModel")}
               </span>
             </th>
-            <th style="text-align:center;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("rowCountTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
               </span>
@@ -492,17 +507,17 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center;">
+            <th style="text-align:center; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.indexStatsColumn("nameTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.indexStatsColumn("name")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.indexStatsColumn("rowCountTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.indexStatsColumn("rowCount")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px;">
+            <th style="text-align:center; width: 250px; vertical-align: middle;">
               <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.indexStatsColumn("totalSizeTooltip")} style="font-size: 17px;">
                 {SnappyDashboardPage.indexStatsColumn("totalSize")}
               </span>
@@ -553,10 +568,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val totalMemory = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
     val usedMemory = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
     val memoryUsage: Double = (usedMemory * 100) / totalMemory
-    val storagePoolUsed = memberDetails.getOrElse("storagePoolUsed", 0).asInstanceOf[Long]
-    val storagePoolSize = memberDetails.getOrElse("storagePoolSize", 0).asInstanceOf[Long]
-    val executionPoolSize = memberDetails.getOrElse("executionPoolSize", 0).asInstanceOf[Long]
-    val executionPoolUsed = memberDetails.getOrElse("executionPoolUsed", 0).asInstanceOf[Long]
+    // val storagePoolUsed = memberDetails.getOrElse("storagePoolUsed", 0).asInstanceOf[Long]
+    // val storagePoolSize = memberDetails.getOrElse("storagePoolSize", 0).asInstanceOf[Long]
+    // val executionPoolSize = memberDetails.getOrElse("executionPoolSize", 0).asInstanceOf[Long]
+    // val executionPoolUsed = memberDetails.getOrElse("executionPoolUsed", 0).asInstanceOf[Long]
+
+    val heapMemorySize = memberDetails.getOrElse("heapMemorySize", 0).asInstanceOf[Long]
+    val heapMemoryUsed = memberDetails.getOrElse("heapMemoryUsed", 0).asInstanceOf[Long]
+    val offHeapMemorySize = memberDetails.getOrElse("offHeapMemorySize", 0).asInstanceOf[Long]
+    val offHeapMemoryUsed = memberDetails.getOrElse("offHeapMemoryUsed", 0).asInstanceOf[Long]
 
     <tr>
       <td>
@@ -579,7 +599,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         {makeProgressBar(memoryUsage)}
       </td>
-      <td>
+      <!-- <td>
         <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(storagePoolUsed)}</div>
       </td>
       <td>
@@ -596,6 +616,21 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(totalMemory).toString}</div>
+      </td> -->
+      <td>
+        <div style="text-align:right; padding-right:15px;">{
+          Utils.bytesToString(heapMemoryUsed).toString + "/" + Utils.bytesToString(heapMemorySize).toString
+          }</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{
+          Utils.bytesToString(offHeapMemoryUsed).toString + "/" + Utils.bytesToString(offHeapMemorySize).toString
+          }</div>
+      </td>
+      <td>
+        <div style="text-align:right; padding-right:15px;">{
+          Utils.bytesToString(usedMemory).toString + "/" + Utils.bytesToString(totalMemory).toString
+          }</div>
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{memberDetails.getOrElse("clients","NA")}</div>
@@ -776,6 +811,12 @@ object SnappyDashboardPage{
   memberStatsColumn += ("executionMemoryToolTip" -> "Total execution pool memory used")
   memberStatsColumn += ("executionMemoryPoolSize" -> "ExecutionPoolSize")
   memberStatsColumn += ("executionMemorySizeToolTip" -> "Max execution pool memory size")
+  memberStatsColumn += ("heapMemory" -> "Heap Memory (Used/Total)")
+  memberStatsColumn += ("heapMemoryTooltip" -> "Members used and total Heap Memory")
+  memberStatsColumn += ("offHeapMemory" -> "Off-Heap Memory (Used/Total)")
+  memberStatsColumn += ("offHeapMemoryTooltip" -> "Members used and total Off Heap Memory")
+  memberStatsColumn += ("jvmHeapMemory" -> "JVM Heap (Used/Total)")
+  memberStatsColumn += ("jvmHeapMemoryTooltip" -> "Members used and total JVM Heap")
 
   val sparkConnectorsStatsTitle = "Spark Connectors"
   val sparkConnectorsStatsTitleTooltip = "Spark Connectors Summary"
