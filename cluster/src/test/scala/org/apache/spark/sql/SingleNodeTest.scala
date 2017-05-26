@@ -45,7 +45,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
     super.afterAll()
   }
 
-  test("Nodes Pruning") {
+  ignore("DISABLED_SNAP-1597 Nodes Pruning") {
     SingleNodeTest.testNodesPruning(snc)
   }
 
