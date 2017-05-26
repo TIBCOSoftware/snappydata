@@ -716,12 +716,17 @@ public class SnappyPrms extends BasePrms {
 
   public static String getExecutorMemory() {
     Long key = executorMemory;
+    String executorMem;
     String heapSize = tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
-    if (heapSize == null)
-      return "";
-    String executorMem = " --executor-memory " + heapSize;
+    if (heapSize == null) {
+      int cores = Runtime.getRuntime().availableProcessors();
+      long defaultMem;
+      defaultMem = ((cores * 64) + 512);
+      executorMem = " --executor-memory " + defaultMem + "m";
+      return executorMem;
+    }
+    executorMem = " --executor-memory " + heapSize;
     return executorMem;
-
   }
 
 
