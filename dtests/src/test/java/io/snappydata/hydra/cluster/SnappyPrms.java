@@ -180,11 +180,6 @@ public class SnappyPrms extends BasePrms {
   public static Long useRowStore;
 
   /**
-   * (boolean) - whether thin client smart connector mode cluster needs to be started.
-   */
-  public static Long useThinClientSmartConnectorMode;
-
-  /**
    * (boolean) - whether smart connector mode cluster needs to be started.
    */
   public static Long useSmartConnectorMode;

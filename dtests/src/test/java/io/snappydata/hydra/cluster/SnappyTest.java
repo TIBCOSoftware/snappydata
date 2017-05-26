@@ -83,7 +83,7 @@ public class SnappyTest implements Serializable {
   public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
-  public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);  //default to false
+  /*public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);*/  //default to false
   public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
   private static String primaryLocator = null;
   public static String leadHost = null;
@@ -1886,28 +1886,16 @@ public class SnappyTest implements Serializable {
         String masterPort = (String) SnappyBB.getBB().getSharedMap().get("masterPort");
         String locatorsList = getLocatorsList("locators");
         String command = null;
-        if (useThinClientSmartConnectorMode) {
-          String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
-          String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
-          command = snappyJobScript + " --class " + userJob +
-              " --master spark://" + masterHost + ":" + masterPort + " " +
-              SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +
-              " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-              " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-              " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-              SnappyPrms.getUserAppArgs() + " " + primaryLocatorHost + ":" + primaryLocatorPort;
-        } else {
-          command = snappyJobScript + " --class " + userJob +
-              " --master spark://" + masterHost + ":" + masterPort +
-              " --conf snappydata.store.locators=" + locatorsList + " " +
-              SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +
-              " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-              " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-              " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-              SnappyPrms.getUserAppArgs();
-        }
+        String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
+        String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
+        command = snappyJobScript + " --class " + userJob +
+            " --master spark://" + masterHost + ":" + masterPort + " " +
+            SnappyPrms.getExecutorMemory() + " " +
+            SnappyPrms.getSparkSubmitExtraPrms() + " " +
+            " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+            " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
+            " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+            SnappyPrms.getUserAppArgs() + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         Log.getLogWriter().info("spark-submit command is : " + command);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;

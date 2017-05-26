@@ -20,7 +20,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import io.snappydata.hydra.installJar.TestUtils
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.{Failure, Success, Try}
 
@@ -31,6 +31,12 @@ object InstallJarTestSparkApp {
   val snc = SnappyContext(sc)
 
   def main(args: Array[String]): Unit = {
+    val connectionURL = args(args.length - 1)
+    val conf = new SparkConf().
+        setAppName("InstallJarTest Application").
+        set("snappydata.connection", connectionURL)
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
     val threadID = Thread.currentThread().getId
     val outputFile = "ValidateInstallJarTestApp_thread_" + threadID + "_" + System
         .currentTimeMillis + ".out"
