@@ -318,13 +318,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
         logDebug(s"Repreparing for bcplan = ${bchj} with new pls = ${newpls.toSet}")
         val broadcastIndex = refs.indexWhere(_.isInstanceOf[Broadcast[_]])
         val newbchj = bchj.transformAllExpressions {
-<<<<<<< HEAD
-          case pl @ ParamLiteral(v, dt, p) =>
-||||||| merged common ancestors
-          case pl@ParamLiteral(_, _, p) =>
-=======
           case ParamLiteral(_, _, p) =>
->>>>>>> master
             val np = newpls.find(_.pos == p).getOrElse(pl)
             val x = ParamLiteral(np.value, np.dataType, p)
             x.considerUnequal = true
