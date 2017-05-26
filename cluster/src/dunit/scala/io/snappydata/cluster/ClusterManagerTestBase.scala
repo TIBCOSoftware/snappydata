@@ -18,26 +18,22 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
-import org.apache.spark.sql.execution.ConnectionPool
-
-import scala.collection.JavaConverters._
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
-import com.gemstone.gemfire.internal.i18n.LocalizedStrings
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.{FabricService, TestUtil}
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit._
-import io.snappydata.util.TestUtils
-import io.snappydata._
-import java.io.File
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkContext}
-import org.slf4j.LoggerFactory
 
 import scala.language.postfixOps
 import scala.sys.process._
+
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.{FabricService, TestUtil}
+import io.snappydata._
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
+import io.snappydata.test.dunit._
+import io.snappydata.util.TestUtils
+import org.slf4j.LoggerFactory
+
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.{Logging, SparkContext}
 /**
  * Base class for tests using Snappy ClusterManager. New utility methods
  * would need to be added as and when corresponding snappy code gets added.
@@ -57,7 +53,7 @@ abstract class ClusterManagerTestBase(s: String)
   //   "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
-    math.min(8, Runtime.getRuntime.availableProcessors()).toString)
+    TestUtils.defaultCores.toString)
   // Keeping it as default for all other dunits as it can create
   // issues like interacting with heap monitor.
   bootProps.setProperty("spark.memory.manager", "default")
