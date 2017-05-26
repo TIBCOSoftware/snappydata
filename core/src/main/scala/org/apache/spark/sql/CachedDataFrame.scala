@@ -72,7 +72,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
   def queryExecutionString: String = queryExecution.toString()
 
   def queryPlanInfo: SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
-    plan = queryExecution.executedPlan transformAllExpressions {
+    queryExecution.executedPlan transformAllExpressions {
       case pl@ParamLiteral(_v, _dt, _p) =>
         val x = allLiterals.find(_.position == _p)
         val v = x match {
@@ -80,6 +80,8 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           case None => _v
         }
         Literal(v, _dt)
+    } transform {
+      case CachedPlanHelperExec(childPlan, _) => childPlan
     })
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
