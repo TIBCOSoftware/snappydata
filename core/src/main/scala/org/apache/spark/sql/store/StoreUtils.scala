@@ -38,11 +38,13 @@ object StoreUtils {
   val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
   val REPLICATE = ExternalStoreUtils.REPLICATE
   val BUCKETS = ExternalStoreUtils.BUCKETS
+  val PARTITIONER = "PARTITIONER"
   val COLOCATE_WITH = "COLOCATE_WITH"
   val REDUNDANCY = "REDUNDANCY"
   val RECOVERYDELAY = "RECOVERYDELAY"
   val MAXPARTSIZE = "MAXPARTSIZE"
   val EVICTION_BY = "EVICTION_BY"
+  val PERSISTENCE = "PERSISTENCE"
   val PERSISTENT = "PERSISTENT"
   val DISKSTORE = "DISKSTORE"
   val SERVER_GROUPS = "SERVER_GROUPS"
@@ -52,6 +54,7 @@ object StoreUtils {
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
+  val GEM_PARTITIONER = "PARTITIONER"
   val GEM_COLOCATE_WITH = "COLOCATE WITH"
   val GEM_REDUNDANCY = "REDUNDANCY"
   val GEM_REPLICATE = "REPLICATE"
@@ -86,9 +89,9 @@ object StoreUtils {
   val MAP_TYPE = 14
   val STRUCT_TYPE = 15
 
-  val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
-    REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
+  val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
+    COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
+    PERSISTENCE, PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
     GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
@@ -120,14 +123,7 @@ object StoreUtils {
         case None => Seq.empty
       }
     } else {
-      val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
-      if (distMembers.isEmpty) {
-        var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
-        if (prefNode == null) {
-          prefNode = region.getOrCreateNodeForInitializedBucketRead(bucketId, true)
-        }
-        distMembers.add(prefNode)
-      }
+      val distMembers = getBucketOwnersForRead(bucketId, region)
       val members = new mutable.ArrayBuffer[String](2)
       distMembers.foreach { m =>
         SnappyContext.getBlockId(m.toString) match {
@@ -137,6 +133,19 @@ object StoreUtils {
       }
       members
     }
+  }
+
+  private[sql] def getBucketOwnersForRead(bucketId: Int,
+      region: PartitionedRegion): mutable.Set[InternalDistributedMember] = {
+    val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
+    if (distMembers.isEmpty) {
+      var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
+      if (prefNode == null) {
+        prefNode = region.getOrCreateNodeForInitializedBucketRead(bucketId, true)
+      }
+      distMembers.add(prefNode)
+    }
+    distMembers
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
@@ -362,6 +371,10 @@ object StoreUtils {
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
         .getOrElse(EMPTY_STRING))
 
+    // custom partition resolver
+    parameters.remove(PARTITIONER).foreach(v =>
+      sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
+
     // if OVERFLOW has been provided, then use HEAPPERCENT as the default
     // eviction policy (unless overridden explicitly)
     val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
@@ -389,25 +402,28 @@ object StoreUtils {
       sb.append(s"$GEM_OVERFLOW ")
     }
 
-    var isPersistent = false
-    parameters.remove(PERSISTENT).foreach { v =>
+    // default is sync persistence for all snappydata tables
+    var isPersistent = true
+    parameters.remove(PERSISTENCE).orElse(parameters.remove(PERSISTENT)).map { v =>
       if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("asynchronous")) {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
-        isPersistent = true
       } else if (v.equalsIgnoreCase("sync") ||
           v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
-        isPersistent = true
+      } else if (v.equalsIgnoreCase("none")) {
+        isPersistent = false
+        sb
       } else {
         throw Utils.analysisException(s"Invalid value for option " +
-            s"$PERSISTENT = $v (expected one of: async, sync, " +
-            s"asynchronous, synchronous)")
+            s"$PERSISTENCE = $v (expected one of: sync, async, none, " +
+            s"synchronous, asynchronous)")
       }
-    }
+    }.getOrElse(sb.append(s"$GEM_PERSISTENT SYNCHRONOUS "))
+
     parameters.remove(DISKSTORE).foreach { v =>
       if (isPersistent) sb.append(s"'$v' ")
       else throw Utils.analysisException(
-        s"Option '$DISKSTORE' requires '$PERSISTENT' option")
+        s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
     }
     sb.append(parameters.remove(SERVER_GROUPS)
         .map(v => s"$GEM_SERVER_GROUPS ($v) ")

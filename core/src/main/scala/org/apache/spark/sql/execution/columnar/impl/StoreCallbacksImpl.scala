@@ -35,6 +35,7 @@ import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.FunctionIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -44,13 +45,16 @@ import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Row, SnappyContext, SnappySession, SplitClusterMode, _}
-import org.apache.spark.storage.TestBlockId
 import org.apache.spark.{Logging, SparkContext, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   private val partitioner = new StoreHashFunction
+
+  override def registerTypes(): Unit = {
+    // register the column key and value types
+    ColumnFormatEntry.registerTypes()
+  }
 
   override def createColumnBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[AnyRef] = {
@@ -111,7 +115,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             batchID, bucketID, dependents)
         } finally {
           lcc.setExecuteLocally(null, null, false, null)
-          tc.clearActiveTXState(false, true);
+          tc.clearActiveTXState(false, true)
         }
       } catch {
         case e: Throwable => throw e
@@ -128,7 +132,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   def getInternalTableSchemas: java.util.List[String] = {
     val schemas = new java.util.ArrayList[String](2)
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
-    schemas.add(Constant.INTERNAL_SCHEMA_NAME)
+    schemas.add(Constant.SHADOW_SCHEMA_NAME)
     schemas
   }
 
@@ -146,7 +150,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def snappyInternalSchemaName(): String = {
-    io.snappydata.Constant.INTERNAL_SCHEMA_NAME
+    io.snappydata.Constant.SHADOW_SCHEMA_NAME
   }
 
   override def cleanUpCachedObjects(table: String,
@@ -182,7 +186,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   def getSnappyTableStats: AnyRef = {
-    val c = SnappyTableStatsProviderService.getService.getTableSizeStats().values.asJavaCollection
+    val c = SnappyTableStatsProviderService.getService
+        .getTableSizeStats.values.asJavaCollection
     val list: java.util.List[SnappyRegionStats] = new java.util.ArrayList(c.size())
     list.addAll(c)
     list
@@ -284,18 +289,21 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def acquireStorageMemory(objectName: String, numBytes: Long,
-      buffer: UMMMemoryTracker, shouldEvict: Boolean): Boolean = {
-    val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_$objectName")
+      buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
+    val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
     MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
-      blockId, numBytes, MemoryMode.ON_HEAP, buffer, shouldEvict)
+      MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
   }
 
-  override def releaseStorageMemory(objectName: String, numBytes: Long): Unit = {
+  override def releaseStorageMemory(objectName: String, numBytes: Long,
+      offHeap: Boolean): Unit = {
+    val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
     MemoryManagerCallback.memoryManager.
-      releaseStorageMemoryForObject(objectName, numBytes, MemoryMode.ON_HEAP)
+        releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
 
   override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
+    // off-heap will be cleared via ManagedDirectBufferAllocator
     MemoryManagerCallback.memoryManager.
       dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
 
@@ -303,17 +311,30 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def isSnappyStore: Boolean = true
 
-  override def getStoragePoolUsedMemory: Long =
-    MemoryManagerCallback.memoryManager.getStoragePoolMemoryUsed()
+  override def getStoragePoolUsedMemory(offHeap: Boolean): Long =
+    MemoryManagerCallback.memoryManager.getStoragePoolMemoryUsed(
+      if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP)
 
-  override def getStoragePoolSize: Long =
-    MemoryManagerCallback.memoryManager.getStoragePoolSize
+  override def getStoragePoolSize(offHeap: Boolean): Long =
+    MemoryManagerCallback.memoryManager.getStoragePoolSize(
+      if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP)
 
-  override def getExecutionPoolUsedMemory: Long
-  = MemoryManagerCallback.memoryManager.getExecutionPoolUsedMemory
+  override def getExecutionPoolUsedMemory(offHeap: Boolean): Long =
+    MemoryManagerCallback.memoryManager.getExecutionPoolUsedMemory(
+      if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP)
 
-  override def getExecutionPoolSize: Long =
-    MemoryManagerCallback.memoryManager.getExecutionPoolSize
+  override def getExecutionPoolSize(offHeap: Boolean): Long =
+    MemoryManagerCallback.memoryManager.getExecutionPoolSize(
+      if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP)
+
+  override def getOffHeapMemory(objectName: String): Long =
+    MemoryManagerCallback.memoryManager.getOffHeapMemory(objectName)
+
+  override def hasOffHeap: Boolean =
+    MemoryManagerCallback.memoryManager.hasOffHeap
+
+  override def logMemoryStats(): Unit =
+    MemoryManagerCallback.memoryManager.logStats()
 }
 
 trait StoreCallback extends Serializable {
