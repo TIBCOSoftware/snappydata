@@ -85,41 +85,40 @@ class SnappyUnifiedMemoryManager private[memory](
   @volatile private[memory] var _memoryForObjectMap:
     Object2LongOpenHashMap[(String, MemoryMode)] = _
 
-  private[memory] def memoryForObject: Object2LongOpenHashMap[(String, MemoryMode)] =
-    synchronized {
+  private[memory] def memoryForObject: Object2LongOpenHashMap[(String, MemoryMode)] = {
+    val memoryMap = _memoryForObjectMap
+    if (memoryMap eq null) synchronized {
       val memoryMap = _memoryForObjectMap
-      if (memoryMap eq null) synchronized {
-        val memoryMap = _memoryForObjectMap
-        if (memoryMap eq null) {
-          _memoryForObjectMap = new Object2LongOpenHashMap[(String, MemoryMode)]()
-          _memoryForObjectMap.defaultReturnValue(0L)
-          // transfer the memory map from tempMemoryManager on first use
-          if (!tempManager) {
-            logInfo(s"Allocating boot time memory to $managerId ")
+      if (memoryMap eq null) {
+        _memoryForObjectMap = new Object2LongOpenHashMap[(String, MemoryMode)]()
+        _memoryForObjectMap.defaultReturnValue(0L)
+        // transfer the memory map from tempMemoryManager on first use
+        if (!tempManager) {
+          logInfo(s"Allocating boot time memory to $managerId ")
 
-            val bootTimeMap = MemoryManagerCallback.tempMemoryManager
+          val bootTimeMap = MemoryManagerCallback.tempMemoryManager
               .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap
-            if (bootTimeMap ne null) {
-              // Not null only for cluster mode. In local mode
-              // as Spark is booted first temp memory manager is not used
-              bootTimeMap.object2LongEntrySet().iterator().asScala foreach { entry =>
-                val (objectName, mode) = entry.getKey
-                acquireStorageMemoryForObject(objectName,
-                  MemoryManagerCallback.storageBlockId, entry.getLongValue, mode, null,
-                  shouldEvict = true)
-              }
-              logInfo(s"Total Memory used while booting = " +
-                MemoryManagerCallback.tempMemoryManager
-                  .asInstanceOf[SnappyUnifiedMemoryManager].storageMemoryUsed)
-              MemoryManagerCallback.tempMemoryManager
-                .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap.clear()
+          if (bootTimeMap ne null) {
+            // Not null only for cluster mode. In local mode
+            // as Spark is booted first temp memory manager is not used
+            bootTimeMap.object2LongEntrySet().iterator().asScala foreach { entry =>
+              val (objectName, mode) = entry.getKey
+              acquireStorageMemoryForObject(objectName,
+                MemoryManagerCallback.storageBlockId, entry.getLongValue, mode, null,
+                shouldEvict = true)
             }
+            logInfo(s"Total Memory used while booting = " +
+                MemoryManagerCallback.tempMemoryManager
+                    .asInstanceOf[SnappyUnifiedMemoryManager].storageMemoryUsed)
+            MemoryManagerCallback.tempMemoryManager
+                .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap.clear()
           }
+        }
 
-          _memoryForObjectMap
-        } else memoryMap
+        _memoryForObjectMap
       } else memoryMap
-    }
+    } else memoryMap
+  }
 
   val threadsWaitingForStorage = new AtomicInteger()
 
@@ -492,10 +491,7 @@ class SnappyUnifiedMemoryManager private[memory](
         // return immediately for OFF_HEAP with shouldEvict=false
         if (offHeapNoEvict || tempManager) return false
 
-        // @TODO Commenting the below code as it causes strange behaviour. Memory
-        // allocation fails here , but somehow the query does not get cancelled.
-
-         if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
+        if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return false
@@ -569,19 +565,21 @@ class SnappyUnifiedMemoryManager private[memory](
                                              numBytes: Long,
                                              memoryMode: MemoryMode): Unit = synchronized {
     logDebug(s"releasing $managerId memory for $objectName = $numBytes")
-    if (memoryForObject.addTo(objectName -> memoryMode, -numBytes) != 0L) {
+    val key = objectName -> memoryMode
+    if (memoryForObject.addTo(key, -numBytes) >= 0L) {
       super.releaseStorageMemory(numBytes, memoryMode)
     } else {
       // objectName was not present
-      memoryForObject.removeLong(objectName)
+      memoryForObject.removeLong(key)
     }
   }
 
   override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit = {
+    val key = SPARK_CACHE -> memoryMode
     releaseStorageMemoryForObject(SPARK_CACHE, numBytes, memoryMode)
     logDebug(s"releasing $managerId memory for $SPARK_CACHE $numBytes")
-    if (memoryForObject.containsKey(SPARK_CACHE)) {
-      memoryForObject.addTo(SPARK_CACHE -> memoryMode, -numBytes)
+    if (memoryForObject.containsKey(key)) {
+      memoryForObject.addTo(key, -numBytes)
       super.releaseStorageMemory(numBytes, memoryMode)
     }
   }
@@ -589,13 +587,14 @@ class SnappyUnifiedMemoryManager private[memory](
   override def dropStorageMemoryForObject(name: String,
                                           memoryMode: MemoryMode,
                                           ignoreNumBytes: Long): Long = synchronized {
-    val bytesToBeFreed = memoryForObject.getLong(name -> memoryMode)
+    val key = name -> memoryMode
+    val bytesToBeFreed = memoryForObject.getLong(key)
     val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
     logDebug(s"Dropping $managerId memory for $name = $numBytes (registered=$bytesToBeFreed)")
 
     if (numBytes > 0) {
       super.releaseStorageMemory(numBytes, memoryMode)
-      memoryForObject.removeLong(name -> memoryMode)
+      memoryForObject.removeLong(key)
     }
     bytesToBeFreed
   }
@@ -619,7 +618,7 @@ object SnappyUnifiedMemoryManager extends Logging {
       math.max(getMaxHeapMemory / 20, 500L * 1024L * 1024L))
   }
 
-  private val DEFAULT_EVICTION_PERCENT = 80f
+  private val DEFAULT_EVICTION_FRACTION = 80f
 
   private val DEFAULT_STORAGE_FRACTION = 0.5
 
@@ -685,10 +684,10 @@ object SnappyUnifiedMemoryManager extends Logging {
       if (thresholds.getEvictionThreshold > 0.1f) {
         cache.getResourceManager.getHeapMonitor.getThresholds.getEvictionThreshold
       } else {
-        DEFAULT_EVICTION_PERCENT
+        DEFAULT_EVICTION_FRACTION
       }
     } else {
-      conf.getDouble("spark.testing.maxStorageFraction", DEFAULT_EVICTION_PERCENT).toFloat
+      conf.getDouble("spark.testing.maxStorageFraction", DEFAULT_EVICTION_FRACTION).toFloat
     }
   }
 

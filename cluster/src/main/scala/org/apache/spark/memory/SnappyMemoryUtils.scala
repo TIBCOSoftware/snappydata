@@ -26,7 +26,7 @@ object SnappyMemoryUtils {
     * @return
     */
   def isCriticalUp(): Boolean =
-    Option(GemFireStore.getBootingInstance).exists(g => g.thresholdListener.isCritical)
+    Option(GemFireStore.getBootingInstance).exists(_.thresholdListener.isCritical)
 
 
   /**
@@ -35,6 +35,6 @@ object SnappyMemoryUtils {
     * @return
     */
   def isEvictionUp: Boolean =
-    Option(GemFireStore.getBootingInstance).exists(g => g.thresholdListener.isEviction)
+    Option(GemFireStore.getBootingInstance).exists(_.thresholdListener.isEviction)
 
 }

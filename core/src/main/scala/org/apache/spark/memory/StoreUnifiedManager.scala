@@ -31,18 +31,18 @@ import org.apache.spark.{Logging, SparkConf, SparkEnv}
 trait StoreUnifiedManager {
 
   def acquireStorageMemoryForObject(
-                                     objectName: String,
-                                     blockId: BlockId,
-                                     numBytes: Long,
-                                     memoryMode: MemoryMode,
-                                     buffer: UMMMemoryTracker,
-                                     shouldEvict: Boolean): Boolean
+      objectName: String,
+      blockId: BlockId,
+      numBytes: Long,
+      memoryMode: MemoryMode,
+      buffer: UMMMemoryTracker,
+      shouldEvict: Boolean): Boolean
 
   def dropStorageMemoryForObject(objectName: String, memoryMode: MemoryMode,
-                                 ignoreNumBytes: Long): Long
+      ignoreNumBytes: Long): Long
 
   def releaseStorageMemoryForObject(objectName: String, numBytes: Long,
-                                    memoryMode: MemoryMode): Unit
+      memoryMode: MemoryMode): Unit
 
   def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long
 
@@ -64,7 +64,7 @@ trait StoreUnifiedManager {
     * by [[BufferAllocator]]s to be also changed and freshly accounted.
     */
   def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
-                                  allowNonAllocator: Boolean): Unit
+      allowNonAllocator: Boolean): Unit
 }
 
 /**
@@ -75,25 +75,25 @@ trait StoreUnifiedManager {
 class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
   override def acquireStorageMemoryForObject(objectName: String,
-                                             blockId: BlockId,
-                                             numBytes: Long,
-                                             memoryMode: MemoryMode,
-                                             buffer: UMMMemoryTracker,
-                                             shouldEvict: Boolean): Boolean = {
+      blockId: BlockId,
+      numBytes: Long,
+      memoryMode: MemoryMode,
+      buffer: UMMMemoryTracker,
+      shouldEvict: Boolean): Boolean = {
     logDebug(s"Acquiring DefaultManager meemory for $objectName $numBytes")
     SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
   }
 
   // This should not be called in connector mode
   override def dropStorageMemoryForObject(
-                                           objectName: String,
-                                           memoryMode: MemoryMode,
-                                           ignoreNumBytes: Long): Long = 0L
+      objectName: String,
+      memoryMode: MemoryMode,
+      ignoreNumBytes: Long): Long = 0L
 
   override def releaseStorageMemoryForObject(
-                                              objectName: String,
-                                              numBytes: Long,
-                                              memoryMode: MemoryMode): Unit = {
+      objectName: String,
+      numBytes: Long,
+      memoryMode: MemoryMode): Unit = {
     logDebug(s"Releasing DefaultManager meemory for $objectName $numBytes")
     SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
   }
@@ -113,7 +113,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
   override def logStats(): Unit = logInfo("No stats for NoOpSnappyMemoryManager")
 
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
-                                           allowNonAllocator: Boolean): Unit = {}
+      allowNonAllocator: Boolean): Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {
@@ -128,13 +128,13 @@ object MemoryManagerCallback extends Logging {
     try {
       val conf = new SparkConf()
       Utils.classForName(ummClass)
-        .getConstructor(classOf[SparkConf], classOf[Int], classOf[Boolean])
-        .newInstance(conf, Int.box(1), Boolean.box(true)).asInstanceOf[StoreUnifiedManager]
+          .getConstructor(classOf[SparkConf], classOf[Int], classOf[Boolean])
+          .newInstance(conf, Int.box(1), Boolean.box(true)).asInstanceOf[StoreUnifiedManager]
       // We dont need execution memory during GemXD boot. Hence passing num core as 1
     } catch {
       case _: ClassNotFoundException =>
         logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
-          "SnappyUnifiedMemoryManager won't be used.")
+            "SnappyUnifiedMemoryManager won't be used.")
         new DefaultMemoryManager
     }
   }
@@ -157,7 +157,7 @@ object MemoryManagerCallback extends Logging {
     } catch {
       case _: ClassNotFoundException =>
         logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
-          "SnappyUnifiedMemoryManager won't be used.")
+            "SnappyUnifiedMemoryManager won't be used.")
         false
     }
   }
