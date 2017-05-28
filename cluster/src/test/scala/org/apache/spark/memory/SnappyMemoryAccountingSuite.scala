@@ -432,6 +432,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         assert(memoryIncreaseDuetoEviction > 0)
       }
     }
+    SparkEnv.get.memoryManager.
+        asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count == rows)
     snSession.dropTable("t1")
@@ -458,6 +460,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val sparkSession = createSparkSession(1, 0, 10000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    SparkEnv.get.memoryManager.
+        asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val beforeCache = SparkEnv.get.memoryManager.storageMemoryUsed
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sparkSession.sparkContext.parallelize(data, 2).map(s => new Data(s(0), s(1), s(2)))
@@ -590,7 +594,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
   test("CachedDataFrame accounting") {
     val sparkSession = createSparkSession(1, 0, 1000)
-
     val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
     val converter = UnsafeProjection.create(fieldTypes)
 

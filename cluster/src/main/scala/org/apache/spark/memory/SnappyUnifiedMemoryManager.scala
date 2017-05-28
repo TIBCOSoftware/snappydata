@@ -77,7 +77,7 @@ class SnappyUnifiedMemoryManager private[memory](
   val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionPercent(conf)
 
   private val maxHeapStorageSize =
-    (maxHeapMemory * evictionFraction * 0.01).toLong
+    (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
@@ -562,26 +562,20 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   override def releaseStorageMemoryForObject(objectName: String,
-                                             numBytes: Long,
-                                             memoryMode: MemoryMode): Unit = synchronized {
+      numBytes: Long,
+      memoryMode: MemoryMode): Unit = synchronized {
     logDebug(s"releasing $managerId memory for $objectName = $numBytes")
     val key = objectName -> memoryMode
-    if (memoryForObject.addTo(key, -numBytes) >= 0L) {
-      super.releaseStorageMemory(numBytes, memoryMode)
-    } else {
-      // objectName was not present
-      memoryForObject.removeLong(key)
+    super.releaseStorageMemory(numBytes, memoryMode)
+    if (memoryForObject.containsKey(key)) {
+      if (memoryForObject.addTo(key, -numBytes) == numBytes) {
+        memoryForObject.removeLong(key)
+      }
     }
   }
 
   override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit = {
-    val key = SPARK_CACHE -> memoryMode
     releaseStorageMemoryForObject(SPARK_CACHE, numBytes, memoryMode)
-    logDebug(s"releasing $managerId memory for $SPARK_CACHE $numBytes")
-    if (memoryForObject.containsKey(key)) {
-      memoryForObject.addTo(key, -numBytes)
-      super.releaseStorageMemory(numBytes, memoryMode)
-    }
   }
 
   override def dropStorageMemoryForObject(name: String,
@@ -591,7 +585,6 @@ class SnappyUnifiedMemoryManager private[memory](
     val bytesToBeFreed = memoryForObject.getLong(key)
     val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
     logDebug(s"Dropping $managerId memory for $name = $numBytes (registered=$bytesToBeFreed)")
-
     if (numBytes > 0) {
       super.releaseStorageMemory(numBytes, memoryMode)
       memoryForObject.removeLong(key)
@@ -618,7 +611,7 @@ object SnappyUnifiedMemoryManager extends Logging {
       math.max(getMaxHeapMemory / 20, 500L * 1024L * 1024L))
   }
 
-  private val DEFAULT_EVICTION_FRACTION = 80f
+  private val DEFAULT_EVICTION_FRACTION = 0.8f
 
   private val DEFAULT_STORAGE_FRACTION = 0.5
 
@@ -682,7 +675,7 @@ object SnappyUnifiedMemoryManager extends Logging {
     if (cache ne null) {
       val thresholds = cache.getResourceManager.getHeapMonitor.getThresholds
       if (thresholds.getEvictionThreshold > 0.1f) {
-        cache.getResourceManager.getHeapMonitor.getThresholds.getEvictionThreshold
+        (cache.getResourceManager.getHeapMonitor.getThresholds.getEvictionThreshold * 0.01).toFloat
       } else {
         DEFAULT_EVICTION_FRACTION
       }

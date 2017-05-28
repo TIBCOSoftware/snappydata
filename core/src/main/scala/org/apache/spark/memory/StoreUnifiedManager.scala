@@ -74,14 +74,20 @@ trait StoreUnifiedManager {
   */
 class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
+  val memoryManager = SparkEnv.get.memoryManager
+
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = {
-    logDebug(s"Acquiring DefaultManager meemory for $objectName $numBytes")
-    SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
+    logDebug(s"Acquiring DefaultManager memory for $objectName $numBytes")
+    if (memoryManager ne null) {
+      memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
+    } else {
+      false
+    }
   }
 
   // This should not be called in connector mode
@@ -95,7 +101,9 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {
     logDebug(s"Releasing DefaultManager meemory for $objectName $numBytes")
-    SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
+    if (memoryManager ne null) {
+      memoryManager.releaseStorageMemory(numBytes, memoryMode)
+    }
   }
 
   override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L
@@ -177,25 +185,21 @@ object MemoryManagerCallback extends Logging {
       return defaultManager
     }
 
-    if (GemFireCacheImpl.getInstance ne null) {
-      val env = SparkEnv.get
-      if (env ne null) {
-        env.memoryManager match {
-          case unifiedManager: StoreUnifiedManager =>
-            snappyUnifiedManager = unifiedManager
-            unifiedManager
-          case _ =>
-            // For testing purpose if we want to disable SnappyUnifiedManager
-            defaultManager
-        }
-      } else {
-        tempMemoryManager
+    val env = SparkEnv.get
+    if (env ne null) {
+      env.memoryManager match {
+        case unifiedManager: StoreUnifiedManager =>
+          snappyUnifiedManager = unifiedManager
+          unifiedManager
+        case _ =>
+          // For testing purpose if we want to disable SnappyUnifiedManager
+          defaultManager
       }
-    } else {
-      // Till GemXD Boot Time
+    } else { // Spark.env will be null only with gemxd boot time
       tempMemoryManager
     }
   }
+
 }
 
 
