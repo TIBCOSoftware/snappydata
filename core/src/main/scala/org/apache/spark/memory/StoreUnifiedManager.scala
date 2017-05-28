@@ -74,8 +74,6 @@ trait StoreUnifiedManager {
   */
 class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
-  val memoryManager = SparkEnv.get.memoryManager
-
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
       numBytes: Long,
@@ -83,8 +81,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = {
     logDebug(s"Acquiring DefaultManager memory for $objectName $numBytes")
-    if (memoryManager ne null) {
-      memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
+    if (SparkEnv.get ne null) {
+      SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
     } else {
       false
     }
@@ -101,8 +99,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {
     logDebug(s"Releasing DefaultManager meemory for $objectName $numBytes")
-    if (memoryManager ne null) {
-      memoryManager.releaseStorageMemory(numBytes, memoryMode)
+    if (SparkEnv.get ne null) {
+      SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
     }
   }
 
@@ -149,7 +147,7 @@ object MemoryManagerCallback extends Logging {
 
   @volatile private var snappyUnifiedManager: StoreUnifiedManager = _
 
-  private val defaultManager: StoreUnifiedManager = new DefaultMemoryManager
+  private lazy val defaultManager: StoreUnifiedManager = new DefaultMemoryManager
 
   def resetMemoryManager(): Unit = synchronized {
     snappyUnifiedManager = null // For local mode testing
