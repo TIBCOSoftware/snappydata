@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.benchmark
 
 import java.sql.{Date, DriverManager, Timestamp}
 import java.time.{ZoneId, ZonedDateTime}
-import java.util.{Calendar, GregorianCalendar}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
@@ -316,9 +315,7 @@ object TAQTest extends Logging with Assertions {
       val exs = EXCHANGES.map(UTF8String.fromString)
       val numExs = exs.length
       var day = 0
-      // month is 0 based
-      // var cal = new GregorianCalendar(2016, 5, day + 6)
-      val zoneId = ZoneId.of("UTC")
+      val zoneId = ZoneId.systemDefault()
       var cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
       var millisTime = cal.toInstant.toEpochMilli
       var date = new Date(millisTime)
@@ -340,8 +337,9 @@ object TAQTest extends Logging with Assertions {
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
+          // seconds < 59 so that millis+gid does not overflow into next hour
           cal = ZonedDateTime.of(2016, 6, day + 6, rnd.nextInt() & 0x07,
-            math.abs(rnd.nextInt() % 60), math.abs(rnd.nextInt() % 60),
+            math.abs(rnd.nextInt() % 60), math.abs(rnd.nextInt() % 59),
             math.abs(rnd.nextInt() % 1000000000), zoneId)
           millisTime = cal.toInstant.toEpochMilli
         }
@@ -356,9 +354,9 @@ object TAQTest extends Logging with Assertions {
       val exs = EXCHANGES.map(UTF8String.fromString)
       val numExs = exs.length
       var day = 0
-      // month is 0 based
-      var cal = new GregorianCalendar(2016, 5, day + 6)
-      var millisTime = cal.getTimeInMillis
+      val zoneId = ZoneId.systemDefault()
+      var cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+      var millisTime = cal.toInstant.toEpochMilli
       var date = new Date(millisTime)
       var dayCounter = 0
       itr.map { id =>
@@ -370,8 +368,8 @@ object TAQTest extends Logging with Assertions {
           if (dayCounter == 10000) {
             // change date
             day = (day + 1) % numDays
-            cal = new GregorianCalendar(2016, 5, day + 6)
-            millisTime = cal.getTimeInMillis
+            cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+            millisTime = cal.toInstant.toEpochMilli
             date = new Date(millisTime)
             dayCounter = 0
           }
@@ -379,11 +377,11 @@ object TAQTest extends Logging with Assertions {
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
-          cal.set(Calendar.HOUR, rnd.nextInt() & 0x07)
-          cal.set(Calendar.MINUTE, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.SECOND, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.MILLISECOND, math.abs(rnd.nextInt() % 1000))
-          millisTime = cal.getTimeInMillis
+          // seconds < 59 so that millis+gid does not overflow into next hour
+          cal = ZonedDateTime.of(2016, 6, day + 6, rnd.nextInt() & 0x07,
+            math.abs(rnd.nextInt() % 60), math.abs(rnd.nextInt() % 59),
+            math.abs(rnd.nextInt() % 1000000000), zoneId)
+          millisTime = cal.toInstant.toEpochMilli
         }
         val time = new Timestamp(millisTime + gid)
         val dec = Decimal(math.abs(rnd.nextInt() % 100000000), 10, 4)
@@ -451,7 +449,7 @@ object TAQTest extends Logging with Assertions {
             session.sql("drop table if exists trade")
             session.sql("drop table if exists S")
             val partitioning = if (op == CreateOp.Read) {
-              " options (partition_by 'sym', persistent 'sync')"
+              " options (partition_by 'sym')"
             } else ""
             if (COLUMN_TABLE) {
               session.sql(s"$sqlQuote using column$partitioning")
@@ -460,7 +458,7 @@ object TAQTest extends Logging with Assertions {
               session.sql(s"$sqlQuote using row$partitioning")
               session.sql(s"$sqlTrade using row$partitioning")
             }
-            session.sql(s"CREATE TABLE S (sym CHAR(4) NOT NULL) options (persistent 'sync')")
+            session.sql(s"CREATE TABLE S (sym CHAR(4) NOT NULL)")
             qDF.write.insertInto("quote")
             tDF.write.insertInto("trade")
             sDF.write.insertInto("S")
