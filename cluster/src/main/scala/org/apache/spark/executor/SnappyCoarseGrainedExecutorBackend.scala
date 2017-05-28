@@ -19,9 +19,9 @@ package org.apache.spark.executor
 import java.net.URL
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ExecutorInitiator
-import org.apache.commons.io.DirectoryWalker.CancelException
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
