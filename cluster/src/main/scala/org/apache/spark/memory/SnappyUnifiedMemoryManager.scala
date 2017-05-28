@@ -20,8 +20,8 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import collection.JavaConverters._
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
@@ -57,7 +57,7 @@ class SnappyUnifiedMemoryManager private[memory](
       SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
     numCores) with StoreUnifiedManager {
 
-  val managerId = if (!tempManager) "SnappyManager" else "BootTimeManager"
+  private val managerId = if (!tempManager) "RuntimeManager" else "BootTimeManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
            conf.getDouble("spark.memory.storageMaxFraction", 0.9)).toLong
@@ -74,7 +74,7 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val onHeapStorageRegionSize = onHeapStorageMemoryPool.poolSize
 
-  val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionPercent(conf)
+  private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
   private val maxHeapStorageSize =
     (maxHeapMemory * evictionFraction).toLong
@@ -611,7 +611,7 @@ object SnappyUnifiedMemoryManager extends Logging {
       math.max(getMaxHeapMemory / 20, 500L * 1024L * 1024L))
   }
 
-  private val DEFAULT_EVICTION_FRACTION = 0.8f
+  private val DEFAULT_EVICTION_FRACTION = 0.8
 
   private val DEFAULT_STORAGE_FRACTION = 0.5
 
@@ -653,8 +653,13 @@ object SnappyUnifiedMemoryManager extends Logging {
     val memorySize = if (cache ne null) {
       cache.getMemorySize
     } else { // for local mode testing
-      conf.getSizeAsBytes(DistributionConfig.SNAPPY_PREFIX +
+      val size = conf.getSizeAsBytes(DistributionConfig.SNAPPY_PREFIX +
           DistributionConfig.MEMORY_SIZE_NAME, "0b")
+      if (size == 0) {
+        // try with additional "spark." prefix
+        conf.getSizeAsBytes("spark." + DistributionConfig.SNAPPY_PREFIX +
+            DistributionConfig.MEMORY_SIZE_NAME, "0b")
+      } else size
     }
     if (memorySize > 0) {
       // set Spark's off-heap properties
@@ -670,17 +675,19 @@ object SnappyUnifiedMemoryManager extends Logging {
   /**
     * Return a fraction which determines what is the max limit storage can grow.
     */
-  def getStorageEvictionPercent(conf: SparkConf): Float = {
+  def getStorageEvictionFraction(conf: SparkConf): Double = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache ne null) {
       val thresholds = cache.getResourceManager.getHeapMonitor.getThresholds
-      if (thresholds.getEvictionThreshold > 0.1f) {
-        (cache.getResourceManager.getHeapMonitor.getThresholds.getEvictionThreshold * 0.01).toFloat
+      if (thresholds.isEvictionThresholdEnabled) {
+        thresholds.getEvictionThreshold * 0.01
+      } else if (thresholds.isCriticalThresholdEnabled) {
+        thresholds.getCriticalThreshold * 0.9 * 0.01
       } else {
         DEFAULT_EVICTION_FRACTION
       }
     } else {
-      conf.getDouble("spark.testing.maxStorageFraction", DEFAULT_EVICTION_FRACTION).toFloat
+      conf.getDouble("spark.testing.maxStorageFraction", DEFAULT_EVICTION_FRACTION)
     }
   }
 
@@ -694,7 +701,7 @@ object SnappyUnifiedMemoryManager extends Logging {
     val cache = Misc.getGemFireCacheNoThrow
     var reservedMemory = if (cache ne null) {
       val thresholds = cache.getResourceManager.getHeapMonitor.getThresholds
-      if (thresholds.getCriticalThreshold > 0.1f) {
+      if (thresholds.isCriticalThresholdEnabled) {
         systemMemory = thresholds.getMaxMemoryBytes
         systemMemory - thresholds.getCriticalThresholdBytes
       } else RESERVED_SYSTEM_MEMORY_BYTES
