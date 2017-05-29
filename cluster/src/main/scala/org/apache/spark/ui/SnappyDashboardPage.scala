@@ -207,7 +207,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <h3 style="vertical-align: bottom; display: inline-block;">
           {title}
         </h3>
-        <span style="float:right; font-size: 12px;" data-toggle="tooltip" title="" data-original-title="Reload page to refresh Dashboard." >Last updated on {lastUpdatedOn}</span>
+        <span style="float:right; font-size: 12px;" data-toggle="tooltip" title=""
+              data-original-title="Reload page to refresh Dashboard." >Last updated on {lastUpdatedOn}</span>
       </div>
     </div>
   }
@@ -215,7 +216,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def createTitleNode(title:String, tooltip:String): Seq[Node] = {
     <div class="row-fluid">
       <div class="span12">
-        <h4 style="vertical-align: bottom; display: inline-block;" data-toggle="tooltip" data-placement="top" title={tooltip}>
+        <h4 style="vertical-align: bottom; display: inline-block;"
+            data-toggle="tooltip" data-placement="top" title={tooltip}>
           {title}
         </h4>
       </div>
@@ -225,7 +227,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def createTitleNode(title:String, tooltip:String, count:Integer): Seq[Node] = {
     <div class="row-fluid">
       <div class="span12">
-        <h4 style="vertical-align: bottom; display: inline-block;" data-toggle="tooltip" data-placement="top" title={tooltip}>
+        <h4 style="vertical-align: bottom; display: inline-block;"
+            data-toggle="tooltip" data-placement="top" title={tooltip}>
           {title}
         </h4>
         <div style="font-weight: bold; display: inline-block; line-height: 20px; margin: 10px 0; font-size: 17.5px;">( {count} )</div>
@@ -247,7 +250,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     <div class="row-fluid">
       <div class="span12">
-        <h4 style="vertical-align: bottom; display: inline-block;" data-toggle="tooltip" data-placement="top" title={tooltip}>
+        <h4 style="vertical-align: bottom; display: inline-block;"
+            data-toggle="tooltip" data-placement="top" title={tooltip}>
           {title}
         </h4>
         <div style="font-weight: bold; display: inline-block; line-height: 20px; margin: 10px 0; font-size: 17.5px;">({
@@ -330,82 +334,114 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <thead>
           <tr>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("statusTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("statusTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("status")}
               </span>
             </th>
             <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("nameOrIdTooltip")} style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("nameOrId")}
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("descriptionTooltip")}
+                    style="font-size: 17px;">
+                {SnappyDashboardPage.memberStatsColumn("description")}
               </span>
             </th>
             <!-- <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("hostTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+              data-original-title={SnappyDashboardPage.memberStatsColumn("hostTooltip")}
+              style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("host")}
               </span>
             </th> -->
-            <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")} style="font-size: 17px;">
+            <th style="text-align:center; vertical-align: middle; min-width: 100px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("memberType")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("cpuUsageTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("cpuUsageTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("cpuUsage")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("memoryUsageTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("memoryUsageTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
             <!-- <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemoryToolTip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+              data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemoryToolTip")}
+              style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("storageMemoryUsed")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemorySizeToolTip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+              data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemorySizeToolTip")}
+              style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("storageMemoryPoolSize")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemoryToolTip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+              data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemoryToolTip")}
+              style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("executionMemoryUsed")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemorySizeToolTip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+              data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemorySizeToolTip")}
+              style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("executionMemoryPoolSize")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+              data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")}
+              style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("usedMemory")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("totalMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+              data-original-title={SnappyDashboardPage.memberStatsColumn("totalMemoryTooltip")}
+              style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("totalMemory")}
               </span>
             </th> -->
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("heapMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("heapMemoryTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("heapMemory")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("offHeapMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("offHeapMemoryTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("offHeapMemory")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("jvmHeapMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("jvmHeapMemoryTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("jvmHeapMemory")}
               </span>
             </th>
             <th style="text-align:center; width: 100px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.memberStatsColumn("clientsTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.memberStatsColumn("clientsTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("clients")}
               </span>
             </th>
@@ -424,27 +460,37 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <thead>
           <tr>
             <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("nameOrIdTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("nameOrIdTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("nameOrId")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("cpuUsageTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("cpuUsageTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("cpuUsage")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("memoryUsageTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("memoryUsageTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("memoryUsage")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("usedMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("usedMemoryTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("usedMemory")}
               </span>
             </th>
             <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("totalMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.sparkConnectorsStatsColumn("totalMemoryTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.sparkConnectorsStatsColumn("totalMemory")}
               </span>
             </th>
@@ -464,32 +510,44 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <thead>
           <tr>
             <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("nameTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.tableStatsColumn("nameTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("name")}
               </span>
             </th>
             <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("storageModelTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.tableStatsColumn("storageModelTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("storageModel")}
               </span>
             </th>
             <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("rowCountTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.tableStatsColumn("rowCountTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
               </span>
             </th>
@@ -508,17 +566,23 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <thead>
           <tr>
             <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.indexStatsColumn("nameTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.indexStatsColumn("nameTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.indexStatsColumn("name")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.indexStatsColumn("rowCountTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.indexStatsColumn("rowCountTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.indexStatsColumn("rowCount")}
               </span>
             </th>
             <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title="" data-original-title={SnappyDashboardPage.indexStatsColumn("totalSizeTooltip")} style="font-size: 17px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyDashboardPage.indexStatsColumn("totalSizeTooltip")}
+                    style="font-size: 17px;">
                 {SnappyDashboardPage.indexStatsColumn("totalSize")}
               </span>
             </th>
@@ -549,6 +613,24 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         memberDetails.getOrElse("name","NA")
       }
     }
+
+    val host = memberDetails.getOrElse("host", "").toString
+    val fullDirName = memberDetails.getOrElse("userDir", "").toString
+    val shortDirName = fullDirName.substring(fullDirName.lastIndexOf(System.getProperty("file.separator")) + 1)
+    val processId = memberDetails.getOrElse("processId","").toString
+
+    val memberDescription = {
+      host +
+          " | " + shortDirName +
+          " | " + processId
+    }
+    val memberDescriptionTooltip = {
+      <span>Host: {host}
+        <br/>Directory: {fullDirName}
+        <br/>Process Id: {processId}
+      </span>
+    }
+    val tooltipHandler = "$('#" + shortDirName + "').toggle();";
 
     val memberType = {
       if(memberDetails.getOrElse("lead", false).toString.toBoolean){
@@ -582,10 +664,22 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         <div style="float: left; border-right: thin inset; height: 24px; padding: 0 5px;">
           <img src={statusImgUri} />
-        </div><div style="float: left; height: 24px; padding-left: 15px; "><b>{memberDetails.getOrElse("status","NA")}</b></div>
+        </div><div style="float: left; height: 24px; padding-left: 15px; "><b>{
+          memberDetails.getOrElse("status","NA")
+        }</b></div>
       </td>
-      <td>
+      <!-- <td>
         <div style="width:100%; padding-left:10px;">{nameOrId}</div>
+      </td> -->
+      <td>
+        <div style="width: 80%; float: left; padding-left: 10px;">{memberDescription}</div>
+        <div style="width: 10px; float: right; padding-right: 10px; cursor: pointer;"
+             onclick={tooltipHandler}> + </div>
+        <div id={shortDirName}
+             style="float: left; padding-right: 10px; padding-left: 10px;
+             display: none; border: 1px solid #dbd9cf;">
+          {memberDescriptionTooltip}
+        </div>
       </td>
       <!-- <td>
         <div style="width:100%; padding-left:10px;">{memberDetails.getOrElse("host","NA")}</div>
@@ -783,6 +877,8 @@ object SnappyDashboardPage{
   memberStatsColumn += ("nameTooltip" -> "Members Name")
   memberStatsColumn += ("nameOrId" -> "Member")
   memberStatsColumn += ("nameOrIdTooltip" -> "Members Name/Id")
+  memberStatsColumn += ("description" -> "Member")
+  memberStatsColumn += ("descriptionTooltip" -> "Members Description")
   memberStatsColumn += ("host" -> "Host")
   memberStatsColumn += ("hostTooltip" -> "Physical machine on which member is running")
   memberStatsColumn += ("cpuUsage" -> "CPU Usage")
