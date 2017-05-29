@@ -72,22 +72,16 @@ object TPCH_Snappy_Query extends SnappySQLJob {
   }
 
   def main(args: Array[String]): Unit = {
-    val isResultCollection = false
-    val isSnappy = true
-
-    val conf = new SparkConf()
-        .setAppName("TPCH")
-        // .setMaster("local[6]")
-        .setMaster("snappydata://localhost:10334")
-        .set("jobserver.enabled", "false")
+    val conf = new SparkConf().setAppName("TPCH")
+    queries = conf.get("spark.queries",
+      "1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21").split("-")
+    warmUp = conf.getInt("spark.warmUp", 2)
+    runsForAverage = conf.getInt("spark.actualRuns", 3)
+    isResultCollection = conf.getBoolean("spark.resultCollection", false)
+    sqlSparkProperties = conf.get("spark.sparkSqlProps").split(",")
     val sc = new SparkContext(conf)
-    val snc =
-      SnappyContext(sc)
-
-
-    snc.sql("set spark.sql.shuffle.partitions=6")
-    queries = Array("16")
-    runJob(snc, null)
+    val snc = new SnappySession(sc)
+    runSnappyJob(snc, null)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {

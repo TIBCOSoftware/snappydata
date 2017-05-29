@@ -18,6 +18,9 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import io.snappydata.collection.ObjectHashSet
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -25,8 +28,8 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
+import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
 
 /**
@@ -115,7 +118,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         (index, ctx.freshName("minValue"), ctx.freshName("maxValue"))
     }.unzip3
 
-  private[this] val hashingClass = classOf[HashingUtil].getName
+  private[this] val hashingClass = classOf[ClientResolverUtils].getName
   private[this] val nullsMaskPrefix = "nullsMask"
   /**
    * Indicator value for "nullIndex" of a non-primitive nullable that can be
@@ -306,12 +309,16 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
     }.mkString("\n")
 
-    // For SnappyData column or row tables there is no need to make
-    // a copy of non-primitive values into the map since they are immutable.
+    // For SnappyData row tables there is no need to make a copy of
+    // non-primitive values into the map since they are immutable.
     // Also checks for other common plans known to provide immutable objects.
+    // Cannot do the same for column tables since it will end up holding
+    // the whole column buffer for a single value which can cause doom
+    // for eviction. For off-heap it will not work at all and can crash
+    // unless a reference to the original column ByteBuffer is retained.
     // TODO: can be extended for more plans as per their behaviour.
     def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
-      case _: PartitionedPhysicalScan | _: HashJoinExec => true
+      case _: RowTableScan | _: HashJoinExec => true
       case FilterExec(_, c) => providesImmutableObjects(c)
       case ProjectExec(_, c) => providesImmutableObjects(c)
       case _ => false
@@ -383,7 +390,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           ${generateUpdate(entryVar, Nil, valueVars, forKey = false, doCopy)}
           // insert into the map and rehash if required
           $dataTerm[$posVar] = $entryVar;
-          if ($hashMapTerm.handleNewInsert()) {
+          if ($hashMapTerm.handleNewInsert($posVar)) {
             // map was rehashed
             $maskTerm = $hashMapTerm.mask();
             $dataTerm = ($className[])$hashMapTerm.data();
@@ -632,7 +639,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |  ${generateUpdate(objVar, Nil, newKeyVars, forKey = true)}
              |  // insert into the map and rehash if required
              |  $dataTerm[$pos] = $objVar;
-             |  if ($hashMapTerm.handleNewInsert()) {
+             |  if ($hashMapTerm.handleNewInsert($pos)) {
              |    // return null to indicate map was rehashed
              |    return null;
              |  } else {
@@ -1309,25 +1316,23 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     case StringType if !multiMap =>
       // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
-      val platformClass = classOf[Platform].getName
       val bytes = ctx.freshName("stringBytes")
       s"""byte[] $bytes;
-        if ($stringVar.getBaseOffset() == $platformClass.BYTE_ARRAY_OFFSET
+        if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
             && ($bytes = (byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
           $colVar = $bytes;
         } else {
           $colVar = $stringVar.getBytes();
         }"""
     // multimap holds a reference to UTF8String itself
-    case StringType if doCopy =>
+    case StringType =>
       // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
-      val platformClass = classOf[Platform].getName
-      s"""if ($stringVar.getBaseOffset() == $platformClass.BYTE_ARRAY_OFFSET
+      s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
             && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
           $colVar = $stringVar;
         } else {
-          $colVar = $stringVar.clone();
+          $colVar = ${if (doCopy) stringVar + ".clone()" else stringVar};
         }"""
     case (_: ArrayType | _: MapType | _: StructType) if doCopy =>
       s"$colVar = ${resultVar.value}.copy();"
@@ -1363,9 +1368,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def hashSingleInt(colVar: String, nullVar: String,
       hashVar: String): String = {
     if (nullVar.isEmpty || nullVar == "false") {
-      s"$hashVar = $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = $hashingClass.fastHashInt($colVar);\n"
     } else {
-      s"$hashVar = ($nullVar) ? -1 : $hashingClass.hashInt($colVar);\n"
+      s"$hashVar = ($nullVar) ? -1 : $hashingClass.fastHashInt($colVar);\n"
     }
   }
 
@@ -1380,13 +1385,13 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     if (nullVar.isEmpty || nullVar == "false") {
       s"""
         final long $longVar = $colVar;
-        $hashVar = $hashingClass.hashInt(
+        $hashVar = $hashingClass.fastHashInt(
           (int)($longVar ^ ($longVar >>> 32)));
       """
     } else {
       s"""
         final long $longVar;
-        $hashVar = ($nullVar) ? -1 : $hashingClass.hashInt(
+        $hashVar = ($nullVar) ? -1 : $hashingClass.fastHashInt(
           (int)(($longVar = ($colVar)) ^ ($longVar >>> 32)));
       """
     }
@@ -1440,19 +1445,18 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // strings are stored as raw byte arrays
       case StringType if !multiMap =>
         val byteMethodsClass = classOf[ByteArrayMethods].getName
-        val platformClass = classOf[Platform].getName
         if (thisVar.isEmpty) {
           // left side is a UTF8String while right side is byte array
           s"""$thisColVar.numBytes() == $otherCol.length
             && $byteMethodsClass.arrayEquals($thisColVar.getBaseObject(),
                $thisColVar.getBaseOffset(), $otherCol,
-               $platformClass.BYTE_ARRAY_OFFSET, $otherCol.length)"""
+               Platform.BYTE_ARRAY_OFFSET, $otherCol.length)"""
         } else {
           // both sides are raw byte arrays
           s"""$thisColVar.length == $otherCol.length
             && $byteMethodsClass.arrayEquals($thisColVar,
-               $platformClass.BYTE_ARRAY_OFFSET, $otherCol,
-               $platformClass.BYTE_ARRAY_OFFSET, $otherCol.length)"""
+               Platform.BYTE_ARRAY_OFFSET, $otherCol,
+               Platform.BYTE_ARRAY_OFFSET, $otherCol.length)"""
         }
       case _ => s"$thisColVar.equals($otherCol)"
     }

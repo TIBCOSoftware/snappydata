@@ -49,8 +49,8 @@ allprojects {
     mavenCentral()
     maven { url "https://repo.spring.io/libs-release" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    maven { url 'http://repository.snappydata.io:8089/repository/internal' }
-    maven { url 'http://repository.snappydata.io:8089/repository/snapshots' }
+    maven { url 'http://repository.snappydata.io/repository/internal' }
+    maven { url 'http://repository.snappydata.io/repository/snapshots' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
   }
 
@@ -224,7 +224,7 @@ subprojects {
       args = params.split(',') as List
     }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs '-Xmx2g', '-XX:MaxPermSize=512m'
+    jvmArgs '-Xmx2g'
   }
 
   task scalaTest(type: Test) {
@@ -235,12 +235,12 @@ subprojects {
     minHeapSize '4g'
     maxHeapSize '4g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     // for benchmarking
     // minHeapSize '12g'
     // maxHeapSize '12g'
     // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
-    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
 
     testLogging.exceptionFormat = 'full'
 
@@ -278,7 +278,7 @@ subprojects {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-XX:MaxPermSize=512m'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     testLogging.exceptionFormat = 'full'
 
     include '**/*.class'
@@ -303,10 +303,10 @@ subprojects {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
     maxParallelForks = 1
-    minHeapSize '2g'
-    maxHeapSize '2g'
+    minHeapSize '1536m'
+    maxHeapSize '1536m'
 
-    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m',
+    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
@@ -591,8 +591,6 @@ task generateSources {
 }
 
 task product(type: Zip) {
-  dependsOn ':snappy-store:gemfirexd-client:shadowJar'
-  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
@@ -621,9 +619,7 @@ task product(type: Zip) {
     delete "${snappyProductDir}/python/lib/pyspark.zip"
   }
   doLast {
-    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     def examplesProject = project(":snappy-examples_${scalaBinaryVersion}")
-    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
     String exampleArchiveName = "quickstart.jar"
 
     // copy all runtime dependencies of snappy-cluster, itself and AQP
@@ -687,13 +683,6 @@ task product(type: Zip) {
       into "${snappyProductDir}/docs"
     }
 
-    // copy the snappy-core shadow jar into distributions
-    copy {
-      from("${coreProject.buildDir}/libs")
-      into "${rootProject.buildDir}/distributions"
-      include "${coreProject.shadowJar.archiveName}"
-      rename { filename -> coreName }
-    }
     // Next the remaining components of full product like examples etc
     // Spark portions already copied in the assembly:product dependency
     copy {
@@ -710,13 +699,6 @@ task product(type: Zip) {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
-      }
-      // also copy the JDBC client jar separately into distributions
-      def clientProject = project(':snappy-store:gemfirexd-client')
-      copy {
-        from clientProject.shadowJar.destinationDir
-        into "${rootProject.buildDir}/distributions"
-        include clientProject.shadowJar.archiveName
       }
     }
     // copy AQP jar from maven repo if project not present
@@ -803,6 +785,29 @@ distZip {
 // use the task below to prepare final release bits
 task distProduct {
   dependsOn product, distTar, distZip
+  dependsOn ':snappy-store:gemfirexd-client:shadowJar'
+  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
+
+  doLast {
+    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
+    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
+    // copy the snappy-core shadow jar into distributions
+    copy {
+      from coreProject.shadowJar.destinationDir
+      into "${rootProject.buildDir}/distributions"
+      include coreProject.shadowJar.archiveName
+      rename { filename -> coreName }
+    }
+    if (new File(rootDir, 'store/build.gradle').exists()) {
+      // copy the JDBC client jar separately into distributions
+      def clientProject = project(':snappy-store:gemfirexd-client')
+      copy {
+        from clientProject.shadowJar.destinationDir
+        into "${rootProject.buildDir}/distributions"
+        include clientProject.shadowJar.archiveName
+      }
+    }
+  }
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -840,9 +845,14 @@ task cleanAll {
 }
 task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
+  dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
   dependsOn distTar, distZip
   mustRunAfter cleanAll
+}
+task buildDtests {
+  delete "${snappyProductDir}/dtests/build-artifacts/scala-${scalaBinaryVersion}/"
+  dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
 }
 task checkAll {
   dependsOn ':snappy-spark:scalaStyle'
@@ -1008,6 +1018,10 @@ task publishDocs(type:Exec) {
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports
   dependsOn ':snappy-spark:scalaStyle', docs
+  if (!project.hasProperty('smoke.skip')) {
+    dependsOn ":buildDtests"
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+  }
 }
 
 if (project.hasProperty('trackBuildTime') ) {

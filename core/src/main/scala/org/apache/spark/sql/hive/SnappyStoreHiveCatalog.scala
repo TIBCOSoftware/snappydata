@@ -28,6 +28,9 @@ import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -99,7 +102,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val defaultDbDefinition =
       CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
     // Initialize default database if it doesn't already exist
-    client.createDatabase(defaultDbDefinition, ignoreIfExists = true)
+    externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
     client.setCurrentDatabase(defaultName)
     formatDatabaseName(defaultName)
   }
@@ -151,10 +154,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
-      (LogicalRelation, CatalogTable)] = {
+      (LogicalRelation, CatalogTable, RelationInfo)] = {
     val cacheLoader = new CacheLoader[QualifiedTableName,
-        (LogicalRelation, CatalogTable)]() {
-      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable) = {
+        (LogicalRelation, CatalogTable, RelationInfo)]() {
+      override def load(in: QualifiedTableName): (LogicalRelation, CatalogTable, RelationInfo) = {
         logDebug(s"Creating new cached data source for $in")
         val table = in.getTable(client)
         val partitionColumns = table.partitionColumns.map(_.name)
@@ -190,7 +193,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation), table)
+        (LogicalRelation(relation, metastoreTableIdentifier = Some(in)), table, RelationInfo(
+          0, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
       }
     }
 
@@ -205,7 +209,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     SnappyStoreHiveCatalog.cachedSampleTables
   }
 
-  private var relationDestroyVersion = 0
+  var relationDestroyVersion = 0
 
   def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
     val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
@@ -289,7 +293,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  private def registerRelationDestroy(): Unit = {
+  protected def registerRelationDestroy(): Unit = {
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
@@ -394,6 +398,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def invalidateTable(tableIdent: QualifiedTableName): Unit = {
     tableIdent.invalidate()
     cachedDataSourceTables.invalidate(tableIdent)
+  }
+
+  def invalidateAll(): Unit = {
+    cachedDataSourceTables.invalidateAll()
   }
 
   def unregisterAllTables(): Unit = synchronized {
@@ -644,7 +652,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case he: HiveException if isDisconnectException(he) =>
         // stale JDBC connection
         Hive.closeCurrent()
-        client = externalCatalog.client.newSession()
+        SnappyStoreHiveCatalog.suspendActiveSession {
+          client = externalCatalog.client.newSession()
+        }
         function
     }
   }
@@ -999,7 +1009,7 @@ object SnappyStoreHiveCatalog {
   }
 
   private[this] var relationDestroyVersion = 0
-  private val relationDestroyLock = new ReentrantReadWriteLock()
+  val relationDestroyLock = new ReentrantReadWriteLock()
   private val alterTableLock = new Object
 
   private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
@@ -1010,15 +1020,53 @@ object SnappyStoreHiveCatalog {
     try {
       val globalVersion = relationDestroyVersion
       relationDestroyVersion += 1
+      setRelationDestroyVersionOnAllMembers()
       globalVersion
     } finally {
       sync.unlock()
     }
   }
 
+  def setRelationDestroyVersionOnAllMembers(): Unit = {
+    SparkSession.getDefaultSession.foreach(session =>
+      SnappyContext.getClusterMode(session.sparkContext) match {
+        case SnappyEmbeddedMode(_, _) =>
+          val version = getRelationDestroyVersion
+          Utils.mapExecutors(session.sqlContext,
+            () => {
+              val profile: GfxdProfile =
+                GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
+              Option(profile).foreach(gp => gp.setRelationDestroyVersion(version))
+              Iterator.empty
+            }).count()
+        case _ =>
+      }
+    )
+  }
+
   def getSchemaStringFromHiveTable(table: Table): String =
     JdbcExtendedUtils.readSplitProperty(HIVE_SCHEMA_PROP,
       table.getParameters.asScala).orNull
+
+  /**
+   * Suspend the active SparkSession in case "function" creates new threads
+   * that can end up inheriting it. Currently used during hive client creation
+   * otherwise the BoneCP background threads hold on to old sessions
+   * (even after a restart) due to the InheritableThreadLocal. Shows up as
+   * leaks in unit tests where lead JVM size keeps on increasing with new tests.
+   */
+  def suspendActiveSession[T](function: => T): T = {
+    SparkSession.getActiveSession match {
+      case Some(activeSession) =>
+        SparkSession.clearActiveSession()
+        try {
+          function
+        } finally {
+          SparkSession.setActiveSession(activeSession)
+        }
+      case None => function
+    }
+  }
 
   def closeCurrent(): Unit = {
     Hive.closeCurrent()
@@ -1063,4 +1111,15 @@ object ExternalTableType {
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
+
+  def isTableBackedByRegion(t: Table): Boolean = {
+    val tableType = t.getParameters.get(JdbcExtendedUtils.TABLETYPE_PROPERTY)
+    tableType match {
+      case _ if tableType == ExternalTableType.Row.name ||
+          tableType == ExternalTableType.Column.name ||
+          tableType == ExternalTableType.Sample.name ||
+          tableType == ExternalTableType.Index.name => true
+      case _ => false
+    }
+  }
 }

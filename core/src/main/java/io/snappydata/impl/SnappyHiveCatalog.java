@@ -22,14 +22,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -38,7 +41,6 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
 import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.spark.sql.collection.Utils;
@@ -63,8 +65,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   private final ThreadLocal<HMSQuery> queries = new ThreadLocal<>();
 
   private final ExecutorService hmsQueriesExecutorService;
-
-  private final ArrayList<HiveMetaStoreClient> allHMclients = new ArrayList<>();
 
   public SnappyHiveCatalog() {
     final ThreadGroup hmsThreadGroup = LogWriterImpl.createThreadGroup(
@@ -93,6 +93,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
   }
 
+  public Table getTable(String schema, String tableName, boolean skipLocks) {
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.GET_TABLE, tableName, schema, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (Table)handleFutureResult(f);
+  }
+
   public boolean isColumnTable(String schema, String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
     q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName, schema, skipLocks);
@@ -115,7 +122,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       return Collections.emptyList();
     }
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.GET_HIVE_TABLES, null, null, skipLocks);
+    q.resetValues(HMSQuery.GET_NON_STORE_TABLES, null, null, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     // noinspection unchecked
     return (List<ExternalTableMetaData>)handleFutureResult(f);
@@ -141,6 +148,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     HMSQuery q = getHMSQuery();
     q.resetValues(HMSQuery.GET_ALL_TABLES_MANAGED_IN_DD, null, null, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    // noinspection unchecked
     return (HashMap<String, List<String>>)handleFutureResult(f);
   }
 
@@ -159,12 +167,17 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   @Override
   public void stop() {
-    for (HiveMetaStoreClient cl : this.allHMclients) {
-      cl.close();
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.CLOSE_HMC, null, null, true);
+    try {
+      this.hmsQueriesExecutorService.submit(q).get();
+    } catch (Exception ignored) {
     }
-    this.hmClients = null;
-    this.allHMclients.clear();
     this.hmsQueriesExecutorService.shutdown();
+    try {
+      this.hmsQueriesExecutorService.awaitTermination(5, TimeUnit.SECONDS);
+    } catch (InterruptedException ignored) {
+    }
   }
 
   private HMSQuery getHMSQuery() {
@@ -200,8 +213,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private static final int GET_ALL_TABLES_MANAGED_IN_DD = 4;
     private static final int REMOVE_TABLE = 5;
     private static final int GET_COL_TABLE = 6;
-    // private static final int CLOSE_HMC = 7;
-    private static final int GET_HIVE_TABLES = 8;
+    private static final int CLOSE_HMC = 7;
+    private static final int GET_TABLE = 8;
+    private static final int GET_NON_STORE_TABLES = 9;
 
     // More to be added later
 
@@ -242,7 +256,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           hmc = SnappyHiveCatalog.this.hmClients.get();
           return getSchema(hmc);
 
-        case GET_HIVE_TABLES: {
+        case GET_TABLE:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          return getTable(hmc, this.dbName, this.tableName);
+
+        case GET_NON_STORE_TABLES: {
           hmc = SnappyHiveCatalog.this.hmClients.get();
           List<String> schemas = hmc.getAllDatabases();
           ArrayList<ExternalTableMetaData> externalTables = new ArrayList<>();
@@ -253,6 +271,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               String tableType = table.getParameters().get(
                   JdbcExtendedUtils.TABLETYPE_PROPERTY());
               if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType) &&
+                  !ExternalTableType.Column().name().equalsIgnoreCase(tableType) &&
                   !ExternalTableType.Index().name().equalsIgnoreCase(tableType)) {
                 // TODO: FIX ME: should not convert to upper case blindly
                 // but unfortunately hive meta-store is not case-sensitive
@@ -302,7 +321,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               "." + Utils.toUpperCase(table.getTableName());
           StructType schema = ExternalStoreUtils.getTableSchema(
               table.getParameters()).get();
-          CaseInsensitiveMap parameters = new CaseInsensitiveMap(
+          @SuppressWarnings("unchecked")
+          Map<String, String> parameters = new CaseInsensitiveMap(
               table.getSd().getSerdeInfo().getParameters());
           int partitions = ExternalStoreUtils.getAndSetTotalPartitions(
               parameters, true);
@@ -314,9 +334,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;
           int columnBatchSize = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE()).toString());
+              ExternalStoreUtils.COLUMN_BATCH_SIZE()));
           int columnMaxDeltaRows = Integer.parseInt(parameters.get(
-              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()).toString());
+              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS()));
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? null : value.toString();
           String tableType = table.getParameters().get(
@@ -333,6 +353,12 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               baseTable,
               dmls,
               dependentRelations);
+
+        case CLOSE_HMC:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          hmc.close();
+          SnappyHiveCatalog.this.hmClients.remove();
+          return true;
 
         default:
           throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
@@ -359,12 +385,44 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");
 
-      try {
-        HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
-        SnappyHiveCatalog.this.hmClients.set(hmc);
-        SnappyHiveCatalog.this.allHMclients.add(hmc);
-      } catch (MetaException me) {
-        throw new IllegalStateException(me);
+      final short numRetries = 40;
+      short count = 0;
+      while (true) {
+        try {
+          HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
+          SnappyHiveCatalog.this.hmClients.set(hmc);
+          return;
+        } catch (Exception ex) {
+          Throwable t = ex;
+          boolean noDataStoreFound = false;
+          while (t != null && !noDataStoreFound) {
+            noDataStoreFound = (t instanceof SQLException) &&
+                SQLState.NO_DATASTORE_FOUND.startsWith(
+                    ((SQLException)t).getSQLState());
+            t = t.getCause();
+          }
+          // wait for some time and retry if no data store found error
+          // is thrown due to region not being initialized
+          if (count < numRetries && noDataStoreFound) {
+            try {
+              Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                  "SnappyHiveCatalog.HMSQuery.initHMC: No datastore found " +
+                      "while initializing Hive metastore client. " +
+                      "Will retry initialization after 3 seconds. " +
+                      "Exception received is " + t);
+              if (Misc.getI18NLogWriter().fineEnabled()) {
+                Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                    "Exception stacktrace:", ex);
+              }
+              count++;
+              Thread.sleep(3000);
+            } catch (InterruptedException ie) {
+              throw new IllegalStateException(ex);
+            }
+          } else {
+            throw new IllegalStateException(ex);
+          }
+        }
       }
     }
 

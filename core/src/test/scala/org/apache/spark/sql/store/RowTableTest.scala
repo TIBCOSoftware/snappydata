@@ -606,4 +606,15 @@ class RowTableTest
     snc.dropTable(tableName2)
     println("Successful")
   }
+
+  test("Test create table from CSV without header- SNAP-1442") {
+    snc.sql(s"create table t1 using com.databricks.spark.csv options(path '${(getClass.getResource("/northwind/regions"+
+      ".csv").getPath)}', header 'true', inferschema 'true')")
+    snc.sql("CREATE TABLE t2 (RegionID int, RegionDescription string) USING row OPTIONS(PERSISTENT 'async') AS " +
+      "(SELECT RegionID, RegionDescription FROM t1)")
+
+    val df2 = snc.sql("select * from t1")
+    assert(df2.count()==4)
+    snc.sql("DROP table t2")
+  }
 }

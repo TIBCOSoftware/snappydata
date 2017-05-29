@@ -29,7 +29,6 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -56,7 +55,7 @@ class LeadImpl extends ServerImpl with Lead
     val gfCache = GemFireCacheImpl.getInstance
 
     if (gfCache == null || gfCache.isClosed) {
-      throw new Exception("GemFire Cache not initialized")
+      throw new IllegalStateException("GemFire Cache not initialized")
     }
 
     val dSys = gfCache.getDistributedSystem
@@ -81,7 +80,7 @@ class LeadImpl extends ServerImpl with Lead
   }.toSet
 
   var _directApiInvoked: Boolean = false
-
+  var isTestSetup = false
   def directApiInvoked: Boolean = _directApiInvoked
 
   private var remoteInterpreterServerClass: Class[_] = _
@@ -92,6 +91,8 @@ class LeadImpl extends ServerImpl with Lead
 
     _directApiInvoked = true
 
+    isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
+    bootProperties.remove("isTest")
     try {
 
       val locator = {
@@ -233,10 +234,12 @@ class LeadImpl extends ServerImpl with Lead
 
   @throws[SQLException]
   override def stop(shutdownCredentials: Properties): Unit = {
+    /* (sample reservoir region is now persistent by default)
     val servers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null)
     if (servers.size() > 0) {
       SnappyContext.flushSampleTables()
     }
+    */
 
     assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")
@@ -339,7 +342,7 @@ class LeadImpl extends ServerImpl with Lead
 
     val jobServerEnabled = Property.JobServerEnabled.getProperty(
       bootProperties).toBoolean
-    if (_directApiInvoked) {
+    if (_directApiInvoked && !isTestSetup) {
       assert(jobServerEnabled,
         "JobServer must have been enabled with lead.start(..) invocation")
     }
@@ -367,7 +370,6 @@ class LeadImpl extends ServerImpl with Lead
 
   def getConfig(args: Array[String]): Config = {
 
-    System.setProperty("config.trace", "loads")
     val notConfigurable = ConfigFactory.parseProperties(getDynamicOverrides).
         withFallback(ConfigFactory.parseResources("jobserver-overrides.conf"))
 
@@ -380,7 +382,7 @@ class LeadImpl extends ServerImpl with Lead
 
     val finalConf = snappyDefaults.withFallback(builtIn).resolve()
 
-    logInfo("Passing JobServer with config " + finalConf.root.render())
+    logDebug("Passing JobServer with config " + finalConf.root.render())
 
     finalConf
   }

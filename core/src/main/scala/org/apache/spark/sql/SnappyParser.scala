@@ -16,21 +16,24 @@
  */
 package org.apache.spark.sql
 
+import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
 import io.snappydata.QueryHint
 import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, plusOrMinus, trueFn}
-import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.CachedPlanHelperExec
 import org.apache.spark.sql.sources.PutIntoTable
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
@@ -45,9 +48,13 @@ class SnappyParser(session: SnappySession)
 
   override final def input: ParserInput = _input
 
+  private var paramcounter = 0
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
+    paramcounter = 0
+    session.sessionState.questionMarkCounter = 0
+    tokenize = false
   }
 
   protected final type WhenElseType = (Seq[(Expression, Expression)],
@@ -167,6 +174,60 @@ class SnappyParser(session: SnappySession)
     booleanLiteral |
     NULL ~> (() => Literal.create(null, NullType)) |
     intervalLiteral
+  }
+
+  protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
+    questionMark ~> (() => {
+      session.sessionState.questionMarkCounter = session.sessionState.questionMarkCounter + 1
+      if (session.sessionState.isPreparePhase) {
+        ParamLiteral(Row(session.sessionState.questionMarkCounter), NullType, 0)
+      } else {
+        assert(session.sessionState.pvs.isDefined,
+          "For Prepared Statement, Parameter constants are not provided")
+        if (session.sessionState.questionMarkCounter >
+            session.sessionState.pvs.get.getParameterCount) {
+          assert(assertion = false, s"For Prepared Statement, Got more number of" +
+              s" placeholders = ${session.sessionState.questionMarkCounter}" +
+              s" than given number of parameter" +
+              s" constants = ${session.sessionState.pvs.get.getParameterCount}")
+        }
+        val dvd =
+          session.sessionState.pvs.get.getParameter(session.sessionState.questionMarkCounter - 1)
+        val scalaTypeVal = CachedPlanHelperExec.getValue(dvd)
+        val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
+        val storeType = dvd.getTypeFormatId
+        val storePrecision = dvd match {
+          case d: SQLDecimal => d.getDecimalValuePrecision
+          case _ => -1
+        }
+        val storeScale = dvd match {
+          case d: SQLDecimal => d.getDecimalValueScale
+          case _ => -1
+        }
+        val dataType = SnappySession.getDataType(storeType, storePrecision, storeScale)
+        paramcounter = paramcounter + 1
+        val p = ParamLiteral(catalystTypeVal, dataType, paramcounter)
+        addParamLiteralToContext(p)
+        p
+      }
+    })
+  }
+
+  def addParamLiteralToContext(p: ParamLiteral): Unit =
+    session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
+      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      case Some(list) => list += p
+      case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
+        mutable.ArrayBuffer(p))
+    }
+
+  protected final def paramliteral: Rule1[ParamLiteral] = rule {
+    literal ~> ((l: Literal) => {
+      paramcounter = paramcounter + 1
+      val p = ParamLiteral(l.value, l.dataType, paramcounter)
+      addParamLiteralToContext(p)
+      p
+    })
   }
 
   protected final def month: Rule1[Int] = rule {
@@ -597,33 +658,33 @@ class SnappyParser(session: SnappySession)
 
   protected final def primary: Rule1[Expression] = rule {
     identifier ~ (
-        '(' ~ ws ~ (
-            '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
-              if (udfName.equalsIgnoreCase("COUNT")) {
-                AggregateExpression(Count(Literal(1, IntegerType)),
-                  mode = Complete, isDistinct = false)
-              } else {
-                throw Utils.analysisException(s"invalid expression $udfName(*)")
-              }) |
-            (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
-                (OVER ~ windowSpec).? ~> { (u: Any, d: Any, e: Any, w: Any) =>
-              val udfName = u.asInstanceOf[String]
-              val exprs = e.asInstanceOf[Seq[Expression]]
-              val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
-                UnresolvedFunction(udfName, exprs, isDistinct = false)
-              } else if (udfName.equalsIgnoreCase("COUNT")) {
-                aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
-              } else {
-                UnresolvedFunction(udfName, exprs, isDistinct = true)
-              }
-              w.asInstanceOf[Option[WindowSpec]] match {
-                case None => function
-                case Some(spec: WindowSpecDefinition) =>
-                  WindowExpression(function, spec)
-                case Some(ref: WindowSpecReference) =>
-                  UnresolvedWindowExpression(function, ref)
-              }
+      ('.' ~ identifier).? ~ '(' ~ ws ~ (
+        '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
+          if (n1.equalsIgnoreCase("COUNT")) {
+            AggregateExpression(Count(Literal(1, IntegerType)),
+              mode = Complete, isDistinct = false)
+          } else {
+            throw Utils.analysisException(s"invalid expression $n1(*)")
+          }) |
+          (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
+            (OVER ~ windowSpec).? ~> { (n1: String, n2: Option[String], d: Any, e: Any, w: Any) =>
+            val udfName = n2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
+            val exprs = e.asInstanceOf[Seq[Expression]]
+            val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
+              UnresolvedFunction(udfName, exprs, isDistinct = false)
+            } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
+              aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
+            } else {
+              UnresolvedFunction(udfName, exprs, isDistinct = true)
             }
+            w.asInstanceOf[Option[WindowSpec]] match {
+              case None => function
+              case Some(spec: WindowSpecDefinition) =>
+                WindowExpression(function, spec)
+              case Some(ref: WindowSpecReference) =>
+                UnresolvedWindowExpression(function, ref)
+            }
+          }
         ) |
         '.' ~ ws ~ (
             identifier. +('.' ~ ws) ~> ((i1: String, rest: Any) =>
@@ -633,10 +694,10 @@ class SnappyParser(session: SnappySession)
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
-    '{' ~ FN ~ ws ~ identifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
-      (fn: Any, e: Any) =>
-        fn.asInstanceOf[String] match {
-          case f if f.equalsIgnoreCase("TIMESTAMPADD") =>
+    '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
+      (fn: FunctionIdentifier, e: Any) =>
+        fn match {
+          case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
             val exprs = e.asInstanceOf[Seq[Expression]].toList
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
@@ -646,7 +707,7 @@ class SnappyParser(session: SnappySession)
             isDistinct = false)
         }
     } |
-    literal |
+    ( ( test(tokenize) ~ paramliteral ) | literal | paramLiteralQuestionMark) |
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
@@ -677,9 +738,9 @@ class SnappyParser(session: SnappySession)
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
     (FROM ~ ws ~ relations).? ~
-    (WHERE ~ expression).? ~
+    (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
-    (HAVING ~ expression).? ~
+    (HAVING ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
       val base = f.asInstanceOf[Option[LogicalPlan]].getOrElse(OneRowRelation)
@@ -756,9 +817,32 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
+  // Only when wholeStageEnabled try for tokenization. It should be
+  // true
+  private var tokenize = session.sessionState.conf.wholeStageEnabled
+
+  private var isSelect = false
+
+  protected final def TOKENIZE_BEGIN: Rule0 = rule {
+    MATCH ~> (() =>
+      tokenize = isSelect && session.sessionState.conf.wholeStageEnabled)
+  }
+
+  protected final def TOKENIZE_END: Rule0 = rule {
+    MATCH ~> {() => tokenize = false}
+  }
+
+  protected final def SET_SELECT: Rule0 = rule {
+    MATCH ~> (() => isSelect = true)
+  }
+
+  protected final def SET_NOSELECT: Rule0 = rule {
+    MATCH ~> (() => isSelect = false)
+  }
+
   override protected def start: Rule1[LogicalPlan] = rule {
-    query.named("select") | insert | put | dmlOperation | ctes |
-        ddl | set | cache | uncache | desc
+    (SET_SELECT ~ query.named("select")) | (SET_NOSELECT ~ (insert | put |
+        dmlOperation | ctes | ddl | set | cache | uncache | desc))
   }
 
   def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {

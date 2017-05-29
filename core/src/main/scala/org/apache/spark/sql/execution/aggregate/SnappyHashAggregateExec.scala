@@ -36,6 +36,8 @@
 
 package org.apache.spark.sql.execution.aggregate
 
+import io.snappydata.collection.ObjectHashSet
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
@@ -65,7 +67,7 @@ case class SnappyHashAggregateExec(
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
     hasDistinct: Boolean)
-    extends UnaryExecNode with BatchConsumer {
+    extends UnaryExecNode with BatchConsumer with NonRecursivePlans {
 
   override def nodeName: String = "SnappyHashAggregate"
 
@@ -206,10 +208,7 @@ case class SnappyHashAggregateExec(
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
-    // Code generation should never fail.
-    // If code generation is not supported (due to ImperativeAggregate)
-    // then this plan should not be created (SnappyAggregation.supportCodegen).
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
   }
 
   // all the mode of aggregate expressions
@@ -225,7 +224,10 @@ case class SnappyHashAggregateExec(
     child.asInstanceOf[CodegenSupport].inputRDDs()
   }
 
+
+
   override protected def doProduce(ctx: CodegenContext): String = {
+    startProducing
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {
@@ -502,7 +504,7 @@ case class SnappyHashAggregateExec(
     ctx.addNewFunction(doAgg,
       s"""
         private void $doAgg() throws java.io.IOException {
-          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns,
+          $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns, false,
             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
           $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
           int $maskTerm = $hashMapTerm.mask();

@@ -18,6 +18,9 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
+import com.gemstone.gemfire.distributed.internal.DistributionConfig
+import com.gemstone.gemfire.internal.snappy.StoreCallbacks
+
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
@@ -31,6 +34,8 @@ object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
 
+  val DEFAULT_THIN_CLIENT_URL = "jdbc:snappydata://"
+
   val SNAPPY_URL_PREFIX = "snappydata://"
 
   val JDBC_URL_PREFIX = "snappydata://"
@@ -41,7 +46,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
+  val STORE_PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
@@ -70,13 +75,13 @@ object Constant {
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
 
   // Internal Column table store schema
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
+  final val SHADOW_SCHEMA_NAME = StoreCallbacks.SHADOW_SCHEMA_NAME
 
   // Internal Column table store suffix
-  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
+  final val SHADOW_TABLE_SUFFIX = StoreCallbacks.SHADOW_TABLE_SUFFIX
 
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
@@ -174,6 +179,14 @@ object Property extends Enumeration {
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
+  val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
+     "Host and client port combination in the form [host:clientPort]. This " +
+     "is used by smart connector to connect to SnappyData cluster using " +
+     "JDBC driver. This will be used to form a JDBC URL of the form " +
+     "\"jdbc:snappydata://host:clientPort/\". It is recommended that hostname " +
+     "and client port of the locator be specified for this.",
+     None, Constant.SPARK_PREFIX)
+
   val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
@@ -213,7 +226,7 @@ object Property extends Enumeration {
         s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
-    "The join would be converted into a hash join if the table is of size less" +
+    "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](

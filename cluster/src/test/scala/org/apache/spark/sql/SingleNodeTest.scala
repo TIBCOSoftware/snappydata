@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -45,7 +45,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
     super.afterAll()
   }
 
-  test("Nodes Pruning") {
+  ignore("DISABLED_SNAP-1597 Nodes Pruning") {
     SingleNodeTest.testNodesPruning(snc)
   }
 
@@ -80,11 +80,10 @@ object SingleNodeTest {
     // scalastyle:off println
     val tpchDataPath = TPCHColumnPartitionedTable.getClass.getResource("/TPCH").getPath
     val buckets_Order_Lineitem = "5"
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath,
+    TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath,
       true, buckets_Order_Lineitem, null)
 
     def validateSinglePartition(df: DataFrame, bucketId: Int): Unit = {
-      if (true) return // no pruning in this branch yet
       val scanRDD = df.queryExecution.executedPlan.collectFirst {
         case c: ColumnTableScan => c.dataRDD
       }

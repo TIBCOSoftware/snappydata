@@ -35,12 +35,13 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
   val numFormatter = java.text.NumberFormat.getIntegerInstance
 
   def render(request: HttpServletRequest): Seq[Node] = {
-    val uiDisplayInfo = SnappyTableStatsProviderService
-        .getAggregatedTableStatsOnDemand
+    val uiDisplayInfo = SnappyTableStatsProviderService.getService
+        .getAggregatedStatsOnDemand
 
-    val nodes = if (uiDisplayInfo.nonEmpty) {
+    val uiTableInfo = uiDisplayInfo._1
+    val nodes = if (uiTableInfo.nonEmpty) {
       <span>
-        <h4>Snappy Tables</h4>{UIUtils.listingTable(header, rowTable, uiDisplayInfo.values)}
+        <h4>Snappy Tables</h4>{UIUtils.listingTable(header, rowTable, uiTableInfo.values)}
       </span>
     } else Nil
 

@@ -97,6 +97,9 @@ dependencies {
         testCompile group: 'io.snappydata', name: 'gemfire-core', version: snappyStoreVersion
         testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
     }
+    testRuntime project(':snappy-core_' + scalaBinaryVersion)
+    testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-cluster_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
     testCompile project(':snappy-cluster_' + scalaBinaryVersion)
     testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
@@ -119,6 +122,19 @@ if (rootProject.hasProperty('enablePublish')) {
 }
 
 archivesBaseName = 'snappydata-store-scala-tests'
+
+scalaTest {
+    dependsOn ':cleanScalaTest'
+    doFirst {
+        // cleanup files since scalatest plugin does not honour workingDir yet
+        cleanIntermediateFiles(project.path)
+    }
+    testOutput '/dev/tty'
+    doLast {
+        // cleanup files since scalatest plugin does not honour workingDir yet
+        cleanIntermediateFiles(project.path)
+    }
+}
 
 testClasses.doLast {
   copyTestsCommonResources(buildDir)

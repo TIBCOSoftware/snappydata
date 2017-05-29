@@ -24,11 +24,8 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
-import com.esotericsoftware.kryo.serializers.{ExternalizableSerializer, JavaSerializer => KryoJavaSerializer}
+import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
-import org.apache.commons.logging.impl.SLF4JLocationAwareLog
-import org.slf4j.helpers.NOPLogger
-import org.slf4j.impl.Log4jLoggerAdapter
 
 import org.apache.spark.broadcast.TorrentBroadcast
 import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
@@ -38,7 +35,7 @@ import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
-import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SparkShellColumnBatchRDD, SparkShellRowRDD}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
@@ -78,8 +75,8 @@ final class PooledKryoSerializer(conf: SparkConf)
     val kryo = super.newKryo()
 
     // specific serialization implementations in Spark and commonly used classes
-    kryo.register(classOf[UnsafeRow], new KryoSerializableSerializer)
-    kryo.register(classOf[UTF8String], new KryoSerializableSerializer)
+    kryo.register(classOf[UnsafeRow])
+    kryo.register(classOf[UTF8String])
     kryo.register(classOf[UpdateBlockInfo], new ExternalizableOnlySerializer)
     kryo.register(classOf[CompressedMapStatus], new ExternalizableOnlySerializer)
     kryo.register(classOf[HighlyCompressedMapStatus],
@@ -127,10 +124,6 @@ final class PooledKryoSerializer(conf: SparkConf)
       BlockManagerId.getCachedBlockManagerId))
     kryo.register(classOf[StorageLevel], new ExternalizableResolverSerializer(
       StorageLevel.getCachedStorageLevel))
-    kryo.register(classOf[SLF4JLocationAwareLog], new KryoJavaSerializer())
-    kryo.register(classOf[Log4jLoggerAdapter], new KryoJavaSerializer())
-    kryo.register(classOf[NOPLogger], new KryoJavaSerializer())
-
     kryo.register(classOf[BlockAndExecutorId], new ExternalizableOnlySerializer)
     kryo.register(classOf[StructType], StructTypeSerializer)
     kryo.register(classOf[NarrowExecutorLocalSplitDep],
@@ -138,20 +131,15 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(CachedDataFrame.getClass, new KryoSerializableSerializer)
     kryo.register(classOf[ConnectionProperties], ConnectionPropertiesSerializer)
     kryo.register(classOf[RowFormatScanRDD], new KryoSerializableSerializer)
-    kryo.register(classOf[SparkShellRowRDD], new KryoSerializableSerializer)
+    kryo.register(classOf[SmartConnectorRowRDD], new KryoSerializableSerializer)
     kryo.register(classOf[ColumnarStorePartitionedRDD],
       new KryoSerializableSerializer)
-    kryo.register(classOf[SparkShellColumnBatchRDD],
+    kryo.register(classOf[SmartConnectorColumnRDD],
       new KryoSerializableSerializer)
     kryo.register(classOf[MultiBucketExecutorPartition],
       new KryoSerializableSerializer)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
-
-    // use Externalizable by default as last fallback, if available,
-    // rather than going to FieldSerializer
-    kryo.addDefaultSerializer(classOf[Externalizable],
-      new ExternalizableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(
@@ -160,6 +148,16 @@ final class PooledKryoSerializer(conf: SparkConf)
     } catch {
       case _: ClassNotFoundException => // ignore
     }
+
+    // use Externalizable by default as last fallback, if available,
+    // rather than going to FieldSerializer
+    kryo.addDefaultSerializer(classOf[Externalizable],
+      new ExternalizableSerializer)
+
+    // use a custom default serializer factory that will honour
+    // readObject/writeObject, readResolve/writeReplace methods to fall-back
+    // to java serializer else use Kryo's FieldSerializer
+    kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
 
     kryo
   }

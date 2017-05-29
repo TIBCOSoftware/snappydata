@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution
 
+import io.snappydata.collection.ObjectHashSet
+
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -132,7 +134,9 @@ object DictionaryOptimizedMapAccessor {
         s"$key = ${keyDictVar.dictionary}[$keyIndex];"
       } else {
         keyVar.code =
-            s"$key = ${keyVar.isNull} ? null : ${keyDictVar.valueAssignCode};"
+            s"""if ($key == null) {
+               |  $key = ${keyVar.isNull} ? null : ${keyDictVar.valueAssignCode};
+               |}""".stripMargin
         s"$key = ${keyDictVar.dictionary}[$keyIndex];"
       }
     }

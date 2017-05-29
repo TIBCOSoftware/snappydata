@@ -64,6 +64,9 @@ object ExternalStoreUtils extends Logging {
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
+  val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
+    COLUMN_MAX_DELTA_ROWS, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
       schema + '.' + tableName
@@ -166,18 +169,22 @@ object ExternalStoreUtils extends Logging {
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
-      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
+          "skip-constraint-checks=true"
       case Some(sc) =>
         SnappyContext.getClusterMode(sc) match {
           case SnappyEmbeddedMode(_, _) =>
             // Already connected to SnappyData in embedded mode.
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
+                "skip-constraint-checks=true"
+          case ThinClientConnectorMode(_, url) =>
+            url + ";route-query=false;skip-constraint-checks=true"
           case SplitClusterMode(_, _) =>
-            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false"
+            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
           case LocalMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ';' + url
+            Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
           case ExternalClusterMode(_, url) =>
             throw new AnalysisException("Option 'url' not specified for cluster " +
                 url)
@@ -234,8 +241,10 @@ object ExternalStoreUtils extends Logging {
     val connProps = new Properties()
     val executorConnProps = new Properties()
     parameters.foreach { kv =>
-      connProps.setProperty(kv._1, kv._2)
-      executorConnProps.setProperty(kv._1, kv._2)
+      if (!ddlOptions.contains(Utils.toUpperCase(kv._1))) {
+        connProps.setProperty(kv._1, kv._2)
+        executorConnProps.setProperty(kv._1, kv._2)
+      }
     }
     connProps.remove("poolProperties")
     executorConnProps.remove("poolProperties")
@@ -248,6 +257,7 @@ object ExternalStoreUtils extends Logging {
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
+        connProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
