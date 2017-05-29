@@ -608,7 +608,6 @@ task product(type: Zip) {
 
   if (hasJdbcConnectorProject) {
     dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
-    targetProject = project(":snappy-jdbc-connector_${scalaBinaryVersion}")
   }
 
   // create snappydata+spark combined python zip
