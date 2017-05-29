@@ -56,171 +56,21 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     super.afterAll()
   }
 
-  test("check CDC") {
+  test("dd") {
+
+    snc.sql("create table checko (col1 Integer primary key, col2 Integer) using row options " +
+        "(partition_by 'col1') ")
+
     // scalastyle:off println
-    val sqldriver = "/data/wrk/w/snappydata/sqljdbc4.jar"
-    val conf = new SparkConf().
-        setIfMissing("spark.master", "local[4]").
-        setAppName(getClass.getName).
-        setJars(Seq(sqldriver)).
-        set("spark.driver.extraClassPath", sqldriver).
-        set("spark.executor.extraClassPath", sqldriver)
+    val data = sc.parallelize(Seq((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)))
 
-    // val spark = new SparkContext(conf)
+    import snappy._
+    snc.createDataFrame(data).write.putInto("APP.CHECKO")
 
-    val spark = SparkSession.
-        builder().
-        appName("Spark SQLServer Example").
-        config(conf).
-        getOrCreate()
-    import spark.implicits._
+    println(snc.sql("select * from checko").count())
 
-    Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver")
-
-    val frames = Array("customer").map { tab =>
-      val df = spark.readStream
-          .format("jdbcStream")
-          .option("partition.1", "clientid > 1 and clientid < 100")
-          .option("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver")
-          .option("url", "jdbc:sqlserver://snappydb16.westus.cloudapp.azure.com:1433")
-          .option("dbtable", s"(select top 100000 * from tengb..$tab) x")
-          .option("user", "sqldb")
-          .option("password", "snappydata#msft1")
-          .load()
-
-/*
-      val xd = df.select(functions.window(functions.col("__startlsn"),
-        "10 seconds", "10 seconds", "5 seconds"))
-*/
-
-      df.writeStream
-          .foreach(new ForeachWriter[Row] {
-            /**
-             * Called to process the data in the executor side. This method will be called only
-             * when `open`
-             * returns `true`.
-             */
-            override def process(value: Row): Unit = {
-              value.schema.fields.foreach(_.dataType)
-              println(value.mkString)
-            }
-
-            /**
-             * Called when stopping to process one partition of new data in the executor side.
-             * This is
-             * guaranteed to be called either `open` returns `true` or `false`. However,
-             * `close` won't be called in the following cases:
-             *  - JVM crashes without throwing a `Throwable`
-             *  - `open` throws a `Throwable`.
-             *
-             * @param errorOrNull the error thrown during processing data or null if there was no
-             *                    error.
-             */
-            override def close(errorOrNull: Throwable): Unit = {
-              // savePoint()
-            }
-
-            /**
-             * Called when starting to process one partition of new data in the executor. The
-             * `version` is
-             * for data deduplication when there are failures. When recovering from a failure,
-             * some data may
-             * be generated multiple times but they will always have the same version.
-             *
-             * If this method finds using the `partitionId` and `version` that this partition has
-             * already been
-             * processed, it can return `false` to skip the further data processing. However,
-             * `close` still
-             * will be called for cleaning up resources.
-             *
-             * @param partitionId the partition id.
-             * @param version     a unique id for data deduplication.
-             * @return `true` if the corresponding partition and version id should be processed.
-             *        `false`
-             *         indicates the partition should be skipped.
-             */
-            override def open(partitionId: Long, version: Long): Boolean = {
-              true
-            }
-
-          }).start()
-    }
-
-    frames.foreach(_.awaitTermination())
-
-    var from = 0
-    var upto = 10000
-    val sdf = spark.read.
-        option("user", "sqldb").
-        option("password", "snappydata#msft1").
-        jdbc(s"jdbc:sqlserver://snappydb16.westus.cloudapp.azure.com:1433",
-          "(select * from tengb..customer) x",
-          Array(s"C_CustKey > $from and C_CustKey < $upto"),
-          new Properties()
-        )
-
-    sdf.printSchema()
-
-    sdf.explain(true)
-
-    val begin = System.currentTimeMillis()
-    sdf.foreachPartition { iter =>
-      iter.foreach { r =>
-        r.getInt(0) % 1000 match {
-          case 0 => println(s"read ${r.getString(1)}")
-          case _ =>
-        }
-        /*
-                r.getInt(3) match {
-                  case 1 => // delete
-                  // println(s"DELETE entry ${r.get(5)}")
-                  case 2 => // insert
-                  // println(s"INSERT entry ${r.get(5)}")
-                  case 4 | 5 => // update
-                  // println(s"UPSERT entry ${r.get(5)}")
-                }
-        */
-      }
-    }
-
-    println(s"Time taken to execute ${System.currentTimeMillis() - begin} ms")
+    // scalastyle:on println
   }
-
-  /*
-
-    test("dd") {
-      // scalastyle:off println
-      val toks = Seq("[dd]", "[dd1]", "date '[DATE]'", "date '[DATE]' + interval '1' year",
-        "[Quantity]", "[dd2]")
-
-      val args = Seq("y", "1-1-1999", "1", "zz")
-
-      val newArgs = toks.zipWithIndex.sliding(2).flatMap(_.toList match {
-        case (l, i) :: (r, _) :: Nil
-          if l.indexOf("date '[DATE]'") >= 0 && r.indexOf("date '[DATE]' ") >= 0 =>
-          Seq(args(i), args(i))
-        case (_, i) :: _ if i < args.length =>
-          Seq(args(i))
-        case x =>
-          Seq.empty
-      }).toList
-
-      def sideBySide(left: Seq[String], right: Seq[String]): Seq[String] = {
-        val maxLeftSize = left.map(_.length).max
-        val leftPadded = left ++ Seq.fill(math.max(right.size - left.size, 0))(" ")
-        val rightPadded = right ++ Seq.fill(math.max(left.size - right.size, 0))(" ")
-        leftPadded.zip(rightPadded).map {
-          case (l, r) => l + (" " * ((maxLeftSize - l.length) + 3)) + r
-        }
-      }
-
-      if(toks.length != newArgs.length) {
-        println(sideBySide(toks, newArgs).mkString("\n"))
-      }
-      println(newArgs)
-      // scalastyle:on println
-    }
-  */
 
   test("check varchar index") {
     /*
