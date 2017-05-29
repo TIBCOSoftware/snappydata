@@ -789,7 +789,7 @@ private[sql] final case class ColumnTableScan(
         stringAssignCode =
             s"($dictionary != null ? $dictionary[$dictIndex] " +
                 s": $decoder.readUTF8String($buffer, $cursorVar));\n"
-        assignCode = stringAssignCode + s"$nullCheckAddon"
+        assignCode = stringAssignCode + nullCheckAddon
 
         s"$dictionaryAssignCode\n$col = $assignCode;"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
