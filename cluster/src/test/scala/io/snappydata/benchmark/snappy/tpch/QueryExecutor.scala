@@ -111,13 +111,14 @@ object QueryExecutor {
   }
 
 
-  def execute(queryNumber: String, fileName: String, sqlContext: SQLContext,
-      isResultCollection: Boolean, isSnappy: Boolean, threadNumber: Int = 1,
-      isDynamic: Boolean = false, warmup: Int = 0, runsForAverage: Int = 1,
-      avgPrintStream: PrintStream = null): Unit = {
+  def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
+      isSnappy: Boolean, threadNumber: Int = 1, isDynamic: Boolean = false, warmup: Int = 0,
+      runsForAverage: Int = 1, avgPrintStream: PrintStream = null): Unit = {
 
-    val planFileName = if (isSnappy) s"${threadNumber}_Plan_Snappy.out" else s"${threadNumber}_Plan_Spark.out"
-    val queryFileName = s"${threadNumber}_$fileName.out"
+    val planFileName = if (isSnappy) s"${threadNumber}_Plan_Snappy.out"
+            else s"${threadNumber}_Plan_Spark.out"
+    val queryFileName = if (isSnappy) s"${threadNumber}_Snappy_$queryNumber.out"
+            else s"${threadNumber}_Spark_$queryNumber.out"
 
     if (planFileStream == null && planPrintStream == null) {
       planFileStream = new FileOutputStream(new File(planFileName))

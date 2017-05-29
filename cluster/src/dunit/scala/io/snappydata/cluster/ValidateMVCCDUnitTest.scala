@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.cluster
 
 import java.io.File
@@ -97,6 +114,10 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       FabricService.State.RUNNING)
   }
 
+  override def tearDownAfter(): Unit = {
+    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
+  }
+
   def setDMLMaxChunkSize(size: Long): Unit = {
     GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
   }
@@ -133,8 +154,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
-
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", netPort1)
 
     if (errorInThread != null) {
 
@@ -194,7 +213,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", netPort1)
     if (errorInThread != null) {
 
       throw errorInThread

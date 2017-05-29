@@ -314,7 +314,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    *
    * @return a Map of results, where the key is the VM and the value is the result
    */
-  protected static Map invokeInEveryVM(SerializableCallable work) {
+  public static Map invokeInEveryVM(SerializableCallable work) {
     HashMap ret = new HashMap();
     for (int h = 0; h < Host.getHostCount(); h++) {
       Host host = Host.getHost(h);
@@ -331,7 +331,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    *
    * @see VM#invoke(Class, String)
    */
-  protected static void invokeInEveryVM(Class c, String method) {
+  public static void invokeInEveryVM(Class c, String method) {
     for (int h = 0; h < Host.getHostCount(); h++) {
       Host host = Host.getHost(h);
 
@@ -347,7 +347,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    *
    * @see VM#invoke(Class, String)
    */
-  protected static void invokeInEveryVM(Class c, String method, Object[] methodArgs) {
+  public static void invokeInEveryVM(Class c, String method, Object[] methodArgs) {
     for (int h = 0; h < Host.getHostCount(); h++) {
       Host host = Host.getHost(h);
 
@@ -770,21 +770,23 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    */
   @Override
   public final void tearDown() throws Exception {
-    tearDown2();
-    final String className = getClass().getName();
-    for (int h = 0; h < Host.getHostCount(); h++) {
-      Host host = Host.getHost(h);
-      for (int v = 0; v < host.getVMCount(); v++) {
-        VM vm = host.getVM(v);
-        invokeInVM(vm, "perVMTearDown", testName);
+    try {
+      tearDown2();
+      for (int h = 0; h < Host.getHostCount(); h++) {
+        Host host = Host.getHost(h);
+        for (int v = 0; v < host.getVMCount(); v++) {
+          VM vm = host.getVM(v);
+          invokeInVM(vm, "perVMTearDown", testName);
+        }
       }
-    }
-    tearDownAfter();
+    } finally {
+      tearDownAfter();
 
-    if (getName().equals(lastTest)) {
-      afterClass();
-      beforeClassDone = false;
-      lastTest = null;
+      if (getName().equals(lastTest)) {
+        afterClass();
+        beforeClassDone = false;
+        lastTest = null;
+      }
     }
   }
 
