@@ -26,6 +26,7 @@ import scala.util.Random
 
 import io.snappydata.test.dunit.VM
 import io.snappydata.test.util.TestException
+import io.snappydata.util.TestUtils
 import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -249,6 +250,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.cores", TestUtils.defaultCores.toString)
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
           .set("snappydata.connection", connectionURL)

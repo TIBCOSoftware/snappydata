@@ -651,9 +651,9 @@ trait ExecutionEngineArbiterTestBase {
         s" $testTable2 where col2 in (select col1 from $testTable1 " +
         s"where col1 in (1,2,3) group by col1)")
 
-    runAndValidateQuery(conn, false, s"drop table $testTable1")
+    runAndValidateQuery(conn, true, s"drop table $testTable1")
 
-    runAndValidateQuery(conn, false,
+    runAndValidateQuery(conn, true,
       s" create table $testTable1 (col1 int primary key , col2 int , col3 int ) " +
           s"using row options (" + "PARTITION_BY 'PRIMARY KEY'" + ")", true)
 

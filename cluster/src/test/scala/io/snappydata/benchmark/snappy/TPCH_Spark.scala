@@ -56,9 +56,9 @@ object TPCH_Spark {
     var avgPrintStream: PrintStream = new PrintStream(avgFileStream)
 
 
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(
+    TPCHColumnPartitionedTable.createPopulateOrderTable(
       snc, path, isSnappy, buckets, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(
+    TPCHColumnPartitionedTable.createPopulateLineItemTable(
       snc, path, isSnappy, buckets, loadPerfPrintStream)
     TPCHReplicatedTable.createPopulateRegionTable(
       usingOptionString, snc, path, isSnappy, loadPerfPrintStream)

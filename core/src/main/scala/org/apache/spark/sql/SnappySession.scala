@@ -1362,7 +1362,7 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] def getIndexTable(
       indexIdent: QualifiedTableName): QualifiedTableName = {
     // TODO: SW: proper schema handling required here
-    new QualifiedTableName(Constant.INTERNAL_SCHEMA_NAME, indexIdent.table)
+    new QualifiedTableName(Constant.SHADOW_SCHEMA_NAME, indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,
