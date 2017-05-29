@@ -208,8 +208,7 @@ case class SnappyHashAggregateExec(
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
-      .asInstanceOf[SnappySession])).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
   }
 
   // all the mode of aggregate expressions

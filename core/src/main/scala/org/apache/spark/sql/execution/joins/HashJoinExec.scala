@@ -177,8 +177,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    * Produces the result of the query as an RDD[InternalRow]
    */
   override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this, sqlContext.sparkSession
-      .asInstanceOf[SnappySession])).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
   }
 
   // return empty here as code of required variables is explicitly instantiated
