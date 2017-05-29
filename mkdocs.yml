@@ -152,15 +152,18 @@ pages:
 # -- Topic - Best Practices
 - 'Best practices': 'best_practices.md'
 - 'Best practices':
+    - 'Architectural Considerations': 'best_practices/architectural_considerations.md'
+    - 'Capacity Planning': 'best_practices/capacity_planning.md'
+    - 'Design Database and Schema': 'best_practices/design_schema.md'
+    - 'Loading Data from External Repositories': 'best_practices/loading_data.md'
+    - 'Linux Level Configuration': 'best_practices/linux_configuration.md'
+    - 'Preventing Disk Full Errors': 'best_practices/prevent_disk_full_errors.md'      
 #    - 'Using Index': 'best_practices/using_index.md'
 #    - 'Using Collocated Joins': 'best_practices/collocated_joins.md'
 ##    - 'Using Char or Varchar string': 'best_practices/char_varchar_string.md'
 #    - 'Physical designing with SnappyData': 'best_practices/physical_design.md'
 #    - 'Using Row vs Column Tables': 'best_practices/use_row_column_table.md'
 #    - 'Right Affinity Mode to Use': 'best_practices/affinity_mode_to_use.md'
-#    - 'Capacity Planning': 'best_practices/capacity_planning.md'
-    - 'Preventing Disk Full Errors': 'best_practices/prevent_disk_full_errors.md'
-#    - 'Design Database and Schema': 'best_practices/design_schema.md'
 #    - 'Design Database and Schema': 
 #        - 'Physical Design': 'best_practices/design_schema/physical_design.md'
 #        - 'Using Row and Column Table': 'best_practices/design_schema/row_column_table.md'
