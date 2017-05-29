@@ -770,21 +770,23 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    */
   @Override
   public final void tearDown() throws Exception {
-    tearDown2();
-    final String className = getClass().getName();
-    for (int h = 0; h < Host.getHostCount(); h++) {
-      Host host = Host.getHost(h);
-      for (int v = 0; v < host.getVMCount(); v++) {
-        VM vm = host.getVM(v);
-        invokeInVM(vm, "perVMTearDown", testName);
+    try {
+      tearDown2();
+      for (int h = 0; h < Host.getHostCount(); h++) {
+        Host host = Host.getHost(h);
+        for (int v = 0; v < host.getVMCount(); v++) {
+          VM vm = host.getVM(v);
+          invokeInVM(vm, "perVMTearDown", testName);
+        }
       }
-    }
-    tearDownAfter();
+    } finally {
+      tearDownAfter();
 
-    if (getName().equals(lastTest)) {
-      afterClass();
-      beforeClassDone = false;
-      lastTest = null;
+      if (getName().equals(lastTest)) {
+        afterClass();
+        beforeClassDone = false;
+        lastTest = null;
+      }
     }
   }
 
