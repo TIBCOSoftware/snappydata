@@ -119,8 +119,8 @@ object TPCHColumnPartitionedTable {
 
   var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
 
-  def createAndPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+  def createPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -190,8 +190,8 @@ object TPCHColumnPartitionedTable {
   }
 
 
-  def createAndPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+  def createPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -263,7 +263,7 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -312,7 +312,7 @@ object TPCHColumnPartitionedTable {
 
 
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -358,7 +358,7 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext

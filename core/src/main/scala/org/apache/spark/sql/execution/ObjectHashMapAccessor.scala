@@ -28,6 +28,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
+import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.array.ByteArrayMethods
 
@@ -308,12 +309,16 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
     }.mkString("\n")
 
-    // For SnappyData column or row tables there is no need to make
-    // a copy of non-primitive values into the map since they are immutable.
+    // For SnappyData row tables there is no need to make a copy of
+    // non-primitive values into the map since they are immutable.
     // Also checks for other common plans known to provide immutable objects.
+    // Cannot do the same for column tables since it will end up holding
+    // the whole column buffer for a single value which can cause doom
+    // for eviction. For off-heap it will not work at all and can crash
+    // unless a reference to the original column ByteBuffer is retained.
     // TODO: can be extended for more plans as per their behaviour.
     def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
-      case _: PartitionedPhysicalScan | _: HashJoinExec => true
+      case _: RowTableScan | _: HashJoinExec => true
       case FilterExec(_, c) => providesImmutableObjects(c)
       case ProjectExec(_, c) => providesImmutableObjects(c)
       case _ => false
@@ -1320,14 +1325,14 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           $colVar = $stringVar.getBytes();
         }"""
     // multimap holds a reference to UTF8String itself
-    case StringType if doCopy =>
+    case StringType =>
       // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
       s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
             && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
           $colVar = $stringVar;
         } else {
-          $colVar = $stringVar.clone();
+          $colVar = ${if (doCopy) stringVar + ".clone()" else stringVar};
         }"""
     case (_: ArrayType | _: MapType | _: StructType) if doCopy =>
       s"$colVar = ${resultVar.value}.copy();"

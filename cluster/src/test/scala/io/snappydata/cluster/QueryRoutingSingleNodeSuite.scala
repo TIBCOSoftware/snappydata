@@ -65,7 +65,9 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         }
       })
       stmt.executeBatch()
+      // scalastyle:off println
       println(s"committed $numRows rows")
+      // scalastyle:on println
     } finally {
       stmt.close()
       conn.close()
@@ -85,7 +87,9 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         rs.getInt(1)
         index += 1
       }
+      // scalastyle:off println
       println("Number of rows read " + index)
+      // scalastyle:on println
       rs.close()
     } finally {
       stmt.close()
@@ -100,7 +104,9 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
 
     serverHostPort = TestUtil.startNetServer()
+    // scalastyle:off println
     println("network server started")
+    // scalastyle:on println
     insertRows(1000)
 
 
@@ -231,12 +237,16 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         s") " +
         s" limit 20" +
         s""
+    // scalastyle:off println
     println(s"Iter ${iter} QUERY = ${qry}")
+    // scalastyle:on println
     val df1 = snc.sql(qry)
     val res1 = df1.collect()
+    // scalastyle:off println
     println(s"Iter ${iter} with query = ${qry}")
     res1.foreach(println)
     println(s"Iter ${iter} query end and res1 size = ${res1.length}")
+    // scalastyle:on println
     assert(res1.length == 3)
 
     val qry2 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
@@ -251,9 +261,11 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         s""
     val df2 = snc.sql(qry2)
     val res2 = df2.collect()
+    // scalastyle:off println
     println(s"Iter ${iter} with query2 = ${qry2}")
     res2.foreach(println)
     println(s"Iter ${iter} query2 end with res size = ${res2.length}")
+    // scalastyle:on println
     assert(!(res1.sameElements(res2)))
     assert(res2.length == 3)
   }
@@ -285,6 +297,59 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       query2(tableName1, tableName2, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  test("SNAP-1615") {
+    val tName = "table1615"
+    snc.sql(s"create table $tName (id int, price decimal(38,18), name varchar(10)) using column")
+
+    val sHostPort = TestUtil.startNetServer()
+    // scalastyle:off println
+    println("network server started")
+    // scalastyle:on println
+    val conn: java.sql.Connection = DriverManager.getConnection("jdbc:snappydata://" + sHostPort)
+    val stmt: java.sql.Statement = conn.createStatement()
+    try {
+      stmt.addBatch(s"insert into $tName values(1,10.4,'abc')")
+      stmt.addBatch(s"insert into $tName values(2,112.4,'aaa')")
+      stmt.addBatch(s"insert into $tName values(3,1452.4,'bbb')")
+      stmt.addBatch(s"insert into $tName values(4,16552.4,'ccc')")
+      stmt.addBatch(s"insert into $tName values(5,null,'ddd')")
+      stmt.addBatch(s"insert into $tName values(6,10.6,'ddd')")
+      stmt.executeBatch()
+      // scalastyle:off println
+      println(s"inserted rows")
+      // scalastyle:on println
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+
+    (1 to 5).foreach(d => query1615(tName, sHostPort))
+  }
+
+  def query1615(tName: String, sHostPort: String): Unit = {
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + sHostPort)
+    val stmt = conn.createStatement()
+    try {
+      val rs = stmt.executeQuery(s"select avg(price),name from $tName group by name")
+      var index = 0
+      var sum: BigDecimal = 0
+      while (rs.next()) {
+        sum += rs.getBigDecimal(1)
+        assert(rs.getString(2) != null)
+        index += 1
+      }
+      // scalastyle:off println
+      println(s"Number of rows read $index sum=$sum")
+      // scalastyle:on println
+      assert(index == 5, index)
+      assert(sum - 18138.2 == 0, sum)
+      rs.close()
+    } finally {
+      stmt.close()
+      conn.close()
     }
   }
 }

@@ -668,7 +668,7 @@ case class InsertCachedPlanHelper(session: SparkSession) extends Rule[SparkPlan]
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
     case ws @ WholeStageCodegenExec(onlychild) => {
       val c = onlychild.asInstanceOf[CodegenSupport]
-      ws.copy(child = CachedPlanHelperExec(c, session.asInstanceOf[SnappySession]))
+      ws.copy(child = CachedPlanHelperExec(c))
     }
   }
 }

@@ -37,6 +37,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
   protected val productDir = SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
+  override val stopNetServersInTearDown = false
 
 
   override def beforeClass(): Unit = {
@@ -46,6 +47,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   override def afterClass(): Unit = {
+    Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+    ClusterManagerTestBase.stopNetworkServers()
     super.afterClass()
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
@@ -108,7 +111,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ColocatedTable", pw, sqlContext)
 
       // verify the colocated table queries in smart connector mode
-      val params = Array(ClusterManagerTestBase.locPort, "ColocatedTable").
+      val params = Array(locatorNetPort, "ColocatedTable").
           asInstanceOf[Array[AnyRef]]
       vm3.invoke(classOf[SmartConnectorFunctions], "nwQueryValidationOnConnector", params)
     } finally {
