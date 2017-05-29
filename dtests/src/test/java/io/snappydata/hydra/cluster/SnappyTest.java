@@ -106,8 +106,8 @@ public class SnappyTest implements Serializable {
   public static final int THOUSAND = 1000;
   public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "snappyStore");
   public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
-  public static final String LEAD_PORT = "8090";
-  public static final String MASTER_PORT = "7077";
+  //public static final String LEAD_PORT = "8090";
+  //public static final String MASTER_PORT = "7077";
   private static int jobSubmissionCount = 0;
   protected static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
@@ -399,6 +399,14 @@ public class SnappyTest implements Serializable {
         nodeLogDir = HostHelper.getLocalHost();
         String sparkLogDir = "SPARK_LOG_DIR=" + hd.getUserDir();
         String sparkWorkerDir = "SPARK_WORKER_DIR=" + hd.getUserDir();
+        String sparkMasterPort = (String) SnappyBB.getBB().getSharedMap().get("sparkMasterPort");
+        if (sparkMasterPort == null) {
+          int masterPort = PortHelper.getRandomPort();
+          sparkMasterPort = "SPARK_MASTER_PORT=" + masterPort;
+          Log.getLogWriter().info("sparkMasterPort is : " + masterPort);
+          SnappyBB.getBB().getSharedMap().put("masterPort", Integer.toString(masterPort));
+          SnappyBB.getBB().getSharedMap().put("sparkMasterPort", sparkMasterPort);
+        }
         SnappyBB.getBB().getSharedMap().put("sparkLogDir" + "_" + snappyTest.getMyTid(), sparkLogDir);
         SnappyBB.getBB().getSharedMap().put("sparkWorkerDir" + "_" + snappyTest.getMyTid(), sparkWorkerDir);
         break;
@@ -415,7 +423,6 @@ public class SnappyTest implements Serializable {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         String value = (String) SnappyBB.getBB().getSharedMap().get(key);
         fileContents.add(value);
       }
@@ -443,7 +450,6 @@ public class SnappyTest implements Serializable {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         String value = (String) SnappyBB.getBB().getSharedMap().get(key);
         fileContents.add(value);
       }
@@ -456,7 +462,6 @@ public class SnappyTest implements Serializable {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         File value = (File) SnappyBB.getBB().getSharedMap().get(key);
         dirList.add(value);
       }
@@ -479,7 +484,6 @@ public class SnappyTest implements Serializable {
     Set<String> locatorHostPortList = new LinkedHashSet<>();
     for (String key : keys) {
       if (key.startsWith(userKey)) {
-        Log.getLogWriter().info("Key Found..." + key);
         String value = (String) SnappyBB.getBB().getSharedMap().get(key);
         locatorHostPortList.add(value);
       }
@@ -562,6 +566,7 @@ public class SnappyTest implements Serializable {
     snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkWorkerDir");
+    snappyTest.writeConfigData("spark-env.sh", "sparkMasterPort");
   }
 
   protected void writeConfigData(String fileName, String logDir) {
@@ -1878,13 +1883,14 @@ public class SnappyTest implements Serializable {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
         String masterHost = getSparkMasterHost();
+        String masterPort = (String) SnappyBB.getBB().getSharedMap().get("masterPort");
         String locatorsList = getLocatorsList("locators");
         String command = null;
         if (useThinClientSmartConnectorMode) {
           String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
           String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
           command = snappyJobScript + " --class " + userJob +
-              " --master spark://" + masterHost + ":" + MASTER_PORT + " " +
+              " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
               SnappyPrms.getSparkSubmitExtraPrms() + " " +
               " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
@@ -1893,7 +1899,7 @@ public class SnappyTest implements Serializable {
               SnappyPrms.getUserAppArgs() + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         } else {
           command = snappyJobScript + " --class " + userJob +
-              " --master spark://" + masterHost + ":" + MASTER_PORT +
+              " --master spark://" + masterHost + ":" + masterPort +
               " --conf snappydata.store.locators=" + locatorsList + " " +
               SnappyPrms.getExecutorMemory() + " " +
               SnappyPrms.getSparkSubmitExtraPrms() + " " +
@@ -1965,10 +1971,7 @@ public class SnappyTest implements Serializable {
       Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
       for (String key : keys) {
         if (key.startsWith(logFilekey)) {
-
-
           String logFilename = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
-          Log.getLogWriter().info("Key Found...." + logFilename);
           snappyJobLogFiles.add(logFilename);
         }
       }

@@ -564,7 +564,7 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, INTERNAL_SCHEMA_NAME, null,
+    val rSet2 = dbmd.getTables(null, SHADOW_SCHEMA_NAME, null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
@@ -658,7 +658,7 @@ class QueryRoutingDUnitTest(val s: String)
 
   }
 
-  def testNodesPruning(): Unit = {
+  def DISABLED_SNAP_1597_testNodesPruning(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val snc = SnappyContext(sc)

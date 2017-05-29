@@ -26,9 +26,11 @@ import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
+import org.apache.spark.sql.{Row, SnappyContext}
 
 object TestUtils {
+
+  def defaultCores: Int = math.min(8, Runtime.getRuntime.availableProcessors())
 
   def dropAllTables(snc: => SnappyContext): Unit = {
     val sc = SnappyContext.globalSparkContext
@@ -92,7 +94,7 @@ object TestUtils {
         case _ => false
       }
     } catch {
-      case e: Exception => false
+      case _: Exception => false
     }
   }
 
