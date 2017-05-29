@@ -44,8 +44,6 @@ public class TPCHPerfComparerTest extends SnappyTest {
     }
 
     try {
-      Log.getLogWriter().info("KBKBKB : " + primaryLeadDir);
-
       FileWriter writer = new FileWriter("SnappyVsSpark.out");
       BufferedWriter buffer = new BufferedWriter(writer);
       buffer.write("Query   Snappy   Spark   PercentageDiff");
