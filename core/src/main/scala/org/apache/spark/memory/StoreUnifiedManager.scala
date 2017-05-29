@@ -84,7 +84,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     if (SparkEnv.get ne null) {
       SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
     } else {
-      false
+      true
     }
   }
 

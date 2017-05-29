@@ -389,50 +389,57 @@ object CachedDataFrame
     val output = new ByteBufferDataOutput(4 << 10,
       DirectBufferAllocator.instance(),
       null,
-      ManagedDirectBufferAllocator.CACHED_DATA_FRAME_RESULTOUTPUT_OWNER)
+      ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
     // holds intermediate bytes which are compressed and flushed to output
     val maxOutputBufferSize = 64 << 10 // 64K
     // can't enforce maxOutputBufferSize due to a row larger than that limit
     val bufferOutput = new Output(4 << 10, -1)
-    val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
-    while (iter.hasNext) {
-      val row = iter.next().asInstanceOf[UnsafeRow]
-      val numBytes = row.getSizeInBytes
-      // if capacity has been exceeded then compress and store
-      val bufferPosition = bufferOutput.position()
-      if (maxOutputBufferSize - bufferPosition < numBytes + 5) {
-        flushBufferOutput(bufferOutput, bufferPosition, output, codec)
-      }
-      bufferOutput.writeVarInt(numBytes, true)
-      row.writeToStream(bufferOutput, buffer)
-      count += 1
-    }
-
-    flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
-    var memSize = 0L
-    var enoughMemory = true
+    var outputRetained = false
     try {
+      val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
+      while (iter.hasNext) {
+        val row = iter.next().asInstanceOf[UnsafeRow]
+        val numBytes = row.getSizeInBytes
+        // if capacity has been exceeded then compress and store
+        val bufferPosition = bufferOutput.position()
+        if (maxOutputBufferSize - bufferPosition < numBytes + 5) {
+          flushBufferOutput(bufferOutput, bufferPosition, output, codec)
+        }
+        bufferOutput.writeVarInt(numBytes, true)
+        row.writeToStream(bufferOutput, buffer)
+        count += 1
+      }
+
+      flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
       if (count > 0) {
         val finalBuffer = output.getBufferRetain
+        outputRetained = true
         finalBuffer.flip
-        memSize = finalBuffer.limit()
+        val memSize = finalBuffer.limit().toLong
         // Ask UMM before getting the array to heap.
         // Taking unroll memory as this memory is cleaned up on task completion.
         // On connector mode also this should account to the overall memory usage.
         // We will ensure that sufficient memory is available by reserving
-        // two times as Kryo serialization will expand its buffer accordingly.
-
+        // four times as Kryo serialization will expand its buffer accordingly
+        // and transport layer can create another copy.
         if (!MemoryManagerCallback.memoryManager.
-          acquireStorageMemoryForObject(
-            objectName = owner,
-            blockId = MemoryManagerCallback.cachedDFBlockId,
-            numBytes = 2 * memSize,
-            memoryMode = MemoryMode.ON_HEAP,
-            buffer = null,
-            shouldEvict = false)) {
-          enoughMemory = false
+            acquireStorageMemoryForObject(
+              objectName = owner,
+              blockId = MemoryManagerCallback.cachedDFBlockId,
+              numBytes = 4L * memSize,
+              memoryMode = MemoryMode.ON_HEAP,
+              buffer = null,
+              shouldEvict = false)) {
           throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
             java.util.Collections.emptySet())
+        }
+
+        context.addTaskCompletionListener { _ =>
+          MemoryManagerCallback.memoryManager.
+              releaseStorageMemoryForObject(
+                objectName = owner,
+                numBytes = 4L * memSize,
+                memoryMode = MemoryMode.ON_HEAP)
         }
 
         val bytes = ClientSharedUtils.toBytes(finalBuffer)
@@ -444,14 +451,11 @@ object CachedDataFrame
       // Not handling DirectByteBuffer case which gives a OOM exception.
       // Assumption is most of the big workload will use off-heap
       bufferOutput.clear()
-      output.release
-      if (enoughMemory) {
-        MemoryManagerCallback.memoryManager.
-          releaseStorageMemoryForObject(
-            objectName = owner,
-            numBytes = 2 * memSize,
-            memoryMode = MemoryMode.ON_HEAP)
+      // one additional release for the explicit getBufferRetain
+      if (outputRetained) {
+        output.release()
       }
+      output.release()
     }
   }
 

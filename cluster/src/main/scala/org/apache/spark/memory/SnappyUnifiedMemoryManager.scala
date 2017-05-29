@@ -454,6 +454,12 @@ class SnappyUnifiedMemoryManager private[memory](
             getMinOffHeapEviction(numBytes))
       }
 
+      // Evict only limited amount for owners marked as non-evicting.
+      // TODO: this can be removed once these calls are moved to execution
+      val doEvict = if (shouldEvict &&
+          ManagedDirectBufferAllocator.nonEvictingOwners.contains(objectName)) {
+        numBytes < storagePool.memoryFree * 2
+      } else shouldEvict
 
       if (numBytes > maxMemory) {
         // Fail fast if the block simply won't fit
@@ -465,7 +471,7 @@ class SnappyUnifiedMemoryManager private[memory](
       // don't borrow from execution for off-heap if shouldEvict=false since it
       // will try clearing references before calling with shouldEvict=true again
       val offHeap = memoryMode eq MemoryMode.OFF_HEAP
-      val offHeapNoEvict = !shouldEvict && offHeap
+      val offHeapNoEvict = !doEvict && offHeap
       if (numBytes > storagePool.memoryFree && !offHeapNoEvict) {
         // There is not enough free memory in the storage pool, so try to borrow free memory from
         // the execution pool.
@@ -497,7 +503,7 @@ class SnappyUnifiedMemoryManager private[memory](
           return false
         }
 
-        if (shouldEvict) {
+        if (doEvict) {
           // Sufficient memory could not be freed. Time to evict from SnappyData store.
           // val requiredBytes = numBytes - storagePool.memoryFree
           // Evict data a little more than required based on waiting tasks

@@ -33,6 +33,7 @@ import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
+import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
@@ -106,7 +107,11 @@ class LeadImpl extends ServerImpl with Lead
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("leaderLauncher").
           set(Property.JobServerEnabled.name, "true").
-          set("spark.scheduler.mode", "FAIR")
+          set("spark.scheduler.mode", "FAIR").
+          setIfMissing("spark.memory.manager",
+            ExecutorInitiator.SNAPPY_MEMORY_MANAGER)
+          .setIfMissing("spark.memory.storageMaxFraction", "0.95")
+
       Utils.setDefaultSerializerAndCodec(conf)
 
       // inspect user input and add appropriate prefixes
