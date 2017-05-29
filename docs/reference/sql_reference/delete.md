@@ -6,7 +6,7 @@ Delete rows from a table.
 
 ``` pre
 {
-    DELETE FROM table-name [ [ AS ] correlation-name ]
+    DELETE FROM table-name [ ]
         [ WHERE ]
 }
 ```
