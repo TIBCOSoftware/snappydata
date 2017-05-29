@@ -716,7 +716,7 @@ public class SnappyPrms extends BasePrms {
     if (heapSize == null) {
       int cores = Runtime.getRuntime().availableProcessors();
       long defaultMem;
-      defaultMem = ((cores * 64) + 512);
+      defaultMem = ((cores * 64) + 1024);
       executorMem = " --executor-memory " + defaultMem + "m";
       return executorMem;
     }

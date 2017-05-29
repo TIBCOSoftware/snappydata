@@ -535,8 +535,8 @@ public class SnappyTest implements Serializable {
    * snappy build location. This is required for long running test scenarios where in cluster
    * will be started in first test and then rest all tests will use the same cluster
    */
-  public static void HydraTask_writeMasterHostInfo() {
-    writeSparkMasterHostInfo();
+  public static void HydraTask_writeMasterConnInfo() {
+    writeSparkMasterConnInfo();
   }
 
   /**
@@ -1003,9 +1003,11 @@ public class SnappyTest implements Serializable {
   /**
    * Writes the master host information to the masterHost file under conf directory.
    */
-  protected static void writeSparkMasterHostInfo() {
+  protected static void writeSparkMasterConnInfo() {
     String masterHost = getSparkMasterHost();
+    String masterPort = getSparkMasterPort();
     snappyTest.writeNodeConfigData("masterHost", masterHost, false);
+    snappyTest.writeNodeConfigData("masterPort", masterPort, false);
   }
 
   protected static void writePrimaryLocatorHostPortInfo() {
@@ -1883,11 +1885,11 @@ public class SnappyTest implements Serializable {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
         String masterHost = getSparkMasterHost();
-        String masterPort = (String) SnappyBB.getBB().getSharedMap().get("masterPort");
+        String masterPort = getSparkMasterPort();
         String locatorsList = getLocatorsList("locators");
         String command = null;
-        String primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
-        String primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
+        String primaryLocatorHost = getPrimaryLocatorHost();
+        String primaryLocatorPort = getPrimaryLocatorPort();
         command = snappyJobScript + " --class " + userJob +
             " --master spark://" + masterHost + ":" + masterPort + " " +
             SnappyPrms.getExecutorMemory() + " " +
@@ -2193,6 +2195,7 @@ public class SnappyTest implements Serializable {
       String leadHost = productConfDirPath + sep + "leadHost";
       String leadPort = productConfDirPath + sep + "leadPort";
       String masterHost = productConfDirPath + sep + "masterHost";
+      String masterPort = productConfDirPath + sep + "masterPort";
       String primaryLocatorHost = productConfDirPath + sep + "primaryLocatorHost";
       String primaryLocatorPort = productConfDirPath + sep + "primaryLocatorPort";
       Files.delete(Paths.get(locatorList));
@@ -2200,6 +2203,7 @@ public class SnappyTest implements Serializable {
       Files.delete(Paths.get(leadHost));
       Files.delete(Paths.get(leadPort));
       Files.delete(Paths.get(masterHost));
+      Files.delete(Paths.get(masterPort));
       Files.delete(Paths.get(primaryLocatorHost));
       Files.delete(Paths.get(primaryLocatorPort));
       Log.getLogWriter().info("Long Running Test artifacts deleted.");
@@ -2763,6 +2767,18 @@ public class SnappyTest implements Serializable {
       }
     } else masterHost = getMasterHost();
     return masterHost;
+  }
+
+  protected static String getSparkMasterPort() {
+    String masterPort = (String) SnappyBB.getBB().getSharedMap().get("masterPort");
+    if (isLongRunningTest) {
+      masterPort = getDataFromFile("masterPort");
+      if (masterPort == null) {
+        masterPort = (String) SnappyBB.getBB().getSharedMap().get("masterPort");
+        snappyTest.writeNodeConfigData("masterPort", masterPort, false);
+      }
+    }
+    return masterPort;
   }
 
   protected static String getMasterHost() {
