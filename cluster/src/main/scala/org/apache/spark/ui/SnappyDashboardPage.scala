@@ -181,14 +181,20 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
       numClients += m("clients").toString.toInt
 
-      totalHeapUsage = totalHeapUsage +
-          (m("heapMemoryUsed").asInstanceOf[Long] * 100 / m("heapMemorySize").asInstanceOf[Long])
+      if(m("heapMemorySize").asInstanceOf[Long] > 0){
+        totalHeapUsage = totalHeapUsage +
+            (m("heapMemoryUsed").asInstanceOf[Long] * 100 / m("heapMemorySize").asInstanceOf[Long])
+      }
 
-      totalOffHeapUsage = totalOffHeapUsage +
-          (m("offHeapMemoryUsed").asInstanceOf[Long] * 100 / m("offHeapMemorySize").asInstanceOf[Long])
+      if(m("offHeapMemorySize").asInstanceOf[Long] > 0){
+        totalOffHeapUsage = totalOffHeapUsage +
+            (m("offHeapMemoryUsed").asInstanceOf[Long] * 100 / m("offHeapMemorySize").asInstanceOf[Long])
+      }
 
-      totalJvmHeapUsage = totalJvmHeapUsage +
-          (m("usedMemory").asInstanceOf[Long] * 100 / m("totalMemory").asInstanceOf[Long])
+      if(m("totalMemory").asInstanceOf[Long] > 0){
+        totalJvmHeapUsage = totalJvmHeapUsage +
+            (m("usedMemory").asInstanceOf[Long] * 100 / m("totalMemory").asInstanceOf[Long])
+      }
 
     })
 
@@ -315,10 +321,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       "/static/snappydata/warning-status-icon-70x68.png"
     }
 
-    val avgMemoryUsage = clusterDetails.getOrElse("avgMemoryUsage", 0.0);
-    val avgHeapUsage = clusterDetails.getOrElse("avgHeapUsage", 0.0);
-    val avgOffHeapUsage = clusterDetails.getOrElse("avgOffHeapUsage", 0.0);
-    val avgJvmHeapUsage = clusterDetails.getOrElse("avgJvmHeapUsage", 0.0);
+    val avgMemoryUsage = clusterDetails.getOrElse("avgMemoryUsage", 0.0).asInstanceOf[Long];
+    val avgHeapUsage = clusterDetails.getOrElse("avgHeapUsage", 0.0).asInstanceOf[Long];
+    val avgOffHeapUsage = clusterDetails.getOrElse("avgOffHeapUsage", 0.0).asInstanceOf[Long];
+    val avgJvmHeapUsage = clusterDetails.getOrElse("avgJvmHeapUsage", 0.0).asInstanceOf[Long];
 
     <div class="row-fluid">
       <div class="keyStates">
@@ -374,13 +380,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("description")}
               </span>
             </th>
-            <!-- <th style="text-align:center; vertical-align: middle;">
-              <span data-toggle="tooltip" title=""
-              data-original-title={SnappyDashboardPage.memberStatsColumn("hostTooltip")}
-              style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("host")}
-              </span>
-            </th> -->
             <th style="text-align:center; vertical-align: middle; min-width: 100px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")}
@@ -402,48 +401,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
-            <!-- <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title=""
-              data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemoryToolTip")}
-              style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("storageMemoryUsed")}
-              </span>
-            </th>
-            <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title=""
-              data-original-title={SnappyDashboardPage.memberStatsColumn("storageMemorySizeToolTip")}
-              style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("storageMemoryPoolSize")}
-              </span>
-            </th>
-            <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title=""
-              data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemoryToolTip")}
-              style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("executionMemoryUsed")}
-              </span>
-            </th>
-            <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title=""
-              data-original-title={SnappyDashboardPage.memberStatsColumn("executionMemorySizeToolTip")}
-              style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("executionMemoryPoolSize")}
-              </span>
-            </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
-              <span data-toggle="tooltip" title=""
-              data-original-title={SnappyDashboardPage.memberStatsColumn("usedMemoryTooltip")}
-              style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("usedMemory")}
-              </span>
-            </th>
-            <th style="text-align:center; width: 150px; vertical-align: middle;">
-              <span data-toggle="tooltip" title=""
-              data-original-title={SnappyDashboardPage.memberStatsColumn("totalMemoryTooltip")}
-              style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("totalMemory")}
-              </span>
-            </th> -->
             <th style="text-align:center; width: 150px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={SnappyDashboardPage.memberStatsColumn("heapMemoryTooltip")}
@@ -675,18 +632,17 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       }
     }
 
-    val totalMemory = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
-    val usedMemory = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
-    val memoryUsage: Double = (usedMemory * 100) / totalMemory
-    // val storagePoolUsed = memberDetails.getOrElse("storagePoolUsed", 0).asInstanceOf[Long]
-    // val storagePoolSize = memberDetails.getOrElse("storagePoolSize", 0).asInstanceOf[Long]
-    // val executionPoolSize = memberDetails.getOrElse("executionPoolSize", 0).asInstanceOf[Long]
-    // val executionPoolUsed = memberDetails.getOrElse("executionPoolUsed", 0).asInstanceOf[Long]
-
     val heapMemorySize = memberDetails.getOrElse("heapMemorySize", 0).asInstanceOf[Long]
     val heapMemoryUsed = memberDetails.getOrElse("heapMemoryUsed", 0).asInstanceOf[Long]
     val offHeapMemorySize = memberDetails.getOrElse("offHeapMemorySize", 0).asInstanceOf[Long]
     val offHeapMemoryUsed = memberDetails.getOrElse("offHeapMemoryUsed", 0).asInstanceOf[Long]
+    val jvmHeapSize = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
+    val jvmHeapUsed = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
+
+    var memoryUsage:Long = 0
+    if((heapMemorySize + offHeapMemorySize) > 0) {
+      memoryUsage = (heapMemoryUsed + offHeapMemoryUsed) * 100 / (heapMemorySize + offHeapMemorySize)
+    }
 
     <tr>
       <td>
@@ -696,22 +652,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           memberDetails.getOrElse("status","NA")
         }</b></div>
       </td>
-      <!-- <td>
-        <div style="width:100%; padding-left:10px;">{nameOrId}</div>
-      </td> -->
       <td>
         <div style="width: 80%; float: left; padding-left: 10px;">{memberDescription}</div>
         <div style="width: 10px; float: right; padding-right: 10px; cursor: pointer;"
              onclick={tooltipHandler}> + </div>
         <div id={shortDirName}
-             style="float: left; padding-right: 10px; padding-left: 10px;
-             display: none; border: 1px solid #dbd9cf;">
+             style="float: left; padding: 0px 10px; display: none; border: 1px solid #dbd9cf; margin: 5px auto 2px;">
           {memberDescriptionTooltip}
         </div>
       </td>
-      <!-- <td>
-        <div style="width:100%; padding-left:10px;">{memberDetails.getOrElse("host","NA")}</div>
-      </td> -->
       <td>
         <div style="text-align:center;">{memberType}</div>
       </td>
@@ -721,24 +670,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         {makeProgressBar(memoryUsage)}
       </td>
-      <!-- <td>
-        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(storagePoolUsed)}</div>
-      </td>
-      <td>
-        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(storagePoolSize)}</div>
-      </td>
-      <td>
-        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(executionPoolUsed)}</div>
-      </td>
-      <td>
-        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(executionPoolSize)}</div>
-      </td>
-      <td>
-        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(usedMemory)}</div>
-      </td>
-      <td>
-        <div style="text-align:right; padding-right:15px;">{Utils.bytesToString(totalMemory).toString}</div>
-      </td> -->
       <td>
         <div style="text-align:right; padding-right:15px;">{
           Utils.bytesToString(heapMemoryUsed).toString + "/" + Utils.bytesToString(heapMemorySize).toString
@@ -751,7 +682,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{
-          Utils.bytesToString(usedMemory).toString + "/" + Utils.bytesToString(totalMemory).toString
+          Utils.bytesToString(jvmHeapUsed).toString + "/" + Utils.bytesToString(jvmHeapSize).toString
           }</div>
       </td>
       <td>
@@ -912,7 +843,7 @@ object SnappyDashboardPage{
   memberStatsColumn += ("cpuUsage" -> "CPU Usage")
   memberStatsColumn += ("cpuUsageTooltip" -> "CPU used by Member")
   memberStatsColumn += ("memoryUsage" -> "Memory Usage")
-  memberStatsColumn += ("memoryUsageTooltip" -> "Memory used by Member")
+  memberStatsColumn += ("memoryUsageTooltip" -> "Memory(Heap + Off-Heap) used by Member")
   memberStatsColumn += ("usedMemory" -> "Used Memory")
   memberStatsColumn += ("usedMemoryTooltip" -> "Used Memory")
   memberStatsColumn += ("totalMemory" -> "Total Memory")
