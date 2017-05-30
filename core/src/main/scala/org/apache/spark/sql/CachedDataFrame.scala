@@ -422,25 +422,29 @@ object CachedDataFrame
         // We will ensure that sufficient memory is available by reserving
         // four times as Kryo serialization will expand its buffer accordingly
         // and transport layer can create another copy.
-        if (!MemoryManagerCallback.memoryManager.
-            acquireStorageMemoryForObject(
-              objectName = owner,
-              blockId = MemoryManagerCallback.cachedDFBlockId,
-              numBytes = 4L * memSize,
-              memoryMode = MemoryMode.ON_HEAP,
-              buffer = null,
-              shouldEvict = false)) {
-          throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
-            java.util.Collections.emptySet())
+
+        if (context != null) { // TODO why driver is calling this code with context null ?
+          if (!MemoryManagerCallback.memoryManager.
+              acquireStorageMemoryForObject(
+                objectName = owner,
+                blockId = MemoryManagerCallback.cachedDFBlockId,
+                numBytes = 4L * memSize,
+                memoryMode = MemoryMode.ON_HEAP,
+                buffer = null,
+                shouldEvict = false)) {
+            throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
+              java.util.Collections.emptySet())
+          }
+
+          context.addTaskCompletionListener { _ =>
+            MemoryManagerCallback.memoryManager.
+                releaseStorageMemoryForObject(
+                  objectName = owner,
+                  numBytes = 4L * memSize,
+                  memoryMode = MemoryMode.ON_HEAP)
+          }
         }
 
-        context.addTaskCompletionListener { _ =>
-          MemoryManagerCallback.memoryManager.
-              releaseStorageMemoryForObject(
-                objectName = owner,
-                numBytes = 4L * memSize,
-                memoryMode = MemoryMode.ON_HEAP)
-        }
 
         val bytes = ClientSharedUtils.toBytes(finalBuffer)
         new PartitionResult(bytes, count)
