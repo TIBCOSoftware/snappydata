@@ -16,12 +16,14 @@
  */
 package io.snappydata.externalstore
 
-import java.sql.{DriverManager, Connection, SQLException}
+import java.sql.{Connection, DriverManager, SQLException}
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.row.GemFireXDClientDialect
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, TableNotFoundException}
 
 /**
@@ -104,10 +106,15 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testHiveStoreEntryMissingForTable(): Unit = {
+    val snc = SnappyContext(sc)
+
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    val snc = SnappyContext(sc)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
 
     createTables(snc)
 
@@ -134,10 +141,15 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testStoreDDEntryMissingForTable(): Unit = {
+    val snc = SnappyContext(sc)
+
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    val snc = SnappyContext(sc)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
 
     createTables(snc)
 
@@ -148,8 +160,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore
-    snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+    assert(JdbcExtendedUtils.tableExistsInMetaData("APP.COLUMN_TABLE1",
+      routeQueryDisabledConn, GemFireXDClientDialect))
 
     val connection = getClientConnection(netPort1)
     // repair the catalog

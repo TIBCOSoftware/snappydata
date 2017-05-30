@@ -22,22 +22,26 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkContext, SparkConf}
 
 object CreateAndLoadNWTablesSparkApp {
-  val conf = new SparkConf().
-    setAppName("NWTestUtil Application")
-  val sc = new SparkContext(conf)
-  val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
+    val connectionURL = args(args.length - 1)
+    val conf = new SparkConf().
+        setAppName("CreateAndLoadNWTablesSpark Application").
+        set("snappydata.connection", connectionURL)
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)
-    //snc.sql("set spark.sql.shuffle.partitions=6")
+    // snc.sql("set spark.sql.shuffle.partitions=6")
     snc.setConf("dataFilesLocation", dataFilesLocation)
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
-    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesSparkApp.out"), true));
+    // scalastyle:off println
+    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesSparkApp.out"),
+      true));
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     NWTestUtil.dropTables(snc)
-    pw.println(s"Create and load ${tableType} tables Test started")
+    pw.println(s"Create and load ${tableType} tables Test started at : " + System.currentTimeMillis)
     tableType match {
       case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
       case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc)
@@ -45,7 +49,8 @@ object CreateAndLoadNWTablesSparkApp {
       case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
       case _ => // the default, catch-all
     }
-    pw.println(s"Create and load ${tableType} tables Test completed successfully")
+    pw.println(s"Create and load ${tableType} tables Test completed successfully at : " + System
+        .currentTimeMillis)
     pw.close()
   }
 }

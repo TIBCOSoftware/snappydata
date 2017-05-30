@@ -17,11 +17,13 @@
 package org.apache.spark.sql.execution.benchmark
 
 import java.sql.{Date, DriverManager, Timestamp}
-import java.util.{Calendar, GregorianCalendar}
+import java.time.{ZoneId, ZonedDateTime}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
+import org.scalatest.Assertions
 
+import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
@@ -34,34 +36,39 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 class TAQTest extends SnappyFunSuite {
 
   override protected def newSparkConf(
-      addOn: SparkConf => SparkConf = null): SparkConf = {
-    val conf = new SparkConf()
-        .setIfMissing("spark.master", "local[*]")
-        .setAppName("microbenchmark")
-    conf.set("snappydata.store.eviction-heap-percentage", "90")
-    conf.set("snappydata.store.critical-heap-percentage", "95")
-    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    if (addOn != null) {
-      addOn(conf)
+      addOn: SparkConf => SparkConf = null): SparkConf =
+    TAQTest.newSparkConf(addOn)
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
     }
-    conf
   }
 
-  ignore("select queries with random data - insert") {
+  override def afterAll(): Unit = {
+    super.afterAll()
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
+    }
+  }
+
+  test("select queries with random data (eviction) - insert") {
     val quoteSize = 34000000L
     val tradeSize = 5000000L
     val numDays = 1
     val numIters = 5
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true,
-      op = CreateOp.Quote)
+      op = CreateOp.Quote, runSparkCaching = false)
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       tradeSize, numDays, queryNumber = 2, numIters, doInit = false,
-      op = CreateOp.Trade)
+      op = CreateOp.Trade, runSparkCaching = false)
   }
 
-  test("select queries with random data - query") {
+  test("select queries with random data (eviction) - query") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1
@@ -156,7 +163,7 @@ case class Trade(sym: UTF8String, ex: UTF8String, price: Decimal,
     time: Timestamp, date: Date, size: Double, c1: Array[UTF8String],
     c2: Map[UTF8String, Double])
 
-object TAQTest extends Logging {
+object TAQTest extends Logging with Assertions {
 
   private[benchmark] var COLUMN_TABLE = true
 
@@ -245,34 +252,23 @@ object TAQTest extends Logging {
         s"on q.time=(select max(time) from q where time<=t.time and sym='$s') " +
         "where price<bid" */
   )
+  val expectedResultSizes = Array(
+    100,
+    900,
+    800
+  )
 
   object CreateOp extends Enumeration {
     type Type = Value
     val Read, Quote, Trade = Value
   }
 
-  private def collect(df: Dataset[Row]): Unit = {
+  private def collect(df: Dataset[Row], expectedNumResults: Int): Unit = {
     val result = df.collect()
+    assert(result.length === expectedNumResults)
     // scalastyle:off
     println(s"Count = ${result.length}")
     // scalastyle:on
-  }
-
-  def addCaseWithCleanup(
-      benchmark: Benchmark,
-      name: String,
-      numIters: Int = 0,
-      prepare: () => Unit,
-      cleanup: () => Unit,
-      testCleanup: () => Unit)(f: Int => Unit): Unit = {
-    val timedF = (timer: Benchmark.Timer) => {
-      timer.startTiming()
-      f(timer.iteration)
-      timer.stopTiming()
-      testCleanup()
-    }
-    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters,
-      prepare, cleanup)
   }
 
   private def doGC(): Unit = {
@@ -280,6 +276,22 @@ object TAQTest extends Logging {
     System.runFinalization()
     System.gc()
     System.runFinalization()
+  }
+
+  def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
+    val cores = math.min(8, Runtime.getRuntime.availableProcessors())
+    val conf = new SparkConf()
+        .setIfMissing("spark.master", s"local[$cores]")
+        .setAppName("microbenchmark")
+    conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("snappydata.store.memory-size", "1200m")
+    conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
+    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    if (addOn != null) {
+      addOn(conf)
+    }
+    conf
   }
 
   /**
@@ -303,9 +315,10 @@ object TAQTest extends Logging {
       val exs = EXCHANGES.map(UTF8String.fromString)
       val numExs = exs.length
       var day = 0
-      // month is 0 based
-      var cal = new GregorianCalendar(2016, 5, day + 6)
-      var date = new Date(cal.getTimeInMillis)
+      val zoneId = ZoneId.systemDefault()
+      var cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+      var millisTime = cal.toInstant.toEpochMilli
+      var date = new Date(millisTime)
       var dayCounter = 0
       itr.map { id =>
         val sym = syms(math.abs(rnd.nextInt() % numSyms))
@@ -315,20 +328,22 @@ object TAQTest extends Logging {
           // change date after some number of iterations
           if (dayCounter == 10000) {
             day = (day + 1) % numDays
-            cal = new GregorianCalendar(2016, 5, day + 6)
-            date = new Date(cal.getTimeInMillis)
+            cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+            millisTime = cal.toInstant.toEpochMilli
+            date = new Date(millisTime)
             dayCounter = 0
           }
         }
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
-          cal.set(Calendar.HOUR, rnd.nextInt() & 0x07)
-          cal.set(Calendar.MINUTE, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.SECOND, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.MILLISECOND, math.abs(rnd.nextInt() % 1000))
+          // seconds < 59 so that millis+gid does not overflow into next hour
+          cal = ZonedDateTime.of(2016, 6, day + 6, rnd.nextInt() & 0x07,
+            math.abs(rnd.nextInt() % 60), math.abs(rnd.nextInt() % 59),
+            math.abs(rnd.nextInt() % 1000000000), zoneId)
+          millisTime = cal.toInstant.toEpochMilli
         }
-        val time = new Timestamp(cal.getTimeInMillis + gid)
+        val time = new Timestamp(millisTime + gid)
         Quote(sym, ex, rnd.nextDouble() * 1000.0, time, date)
       }
     }
@@ -339,9 +354,10 @@ object TAQTest extends Logging {
       val exs = EXCHANGES.map(UTF8String.fromString)
       val numExs = exs.length
       var day = 0
-      // month is 0 based
-      var cal = new GregorianCalendar(2016, 5, day + 6)
-      var date = new Date(cal.getTimeInMillis)
+      val zoneId = ZoneId.systemDefault()
+      var cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+      var millisTime = cal.toInstant.toEpochMilli
+      var date = new Date(millisTime)
       var dayCounter = 0
       itr.map { id =>
         val sym = syms(math.abs(rnd.nextInt() % numSyms))
@@ -352,20 +368,22 @@ object TAQTest extends Logging {
           if (dayCounter == 10000) {
             // change date
             day = (day + 1) % numDays
-            cal = new GregorianCalendar(2016, 5, day + 6)
-            date = new Date(cal.getTimeInMillis)
+            cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+            millisTime = cal.toInstant.toEpochMilli
+            date = new Date(millisTime)
             dayCounter = 0
           }
         }
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
-          cal.set(Calendar.HOUR, rnd.nextInt() & 0x07)
-          cal.set(Calendar.MINUTE, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.SECOND, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.MILLISECOND, math.abs(rnd.nextInt() % 1000))
+          // seconds < 59 so that millis+gid does not overflow into next hour
+          cal = ZonedDateTime.of(2016, 6, day + 6, rnd.nextInt() & 0x07,
+            math.abs(rnd.nextInt() % 60), math.abs(rnd.nextInt() % 59),
+            math.abs(rnd.nextInt() % 1000000000), zoneId)
+          millisTime = cal.toInstant.toEpochMilli
         }
-        val time = new Timestamp(cal.getTimeInMillis + gid)
+        val time = new Timestamp(millisTime + gid)
         val dec = Decimal(math.abs(rnd.nextInt() % 100000000), 10, 4)
         val c1 = Array(sym, ex, sym)
         val bid = rnd.nextDouble() * 1000
@@ -408,7 +426,7 @@ object TAQTest extends Logging {
      */
     def addBenchmark(name: String, cache: Boolean,
         params: Map[String, String] = Map(), query: String,
-        snappy: Boolean, init: Boolean): Unit = {
+        expectedNumResults: Int, snappy: Boolean, init: Boolean): Unit = {
       val defaults = params.keys.flatMap {
         k => session.conf.getOption(k).map((k, _))
       }
@@ -430,14 +448,15 @@ object TAQTest extends Logging {
             session.sql("drop table if exists quote")
             session.sql("drop table if exists trade")
             session.sql("drop table if exists S")
+            val partitioning = if (op == CreateOp.Read) {
+              " options (partition_by 'sym')"
+            } else ""
             if (COLUMN_TABLE) {
-              session.sql(s"$sqlQuote using column")
-              session.sql(s"$sqlTrade using column")
+              session.sql(s"$sqlQuote using column$partitioning")
+              session.sql(s"$sqlTrade using column$partitioning")
             } else {
-              session.sql(s"$sqlQuote using row options " +
-                  s"(partition_by 'sym', overflow 'true')")
-              session.sql(s"$sqlTrade using row options " +
-                  s"(partition_by 'sym', overflow 'true')")
+              session.sql(s"$sqlQuote using row$partitioning")
+              session.sql(s"$sqlTrade using row$partitioning")
             }
             session.sql(s"CREATE TABLE S (sym CHAR(4) NOT NULL)")
             qDF.write.insertInto("quote")
@@ -470,14 +489,14 @@ object TAQTest extends Logging {
         }
       }
 
-      addCaseWithCleanup(benchmark, name, numIters, prepare,
-        cleanup, testCleanup) { _ =>
+      ColumnCacheBenchmark.addCaseWithCleanup(benchmark, name, numIters,
+        prepare, cleanup, testCleanup) { _ =>
         op match {
           case CreateOp.Read =>
             if (snappy) {
-              collect(session.sql(query))
+              collect(session.sql(query), expectedNumResults)
             } else {
-              collect(spark.sql(query))
+              collect(spark.sql(query), expectedNumResults)
             }
           case CreateOp.Quote if snappy =>
             qDF.write.insertInto("quote")
@@ -505,11 +524,15 @@ object TAQTest extends Logging {
 
     if (runSparkCaching) {
       addBenchmark(s"Q$queryNumber: cache = T", cache = true,
-        Map.empty, query = cacheQueries(queryNumber - 1), snappy = false, init)
+        Map.empty, query = cacheQueries(queryNumber - 1),
+        expectedNumResults = expectedResultSizes(queryNumber - 1),
+        snappy = false, init)
     }
 
     addBenchmark(s"Q$queryNumber: cache = F snappy = T", cache = false,
-      Map.empty, query = queries(queryNumber - 1), snappy = true, init)
+      Map.empty, query = queries(queryNumber - 1),
+      expectedNumResults = expectedResultSizes(queryNumber - 1),
+      snappy = true, init)
     init = false
 
     benchmark.run()

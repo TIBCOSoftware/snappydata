@@ -20,11 +20,11 @@ import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
-
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.util.SnappyUtils
+import spark.jobserver.util.ContextURLClassLoader
 
 abstract class SnappyStreamingJob extends SparkJobBase {
   override type C = SnappyStreamingContext
@@ -37,12 +37,7 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
     val snc = sc.asInstanceOf[SnappyStreamingContext]
-    try {
-      runSnappyJob(snc, jobConfig)
-    }
-    finally {
-      SnappyUtils.removeJobJar(snc.sparkContext)
-    }
+    runSnappyJob(snc, jobConfig)
   }
 
   def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation
@@ -61,6 +56,8 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
     new SnappyStreamingContext(LeadImpl.getInitializingSparkContext,
       Milliseconds(interval)) with ContextLike {
 
+      private val addedJars = scala.collection.mutable.ArrayBuffer.empty[String]
+
       override def isValidJob(job: SparkJobBase): Boolean =
         job.isInstanceOf[SnappyStreamingJob] || job.isInstanceOf[JavaSnappyStreamingJob]
 
@@ -68,9 +65,23 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
         try {
           val stopGracefully = config.getBoolean("streaming.stopGracefully")
           stop(stopSparkContext = false, stopGracefully = stopGracefully)
+          addedJars.foreach { jarName =>
+            SnappyUtils.removeJobJar(sparkContext, jarName)
+          }
         } catch {
           case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
         }
+      }
+
+      // Callback added to provide our classloader to load job classes.
+      // If Job class directly refers to any jars which has been provided
+      // by install_jars, this can help.
+      override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
+        SnappyUtils.getSnappyContextURLClassLoader(parent)
+      }
+
+      override def addJobJar(jarName : String): Unit = {
+       addedJars.append(jarName)
       }
     }
   }

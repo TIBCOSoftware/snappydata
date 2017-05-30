@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 import com.pivotal.gemfirexd.internal.iapi.types._
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import io.snappydata.core.{Data1, Data4, TestData2}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -329,7 +329,7 @@ class UnifiedPartitionerTest extends SnappyFunSuite
 
   test("Test PR for Int type column") {
     val snc = SnappyContext(sc)
-    snc.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key}=3")
+    snc.sql(s"set ${Property.ColumnBatchSize.name}=30")
     snc.sql(s"set ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key}=1")
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemId INT, ItemRef INT) " +
         "USING column " +

@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.io.{File, FileOutputStream, PrintWriter}
+import java.net.InetAddress
 import java.sql.{ResultSet, Statement}
 
 import scala.io.Source
@@ -24,6 +25,7 @@ import scala.io.Source
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
@@ -32,6 +34,24 @@ import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{FilterExec, ProjectExec}
 
 class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+
+  override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
+  protected val productDir = SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
+  override val stopNetServersInTearDown = false
+
+
+  override def beforeClass(): Unit = {
+    super.beforeClass()
+    startNetworkServersOnAllVMs()
+    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+  }
+
+  override def afterClass(): Unit = {
+    Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+    ClusterManagerTestBase.stopNetworkServers()
+    super.afterClass()
+    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+  }
 
   def testReplicatedTableQueries(): Unit = {
     val snc = SnappyContext(sc)
@@ -87,7 +107,13 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       NorthWindDUnitTest.createAndLoadColocatedTables(snc)
       NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
       // validateColocatedTableQueries(snc)
+
       NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ColocatedTable", pw, sqlContext)
+
+      // verify the colocated table queries in smart connector mode
+      val params = Array(locatorNetPort, "ColocatedTable").
+          asInstanceOf[Array[AnyRef]]
+      vm3.invoke(classOf[SmartConnectorFunctions], "nwQueryValidationOnConnector", params)
     } finally {
       pw.close()
     }

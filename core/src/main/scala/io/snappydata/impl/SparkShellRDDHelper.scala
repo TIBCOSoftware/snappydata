@@ -33,8 +33,8 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 import io.snappydata.thrift.internal.ClientStatement
-
 import org.apache.spark.Partition
+import org.apache.spark.{Logging, Partition}
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -42,42 +42,71 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.types.StructType
 
 final class SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
   def getSQLStatement(resolvedTableName: String,
-      requiredColumns: Array[String], partitionId: Int): String = {
-    val whereClause = if (useLocatorURL) s" where bucketId = $partitionId" else ""
-    "select " + requiredColumns.mkString(", ") +
-        ", numRows, stats from " + resolvedTableName + whereClause
+      partitionId: Int, requiredColumns: Array[String],
+      schema: StructType): (String, String) = {
+
+    val schemaWithIndex = schema.zipWithIndex
+    // to fetch columns create a union all string
+    // (select data, columnIndex from table where
+    //  partitionId = 1 and uuid = ? and columnIndex = 1)
+    // union all
+    // (select data, columnIndex from table where
+    //  partitionId = 1 and uuid = ? and columnIndex = 7)
+    // An OR query like the following results in a bulk table scan
+    // select data, columnIndex from table where partitionId = 1 and
+    //  (columnIndex = 1 or columnIndex = 7)
+    val fetchColString = requiredColumns.map(col => {
+      schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
+    }).map(i => s"(select data, columnIndex from $resolvedTableName where " +
+        s"partitionId = $partitionId and uuid = ? and columnIndex = $i)").mkString(" union all ")
+    // fetch stats query and fetch columns query
+    (s"select data, uuid from $resolvedTableName where columnIndex = -1",
+        fetchColString)
   }
 
   def executeQuery(conn: Connection, tableName: String,
-      split: Partition, query: String): (Statement, ResultSet) = {
+      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
     val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
     val statement = conn.createStatement()
     if (!useLocatorURL) {
-      statement match {
-        case clientStmt: ClientStatement =>
-          val numBuckets = partition.buckets.size
-          val bucketSet = if (numBuckets == 1) {
-            Collections.singleton[Integer](partition.buckets.head)
-          } else {
-            val buckets = new java.util.HashSet[Integer](numBuckets)
-            partition.buckets.foreach(buckets.add(_))
-            buckets
-          }
-          clientStmt.setLocalExecutionBucketIds(bucketSet, resolvedName)
-        case _ =>
-          val buckets = partition.buckets.mkString(",")
-          statement.execute(
-            s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
-      }
+      val buckets = partition.buckets.mkString(",")
+      statement.execute(
+        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets', $relDestroyVersion)")
+      // TODO: currently clientStmt.setLocalExecutionBucketIds is not taking effect probably
+      // due to a bug. Need to be looked into before enabling the code below.
+
+//      statement match {
+//        case clientStmt: ClientStatement =>
+//          val numBuckets = partition.buckets.size
+//          val bucketSet = if (numBuckets == 1) {
+//            Collections.singleton[Integer](partition.buckets.head)
+//          } else {
+//            val buckets = new java.util.HashSet[Integer](numBuckets)
+//            partition.buckets.foreach(buckets.add(_))
+//            buckets
+//          }
+//          clientStmt.setLocalExecutionBucketIds(bucketSet, resolvedName)
+//        case _ =>
+//          val buckets = partition.buckets.mkString(",")
+//          statement.execute(
+//            s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$buckets')")
+//      }
+    }
+
+    val txId = SparkShellRDDHelper.snapshotTxId.get()
+    if (!txId.equals("null")) {
+      statement.execute(
+        s"call sys.USE_SNAPSHOT_TXID('$txId')")
     }
 
     val rs = statement.executeQuery(query)
@@ -108,6 +137,7 @@ final class SparkShellRDDHelper {
     // enable direct ByteBuffers for best performance
     val executorProps = connProperties.executorConnProps
     executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
+    executorProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
     // setup pool properties
     val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
@@ -128,9 +158,15 @@ final class SparkShellRDDHelper {
 
 object SparkShellRDDHelper {
 
+  var snapshotTxId: ThreadLocal[String] = new ThreadLocal[String]
+
   def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
     val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
     val bucketToServerList = getBucketToServerMapping(resolvedName)
+    getPartitions(bucketToServerList)
+  }
+
+  def getPartitions(bucketToServerList: Array[ArrayBuffer[(String, String)]]): Array[Partition] = {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
@@ -166,6 +202,10 @@ object SparkShellRDDHelper {
     }
   }
 
+  /*
+  * Called when using smart connector mode that uses accessor
+  * to get SnappyData cluster info
+  **/
   private def getBucketToServerMapping(
       resolvedName: String): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
@@ -220,4 +260,92 @@ object SparkShellRDDHelper {
           s"${r.getAttributes.getDataPolicy} attributes: ${r.getAttributes}")
     }
   }
+
+  def setBucketToServerMappingInfo(
+      bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]]  = {
+    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    // no query routing or load-balancing
+    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
+        ClientAttribute.LOAD_BALANCE + "=false"
+    if (bucketToServerMappingStr != null) {
+      val arr: Array[String] = bucketToServerMappingStr.split(":")
+      val orphanBuckets = ArrayBuffer.empty[Int]
+      val noOfBuckets = arr(0).toInt
+//    val redundancy = arr(1).toInt
+      val allNetUrls = new Array[ArrayBuffer[(String, String)]](noOfBuckets)
+      val bucketsServers: String = arr(2)
+      val newarr: Array[String] = bucketsServers.split("\\|")
+      val availableNetUrls = ArrayBuffer.empty[(String, String)]
+      for (x <- newarr) {
+        val aBucketInfo: Array[String] = x.split(";")
+        val bid: Int = aBucketInfo(0).toInt
+        if (!(aBucketInfo(1) == "null")) {
+          // get (addr,host,port)
+          val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
+          val netUrls = ArrayBuffer.empty[(String, String)]
+          netUrls += hostAddressPort._1 ->
+              (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+          allNetUrls(bid) = netUrls
+          for (e <- netUrls) {
+            if (!availableNetUrls.contains(e)) {
+              availableNetUrls += e
+            }
+          }
+        } else {
+          // Save the bucket which does not have a neturl,
+          // and later assign available ones to it.
+          orphanBuckets += bid
+        }
+      }
+      for (bucket <- orphanBuckets) {
+        allNetUrls(bucket) = availableNetUrls
+      }
+      return allNetUrls
+    }
+    Array.empty
+  }
+
+  def setReplicasToServerMappingInfo(
+      replicaNodesStr: String): Array[ArrayBuffer[(String, String)]] = {
+    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    // no query routing or load-balancing
+    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
+        ClientAttribute.LOAD_BALANCE + "=false"
+    val hostInfo = replicaNodesStr.split(";")
+    val netUrls = ArrayBuffer.empty[(String, String)]
+    for (host <- hostInfo) {
+      val hostAddressPort = returnHostPortFromServerString(host)
+      netUrls += hostAddressPort._1 ->
+          (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+    }
+    return Array(netUrls)
+  }
+
+  /*
+  * The pattern to extract addresses from the result of
+  * GET_ALLSERVERS_AND_PREFSERVER2 procedure; format is:
+  *
+  * host1/addr1[port1]{kind1},host2/addr2[port2]{kind2},...
+  */
+  private lazy val addrPattern =
+    java.util.regex.Pattern.compile("([^,/]*)(/[^,\\[]+)?\\[([\\d]+)\\](\\{[^}]+\\})?")
+
+  private def returnHostPortFromServerString(serverStr: String): (String, String, String) = {
+    if (serverStr == null || serverStr.length == 0) {
+      return null
+    }
+    val matcher: java.util.regex.Matcher = addrPattern.matcher(serverStr)
+    val matchFound: Boolean = matcher.find
+    if (!matchFound) {
+      (null, null, null)
+    } else {
+      val host: String = matcher.group(1)
+      val address: String = matcher.group(2)
+      val portStr: String = matcher.group(3)
+//      (address, host, portStr)
+      (host, host, portStr)
+    }
+  }
+
+
 }

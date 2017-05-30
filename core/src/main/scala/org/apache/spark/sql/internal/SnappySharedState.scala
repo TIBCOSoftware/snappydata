@@ -16,7 +16,11 @@
  */
 package org.apache.spark.sql.internal
 
+import io.snappydata.impl.SnappyHiveCatalog
+
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext}
+import org.apache.spark.sql.hive.{SnappyConnectorExternalCatalog, HiveClientUtil, SnappyExternalCatalog}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.CacheManager
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyExternalCatalog}
@@ -34,11 +38,25 @@ private[sql] class SnappySharedState(override val sparkContext: SparkContext,
   /**
    * A Hive client used to interact with the metastore.
    */
-  private[sql] lazy val metadataHive = new HiveClientUtil(sparkContext).client
+  private[sql] lazy val metadataHive = {
+    val oldFlag = SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.get()
+    SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(java.lang.Boolean.TRUE)
+    try {
+      // avoid inheritance of activeSession
+      SparkSession.clearActiveSession()
+      new HiveClientUtil(sparkContext).client
+    } finally {
+      SnappyHiveCatalog.SKIP_HIVE_TABLE_CALLS.set(oldFlag)
+    }
+  }
 
+  override lazy val externalCatalog = SnappyContext.getClusterMode(sparkContext) match {
+    case ThinClientConnectorMode(_, _) =>
+      new SnappyConnectorExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
+    case _ =>
+      new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
+  }
 
-  override lazy val externalCatalog =
-    new SnappyExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
 }
 
 private[sql] class SnappyCacheManager(sessionId: Int) extends CacheManager {

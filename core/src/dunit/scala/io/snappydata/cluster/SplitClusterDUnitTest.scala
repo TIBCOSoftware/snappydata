@@ -32,9 +32,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
+import io.snappydata.util.TestUtils
 import org.junit.Assert
 
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{SparkConf, SparkContext}
@@ -51,6 +52,7 @@ class SplitClusterDUnitTest(s: String)
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
+  bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
 
   private[this] var host: Host = _
   var vm0: VM = _
@@ -75,9 +77,7 @@ class SplitClusterDUnitTest(s: String)
   override protected val productDir =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
-  // see comments in SNAP-606 about Apache Spark filtering out "spark.*"
-  // properties for this, so fails with just "snappydata." prefix
-  override protected val locatorProperty = "spark.snappydata.store.locators"
+  override protected def locatorClientPort = { testObject.locatorNetPort }
 
   override def beforeClass(): Unit = {
     super.beforeClass()
@@ -123,7 +123,7 @@ class SplitClusterDUnitTest(s: String)
     }
   }
 
-  override protected def startNetworkServers(num: Int): Unit = {
+  override protected def startNetworkServers(): Unit = {
     // no change to network servers at runtime in this mode
   }
 
@@ -143,6 +143,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.cores", TestUtils.defaultCores.toString)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
 
@@ -619,6 +620,18 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
         s"Exception in parsing as JSON: $s", e)
     }
     throw new AssertionError(s"Failed in parsing as JSON: $s")
+  }
+
+  def startSparkCluster(productDir: String): Unit = {
+    logInfo(s"Starting spark cluster in $productDir/work")
+    (productDir + "/sbin/start-all.sh") !!
+  }
+
+  def stopSparkCluster(productDir: String): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    logInfo(s"Stopping spark cluster in $productDir/work")
+    if (sparkContext != null) sparkContext.stop()
+    (productDir + "/sbin/stop-all.sh") !!
   }
 }
 

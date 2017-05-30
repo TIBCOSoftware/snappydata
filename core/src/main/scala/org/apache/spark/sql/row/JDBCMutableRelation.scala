@@ -68,7 +68,7 @@ case class JDBCMutableRelation(
   override val needConversion: Boolean = false
 
   override def sizeInBytes: Long = {
-    SnappyTableStatsProviderService.getTableStatsFromService(table) match {
+    SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
       case Some(s) => s.getTotalSize
       case None => super.sizeInBytes
     }
@@ -158,6 +158,7 @@ case class JDBCMutableRelation(
         }
     } finally {
       if (conn != null) {
+        conn.commit()
         conn.close()
       }
     }
@@ -266,6 +267,7 @@ case class JDBCMutableRelation(
         stmt.close()
         result
       } finally {
+        connection.commit()
         connection.close()
       }
     }
@@ -281,6 +283,7 @@ case class JDBCMutableRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -316,6 +319,7 @@ case class JDBCMutableRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -333,6 +337,7 @@ case class JDBCMutableRelation(
       stmt.close()
       result
     } finally {
+      connection.commit()
       connection.close()
     }
   }
@@ -347,6 +352,7 @@ case class JDBCMutableRelation(
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
       } finally {
+        conn.commit()
         conn.close()
       }
     }
@@ -358,6 +364,7 @@ case class JDBCMutableRelation(
       JdbcExtendedUtils.truncateTable(conn, table, dialect)
     }
     finally {
+      conn.commit()
       conn.close()
     }
   }
@@ -398,6 +405,7 @@ case class JDBCMutableRelation(
           throw se
         }
     } finally {
+      conn.commit()
       conn.close()
     }
   }
