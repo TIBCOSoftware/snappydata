@@ -48,7 +48,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   val memoryMode = MemoryMode.ON_HEAP
 
   test("Test UnRollMemory") {
-    val sparkSession = createSparkSession(1, 0)
+    val sparkSession = createSparkSession(1, 0, 10000)
     val snSession = new SnappySession(sparkSession.sparkContext)
     val memoryManager = SparkEnv.get.memoryManager
         .asInstanceOf[SnappyUnifiedMemoryManager]
@@ -58,12 +58,13 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
 
     assert(memoryManager.storageMemoryUsed == 500)
-    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_") == 500)
+    val key = "_SPARK_CACHE_" -> memoryMode
+    assert(memoryManager.memoryForObject.getLong(key) == 500)
     memoryManager.releaseUnrollMemory(500, memoryMode)
 
     assert(memoryManager.getStoragePoolMemoryUsed(MemoryMode.OFF_HEAP) +
         memoryManager.getStoragePoolMemoryUsed(MemoryMode.ON_HEAP) == 0)
-    assert(memoryManager.memoryForObject.getLong("_SPARK_CACHE_") == 0)
+    assert(memoryManager.memoryForObject.getLong(key) == 0)
   }
 
 
@@ -121,6 +122,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
         assert(memoryIncreaseDuetoEviction > 0)
       }
     }
+    snappyMemoryManager.dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count == rows)
     snSession.dropTable("t1")

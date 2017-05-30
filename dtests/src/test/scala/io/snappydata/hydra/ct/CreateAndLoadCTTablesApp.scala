@@ -23,10 +23,12 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkContext, SparkConf}
 
 object CreateAndLoadCTTablesApp {
-  val conf = new SparkConf().
-      setAppName("CTTestUtil Application")
 
   def main(args: Array[String]) {
+    val connectionURL = args(args.length - 1)
+    val conf = new SparkConf().
+        setAppName("CreateAndLoadCTTables Application").
+        set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)
@@ -35,29 +37,36 @@ object CreateAndLoadCTTablesApp {
     val tableType = args(1)
     val redundancy = args(2)
     val persistenceMode = args(3)
-    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadCTTablesApp.out"),true));
+    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadCTTablesApp.out"), true))
+    // scalastyle:off println
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     CTTestUtil.dropTables(snc)
     pw.println(s"Create and load for ${tableType} tables has started")
     pw.flush()
     tableType match {
-      //replicated row tables
+      // replicated row tables
       case "Replicated" => CTTestUtil.createReplicatedRowTables(snc)
-      case "PersistentReplicated" => CTTestUtil.createPersistReplicatedRowTables(snc,persistenceMode)
-      //partitioned row tables
-      case "PartitionedRow" => CTTestUtil.createPartitionedRowTables(snc,redundancy)
-      case "PersistentPartitionRow" => CTTestUtil.createPersistPartitionedRowTables(snc,redundancy,persistenceMode)
-      case "ColocatedRow" => CTTestUtil.createColocatedRowTables(snc,redundancy)
-      case "EvictionRow"=> CTTestUtil.createRowTablesWithEviction(snc,redundancy)
-      case "PersistentColocatedRow" => CTTestUtil.createPersistColocatedTables(snc,redundancy,persistenceMode)
-      case "ColocatedWithEvictionRow" => CTTestUtil.createColocatedRowTablesWithEviction(snc,redundancy,persistenceMode)
-      //column tables
-      case "Column" => CTTestUtil.createColumnTables(snc,redundancy)
-      case "PersistentColumn" => CTTestUtil.createPersistColumnTables(snc,persistenceMode)
-      case "ColocatedColumn" => CTTestUtil.createColocatedColumnTables(snc,redundancy)
-      case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc,redundancy)
-      case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,redundancy,persistenceMode)
-      case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,redundancy)
+      case "PersistentReplicated" => CTTestUtil.createPersistReplicatedRowTables(snc,
+        persistenceMode)
+      // partitioned row tables
+      case "PartitionedRow" => CTTestUtil.createPartitionedRowTables(snc, redundancy)
+      case "PersistentPartitionRow" => CTTestUtil.createPersistPartitionedRowTables(snc,
+        redundancy, persistenceMode)
+      case "ColocatedRow" => CTTestUtil.createColocatedRowTables(snc, redundancy)
+      case "EvictionRow" => CTTestUtil.createRowTablesWithEviction(snc, redundancy)
+      case "PersistentColocatedRow" => CTTestUtil.createPersistColocatedTables(snc, redundancy,
+        persistenceMode)
+      case "ColocatedWithEvictionRow" => CTTestUtil.createColocatedRowTablesWithEviction(snc,
+        redundancy, persistenceMode)
+      // column tables
+      case "Column" => CTTestUtil.createColumnTables(snc, redundancy)
+      case "PersistentColumn" => CTTestUtil.createPersistColumnTables(snc, persistenceMode)
+      case "ColocatedColumn" => CTTestUtil.createColocatedColumnTables(snc, redundancy)
+      case "EvictionColumn" => CTTestUtil.createColumnTablesWithEviction(snc, redundancy)
+      case "PersistentColocatedColumn" => CTTestUtil.createPersistColocatedColumnTables(snc,
+        redundancy, persistenceMode)
+      case "ColocatedWithEvictionColumn" => CTTestUtil.createColocatedColumnTablesWithEviction(snc,
+        redundancy)
       case _ =>
         pw.println(s"Did not find any match for ${tableType} to create tables")
         pw.close()

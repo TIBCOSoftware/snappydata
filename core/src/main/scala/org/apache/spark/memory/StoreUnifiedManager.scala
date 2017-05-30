@@ -18,115 +18,61 @@ package org.apache.spark.memory
 
 import java.nio.ByteBuffer
 
-import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
-
 import org.apache.spark.storage.{BlockId, TestBlockId}
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.util.Utils
+import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
-
+/**
+  * Base trait for different memory manager used by SnappyData in different modes
+  */
 trait StoreUnifiedManager {
 
   def acquireStorageMemoryForObject(
-      objectName : String,
+      objectName: String,
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean
 
-  def dropStorageMemoryForObject(objectName : String, memoryMode: MemoryMode,
-                                 ignoreNumBytes : Long): Long
+  def dropStorageMemoryForObject(objectName: String, memoryMode: MemoryMode,
+      ignoreNumBytes: Long): Long
 
-  def releaseStorageMemoryForObject(objectName : String, numBytes: Long,
-                                    memoryMode: MemoryMode): Unit
+  def releaseStorageMemoryForObject(objectName: String, numBytes: Long,
+      memoryMode: MemoryMode): Unit
 
   def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long
+
   def getStoragePoolSize(memoryMode: MemoryMode): Long
+
   def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long
+
   def getExecutionPoolSize(memoryMode: MemoryMode): Long
+
   def getOffHeapMemory(objectName: String): Long
+
   def hasOffHeap: Boolean
+
   def logStats(): Unit
+
   /**
-   * Change the off-heap owner to mark it being used for storage.
-   * Passing the owner as null allows moving ByteBuffers not allocated
-   * by [[BufferAllocator]]s to be also changed and freshly accounted.
-   */
+    * Change the off-heap owner to mark it being used for storage.
+    * Passing the owner as null allows moving ByteBuffers not allocated
+    * by [[BufferAllocator]]s to be also changed and freshly accounted.
+    */
   def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit
 }
 
 /**
-  * This class will store all the memory usage for GemFireXD boot up time when SparkEnv
-  * is not initialised.
-  * This class will not actually allocate any memory.
-  * It is just a temp account holder till SnappyUnifiedManager is started.
+  * A MemoryManager which simply delegates to configured Spark memory manager.
+  * This manager will be used in Connector mode. All SnappyData execution memory
+  * like encoder etc will account memory here.
   */
-class TempMemoryManager extends StoreUnifiedManager with Logging{
-
-  val memoryForObject = new mutable.HashMap[(String, MemoryMode), Long]()
-
-  override def acquireStorageMemoryForObject(objectName: String,
-      blockId: BlockId,
-      numBytes: Long,
-      memoryMode: MemoryMode,
-      buffer: UMMMemoryTracker,
-      shouldEvict: Boolean): Boolean = synchronized {
-    val key = objectName -> memoryMode
-    logDebug(s"Acquiring mem [TEMP] for $key $numBytes")
-    if (!memoryForObject.contains(key)) {
-      memoryForObject.put(key, 0L)
-    }
-    memoryForObject(key) += numBytes
-    true
-  }
-
-  override def dropStorageMemoryForObject(
-      objectName: String,
-      memoryMode: MemoryMode,
-      ignoreNumBytes : Long): Long = synchronized {
-    memoryForObject.remove(objectName -> memoryMode).getOrElse(0L)
-  }
-
-  override def releaseStorageMemoryForObject(
-      objectName: String,
-      numBytes: Long,
-      memoryMode: MemoryMode): Unit = synchronized {
-    memoryForObject(objectName -> memoryMode) -= numBytes
-  }
-
-  override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L
-
-  override def getStoragePoolSize(memoryMode: MemoryMode): Long = 0L
-
-  override def getExecutionPoolUsedMemory(memoryMode: MemoryMode): Long = 0L
-
-  override def getExecutionPoolSize(memoryMode: MemoryMode): Long = 0L
-
-  override def getOffHeapMemory(objectName: String): Long = 0L
-
-  override def hasOffHeap: Boolean = false
-
-  override def logStats(): Unit = synchronized {
-    val memoryLog = new StringBuilder
-    val separator = "\n\t\t"
-    memoryLog.append("TempMemoryManager stats:")
-    for ((n, v) <- memoryForObject) {
-      memoryLog.append(separator).append(n).append(" = ").append(v)
-    }
-    logInfo(memoryLog.toString())
-  }
-
-  override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
-      allowNonAllocator: Boolean): Unit = {}
-}
-
-
-class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
+class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
   override def acquireStorageMemoryForObject(objectName: String,
       blockId: BlockId,
@@ -134,19 +80,29 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
       memoryMode: MemoryMode,
       buffer: UMMMemoryTracker,
       shouldEvict: Boolean): Boolean = {
-    logDebug(s"Acquiring mem [NO-OP] for $objectName $numBytes")
-    true
+    logDebug(s"Acquiring DefaultManager memory for $objectName $numBytes")
+    if (SparkEnv.get ne null) {
+      SparkEnv.get.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
+    } else {
+      true
+    }
   }
 
+  // This should not be called in connector mode
   override def dropStorageMemoryForObject(
       objectName: String,
       memoryMode: MemoryMode,
-      ignoreNumBytes : Long): Long = 0L
+      ignoreNumBytes: Long): Long = 0L
 
   override def releaseStorageMemoryForObject(
       objectName: String,
       numBytes: Long,
-      memoryMode: MemoryMode): Unit = {}
+      memoryMode: MemoryMode): Unit = {
+    logDebug(s"Releasing DefaultManager meemory for $objectName $numBytes")
+    if (SparkEnv.get ne null) {
+      SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
+    }
+  }
 
   override def getStoragePoolMemoryUsed(memoryMode: MemoryMode): Long = 0L
 
@@ -169,20 +125,38 @@ class NoOpSnappyMemoryManager extends StoreUnifiedManager with Logging {
 object MemoryManagerCallback extends Logging {
 
   val storageBlockId = TestBlockId("SNAPPY_STORAGE_BLOCK_ID")
+  val cachedDFBlockId = TestBlockId("SNAPPY_CACHED_DF_BLOCK_ID")
 
-  val tempMemoryManager = new TempMemoryManager
+  val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
+
+  // This memory manager will be used while GemXD is booting up and SparkEnv is not ready.
+  lazy val tempMemoryManager = {
+    try {
+      val conf = new SparkConf()
+      Utils.classForName(ummClass)
+          .getConstructor(classOf[SparkConf], classOf[Int], classOf[Boolean])
+          .newInstance(conf, Int.box(1), Boolean.box(true)).asInstanceOf[StoreUnifiedManager]
+      // We dont need execution memory during GemXD boot. Hence passing num core as 1
+    } catch {
+      case _: ClassNotFoundException =>
+        logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
+            "SnappyUnifiedMemoryManager won't be used.")
+        new DefaultMemoryManager
+    }
+  }
+
   @volatile private var snappyUnifiedManager: StoreUnifiedManager = _
-  private val noOpMemoryManager : StoreUnifiedManager = new NoOpSnappyMemoryManager
+
+  private lazy val defaultManager: StoreUnifiedManager = new DefaultMemoryManager
 
   def resetMemoryManager(): Unit = synchronized {
-    tempMemoryManager.memoryForObject.clear()
     snappyUnifiedManager = null // For local mode testing
   }
 
+
   private final val isCluster = {
     try {
-      org.apache.spark.util.Utils.classForName(
-        "org.apache.spark.memory.SnappyUnifiedMemoryManager")
+      org.apache.spark.util.Utils.classForName(ummClass)
       // Class is loaded means we are running in SnappyCluster mode.
 
       true
@@ -206,28 +180,24 @@ object MemoryManagerCallback extends Logging {
       return snappyUnifiedManager
     }
     if (!isCluster) {
-      return noOpMemoryManager
+      return defaultManager
     }
 
-    if (GemFireCacheImpl.getInstance ne null) {
-      val env = SparkEnv.get
-      if (env ne null) {
-        env.memoryManager match {
-          case unifiedManager: StoreUnifiedManager =>
-            snappyUnifiedManager = unifiedManager
-            unifiedManager
-          case _ =>
-            // For testing purpose if we want to disable SnappyUnifiedManager
-            noOpMemoryManager
-        }
-      } else {
-        tempMemoryManager
+    val env = SparkEnv.get
+    if (env ne null) {
+      env.memoryManager match {
+        case unifiedManager: StoreUnifiedManager =>
+          snappyUnifiedManager = unifiedManager
+          unifiedManager
+        case _ =>
+          // For testing purpose if we want to disable SnappyUnifiedManager
+          defaultManager
       }
-    } else {
-      // Till GemXD Boot Time
+    } else { // Spark.env will be null only with gemxd boot time
       tempMemoryManager
     }
   }
+
 }
 
 

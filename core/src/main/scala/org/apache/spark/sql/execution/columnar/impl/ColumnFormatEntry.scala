@@ -344,7 +344,7 @@ final class ColumnFormatValue
             // processors like gateway event processors will not expect it.
         }
       }
-      ColumnFormatEntry.VALUE_EMPTY_BUFFER
+      ColumnFormatEntry.VALUE_EMPTY_BUFFER.duplicate()
     }
   }
 
@@ -542,13 +542,12 @@ final class ColumnFormatEncoder extends RowEncoder {
       case blob: BufferedBlob => blob.getAsLastChunk.chunk
       case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
     }
-    // the incoming blob includes the serialization header to avoid
+    // the incoming blob includes the space for serialization header to avoid
     // a copy when transferring to ColumnFormatValue, so just move to
-    // the start of data
-    columnBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+    // the start of data and write the serialization header
+    columnBuffer.rewind()
     // set the buffer into ColumnFormatValue
-    val batchValue = new ColumnFormatValue()
-    batchValue.setBuffer(columnBuffer, writeSerializationHeader = false)
+    val batchValue = new ColumnFormatValue(columnBuffer)
     new java.util.AbstractMap.SimpleEntry[RegionKey, AnyRef](batchKey, batchValue)
   }
 

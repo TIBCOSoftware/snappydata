@@ -22,17 +22,12 @@ import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
 object ValidateNWQueriesApp {
-  var conf = new SparkConf().
-      setAppName("ValidateNWQueriesApp Application")
 
   def main(args: Array[String]) {
-    val useThinClientSmartConnectorMode: Boolean = args(3).toBoolean
-    if (useThinClientSmartConnectorMode) {
-      val connectionURL = args(args.length - 1)
-      conf = new SparkConf().
-          setAppName("ValidateNWQueries Application").
-          set("snappydata.connection", connectionURL)
-    }
+    val connectionURL = args(args.length - 1)
+    val conf = new SparkConf().
+        setAppName("ValidateNWQueries Application").
+        set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
@@ -43,8 +38,8 @@ object ValidateNWQueriesApp {
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
-    val numRowsValidation: Boolean = args(5).toBoolean
-    val isSmokeRun: Boolean = args(4).toBoolean
+    val numRowsValidation: Boolean = args(4).toBoolean
+    val isSmokeRun: Boolean = args(3).toBoolean
     val threadID = Thread.currentThread().getId
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
         ".out"

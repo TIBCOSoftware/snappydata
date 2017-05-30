@@ -5,7 +5,6 @@ io/snappydata/hydra/northwind/smokeNW1.conf
   tableType="ReplicatedRow"
   numRowsValidation = false
   fullResultSetValidation = true
-  useThinClientSmartConnectorMode = false
   isSmokeRun = true
 
 io/snappydata/hydra/northwind/smokeNW2.conf
@@ -15,7 +14,6 @@ io/snappydata/hydra/northwind/smokeNW2.conf
   tableType="PartitionedRow"
   numRowsValidation = false
   fullResultSetValidation = true
-  useThinClientSmartConnectorMode = false
   isSmokeRun = true
 
 
@@ -26,7 +24,6 @@ io/snappydata/hydra/northwind/smokeNW3.conf
   tableType="Column"
   numRowsValidation = false
   fullResultSetValidation = true
-  useThinClientSmartConnectorMode = false
   isSmokeRun = true
 
 io/snappydata/hydra/northwind/smokeNW4.conf
@@ -36,5 +33,4 @@ io/snappydata/hydra/northwind/smokeNW4.conf
   tableType="Colocated"
   numRowsValidation = false
   fullResultSetValidation = true
-  useThinClientSmartConnectorMode = false
   isSmokeRun = true
