@@ -27,8 +27,8 @@ import com.gemstone.gemfire.management.internal.SystemManagementService
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.tools.sizer.GemFireXDInstrumentation
-import io.snappydata.{SnappyEmbeddedTableStatsProviderService, Constant, SnappyTableStatsProviderService}
 import io.snappydata.test.dunit.SerializableRunnable
+import io.snappydata.{SnappyEmbeddedTableStatsProviderService, SnappyTableStatsProviderService}
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -62,13 +62,17 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "R")
     snc.dropTable(table)
 
+    createTable(snc, table, "row", Map("PERSISTENCE" -> "none"))
+    SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "R")
+    snc.dropTable(table)
+
 
     createTable(snc, table, "row", Map("PARTITION_BY" -> "col1"))
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "P")
     snc.dropTable(table)
 
 
-    createTable(snc, table, "row", Map("PARTITION_BY" -> "col1", "PERSISTENT" -> "sync"))
+    createTable(snc, table, "row", Map("PARTITION_BY" -> "col1", "PERSISTENCE" -> "sync"))
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table, "P")
     snc.dropTable(table)
 
@@ -81,7 +85,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
     snc.dropTable(table)
 
-    createTable(snc, table, "column", Map("PARTITION_BY" -> "col1", "PERSISTENT" -> "sync"))
+    createTable(snc, table, "column", Map("PARTITION_BY" -> "col1", "PERSISTENCE" -> "sync"))
     SnappyTableStatsProviderDUnitTest.verifyResults(snc, table)
     snc.dropTable(table)
 
@@ -236,8 +240,11 @@ object SnappyTableStatsProviderDUnitTest {
     result.setReplicatedTable(true)
     result.setColumnTable(false)
     result.setRowCount(regionBean.getEntryCount)
-    totalSize += sizer.sizeof(region.getBestLocalIterator(true).next()) *
-        result.getRowCount
+    val overhead = region.getBestLocalIterator(true).next() match {
+      case de: DiskEntry => sizer.sizeof(de) + sizer.sizeof(de.getDiskId)
+      case re => sizer.sizeof(re)
+    }
+    totalSize += overhead * result.getRowCount
     result.setSizeInMemory(totalSize)
     result.setTotalSize(totalSize)
     result

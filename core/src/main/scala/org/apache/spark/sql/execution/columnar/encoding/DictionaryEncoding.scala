@@ -18,10 +18,12 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{ByteBufferHashMap, LongKey, ObjectHashSet}
 
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -217,12 +219,13 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     if (!releaseOld || (columnData eq null)) {
       // 2 byte indexes for short dictionary while 4 bytes for big dictionary
       val numBytes = if (isShortDictionary) initSize << 1L else initSize << 2L
-      setSource(allocator.allocate(numBytes), releaseOld)
+      setSource(allocator.allocate(numBytes, ColumnEncoding.BUFFER_OWNER),
+        releaseOld)
     }
   }
 
   override def initialize(field: StructField, initSize: Int,
-      withHeader: Boolean, allocator: ColumnAllocator): Long = {
+      withHeader: Boolean, allocator: BufferAllocator): Long = {
     assert(withHeader, "DictionaryEncoding not supported without header")
 
     setAllocator(allocator)
@@ -230,7 +233,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       case StringType =>
         if (stringMap eq null) {
           // assume some level of compression with dictionary encoding
-          val mapSize = math.max(initSize >>> 1, 128)
+          val mapSize = math.min(math.max(initSize >>> 1, 128), 1024)
           // keySize is 4 since need to store dictionary index
           stringMap = new ByteBufferHashMap(mapSize, 0.6, 4,
             StringType.defaultSize, allocator)
@@ -242,7 +245,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       case t =>
         // assume some level of compression with dictionary encoding
         val mapSize = if (longMap ne null) longMap.size
-        else math.max(initSize >>> 1, 128)
+        else math.min(math.max(initSize >>> 1, 128), 1024)
         longMap = new ObjectHashSet[LongIndexKey](mapSize, 0.6, 1, false)
         longArray = new TLongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
@@ -360,11 +363,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val numNullWords = getNumNullWords
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
     val storageAllocator = this.storageAllocator
-    val columnData = storageAllocator.allocate(ColumnEncoding.checkBufferSize(
-      8L /* typeId + number of nulls */ + (numNullWords << 3L) + dataSize))
+    // serialization header size + typeId + number of nulls
+    val headerSize = ColumnFormatEntry.VALUE_HEADER_SIZE + 8L
+    val columnData = storageAllocator.allocateForStorage(ColumnEncoding
+        .checkBufferSize(headerSize + (numNullWords << 3L) + dataSize))
     val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
-    var cursor = baseOffset
+    // skip serialization header which will be filled in by ColumnFormatValue
+    var cursor = baseOffset + ColumnFormatEntry.VALUE_HEADER_SIZE
     // typeId
     ColumnEncoding.writeInt(columnBytes, cursor, typeId)
     cursor += 4
@@ -418,11 +424,10 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override def close(): Unit = {
     super.close()
-    stringMap = null
     if ((stringMap ne null) && (stringMap.keyData ne null)) {
       stringMap.release()
-      stringMap = null
     }
+    stringMap = null
     longMap = null
     longArray = null
   }

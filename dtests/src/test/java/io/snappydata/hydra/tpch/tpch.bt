@@ -1,0 +1,53 @@
+//split mode tests
+//Row tables
+
+io/snappydata/hydra/tpch/tpch.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataDir="/home/kishor/SNAPPY/DATA/TPCH/1GB"
+  buckets_Order_Lineitem=113
+  buckets_Cust_Part_PartSupp=113
+  buckets_Nation_Region_Supp=113
+  Nation_Region_Supp_col=false
+  Redundancy=0
+  Persistence=false
+  Persistence_Type=SYNCHRONOUS
+  NumberOfLoadStages=1
+  Parquet=false
+  queries="1-2-3-4-5"
+  sparkSqlProperties="null"
+  IsDynamic=false
+  ResultCollection=true
+  WarmupRuns=0
+  AverageRuns=0
+  threadNumber=1
+
+io/snappydata/hydra/tpch/tpch.conf
+    A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+    D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+    dataDir="/home/kishor/SNAPPY/DATA/TPCH/1GB"
+    buckets_Order_Lineitem=113
+    buckets_Cust_Part_PartSupp=113
+    buckets_Nation_Region_Supp=113
+    Nation_Region_Supp_col=false
+    Redundancy=0
+    Persistence=false
+    Persistence_Type=SYNCHRONOUS
+    NumberOfLoadStages=1
+    Parquet=false
+    queries="1-2-3-4-5"
+    sparkSqlProperties="null"
+    IsDynamic=false
+    ResultCollection=false
+    WarmupRuns=1
+    AverageRuns=2
+    threadNumber=1
+
+
+
+
+

@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -40,7 +41,6 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
 import org.apache.commons.collections.map.CaseInsensitiveMap;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.spark.sql.collection.Utils;
@@ -385,11 +385,44 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");
 
-      try {
-        HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
-        SnappyHiveCatalog.this.hmClients.set(hmc);
-      } catch (MetaException me) {
-        throw new IllegalStateException(me);
+      final short numRetries = 40;
+      short count = 0;
+      while (true) {
+        try {
+          HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
+          SnappyHiveCatalog.this.hmClients.set(hmc);
+          return;
+        } catch (Exception ex) {
+          Throwable t = ex;
+          boolean noDataStoreFound = false;
+          while (t != null && !noDataStoreFound) {
+            noDataStoreFound = (t instanceof SQLException) &&
+                SQLState.NO_DATASTORE_FOUND.startsWith(
+                    ((SQLException)t).getSQLState());
+            t = t.getCause();
+          }
+          // wait for some time and retry if no data store found error
+          // is thrown due to region not being initialized
+          if (count < numRetries && noDataStoreFound) {
+            try {
+              Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                  "SnappyHiveCatalog.HMSQuery.initHMC: No datastore found " +
+                      "while initializing Hive metastore client. " +
+                      "Will retry initialization after 3 seconds. " +
+                      "Exception received is " + t);
+              if (Misc.getI18NLogWriter().fineEnabled()) {
+                Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                    "Exception stacktrace:", ex);
+              }
+              count++;
+              Thread.sleep(3000);
+            } catch (InterruptedException ie) {
+              throw new IllegalStateException(ex);
+            }
+          } else {
+            throw new IllegalStateException(ex);
+          }
+        }
       }
     }
 

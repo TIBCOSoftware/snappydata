@@ -14,9 +14,19 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.cluster
+package org.apache.spark.sql.execution
 
-class ThinConnectorSplitClusterDUnitTest(s: String) extends SplitClusterDUnitTest(s) {
-  override protected val useThinClientConnector = true
+
+trait NonRecursivePlans {
+  var producedForPlanInstance : Boolean = false
+
+  /**
+    * Sets the variable which will disallow recursive plan generation,
+    * hence code generation will stop if it fails.
+    * Check for producedForPlanInstance is done in CachedPlanHelperExec.
+    */
+  def startProducing(): Unit = {
+    producedForPlanInstance = true
+  }
 
 }

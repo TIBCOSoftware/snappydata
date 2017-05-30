@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, SnappyTableStatsProviderService}
+import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -271,23 +271,5 @@ abstract case class JDBCAppendableRelation(
     throw new UnsupportedOperationException("Indexes are not supported")
   }
 
-  private[sql] def externalColumnTableName: String = JDBCAppendableRelation.
-      cachedBatchTableName(table)
-}
-
-object JDBCAppendableRelation extends Logging {
-
-  private[sql] final def cachedBatchTableName(table: String): String = {
-    val tableName = if (table.indexOf('.') > 0) {
-      table.replace(".", "__")
-    } else {
-      Constant.DEFAULT_SCHEMA + "__" + table
-    }
-    Constant.INTERNAL_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
-  }
-
-  final def getTableName(cachedBatchTablename: String): String = {
-    cachedBatchTablename.substring(Constant.INTERNAL_SCHEMA_NAME.length + 1,
-      cachedBatchTablename.indexOf(Constant.SHADOW_TABLE_SUFFIX)).replace("__", ".")
-  }
+  private[sql] def externalColumnTableName: String
 }
