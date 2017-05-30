@@ -103,10 +103,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
     else metricTerm(ctx, "numInsertedRows")
-    schemaTerm = ctx.addReferenceObj("schema", relationSchema,
+    schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
 
-    val schemaLength = relationSchema.length
+    val schemaLength = tableSchema.length
     encoderArrayTerm = ctx.freshName("encoderArray")
     cursorArrayTerm = ctx.freshName("cursorArray")
     numInsertions = ctx.freshName("numInsertions")
@@ -143,7 +143,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |           |  $schemaTerm.fields()[i]);
        """.stripMargin
 
-    val initEncoderArray = loop(initEncoderCode, relationSchema.length)
+    val initEncoderArray = loop(initEncoderCode, schemaLength)
 
     ctx.addMutableState(s"$encoderClass[]",
       encoderArrayTerm,
@@ -161,7 +161,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val encoderLoopCode = s"$defaultRowSize += " +
       s"$encoderArrayTerm[i].defaultSize($schemaTerm.fields()[i].dataType());"
 
-    val declarations = loop(encoderLoopCode, relationSchema.length)
+    val declarations = loop(encoderLoopCode, schemaLength)
 
     val checkEnd = if (useMemberVariables) {
       "if (!currentRows.isEmpty()) return"
@@ -204,7 +204,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    if (relationSchema.length > MAX_CURSOR_DECLARATIONS) {
+    if (tableSchema.length > MAX_CURSOR_DECLARATIONS) {
       return doProduceWideTable(ctx)
     }
     val encodingClass = classOf[ColumnEncoding].getName
@@ -451,7 +451,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode],
                                   row: ExprCode): String = {
-    val schema = relationSchema
+    val schema = tableSchema
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
@@ -460,7 +460,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val mutableRow = ctx.freshName("mutableRow")
     ctx.addMutableState("MutableRow", mutableRow,
-      s"$mutableRow = new GenericMutableRow(${relationSchema.length});")
+      s"$mutableRow = new GenericMutableRow(${schema.length});")
 
     val rowWriteExprs = schema.indices.map { i =>
       val field = schema(i)
@@ -503,8 +503,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val encoderLoopCode = s"$sizeTerm += $encoderArrayTerm[i].sizeInBytes($cursorArrayTerm[i]);"
 
-    initEncoders = loop(cursorLoopCode, relationSchema.length)
-    val calculateSize = loop(encoderLoopCode, relationSchema.length)
+    initEncoders = loop(cursorLoopCode, schema.length)
+    val calculateSize = loop(encoderLoopCode, schema.length)
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", None,
@@ -530,7 +530,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val bufferLoopCode =
       s"""$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n""".stripMargin
-    val buffersCode = loop(bufferLoopCode, relationSchema.length)
+    val buffersCode = loop(bufferLoopCode, schema.length)
 
     val (statsSplitCode, statsRowTerm) =
       genMultipleStatsMethods(ctx, "writeStats", statsCode, statsSchema, stats)
