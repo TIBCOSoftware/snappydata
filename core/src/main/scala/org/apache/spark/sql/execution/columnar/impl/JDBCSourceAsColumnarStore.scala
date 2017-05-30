@@ -175,10 +175,6 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           stmt.setInt(3, ColumnBatchIterator.STATROW_COL_INDEX)
           val allocator = GemFireCacheImpl.getCurrentBufferAllocator
           val statsBuffer = createStatsBuffer(batch.statsData, allocator)
-          // write the serialization header then rewind
-          ColumnFormatEntry.writeValueSerializationHeader(statsBuffer,
-            batch.statsData.length)
-          statsBuffer.rewind()
           stmt.setBlob(4, new ClientBlob(statsBuffer, true))
           stmt.addBatch()
 

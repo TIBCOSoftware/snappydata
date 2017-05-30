@@ -146,10 +146,6 @@ function execute() {
         args="${args} -J-Dp2p.joinTimeout=2000"
       fi
     fi
-    # Set MaxPermSize if not already set.
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'XX:MaxPermSize=')" -a "${componentType}" != "locator"  ]; then
-      args="${args} -J-XX:MaxPermSize=350m"
-    fi
     if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead"  ]; then
       args="${args} -client-bind-address=${host}"
     fi
