@@ -2,7 +2,7 @@
 
 An INSERT statement creates a row or rows and stores them in the named table. The number of values assigned in an INSERT statement must be the same as the number of specified or implied columns.
 
-##Syntax
+## Syntax
 
 ``` pre
 INSERT INTO table-name
@@ -12,7 +12,7 @@ INSERT INTO table-name
 
 <a id="reference_2A553C72CF7346D890FC904D8654E062__section_69794C56F9E840C991CE0B3A699D6013"></a>
 
-##Description
+## Description
 
 Query can be:
 
@@ -21,14 +21,12 @@ Query can be:
 
 !!! Note
 	SnappyData does not support an INSERT with a subselect query if any subselect query requires aggregation. </p>
-Single-row and multiple-row lists can include the keyword DEFAULT. Specifying DEFAULT for a column inserts the column's default value into the column. Another way to insert the default value into the column is to omit the column from the column list and only insert values into other columns in the table. More information is provided in <mark>[VALUES ref-valuesexpression.md). To be confirmed </mark>
+    
+Single-row and multiple-row lists can include the keyword DEFAULT. Specifying DEFAULT for a column inserts the column's default value into the column. Another way to insert the default value into the column is to omit the column from the column list and only insert values into other columns in the table.
 
-[SELECT](select.md) and <mark> To be confirmed[JOIN Operations ref-join.md) </mark> provide additional information.
+For more information, refer to [SELECT](select.md).
 
-<a id="reference_2A553C72CF7346D890FC904D8654E062__section_33D88974B03A45EC91226B0D46C14549"></a>
-
-
-##Example
+## Example
 
 ``` pre
 INSERT INTO TRADE.CUSTOMERS
