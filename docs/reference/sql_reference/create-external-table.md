@@ -1,9 +1,9 @@
-# CREATE EXTERNAL TABLE OR TEMPORARY TABLE
+# CREATE EXTERNAL TABLE
 
 ## SYNTAX
 
 ```
-CREATE TEMPORARY | EXTERNAL  TABLE [IF NOT EXISTS] [schema_name.]table_name
+CREATE EXTERNAL  TABLE [IF NOT EXISTS] [schema_name.]table_name
     [(col_name1 col_type1, ...)]
     USING datasource
     [OPTIONS (key1=val1, key2=val2, ...)]
@@ -14,9 +14,6 @@ CREATE TEMPORARY | EXTERNAL  TABLE [IF NOT EXISTS] [schema_name.]table_name
 //Jags>> the (col_name col_type) syntax should mimic the 'create table' syntax. where it says 'column_constraint' I think. 
 
 //Jags>> Why are mixing Temporary tables with external tables. Makes sense to have section on external. Temp stuff should be in the main 'create table' reference. 
-
-**TEMPORARY**
-Temporary tables are scoped to SQL connection or the Snappy Spark session that creates it. This table will not appear like the system catalog nor visible to other connections or sessions. 
 
 **EXTERNAL**
 External tables point to external data sources. SnappyData supports all the data sources supported by Spark. You should use external tables to load data in parallel from any of the external sources. See list below. The table definition is persisted in the catalog and visible across all sessions. 
@@ -38,11 +35,3 @@ snappy> CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet OPTIONS(path '../../
 ```
 
 //Jags>> really need more examples ... show example using CSV with several of the important options. Do we have a Data loading section? very much desired. 
-
-**Create a temporary table**
-
-```
-snappy> CREATE TEMPORARY TABLE STAGING_AIRLINEREF USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
-
-snappy> CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP (ArrDelay int, DepDelay int, Origin string, Dest String) AS SELECT ArrDelay, DepDelay, Origin, Dest FROM STAGING_AIRLINE;
-```

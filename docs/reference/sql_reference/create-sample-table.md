@@ -2,16 +2,15 @@
 
 ## SYNTAX
 
-**To Create Row/Column Table:**
+**Mode 1 - To Create Row/Column Table:**
 ```
     CREATE TABLE [IF NOT EXISTS] table_name {
         ( { column-definition | table-constraint }
         [ , { column-definition | table-constraint } ] * )
     }
-    USING row | column | column_sample
+    USING column_sample
     OPTIONS (
     COLOCATE_WITH 'string-constant',  // Default none
-    PARTITION_BY 'PRIMARY KEY | string-constant', // If not specified it will be a replicated table.
     BUCKETS  'string-constant', // Default 113. Must be an integer.
     REDUNDANCY        'string-constant' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
@@ -19,12 +18,11 @@
     DISKSTORE 'string-constant', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘TIMETOLIVE in seconds',
-    COLUMN_BATCH_SIZE 'string-constant', // Must be an integer
-    COLUMN_MAX_DELTA_ROWS 'string-constant', // Must be an integer
     )
     [AS select_statement];
 ```    
-** To Create Sample Table:**
+
+** Mode 2 - To Create Sample Table:**
 ```
     CREATE SAMPLE TABLE table_name ON base_table_name
     OPTIONS (
@@ -45,6 +43,8 @@
     )
     AS select_statement
 ```
+When creating a base table, if you have applied the partition by clause, the clause is also applied to the sample table. The sample table also inherits the number of buckets, redundancy and persistence properties from the base table.
+For sample tables, the overflow property is set to False by default. (For column tables the default value is True).
 
 ## Description
  * QCS: Query Column Set. These columns are used for startification in startified sampling. 

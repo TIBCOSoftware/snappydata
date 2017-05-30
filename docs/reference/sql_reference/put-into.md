@@ -11,6 +11,8 @@ PUT INTO table-name
 
 ## Description
 
+PUT INTO operates like standard [INSERT](insert.md) statement.
+
 !!! Note:
 	Currently supported only for row tables
 

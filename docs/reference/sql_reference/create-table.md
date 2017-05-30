@@ -9,19 +9,18 @@
         ( { column-definition | table-constraint }
         [ , { column-definition | table-constraint } ] * )
     }
-    USING row | column | column_sample
+    USING row | column 
     OPTIONS (
-    COLOCATE_WITH 'string-constant',  // Default none
-    PARTITION_BY 'PRIMARY KEY | string-constant', // If not specified it will be a replicated table.
-    BUCKETS  'string-constant', // Default 113. Must be an integer.
-    REDUNDANCY        'string-constant' , // Must be an integer
+    COLOCATE_WITH 'table_name',  // Default none
+    PARTITION_BY 'PRIMARY KEY | column_name', // If not specified it will be a replicated table.
+    BUCKETS  'num_partitions', // Default 113. Must be an integer.
+    REDUNDANCY        '1' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
-    DISKSTORE 'string-constant', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
-    EXPIRE ‘TIMETOLIVE in seconds',
-    COLUMN_BATCH_SIZE 'string-constant', // Must be an integer
-    COLUMN_MAX_DELTA_ROWS 'string-constant', // Must be an integer
+    EXPIRE ‘time_to_live_in_seconds',
+    COLUMN_BATCH_SIZE 'column_batch_size_in_bytes', // Must be an integer. Only for column table
+    COLUMN_MAX_DELTA_ROWS 'number_of_rows_in_each_bucket', // Must be an integer. Only for column table.
     )
     [AS select_statement];
 ```
@@ -132,5 +131,3 @@ Note that only the column names and datatypes from the queried table are used wh
 //Jags>> Definately need examples with external tables .... how to load from S3, HDFS, CSV, etc .... (maybe in 'data Loading' section)
 
 //Jags>> link to section in docs where we can create tables using Spark API, loading from existing DataFrames, etc. 
-
-

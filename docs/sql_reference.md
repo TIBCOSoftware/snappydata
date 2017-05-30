@@ -16,12 +16,13 @@ This guide contains a list of of Data Definition Language (DDL) and Data Manipul
 
 	- **[CREATE EXTERNAL TABLE](reference/sql_reference/create-external-table.md)**
 
+	- **[CREATE TEMPORARY TABLE](reference/sql_reference/create-temporary-table.md)**
+
 	- **[CREATE SAMPLE TABLE](reference/sql_reference/create-sample-table.md)**
 
 	- **[CREATE STREAM TABLE](reference/sql_reference/create-stream-table.md)** 
 
 * [DELETE](reference/sql_reference/delete.md)
-
 
 * [DROP DISKSTORE](reference/sql_reference/drop-diskstore.md)
 
@@ -36,8 +37,6 @@ This guide contains a list of of Data Definition Language (DDL) and Data Manipul
 * [PUT INTO](reference/sql_reference/put-into.md)
 
 * [SELECT](reference/sql_reference/select.md)
-
-* [SET ISOLATION](reference/sql_reference/set_isolation.md)
 
 * [SET SCHEMA](reference/sql_reference/set-schema.md)
 

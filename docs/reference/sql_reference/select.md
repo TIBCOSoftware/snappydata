@@ -6,12 +6,11 @@ SELECT [ALL|DISTINCT] named_expression[, named_expression, ...]
     FROM relation[, relation, ...]
     [lateral_view[, lateral_view, ...]]
     [WHERE boolean_expression]
-    [aggregation [HAVING boolean_expression]]
+    [group by [HAVING boolean_expression]]
     [ORDER BY sort_expressions]
     [CLUSTER BY expressions]
     [DISTRIBUTE BY expressions]
     [SORT BY sort_expressions]
-    [WINDOW named_window[, WINDOW named_window, ...]]
     [LIMIT num_rows]
 
 named_expression:
@@ -19,9 +18,7 @@ named_expression:
 
 relation:
     | join_relation
-    | (table_name|query|relation) [sample] [AS alias]
-    : VALUES (expressions)[, (expressions), ...]
-          [AS (column_name[, column_name, ...])]
+    | (table_name|query) [sample] [AS alias]
 
 expressions:
     : expression[, expression, ...]
@@ -68,10 +65,6 @@ Impose ordering on a set of expressions within each partition. Default sort dire
 **CLUSTER BY** 
 
 Repartition rows in the relation based on a set of expressions and sort the rows in ascending order based on the expressions. In other words, this is a shorthand for DISTRIBUTE BY and SORT BY where all expressions are sorted in ascending order. This may not be used with ORDER BY, DISTRIBUTE BY, or SORT BY.
-
-**WINDOW**
-
-Assign an identifier to a window specification (more details below).
 
 **LIMIT**
 

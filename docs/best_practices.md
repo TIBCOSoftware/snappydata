@@ -6,7 +6,7 @@ The following topics are covered in this section:
 
 * [Capacity Planning](best_practices/capacity_planning.md)
 
-* [Design Database and Schema](best_practices/physical_design.md)
+* [Design Database and Schema](best_practices/design_schema.md)
 
 * [Loading Data from External Repositories](best_practices/loading_data.md)
 

@@ -19,8 +19,10 @@ CREATE DISKSTORE diskstore_name
 
 ##Description
 
-SnappyData attempts to preallocate oplog files when you execute the CREATE DISKSTORE command. See [Preventing Disk Full Errors](../../best_practices/prevent_disk_full_errors.md) for more information.
+SnappyData attempts to preallocate oplog files when you execute the CREATE DISKSTORE command. 
 
+<!-- See [Preventing Disk Full Errors](../../best_practices/prevent_disk_full_errors.md) for more information.
+-->
 All tables that target the same disk store share that disk store's persistence attributes. A table that does not target a named disk store uses the default disk store for overflow or persistence. By default, SnappyData uses the working directory of the member as the default disk store.
 
 
@@ -96,7 +98,7 @@ snappy> CREATE DISKSTORE STORE1
     TIMEINTERVAL  223344
     WRITEBUFFERSIZE 19292393
     QUEUESIZE 17374
-    ('dir1' 456);
+    ('dir1' 10240);
 ```
 
 This example specifies multiple storage directories and directory sizes for oplog files:
