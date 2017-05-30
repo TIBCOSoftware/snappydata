@@ -685,7 +685,7 @@ BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
 OVERFLOW 'true',
-PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’, 
+PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
 DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
 EXPIRE ‘TIMETOLIVE in seconds',
 COLUMN_BATCH_SIZE '32000000',
@@ -762,7 +762,7 @@ The below mentioned DDL extensions are required to configure a table based on us
    * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
 
-   * PERSISTENT:  When you specify the PERSISTENT keyword, SnappyData persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   * PERSISTENCE:  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
    * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
 
@@ -774,10 +774,10 @@ The below mentioned DDL extensions are required to configure a table based on us
 	<note> Note: The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </note> </br>
     * <note>`snappydata.column.batchSize` - explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property. </note></br>
     * <note>`snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. </note>
-   
+
    Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
 
-	
+
 #### Restrictions on Column Tables
 * Column tables cannot specify any primary key, unique key constraints
 

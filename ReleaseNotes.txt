@@ -14,6 +14,7 @@ Release 0.9
   [SNAP-1481] SQL Tab on UI, Description column now displays actual SQL Query string executed
   instead of handler description text.
 
+
 Release 0.8
 
 - Known Issues
@@ -74,6 +75,7 @@ Release 0.8
     bootstrap are now more accurate.
 
   - Improved performance of closed-form and bootstrap error estimations.
+
 
 Release 0.7
 
