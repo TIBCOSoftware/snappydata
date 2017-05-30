@@ -710,6 +710,22 @@ public class SnappyTest implements Serializable {
   }
 
   /**
+   * Returns hostname of the process
+   */
+  private static synchronized String getPidHost(String pid) {
+    Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+    String pidHost = null;
+    for (String key : keys) {
+      if (key.startsWith("host") && key.contains(pid)) {
+        pidHost = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
+      }
+    }
+    Log.getLogWriter().info("PID Host for : " + pid + " : " + pidHost);
+    return pidHost;
+  }
+
+
+  /**
    * Returns primary lead port .
    */
   private static synchronized String getPrimaryLeadPort(String clientName) {
@@ -1585,6 +1601,8 @@ public class SnappyTest implements Serializable {
             pids.add(pid);
             RemoteTestModule.Master.recordPID(hd, pid);
             SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
+            SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hd.getHostName(),
+                hd.getHostName());
           }
         } catch (RemoteException e) {
           String s = "Unable to access master to record PID: " + pid;
@@ -1624,7 +1642,9 @@ public class SnappyTest implements Serializable {
       BufferedWriter bw = new BufferedWriter(fw);
       for (String pidString : pidList) {
         int pid = Integer.parseInt(pidString);
-        bw.write("/bin/kill -KILL " + pid);
+        String pidHost = snappyTest.getPidHost(Integer.toString(pid));
+        bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+            pidHost + " /bin/kill -KILL " + pid);
         bw.newLine();
         try {
           RemoteTestModule.Master.removePID(hd, pid);
