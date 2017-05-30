@@ -1643,8 +1643,12 @@ public class SnappyTest implements Serializable {
       for (String pidString : pidList) {
         int pid = Integer.parseInt(pidString);
         String pidHost = snappyTest.getPidHost(Integer.toString(pid));
-        bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
-            pidHost + " /bin/kill -KILL " + pid);
+        if (pidHost.equalsIgnoreCase("localhost")) {
+          bw.write("/bin/kill -KILL " + pid);
+        } else {
+          bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+              pidHost + " /bin/kill -KILL " + pid);
+        }
         bw.newLine();
         try {
           RemoteTestModule.Master.removePID(hd, pid);
