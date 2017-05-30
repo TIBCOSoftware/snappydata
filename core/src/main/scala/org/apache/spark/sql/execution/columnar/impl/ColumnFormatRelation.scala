@@ -323,14 +323,14 @@ abstract class BaseColumnFormatRelation(
       if (tableExists) {
         mode match {
           case SaveMode.Ignore =>
-            dialect match {
-              case GemFireXDDialect =>
-                GemFireXDDialect.initializeTable(table,
-                  sqlContext.conf.caseSensitiveAnalysis, conn)
-                GemFireXDDialect.initializeTable(externalColumnTableName,
-                  sqlContext.conf.caseSensitiveAnalysis, conn)
-              case _ => // Do nothing
-            }
+//            dialect match {
+//              case GemFireXDDialect =>
+//                GemFireXDDialect.initializeTable(table,
+//                  sqlContext.conf.caseSensitiveAnalysis, conn)
+//                GemFireXDDialect.initializeTable(externalColumnTableName,
+//                  sqlContext.conf.caseSensitiveAnalysis, conn)
+//              case _ => // Do nothing
+//            }
             return
           case SaveMode.ErrorIfExists =>
             // sys.error(s"Table $table already exists.") TODO: Why so?
