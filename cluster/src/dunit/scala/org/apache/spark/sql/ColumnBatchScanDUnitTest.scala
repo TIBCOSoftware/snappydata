@@ -209,47 +209,76 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.createTable(rowTable, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(rowTable)
 
-    snc.createTable(colTable, "column", dataDF.schema, props)
+    snc.createTable(colTable, "column", dataDF.schema, props + ("BUCKETS" -> "17"))
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(colTable)
 
+    executeTestWithOptions()
+    executeTestWithOptions(Map.empty,Map.empty+("BUCKETS" -> "17"),"","BUCKETS " +
+      "'13',PARTITION_BY 'COL1'")
+
+
+  }
+
+  def executeTestWithOptions(rowTableOptios: Map[String, String] = Map.empty[String,String],
+      colTableOptions: Map[String,String]= Map.empty[String,String],
+       tempRowTableOptions: String = "", tempColTableOptions: String = ""): Unit = {
+
+    val snc = SnappyContext(sc)
+    val rowTable = "rowTable"
+    val colTable = "colTable"
+
+
+    snc.sql("DROP TABLE IF EXISTS " + rowTable)
+    snc.sql("DROP TABLE IF EXISTS " + colTable)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    val rdd = sc.parallelize(
+      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.createTable(rowTable, "row", dataDF.schema, rowTableOptios)
+    dataDF.write.format("row").mode(SaveMode.Append).options(rowTableOptios).saveAsTable(rowTable)
+
+    snc.createTable(colTable, "column", dataDF.schema, colTableOptions)
+    dataDF.write.format("column").mode(SaveMode.Append).options(colTableOptions).saveAsTable(colTable)
 
     val tempRowTableName = "testRowTable"
     val tempColTableName = "testcolTable"
 
+
     snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
-    snc.sql("CREATE TABLE " + tempRowTableName + " AS (SELECT col1 as field1,col2 as field2 FROM" +
-      " " + rowTable + ")")
-    var testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
-    assert(testResults1.length == 113999, s"Expected row count is 113999 while actual count is "+
+    snc.sql(s"CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions)  AS" +
+      s" (SELECT col1 ,col2  FROM " + rowTable + ")")
+    val testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
+    assert(testResults1.length == 113999, s"Expected row count is 113999 while actual count is " +
       s"${testResults1.length}")
 
 
     snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
-    snc.sql("CREATE TABLE " + tempRowTableName + " using row options() AS (SELECT col1 as " +
-      "field1,col2 as field2 FROM " +
-      "" + colTable + ")")
-    var testResults2 = snc.sql("SELECT * FROM " + tempRowTableName).collect()
-    assert(testResults2.length == 113999, s"Expected row count is 113999 while actual count is "+
+    snc.sql("CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions) AS " +
+      s"(SELECT col1 ,col2  FROM " + colTable + ")")
+    val testResults2 = snc.sql("SELECT * FROM " + tempRowTableName).collect()
+    assert(testResults2.length == 113999, s"Expected row count is 113999 while actual count is " +
       s"${testResults2.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + " USING COLUMN OPTIONS() AS (SELECT col1 as " +
-      "field1,col2 as field2 FROM " + rowTable + ")" )
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+      s"col1 ,col2 FROM " + rowTable + ")")
 
-    var testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
-    assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is "+
+    val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is " +
       s"${testResults3.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + " USING COLUMN OPTIONS() AS (SELECT col1 as " +
-      "field1,col2 as field2 FROM " + colTable + ")")
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+      "col1 ,col2 FROM " + colTable + ")")
 
-    var testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
-    assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is"+
+    val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults4.length == 113999, s"Expected row count is 1139 while actual count is" +
       s"${testResults4.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
     snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
 
