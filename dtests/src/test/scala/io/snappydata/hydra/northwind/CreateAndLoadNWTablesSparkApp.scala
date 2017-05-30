@@ -22,17 +22,12 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkContext, SparkConf}
 
 object CreateAndLoadNWTablesSparkApp {
-  var conf = new SparkConf().
-      setAppName("CreateAndLoadNWTablesSpark Application")
 
   def main(args: Array[String]) {
-    val useThinClientSmartConnectorMode: Boolean = args(2).toBoolean
-    if (useThinClientSmartConnectorMode) {
-      val connectionURL = args(args.length - 1)
-      conf = new SparkConf().
-          setAppName("CreateAndLoadNWTablesSpark Application").
-          set("snappydata.connection", connectionURL)
-    }
+    val connectionURL = args(args.length - 1)
+    val conf = new SparkConf().
+        setAppName("CreateAndLoadNWTablesSpark Application").
+        set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)
