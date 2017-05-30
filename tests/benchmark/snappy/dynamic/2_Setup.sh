@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-
 ssh $leads mkdir $leadDir
 echo "*****************Created dir for lead**********************"
 ssh $locator mkdir $locatorDir
@@ -13,6 +12,8 @@ for element in "${servers[@]}";
         COUNTER=$[$COUNTER +1]
  done
 echo "*****************Created dir for server**********************"
+
+cp PerfRun.conf $leadDir
 
 cat > $SnappyData/conf/leads << EOF
 $leads -locators=$locator:10334 $sparkProperties -dir=$leadDir
