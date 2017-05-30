@@ -17,17 +17,20 @@
 
 package org.apache.spark.memory
 
+import java.nio.charset.StandardCharsets
 import java.sql.SQLException
 
-import scala.actors.Futures._
+import com.gemstone.gemfire.cache.LowMemoryException
 
+import scala.actors.Futures._
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-
 import org.apache.spark.SparkEnv
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
+import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
+import org.apache.spark.unsafe.types.UTF8String
 
 
 class SnappyMemoryAccountingSuite extends MemoryFunSuite {
@@ -429,6 +432,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         assert(memoryIncreaseDuetoEviction > 0)
       }
     }
+    SparkEnv.get.memoryManager.
+        asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count == rows)
     snSession.dropTable("t1")
@@ -455,6 +460,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val sparkSession = createSparkSession(1, 0, 10000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    SparkEnv.get.memoryManager.
+        asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val beforeCache = SparkEnv.get.memoryManager.storageMemoryUsed
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sparkSession.sparkContext.parallelize(data, 2).map(s => new Data(s(0), s(1), s(2)))
@@ -585,7 +592,28 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.dropTable("t1")
   }
 
+  test("CachedDataFrame accounting") {
+    val sparkSession = createSparkSession(1, 0, 1000)
+    val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
+    val converter = UnsafeProjection.create(fieldTypes)
 
+    val row = new SpecificMutableRow(fieldTypes)
+    row.setLong(0, 0)
+    row.update(1, UTF8String.fromString("Hello"))
+    row.update(2, "World".getBytes(StandardCharsets.UTF_8))
+
+    val unsafeRow: UnsafeRow = converter.apply(row)
+
+    SparkEnv.get.memoryManager
+      .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 800, memoryMode)
+
+    try {
+      CachedDataFrame(null, Seq(unsafeRow).iterator)
+      assert(false , "Should not have obtained memory")
+    } catch {
+      case lme : LowMemoryException => //Success
+    }
+  }
 
   // @TODO Place holder for column partitioned tables. Enable them after Sumedh's changes
 
