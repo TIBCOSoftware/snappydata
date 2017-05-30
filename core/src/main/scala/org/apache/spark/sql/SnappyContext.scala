@@ -27,10 +27,11 @@ import scala.reflect.runtime.{universe => u}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
@@ -797,13 +798,13 @@ object SnappyContext extends Logging {
 
   val DEFAULT_SOURCE = ROW_SOURCE
   val internalTableSources = Seq(classOf[row.DefaultSource].getCanonicalName,
-    classOf[execution.columnar.DefaultSource].getCanonicalName,
+    classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
   private val builtinSources = new CaseInsensitiveMap(Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[execution.columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
@@ -1010,12 +1011,25 @@ object SnappyContext extends Logging {
         case s if !s.isEmpty =>
           val url = "locators=" + s + ";mcast-port=0"
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SplitClusterMode(sc, url)
+//          else SplitClusterMode(sc, url)
+          else throw new SparkException(
+          s"Invalid configuration parameter ${Property.Locators}. " +
+              s"Use paramater ${Property.SnappyConnection} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
           else SplitClusterMode(sc, url)
+      }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
+        case hostPort if !hostPort.isEmpty =>
+          val p = hostPort.split(":")
+          if (p.length != 2 ) {
+            throw new SparkException("Invalid \"host:clientPort\" pattern specified")
+          }
+          val host = p(0)
+          val clientPort = p(1).toInt
+          val url = Constant.DEFAULT_THIN_CLIENT_URL + s"$host:$clientPort/"
+          ThinClientConnectorMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
@@ -1044,7 +1058,6 @@ object SnappyContext extends Logging {
     }
   }
 
-
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
@@ -1058,6 +1071,8 @@ object SnappyContext extends Logging {
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
         SnappyTableStatsProviderService.start(sc)
+      case ThinClientConnectorMode(_, url) =>
+        SnappyTableStatsProviderService.start(sc, url)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
@@ -1066,7 +1081,7 @@ object SnappyContext extends Logging {
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
         SnappyTableStatsProviderService.start(sc)
-        if(ToolsCallbackInit.toolsCallback != null){
+        if (ToolsCallbackInit.toolsCallback != null) {
           ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
         }
       case _ => // ignore
@@ -1090,6 +1105,7 @@ object SnappyContext extends Logging {
       if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
+      MemoryManagerCallback.resetMemoryManager()
     }
     _clusterMode = null
     _anySNContext = null
@@ -1118,21 +1134,26 @@ object SnappyContext extends Logging {
   def getProvider(providerName: String, onlyBuiltIn: Boolean): String = {
     builtinSources.getOrElse(providerName,
       if (onlyBuiltIn) throw new AnalysisException(
-        s"Failed to find a builtin provider $providerName") else providerName)
+        s"Failed to find a builtin provider $providerName")
+      else providerName)
   }
 
 
   def flushSampleTables(): Unit = {
     val sampleRelations = _anySNContext.sessionState.catalog.
-      getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
-    val clazz = org.apache.spark.util.Utils.classForName(
-      "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
-    val method: Method = clazz.getDeclaredMethod("flushReservior")
-    for (s <- sampleRelations) {
+        getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
+    try {
+      val clazz = org.apache.spark.util.Utils.classForName(
+        "org.apache.spark.sql.sampling.ColumnFormatSamplingRelation")
+      val method: Method = clazz.getDeclaredMethod("flushReservoir")
       method.setAccessible(true)
-      method.invoke(s)
+      for (s <- sampleRelations) {
+        method.invoke(s)
+      }
+    } catch {
+      case _: ClassNotFoundException =>
+      // do nothing. This situation arises in tests
     }
-
   }
 }
 
@@ -1194,6 +1215,19 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
  * the snappy cluster on demand that just remains like an external datastore.
  */
 case class SplitClusterMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
+
+/**
+ * Similar to SplitClusterMode but this will use thin client driver for making
+ * connections to Snappy cluster.
+ *
+ * This is for the two cluster mode: one is
+ * the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
+ * cluster fetching data from the snappy cluster on demand that just
+ * remains like an external datastore.
+ *
+ */
+case class ThinClientConnectorMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
 /**

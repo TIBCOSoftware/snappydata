@@ -41,18 +41,26 @@ package org.apache.spark.sql.execution.benchmark
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
+import org.apache.spark.memory.SnappyUnifiedMemoryManager
+import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Dataset, QueryTest, Row, SparkSession}
+import org.apache.spark.sql._
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.util.Benchmark
-
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
   override protected def newSparkConf(
       addOn: SparkConf => SparkConf = null): SparkConf = {
+    val cores = math.min(8, Runtime.getRuntime.availableProcessors())
     val conf = new SparkConf()
-        .setMaster("local[*]")
+        .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
+    conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("snappydata.store.memory-size", "1200m")
+    conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
+    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     if (addOn != null) {
       addOn(conf)
     }
@@ -62,28 +70,20 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private lazy val sparkSession = new SparkSession(sc)
   private lazy val snappySession = snc.snappySession
 
+
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
   }
 
-  test("cache with randomized keys - query") {
-    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
+  test("insert more than 64K data") {
+    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+    createAndTestBigTable()
+    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key,
+      SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
   }
 
-  def addCaseWithCleanup(
-      benchmark: Benchmark,
-      name: String,
-      numIters: Int = 0,
-      prepare: () => Unit,
-      cleanup: () => Unit,
-      testCleanup: () => Unit)(f: Int => Unit): Unit = {
-    val timedF = (timer: Benchmark.Timer) => {
-      timer.startTiming()
-      f(timer.iteration)
-      timer.stopTiming()
-      testCleanup()
-    }
-    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters, prepare, cleanup)
+  test("cache with randomized keys - query") {
+    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
   private def doGC(): Unit = {
@@ -192,6 +192,34 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
     benchmark.run()
   }
+
+
+  private def createAndTestBigTable(): Unit = {
+    snappySession.sql("drop table if exists wide_table")
+
+    val size = 1
+    val num_col = 300
+    val str = (1 to num_col).map(i => s" '$i' as C$i")
+    val testDF = snappySession.range(size).select(str.map { expr =>
+      Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
+    }: _*)
+
+    testDF.collect()
+    val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
+    snappySession.sql(s"create table wide_table($sql) using column")
+    snappySession.sql(s"create table wide_table1($sql) using column")
+    testDF.write.insertInto("wide_table")
+    testDF.write.insertInto("wide_table1")
+
+
+    val df = snappySession.sql("select *" +
+      " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
+    df.collect()
+
+    val avgProjections = (1 to num_col).map(i => s"AVG(C$i)").mkString(",")
+    val df1 = snappySession.sql(s"select $avgProjections from wide_table")
+    df1.collect()
+  }
 }
 
 object ColumnCacheBenchmark {
@@ -209,5 +237,23 @@ object ColumnCacheBenchmark {
 
   def applySchema(df: Dataset[Row], newSchema: StructType): Dataset[Row] = {
     df.sqlContext.internalCreateDataFrame(df.queryExecution.toRdd, newSchema)
+  }
+
+  def addCaseWithCleanup(
+      benchmark: Benchmark,
+      name: String,
+      numIters: Int = 0,
+      prepare: () => Unit,
+      cleanup: () => Unit,
+      testCleanup: () => Unit,
+      testPrepare: () => Unit = () => Unit)(f: Int => Unit): Unit = {
+    val timedF = (timer: Benchmark.Timer) => {
+      testPrepare()
+      timer.startTiming()
+      f(timer.iteration)
+      timer.stopTiming()
+      testCleanup()
+    }
+    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 }

@@ -16,9 +16,8 @@
  */
 package org.apache.spark.sql.execution
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{DataFrame, QueryTest, Row, SnappySession, SparkSession}
 
 class AggregationSuite extends SnappyFunSuite {
@@ -33,7 +32,7 @@ class AggregationSuite extends SnappyFunSuite {
   test("AVG plan failure for nullables") {
     val spark = new SparkSession(sc)
     val snappy = new SnappySession(sc)
-    snappy.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key}=1000")
+    snappy.sql(s"set ${Property.ColumnBatchSize.name}=5000")
 
     val checkDF = spark.range(10000).selectExpr("id", "(id * 12) as k",
       "concat('val', cast((id % 100) as string)) as s")

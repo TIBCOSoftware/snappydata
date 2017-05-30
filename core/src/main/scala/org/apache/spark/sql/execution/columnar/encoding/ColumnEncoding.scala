@@ -19,17 +19,21 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, HeapBufferAllocator}
 import io.snappydata.util.StringUtils
 
+import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthInBytes
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.collection.BitSet
@@ -38,15 +42,16 @@ import org.apache.spark.util.collection.BitSet
  * Base class for encoding and decoding in columnar form. Memory layout of
  * the bytes for a set of column values is:
  * {{{
- *   .----------------------- Encoding scheme (4 bytes)
- *   |   .------------------- Null bitset size as number of longs N (4 bytes)
- *   |   |   .--------------- Null bitset longs (8 x N bytes,
- *   |   |   |                                   empty if null count is zero)
- *   |   |   |     .--------- Encoded non-null elements
- *   V   V   V     V
- *   +---+---+-----+---------+
- *   |   |   | ... | ... ... |
- *   +---+---+-----+---------+
+ *    .----------------------- Serialization header (8 bytes)
+ *   |    .------------------- Encoding scheme (4 bytes)
+ *   |   | .------------------ Null bitset size as number of longs N (4 bytes)
+ *   |   | | .---------------- Null bitset longs (8 x N bytes,
+ *   |   | | |                                    empty if null count is zero)
+ *   |   | | |     .---------- Encoded non-null elements
+ *   V   V V V     V
+ *   +---+-+-+-----+---------+
+ *   |   | | | ... | ... ... |
+ *   +---+-+-+-----+---------+
  *    \-----/ \-------------/
  *     header      body
  * }}}
@@ -71,12 +76,9 @@ abstract class ColumnDecoder extends ColumnEncoding {
       field: StructField): Long
 
   def initialize(buffer: ByteBuffer, field: StructField): Long = {
-    if (buffer.isDirect) {
-      initialize(null, UnsafeHolder.getDirectBufferAddress(buffer), field)
-    } else {
-      initialize(buffer.array(), buffer.arrayOffset() +
-          buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
-    }
+    val allocator = ColumnEncoding.getAllocator(buffer)
+    initialize(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
+        buffer.position(), field)
   }
 
   def initialize(columnBytes: AnyRef, cursor: Long,
@@ -206,11 +208,12 @@ abstract class ColumnDecoder extends ColumnEncoding {
 
 trait ColumnEncoder extends ColumnEncoding {
 
-  protected final var allocator: ColumnAllocator = _
-  protected final var columnData: ColumnData = _
-  protected final var columnBytes: AnyRef = _
+  protected final var allocator: BufferAllocator = _
+  private final var finalAllocator: BufferAllocator = _
+  protected final var columnData: ByteBuffer = _
+  protected final var columnBeginPosition: Long = _
   protected final var columnEndPosition: Long = _
-  protected final var reuseColumnData: ColumnData = _
+  protected final var columnBytes: AnyRef = _
   protected final var reuseUsedSize: Int = _
   protected final var forComplexType: Boolean = _
 
@@ -222,8 +225,34 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final var _upperStr: UTF8String = _
   protected final var _lowerDecimal: Decimal = _
   protected final var _upperDecimal: Decimal = _
+  protected final var _count: Int = 0
 
-  def sizeInBytes(cursor: Long): Long = cursor - columnData.baseOffset
+  /**
+   * Get the allocator for the final data to be sent for storage.
+   * It is on-heap for now in embedded mode while off-heap for
+   * connector mode to minimize copying in both cases.
+   * This should be changed to use the matching allocator as per the
+   * storage being used by column store in embedded mode.
+   */
+  protected final def storageAllocator: BufferAllocator = {
+    if (finalAllocator ne null) finalAllocator
+    else {
+      finalAllocator = GemFireCacheImpl.getCurrentBufferAllocator
+      finalAllocator
+    }
+  }
+
+  protected final def isAllocatorFinal: Boolean =
+    allocator.getClass eq storageAllocator.getClass
+
+  protected def setAllocator(allocator: BufferAllocator): Unit = {
+    if (this.allocator ne allocator) {
+      this.allocator = allocator
+      this.finalAllocator = null
+    }
+  }
+
+  def sizeInBytes(cursor: Long): Long = cursor - columnBeginPosition
 
   def defaultSize(dataType: DataType): Int = dataType match {
     case CalendarIntervalType => 12 // uses 12 and not 16 bytes
@@ -238,7 +267,8 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def initialize(field: StructField, initSize: Int,
       withHeader: Boolean): Long = {
-    initialize(field, initSize, withHeader, HeapAllocator)
+    initialize(field, initSize, withHeader,
+      GemFireCacheImpl.getCurrentBufferAllocator)
   }
 
   protected def initializeLimits(): Unit = {
@@ -259,11 +289,12 @@ trait ColumnEncoder extends ColumnEncoding {
     _upperStr = null
     _lowerDecimal = null
     _upperDecimal = null
+    _count = 0
   }
 
   def initialize(field: StructField, initSize: Int,
-      withHeader: Boolean, allocator: ColumnAllocator): Long = {
-    this.allocator = allocator
+      withHeader: Boolean, allocator: BufferAllocator): Long = {
+    setAllocator(allocator)
     val dataType = Utils.getSQLDataType(field.dataType)
 
     this.forComplexType = dataType match {
@@ -279,62 +310,106 @@ trait ColumnEncoder extends ColumnEncoding {
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
-    if (reuseColumnData eq null) {
-      var initByteSize = initSizeInBytes(dataType, initSize)
-      if (withHeader) {
-        initByteSize += 8L + numNullBytes /* typeId + nullsSize */
+    var baseSize: Long = numNullBytes
+    if (withHeader) {
+      // add header size for serialized form to avoid a copy in Oplog layer
+      baseSize += ColumnFormatEntry.VALUE_HEADER_SIZE
+      baseSize += 8L /* typeId + nullsSize */
+    }
+    if ((columnData eq null) || (columnData.limit() < (baseSize + defSize))) {
+      var initByteSize = 0L
+      if (reuseUsedSize > baseSize) {
+        initByteSize = reuseUsedSize
+      } else {
+        initByteSize = initSizeInBytes(dataType, initSize) + baseSize
       }
-      columnData = allocator.allocate(initByteSize)
-      columnBytes = columnData.bytes
-      columnEndPosition = columnData.endPosition
+      setSource(allocator.allocate(checkBufferSize(initByteSize),
+        ColumnEncoding.BUFFER_OWNER), releaseOld = true)
     } else {
       // for primitive types optimistically trim to exact size
       dataType match {
         case BooleanType | ByteType | ShortType | IntegerType | LongType |
              DateType | TimestampType | FloatType | DoubleType
-          if reuseUsedSize != reuseColumnData.sizeInBytes =>
-          columnData = allocator.allocate(reuseUsedSize)
-          columnBytes = columnData.bytes
-          columnEndPosition = columnData.endPosition
-          allocator.release(reuseColumnData)
+          if reuseUsedSize > 0 && isAllocatorFinal &&
+              reuseUsedSize != columnData.limit() =>
+          setSource(allocator.allocate(reuseUsedSize,
+            ColumnEncoding.BUFFER_OWNER), releaseOld = true)
 
-        case _ =>
-          columnData = reuseColumnData
-          columnBytes = reuseColumnData.bytes
-          columnEndPosition = reuseColumnData.endPosition
+        case _ => // continue to use the previous columnData
       }
-      reuseColumnData = null
-      reuseUsedSize = 0
     }
+    reuseUsedSize = 0
     if (withHeader) {
-      var cursor = ensureCapacity(columnData.baseOffset, 8L + numNullBytes)
+      // skip serialization header which will be filled in by ColumnFormatValue
+      var cursor = ensureCapacity(columnBeginPosition, 8L + numNullBytes) +
+          ColumnFormatEntry.VALUE_HEADER_SIZE
       // typeId followed by nulls bitset size and space for values
       ColumnEncoding.writeInt(columnBytes, cursor, typeId)
       cursor += 4
       // write the number of null words
       ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
       cursor + 4L + numNullBytes
-    } else columnData.baseOffset
+    } else columnBeginPosition
   }
 
-  final def baseOffset: Long = columnData.baseOffset
+  final def baseOffset: Long = columnBeginPosition
 
-  final def offset(cursor: Long): Long = cursor - columnData.baseOffset
+  final def offset(cursor: Long): Long = cursor - columnBeginPosition
 
   final def buffer: AnyRef = columnBytes
 
-  final def isOffHeap: Boolean = allocator.isOffHeap
-
-  /** Expand the underlying bytes if required and return the new cursor */
-  protected final def expand(cursor: Long, required: Long): Long = {
-    val numWritten = cursor - columnData.baseOffset
-    columnData = allocator.expand(columnData, cursor, required)
-    columnBytes = columnData.bytes
-    columnEndPosition = columnData.endPosition
-    columnData.baseOffset + numWritten
+  protected final def setSource(buffer: ByteBuffer,
+      releaseOld: Boolean): Unit = {
+    if (buffer ne columnData) {
+      if ((columnData ne null) && releaseOld) {
+        allocator.release(columnData)
+      }
+      columnData = buffer
+      columnBytes = allocator.baseObject(buffer)
+      columnBeginPosition = allocator.baseOffset(buffer)
+      columnEndPosition = columnBeginPosition + buffer.limit()
+    }
   }
 
-  final def ensureCapacity(cursor: Long, required: Long): Long = {
+  protected final def clearSource(newSize: Int, releaseData: Boolean): Unit = {
+    if (columnData ne null) {
+      if (releaseData) {
+        allocator.release(columnData)
+      }
+      columnData = null
+      columnBytes = null
+      columnBeginPosition = 0
+      columnEndPosition = 0
+    }
+    reuseUsedSize = newSize
+  }
+
+  protected final def copyTo(dest: ByteBuffer, srcOffset: Int,
+      endOffset: Int): Unit = {
+    val src = columnData
+    // buffer to buffer copy after position reset for source
+    val position = src.position()
+    val limit = src.limit()
+
+    if (position != srcOffset) src.position(srcOffset)
+    if (limit > endOffset) src.limit(endOffset)
+
+    dest.put(src)
+
+    // move back position and limit to original values
+    src.position(position)
+    src.limit(limit)
+  }
+
+  /** Expand the underlying bytes if required and return the new cursor */
+  protected final def expand(cursor: Long, required: Int): Long = {
+    val numWritten = cursor - columnBeginPosition
+    setSource(allocator.expand(columnData, required,
+      ColumnEncoding.BUFFER_OWNER), releaseOld = false)
+    columnBeginPosition + numWritten
+  }
+
+  final def ensureCapacity(cursor: Long, required: Int): Long = {
     if ((cursor + required) <= columnEndPosition) cursor
     else expand(cursor, required)
   }
@@ -347,15 +422,17 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def upperDouble: Double = _upperDouble
 
-  final def lowerDecimal: Decimal = _lowerDecimal
-
-  final def upperDecimal: Decimal = _upperDecimal
-
   final def lowerString: UTF8String = _lowerStr
 
   final def upperString: UTF8String = _upperStr
 
-  @inline protected final def updateLongStats(value: Long): Unit = {
+  final def lowerDecimal: Decimal = _lowerDecimal
+
+  final def upperDecimal: Decimal = _upperDecimal
+
+  final def count: Int = _count
+
+  protected final def updateLongStats(value: Long): Unit = {
     val lower = _lowerLong
     if (value < lower) {
       _lowerLong = value
@@ -364,9 +441,10 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperLong) {
       _upperLong = value
     }
+    updateCount()
   }
 
-  @inline protected final def updateDoubleStats(value: Double): Unit = {
+  protected final def updateDoubleStats(value: Double): Unit = {
     val lower = _lowerDouble
     if (value < lower) {
       // check for first write case
@@ -375,26 +453,10 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperDouble) {
       _upperDouble = value
     }
+    updateCount()
   }
 
-  @inline protected final def updateStringStats(value: UTF8String): Unit = {
-    if (value ne null) {
-      val lower = _lowerStr
-      // check for first write case
-      if (lower eq null) {
-        if (!forComplexType) {
-          _lowerStr = value
-          _upperStr = value
-        }
-      } else if (value.compare(lower) < 0) {
-        _lowerStr = value
-      } else if (value.compare(_upperStr) > 0) {
-        _upperStr = value
-      }
-    }
-  }
-
-  @inline protected final def updateStringStatsClone(value: UTF8String): Unit = {
+  protected final def updateStringStats(value: UTF8String): Unit = {
     if (value ne null) {
       val lower = _lowerStr
       // check for first write case
@@ -412,7 +474,7 @@ trait ColumnEncoder extends ColumnEncoding {
     }
   }
 
-  @inline protected final def updateDecimalStats(value: Decimal): Unit = {
+  protected final def updateDecimalStats(value: Decimal): Unit = {
     if (value ne null) {
       val lower = _lowerDecimal
       // check for first write case
@@ -427,6 +489,11 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperDecimal = value
       }
     }
+    updateCount()
+  }
+
+  @inline final def updateCount(): Unit = {
+    _count += 1
   }
 
   def nullCount: Int
@@ -505,19 +572,77 @@ trait ColumnEncoder extends ColumnEncoding {
     throw new UnsupportedOperationException(s"writeUnsafeData for $toString")
 
   // Helper methods for writing complex types and elements inside them.
+
+  /**
+   * Temporary offset results to be read by generated code immediately
+   * after initializeComplexType, so not an issue for nested types.
+   */
   protected final var baseTypeOffset: Long = _
   protected final var baseDataOffset: Long = _
 
-  @inline final def setOffsetAndSize(cursor: Long, fieldCursor: Long,
+  @inline final def setOffsetAndSize(cursor: Long, fieldOffset: Long,
       baseOffset: Long, size: Int): Unit = {
-    val relativeOffset = cursor - columnData.baseOffset - baseOffset
+    val relativeOffset = cursor - columnBeginPosition - baseOffset
     val offsetAndSize = (relativeOffset << 32L) | size.toLong
-    Platform.putLong(columnBytes, fieldCursor, offsetAndSize)
+    Platform.putLong(columnBytes, columnBeginPosition + fieldOffset,
+      offsetAndSize)
   }
 
   final def getBaseTypeOffset: Long = baseTypeOffset
+
   final def getBaseDataOffset: Long = baseDataOffset
 
+  /**
+   * Complex types are written similar to UnsafeRows while respecting platform
+   * endianness (format is always little endian) so appropriate for storage.
+   * Also have other minor differences related to size writing and interval
+   * type handling. General layout looks like below:
+   * {{{
+   *   .--------------------------- Optional total size including itself (4 bytes)
+   *   |   .----------------------- Optional number of elements (4 bytes)
+   *   |   |   .------------------- Null bitset longs (8 x (N / 8) bytes)
+   *   |   |   |
+   *   |   |   |     .------------- Offsets+Sizes of elements (8 x N bytes)
+   *   |   |   |     |     .------- Variable length elements
+   *   V   V   V     V     V
+   *   +---+---+-----+-------------+
+   *   |   |   | ... | ... ... ... |
+   *   +---+---+-----+-------------+
+   *    \-----/ \-----------------/
+   *     header      body
+   * }}}
+   * The above generic layout is used for ARRAY and STRUCT types.
+   *
+   * The total size of the data is written for top-level complex types. Nested
+   * complex objects write their sizes in the "Offsets+Sizes" portion in the
+   * respective parent object.
+   *
+   * ARRAY types also write the number of elements in the array in the header
+   * while STRUCT types skip it since it is fixed in the meta-data.
+   *
+   * The null bitset follows the header. To keep the reads aligned at 8 byte
+   * boundaries while preserving space, the implementation will combine the
+   * header and the null bitset portion, then pad them together at 8 byte
+   * boundary (in particular it will consider header as some additional empty
+   * fields in the null bitset itself).
+   *
+   * After this follows the "Offsets+Sizes" which keeps the offset and size
+   * for variable length elements. Fixed length elements less than 8 bytes
+   * in size are written directly in the offset+size portion. Variable length
+   * elements have their offsets (from start of this array) and sizes encoded
+   * in this portion as a long (4 bytes for each of offset and size). Fixed
+   * width elements that are greater than 8 bytes are encoded like variable
+   * length elements. [[CalendarInterval]] is the only type currently that
+   * is of that nature whose "months" portion is encoded into the size
+   * while the "microseconds" portion is written into variable length part.
+   *
+   * MAP types are written as an ARRAY of keys followed by ARRAY of values
+   * like in Spark. To keep things simpler both ARRAYs always have the
+   * optional size header at their respective starts which together determine
+   * the total size of the encoded MAP object. For nested MAP types, the
+   * total size is skipped from the "Offsets+Sizes" portion and only
+   * the offset is written (which is the start of key ARRAY).
+   */
   final def initializeComplexType(cursor: Long, numElements: Int,
       skipBytes: Int, writeNumElements: Boolean): Long = {
     val numNullBytes = calculateBitSetWidthInBytes(
@@ -528,89 +653,91 @@ trait ColumnEncoder extends ColumnEncoding {
     if (position + fixedWidth > columnEndPosition) {
       position = expand(position, fixedWidth)
     }
-    // zero out the null bytes for off-heap bytes
-    if (isOffHeap) {
-      var i = 0
-      while (i < numNullBytes) {
-        writeLongUnchecked(position + i, 0L)
-        i += 8
-      }
-    }
-    baseTypeOffset = offset(position)
-    baseDataOffset = baseTypeOffset + numNullBytes
+    val baseTypeOffset = offset(position).toInt
+    // initialize the null bytes to zeros
+    allocator.clearBuffer(columnData, baseTypeOffset, numNullBytes)
+    this.baseTypeOffset = baseTypeOffset
+    this.baseDataOffset = baseTypeOffset + numNullBytes
     if (writeNumElements) {
       writeIntUnchecked(position + skipBytes - 4, numElements)
     }
+    updateCount()
     position + fixedWidth
   }
 
   private final def writeStructData(cursor: Long, value: AnyRef, size: Int,
-      valueOffset: Long, fieldCursor: Long, baseOffset: Long): Long = {
-    val alignedSize = ByteArrayMethods.roundNumberOfBytesToNearestWord(size)
+      valueOffset: Long, fieldOffset: Long, baseOffset: Long): Long = {
+    val alignedSize = ((size + 7) >>> 3) << 3
     // Write the bytes to the variable length portion.
     var position = cursor
     if (position + alignedSize > columnEndPosition) {
       position = expand(position, alignedSize)
     }
+    setOffsetAndSize(position, fieldOffset, baseOffset, size)
     Platform.copyMemory(value, valueOffset, columnBytes, position, size)
-    setOffsetAndSize(position, fieldCursor, baseOffset, size)
     position + alignedSize
   }
 
   final def writeStructUTF8String(cursor: Long, value: UTF8String,
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     writeStructData(cursor, value.getBaseObject, value.numBytes(),
-      value.getBaseOffset, fieldCursor, baseOffset)
+      value.getBaseOffset, fieldOffset, baseOffset)
   }
 
   final def writeStructBinary(cursor: Long, value: Array[Byte],
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     writeStructData(cursor, value, value.length, Platform.BYTE_ARRAY_OFFSET,
-      fieldCursor, baseOffset)
+      fieldOffset, baseOffset)
   }
 
   final def writeStructDecimal(cursor: Long, value: Decimal,
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     // assume precision and scale are matching and ensured by caller
     val bytes = value.toJavaBigDecimal.unscaledValue.toByteArray
     writeStructData(cursor, bytes, bytes.length, Platform.BYTE_ARRAY_OFFSET,
-      fieldCursor, baseOffset)
+      fieldOffset, baseOffset)
   }
 
   final def writeStructInterval(cursor: Long, value: CalendarInterval,
-      fieldCursor: Long, baseOffset: Long): Long = {
+      fieldOffset: Long, baseOffset: Long): Long = {
     var position = cursor
     if (position + 8 > columnEndPosition) {
       position = expand(position, 8)
     }
+    // write months in the size field itself instead of using separate bytes
+    setOffsetAndSize(position, fieldOffset, baseOffset, value.months)
     Platform.putLong(columnBytes, position, value.microseconds)
-    setOffsetAndSize(position, fieldCursor, baseOffset, value.months)
     position + 8
   }
 
+  /**
+   * Finish encoding the current column and return the data as a ByteBuffer.
+   * The encoder can be reused for new column data of same type again.
+   */
   def finish(cursor: Long): ByteBuffer
+
+  /**
+   * Close and relinquish all resources of this encoder.
+   * The encoder may no longer be usable after this call.
+   */
+  def close(): Unit = {
+    clearSource(newSize = 0, releaseData = true)
+  }
 
   protected def getNumNullWords: Int
 
   protected def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long
 
-  protected final def releaseForReuse(columnData: ColumnData,
-      newSize: Long): Unit = {
-    if (reuseColumnData ne null) {
-      allocator.release(reuseColumnData)
-    }
-    if (newSize < Int.MaxValue) {
-      reuseColumnData = columnData
-      reuseUsedSize = newSize.toInt
-    } else {
-      reuseColumnData = null
-      reuseUsedSize = 0
-    }
+  protected final def releaseForReuse(newSize: Int): Unit = {
+    columnData.clear()
+    reuseUsedSize = newSize
   }
 }
 
 object ColumnEncoding {
+
+  private[columnar] val BUFFER_OWNER = "ENCODER"
 
   private[columnar] val bitSetWords: Field = {
     val f = classOf[BitSet].getDeclaredField("words")
@@ -632,13 +759,22 @@ object ColumnEncoding {
     createLongDeltaDecoder
   )
 
-  def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
-    if (buffer.isDirect) {
-      getColumnDecoder(null, UnsafeHolder.getDirectBufferAddress(buffer), field)
-    } else {
-      getColumnDecoder(buffer.array(), buffer.arrayOffset() +
-          buffer.position() + Platform.BYTE_ARRAY_OFFSET, field)
+  final def checkBufferSize(size: Long): Int = {
+    if (size >= 0 && size < Int.MaxValue) size.toInt
+    else {
+      throw new ArrayIndexOutOfBoundsException(
+        s"Invalid size/index = $size. Max allowed = ${Int.MaxValue - 1}.")
     }
+  }
+
+  def getAllocator(buffer: ByteBuffer): BufferAllocator =
+    if (buffer.isDirect) ManagedDirectBufferAllocator.instance()
+    else HeapBufferAllocator.instance()
+
+  def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
+    val allocator = getAllocator(buffer)
+    getColumnDecoder(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
+        buffer.position(), field)
   }
 
   def getColumnDecoder(columnBytes: AnyRef, offset: Long,
@@ -823,17 +959,16 @@ object ColumnEncoding {
     Platform.putLong(columnBytes, cursor, java.lang.Long.reverseBytes(value))
   }
 
-  @inline final def writeUTF8String(columnBytes: AnyRef,
-      cursor: Long, value: UTF8String, size: Int): Long = {
+  final def writeUTF8String(columnBytes: AnyRef,
+      cursor: Long, base: AnyRef, offset: Long, size: Int): Long = {
     ColumnEncoding.writeInt(columnBytes, cursor, size)
     val position = cursor + 4
-    Platform.copyMemory(value.getBaseObject, value.getBaseOffset, columnBytes,
-      position, size)
+    Platform.copyMemory(base, offset, columnBytes, position, size)
     position + size
   }
 }
 
-private[columnar] case class ColumnStatsSchema(fieldName: String,
+case class ColumnStatsSchema(fieldName: String,
     dataType: DataType) {
   val upperBound: AttributeReference = AttributeReference(
     fieldName + ".upperBound", dataType)()
@@ -841,102 +976,17 @@ private[columnar] case class ColumnStatsSchema(fieldName: String,
     fieldName + ".lowerBound", dataType)()
   val nullCount: AttributeReference = AttributeReference(
     fieldName + ".nullCount", IntegerType, nullable = false)()
+  val count: AttributeReference = AttributeReference(
+    fieldName + ".count", IntegerType, nullable = false)()
 
-  val schema = Seq(lowerBound, upperBound, nullCount)
+  val schema = Seq(lowerBound, upperBound, nullCount, count)
 
   assert(schema.length == ColumnStatsSchema.NUM_STATS_PER_COLUMN)
 }
 
-private[columnar] object ColumnStatsSchema {
-  val NUM_STATS_PER_COLUMN = 3
-}
-
-final class ColumnData(val bytes: AnyRef, val baseOffset: Long,
-    val endPosition: Long) {
-
-  def sizeInBytes: Long = endPosition - baseOffset
-}
-
-trait ColumnAllocator {
-
-  /** Allocate data block of given size. */
-  def allocate(size: Long): ColumnData
-
-  /**
-   * Expand given column data to new capacity.
-   *
-   * @return the new expanded column byte object and the end position
-   *         (baseOffset + capacity)
-   */
-  def expand(columnData: ColumnData, cursor: Long, required: Long): ColumnData
-
-  /**
-   * Copies data from the specified source data holder, beginning at the
-   * specified position, to the specified position of the destination data
-   * holder. Both source and destination data holders should have been
-   * allocated by instances of the same ColumnAllocator implementation.
-   */
-  def copy(source: AnyRef, sourcePos: Long,
-      dest: AnyRef, destPos: Long, size: Long): Unit
-
-  /** Release data block allocated previously using allocate or expand. */
-  def release(columnData: ColumnData): Unit
-
-  def toBuffer(data: ColumnData): ByteBuffer
-
-  /** Return true if allocations are done off-heap */
-  def isOffHeap: Boolean
-}
-
-object HeapAllocator extends ColumnAllocator {
-
-  private def baseOffset: Long = Platform.BYTE_ARRAY_OFFSET
-
-  private def checkSize(size: Long): Int = {
-    if (size < Int.MaxValue) size.toInt
-    else {
-      throw new ArrayIndexOutOfBoundsException(
-        s"Invalid size/index = $size. Max allowed = ${Int.MaxValue - 1}.")
-    }
-  }
-
-  override def allocate(size: Long): ColumnData = {
-    new ColumnData(new Array[Byte](
-      ByteArrayMethods.roundNumberOfBytesToNearestWord(checkSize(size))),
-      baseOffset, baseOffset + size)
-  }
-
-  override def expand(columnData: ColumnData, cursor: Long,
-      required: Long): ColumnData = {
-    val columnBytes = columnData.bytes.asInstanceOf[Array[Byte]]
-    val currentUsed = cursor - baseOffset
-    val minRequired = currentUsed + required
-    // double the size
-    val newLength = ByteArrayMethods.roundNumberOfBytesToNearestWord(math.min(
-      math.max(columnBytes.length << 1L, minRequired), Int.MaxValue >>> 1)
-        .asInstanceOf[Int])
-    if (newLength < minRequired) {
-      throw new ArrayIndexOutOfBoundsException(
-        s"Cannot allocate more than $newLength bytes but required $minRequired")
-    }
-    val newBytes = new Array[Byte](newLength)
-    System.arraycopy(columnBytes, 0, newBytes, 0, currentUsed.toInt)
-    new ColumnData(newBytes, baseOffset, newLength + baseOffset)
-  }
-
-  override def copy(source: AnyRef, sourcePos: Long,
-      dest: AnyRef, destPos: Long, size: Long): Unit = {
-    System.arraycopy(source, checkSize(sourcePos - baseOffset), dest,
-      checkSize(destPos - baseOffset), checkSize(size))
-  }
-
-  override def release(columnData: ColumnData): Unit = {}
-
-  override def toBuffer(data: ColumnData): ByteBuffer = {
-    ByteBuffer.wrap(data.bytes.asInstanceOf[Array[Byte]])
-  }
-
-  override def isOffHeap: Boolean = false
+object ColumnStatsSchema {
+  val NUM_STATS_PER_COLUMN = 4
+  val COUNT_INDEX_IN_SCHEMA = 3
 }
 
 object OffHeapAllocator extends ColumnAllocator {
@@ -1058,22 +1108,27 @@ trait NotNullEncoder extends ColumnEncoder {
       numWords: Int): Long = cursor
 
   override def finish(cursor: Long): ByteBuffer = {
+    val newSize = checkBufferSize(cursor - columnBeginPosition)
     // check if need to shrink byte array since it is stored as is in region
-    if (cursor == columnEndPosition) allocator.toBuffer(columnData)
-    else {
+    // avoid copying only if final shape of object in region is same
+    // else copy is required in any case and columnData can be reused
+    if (cursor == columnEndPosition && isAllocatorFinal) {
+      val columnData = this.columnData
+      clearSource(newSize, releaseData = false)
+      // mark its allocation for storage
+      if (columnData.isDirect) {
+        MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
+          columnData, allowNonAllocator = false)
+      }
+      columnData
+    } else {
       // copy to exact size
-      val newSize = cursor - columnData.baseOffset
-      val newColumnData = allocator.allocate(newSize)
-      val newColumnBytes = newColumnData.bytes
-      // using safe copy for heap data to get proper bounds exception
-      allocator.copy(columnBytes, columnData.baseOffset, newColumnBytes,
-        newColumnData.baseOffset, cursor - columnData.baseOffset)
+      val newColumnData = storageAllocator.allocateForStorage(newSize)
+      copyTo(newColumnData, srcOffset = 0, newSize)
+      newColumnData.rewind()
       // reuse this columnData in next round if possible
-      releaseForReuse(columnData, newSize)
-      columnData = newColumnData
-      columnBytes = newColumnBytes
-      columnEndPosition = newColumnData.endPosition
-      allocator.toBuffer(columnData)
+      releaseForReuse(newSize)
+      newColumnData
     }
   }
 }
@@ -1156,11 +1211,12 @@ trait NullableEncoder extends NotNullEncoder {
     // trim trailing empty words
     val numWords = getNumNullWords
     // maximum number of null words that can be allowed to go waste in storage
-    val maxWastedWords = 50
+    val maxWastedWords = 8
     // check if the number of words to be written matches the space that
     // was left at initialization; as an optimization allow for larger
-    // space left at initialization when one full data copy can be avoided
-    val baseOffset = columnData.baseOffset
+    // space left at initialization when one full data copy can be avoided;
+    // add serialization header which will be filled in by ColumnFormatValue
+    val baseOffset = columnBeginPosition + ColumnFormatEntry.VALUE_HEADER_SIZE
     if (initialNumWords == numWords) {
       writeNulls(columnBytes, baseOffset + 8, numWords)
       super.finish(cursor)
@@ -1170,36 +1226,43 @@ trait NullableEncoder extends NotNullEncoder {
       // write till initialNumWords and not just numWords to clear any
       // trailing empty bytes (required since ColumnData can be reused)
       writeNulls(columnBytes, baseOffset + 8, initialNumWords)
-      allocator.toBuffer(columnData)
+      super.finish(cursor)
     } else {
       // make space (or shrink) for writing nulls at the start
       val numNullBytes = numWords << 3
       val initialNullBytes = initialNumWords << 3
-      val oldSize = cursor - baseOffset
-      val newSize = oldSize + numNullBytes - initialNullBytes
-      val newColumnData = allocator.allocate(newSize)
-      val newColumnBytes = newColumnData.bytes
-      var position = newColumnData.baseOffset
-      ColumnEncoding.writeInt(newColumnBytes, position, typeId)
-      position += 4
-      ColumnEncoding.writeInt(newColumnBytes, position, numWords)
-      position += 4
-      // copy the rest of bytes
-      allocator.copy(columnBytes, baseOffset + 8 + initialNullBytes,
-        newColumnBytes, position + numNullBytes, oldSize - 8 - initialNullBytes)
+      val oldSize = cursor - baseOffset + ColumnFormatEntry.VALUE_HEADER_SIZE
+      val newSize = checkBufferSize(oldSize + numNullBytes - initialNullBytes)
+      val storageAllocator = this.storageAllocator
+      val newColumnData = storageAllocator.allocateForStorage(newSize)
+
+      // first copy the rest of the bytes skipping header and nulls
+      val srcOffset = ColumnFormatEntry.VALUE_HEADER_SIZE + 8 + initialNullBytes
+      val destOffset = ColumnFormatEntry.VALUE_HEADER_SIZE + 8 + numNullBytes
+      newColumnData.position(destOffset)
+      copyTo(newColumnData, srcOffset, oldSize.toInt)
+      newColumnData.rewind()
 
       // reuse this columnData in next round if possible but
       // skip if there was a large wastage in this round
       if (math.abs(initialNumWords - numWords) < maxWastedWords) {
-        releaseForReuse(columnData, newSize)
+        releaseForReuse(newSize)
+      } else {
+        clearSource(newSize, releaseData = true)
       }
-      columnData = newColumnData
-      columnBytes = newColumnBytes
-      columnEndPosition = newColumnData.endPosition
 
+      // now write the header including nulls
+      val newColumnBytes = storageAllocator.baseObject(newColumnData)
+      var position = storageAllocator.baseOffset(newColumnData)
+      // skip serialization header which will be filled in by ColumnFormatValue
+      position += ColumnFormatEntry.VALUE_HEADER_SIZE
+      ColumnEncoding.writeInt(newColumnBytes, position, typeId)
+      position += 4
+      ColumnEncoding.writeInt(newColumnBytes, position, numWords)
+      position += 4
       // write the null words
       writeNulls(newColumnBytes, position, numWords)
-      allocator.toBuffer(newColumnData)
+      newColumnData
     }
   }
 }

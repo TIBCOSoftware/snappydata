@@ -23,13 +23,16 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 
 object NWTestSparkApp {
-  val conf = new SparkConf().
-    setAppName("NWTestSparkApp Application")
-  val sc = new SparkContext(conf)
-  val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
+    val connectionURL = args(args.length - 1)
+    val conf = new SparkConf().
+        setAppName("NWTestSpark Application").
+        set("snappydata.connection", connectionURL)
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)
+    // scalastyle:off println
     println(s"dataFilesLocation : ${dataFilesLocation}")
     snc.setConf("dataFilesLocation", dataFilesLocation)
     snc.sql("set spark.sql.shuffle.partitions=6")

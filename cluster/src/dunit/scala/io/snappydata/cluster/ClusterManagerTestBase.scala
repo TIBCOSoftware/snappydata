@@ -16,31 +16,32 @@
  */
 package io.snappydata.cluster
 
-import java.io.File
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
-import scala.collection.JavaConverters._
+import scala.language.postfixOps
+import scala.sys.process._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
+import io.snappydata._
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable, VM}
+import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
-import io.snappydata.{Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{SparkConf, SparkContext}
-
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.{Logging, SparkContext}
 /**
  * Base class for tests using Snappy ClusterManager. New utility methods
  * would need to be added as and when corresponding snappy code gets added.
  *
  * @author hemant
  */
-class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
+abstract class ClusterManagerTestBase(s: String)
+    extends DistributedTestBase(s) with Serializable {
 
   import ClusterManagerTestBase._
 
@@ -51,6 +52,11 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   // bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
+  bootProps.setProperty("spark.executor.cores",
+    TestUtils.defaultCores.toString)
+  // Keeping it as default for all other dunits as it can create
+  // issues like interacting with heap monitor.
+  bootProps.setProperty("spark.memory.manager", "default")
 
   var host: Host = _
   var vm0: VM = _
@@ -71,6 +77,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   val locatorNetPort: Int = 0
   val locatorNetProps = new Properties()
+  val stopNetServersInTearDown = true
 
   // SparkContext is initialized on the lead node and hence,
   // this can be used only by jobs running on Lead node
@@ -120,7 +127,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
-      startSnappyLead(locatorPort, bootProps)
+      startSnappyLead(locatorPort, bootProps.clone().asInstanceOf[java.util.Properties])
     }
     assert(ServiceManager.currentFabricServiceInstance.status ==
         FabricService.State.RUNNING)
@@ -151,8 +158,10 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
       Array[AnyRef](getClass.getName, getName)))
-    Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
-    stopNetworkServers()
+    if (stopNetServersInTearDown) {
+      Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+      stopNetworkServers()
+    }
     bootProps.clear()
   }
 
@@ -184,14 +193,22 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
     DriverManager.getConnection(url)
   }
+
+  def startNetworkServersOnAllVMs(): Unit = {
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+      AvailablePortHelper.getRandomAvailableTCPPort)
+  }
 }
 
 /**
  * New utility methods would need to be added as and when corresponding
  * snappy code gets added.
  */
-object ClusterManagerTestBase {
-  val logger = LoggerFactory.getLogger(getClass)
+object ClusterManagerTestBase extends Logging {
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   final lazy val locPort: Int = locatorPort
 
@@ -207,40 +224,12 @@ object ClusterManagerTestBase {
    * Only a single instance of SnappyLead should be started.
    */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
-    // bootProps.setProperty("log-level", "fine")
-    val conf: SparkConf = new SparkConf()
-        .setMaster(s"snappydata://localhost[$locatorPort]")
-        .setAppName("myapp").set("spark.testing.reservedMemory", "0")
-
-    new File("./" + "driver").mkdir()
-    new File("./" + "driver/events").mkdir()
-
-    val dataDirForDriver = new File("./" + "driver/data").getAbsolutePath
-    val eventDirForDriver = new File("./" + "driver/events").getAbsolutePath
-    conf.set("spark.local.dir", dataDirForDriver)
-    conf.set("spark.eventLog.enabled", "true")
-    conf.set("spark.eventLog.dir", eventDirForDriver)
-    // conf.set(io.snappydata.Property.ColumnBatchSize.name, "64")
-    // conf.set("spark.executor.memory", "2g")
-    // conf.set("spark.shuffle.manager", "SORT")
-    Utils.setDefaultSerializerAndCodec(conf)
-
-    props.asScala.foreach({ case (k, v) =>
-      if (k.indexOf(".") < 0) {
-        conf.set(io.snappydata.Constant.STORE_PROPERTY_PREFIX + k, v)
-      }
-      else {
-        conf.set(k, v)
-      }
-    })
-    logger.info(s"About to create SparkContext with conf \n" + conf.toDebugString)
-    val sc = new SparkContext(conf)
-    logger.info("SparkContext CREATED, about to create SnappyContext.")
-    SnappyContext(sc)
-    assert(ServiceManager.getServerInstance.status == FabricService.State.RUNNING)
-    logger.info("SnappyContext CREATED successfully.")
-    val lead: Server = ServiceManager.getServerInstance
-    assert(lead.status == FabricService.State.RUNNING)
+    props.setProperty("locators", "localhost[" + locatorPort + ']')
+    props.setProperty(Property.JobServerEnabled.name, "false")
+    props.setProperty("isTest", "true")
+    val server: Lead = ServiceManager.getLeadInstance
+    server.start(props)
+    assert(server.status == FabricService.State.RUNNING)
   }
 
   /**
@@ -266,23 +255,25 @@ object ClusterManagerTestBase {
       TestUtils.dropAllTables(snc)
     }
     if (testName != null) {
-      logger.info("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
+      logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
     }
   }
 
   def stopSpark(): Unit = {
     // cleanup metastore
     cleanupTestData(null, null)
-    val sparkContext = SnappyContext.globalSparkContext
-    if (sparkContext != null) sparkContext.stop()
-    // clear system properties set explicitly
-    Utils.clearDefaultSerializerAndCodec()
+    val service = ServiceManager.currentFabricServiceInstance
+    if (service != null) {
+      service.stop(null)
+    }
   }
 
   def stopNetworkServers(): Unit = {
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stopAllNetworkServers()
+      // clear stale connection pool
+      ConnectionPool.clear()
     }
   }
 
@@ -309,10 +300,21 @@ object ClusterManagerTestBase {
         check
       }
 
-      override def description() = desc
+      override def description(): String = desc
     }
     DistributedTestBase.waitForCriterion(criterion, ms, interval,
       throwOnTimeout)
   }
 
+  def startSparkCluster(productDir: String): Unit = {
+    logInfo(s"Starting spark cluster in $productDir/work")
+    (productDir + "/sbin/start-all.sh") !!
+  }
+
+  def stopSparkCluster(productDir: String): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    logInfo(s"Stopping spark cluster in $productDir/work")
+    if (sparkContext != null) sparkContext.stop()
+    (productDir + "/sbin/stop-all.sh") !!
+  }
 }

@@ -20,49 +20,72 @@
 package io.snappydata
 
 import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.CancelException
-import com.gemstone.gemfire.cache.DataPolicy
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
-import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import io.snappydata.Constant._
 
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.{SnappyContext, SnappySession}
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue}
+import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
-object SnappyTableStatsProviderService extends Logging {
+/*
+* Object that encapsulates the actual stats provider service. Stats provider service
+* will either be SnappyEmbeddedTableStatsProviderService or SnappyThinConnectorTableStatsProvider
+ */
+object SnappyTableStatsProviderService {
+  // var that points to the actual stats provider service
+  private var statsProviderService: TableStatsProviderService = _
 
-  @volatile
-  private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
-  private val membersInfo = TrieMap.empty[String, mutable.Map[String, Any]]
-
-  private var _snc: Option[SnappyContext] = None
-
-  private def snc: SnappyContext = synchronized {
-    _snc.getOrElse {
-      val context = SnappyContext()
-      _snc = Option(context)
-      context
+  def start(sc: SparkContext): Unit = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        throw new IllegalStateException(
+          "Not expected to be called for ThinClientConnectorMode")
+      case _ =>
+        statsProviderService = SnappyEmbeddedTableStatsProviderService
     }
+    statsProviderService.start(sc)
   }
 
-  @volatile private var doRun: Boolean = false
-  @volatile private var running: Boolean = false
+  def start(sc: SparkContext, url: String): Unit = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        statsProviderService = SnappyThinConnectorTableStatsProvider
+      case _ =>
+        throw new IllegalStateException(
+          "This is expected to be called for ThinClientConnectorMode only")
+    }
+    statsProviderService.start(sc, url)
+  }
 
+  def stop(): Unit = {
+    statsProviderService.stop()
+  }
+
+  def getService: TableStatsProviderService = {
+    if (statsProviderService == null) {
+      throw new IllegalStateException("SnappyTableStatsProviderService not started")
+    }
+    statsProviderService
+  }
+
+  var suspendCacheInvalidation = false
+}
+
+object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
 
   def start(sc: SparkContext): Unit = {
     val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
@@ -95,43 +118,12 @@ object SnappyTableStatsProviderService extends Logging {
       delay, delay)
   }
 
-  private def aggregateStats(): Unit = synchronized {
-    try {
-      if (doRun) {
-        val prevTableSizeInfo = tableSizeInfo
-        running = true
-        try {
-          tableSizeInfo = getAggregatedTableStatsOnDemand
-          // get members details
-          fillAggregatedMemberStatsOnDemand()
-        } finally {
-          running = false
-          notifyAll()
-        }
-        // check if there has been a substantial change in table
-        // stats, and clear the plan cache if so
-        if (prevTableSizeInfo.size != tableSizeInfo.size) {
-          SnappySession.clearAllCache(onlyQueryPlanCache = true)
-        } else {
-          val prevTotalRows = prevTableSizeInfo.values.map(_.getRowCount).sum
-          val newTotalRows = tableSizeInfo.values.map(_.getRowCount).sum
-          if (math.abs(newTotalRows - prevTotalRows) > 0.1 * prevTotalRows) {
-            SnappySession.clearAllCache(onlyQueryPlanCache = true)
-          }
-        }
-      }
-    } catch {
-      case _: CancelException => // ignore
-      case e: Exception => if (!e.getMessage.contains(
-        "com.gemstone.gemfire.cache.CacheClosedException")) {
-        logWarning(e.getMessage, e)
-      } else {
-        logError(e.getMessage, e)
-      }
-    }
+  override def start(sc: SparkContext, url: String): Unit = {
+    throw new IllegalStateException("This is expected to be called for " +
+        "ThinClientConnectorMode only")
   }
 
-  def fillAggregatedMemberStatsOnDemand(): Unit = {
+  override def fillAggregatedMemberStatsOnDemand(): Unit = {
 
     val existingMembers = membersInfo.keys.toArray
     val collector = new GfxdListResultCollector(null, true)
@@ -169,29 +161,22 @@ object SnappyTableStatsProviderService extends Logging {
       membersInfo(m).put("status", "Stopped"))
   }
 
-  def getMembersStatsFromService: mutable.Map[String, mutable.Map[String, Any]] = {
-    membersInfo
-  }
-
-
-  def stop(): Unit = {
-    doRun = false
-    // wait for it to end for sometime
-    synchronized {
-      if (running) wait(20000)
+  override def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
+    var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
+    val dataServers = GfxdMessage.getAllDataStores
+    try {
+      if (dataServers != null && dataServers.size() > 0) {
+        result = FunctionService.onMembers(dataServers)
+            .withCollector(new GfxdListResultCollector())
+            .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
+            asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
+            .asScala
+      }
     }
-    _snc = None
-  }
-
-
-  def getTableStatsFromService(
-      fullyQualifiedTableName: String): Option[SnappyRegionStats] = {
-    val tableSizes = this.tableSizeInfo
-    if (tableSizes.isEmpty || !tableSizes.contains(fullyQualifiedTableName)) {
-      // force run
-      aggregateStats()
+    catch {
+      case e: Exception => log.warn(e.getMessage, e)
     }
-    tableSizeInfo.get(fullyQualifiedTableName)
+    (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }
 
   def publishColumnTableRowCountStats(): Unit = {
@@ -199,72 +184,41 @@ object SnappyTableStatsProviderService extends Logging {
 
     val regions = asSerializable(Misc.getGemFireCache.getApplicationRegions.asScala)
     for (region: LocalRegion <- regions) {
-      if (region.getDataPolicy == DataPolicy.PARTITION ||
-          region.getDataPolicy == DataPolicy.PERSISTENT_PARTITION) {
+      if (region.getDataPolicy.withPartitioning()) {
         val table = Misc.getFullTableNameFromRegionPath(region.getFullPath)
         val pr = region.asInstanceOf[PartitionedRegion]
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
-        if (table.startsWith(Constant.INTERNAL_SCHEMA_NAME) &&
-            table.endsWith(Constant.SHADOW_TABLE_SUFFIX)) {
-          if (container != null) {
-            val colPos = container.getTableDescriptor.getColumnDescriptor("NUMROWS").getPosition
-            val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
-              true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-            // Resetting PR Numrows in column batch as this will be calculated every time.
-            // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-            var rowsInColumnBatch: Long = 0
+        if (ColumnFormatRelation.isColumnTable(table) &&
+            pr.getLocalMaxMemory > 0) {
+          val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
+            true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+          var numColumnsInTable = -1
+          // Resetting PR Numrows in cached batch as this will be calculated every time.
+          // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
+          var rowsInColumnBatch = 0L
+          var offHeapSize = 0L
+          if (container ne null) {
+            // using direct region operations
             while (itr.hasNext) {
-              rowsInColumnBatch += itr.next().asInstanceOf[RowLocation]
-                  .getRow(container).getColumn(colPos).getInt
+              val re = itr.next().asInstanceOf[AbstractRegionEntry]
+              val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
+              if (numColumnsInTable < 0) {
+                numColumnsInTable = key.getNumColumnsInTable(table)
+              }
+              rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
+                numColumnsInTable)
+              re._getValue() match {
+                case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
+                case _ =>
+              }
             }
-            pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
           }
+          val stats = pr.getPrStats
+          stats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
+          stats.setOffHeapSizeInBytes(offHeapSize)
         }
       }
     }
-  }
-
-  def getAggregatedTableStatsOnDemand: Map[String, SnappyRegionStats] = {
-    val snc = this.snc
-    if (snc == null) return Map.empty
-    val serverStats = getTableStatsFromAllServers
-    val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
-    if (!doRun) return Map.empty
-    // val samples = getSampleTableList(snc)
-    serverStats.foreach { stat =>
-      aggregatedStats.get(stat.getRegionName) match {
-        case Some(oldRecord) =>
-          aggregatedStats.put(stat.getRegionName, oldRecord.getCombinedStats(stat))
-        case None =>
-          aggregatedStats.put(stat.getRegionName, stat)
-      }
-    }
-    Utils.immutableMap(aggregatedStats)
-  }
-
-  /*
-  private def getSampleTableList(snc: SnappyContext): Seq[String] = {
-    try {
-      snc.sessionState.catalog
-          .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString())
-    } catch {
-      case tnfe: org.apache.spark.sql.TableNotFoundException =>
-        Seq.empty[String]
-    }
-  }
-  */
-
-  private def getTableStatsFromAllServers: Seq[SnappyRegionStats] = {
-    var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    val dataServers = GfxdMessage.getAllDataStores
-    if( dataServers != null && dataServers.size() > 0 ){
-      result = FunctionService.onMembers(dataServers)
-        .withCollector(new GfxdListResultCollector())
-        .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
-        asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
-        .asScala
-    }
-    result.flatMap(_.getRegionStats.asScala)
   }
 
 }

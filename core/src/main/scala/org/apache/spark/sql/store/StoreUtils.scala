@@ -28,6 +28,7 @@ import org.apache.spark.Partition
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 
@@ -37,11 +38,13 @@ object StoreUtils {
   val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
   val REPLICATE = ExternalStoreUtils.REPLICATE
   val BUCKETS = ExternalStoreUtils.BUCKETS
+  val PARTITIONER = "PARTITIONER"
   val COLOCATE_WITH = "COLOCATE_WITH"
   val REDUNDANCY = "REDUNDANCY"
   val RECOVERYDELAY = "RECOVERYDELAY"
   val MAXPARTSIZE = "MAXPARTSIZE"
   val EVICTION_BY = "EVICTION_BY"
+  val PERSISTENCE = "PERSISTENCE"
   val PERSISTENT = "PERSISTENT"
   val DISKSTORE = "DISKSTORE"
   val SERVER_GROUPS = "SERVER_GROUPS"
@@ -51,6 +54,7 @@ object StoreUtils {
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
+  val GEM_PARTITIONER = "PARTITIONER"
   val GEM_COLOCATE_WITH = "COLOCATE WITH"
   val GEM_REDUNDANCY = "REDUNDANCY"
   val GEM_REPLICATE = "REPLICATE"
@@ -85,18 +89,15 @@ object StoreUtils {
   val MAP_TYPE = 14
   val STRUCT_TYPE = 15
 
-  val ddlOptions = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
-    REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
-    GEM_INDEXED_TABLE, ExternalStoreUtils.INDEX_NAME,
-    ExternalStoreUtils.COLUMN_BATCH_SIZE, ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS,
-    ExternalStoreUtils.COMPRESSION_CODEC, ExternalStoreUtils.RELATION_FOR_SAMPLE,
-    ExternalStoreUtils.EXTERNAL_DATASOURCE)
+  val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
+    COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
+    PERSISTENCE, PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
+    GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
 
-  val SHADOW_COLUMN_NAME = "rowid"
+  val SHADOW_COLUMN_NAME = "snappydata_internal_rowid"
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
@@ -114,13 +115,37 @@ object StoreUtils {
   }
 
   private[sql] def getBucketPreferredLocations(region: PartitionedRegion,
-      bucketId: Int): Seq[String] = {
+      bucketId: Int, forWrite: Boolean): Seq[String] = {
+    if (forWrite) {
+      val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).toString
+      SnappyContext.getBlockId(primary) match {
+        case Some(b) => Seq(Utils.getHostExecutorId(b.blockId))
+        case None => Seq.empty
+      }
+    } else {
+      val distMembers = getBucketOwnersForRead(bucketId, region)
+      val members = new mutable.ArrayBuffer[String](2)
+      distMembers.foreach { m =>
+        SnappyContext.getBlockId(m.toString) match {
+          case Some(b) => members += Utils.getHostExecutorId(b.blockId)
+          case None =>
+        }
+      }
+      members
+    }
+  }
+
+  private[sql] def getBucketOwnersForRead(bucketId: Int,
+      region: PartitionedRegion): mutable.Set[InternalDistributedMember] = {
     val distMembers = region.getRegionAdvisor.getBucketOwners(bucketId).asScala
-    distMembers.collect {
-      case m if SnappyContext.containsBlockId(m.toString) =>
-        Utils.getHostExecutorId(SnappyContext.getBlockId(
-          m.toString).get.blockId)
-    }.toSeq
+    if (distMembers.isEmpty) {
+      var prefNode = region.getRegionAdvisor.getPreferredInitializedNode(bucketId, true)
+      if (prefNode == null) {
+        prefNode = region.getOrCreateNodeForInitializedBucketRead(bucketId, true)
+      }
+      distMembers.add(prefNode)
+    }
+    distMembers
   }
 
   private[sql] def getPartitionsPartitionedTable(session: SnappySession,
@@ -134,7 +159,7 @@ object StoreUtils {
       val numPartitions = region.getTotalNumberOfBuckets
 
       (0 until numPartitions).map { p =>
-        val prefNodes = getBucketPreferredLocations(region, p)
+        val prefNodes = getBucketPreferredLocations(region, p, forWrite = false)
         val buckets = new mutable.ArrayBuffer[Int](1)
         buckets += p
         new MultiBucketExecutorPartition(p, buckets, numPartitions, prefNodes)
@@ -346,6 +371,10 @@ object StoreUtils {
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
         .getOrElse(EMPTY_STRING))
 
+    // custom partition resolver
+    parameters.remove(PARTITIONER).foreach(v =>
+      sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
+
     // if OVERFLOW has been provided, then use HEAPPERCENT as the default
     // eviction policy (unless overridden explicitly)
     val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
@@ -373,25 +402,28 @@ object StoreUtils {
       sb.append(s"$GEM_OVERFLOW ")
     }
 
-    var isPersistent = false
-    parameters.remove(PERSISTENT).foreach { v =>
+    // default is sync persistence for all snappydata tables
+    var isPersistent = true
+    parameters.remove(PERSISTENCE).orElse(parameters.remove(PERSISTENT)).map { v =>
       if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("asynchronous")) {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
-        isPersistent = true
       } else if (v.equalsIgnoreCase("sync") ||
           v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
-        isPersistent = true
+      } else if (v.equalsIgnoreCase("none")) {
+        isPersistent = false
+        sb
       } else {
         throw Utils.analysisException(s"Invalid value for option " +
-            s"$PERSISTENT = $v (expected one of: async, sync, " +
-            s"asynchronous, synchronous)")
+            s"$PERSISTENCE = $v (expected one of: sync, async, none, " +
+            s"synchronous, asynchronous)")
       }
-    }
+    }.getOrElse(sb.append(s"$GEM_PERSISTENT SYNCHRONOUS "))
+
     parameters.remove(DISKSTORE).foreach { v =>
       if (isPersistent) sb.append(s"'$v' ")
       else throw Utils.analysisException(
-        s"Option '$DISKSTORE' requires '$PERSISTENT' option")
+        s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
     }
     sb.append(parameters.remove(SERVER_GROUPS)
         .map(v => s"$GEM_SERVER_GROUPS ($v) ")
@@ -408,6 +440,7 @@ object StoreUtils {
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
     }).getOrElse(EMPTY_STRING))
 
+    sb.append("  ENABLE CONCURRENCY CHECKS ")
     sb.toString()
   }
 
@@ -420,7 +453,9 @@ object StoreUtils {
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.forall(v => {
-      if (!ddlOptions.contains(v.toString.toUpperCase)) {
+      val u = Utils.toUpperCase(v)
+      if (!u.startsWith(JdbcExtendedUtils.SCHEMADDL_PROPERTY) &&
+          !ddlOptions.contains(u)) {
         throw new AnalysisException(
           s"Unknown options $v specified while creating table ")
       }

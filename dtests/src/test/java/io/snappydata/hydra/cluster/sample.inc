@@ -117,4 +117,3 @@ hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
                              fcn "hydra.TestConfigFcns.duplicate
                                   (\"-Xms512m -Xmx1g \", ${${B}Hosts}, true)"
                              ncf;
-hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";

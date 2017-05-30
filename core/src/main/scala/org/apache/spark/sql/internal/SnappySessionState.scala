@@ -23,6 +23,7 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -30,7 +31,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, NamedExpression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, Literal, NamedExpression, ParamLiteral, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -41,7 +42,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -67,6 +68,8 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
 
+  private[sql] var disableStoreOptimizations : Boolean = false
+
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
@@ -82,7 +85,6 @@ class SnappySessionState(snappySession: SnappySession)
       datasources.PreWriteCheck(conf, catalog),
       PrePutCheck)
   }
-
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
       implicit val ss = snappySession
@@ -102,7 +104,32 @@ class SnappySessionState(snappySession: SnappySession)
 
       modified :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
-          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets)
+          Batch("Link buckets to RDD partitions", Once, LinkPartitionsToBuckets) :+
+          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
+    }
+  }
+
+  // copy of ConstantFolding that will turn a constant up/down cast into
+  // a static value.
+  object ParamLiteralFolding extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      case p: ParamLiteral => p.markFoldable(true)
+        p
+    } transform {
+      case q: LogicalPlan => q transformExpressionsDown {
+        // ignore leaf ParamLiteral & Literal
+        case p: ParamLiteral => p
+        case l: Literal => l
+        // Wrap expressions that are foldable.
+        case e if e.foldable =>
+          // lets mark child params foldable false so that nested expression doesn't
+          // attempt to wrap.
+          e.foreach {
+            case p: ParamLiteral => p.markFoldable(false)
+            case _ =>
+          }
+          DynamicFoldableExpression(e)
+      }
     }
   }
 
@@ -234,14 +261,28 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog = new SnappyStoreHiveCatalog(
-    sharedState.externalCatalog,
-    snappySession,
-    metadataHive,
-    functionResourceLoader,
-    functionRegistry,
-    conf,
-    newHadoopConf())
+  override lazy val catalog: SnappyStoreHiveCatalog = {
+    SnappyContext.getClusterMode(snappySession.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        new SnappyConnectorCatalog(
+          sharedState.externalCatalog,
+          snappySession,
+          metadataHive,
+          functionResourceLoader,
+          functionRegistry,
+          conf,
+          newHadoopConf())
+      case _ =>
+        new SnappyStoreHiveCatalog(
+          sharedState.externalCatalog,
+          snappySession,
+          metadataHive,
+          functionResourceLoader,
+          functionRegistry,
+          conf,
+          newHadoopConf())
+    }
+  }
 
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
@@ -252,6 +293,7 @@ class SnappySessionState(snappySession: SnappySession)
     EnsureRequirements(snappySession.sessionState.conf),
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
+    InsertCachedPlanHelper(snappySession),
     ReuseExchange(snappySession.sessionState.conf))
 
   override def executePlan(plan: LogicalPlan): QueryExecution = {
@@ -290,6 +332,17 @@ class SnappySessionState(snappySession: SnappySession)
 
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
+
+  var isPreparePhase: Boolean = false
+
+  var pvs: Option[ParameterValueSet] = None
+
+  var questionMarkCounter: Int = 0
+
+  def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit = {
+    isPreparePhase = preparePhase
+    pvs = paramSet
+  }
 }
 
 class SnappyConf(@transient val session: SnappySession)
@@ -498,16 +551,16 @@ trait SQLAltName[T] extends AltName[T] {
       case Some(_) => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
       case None => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[Option[T]]]).get
     }
-
   }
 
   private def get(conf: SQLConf, name: String,
       defaultValue: String): T = {
     configEntry.entry.defaultValue match {
-      case Some(_) => configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
-      case None => configEntry.valueConverter[Option[T]](conf.getConfString(name, defaultValue)).get
+      case Some(_) => configEntry.valueConverter[T](
+        conf.getConfString(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.getConfString(name, defaultValue)).get
     }
-
   }
 
   def get(conf: SQLConf): T = if (altName == null) {
@@ -522,6 +575,12 @@ trait SQLAltName[T] extends AltName[T] {
     } else {
       get(conf, altName, configEntry.defaultValueString)
     }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {
@@ -692,7 +751,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           actual.dataType match {
             case _: DecimalType
               if expected.dataType.isInstanceOf[DecimalType] &&
-                 relation.isInstanceOf[PlanInsertableRelation] => actual
+                  relation.isInstanceOf[PlanInsertableRelation] => actual
             case _ => Alias(Cast(actual, expected.dataType), expected.name)()
           }
         }

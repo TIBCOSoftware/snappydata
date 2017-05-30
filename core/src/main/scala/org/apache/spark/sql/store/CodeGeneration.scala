@@ -22,6 +22,7 @@ import java.util.Collections
 import scala.util.hashing.MurmurHash3
 
 import com.gemstone.gemfire.internal.InternalDataSerializer
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
 import org.codehaus.janino.CompilerFactory
@@ -127,6 +128,7 @@ object CodeGeneration extends Logging {
       ctx: CodegenContext): String = {
     val timeUtilsClass = DateTimeUtils.getClass.getName.replace("$", "")
     val encoderClass = classOf[UncompressedEncoder].getName
+    val utilsClass = classOf[ClientSharedUtils].getName
     val nonNullCode = dataType match {
       case IntegerType => s"$stmt.setInt(${col + 1}, ${ev.value});"
       case LongType => s"$stmt.setLong(${col + 1}, ${ev.value});"
@@ -157,7 +159,7 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
               arr, "0")}
            |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $encoder.finish($cursor).array());
+           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
         """.stripMargin
       case m: MapType =>
         val encoderVar = ctx.freshName("encoderObj")
@@ -172,7 +174,7 @@ object CodeGeneration extends Logging {
            |long $cursor = $encoder.initialize($schema[$col], 1, false);
            |${ColumnWriter.genCodeMapWrite(ctx, m, encoder, cursor, map, "0")}
            |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $encoder.finish($cursor).array());
+           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
         """.stripMargin
       case s: StructType =>
         val encoderVar = ctx.freshName("encoderObj")
@@ -188,7 +190,7 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
               struct, "0")}
            |// finish and set the bytes into the statement
-           |$stmt.setBytes(${col + 1}, $encoder.finish($cursor).array());
+           |$stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
         """.stripMargin
       case _ =>
         s"$stmt.setObject(${col + 1}, ${ev.value});"
@@ -323,6 +325,7 @@ object CodeGeneration extends Logging {
     val encoderVar = ctx.freshName("encoder")
     val fieldVar = ctx.freshName("field")
     val dosVar = ctx.freshName("dos")
+    val utilsClass = classOf[ClientSharedUtils].getName
     val typeConversion = dataType match {
       case a: ArrayType =>
         val arr = ctx.freshName("arr")
@@ -333,11 +336,11 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeArrayWrite(ctx, a, encoderVar, cursor,
               arr, "0")}
            |if ($dosVar != null) {
-           |  final byte[] b = $encoderVar.finish($cursor).array();
+           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
            |  return null;
            |} else {
-           |  return $encoderVar.finish($cursor).array();
+           |  return $utilsClass.toBytes($encoderVar.finish($cursor));
            |}
         """.stripMargin
       case m: MapType =>
@@ -349,11 +352,11 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeMapWrite(ctx, m, encoderVar, cursor,
               map, "0")}
            |if ($dosVar != null) {
-           |  final byte[] b = $encoderVar.finish($cursor).array();
+           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
            |  return null;
            |} else {
-           |  return $encoderVar.finish($cursor).array();
+           |  return $utilsClass.toBytes($encoderVar.finish($cursor));
            |}
         """.stripMargin
       case s: StructType =>
@@ -365,11 +368,11 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeStructWrite(ctx, s, encoderVar, cursor,
               struct, "0")}
            |if ($dosVar != null) {
-           |  final byte[] b = $encoderVar.finish($cursor).array();
+           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
            |  return null;
            |} else {
-           |  return $encoderVar.finish($cursor).array();
+           |  return $utilsClass.toBytes($encoderVar.finish($cursor));
            |}
         """.stripMargin
       case _ => throw Utils.analysisException(

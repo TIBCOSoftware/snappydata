@@ -21,13 +21,12 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.collection.mutable.ListBuffer
 
 import io.snappydata.app.{Data1, Data2, Data3}
-import io.snappydata.{QueryHint, SnappyFunSuite}
+import io.snappydata.{Property, QueryHint, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation,
-IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.row.RowFormatRelation
@@ -98,7 +97,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       )
 
       val rdd = sc.parallelize(data, data.length).map(s =>
-        new Data2(s(0).asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
+        Data2(s.head.asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
       val dataDF = snContext.createDataFrame(rdd)
 
       dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -596,8 +595,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val index31 = s"${table3}_IdxOne"
 
     val snContext = context.get
-    // snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
-    snContext.setConf(SQLConf.COLUMN_BATCH_SIZE.key, "3")
+    // Property.ColumnBatchSize.set(snContext.conf, 30)
 
     createBase3Tables(snContext, table1, table2, table3)
 

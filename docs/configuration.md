@@ -1,4 +1,4 @@
-#Overview
+# Overview
 SnappyData, a database server cluster, has three main components - Locator, Server, and Lead.
 
 The Lead node embeds a Spark driver and the Server node embeds a Spark Executor. The server node also embeds a SnappyData store.
@@ -99,7 +99,7 @@ node-c -dir=/node-c/server2 -heap-size=4096m -locators=node-b:8888,node-a:9999
 
 $ cat conf/leads
 # This goes to the default directory 
-node-l -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
 
 <Note> Note: Conf files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the conf files while the cluster is running. </Note>

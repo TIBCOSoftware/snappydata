@@ -79,6 +79,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
     ',' ~ ws
   }
 
+  protected final def questionMark: Rule0 = rule {
+    '?' ~ ws
+  }
+
   protected final def digits: Rule1[String] = rule {
     capture(CharPredicate.Digit. +) ~ ws
   }
@@ -116,7 +120,7 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   protected def start: Rule1[LogicalPlan]
 
   protected final def identifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
+    atomic(capture( Consts.alphaUnderscore ~ Consts.identifier.*)) ~
         delimiter ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.reservedKeywords.contains(ucase)) ~
@@ -283,13 +287,14 @@ object SnappyParserConsts {
   final val lineCommentEnd: String = "\n\r\f" + EOI
   final val lineHintEnd: String = ")\n\r\f" + EOI
   final val hintValueEnd: String = ")*" + EOI
-  final val identifier: CharPredicate = CharPredicate.AlphaNum ++
-      CharPredicate('_')
+  final val underscore: String = CharPredicate('_')
+  final val identifier: CharPredicate = CharPredicate.AlphaNum ++ underscore
+  final val alphaUnderscore: CharPredicate = CharPredicate.Alpha ++ underscore
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')
   final val arithmeticOperator = CharPredicate('*', '/', '%', '&', '|', '^')
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
-      CharPredicate('.') ++ exponent
+      CharPredicate('.')
   final val numericSuffix: CharPredicate = CharPredicate('D', 'L')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
@@ -404,6 +409,7 @@ object SnappyParserConsts {
   final val END: Keyword = nonReservedKeyword("end")
   final val EXTENDED: Keyword = nonReservedKeyword("extended")
   final val EXTERNAL: Keyword = nonReservedKeyword("external")
+  final val FN: Keyword = nonReservedKeyword("fn")
   final val FULL: Keyword = nonReservedKeyword("full")
   final val GLOBAL: Keyword = nonReservedKeyword("global")
   final val HASH: Keyword = nonReservedKeyword("hash")
