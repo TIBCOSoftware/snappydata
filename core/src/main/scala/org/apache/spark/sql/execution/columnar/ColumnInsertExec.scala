@@ -559,16 +559,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    // no shouldStop check required
-    if (!ctx.addedFunctions.contains("shouldStop")) {
-      ctx.addNewFunction("shouldStop",
-        s"""
-          @Override
-          protected final boolean shouldStop() {
-            return false;
-          }
-        """)
-    }
 
     storeColumnBatchArgs = s"$batchSizeTerm, $cursorArrayTerm"
 

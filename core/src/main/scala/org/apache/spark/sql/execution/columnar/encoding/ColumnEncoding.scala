@@ -296,6 +296,7 @@ trait ColumnEncoder extends ColumnEncoding {
       withHeader: Boolean, allocator: BufferAllocator): Long = {
     setAllocator(allocator)
     val dataType = Utils.getSQLDataType(field.dataType)
+    val defSize = defaultSize(dataType)
 
     this.forComplexType = dataType match {
       case _: ArrayType | _: MapType | _: StructType => true
@@ -310,7 +311,6 @@ trait ColumnEncoder extends ColumnEncoding {
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
-    val defSize = defaultSize(dataType)
     var baseSize: Long = numNullBytes
     if (withHeader) {
       // add header size for serialized form to avoid a copy in Oplog layer
