@@ -114,6 +114,10 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       FabricService.State.RUNNING)
   }
 
+  override def tearDownAfter(): Unit = {
+    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
+  }
+
   def setDMLMaxChunkSize(size: Long): Unit = {
     GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
   }
@@ -150,8 +154,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
-
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", netPort1)
 
     if (errorInThread != null) {
 
@@ -211,7 +213,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", netPort1)
     if (errorInThread != null) {
 
       throw errorInThread

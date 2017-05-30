@@ -82,7 +82,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
         }
         Literal(v, _dt)
     } transform {
-      case CachedPlanHelperExec(childPlan, _) => childPlan
+      case CachedPlanHelperExec(childPlan) => childPlan
     })
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
@@ -240,7 +240,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
       sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
       val executedPlan = queryExecution.executedPlan match {
-        case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
+        case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
         case plan => plan
       }
       val results = executedPlan match {
