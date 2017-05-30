@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.internal.shared.BufferAllocator
+
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
@@ -82,7 +84,7 @@ trait BooleanBitSetEncoderBase
   private var currentWord: Long = _
 
   override def initSizeInBytes(dataType: DataType,
-      initSize: Long): Long = dataType match {
+      initSize: Long, defSize: Int): Long = dataType match {
     // round to nearest 64 since each bit mask is a long word
     case BooleanType => ((initSize + 63) >>> 6) << 3
     case _ => throw new UnsupportedOperationException(
@@ -90,7 +92,7 @@ trait BooleanBitSetEncoderBase
   }
 
   override def initialize(field: StructField, initSize: Int,
-      withHeader: Boolean, allocator: ColumnAllocator): Long = {
+      withHeader: Boolean, allocator: BufferAllocator): Long = {
     byteCursor = super.initialize(field, initSize, withHeader, allocator)
     currentWord = 0L
     // returns the index into currentWord

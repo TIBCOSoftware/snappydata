@@ -259,8 +259,8 @@ trait ColumnEncoder extends ColumnEncoding {
     case _ => dataType.defaultSize
   }
 
-  def initSizeInBytes(dataType: DataType, initSize: Long): Long = {
-    initSize * defaultSize(dataType)
+  def initSizeInBytes(dataType: DataType, initSize: Long, defSize: Int): Long = {
+    initSize * defSize
   }
 
   protected def initializeNulls(initSize: Int): Int
@@ -310,6 +310,7 @@ trait ColumnEncoder extends ColumnEncoding {
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
+    val defSize = defaultSize(dataType)
     var baseSize: Long = numNullBytes
     if (withHeader) {
       // add header size for serialized form to avoid a copy in Oplog layer
@@ -321,7 +322,7 @@ trait ColumnEncoder extends ColumnEncoding {
       if (reuseUsedSize > baseSize) {
         initByteSize = reuseUsedSize
       } else {
-        initByteSize = initSizeInBytes(dataType, initSize) + baseSize
+        initByteSize = initSizeInBytes(dataType, initSize, defSize) + baseSize
       }
       setSource(allocator.allocate(checkBufferSize(initByteSize),
         ColumnEncoding.BUFFER_OWNER), releaseOld = true)
@@ -341,7 +342,7 @@ trait ColumnEncoder extends ColumnEncoding {
     reuseUsedSize = 0
     if (withHeader) {
       // skip serialization header which will be filled in by ColumnFormatValue
-      var cursor = ensureCapacity(columnBeginPosition, 8L + numNullBytes) +
+      var cursor = ensureCapacity(columnBeginPosition, 8 + numNullBytes.toInt) +
           ColumnFormatEntry.VALUE_HEADER_SIZE
       // typeId followed by nulls bitset size and space for values
       ColumnEncoding.writeInt(columnBytes, cursor, typeId)
@@ -987,53 +988,6 @@ case class ColumnStatsSchema(fieldName: String,
 object ColumnStatsSchema {
   val NUM_STATS_PER_COLUMN = 4
   val COUNT_INDEX_IN_SCHEMA = 3
-}
-
-object OffHeapAllocator extends ColumnAllocator {
-
-  private def checkSize(size: Long): Int = {
-    if (size < Int.MaxValue) size.toInt
-    else {
-      throw new IndexOutOfBoundsException(
-        s"Invalid size/index = $size. Max allowed = ${Int.MaxValue - 1}.")
-    }
-  }
-
-  override def allocate(size: Long): ColumnData = {
-    val memorySize = ByteArrayMethods.roundNumberOfBytesToNearestWord(
-      checkSize(size))
-    val address = Platform.allocateMemory(memorySize)
-    new ColumnData(null, address, address + memorySize)
-  }
-
-  override def expand(columnData: ColumnData, cursor: Long,
-      required: Long): ColumnData = {
-    val currentUsed = cursor - columnData.baseOffset
-    val minRequired = currentUsed + required
-    // double the size
-    val newLength = ByteArrayMethods.roundNumberOfBytesToNearestWord(math.min(
-      math.max(columnData.sizeInBytes << 1L, minRequired), Int.MaxValue >>> 1)
-        .asInstanceOf[Int])
-    if (newLength < minRequired) {
-      throw new IndexOutOfBoundsException(
-        s"Cannot allocate more than $newLength bytes but required $minRequired")
-    }
-    val address = Platform.allocateMemory(newLength)
-    Platform.copyMemory(null, columnData.baseOffset, null, address, currentUsed)
-    new ColumnData(null, address, address + newLength)
-  }
-
-  override def copy(source: AnyRef, sourcePos: Long,
-      dest: AnyRef, destPos: Long, size: Long): Unit =
-    Platform.copyMemory(source, sourcePos, dest, destPos, size)
-
-  override def release(columnData: ColumnData): Unit =
-    Platform.freeMemory(columnData.baseOffset)
-
-  override def toBuffer(data: ColumnData): ByteBuffer =
-    UnsafeHolder.allocateDirectBuffer(data.baseOffset, data.sizeInBytes.toInt)
-
-  override def isOffHeap: Boolean = true
 }
 
 trait NotNullDecoder extends ColumnDecoder {

@@ -287,7 +287,7 @@ object SnappyParserConsts {
   final val lineCommentEnd: String = "\n\r\f" + EOI
   final val lineHintEnd: String = ")\n\r\f" + EOI
   final val hintValueEnd: String = ")*" + EOI
-  final val underscore: String = CharPredicate('_')
+  final val underscore: CharPredicate = CharPredicate('_')
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++ underscore
   final val alphaUnderscore: CharPredicate = CharPredicate.Alpha ++ underscore
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')
