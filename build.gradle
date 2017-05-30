@@ -1017,11 +1017,11 @@ task publishDocs(type:Exec) {
 
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports
+  dependsOn ':snappy-spark:scalaStyle', docs
   if (!project.hasProperty('smoke.skip')) {
     dependsOn ":buildDtests"
     dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
-  dependsOn ':snappy-spark:scalaStyle', docs
 }
 
 if (project.hasProperty('trackBuildTime') ) {
