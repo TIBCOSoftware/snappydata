@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, GemFireSparkConnectorCacheImpl}
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
@@ -126,6 +126,8 @@ class LeadImpl extends ServerImpl with Lead
           } else {
             Constant.STORE_PROPERTY_PREFIX + k
           }
+        } else if (k.startsWith(GemFireSparkConnectorCacheImpl.gfeGridPropPrefix)) {
+          Constant.STORE_PROPERTY_PREFIX + k
         }
         else {
           k
