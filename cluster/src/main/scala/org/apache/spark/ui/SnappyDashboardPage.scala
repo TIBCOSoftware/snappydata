@@ -128,7 +128,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++ sparkConnectorsStatsDetails ++ tablesStatsDetails ++ indexStatsDetails
 
-    UIUtils.simpleSparkPageWithTabs(pageHeaderText, pageContent, parent, Some(500))
+    UIUtils.simpleSparkPageWithTabs_2(pageHeaderText, pageContent, parent, Some(500))
 
   }
 
@@ -137,6 +137,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       membersBuf: mutable.Map[String, mutable.Map[String, Any]],
       tablesBuf: Map[String, SnappyRegionStats] ) : Unit = {
 
+    val numMembers = membersBuf.size
     var isClusterStateNormal = true
     var numLead = 0
     var numLocator = 0
@@ -146,6 +147,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     var numClientsToDataServers = 0
     var numColumnTables = 0
     var numRowTables = 0
+    var avgMemoryUsage:Long = 0;
+    var avgHeapUsage:Long = 0;
+    var avgOffHeapUsage:Long = 0;
+    var avgJvmHeapUsage:Long = 0;
+
+    // Todo : remove hard coding
+    var totalMemoryUsage:Long = 0;
+    var totalHeapUsage:Long = 0;
+    var totalOffHeapUsage:Long = 0;
+    var totalJvmHeapUsage:Long = 0;
 
     membersBuf.foreach(mb => {
       val m = mb._2
@@ -170,7 +181,25 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
       numClients += m("clients").toString.toInt
 
+      totalHeapUsage = totalHeapUsage +
+          (m("heapMemoryUsed").asInstanceOf[Long] * 100 / m("heapMemorySize").asInstanceOf[Long])
+
+      totalOffHeapUsage = totalOffHeapUsage +
+          (m("offHeapMemoryUsed").asInstanceOf[Long] * 100 / m("offHeapMemorySize").asInstanceOf[Long])
+
+      totalJvmHeapUsage = totalJvmHeapUsage +
+          (m("usedMemory").asInstanceOf[Long] * 100 / m("totalMemory").asInstanceOf[Long])
+
     })
+
+    if(membersBuf.size > 0){
+      totalMemoryUsage = totalHeapUsage + totalOffHeapUsage
+
+      avgMemoryUsage = totalMemoryUsage / numMembers
+      avgHeapUsage = totalHeapUsage / numMembers
+      avgOffHeapUsage = totalOffHeapUsage / numMembers
+      avgJvmHeapUsage = totalJvmHeapUsage / numMembers
+    }
 
     numClientsToDataServers = numClients - numClientsToLocator
 
@@ -184,7 +213,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     })
 
     clusterStatsMap += ("status" -> {if(isClusterStateNormal) "Normal" else "Warning"})
-    clusterStatsMap += ("numMembers" -> membersBuf.size)
+    clusterStatsMap += ("numMembers" -> numMembers)
     clusterStatsMap += ("numTables" -> tablesBuf.size)
     clusterStatsMap += ("numLeads" -> numLead)
     clusterStatsMap += ("numLocators" -> numLocator)
@@ -194,6 +223,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numClientsToDataServers" -> numClientsToDataServers)
     clusterStatsMap += ("numColumnTables" -> numColumnTables)
     clusterStatsMap += ("numRowTables" -> numRowTables)
+    clusterStatsMap += ("avgMemoryUsage" -> avgMemoryUsage)
+    clusterStatsMap += ("avgHeapUsage" -> avgHeapUsage)
+    clusterStatsMap += ("avgOffHeapUsage" -> avgOffHeapUsage)
+    clusterStatsMap += ("avgJvmHeapUsage" -> avgJvmHeapUsage)
 
   }
 
@@ -282,49 +315,43 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       "/static/snappydata/warning-status-icon-70x68.png"
     }
 
-    <div>
-      <div class="keyStatesLeft" style="width: 300px; max-width: 300px;">
-        <div class="clusterHealthImageBox">
-          <img style="padding-left:10px; padding-top: 15px;" src={statusImgUri} />
+    val avgMemoryUsage = clusterDetails.getOrElse("avgMemoryUsage", 0.0);
+    val avgHeapUsage = clusterDetails.getOrElse("avgHeapUsage", 0.0);
+    val avgOffHeapUsage = clusterDetails.getOrElse("avgOffHeapUsage", 0.0);
+    val avgJvmHeapUsage = clusterDetails.getOrElse("avgJvmHeapUsage", 0.0);
+
+    <div class="row-fluid">
+      <div class="keyStates">
+        <div class="keyStatsValue"
+             style="width:50%; margin: auto;">
+          <img style="padding-top: 15px;" src={statusImgUri} />
         </div>
-        <div class="clusterHealthTextBox">
-          {statusNode}
-          <div class="keyStatesText">{SnappyDashboardPage.clusterStats("status")}</div>
+        <div class="keyStatesText">Cluster Status</div>
+      </div>
+      <div class="keyStates">
+        <div class="keyStatsValue" id="avgMemoryUsage" data-value={avgMemoryUsage.toString}>
+          <svg id="memoryUsageGauge" width="100%" height="100%" ></svg>
         </div>
+        <div class="keyStatesText">Avg. Memory Usage</div>
       </div>
       <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numMembers","NA")}</div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("members")}</div>
-      </div>
-      <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numLeads","NA")}</div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("leads")}</div>
-      </div>
-      <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numLocators","NA")}</div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("locators")}</div>
-      </div>
-      <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numDataServers","NA")}</div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("servers")}</div>
-      </div>
-      <div class="keyStates">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("numTables","NA")}</div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("tables")}</div>
-      </div>
-      <div class="keyStatesRight">
-        <div class="keyStatsValue" data-toggle="tooltip" title="" data-original-title={
-        val numClientsToLocator = clusterDetails.getOrElse("numClientsToLocator",0).toString.toInt
-        val numClientsToDataServers = clusterDetails.getOrElse("numClientsToDataServers",0).toString.toInt
-        "Control Connections : " + numClientsToLocator + " Data Server Connections : " + numClientsToDataServers }>
-          {clusterDetails.getOrElse("numClients","NA")}
+        <div class="keyStatsValue" id="avgHeapUsage" data-value={avgHeapUsage.toString}>
+          <svg id="heapUsageGauge" width="100%" height="100%" ></svg>
         </div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("clients")}</div>
+        <div class="keyStatesText">Avg. Heap Usage</div>
       </div>
-      <!-- <div class="keyStatesRight">
-        <div class="keyStatsValue">{clusterDetails.getOrElse("memoryUsage","NA")}</div>
-        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("memoryUsage")}</div>
-      </div> -->
+      <div class="keyStates">
+        <div class="keyStatsValue" id="avgOffHeapUsage" data-value={avgOffHeapUsage.toString}>
+          <svg id="offHeapUsageGauge" width="100%" height="100%" ></svg>
+        </div>
+        <div class="keyStatesText">Avg. Off-Heap Usage</div>
+      </div>
+      <div class="keyStates">
+        <div class="keyStatsValue" id="avgJvmHeapUsage" data-value={avgJvmHeapUsage.toString}>
+          <svg id="jvmHeapUsageGauge" width="100%" height="100%" ></svg>
+        </div>
+        <div class="keyStatesText">Avg. JVM Heap Usage</div>
+      </div>
     </div>
   }
 
