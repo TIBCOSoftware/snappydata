@@ -49,7 +49,7 @@ The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are giv
 ````
 *leads*
 ````
-{{LEAD_0}} -heap-size=4096m -J-XX:MaxPermSize=512m -spark.ui.port=3333 -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -spark.executor.cores=10
+{{LEAD_0}} -heap-size=4096m -spark.ui.port=3333 -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -spark.executor.cores=10
 ````
 *servers*
 ````
