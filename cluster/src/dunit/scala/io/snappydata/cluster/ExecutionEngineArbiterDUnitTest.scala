@@ -583,26 +583,26 @@ trait ExecutionEngineArbiterTestBase {
 
 
     // test for distinct queries
-    runAndValidateQuery(conn, false, s"select distinct col1 from $testTable")
-    runAndValidateQuery(conn, false, s"select col1 from $testTable where col2 in " +
+    runAndValidateQuery(conn, true, s"select distinct col1 from $testTable")
+    runAndValidateQuery(conn, true, s"select col1 from $testTable where col2 in " +
         s"(select distinct col2 from $testTable2)")
-    runAndValidateQuery(conn, false, s"select sum(col1) from $testTable group by col2")
+    runAndValidateQuery(conn, true, s"select sum(col1) from $testTable group by col2")
 
-    runAndValidateQuery(conn, false, s"select col1 from  $testTable where col1 in" +
+    runAndValidateQuery(conn, true, s"select col1 from  $testTable where col1 in" +
         s" (select avg(col1) from $testTable2 group by col2)")
 
     // test for union queries
-    runAndValidateQuery(conn, false, s"select col1  " +
+    runAndValidateQuery(conn, true, s"select col1  " +
         s"from $testTable union select col1 from $testTable1")
-    runAndValidateQuery(conn, false, s"select *  from $testTable2 where  col1 in " +
+    runAndValidateQuery(conn, true, s"select *  from $testTable2 where  col1 in " +
         s"( select col1  from $testTable union select col1 from $testTable1)")
 
 
     // test intersect queries
-    runAndValidateQuery(conn, false, s"select col1  from $testTable " +
+    runAndValidateQuery(conn, true, s"select col1  from $testTable " +
         s"intersect select col1 from $testTable1")
 
-    runAndValidateQuery(conn, false, s"select *  from $testTable2 where  col1 in " +
+    runAndValidateQuery(conn, true, s"select *  from $testTable2 where  col1 in " +
         s"( select col1  from $testTable intersect select col1 from $testTable1)")
 
     val s = conn.createStatement()

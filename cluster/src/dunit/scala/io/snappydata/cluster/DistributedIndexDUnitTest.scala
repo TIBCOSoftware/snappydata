@@ -175,7 +175,11 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     System.clearProperty("LOG-NOW")
   }
 
-  def testCreateDropRowTable(): Unit = {
+  // Part of fix to SNAP-1461
+  // This is being commented out. This is because now even the replicated
+  // table queries which are not pkbased or convertible to getAll are being routed
+  // and the test below asserts on an index being used assuming store execution.
+  def _testCreateDropRowTable(): Unit = {
     val tableName = "tabTwo"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)

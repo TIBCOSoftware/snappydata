@@ -1711,7 +1711,7 @@ object SnappySession extends Logging {
       session: SnappySession, sqlText: String,
       key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
     val executedPlan = df.queryExecution.executedPlan match {
-      case WholeStageCodegenExec(CachedPlanHelperExec(plan, _)) => plan
+      case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
       case plan => plan
     }
 
