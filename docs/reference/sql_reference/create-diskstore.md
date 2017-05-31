@@ -75,7 +75,7 @@ In each entry:
 
 *   *integer-constant* optionally specifies the maximum amount of space, in megabytes, to use for the disk store in that directory. The space used is calculated as the combined sizes of all oplog files in the directory.
 
-    If you do not specify an *integer-constant* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings (see [gemfire.DISKSPACE_WARNING_INTERVAL](../../reference/configuration_parameters/gemfire.DISKSPACE_WARNING_INTERVAL.md)). If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
+    If you do not specify an *integer-constant* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings. If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
 
 You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
 
@@ -107,7 +107,7 @@ This example specifies multiple storage directories and directory sizes for oplo
 snappy> CREATE DISKSTORE STORE1 
     WRITEBUFFERSIZE 19292393
     QUEUESIZE 17374
-    ('dir1' 10240 , 'dir2', 'dir3' 532 );
+    ('dir1' 456 , 'dir2', 'dir3' 532 );
 ```
 
 
