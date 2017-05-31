@@ -1216,18 +1216,6 @@ class SnappySession(@transient private val sc: SparkContext,
     } catch {
       case tnfe: TableNotFoundException =>
         if (ifExists) return else throw tnfe
-      case NonFatal(_) =>
-        // table loading may fail due to an initialization exception
-        // in relation, so try to remove from hive catalog in any case
-        try {
-          sessionCatalog.unregisterDataSourceTable(tableIdent, None)
-          return
-        } catch {
-          case NonFatal(e) =>
-            if (ifExists) return
-            else throw new TableNotFoundException(
-              s"Table '$tableIdent' not found", Some(e))
-        }
     }
     // additional cleanup for external and temp tables, if required
     plan match {
