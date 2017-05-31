@@ -23,7 +23,6 @@ import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
@@ -62,7 +61,7 @@ class SnappyExecutor(
 
   }
 
-  def getName(path: String) = new File(path).getName
+  def getName(path: String): String = new File(path).getName
 
   override def updateDependencies(newFiles: mutable.HashMap[String, Long],
       newJars: mutable.HashMap[String, Long]): Unit = {
@@ -71,10 +70,11 @@ class SnappyExecutor(
       val addedJarFiles = classloader.getAddedURLs.toList
       val newJarFiles = newJars.keys.map(getName).toList
       val diffJars = addedJarFiles.diff(newJarFiles)
-      if (diffJars.size > 0) {
+      if (diffJars.nonEmpty) {
         diffJars.foreach(classloader.removeURL)
-        Misc.getCacheLogWriter.info("As some of the Jars have been deleted, setting up a new ClassLoader for subsequent Threads")
-        diffJars.foreach(d => Misc.getCacheLogWriter.info(s"removed jar $d"))
+        logInfo("As some of the Jars have been deleted, setting up " +
+            "a new ClassLoader for subsequent Threads")
+        diffJars.foreach(d => logInfo(s"removed jar $d"))
 
         this.urlClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(),
           classloader.getParent, classloader.jobJars)
@@ -92,8 +92,8 @@ class SnappyExecutor(
 
 class SnappyMutableURLClassLoader(urls: Array[URL],
     parent: ClassLoader,
-    val jobJars : scala.collection.mutable.Map[String, URLClassLoader])
-    extends MutableURLClassLoader(urls, parent) {
+    val jobJars: scala.collection.mutable.Map[String, URLClassLoader])
+    extends MutableURLClassLoader(urls, parent) with Logging {
 
 
   protected def getJobName: String = {
@@ -124,10 +124,10 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
     if (jobJars.contains(jar)) {
       val urlLoader = jobJars.get(jar)
       if (urlLoader.isDefined) {
-        val file = new File(SparkFiles.getRootDirectory() , jar)
+        val file = new File(SparkFiles.getRootDirectory(), jar)
         jobJars.remove(jar)
         if (file.exists()) {
-          Misc.getCacheLogWriter.info(s"Removing $jar from Spark root directory")
+          logInfo(s"Removing $jar from Spark root directory")
           file.delete()
         }
       }
@@ -137,7 +137,7 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
   override def loadClass(name: String, resolve: Boolean): Class[_] = {
     loadJar(() => super.loadClass(name, resolve)).
         getOrElse(loadJar(() => Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name))
-            .getOrElse(loadJar(() => loadClassFromJobJar(name), true).get))
+            .getOrElse(loadJar(() => loadClassFromJobJar(name), throwException = true).get))
   }
 
   def loadJar(f: () => Class[_], throwException: Boolean = false): Option[Class[_]] = {
@@ -187,8 +187,8 @@ private class SnappyUncaughtExceptionHandler(
       }
     } catch {
       // Exception while handling an uncaught exception. we cannot do much here
-      case oom: OutOfMemoryError => Runtime.getRuntime.halt(SparkExitCode.OOM)
-      case t: Throwable => Runtime.getRuntime.halt(SparkExitCode.UNCAUGHT_EXCEPTION_TWICE)
+      case _: OutOfMemoryError => Runtime.getRuntime.halt(SparkExitCode.OOM)
+      case _: Throwable => Runtime.getRuntime.halt(SparkExitCode.UNCAUGHT_EXCEPTION_TWICE)
     }
   }
 }

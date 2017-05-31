@@ -242,7 +242,7 @@ object TPCH_Queries {
         "     o_orderdate," +
         "     o_shippriority" +
         " order by" +
-        "     o_orderdate" +
+        "     l_orderkey" +
         " limit 10"
   }
 
@@ -735,7 +735,7 @@ object TPCH_Queries {
         "         PS_PARTKEY having" +
         "         sum(PS_SUPPLYCOST * PS_AVAILQTY) > (" +
         "                 select" +
-        "                         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0001" +
+        "                         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0000001" +
         "                 from" +
         "                         SUPPLIER," +
         "                         NATION," +
@@ -1002,7 +1002,7 @@ object TPCH_Queries {
       val date = java.time.LocalDate.of(year, month, 1)
       Array(date.toString, date.toString)
     } else {
-      Array("1996-01-01", "1996-01-01")
+      Array("1993-02-01", "1996-01-01")
     }
 
   }

@@ -338,7 +338,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
 
-  def IGNORE_testMemoryAfterRecovery_ColumnTable(): Unit = {
+  def _testMemoryAfterRecovery_ColumnTable(): Unit = {
 
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
@@ -361,9 +361,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
-
+    Thread.sleep(10000)
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
-    Thread.sleep(5000)
+
     vm1.invoke(restartServer(props))
     Thread.sleep(5000)
     val waitAssert = new WaitAssert(10, getClass) // @TODO identify why so large error
@@ -374,7 +374,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
 
-  def IGNORE_testMemoryAfterRecovery_RowTable(): Unit = {
+  def testMemoryAfterRecovery_RowTable(): Unit = {
 
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
@@ -463,8 +463,13 @@ object SnappyUnifiedMemoryManagerDUnitTest {
   val memoryMode = MemoryMode.ON_HEAP
 
   def resetStorageMemory(): Unit = {
-    MemoryManagerCallback.resetMemoryManager()
-    System.clearProperty("snappydata.umm.memtrace")
+    if (SparkEnv.get != null) {
+      SparkEnv.get.memoryManager.releaseAllStorageMemory
+      if (SparkEnv.get.memoryManager.isInstanceOf[SnappyUnifiedMemoryManager]) {
+        SparkEnv.get.memoryManager
+          .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap.clear()
+      }
+    }
   }
 
   def getStorageMemory(): Long = {
