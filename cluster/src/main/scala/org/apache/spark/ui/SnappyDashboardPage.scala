@@ -70,7 +70,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       }
     })
 
-    val (tableBuff,indexBuff) =  SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
+    val tableBuff = SnappyTableStatsProviderService.getService.getTableSizeStats
+    val indexBuff = SnappyTableStatsProviderService.getService.getIndexesStatsFromService
 
     updateClusterStats(clusterStatsMap, clusterMembers, tableBuff)
 

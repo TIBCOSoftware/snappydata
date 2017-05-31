@@ -32,6 +32,8 @@ trait TableStatsProviderService extends Logging {
 
   @volatile
   private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
+  @volatile
+  private var indexesInfo = Map.empty[String, SnappyIndexStats]
   protected val membersInfo: TrieMap[String, mutable.Map[String, Any]] =
     TrieMap.empty[String, mutable.Map[String, Any]]
 
@@ -57,9 +59,9 @@ trait TableStatsProviderService extends Logging {
         val prevTableSizeInfo = tableSizeInfo
         running = true
         try {
-          // TODO: SW: indexStats never used?
-          val (tableStats, _) = getAggregatedStatsOnDemand
+          val (tableStats, indexStats) = getAggregatedStatsOnDemand
           tableSizeInfo = tableStats
+          indexesInfo = indexStats // populating indexes stats
           // get members details
           fillAggregatedMemberStatsOnDemand()
         } finally {
@@ -105,7 +107,20 @@ trait TableStatsProviderService extends Logging {
     _snc = None
   }
 
+  def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
+    // TODO: [SachinK] This code is commented to avoid forced refresh of stats on every call (as indexesInfo could be empty).
+    /*
+    val indexStats = this.indexesInfo
+    if (indexStats.isEmpty) {
+      // force run
+      aggregateStats()
+    }
+    */
+    indexesInfo
+  }
+
   def getTableSizeStats: Map[String, SnappyRegionStats] = {
+    // TODO: [SachinK] Below conditional check can be commented to avoid forced refresh of stats on every call (tableSizeInfo could be empty).
     val tableSizes = this.tableSizeInfo
     if (tableSizes.isEmpty) {
       // force run
