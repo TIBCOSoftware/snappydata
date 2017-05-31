@@ -101,9 +101,12 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       options: Map[String, String],
       isBuiltIn: Boolean): LogicalPlan = {
 
+    snappySession.sessionCatalog.invalidateTable(tableIdent)
+
     runStmtWithExceptionHandling(executeCreateTableStmt(tableIdent,
       provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn))
 
+    SnappySession.clearAllCache()
     snappySession.sessionCatalog.lookupRelation(tableIdent)
   }
 
@@ -128,6 +131,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     snappySession.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
     SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappySession.clearAllCache()
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,
