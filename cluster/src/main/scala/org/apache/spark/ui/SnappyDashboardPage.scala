@@ -303,17 +303,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def clusterStats(clusterDetails: mutable.Map[String, Any]): Seq[Node] = {
 
     val status = clusterDetails.getOrElse("status", "")
-    val statusNode = {
-      if (status.toString.equalsIgnoreCase("normal")) {
-        <div class="keyStatsValue statusTextNormal">
-          {status}
-        </div>
-      } else {
-        <div class="keyStatsValue statusTextWarning">
-          {status}
-        </div>
-      }
-    }
 
     val statusImgUri = if(status.toString.equalsIgnoreCase("normal")) {
       "/static/snappydata/running-status-icon-70x68.png"
@@ -329,34 +318,43 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     <div class="row-fluid">
       <div class="keyStates">
         <div class="keyStatsValue"
-             style="width:50%; margin: auto;">
+             style="width:50%; margin: auto;" data-toggle="tooltip" title=""
+             data-original-title={SnappyDashboardPage.clusterStats("status").toString + ": " + status.toString} >
           <img style="padding-top: 15px;" src={statusImgUri} />
         </div>
-        <div class="keyStatesText">Cluster Status</div>
+        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("status")}</div>
       </div>
       <div class="keyStates">
-        <div class="keyStatsValue" id="avgMemoryUsage" data-value={avgMemoryUsage.toString}>
+        <div class="keyStatsValue" id="avgMemoryUsage" data-value={avgMemoryUsage.toString}
+             data-toggle="tooltip" title=""
+             data-original-title={SnappyDashboardPage.clusterStats("avgMemoryUsageTooltip").toString}>
           <svg id="memoryUsageGauge" width="100%" height="100%" ></svg>
         </div>
-        <div class="keyStatesText">Avg. Memory Usage</div>
+        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("avgMemoryUsage")}</div>
       </div>
       <div class="keyStates">
-        <div class="keyStatsValue" id="avgHeapUsage" data-value={avgHeapUsage.toString}>
+        <div class="keyStatsValue" id="avgHeapUsage" data-value={avgHeapUsage.toString}
+             data-toggle="tooltip" title=""
+             data-original-title={SnappyDashboardPage.clusterStats("avgHeapUsageTooltip").toString}>
           <svg id="heapUsageGauge" width="100%" height="100%" ></svg>
         </div>
-        <div class="keyStatesText">Avg. Heap Usage</div>
+        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("avgHeapUsage")}</div>
       </div>
       <div class="keyStates">
-        <div class="keyStatsValue" id="avgOffHeapUsage" data-value={avgOffHeapUsage.toString}>
+        <div class="keyStatsValue" id="avgOffHeapUsage" data-value={avgOffHeapUsage.toString}
+             data-toggle="tooltip" title=""
+             data-original-title={SnappyDashboardPage.clusterStats("avgOffHeapUsageTooltip").toString}>
           <svg id="offHeapUsageGauge" width="100%" height="100%" ></svg>
         </div>
-        <div class="keyStatesText">Avg. Off-Heap Usage</div>
+        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("avgOffHeapUsage")}</div>
       </div>
       <div class="keyStates">
-        <div class="keyStatsValue" id="avgJvmHeapUsage" data-value={avgJvmHeapUsage.toString}>
+        <div class="keyStatsValue" id="avgJvmHeapUsage" data-value={avgJvmHeapUsage.toString}
+             data-toggle="tooltip" title=""
+             data-original-title={SnappyDashboardPage.clusterStats("avgJvmHeapUsageTooltip").toString}>
           <svg id="jvmHeapUsageGauge" width="100%" height="100%" ></svg>
         </div>
-        <div class="keyStatesText">Avg. JVM Heap Usage</div>
+        <div class="keyStatesText">{SnappyDashboardPage.clusterStats("avgJvmHeapUsage")}</div>
       </div>
     </div>
   }
@@ -612,7 +610,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val memberDescriptionTooltip = {
       <span>Host: {host}
         <br/>Directory: {fullDirName}
-        <br/>Process Id: {processId}
+        <br/>Process ID: {processId}
       </span>
     }
     val tooltipHandler = "$('#" + shortDirName + "').toggle();";
@@ -672,17 +670,17 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{
-          Utils.bytesToString(heapMemoryUsed).toString + "/" + Utils.bytesToString(heapMemorySize).toString
+          Utils.bytesToString(heapMemoryUsed).toString + " / " + Utils.bytesToString(heapMemorySize).toString
           }</div>
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{
-          Utils.bytesToString(offHeapMemoryUsed).toString + "/" + Utils.bytesToString(offHeapMemorySize).toString
+          Utils.bytesToString(offHeapMemoryUsed).toString + " / " + Utils.bytesToString(offHeapMemorySize).toString
           }</div>
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{
-          Utils.bytesToString(jvmHeapUsed).toString + "/" + Utils.bytesToString(jvmHeapSize).toString
+          Utils.bytesToString(jvmHeapUsed).toString + " / " + Utils.bytesToString(jvmHeapSize).toString
           }</div>
       </td>
       <td>
@@ -823,7 +821,14 @@ object SnappyDashboardPage{
   clusterStats += ("locators" -> "Locators")
   clusterStats += ("clients" -> "Connections")
   clusterStats += ("tables" -> "Tables")
-  clusterStats += ("memoryUsage" -> "Memory Usage")
+  clusterStats += ("avgMemoryUsage" -> "Avg. Memory Usage")
+  clusterStats += ("avgMemoryUsageTooltip" -> "Members Average Memory Usage")
+  clusterStats += ("avgHeapUsage" -> "Avg. Heap Usage")
+  clusterStats += ("avgHeapUsageTooltip" -> "Members Average Heap Usage")
+  clusterStats += ("avgOffHeapUsage" -> "Avg. Off-Heap Usage")
+  clusterStats += ("avgOffHeapUsageTooltip" -> "Members Average Off-Heap Usage")
+  clusterStats += ("avgJvmHeapUsage" -> "Avg. JVM Heap Usage")
+  clusterStats += ("avgJvmHeapUsageTooltip" -> "Members Average JVM Heap Usage")
 
   val membersStatsTitle = "Members"
   val membersStatsTitleTooltip = "SnappyData Members Summary"
@@ -866,11 +871,11 @@ object SnappyDashboardPage{
   memberStatsColumn += ("executionMemoryToolTip" -> "Total execution pool memory used")
   memberStatsColumn += ("executionMemoryPoolSize" -> "ExecutionPoolSize")
   memberStatsColumn += ("executionMemorySizeToolTip" -> "Max execution pool memory size")
-  memberStatsColumn += ("heapMemory" -> "Heap Memory (Used/Total)")
+  memberStatsColumn += ("heapMemory" -> "Heap Memory (Used / Total)")
   memberStatsColumn += ("heapMemoryTooltip" -> "Members used and total Heap Memory")
-  memberStatsColumn += ("offHeapMemory" -> "Off-Heap Memory (Used/Total)")
+  memberStatsColumn += ("offHeapMemory" -> "Off-Heap Memory (Used / Total)")
   memberStatsColumn += ("offHeapMemoryTooltip" -> "Members used and total Off Heap Memory")
-  memberStatsColumn += ("jvmHeapMemory" -> "JVM Heap (Used/Total)")
+  memberStatsColumn += ("jvmHeapMemory" -> "JVM Heap (Used / Total)")
   memberStatsColumn += ("jvmHeapMemoryTooltip" -> "Members used and total JVM Heap")
 
   val sparkConnectorsStatsTitle = "Spark Connectors"
