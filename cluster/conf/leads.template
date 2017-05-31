@@ -30,7 +30,7 @@
 # 
 # Another example which shows how to specify a JVM parameter and Spark properties.
 # 
-#     localhost   -dir=/tmp/data/server -J-XX:MaxPermSize=512m -spark.ui.port=3333 -spark.executor.cores=16
+#     localhost   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16
 #
 # For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

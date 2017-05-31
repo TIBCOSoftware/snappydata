@@ -58,9 +58,9 @@ object DataValidationJob extends SnappySQLJob {
       println(s"For Query $query")
 
       if (!isDynamic) {
-        val expectedFile = sc.textFile(s"$expectedResultsAvailableAt/Snappy_$query.out")
+        val expectedFile = sc.textFile(s"file://$expectedResultsAvailableAt/1_Spark_$query.out")
 
-        val actualFile = sc.textFile(s"$actualResultsAvailableAt/Snappy_$query.out")
+        val actualFile = sc.textFile(s"file://$actualResultsAvailableAt/1_Snappy_$query.out")
 
         val expectedLineSet = expectedFile.collect().toList.sorted
         val actualLineSet = actualFile.collect().toList.sorted

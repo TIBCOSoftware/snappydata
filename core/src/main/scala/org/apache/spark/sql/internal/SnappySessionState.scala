@@ -17,8 +17,7 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.{Calendar, Properties}
-import javassist.bytecode.stackmap.TypeData.NullType
+import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
@@ -68,6 +67,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
+
+  private[sql] var disableStoreOptimizations : Boolean = false
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
@@ -226,7 +227,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog = {
+  override lazy val catalog: SnappyStoreHiveCatalog = {
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
