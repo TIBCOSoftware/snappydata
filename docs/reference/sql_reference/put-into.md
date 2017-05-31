@@ -13,8 +13,7 @@ PUT INTO table-name
 
 PUT INTO operates like standard [INSERT](insert.md) statement.
 
-!!! Note:
-	Currently supported only for row tables
+###	For Row Tables
 
 PUT INTO uses a syntax similar to the INSERT statement, but SnappyData does not check existing primary key values before executing the PUT INTO command. If a row with the same primary key exists in the table, PUT INTO simply overwrites the older row value. If no rows with the same primary key exist, PUT INTO operates like a standard INSERT. This behavior ensures that only the last primary key value inserted or updated remains in the system, which preserves the primary key constraint. Removing the primary key check speeds execution when importing bulk data.
 
