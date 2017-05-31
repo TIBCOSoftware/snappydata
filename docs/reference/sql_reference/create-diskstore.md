@@ -107,7 +107,7 @@ This example specifies multiple storage directories and directory sizes for oplo
 snappy> CREATE DISKSTORE STORE1 
     WRITEBUFFERSIZE 19292393
     QUEUESIZE 17374
-    ('dir1' 456 , 'dir2', 'dir3' 532 );
+    ('dir1' 10240 , 'dir2', 'dir3' 532 );
 ```
 
 

@@ -47,7 +47,7 @@ UPDATE TRADE.CUSTOMERS
 
 -- Set the ADDR of all customers to 'VMWare' where the current address is NULL.
 UPDATE TRADE.CUSTOMERS
- SET ADDR = 'VMWare'
+ SET ADDR = 'Snappydata'
  WHERE ADDR IS NULL;
 
 // Increase the  QTY field by 10 for all rows of SELLORDERS table.
