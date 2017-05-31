@@ -575,12 +575,15 @@ object ExternalStoreUtils extends Logging {
           val p = math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP),
             Int.MaxValue).toInt
           (p, -1)
-        } else (Limits.DB2_LOB_MAXWIDTH, -1)
+        } else (Limits.DB2_VARCHAR_MAXWIDTH, -1)
         case _: NumericType => (-1, 0)
         case _ => (-1, -1)
       }
-      val jdbcTypeOpt = GemFireXDDialect.getJDBCType(dataType).orElse(
+      val jdbcTypeOpt = if (dataType eq StringType) {
+        Some(org.apache.spark.sql.jdbc.JdbcType("VARCHAR", java.sql.Types.VARCHAR))
+      } else { GemFireXDDialect.getJDBCType(dataType).orElse(
         JdbcUtils.getCommonJDBCType(dataType))
+      }
       jdbcTypeOpt match {
         case Some(jdbcType) =>
           val (precision, width) = if (prec == -1) {
