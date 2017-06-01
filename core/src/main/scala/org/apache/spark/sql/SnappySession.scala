@@ -1885,9 +1885,13 @@ object SnappySession extends Logging {
     def apply(session: SnappySession, lp: LogicalPlan, sqlText: String, pls:
     ArrayBuffer[ParamLiteral]): CachedKey = {
 
+      val invalidate = Array(false)
+
       def normalizeExprIds: PartialFunction[Expression, Expression] = {
         case s: ScalarSubquery =>
-          s.copy(exprId = ExprId(0))
+          invalidate(0) = true
+          // s.copy(exprId = ExprId(0))
+          s
         case e: Exists =>
           e.copy(exprId = ExprId(0))
         case p: PredicateSubquery =>
@@ -1912,7 +1916,12 @@ object SnappySession extends Logging {
 
       // normalize lp so that two queries can be determined to be equal
       val tlp = lp.transform(transformExprID)
-      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
+      val key = new CachedKey(session, tlp,
+        sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
+      if (invalidate(0)) {
+        key.invalidatePlan()
+      }
+      key
     }
   }
 
