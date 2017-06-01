@@ -214,7 +214,7 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     executeTestWithOptions()
     executeTestWithOptions(Map.empty,Map.empty+("BUCKETS" -> "17"),"","BUCKETS " +
-      "'13',PARTITION_BY 'COL1'")
+      "'13',PARTITION_BY 'COL1', REDUNDANCY '1'")
 
 
   }
@@ -273,8 +273,19 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       "col1 ,col2 FROM " + colTable + ")")
 
     val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
-    assert(testResults4.length == 113999, s"Expected row count is 1139 while actual count is" +
+    assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is" +
       s"${testResults4.length}")
+
+
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+      "t1.col1 ,t1.col2 FROM " + colTable + " t1,"+ rowTable +" t2 where t1.col1=t2.col2)")
+
+    // Expected count will be 113998 as first row will not match
+    val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults5.length == 113998, s"Expected row count is 113998 while actual count is" +
+      s"${testResults5.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
     snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
