@@ -14,8 +14,6 @@ The following topics are covered in this section:
 
 * [Snappy-SQL Shell Interactive Commands](reference/interactive_commands/store_command_reference.md)
 
-* [Disk Store Recovery Utilities](reference/disk_store_utilities/disk-store-utils.md)
-
 * [API Reference Guide](reference/api_reference/api_reference.md)
 
 * [Configuration Parameters](reference/configuration_parameters/config_parameters.md)

@@ -7,22 +7,22 @@
 ```
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
-(COLUMN_DEFINITION)
-USING 'kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream'
-OPTIONS (
-// multiple stream source specific options
-  storagelevel 'string-constant',
-  rowConverter 'string-constant',
-  topics 'string-constant',
-  kafkaParams 'string-constant',
-  consumerKey 'string-constant',
-  consumerSecret 'string-constant',
-  accessToken 'string-constant',
-  accessTokenSecret 'string-constant',
-  hostname 'string-constant',
-  port 'string-constant',
-  directory 'string-constant'
-)
+    (COLUMN_DEFINITION)
+    USING kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream
+    OPTIONS (
+    // multiple stream source specific options
+      storagelevel 'cache-data-option',
+      rowConverter 'rowconverter-class-name',
+      topics 'comma-seperated-topic-name',
+      kafkaParams 'kafka-related-params',
+      consumerKey 'aws-consumer-key',
+      consumerSecret 'aws-consumer-secret',
+      accessToken 'aws-access-token',
+      accessTokenSecret 'aws-access-token-secret',
+      hostname 'socket-streaming-hostname',
+      port 'socket-streaming-port-number',
+      directory 'file-streaming-directory'
+	)
 ```
 
 ## Description

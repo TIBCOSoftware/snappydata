@@ -59,9 +59,6 @@ The launcher uses the `java` executable that is found in the PATH. To override t
 -   **[locator](../../reference/command_line_utilities/store-locator.md)**
     Allows peers (including other locators) in a distributed system to discover each other without the need to hard-code anything about other peers.
 
--   **[print-stacks](../../reference/command_line_utilities/store-print-stacks.md)**
-    Prints a stack dump of SnappyData member processes.
-
 -   **[revoke-missing-disk-store](../../reference/command_line_utilities/store-revoke-missing-disk-stores.md)**
     Instruct SnappyData members to stop waiting for a disk store to become available.
 
@@ -70,9 +67,6 @@ The launcher uses the `java` executable that is found in the PATH. To override t
 
 -   **[server](../../reference/command_line_utilities/store-server.md)**
     A SnappyData server is the main server side component in a SnappyData system that provides connectivity to other servers, peers, and clients in the cluster. It can host data. A server is started using the *server* utility of the *gfxd* launcher.
-
--   **[show-disk-store-metadata](../../reference/command_line_utilities/store-show-disk-store-metadata.md)**
-    Display the disk store metadata for a specified disk store directory.
 
 -   **[version](../../reference/command_line_utilities/store-version.md)**
     Prints information about the SnappyData product version.

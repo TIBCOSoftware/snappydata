@@ -8,10 +8,10 @@ Remove a disk store configuration from the SnappyData cluster.
 DROP DISKSTORE [ IF EXISTS ] store-name
 ```
 
-**IF EXISTS   **
+**IF EXISTS**
 Include the `IF EXISTS` clause to execute the statement only if the specified disk store exists in SnappyData.
 
-**store-name   **
+**store-name**
 User-defined name of the disk store configuration that you want to remove. The available names are stored in the [SYSDISKSTORES](../../reference/system_tables/sysdiskstores.md) system table.
 
 ##Example

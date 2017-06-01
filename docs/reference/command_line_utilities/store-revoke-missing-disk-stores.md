@@ -16,7 +16,7 @@ The table describes options and arguments for snappy revoke-missing-disk-store. 
 
 |Option<|Description|
 |-|-|
-|&lt;disk-store-id&gt;|(Required.) Specifies the unique ID of the disk store to revoke. You can obtain the ID from the output of  [show-disk-store-metadata](store-show-disk-store-metadata.md#reference_FF886BB14E5949B79E47AC334D23EEE5)|
+|&lt;disk-store-id&gt;|(Required.) Specifies the unique ID of the disk store to revoke. <!--You can obtain the ID from the output of  [show-disk-store-metadata](store-show-disk-store-metadata.md#reference_FF886BB14E5949B79E47AC334D23EEE5)-->|
 |-mcast-port|</br>Multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead).</br>Valid values are in the range 0–65535, with a default value of 10334.|
 |-mcast-address|</br>Multicast address used to discover other members of the distributed system. This value is used only if the `-locators` option is not specified.</br>The default multicast address is 239.192.81.1.|
 |-locators|</br>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|

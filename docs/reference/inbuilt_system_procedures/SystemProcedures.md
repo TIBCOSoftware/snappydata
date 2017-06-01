@@ -7,8 +7,6 @@ SnappyData provides built-in system procedures to help you manage the distribute
 	
 The following built-in procedures are available:
 
-* [SYS.DISKSTORE_FSYNC](diskstore-fsync.md)
-
 * [SYS.DUMP_STACKS](dump-stacks.md)
 
 * [SYS.REBALANCE_ALL_BUCKETS](rebalance-all-buckets.md)

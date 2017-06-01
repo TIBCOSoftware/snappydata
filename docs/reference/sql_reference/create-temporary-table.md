@@ -13,7 +13,7 @@ CREATE TEMPORARY TABLE [IF NOT EXISTS] [schema_name.]table_name
 
 //Jags>> the (col_name col_type) syntax should mimic the 'create table' syntax. where it says 'column_constraint' I think. 
 
-//Jags>> Why are mixing Temporary tables with external tables. Makes sense to have section on external. Temp stuff should be in the main 'create table' reference. 
+//Jags>> Why are mixing Temporary tables with external tables. Makes sense to have section on external. Temp stuff should be in the main 'create table' reference.
 
 **TEMPORARY**
 Temporary tables are scoped to SQL connection or the Snappy Spark session that creates it. This table will not appear like the system catalog nor visible to other connections or sessions. 

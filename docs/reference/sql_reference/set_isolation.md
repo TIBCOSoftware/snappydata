@@ -6,16 +6,15 @@ Change the transaction isolation level for the connection.
 
 ``` pre
 SET [ CURRENT ] ISOLATION [ = ]
-{ 
-UR | DIRTY READ | READ UNCOMMITTED 
-CS | READ COMMITTED
-RS | REPEATABLE READ
-RESET
+    { 
+    UR | DIRTY READ | READ UNCOMMITTED 
+    CS | READ COMMITTED
+    RS | REPEATABLE READ
+    RESET
 }
 ```
 
-<a id="reference_10C94598953248B092C202062A1B784B__section_774BCEB643144CFEB13CC9023698A4EA"></a>
-##Description
+## Description
 
 The supported isolation levels in SnappyData are NONE, READ COMMITTED, READ UNCOMMITTED, and REPEATABLE READ. The READ UNCOMMITTED level is implicitly upgraded to READ COMMITTED.
 
@@ -23,8 +22,7 @@ Isolation level NONE indicates no transactional behavior. The RESET clause corre
 
 This statement behaves identically to the JDBC *java.sql.Connection.setTransactionIsolation* method and commits the current transaction if isolation level has changed.
 
-Example
--------
+### Example
 
 ``` pre
 snappy(PEERCLIENT)> set ISOLATION READ COMMITTED;

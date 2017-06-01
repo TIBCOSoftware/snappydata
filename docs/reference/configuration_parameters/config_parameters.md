@@ -78,31 +78,7 @@ Below is the list to all the configuration properties and links for each propert
 
 - [archive-file-size-limit](archive-file-size-limit.md)
 
-- [async-distribution-timeout](async-distribution-timeout.md)
-
-- [async-max-queue-size](async-max-queue-size.md)
-
-- [async-queue-timeout](async-queue-timeout.md)
-
-- [auth-provider](auth-provider.md)
-
 - [bind-address](bind-address.md)
-
-- [conserve-sockets](conserve-sockets.md)
-
-- [default-recovery-delay](default-recovery-delay.md)
-
-- [departure-correlation-window](departure-correlation-window.md)
-
-- [disable-auto-reconnect](disable-auto-reconnect.md)
-
-- [disable-streaming](disable-streaming.md)
-
-- [disable-tcp](disable-tcp.md)
-
-- [distributed-system-id](distributed-system-id.md)
-
-- [drdaID](drdaID.md)
 
 - [enable-network-partition-detection](enable-network-partition-detection.md)
 
@@ -110,53 +86,9 @@ Below is the list to all the configuration properties and links for each propert
 
 - [enable-time-statistics](enable-time-statistics.md)
 
-- [enable-timestats](enable-timestats.md)
-
 - [enforce-unique-host](enforce-unique-host.md)
 
-- [gemfire.DISKSPACE_WARNING_INTERVAL](gemfire.DISKSPACE_WARNING_INTERVAL.md)
-
-- [max_view_log_size](max_view_log_size.md)
-
-- [gemfire.LOCK_MAX_TIMEOUT](gemfire.LOCK_MAX_TIMEOUT.md)
-
-- [gemfire.preAllocateDisk](gemfire.preAllocateDisk.md)
-
-- [gemfire.preAllocateIF](gemfire.preAllocateIF.md)
-
-- [gemfire.syncWrites](gemfire.syncWrites.md)
-
-- [gemfire.tx-disable-batching](gemfire.tx-disable-batching.md)
-
-- [host-data](host-data.md)
-
 - [init-scripts](init-scripts.md)
-
-- [jmx-manager](jmx-manager.md)
-
-- [jmx-manager-access-file](jmx-manager-access-file.md)
-
-- [jmx-manager-hostname-for-clients](jmx-manager-hostname-for-clients.md)
-
-- [jmx-manager-http-port](jmx-manager-http-port.md)
-
-- [jmx-manager-password-file](jmx-manager-password-file.md)
-
-- [jmx-manager-port](jmx-manager-port.md)
-
-- [jmx-manager-ssl](jmx-manager-ssl.md)
-
-- [jmx-manager-start](jmx-manager-start.md)
-
-- [jmx-manager-update-rate](jmx-manager-update-rate.md)
-
-- [keepalive-count](keepalive-count.md)
-
-- [keepalive-idle](keepalive-idle.md)
-
-- [keepalive-interval](keepalive-interval.md)
-
-- [load-balance](load-balance.md)
 
 - [locators](locators.md)
 
@@ -168,21 +100,9 @@ Below is the list to all the configuration properties and links for each propert
 
 - [log-level](log-level.md)
 
-- [max-num-reconnect-tries](max-num-reconnect-tries.md)
-
-- [max-wait-time-reconnect](max-wait-time-reconnect.md)
-
-- [mcast-flow-control](mcast-flow-control.md)
-
-- [mcast-recv-buffer-size](mcast-recv-buffer-size.md)
-
-- [mcast-send-buffer-size](mcast-send-buffer-size.md)
-
 - [member-timeout](member-timeout.md)
 
 - [membership-port-range](membership-port-range.md)
-
-- [password](password.md)
 
 - [persist-dd](persist-dd.md)
 
@@ -194,19 +114,7 @@ Below is the list to all the configuration properties and links for each propert
 
 - [secondary-locators](secondary-locators.md)
 
-- [security-log-file](security-log-file.md)
-
-- [security-log-level](security-log-level.md)
-
-- [security-peer-verifymember-timeout](security-peer-verifymember-timeout.md)
-
-- [server-auth-provider](server-auth-provider.md)
-
-- [server-bind-address](server-bind-address.md)
-
 - [shutdown](shutdown.md)
-
-- [single-hop-enabled](single-hop-enabled.md)
 
 - [skip-constraint-checks](skip-constraint-checks.md)
 
@@ -218,63 +126,11 @@ Below is the list to all the configuration properties and links for each propert
 
 - [socket-lease-time](socket-lease-time.md)
 
-- [snappydata.auth-ldap-search-base](snappydata.auth-ldap-search-base.md)
-
-- [snappydata.auth-ldap-search-dn](snappydata.auth-ldap-search-dn.md)
-
-- [snappydata.auth-ldap-search-filter](snappydata.auth-ldap-search-filter.md)
-
-- [snappydata.auth-ldap-search-pw](snappydata.auth-ldap-search-pw.md)
-
-- [snappydata.auth-ldap-server](snappydata.auth-ldap-server.md)
-
-- [snappydata.authz-default-connection-mode](snappydata.authz-default-connection-mode.md)
-
-- [snappydata.authz-full-access-users](snappydata.authz-full-access-users.md)
-
-- [snappydata.authz-read-only-access-users](snappydata.authz-read-only-access-users.md)
-
-- [snappydata.sql-authorization](snappydata.sql-authorization.md)
-
 - [snappydata.datadictionary.allow-startup-errors](snappydata.datadictionary.allow-startup-errors.md)
 
 - [snappydata.default-startup-recovery-delay](snappydata.default-startup-recovery-delay.md)
 
-- [snappydata.drda.host](snappydata.drda.host.md)
-
-- [snappydata.drda.keepAlive](snappydata.drda.keepAlive.md)
-
-- [snappydata.drda.logConnections](snappydata.drda.logConnections.md)
-
-- [snappydata.drda.maxThreads](snappydata.drda.maxThreads.md)
-
-- [snappydata.drda.minThreads](snappydata.drda.minThreads.md)
-
-- [snappydata.drda.portNumber](snappydata.drda.portNumber.md)
-
-- [snappydata.drda.securityMechanism](snappydata.drda.securityMechanism.md)
-
-- [snappydata.drda.sslMode](snappydata.drda.sslMode.md)
-
-- [snappydata.drda.streamOutBufferSize](snappydata.drda.streamOutBufferSize.md)
-
-- [snappydata.drda.timeSlice](snappydata.drda.timeSlice.md)
-
-- [snappydata.drda.trace](snappydata.drda.trace.md)
-
-- [snappydata.drda.traceAll](snappydata.drda.traceAll.md)
-
-- [snappydata.drda.traceDirectory](snappydata.drda.traceDirectory.md)
-
 - [snappydata.history](snappydata.history.md)
-
-- [snappydata.language.permissionsCacheSize](snappydata.language.permissionsCacheSize.md)
-
-- [snappydata.language.spsCacheSize](snappydata.language.spsCacheSize.md)
-
-- [snappydata.language.statementCacheSize](snappydata.language.statementCacheSize.md)
-
-- [snappydata.language.tableDescriptorCacheSize](snappydata.language.tableDescriptorCacheSize.md)
 
 - [snappydata.max-lock-wait](snappydata.max-lock-wait.md)
 
@@ -284,25 +140,7 @@ Below is the list to all the configuration properties and links for each propert
 
 - [snappydata.query-timeout](snappydata.query-timeout.md)
 
-- [snappydata.security. Properties (prefix)](snappydata.security.md)
-
-- [snappydata.client.single-hop-max-connections](snappydata.client.single-hop-max-connections.md)
-
-- [snappydata.stream.error.logSeverityLevel](snappydata.stream.error.logSeverityLevel.md)
-
 - [snappydata.storage.tempDirectory](snappydata.storage.tempDirectory.md)
-
-- [snappydata.system.home](snappydata.system.home.md)
-
-- [ssl](ssl.md)
-
-- [ssl-ciphers](ssl-ciphers.md)
-
-- [ssl-enabled](ssl-enabled.md)
-
-- [ssl-protocols](ssl-protocols.md)
-
-- [ssl-require-authentication](ssl-require-authentication.md)
 
 - [start-locator](start-locator.md)
 
@@ -312,23 +150,8 @@ Below is the list to all the configuration properties and links for each propert
 
 - [statistic-sampling-enabled](statistic-sampling-enabled.md)
 
-- [sync-commits](sync-commits.md)
-
 - [sys-disk-dir](sys-disk-dir.md)
 
 - [tcp-port](tcp-port.md)
 
-- [udp-fragment-size](udp-fragment-size.md)
-
-- [udp-recv-buffer-size](udp-recv-buffer-size.md)
-
-- [udp-send-buffer-size](udp-send-buffer-size.md)
-
 - [user](user.md)
-
-<!--
-[mcast-address](mcast-address.md) 
-[mcast-port](mcast-port.md) 
-[mcast-ttl](mcast-ttl.md) 
-[server-groups](server-groups.md) 
--->

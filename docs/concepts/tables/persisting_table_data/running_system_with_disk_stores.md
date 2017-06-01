@@ -2,8 +2,7 @@
 
 Optimize availability and performance by following the guidelines in this section
 
-
--   SnappyData recommends the use of ext4 filesystems when operating on Linux platforms. The ext4 filesystem supports preallocation, which benefits disk startup performance. If you are using ext3 filesystems in latency-sensitive environments with high write throughput, you can improve disk startup performance by setting the MAXLOGSIZE property of a disk store to a value lower than the default 1 GB (see [CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore.md)), or by using the system property `gemfire.preAllocateDisk=false` to disable preallocation (see [Preventing Disk Full Errors](../../../best_practices/prevent_disk_full_errors.md)).
+-   SnappyData recommends the use of ext4 filesystems when operating on Linux platforms. The ext4 filesystem supports preallocation, which benefits disk startup performance. If you are using ext3 filesystems in latency-sensitive environments with high write throughput, you can improve disk startup performance by setting the MAXLOGSIZE property of a disk store to a value lower than the default 1 GB (see [CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore.md))<!--, or by using the system property `gemfire.preAllocateDisk=false` to disable preallocation (see [Preventing Disk Full Errors](../../../best_practices/prevent_disk_full_errors.md))-->.
 
 -   When you start your system, start all the members that have persistent tables roughly at the same time. Create and use startup scripts for consistency and completeness.
 

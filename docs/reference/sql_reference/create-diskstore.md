@@ -2,7 +2,7 @@
 
 Disk stores provide disk storage for tables that need to overflow or persist.
 
-##Syntax
+## Syntax
 
 ``` pre
 CREATE DISKSTORE diskstore_name
@@ -17,7 +17,7 @@ CREATE DISKSTORE diskstore_name
     [ ( 'dir-name' [ integer-constant ] [,'dir-name' [ integer-constant ] ]* ) ]
 ```
 
-##Description
+## Description
 
 SnappyData attempts to preallocate oplog files when you execute the CREATE DISKSTORE command. 
 
@@ -79,7 +79,7 @@ In each entry:
 
 You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
 
-##Example
+## Example
 
 This example uses the default base directory and parameter values to create a named disk store:
 

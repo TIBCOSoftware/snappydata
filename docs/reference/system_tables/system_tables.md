@@ -4,8 +4,6 @@ Tables that SnappyData uses to manage the distributed system and its data. All s
 
 The following system tables are available:
 
-* [JARS](jars.md)
-
 * [MEMBERS](members.md)
 
 * [MEMORYANALYTICS](memoryanalytics.md)

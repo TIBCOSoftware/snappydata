@@ -62,6 +62,3 @@ Commands can span multiple lines without using any special escape character for 
 
 -   **[show](../../reference/interactive_commands/show.md)**
     Displays information about active connections and database objects.
-
--   **[wait for](../../reference/interactive_commands/wait_for.md)**
-    Displays the results of a previously started asynchronous command.

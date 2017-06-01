@@ -5,7 +5,7 @@ Set or change the default schema for a connection's session.
 ##Syntax
 
 ``` pre
-	SET SCHEMA schema-name
+SET SCHEMA schema-name
 ```
 
 ##Description

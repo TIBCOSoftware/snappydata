@@ -15,26 +15,20 @@ Update the value of one or more columns.
 }
 ```
 
-<a id="reference_9518856325F74F79B13674B8E060E6C5__section_F763D37B83E54D828B8572FF3192C67F"></a>
 ## Description
 
 This form of the UPDATE statement is called a searched update. It updates the value of one or more columns for all rows of the table for which the WHERE clause evaluates to TRUE. Specifying DEFAULT for the update value sets the value of the column to the default defined for that table.
 
 The UPDATE statement returns the number of rows that were updated.
 
-!!! Note:
+!!! Note
 	Updates on partitioning column and primary key column are not supported. 
-
-<a id="reference_9518856325F74F79B13674B8E060E6C5__section_E3CBEF5040C141AF99A321C394A4C137"></a>
 
 **value**
 
 ``` pre
 expression | DEFAULT
 ```
-
-<a id="reference_9518856325F74F79B13674B8E060E6C5__section_B9BA421C1A534CADB9FBE16B0B01D5F2"></a>
-
 
 ## Example
 

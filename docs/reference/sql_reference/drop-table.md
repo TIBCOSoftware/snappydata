@@ -2,14 +2,13 @@
 
 Remove the specified table.
 
-##Syntax
+## Syntax
 
 ``` pre
 DROP TABLE [ IF EXISTS ] [schema-name.]table-name
 ```
 
-<a id="reference_3D95C4FE18FC4A81BBA397AB8BEFE711__section_CC9494F3E8F44B6A96E07EB9D38B9A8A"></a>
-##Description
+## Description
 
 Removes the specified table. Include the `IF EXISTS` clause to execute the statement only if the specified table exists in SnappyData. The *schema-name.* prefix is optional if you are currently using the schema that contains the table.
 

@@ -5,36 +5,32 @@
 **To Create Row/Column Table:**
 
 ```
-    CREATE TABLE [IF NOT EXISTS] table_name {
-        ( { column-definition | table-constraint }
-        [ , { column-definition | table-constraint } ] * )
-    }
+CREATE TABLE [IF NOT EXISTS] table_name {
+( { column-definition | table-constraint }
+[ , { column-definition | table-constraint } ] * )
+}
     USING row | column 
     OPTIONS (
-    COLOCATE_WITH 'table_name',  // Default none
-    PARTITION_BY 'PRIMARY KEY | column_name', // If not specified it will be a replicated table.
-    BUCKETS  'num_partitions', // Default 113. Must be an integer.
-    REDUNDANCY        '1' , // Must be an integer
+    COLOCATE_WITH 'table-name',  // Default none
+    PARTITION_BY 'column-name', // If not specified it will be a replicated table.
+    BUCKETS  'num-partitions', // Default 113. Must be an integer.
+    REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time_to_live_in_seconds',
-    COLUMN_BATCH_SIZE 'column_batch_size_in_bytes', // Must be an integer. Only for column table
-    COLUMN_MAX_DELTA_ROWS 'number_of_rows_in_each_bucket', // Must be an integer. Only for column table.
-    )
-    [AS select_statement];
+    COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table
+    COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
+	)
+	[AS select_statement];
 ```
 
 !!! Note
 	For more information on creating sample tables, refer to [Create Sample Table](create-sample-table.md).
     
-//Jags>> above syntax text needs to be formatted. 
-
 //Jags>> Keywords are not consistent ... all keywords should use underscor as separator. e.g. STRATA_RESERVOIR_SIZE ... please add P1 ticket
 
 //Jags>> the column_definitoon and table_constraint above should link to location where we discuss all the data types. Critically important.
-
-//Jags>> All the 'string-constant' should be substituted with something more meaningful. e.g. PARTITION_BY 'primary key' | columns ... REDUNDANCY 'Num of copies'  ... applies to partitioned tables. Redundancy '1' implies 2 copies of data. 
 
 ## Description
 //Jags>> this description is not required. This is well understood and we are not trying to explain all SQL. 

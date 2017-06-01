@@ -10,8 +10,6 @@ INSERT INTO table-name
    Query
 ```
 
-<a id="reference_2A553C72CF7346D890FC904D8654E062__section_69794C56F9E840C991CE0B3A699D6013"></a>
-
 ## Description
 
 Query can be:

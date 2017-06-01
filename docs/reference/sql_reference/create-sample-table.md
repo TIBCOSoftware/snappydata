@@ -7,46 +7,47 @@ For sample tables, the overflow property is set to **False** by default. For col
 
 **Mode 1**
 ```
-    CREATE TABLE [IF NOT EXISTS] table_name {
+CREATE TABLE [IF NOT EXISTS] table_name {
         ( { column-definition | table-constraint }
         [ , { column-definition | table-constraint } ] * )
     }
     USING column_sample
     OPTIONS (
-    BUCKETS  'string-constant', // Default 113. Must be an integer.
-    REDUNDANCY        'string-constant' , // Must be an integer
+    BUCKETS  'num-partitions', // Default 113. Must be an integer.
+    REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
-    DISKSTORE 'string-constant', //empty string maps to default diskstore
+    DISKSTORE 'diskstore-name', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
-    EXPIRE ‘TIMETOLIVE in seconds',
-    QCS 'string-constant', // column-name [, column-name ] *
-    FRACTION 'string-constant',  //Must be a double
-    STRATARESERVOIRSIZE 'string-constant',  // Default 50 Must be an integer.
+    EXPIRE ‘time-to-live-in-seconds',
+    QCS 'column-name', // column-name [, column-name ] *
+    FRACTION 'population-fraction',  //Must be a double
+    STRATARESERVOIRSIZE 'strata-initial-capacity',  // Default 50 Must be an integer.
     )
     [AS select_statement];
 ```    
 
 ** Mode 2**
 ```
-    CREATE SAMPLE TABLE table_name ON base_table_name
+CREATE SAMPLE TABLE table_name ON base_table_name
     OPTIONS (
-    COLOCATE_WITH 'string-constant',  // Default none
-    BUCKETS  'string-constant', // Default 113. Must be an integer.
-    REDUNDANCY        'string-constant' , // Must be an integer
+    COLOCATE_WITH 'table-name',  // Default none
+    BUCKETS  'num-partitions', // Default 113. Must be an integer.
+    REDUNDANCY        'num-redundant-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
-    DISKSTORE 'string-constant', //empty string maps to default diskstore
+    DISKSTORE 'diskstore-name', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
-    EXPIRE ‘TIMETOLIVE in seconds',
-    QCS 'string-constant', // column-name [, column-name ] *
-    FRACTION 'string-constant',  //Must be a double
-    STRATARESERVOIRSIZE 'string-constant',  // Default 50 Must be an integer.
+    EXPIRE ‘time-to-live-in-seconds',
+    QCS 'column-name', // column-name [, column-name ] *
+    FRACTION 'population-fraction',  //Must be a double
+    STRATARESERVOIRSIZE 'strata-initial-capacity',  // Default 50 Must be an integer.
     )
     AS select_statement
 ```
 
 ## Description
+
  * **QCS**: Query Column Set. These columns are used for startification in startified sampling. 
 
  * **FRACTION**: This represents the fraction of the full population (base table) that is managed in the sample. 
@@ -57,7 +58,7 @@ For sample tables, the overflow property is set to **False** by default. For col
 
 Refer to [create sample tables](concepts/sde/stratified_sampling/#create-sample-tables) for more information on creating sample tables on datasets that can be sourced from any source supported in Spark/SnappyData.
 
-## Example: 
+## Examples: 
 
 ### Mode 1 Example
 
