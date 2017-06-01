@@ -598,7 +598,7 @@ object NWTestUtil {
     snc.sql(NWQueries.shippers_table)
     NWQueries.shippers(snc).write.insertInto("shippers")
 
-    snc.sql(NWQueries.employees_table + " using row options(partition_by 'City,Country', " +
+    snc.sql(NWQueries.employees_table + " using column options(partition_by 'City,Country', " +
         "redundancy '1')")
     NWQueries.employees(snc).write.insertInto("employees")
 
