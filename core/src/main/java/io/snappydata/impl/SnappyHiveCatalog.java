@@ -48,7 +48,6 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
-import org.apache.spark.sql.row.GemFireXDDialect;
 import org.apache.spark.sql.sources.JdbcExtendedUtils;
 import org.apache.spark.sql.store.StoreUtils;
 import org.apache.spark.sql.types.StructType;
@@ -92,7 +91,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    GemFireXDDialect.init();
   }
 
   public Table getTable(String schema, String tableName, boolean skipLocks) {
