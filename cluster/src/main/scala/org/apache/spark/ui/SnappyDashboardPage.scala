@@ -51,7 +51,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     clusterStatsMap += ("numColumnTables" -> 0)
     clusterStatsMap += ("numRowTables" -> 0)
 
-    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
+    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsOnDemand
 
     var clusterMembers = scala.collection.mutable.HashMap.empty[String, mutable.Map[String, Any]]
     var sparkConnectors = scala.collection.mutable.HashMap.empty[String, mutable.Map[String, Any]]
@@ -70,8 +70,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       }
     })
 
-    val tableBuff = SnappyTableStatsProviderService.getService.getTableSizeStats
-    val indexBuff = SnappyTableStatsProviderService.getService.getIndexesStatsFromService
+    val (tableBuff, indexBuff) = SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
 
     updateClusterStats(clusterStatsMap, clusterMembers, tableBuff)
 

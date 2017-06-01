@@ -98,6 +98,11 @@ trait TableStatsProviderService extends Logging {
     membersInfo
   }
 
+  def getMembersStatsOnDemand: mutable.Map[String, mutable.Map[String, Any]] = {
+    fillAggregatedMemberStatsOnDemand()
+    membersInfo
+  }
+
   def stop(): Unit = {
     doRun = false
     // wait for it to end for sometime
