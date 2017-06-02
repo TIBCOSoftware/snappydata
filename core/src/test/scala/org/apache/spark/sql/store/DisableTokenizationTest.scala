@@ -36,9 +36,7 @@ class DisableTokenizationTest
         with BeforeAndAfter
         with BeforeAndAfterAll {
 
-  val table  = "my_table"
-  val table2 = "my_table2"
-  val all_typetable = "my_table3"
+  val table = "my_table"
 
   override def beforeAll(): Unit = {
     System.setProperty("DISABLE_TOKENIZATION", "true")
@@ -62,11 +60,9 @@ class DisableTokenizationTest
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
     try {
-      // System.setProperty("DISABLE_TOKENIZATION", "true")
       (0 to 10).foreach(i => {
         val q = s"select b from $table where a = $i"
         var result = snc.sql(q).collect()
-        println(s"q = $q and res(0) = ${result(0).get(0)}")
         assert(result(0).get(0) == i)
       })
 
@@ -93,23 +89,5 @@ class DisableTokenizationTest
     // This sleep was necessary as it has some dependency on the region size
     // collector thread frequency. Can't remember right now.
     if (dosleep) Thread.sleep(5000)
-  }
-
-  private def normalizeRow(rows: Array[Row]): Array[String] = {
-    val newBuffer: ArrayBuffer[String] = new ArrayBuffer
-    val sb = new StringBuilder
-    rows.foreach(r => {
-      r.toSeq.foreach {
-        case d: Double =>
-          // round to one decimal digit
-          sb.append(math.floor(d * 5.0 + 0.25) / 5.0).append(',')
-        case bd: java.math.BigDecimal =>
-          sb.append(bd.setScale(2, java.math.RoundingMode.HALF_UP)).append(',')
-        case v => sb.append(v).append(',')
-      }
-      newBuffer += sb.toString()
-      sb.clear()
-    })
-    newBuffer.sortWith(_ < _).toArray
   }
 }
