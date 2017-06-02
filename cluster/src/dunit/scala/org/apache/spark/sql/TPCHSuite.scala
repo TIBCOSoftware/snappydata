@@ -29,14 +29,12 @@ import org.apache.spark.sql.internal.SQLConf
  */
 class TPCHSuite extends SnappyFunSuite with BeforeAndAfterAll  {
 
-  ignore("Test TPCH") {
+  test("Test TPCH") {
     val snc = SnappyContext(sc)
-    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "104857600")
-    Property.HashJoinSize.set(snc.conf, 1L * 1024 * 1024 * 1024)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
-    TPCHUtils.queryExecution(snc, isSnappy = true)
-    // TPCHUtils.queryExecution(snc, isSnappy = true, warmup = 6, runsForAverage = 10,
-    //  isResultCollection = false)
-    TPCHUtils.validateResult(snc, isSnappy = true)
+    for (i <- 1 to 100) {
+      TPCHUtils.runtpchMultipleTimes(snc)
+    }
+
   }
 }
