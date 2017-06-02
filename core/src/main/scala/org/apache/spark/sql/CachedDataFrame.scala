@@ -50,8 +50,9 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
+import scala.concurrent.duration.Duration
 
 class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
@@ -96,12 +97,10 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           var i = 0
           while (i < numShuffleDeps) {
             val shuffleDependency = shuffleDependencies(i)
-            // Cleaning the  shuffle artifacts synchronously which might not
-            // desired for performance. Ticket SNAP-
-            cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
-            // lastShuffleCleanups(i) = Future {
-            //  cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
-            // }
+            // Cleaning the  shuffle artifacts asynchronously
+            lastShuffleCleanups(i) = Future {
+              cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
+            }
             i += 1
           }
         case None =>
@@ -212,7 +211,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       while (index < numShuffles) {
         val cleanup = lastShuffleCleanups(index)
         if (cleanup ne null) {
-          cleanup.onComplete(identity)
+          Await.ready(cleanup, Duration.Inf)
           lastShuffleCleanups(index) = null
         }
         index += 1
@@ -304,6 +303,8 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       if (!hasLocalCallSite) {
         sc.clearCallSite()
       }
+      // clear the shuffle dependencies asynchronously after the execution.
+      clearCachedShuffleDeps(sc)
     }
   }
 
