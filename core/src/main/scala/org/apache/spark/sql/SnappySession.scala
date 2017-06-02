@@ -1438,7 +1438,11 @@ class SnappySession(@transient private val sc: SparkContext,
    *            ("MyTable", x.toSeq)
    *         )
    * }}}
-   *
+   * If insert is on a column table then a row insert can trigger an overflow
+   * to column store form row buffer. If the overflow fails due to some condition like
+   * low memory , then the overflow fails and exception is thrown,
+   * but row buffer values are kept as it is. Any user level counter of number of rows inserted
+   * might be invalid in such a case.
    * @param tableName table name for the insert operation
    * @param rows      list of rows to be inserted into the table
    * @return number of rows inserted
