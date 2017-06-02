@@ -59,7 +59,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     }
   }
 
-  def testSnappy(): Unit = {
+  def _testSnappy(): Unit = {
     val snc = SnappyContext(sc)
 
     // create table randomly either using smart connector or
@@ -108,28 +108,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       "queryValidationOnConnector", locatorNetPort)
   }
 
-  private def normalizeRow(rows: Array[Row]): Array[String] = {
-    val newBuffer: ArrayBuffer[String] = new ArrayBuffer
-    val sb = new StringBuilder
-    rows.foreach(r => {
-      r.toSeq.foreach {
-        case d: Double =>
-          // round to nearest integer if large enough else
-          // round to one decimal digit
-          if (math.abs(d) >= 1000) {
-            sb.append(math.floor(d + 0.5)).append(',')
-          } else {
-            sb.append(math.floor(d * 5.0 + 0.25) / 5.0).append(',')
-          }
-        case bd: java.math.BigDecimal =>
-          sb.append(bd.setScale(2, java.math.RoundingMode.HALF_UP)).append(',')
-        case v => sb.append(v).append(',')
-      }
-      newBuffer += sb.toString()
-      sb.clear()
-    })
-    newBuffer.sortWith(_ < _).toArray
-  }
 
   def testTokenization_embedded(): Unit = {
     startNetworkServersOnAllVMs()
@@ -137,11 +115,10 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
     logInfo("CREATING TABLE IN EMBEDDED MODE")
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
-    Thread.sleep(20000)
-    runtpchMultipleTimes(snc)
+    TPCHUtils.runtpchMultipleTimes(snc)
   }
 
-  def testTokenization_split(): Unit = {
+  def _testTokenization_split(): Unit = {
     startNetworkServersOnAllVMs()
     val snc = SnappyContext(sc)
 
@@ -149,80 +126,11 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     vm3.invoke(classOf[SmartConnectorFunctions],
       "createTablesUsingConnector", locatorNetPort)
     Thread.sleep(20000)
-    runtpchMultipleTimes(snc)
+    TPCHUtils.runtpchMultipleTimes(snc)
   }
 
-  private def removeLimitClause(query: String): String = {
-    val idxstart = query.indexOf("limit ")
-    var retquery = query
-    if (idxstart > 0) {
-      retquery = query.substring(0, idxstart)
-    }
-    retquery
-  }
 
-  private def runtpchMultipleTimes(snc: SnappyContext) = {
-    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
-    val results: ListBuffer[(String, String, String, Array[String],
-        Array[String], Array[String], String)] = new ListBuffer()
 
-    queries.foreach(f = qNum => {
-      var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
-      var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
-      var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
-      if (!qNum.equals("15")) {
-        val df = snc.sqlUncached(queryToBeExecuted1)
-        val res = df.collect()
-        val r1 = normalizeRow(res)
-        snc.snappySession.clearPlanCache()
-        val df2 = snc.sqlUncached(queryToBeExecuted2)
-        val res2 = df2.collect()
-        val r2 = normalizeRow(res2)
-        snc.snappySession.clearPlanCache()
-        val df3 = snc.sqlUncached(queryToBeExecuted3)
-        val res3 = df3.collect()
-        val r3 = normalizeRow(res3)
-        snc.snappySession.clearPlanCache()
-        results += ((queryToBeExecuted1, queryToBeExecuted2,
-            queryToBeExecuted3, r1, r2, r3, qNum))
-      }
-    })
-
-    var m = SnappySession.getPlanCache
-    var cached = 0
-    results.foreach(x => {
-      val q1 = x._1
-      val q2 = x._2
-      val q3 = x._3
-      val r1 = x._4
-      val r2 = x._5
-      val r3 = x._6
-      val qN = x._7
-      val df = snc.sql(q1)
-      val res = df.collect()
-      val rs1 = normalizeRow(res)
-      assert(rs1.sameElements(r1))
-      val df2 = snc.sql(q2)
-      val res2 = df2.collect()
-      val rs2 = normalizeRow(res2)
-      assert(rs2.sameElements(r2))
-      val df3 = snc.sql(q3)
-      val res3 = df3.collect()
-      val rs3 = normalizeRow(res3)
-      assert(rs3.sameElements(r3))
-
-      m = SnappySession.getPlanCache
-      val size = SnappySession.getPlanCache.size()
-      snc.snappySession.clearPlanCache()
-      if (size == 1) {
-        cached = cached + 1
-      }
-
-    })
-    logInfo(s"Number of queries cached = ${cached}")
-    logInfo(s"Size of plan cache = ${SnappySession.getPlanCache.size()}")
-    m = SnappySession.getPlanCache
-  }
 
 
   def _testSpark(): Unit = {
@@ -232,7 +140,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     TPCHUtils.validateResult(snc, isSnappy = false)
   }
 
-  def testSnap1296_1297(): Unit = {
+  def _testSnap1296_1297(): Unit = {
     val snc = SnappyContext(sc)
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
     val conn = getANetConnection(locatorNetPort)
@@ -316,12 +224,23 @@ object TPCHUtils extends Logging {
 
   val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
-  val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
-    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-    "20", "21", "22")
+//  val queries = Array("1","1","1","1","1", "2","2","2","2","2", "3","3","3","3","3",
+//    "4","4","4","4","4", "5","5","5","5","5", "6","6","6","6","6",
+//    "7","7","7","7","7", "8","8","8","8","8", "9", "9", "9", "9", "9",
+//    "10", "10","10","10","10","11","11","11","11","11", "12","12","12","12","12",
+//    "13","13","13","13","13","13","13", "14","14","14","14","14", "15","15","15","15","15",
+//    "16","16","16","16","16", "17","17","17","17","17","17",
+//    "18","18","18","18","18", "19","19","19","19","19",
+//    "20","20","20","20","20", "21", "21", "21", "21", "21", "21", "22", "22", "22", "22", "22", "22")
+
+//  val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
+//    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+//    "20", "21", "22")
+  val queries = Array("1")
+  // val queries = Array("1","1","1","1","1","1","1","1","1")
 
   def createAndLoadTables(snc: SQLContext, isSnappy: Boolean): Unit = {
-    val tpchDataPath = getClass.getResource("/TPCH").getPath // "/data/wrk/w/TPCH/1GB"
+    val tpchDataPath = "/home/hemant/repos/data/tpchTbls" // "/data/wrk/w/TPCH/1GB"
 
     val usingOptionString =
       s"""
@@ -348,7 +267,107 @@ object TPCHUtils extends Logging {
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath,
       isSnappy, buckets_Cust_Part_PartSupp, null)
   }
+  private def removeLimitClause(query: String): String = {
+    val idxstart = query.indexOf("limit ")
+    var retquery = query
+    if (idxstart > 0) {
+      retquery = query.substring(0, idxstart)
+    }
+    retquery
+  }
 
+  private def normalizeRow(rows: Array[Row]): Array[String] = {
+    val newBuffer: ArrayBuffer[String] = new ArrayBuffer
+    val sb = new StringBuilder
+    rows.foreach(r => {
+      r.toSeq.foreach {
+        case d: Double =>
+          // round to nearest integer if large enough else
+          // round to one decimal digit
+          if (math.abs(d) >= 1000) {
+            sb.append(math.floor(d + 0.5)).append(',')
+          } else {
+            sb.append(math.floor(d * 5.0 + 0.25) / 5.0).append(',')
+          }
+        case bd: java.math.BigDecimal =>
+          sb.append(bd.setScale(2, java.math.RoundingMode.HALF_UP)).append(',')
+        case v => sb.append(v).append(',')
+      }
+      newBuffer += sb.toString()
+      sb.clear()
+    })
+    newBuffer.sortWith(_ < _).toArray
+  }
+
+
+  def runtpchMultipleTimes(snc: SnappyContext): Unit = {
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
+    val results: ListBuffer[(String, String, String, Array[String],
+      Array[String], Array[String], String)] = new ListBuffer()
+
+    queries.foreach(f = qNum => {
+      var queryToBeExecuted1 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      var queryToBeExecuted2 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      var queryToBeExecuted3 = removeLimitClause(TPCH_Queries.getQuery(qNum, true))
+      if (!qNum.equals("15")) {
+        val df = snc.sqlUncached(queryToBeExecuted1)
+        val res = df.collect()
+        val r1 = normalizeRow(res)
+        // snc.snappySession.clearPlanCache()
+        val df2 = snc.sqlUncached(queryToBeExecuted2)
+        val res2 = df2.collect()
+        val r2 = normalizeRow(res2)
+        // snc.snappySession.clearPlanCache()
+        val df3 = snc.sqlUncached(queryToBeExecuted3)
+        val res3 = df3.collect()
+        val r3 = normalizeRow(res3)
+        // snc.snappySession.clearPlanCache()
+        results += ((queryToBeExecuted1, queryToBeExecuted2,
+          queryToBeExecuted3, r1, r2, r3, qNum))
+      }
+    })
+
+//    var m = SnappySession.getPlanCache
+//    var cached = 0
+    results.foreach(x => {
+      val q1 = x._1
+      val q2 = x._2
+      val q3 = x._3
+      val r1 = x._4
+      val r2 = x._5
+      val r3 = x._6
+      val qN = x._7
+      val df = snc.sql(q1)
+      val res = df.collect()
+      val rs1 = normalizeRow(res)
+      println(s"$qN Comparing ${rs1.mkString(",")} ")
+      println(s"$qN with      ${r1.mkString(",")}")
+      assert(rs1.sameElements(r1))
+      val df2 = snc.sql(q2)
+      val res2 = df2.collect()
+      val rs2 = normalizeRow(res2)
+      println(s"$qN Comparing ${rs2.mkString(",")} ")
+      println(s"$qN with      ${r2.mkString(",")}")
+      assert(rs2.sameElements(r2))
+      val df3 = snc.sql(q3)
+      val res3 = df3.collect()
+      val rs3 = normalizeRow(res3)
+      println(s"$qN Comparing ${rs3.mkString(",")} ")
+      println(s"$qN with      ${r3.mkString(",")}")
+      assert(rs3.sameElements(r3))
+
+//      m = SnappySession.getPlanCache
+//      val size = SnappySession.getPlanCache.size()
+//      snc.snappySession.clearPlanCache()
+//      if (size == 1) {
+//        cached = cached + 1
+//      }
+
+    })
+//    logInfo(s"Number of queries cached = ${cached}")
+//    logInfo(s"Size of plan cache = ${SnappySession.getPlanCache.size()}")
+//    m = SnappySession.getPlanCache
+  }
   def validateResult(snc: SQLContext, isSnappy: Boolean, isTokenization: Boolean = false): Unit = {
     val sc: SparkContext = snc.sparkContext
 
