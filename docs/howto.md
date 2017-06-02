@@ -210,7 +210,7 @@ For more information on the various modes, refer to the [SnappyData Smart Connec
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
 **Configure a SnappySession**: 
-The code below shows how to initialize a SparkSession. Here the property `snappydata.store.locators` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster.
+The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster.
 
 ```
     val spark: SparkSession = SparkSession
@@ -218,8 +218,8 @@ The code below shows how to initialize a SparkSession. Here the property `snappy
         .appName("SmartConnectorExample")
         // It can be any master URL
         .master("local[4]")
-        // snappydata.store.locators property enables the application to interact with SnappyData store
-        .config("snappydata.store.locators", "localhost:10334")
+         // snappydata.connection property enables the application to interact with SnappyData store
+        .config("snappydata.connection", "localhost:1527")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -1211,7 +1211,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 	|--------|--------| -------- |
 	|default.ur|jdbc:snappydata://localhost:1527/	| Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527` |
 	|default.driver|com.pivotal.gemfirexd.jdbc.ClientDriver| Specify the JDBC driver for SnappyData|
-	|snappydata.store.locators|localhost:10334| Specify the URI of the locator (only local/split mode) |
+	|snappydata.connection|localhost:1527| Specify the `host:clientPort` combination of the locator for the JDBC connection |
 	|master|local[*]| Specify the URI of the spark master (only local/split mode) |
 	|zeppelin.jdbc.concurrent.use|true| Specify the Zeppelin scheduler to be used. </br>Select **True** for Fair and **False** for FIFO | 
 
