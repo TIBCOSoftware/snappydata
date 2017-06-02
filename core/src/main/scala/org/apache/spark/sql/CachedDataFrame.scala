@@ -82,8 +82,6 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           case None => _v
         }
         Literal(v, _dt)
-    } transform {
-      case CachedPlanHelperExec(childPlan) => childPlan
     })
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
@@ -170,6 +168,9 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       case e: Exception =>
         sparkSession.listenerManager.onFailure(name, queryExecution, e)
         throw e
+    } finally {
+      // clear the shuffle dependencies asynchronously after the execution.
+      clearCachedShuffleDeps(sparkSession.sparkContext)
     }
   }
 
@@ -189,6 +190,14 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   override def collect(): Array[Row] = {
     collectInternal().map(boundEnc.fromRow).toArray
+  }
+
+  override def count(): Long = withCallback("count") { df =>
+    df.groupBy().count().collect().head.getLong(0)
+  }
+
+  override def head(n: Int): Array[Row] = withCallback("head") { df =>
+    df.limit(n).collect()
   }
 
   def collectInternal(): Iterator[InternalRow] = {
@@ -303,8 +312,6 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       if (!hasLocalCallSite) {
         sc.clearCallSite()
       }
-      // clear the shuffle dependencies asynchronously after the execution.
-      clearCachedShuffleDeps(sc)
     }
   }
 
