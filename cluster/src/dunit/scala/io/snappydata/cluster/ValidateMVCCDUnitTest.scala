@@ -210,9 +210,60 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     }
 
     val cnt = snc.sql(s"select * from $tableName").count()
-
     assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
+    if (errorInThread != null) {
+
+      throw errorInThread
+    }
+    println("Successful")
+
+  }
+
+
+  def testMixOperationsOnRowTables(): Unit = {
+    errorInThread = null
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val snc = SnappyContext(sc)
+    val tableName: String = "TESTTABLE"
+    //snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
+
+    snc.sql(s"drop table if exists $tableName")
+    snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using row " +
+      s"OPTIONS (REDUNDANCY '1',PARTITION_BY 'col1')")
+
+
+    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "performMixOperationsOnRowTable",
+      netPort1)
+
+    if (errorInThread != null) {
+
+      throw errorInThread
+    }
+    println("Successful")
+
+  }
+
+
+  def testBatchInsertUsingPreparedStatement(): Unit = {
+    errorInThread = null
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val snc = SnappyContext(sc)
+    val tableName: String = "TESTTABLE"
+    //snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
+
+    snc.sql(s"drop table if exists $tableName")
+    snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using row " +
+      s"OPTIONS (REDUNDANCY '1',PARTITION_BY 'col1')")
+
+
+    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "performBatchInsert",
+      netPort1)
+
     if (errorInThread != null) {
 
       throw errorInThread
@@ -459,6 +510,92 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       // column and 4th row is for stats
       assert(cnt4 == 0,s"Expected row count is 0 while actual row count is $cnt4")
 
+
+    }
+
+
+
+    def performBatchInsert(netPort: Int): Unit = {
+
+      val driver = "io.snappydata.jdbc.ClientDriver"
+      Utils.classForName(driver).newInstance
+      var url: String = null
+
+      url = "jdbc:snappydata://localhost:" + netPort + "/"
+
+      val  tableName: String = "APP.TESTTABLE"
+      val conn = DriverManager.getConnection(url)
+      val prepareStatement = conn.prepareStatement(s"insert into $tableName values(?,?,?)")
+
+      val s = conn.createStatement()
+      for(i <- 1 to 100) {
+        prepareStatement.setInt(0,i)
+        prepareStatement.setInt(1,i+1)
+        prepareStatement.setInt(2,i+2)
+        prepareStatement.addBatch()
+      }
+      prepareStatement.executeBatch()
+
+      s.execute(s"select * from $tableName")
+      var cnt = 0
+      val rs = s.getResultSet
+      while (rs.next) {
+        cnt = cnt + 1
+      }
+      assert(cnt == 100,s"Expected row count is 100 while actual row count is $cnt")
+
+      s.execute(s"drop table if exists $tableName")
+
+    }
+    def performMixOperationsOnRowTable(netPort: Int): Unit = {
+
+
+      val driver = "io.snappydata.jdbc.ClientDriver"
+      Utils.classForName(driver).newInstance
+      var url: String = null
+
+      url = "jdbc:snappydata://localhost:" + netPort + "/"
+
+      val  tableName: String = "APP.TESTTABLE"
+      val conn = DriverManager.getConnection(url)
+      val s = conn.createStatement()
+
+      for(i <- 1 to 5) {
+        s.executeUpdate(s"insert into $tableName values($i,${i+1},${i+2}})")
+      }
+
+      s.execute(s"select * from $tableName")
+      var cnt = 0
+      val rs = s.getResultSet
+      while (rs.next) {
+        cnt = cnt + 1
+      }
+
+      assert(cnt == 5,s"Expected row count is 5 while actual row count is $cnt")
+
+
+      s.executeUpdate(s"update $tableName set col1=1 where col1>2")
+
+      s.execute(s"select * from $tableName where col1=1")
+      cnt = 0
+      val rs1 = s.getResultSet
+      while (rs1.next) {
+        cnt = cnt + 1
+      }
+      assert(cnt == 4,s"Expected row count is 4 while actual row count is $cnt")
+
+
+      s.executeUpdate(s"delete from $tableName where col1=1")
+
+      s.execute(s"select * from $tableName")
+      cnt = 0
+      val rs2 = s.getResultSet
+      while (rs2.next) {
+        cnt = cnt + 1
+      }
+      assert(cnt == 1,s"Expected row count is 1 while actual row count is $cnt")
+
+      s.execute(s"drop table if exists $tableName")
 
     }
 
