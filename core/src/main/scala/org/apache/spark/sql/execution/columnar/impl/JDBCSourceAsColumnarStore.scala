@@ -596,6 +596,24 @@ class SmartConnectorRowRDD(_session: SnappySession,
       pushProjections = true, useResultSet = true, _connProperties,
     _filters, _partEval, _commitTx) {
 
+
+  override def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext) = {
+    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+      val txId =  SparkShellRDDHelper.snapshotTxId.get
+      logDebug(s"The txid going to be committed is $txId " + tableName)
+      if ((txId ne null) && !txId.equals("null")
+      /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+        val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
+        ps.setString(1, txId)
+        ps.executeUpdate()
+        logDebug(s"The txid being committed is $txId")
+        ps.close()
+        SparkShellRDDHelper.snapshotTxId.set(null)
+      }
+    }
+    ))
+  }
+
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
     val helper = new SparkShellRDDHelper
@@ -641,7 +659,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
     // get the txid which was used to take the snapshot.
     if (!_commitTx) {
-      //if (txId == null) {
         val getSnapshotTXId = conn.prepareCall(s"call sys.GET_SNAPSHOT_TXID (?)")
         getSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
         getSnapshotTXId.execute
@@ -649,10 +666,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
         getSnapshotTXId.close()
         SparkShellRDDHelper.snapshotTxId.set(txid)
         logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
-      //} else {
-
-     // }
-
     }
     logDebug(s"The previous snapshot tx id is ${txId} and tablename is ${tableName}")
     (conn, stmt, rs)
