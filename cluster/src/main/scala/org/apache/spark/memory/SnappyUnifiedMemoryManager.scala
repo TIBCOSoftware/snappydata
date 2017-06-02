@@ -606,6 +606,13 @@ class SnappyUnifiedMemoryManager private[memory](
     }
     memoryForObject.clear()
   }
+
+  // Recovery is a special case. If any of the storage pool has reached 90% of
+  // max storage pool size stop recovery.
+  override def shouldStopRecovery(): Boolean = synchronized {
+    (offHeapStorageMemoryPool.memoryUsed >= (maxOffHeapStorageSize * 0.90) ) ||
+        (onHeapStorageMemoryPool.memoryUsed >= (maxHeapStorageSize * 0.90))
+  }
 }
 
 object SnappyUnifiedMemoryManager extends Logging {
