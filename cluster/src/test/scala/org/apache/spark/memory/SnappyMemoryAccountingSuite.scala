@@ -254,7 +254,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     }
     // scalastyle:on
     val count = snSession.sql("select * from t1").count()
-    assert(count == rows)
+    assert(count >= rows)
     snSession.dropTable("t1")
   }
 
