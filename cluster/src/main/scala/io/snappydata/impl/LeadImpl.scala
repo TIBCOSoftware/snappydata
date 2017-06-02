@@ -105,7 +105,7 @@ class LeadImpl extends ServerImpl with Lead
 
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
-          setAppName("leaderLauncher").
+          setAppName("SnappyData").
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",

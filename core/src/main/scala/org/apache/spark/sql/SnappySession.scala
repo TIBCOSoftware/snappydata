@@ -1438,7 +1438,11 @@ class SnappySession(@transient private val sc: SparkContext,
    *            ("MyTable", x.toSeq)
    *         )
    * }}}
-   *
+   * If insert is on a column table then a row insert can trigger an overflow
+   * to column store form row buffer. If the overflow fails due to some condition like
+   * low memory , then the overflow fails and exception is thrown,
+   * but row buffer values are kept as it is. Any user level counter of number of rows inserted
+   * might be invalid in such a case.
    * @param tableName table name for the insert operation
    * @param rows      list of rows to be inserted into the table
    * @return number of rows inserted
@@ -1885,9 +1889,18 @@ object SnappySession extends Logging {
     def apply(session: SnappySession, lp: LogicalPlan, sqlText: String, pls:
     ArrayBuffer[ParamLiteral]): CachedKey = {
 
+      var invalidate = false
+
       def normalizeExprIds: PartialFunction[Expression, Expression] = {
+        /*
+         Fix for SNAP-1642. Not changing the exprId should have been enough
+         to not let it tokenize. But invalidating it explicitly so by chance
+         also we do not cache it. Will revisit this soon after 0.9
+         */
         case s: ScalarSubquery =>
-          s.copy(exprId = ExprId(0))
+          invalidate = true
+          // s.copy(exprId = ExprId(0))
+          s
         case e: Exists =>
           e.copy(exprId = ExprId(0))
         case p: PredicateSubquery =>
@@ -1912,7 +1925,12 @@ object SnappySession extends Logging {
 
       // normalize lp so that two queries can be determined to be equal
       val tlp = lp.transform(transformExprID)
-      new CachedKey(session, tlp, sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
+      val key = new CachedKey(session, tlp,
+        sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
+      if (invalidate) {
+        key.invalidatePlan()
+      }
+      key
     }
   }
 
