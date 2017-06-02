@@ -1160,25 +1160,27 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 2. [Configure the SnappyData Cluster](configuration.md#configuration-files).
 
-3. Copy the SnappyData Zeppelin interpreter (**snappydata-zeppelin-<_version_number_>.jar**) file to the **jars** (snappydata-<_version_number_>-bin/jars/) directory in the SnappyData home directory.
+3. In [lead node configuration](configuration.md#configuring-leads) set the following properties:
 
-4. Enable the SnappyData Zeppelin interpreter by adding `-zeppelin.interpreter.enable=true` in [lead node configuration](configuration.md#configuring-leads).
+	- Enable the SnappyData Zeppelin interpreter by adding `-zeppelin.interpreter.enable=true` 
 
-5. [Start the SnappyData cluster](howto.md#how-to-start-a-snappydata-cluster)
+    - In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding `-classpath=/<download_location>/snappydata-zeppelin-<version_number>.jar`.
 
-6. Extract the contents of the Zeppelin binary package. </br> 
+4. [Start the SnappyData cluster](howto.md#how-to-start-a-snappydata-cluster)
 
-7. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
+5. Extract the contents of the Zeppelin binary package. </br> 
+
+6. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
 	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<snappydata_interpreter_version_number>`. </br>
     Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
 
-8. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
+7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
 
-9. Edit the **zeppeline-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
+8. Edit the **zeppeline-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
 
-10. Restart the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
+9. Restart the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
 
-11. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
+10. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
 
 ### Step 2: Configure SnappyData for Apache Zeppelin
 
