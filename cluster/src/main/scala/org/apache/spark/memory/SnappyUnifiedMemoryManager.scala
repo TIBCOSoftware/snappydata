@@ -456,9 +456,10 @@ class SnappyUnifiedMemoryManager private[memory](
 
       // Evict only limited amount for owners marked as non-evicting.
       // TODO: this can be removed once these calls are moved to execution
+      // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
       val doEvict = if (shouldEvict &&
           ManagedDirectBufferAllocator.nonEvictingOwners.contains(objectName)) {
-        numBytes < storagePool.memoryFree * 2
+        numBytes < math.max(0.05 * storagePool.poolSize, storagePool.memoryFree * 2)
       } else shouldEvict
 
       if (numBytes > maxMemory) {
@@ -610,8 +611,8 @@ class SnappyUnifiedMemoryManager private[memory](
   // Recovery is a special case. If any of the storage pool has reached 90% of
   // max storage pool size stop recovery.
   override def shouldStopRecovery(): Boolean = synchronized {
-    (offHeapStorageMemoryPool.memoryUsed >= (maxOffHeapStorageSize * 0.90) ) ||
-        (onHeapStorageMemoryPool.memoryUsed >= (maxHeapStorageSize * 0.90))
+    (offHeapStorageMemoryPool.memoryUsed > (maxOffHeapStorageSize * 0.90) ) ||
+        (onHeapStorageMemoryPool.memoryUsed > (maxHeapStorageSize * 0.90))
   }
 }
 
