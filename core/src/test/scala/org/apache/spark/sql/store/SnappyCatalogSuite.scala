@@ -158,7 +158,8 @@ class SnappyCatalogSuite extends SnappyFunSuite
         Set("APP", "MY_DB2", "DEFAULT"))
   }
 
-  test("list tables") {
+  // SNAP-1641 is filed to enable this test
+  ignore("list tables") {
     assert(snappySession.catalog.listTables().collect().isEmpty)
     createTable("my_table1")
     createTable("my_table2")
@@ -173,7 +174,8 @@ class SnappyCatalogSuite extends SnappyFunSuite
         .map(_.name.toLowerCase).toSet == Set("my_table2"))
   }
 
-  test("list tables with database") {
+  // SNAP-1641 is filed to enable this test
+  ignore("list tables with database") {
     assert(snappySession.catalog.listTables("default").collect().isEmpty)
     createDatabase("my_db1")
     createDatabase("my_db2")
@@ -260,7 +262,8 @@ class SnappyCatalogSuite extends SnappyFunSuite
     assert(e.getMessage.contains("unknown_db"))
   }
 
-  test("list columns") {
+  // SNAP-1641 is filed to enable this test
+  ignore("list columns") {
     createTable("tab1")
     testListColumns("tab1", dbName = None)
   }
@@ -270,7 +273,8 @@ class SnappyCatalogSuite extends SnappyFunSuite
     snappySession.catalog.listColumns("temp1")
   }
 
-  test("list columns in database") {
+  // SNAP-1641 is filed to enable this test
+  ignore("list columns in database") {
     createDatabase("db1")
     createTable("tab1", Some("db1"))
     testListColumns("tab1", dbName = Some("db1"))

@@ -16,6 +16,9 @@
  */
 package org.apache.spark.sql.store
 
+import scala.collection.mutable.ArrayBuffer
+
+import io.snappydata.app.Data1
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -272,32 +275,55 @@ class TokenizationTest
 
   test("Test tokenize for sub-queries") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
+    snc.sql(s"set spark.sql.crossJoin.enabled=true")
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     createSimpleTableAndPoupulateData(numRows, s"$table2")
     var query = s"select * from $table t1, $table2 t2 where t1.a in " +
       s"( select a from $table2 where b = 5 )"
-    snc.sql(query).collect()
+    var results1 = snc.sqlUncached(query).collect()
+    var results2 = snc.sql(query).collect()
+    assert(results1.toSeq === results2.toSeq)
 
     val cacheMap = SnappySession.getPlanCache.asMap()
 
     assert( cacheMap.size() == 1)
 
     query = s"select * from $table t1, $table2 t2 where t1.a in " +
-      s"( select a from $table2 where b = 100 )"
-    snc.sql(query).collect()
+      s"( select a from $table2 where b = 8)"
+    results1 = snc.sqlUncached(query).collect()
+    results2 = snc.sql(query).collect()
+    assert(results1.toSeq === results2.toSeq)
     assert( cacheMap.size() == 1)
+
+    // check for scalar subqueries (these should run without caching)
+    query = s"select * from $table t1, $table2 t2 where t1.a = " +
+        s"( select a from $table2 where b = 5 )"
+    results1 = snc.sqlUncached(query).collect()
+    results2 = snc.sql(query).collect()
+    assert(results1.toSeq === results2.toSeq)
+    assert( cacheMap.size() == 1)
+
+    query = s"select * from $table t1, $table2 t2 where t1.a = " +
+        s"( select a from $table2 where b = 7 )"
+    results1 = snc.sqlUncached(query).collect()
+    results2 = snc.sql(query).collect()
+    assert(results1.toSeq === results2.toSeq)
+    assert( cacheMap.size() == 1)
+
     logInfo("Successful")
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
   test("Test tokenize for joins and sub-queries") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     val numRows = 10
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
     createSimpleTableAndPoupulateData(numRows, s"$table2")
     var query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 5 limit 2"
-    //snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+    // snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
     val result1 = snc.sql(query).collect()
     result1.foreach( r => {
       println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
@@ -327,7 +353,8 @@ class TokenizationTest
     logInfo("Successful")
   }
 
-  private def createSimpleTableAndPoupulateData(numRows: Int, name: String, dosleep: Boolean = false) = {
+  private def createSimpleTableAndPoupulateData(numRows: Int, name: String,
+      dosleep: Boolean = false) = {
     val data = ((0 to numRows), (0 to numRows), (0 to numRows)).zipped.toArray
     val rdd = sc.parallelize(data, data.length)
       .map(s => Data(s._1, s._2, s._3))
@@ -462,10 +489,32 @@ class TokenizationTest
     }
   }
 
+  test("Test BUG SNAP-1642") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val maxquery = s"select * from $table where a = (select max(a) from $table)"
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    val rs1 = snc.sql(maxquery)
+    val rows1 = rs1.collect()
+
+    val data = ((11 to 12), (11 to 12), (11 to 12)).zipped.toArray
+    val rdd = sc.parallelize(data, data.length)
+        .map(s => Data(s._1, s._2, s._3))
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.mode(SaveMode.Append).saveAsTable(table)
+
+    val rs2 = snc.sql(maxquery)
+    val rows2 = rs2.collect()
+
+    var uncachedResult = snc.sqlUncached(maxquery).collect()
+    assert(rows2.sameElements(uncachedResult))
+  }
+
   test("Test broadcast hash joins and scalar sub-queries - 2") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
-    val th = 10L * 1024 * 1024 * 1024
-    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=$th")
+    // val th = 10L * 1024 * 1024 * 1024
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=-1")
     val ddlStr = "(YearI INT," + // NOT NULL
         "MonthI INT," + // NOT NULL
         "DayOfMonth INT," + // NOT NULL
@@ -510,16 +559,6 @@ class TokenizationTest
 
     airlineDF.write.insertInto(colTableName)
 
-    snc.sql(s"select Y.distance, Y.dest, X.distance, X.dest from " +
-        s" (select distance, dest, count(*) " +
-        s" from $colTableName where taxiin > 20 or taxiout > 20" +
-        s" group by dest, distance) X " +
-        s" right outer join " +
-        s"(select distance, dest, count(*) " +
-        s" from $colTableName where taxiin > 10 or taxiout > 10" +
-        s" group by dest, distance) Y" +
-        s" on X.dest = Y.dest and X.distance = Y.distance").collect().foreach(println)
-
     var df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
         s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
         s" where (taxiin > 10 or taxiout > 10) and dest in  (select dest from $colTableName " +
@@ -527,17 +566,35 @@ class TokenizationTest
         s" by avgTaxiTime desc")
     // df.explain(true)
     val res1 = df.collect()
-
+    val r1 = normalizeRow(res1)
     df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
         s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
         s" where (taxiin > 20 or taxiout > 20) and dest in  (select dest from $colTableName " +
         s" where distance = 658 group by dest having count ( * ) > 100) group by dest order " +
         s" by avgTaxiTime desc")
     val res2 = df.collect()
-
-    assert(!res1.sameElements(res2))
-    assert( SnappySession.getPlanCache.asMap().size() == 2)
+    val r2 = normalizeRow(res2)
+    assert(!r1.sameElements(r2))
+    // assert( SnappySession.getPlanCache.asMap().size() == 1)
 
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
+  }
+
+  private def normalizeRow(rows: Array[Row]): Array[String] = {
+    val newBuffer: ArrayBuffer[String] = new ArrayBuffer
+    val sb = new StringBuilder
+    rows.foreach(r => {
+      r.toSeq.foreach {
+        case d: Double =>
+          // round to one decimal digit
+          sb.append(math.floor(d * 5.0 + 0.25) / 5.0).append(',')
+        case bd: java.math.BigDecimal =>
+          sb.append(bd.setScale(2, java.math.RoundingMode.HALF_UP)).append(',')
+        case v => sb.append(v).append(',')
+      }
+      newBuffer += sb.toString()
+      sb.clear()
+    })
+    newBuffer.sortWith(_ < _).toArray
   }
 }
