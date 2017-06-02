@@ -7,14 +7,14 @@ Disk stores provide disk storage for tables that need to overflow or persist.
 ``` pre
 CREATE DISKSTORE diskstore_name
 
-    [ MAXLOGSIZE integer-constant ]
+    [ MAXLOGSIZE max-log-size-in-mb ]
     [ AUTOCOMPACT boolean-constant ]
     [ ALLOWFORCECOMPACTION boolean-constant ]
-    [ COMPACTIONTHRESHOLD integer-constant ]
-    [ TIMEINTERVAL integer-constant ]
-    [ WRITEBUFFERSIZE integer-constant ]
-    [ QUEUESIZE integer-constant ]
-    [ ( 'dir-name' [ integer-constant ] [,'dir-name' [ integer-constant ] ]* ) ]
+    [ COMPACTIONTHRESHOLD garbage-threshold ]
+    [ TIMEINTERVAL time-after-which-data-is-flused-to-disk ]
+    [ WRITEBUFFERSIZE buffer-size-in-mb ]
+    [ QUEUESIZE max-row-operations-to-disk ]
+    [ ( 'dir-name' [ disk-space-in-mb ] [,'dir-name' [ disk-space-in-mb ] ]* ) ]
 ```
 
 ## Description
@@ -28,7 +28,7 @@ All tables that target the same disk store share that disk store's persistence a
 
 **MAXLOGSIZE**
 
-SnappyData records DML statements in an operation log (oplog) files. This option sets the maximum size in megabytes that the oplog can become before SnappyData automatically rolls to a new file. This size is the combined sizes of the <span class="ph filepath">.crf</span> and <span class="ph filepath">.drf</span> oplog files. When SnappyData creates an oplog file, it immediately reserves this amount of file space. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy server stop` or `./sbin/snappy-stop-all`).
+SnappyData records DML statements in an operation log (oplog) files. This option sets the maximum size in megabytes that the oplog can become before SnappyData automatically rolls to a new file. This size is the combined sizes of the oplog files. When SnappyData creates an oplog file, it immediately reserves this amount of file space. SnappyData only truncates the unused space on a clean shutdown (for example, `snappy server stop` or `./sbin/snappy-stop-all`).
 
 The default value is 1 GB.
 
@@ -63,7 +63,7 @@ Sets the maximum number of row operations that SnappyData asynchronously queues 
 The optional `dir-name` entry defines a specific host system directory to use for the disk store. You can include one or more `dir-name` entries using the syntax:
 
 ``` pre
-[ ( 'dir-name' [ integer-constant ] [,'dir-name' [ integer-constant ] ]* ) ]
+[ ( 'dir-name' [ disk-space-in-mb ] [,'dir-name' [ disk-space-in-mb ] ]* ) ]
 ```
 
 In each entry:
@@ -73,9 +73,9 @@ In each entry:
 	!!! Note 
     	SnappyData uses a "shared nothing" disk store design, and you cannot use a single disk store directory to store oplog files from multiple SnappyData members. 
 
-*   *integer-constant* optionally specifies the maximum amount of space, in megabytes, to use for the disk store in that directory. The space used is calculated as the combined sizes of all oplog files in the directory.
+*   *disk-space-in-mb* optionally specifies the maximum amount of space, in megabytes, to use for the disk store in that directory. The space used is calculated as the combined sizes of all oplog files in the directory.
 
-    If you do not specify an *integer-constant* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings. If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
+    If you do not specify an *disk-space-in-mb* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings. If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
 
 You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
 

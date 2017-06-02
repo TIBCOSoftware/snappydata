@@ -28,20 +28,16 @@ CREATE TABLE [IF NOT EXISTS] table_name {
 !!! Note
 	For more information on creating sample tables, refer to [Create Sample Table](create-sample-table.md).
     
-//Jags>> Keywords are not consistent ... all keywords should use underscor as separator. e.g. STRATA_RESERVOIR_SIZE ... please add P1 ticket
 
 //Jags>> the column_definitoon and table_constraint above should link to location where we discuss all the data types. Critically important.
 
 ## Description
-//Jags>> this description is not required. This is well understood and we are not trying to explain all SQL. 
 
-//Jags>> Use this description -  Tables created using the standard SQL syntax without any of SnappyData specific extensions are created as row-oriented replicated tables. i.e. Each data server node in the cluster will host a consistent replica of the table. All tables are also registered in the Spark catalog and hence visible as DataFrames. 
-//Jags>> e.g. 'create table if not exists Table1 (a int)' is equivalent to 'create table if not exists Table1 (a int) using row'.
+Tables created using the standard SQL syntax without any of SnappyData specific extensions are created as row-oriented replicated tables. Thus, each data server node in the cluster hosts a consistent replica of the table. All tables are also registered in the Spark catalog and hence visible as DataFrames.
+
+For example, `create table if not exists Table1 (a int)` is equivalent to `create table if not exists Table1 (a int) using row`.
+
 //Jags>> The syntax should be 'create [temporary] table ...' ... we allow temporary tables. Need to verify correctness and confusion with spark temporary tables. 
-
-Tables contain columns and constraints, rules to which data must conform. Table-level constraints specify a column or columns. Columns have a data type and can specify column constraints (column-level constraints). The syntax of CREATE TABLE is extended to give properties to the tables that are specific to RowStore.
-
-The CREATE TABLE statement has two variants depending on whether you are specifying the column definitions and constraints (CREATE TABLE), or whether you are modeling the columns after the results of a query expression (CREATE TABLE…AS…).
 
 <a id="ddl"></a>
 ## DDL Extensions
@@ -65,11 +61,11 @@ Below are the SnappyData specific extensions. You will find detailed usage examp
 
    * EXPIRE: use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
 
-//Jags>> Expire is not clear. Rishi or someone needs to be specify the correct semantics. Where is the action specification? do we just destroy? 
+//Jags>> Expire is not clear. Rishi or someone needs to be specify the correct semantics. Where is the action specification? do we just destroy? <mark>RISHI </mark>
 
    * COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
    
-   //Jags>> Shyja, please make a note that we need a separate section where we capture our memory management design. And, this ref should link to that section. Essentially, how does the Snappy storage system work? For each partition there is DeltaRowBuffer --> column store (split into multiple batches). Now, we default on a size not count ? ... Rishi, sumedh need to help. 
+   //Jags>> Shyja, please make a note that we need a separate section where we capture our memory management design. And, this ref should link to that section. Essentially, how does the Snappy storage system work? For each partition there is DeltaRowBuffer --> column store (split into multiple batches). Now, we default on a size not count ? ... Rishi, sumedh need to help. <mark>RISHI </mark>
    
 
    * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by COLUMN_BATCH_SIZE (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. 
@@ -83,7 +79,7 @@ Below are the SnappyData specific extensions. You will find detailed usage examp
 
 Refer to the [CREATE SAMPLE TABLE](create-sample-table.md) for information on the extensions applicable to sample tables.
 
-## Example: Column Table partitioned on a single column
+## Example: Column Table Partitioned on a Single Column
 ```
  snappy>CREATE TABLE CUSTOMER ( 
         C_CUSTKEY     INTEGER NOT NULL,
@@ -97,7 +93,7 @@ Refer to the [CREATE SAMPLE TABLE](create-sample-table.md) for information on th
         USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
 ```
 
-## Example: Replicated, persistent Row Table
+## Example: Replicated, Persistent Row Table
 ```
 	snappy>CREATE TABLE SUPPLIER ( 
           S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
@@ -126,4 +122,4 @@ Note that only the column names and datatypes from the queried table are used wh
 
 //Jags>> Definately need examples with external tables .... how to load from S3, HDFS, CSV, etc .... (maybe in 'data Loading' section)
 
-//Jags>> link to section in docs where we can create tables using Spark API, loading from existing DataFrames, etc. 
+//Jags>> link to section in docs where we can create tables using Spark API, loading from existing DataFrames, etc.
