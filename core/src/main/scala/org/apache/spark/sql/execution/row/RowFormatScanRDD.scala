@@ -396,7 +396,7 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
       false, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
   } else if (region ne null) {
-    region.getDataView.getLocalEntriesIterator(
+    region.getDataView(tx).getLocalEntriesIterator(
       bucketIds.asInstanceOf[java.util.Set[Integer]], false, false, true,
       region, true).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
   } else null
