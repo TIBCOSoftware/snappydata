@@ -157,11 +157,11 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 ***_In the Local mode_***
 ```bash
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
 <Note>Note: </Note>
 
- * <note> The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</note>
+ * <note> The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster.</note>
  
  * <note> In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`</note>
 
@@ -173,7 +173,7 @@ $scala > val snSession = new SnappySession(spark.sparkContext)
 
 ***_Using external cluster manager_***
 ```bash
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
 ```
 The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
