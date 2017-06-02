@@ -1892,6 +1892,11 @@ object SnappySession extends Logging {
       val invalidate = Array(false)
 
       def normalizeExprIds: PartialFunction[Expression, Expression] = {
+        /*
+         Fix for SNAP-1642. Not changing the exprId should have been enough
+         to not let it tokenize. But invalidating it explicitly so by chance
+         also we do not cache it. Will revisit this soon after 0.9
+         */
         case s: ScalarSubquery =>
           invalidate(0) = true
           // s.copy(exprId = ExprId(0))
