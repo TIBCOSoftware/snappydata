@@ -570,6 +570,7 @@ class TokenizationTest
     val rowArray = df.head(2)
     assert(rowArray(0).getInt(0) == 1)
     assert(rowArray(1).getInt(0) == 2)
+    assert(rowArray.length == 2)
     snc.sql(s"DROP TABLE $tableName")
   }
 
