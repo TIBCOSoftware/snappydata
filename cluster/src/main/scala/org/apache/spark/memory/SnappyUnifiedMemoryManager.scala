@@ -495,7 +495,7 @@ class SnappyUnifiedMemoryManager private[memory](
       if (!enoughMemory) {
 
         // return immediately for OFF_HEAP with shouldEvict=false
-        if (offHeapNoEvict || tempManager) return false
+        if (offHeapNoEvict) return false
 
         if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
