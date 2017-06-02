@@ -420,13 +420,13 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("jvmHeapMemory")}
               </span>
             </th>
-            <th style="text-align:center; width: 100px; vertical-align: middle;">
+            <!-- <th style="text-align:center; width: 100px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={SnappyDashboardPage.memberStatsColumn("clientsTooltip")}
                     style="font-size: 17px;">
                 {SnappyDashboardPage.memberStatsColumn("clients")}
               </span>
-            </th>
+            </th> -->
           </tr>
         </thead>
         <tbody>
@@ -683,9 +683,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           Utils.bytesToString(jvmHeapUsed).toString + " / " + Utils.bytesToString(jvmHeapSize).toString
           }</div>
       </td>
-      <td>
+      <!-- <td>
         <div style="text-align:right; padding-right:15px;">{memberDetails.getOrElse("clients","NA")}</div>
-      </td>
+      </td> -->
     </tr>
   }
 
