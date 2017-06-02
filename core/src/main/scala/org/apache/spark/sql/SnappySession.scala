@@ -1889,7 +1889,7 @@ object SnappySession extends Logging {
     def apply(session: SnappySession, lp: LogicalPlan, sqlText: String, pls:
     ArrayBuffer[ParamLiteral]): CachedKey = {
 
-      val invalidate = Array(false)
+      var invalidate = false
 
       def normalizeExprIds: PartialFunction[Expression, Expression] = {
         /*
@@ -1898,7 +1898,7 @@ object SnappySession extends Logging {
          also we do not cache it. Will revisit this soon after 0.9
          */
         case s: ScalarSubquery =>
-          invalidate(0) = true
+          invalidate = true
           // s.copy(exprId = ExprId(0))
           s
         case e: Exists =>
@@ -1927,7 +1927,7 @@ object SnappySession extends Logging {
       val tlp = lp.transform(transformExprID)
       val key = new CachedKey(session, tlp,
         sqlText, session.queryHints.hashCode(), pls.sortBy(_.pos).toArray)
-      if (invalidate(0)) {
+      if (invalidate) {
         key.invalidatePlan()
       }
       key
