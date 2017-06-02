@@ -72,7 +72,7 @@ final class SparkShellRDDHelper {
   }
 
   def executeQuery(conn: Connection, tableName: String,
-      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet) = {
+      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
@@ -104,13 +104,14 @@ final class SparkShellRDDHelper {
     }
 
     val txId = SparkShellRDDHelper.snapshotTxId.get()
+    println(s"The snapshot txid is ${txId} and tableName is in executeQuery ${tableName}")
     if (!txId.equals("null")) {
       statement.execute(
         s"call sys.USE_SNAPSHOT_TXID('$txId')")
     }
 
     val rs = statement.executeQuery(query)
-    (statement, rs)
+    (statement, rs, txId)
   }
 
   def getConnection(connectionProperties: ConnectionProperties,

@@ -76,26 +76,26 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override protected def testObject = SplitSnappyClusterDUnitTest
 
-  def testCollocatedJoinInSplitModeRowTable(): Unit = {
+  def _testCollocatedJoinInSplitModeRowTable(): Unit = {
     testObject.createRowTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+
         "PR_TABLE1" :+ "PR_TABLE2" :+ Int.box(locatorClientPort))
   }
 
-  def testCollocatedJoinInSplitModeColumnTable(): Unit = {
+  def _testCollocatedJoinInSplitModeColumnTable(): Unit = {
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+
         "PR_TABLE3" :+ "PR_TABLE4" :+
         Int.box(locatorClientPort))
   }
-  def testColumnTableStatsInSplitMode(): Unit = {
+  def _testColumnTableStatsInSplitMode(): Unit = {
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "5" :+ Int.box(locatorClientPort))
   }
 
-  def testBatchSize(): Unit = {
+  def _testBatchSize(): Unit = {
     doTestBatchSize()
   }
 
@@ -175,7 +175,7 @@ class SplitSnappyClusterDUnitTest(s: String)
       true).asInstanceOf[PartitionedRegion].size() /3
   }
 
-  def testColumnTableStatsInSplitModeWithHA(): Unit = {
+  def _testColumnTableStatsInSplitModeWithHA(): Unit = {
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
     val props = bootProps
@@ -212,7 +212,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm0.invoke(restartServer)
   }
 
-  def testCTAS(): Unit = {
+  def _testCTAS(): Unit = {
     val snc = SnappyContext(sc)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "splitModeCreateTableUsingCTAS",
@@ -230,7 +230,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("DROP TABLE CUSTOMER_2")
   }
 
-  def testUDF(): Unit = {
+  def _testUDF(): Unit = {
     doTestUDF(skewNetworkServers)
   }
 
@@ -728,7 +728,7 @@ object SplitSnappyClusterDUnitTest
         rs = resultDF.collect()
       case e: Exception => throw e
     }
-    assert(rs.length == 5)
+    assert(rs.length == 5, s"Expected 5 but got ${rs.length}")
     assert(rs(0).getAs[String]("COL1").equals("AA"))
     assert(rs(0).getAs[String]("COL2").equals("AA"))
 
