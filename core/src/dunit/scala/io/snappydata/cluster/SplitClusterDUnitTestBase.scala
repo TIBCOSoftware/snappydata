@@ -141,11 +141,11 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def skewNetworkServers: Boolean = false
 
-  final def _testColumnTableCreation(): Unit = {
+  final def testColumnTableCreation(): Unit = {
     doTestColumnTableCreation()
   }
 
-  final def _testRowTableCreation(): Unit = {
+  final def testRowTableCreation(): Unit = {
     doTestRowTableCreation()
   }
 
@@ -154,7 +154,7 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
 
-  final def _testTableFormChanges(): Unit = {
+  final def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
 

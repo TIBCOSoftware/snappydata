@@ -82,26 +82,26 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override protected def testObject = SplitSnappyClusterDUnitTest
 
-  def _testCollocatedJoinInSplitModeRowTable(): Unit = {
+  def testCollocatedJoinInSplitModeRowTable(): Unit = {
     testObject.createRowTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+
         "PR_TABLE1" :+ "PR_TABLE2" :+ Int.box(locatorClientPort))
   }
 
-  def _testCollocatedJoinInSplitModeColumnTable(): Unit = {
+  def testCollocatedJoinInSplitModeColumnTable(): Unit = {
     testObject.createColumnTableForCollocatedJoin()
     vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+
         "PR_TABLE3" :+ "PR_TABLE4" :+
         Int.box(locatorClientPort))
   }
-  def _testColumnTableStatsInSplitMode(): Unit = {
+  def testColumnTableStatsInSplitMode(): Unit = {
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "5" :+ Int.box(locatorClientPort))
   }
 
-  def _testBatchSize(): Unit = {
+  def testBatchSize(): Unit = {
     doTestBatchSize()
   }
 
@@ -181,7 +181,7 @@ class SplitSnappyClusterDUnitTest(s: String)
       true).asInstanceOf[PartitionedRegion].size() /3
   }
 
-  def _testColumnTableStatsInSplitModeWithHA(): Unit = {
+  def testColumnTableStatsInSplitModeWithHA(): Unit = {
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "1" :+ Int.box(locatorClientPort))
     val props = bootProps
@@ -218,7 +218,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     vm0.invoke(restartServer)
   }
 
-  def _testCTAS(): Unit = {
+  def testCTAS(): Unit = {
     val snc = SnappyContext(sc)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "splitModeCreateTableUsingCTAS",
@@ -236,7 +236,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("DROP TABLE CUSTOMER_2")
   }
 
-  def _testUDF(): Unit = {
+  def testUDF(): Unit = {
     doTestUDF(skewNetworkServers)
   }
 

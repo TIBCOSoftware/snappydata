@@ -104,7 +104,6 @@ final class SparkShellRDDHelper {
     }
 
     val txId = SparkShellRDDHelper.snapshotTxId.get()
-    println(s"The snapshot txid is ${txId} and tableName is in executeQuery ${tableName}")
     if (!txId.equals("null")) {
       statement.execute(
         s"call sys.USE_SNAPSHOT_TXID('$txId')")
