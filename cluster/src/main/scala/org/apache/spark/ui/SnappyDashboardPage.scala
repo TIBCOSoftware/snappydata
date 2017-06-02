@@ -745,10 +745,10 @@ object SnappyDashboardPage{
   tableStatsColumn += ("distributionTypeTooltip" -> "Distribution Type is either PARTITIONED or REPLICATED table ")
   tableStatsColumn += ("rowCount" -> "Row Count")
   tableStatsColumn += ("rowCountTooltip" -> "Total Rows in Table")
-  tableStatsColumn += ("sizeInMemory" -> "In Memory Size")
+  tableStatsColumn += ("sizeInMemory" -> "Memory Size")
   tableStatsColumn += ("sizeInMemoryTooltip" -> "Tables Size in Memory")
   tableStatsColumn += ("totalSize" -> "Total Size")
-  tableStatsColumn += ("totalSizeTooltip" -> "Total Size of Tables")
+  tableStatsColumn += ("totalSizeTooltip" -> "Tables Total Size (In Memory size + Disk Overflow Size)")
 
   val indexStatsTitle = "Indexes"
   val indexStatsTitleTooltip = "SnappyData Index Summary"
