@@ -658,7 +658,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("DROP TABLE CUSTOMER_TEMP")
   }
 
-  override def createDropEmbeddedModeTables(
+  override def dropAndCreateTablesInEmbeddedMode(
       tableType: String): Unit = {
     val snc = SnappyContext(sc)
     val df = snc.table("APP.T1")
@@ -666,17 +666,19 @@ object SplitSnappyClusterDUnitTest
     snc.dropTable("APP.T1")
 
     snc.sql(s"CREATE TABLE T1(COL1 STRING, COL2 STRING) " +
-        s"USING $tableType OPTIONS (PARTITION_BY 'COL1')")
+        s"USING $tableType OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("INSERT INTO T1 VALUES('AA', 'AA')")
     snc.sql("INSERT INTO T1 VALUES('BB', 'BB')")
     snc.sql("INSERT INTO T1 VALUES('CC', 'CC')")
     snc.sql("INSERT INTO T1 VALUES('DD', 'DD')")
     snc.sql("INSERT INTO T1 VALUES('EE', 'EE')")
 
+    val rs = snc.sql("select * from t1").collect()
+    assert(rs.length == 5)
   }
 
   var connectorSnc: SnappyContext = null
-  override def createDropTablesInSplitMode(locatorPort: Int,
+  override def createTablesInSplitMode(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int,
       tableType: String): Unit = {
@@ -686,7 +688,7 @@ object SplitSnappyClusterDUnitTest
     }
     // row table
     connectorSnc.sql(s"CREATE TABLE T1(C1 INT, C2 INT, C3 INT) " +
-        s"USING $tableType OPTIONS (PARTITION_BY 'C1')")
+       s"USING $tableType OPTIONS (PARTITION_BY 'C1', COLUMN_MAX_DELTA_ROWS '1')")
     connectorSnc.sql("INSERT INTO T1 VALUES(1, 1, 1)")
     connectorSnc.sql("INSERT INTO T1 VALUES(2, 2, 2)")
     connectorSnc.sql("INSERT INTO T1 VALUES(3, 3, 3)")
@@ -711,10 +713,10 @@ object SplitSnappyClusterDUnitTest
   override def verifyTableFormInSplitMOde(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
-    if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
-      connectorSnc = getSnappyContextForConnector(locatorPort,
-        locatorClientPort)
-    }
+//    if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
+//      connectorSnc = getSnappyContextForConnector(locatorPort,
+//        locatorClientPort)
+//    }
     var resultDF = connectorSnc.sql("select * from t1 order by col1")
     var rs: Array[Row] = null
     try {
