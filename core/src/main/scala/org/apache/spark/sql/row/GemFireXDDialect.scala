@@ -81,6 +81,8 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
       Some(DoubleType)
     } else if (sqlType == Types.REAL && typeName.equalsIgnoreCase("real")) {
       Some(FloatType)
+    } else if (sqlType == Types.TINYINT || sqlType == Types.SMALLINT) {
+      Some(ShortType)
     } else if (sqlType == Types.VARCHAR && size > 0 &&
         typeName.equalsIgnoreCase("varchar")) {
       md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
@@ -100,7 +102,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def getJDBCType(dt: DataType): Option[JdbcType] = dt match {
     case StringType => Some(JdbcType("CLOB", java.sql.Types.CLOB))
     case BinaryType => Some(JdbcType("BLOB", java.sql.Types.BLOB))
-    case BooleanType => Some(JdbcType("SMALLINT", java.sql.Types.BOOLEAN))
+    case BooleanType => Some(JdbcType("BOOLEAN", java.sql.Types.BOOLEAN))
     case ByteType | ShortType => Some(JdbcType("SMALLINT", java.sql.Types.SMALLINT))
     case d: DecimalType => Some(JdbcType(s"DECIMAL(${d.precision},${d.scale})",
       java.sql.Types.DECIMAL))

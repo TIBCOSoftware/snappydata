@@ -77,6 +77,10 @@ class ColumnEncodersTest extends SnappyFunSuite {
         "T10 Decimal(35, 15) NOT NULL, T11 Date not null, " +
         "T12 Timestamp not null, T13 Binary not null) " +
         "USING column options (buckets '5')")
+    session.sql("CREATE TABLE TypesTable3 (Index Int not null, T1 Boolean, " +
+        "T2 Integer, T3 smallint, T4 Int, T5 bigint, T6 REAL, T7 Double, T8 varchar(100), " +
+        "T9 Decimal(10, 4), T10 Decimal(35, 15), T11 Date, T12 Timestamp, " +
+        "T13 blob) USING row")
 
     val rnd = new XORShiftRandom
     for (_ <- 1 to 5) {
@@ -138,24 +142,30 @@ class ColumnEncodersTest extends SnappyFunSuite {
       val ds = session.createDataset(items)
       ds.write.insertInto("TypesTable")
       ds.write.insertInto("TypesTable2")
+      ds.write.insertInto("TypesTable3")
 
       val df = session.sql("select * from TypesTable order by index")
       assert(items === df.as[AllTypes].collect().toSeq)
 
-      val df1 = session.sql("select * from TypesTable2 order by index")
+      val df2 = session.sql("select * from TypesTable2 order by index")
       ColumnEncodersTest.hasNulls = false
       try {
-        assert(items === df1.as[AllTypes].collect().toSeq)
+        assert(items === df2.as[AllTypes].collect().toSeq)
       } finally {
         ColumnEncodersTest.hasNulls = true
       }
 
+      val df3 = session.sql("select * from TypesTable3 order by index")
+      assert(items === df3.as[AllTypes].collect().toSeq)
+
       session.truncateTable("TypesTable")
       session.truncateTable("TypesTable2")
+      session.truncateTable("TypesTable3")
     }
 
     session.dropTable("TypesTable")
     session.dropTable("TypesTable2")
+    session.dropTable("TypesTable3")
   }
 }
 
