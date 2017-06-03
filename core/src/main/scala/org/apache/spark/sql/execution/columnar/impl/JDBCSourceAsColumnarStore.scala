@@ -659,13 +659,13 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
     // get the txid which was used to take the snapshot.
     if (!_commitTx) {
-        val getSnapshotTXId = conn.prepareCall(s"call sys.GET_SNAPSHOT_TXID (?)")
-        getSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
-        getSnapshotTXId.execute
-        val txid: String = getSnapshotTXId.getString(1)
-        getSnapshotTXId.close()
-        SparkShellRDDHelper.snapshotTxId.set(txid)
-        logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
+      val getSnapshotTXId = conn.prepareCall(s"call sys.GET_SNAPSHOT_TXID (?)")
+      getSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
+      getSnapshotTXId.execute()
+      val txid: String = getSnapshotTXId.getString(1)
+      getSnapshotTXId.close()
+      SparkShellRDDHelper.snapshotTxId.set(txid)
+      logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
     }
     logDebug(s"The previous snapshot tx id is ${txId} and tablename is ${tableName}")
     (conn, stmt, rs)
