@@ -1967,7 +1967,7 @@ object SnappySession extends Logging {
         cachedDF = evaluation._1
         queryHints = evaluation._2
       } else {
-        cachedDF.clearCachedShuffleDeps(session.sparkContext)
+        cachedDF.waitForLastShuffleCleanup()
         cachedDF.reset()
       }
       cachedDF.queryString = sqlText
