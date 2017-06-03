@@ -25,6 +25,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -63,6 +64,15 @@ class SnappyUnifiedMemoryManager private[memory](
            conf.getDouble("spark.memory.storageMaxFraction", 0.9)).toLong
 
   /**
+   * An estimate of the maximum result size handled by a single partition.
+   * There can be major skew so this does not use number of partitions as
+   * divisor, but even the divisor used may not compensate for the skew in some
+   * cases but it should be acceptable for those rare cases.
+   */
+  private val maxPartResultSize = Utils.getMaxResultSize(conf) /
+      math.min(8, Runtime.getRuntime.availableProcessors())
+
+  /**
    * If total heap size is small enough then try and use explicit GC to
    * release pending off-heap references before failing storage allocation.
    */
@@ -96,8 +106,9 @@ class SnappyUnifiedMemoryManager private[memory](
         if (!tempManager) {
           logInfo(s"Allocating boot time memory to $managerId ")
 
-          val bootTimeMap = MemoryManagerCallback.tempMemoryManager
-              .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap
+          val bootTimeManager = MemoryManagerCallback.tempMemoryManager
+              .asInstanceOf[SnappyUnifiedMemoryManager]
+          val bootTimeMap = bootTimeManager._memoryForObjectMap
           if (bootTimeMap ne null) {
             // Not null only for cluster mode. In local mode
             // as Spark is booted first temp memory manager is not used
@@ -106,12 +117,12 @@ class SnappyUnifiedMemoryManager private[memory](
               acquireStorageMemoryForObject(objectName,
                 MemoryManagerCallback.storageBlockId, entry.getLongValue, mode, null,
                 shouldEvict = true)
+              // TODO: SW: if above fails then this should throw exception
+              // and _memoryForObjectMap made null again?
             }
             logInfo(s"Total Memory used while booting = " +
-                MemoryManagerCallback.tempMemoryManager
-                    .asInstanceOf[SnappyUnifiedMemoryManager].storageMemoryUsed)
-            MemoryManagerCallback.tempMemoryManager
-                .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap.clear()
+                bootTimeManager.storageMemoryUsed)
+            bootTimeMap.clear()
           }
         }
 
@@ -293,7 +304,8 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private def getMinOffHeapEviction(required: Long): Long = {
     // off-heap calculations are precise so evict exactly as much as required
-    (required * threadsWaitingForStorage.get()) - offHeapStorageMemoryPool.memoryFree
+    (required * math.max(1, math.min(4, threadsWaitingForStorage.get()))) -
+        offHeapStorageMemoryPool.memoryFree
   }
 
   /**
@@ -458,8 +470,10 @@ class SnappyUnifiedMemoryManager private[memory](
       // TODO: this can be removed once these calls are moved to execution
       // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
       val doEvict = if (shouldEvict &&
-          ManagedDirectBufferAllocator.nonEvictingOwners.contains(objectName)) {
-        numBytes < math.max(0.05 * storagePool.poolSize, storagePool.memoryFree * 2)
+          objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
+        // don't use more than 30% of pool size for one partition result
+        numBytes < math.min(0.3 * storagePool.poolSize,
+          math.max(maxPartResultSize, storagePool.memoryFree))
       } else shouldEvict
 
       if (numBytes > maxMemory) {
