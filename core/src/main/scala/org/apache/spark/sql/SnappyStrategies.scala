@@ -16,8 +16,9 @@
  */
 package org.apache.spark.sql
 
+import io.snappydata.Property
+
 import org.apache.spark.sql.JoinStrategy._
-import org.apache.spark.sql.SnappyAggregationStrategy._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
@@ -26,6 +27,7 @@ import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Hash
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.util.{Utils => SparkUtils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -49,7 +51,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  def isDisabled(): Boolean = {
+  def isDisabled: Boolean = {
     snappySession.sessionState.disableStoreOptimizations
   }
 
@@ -244,10 +246,10 @@ private[sql] trait SnappyStrategies {
   }
 
   object SnappyAggregation extends Strategy {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled()) {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
-      SnappyAggregationStrategy(plan)
+      new SnappyAggregationStrategy(self).apply(plan)
     }
   }
 }
@@ -272,8 +274,7 @@ private[sql] object JoinStrategy {
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <=
-      io.snappydata.Property.HashJoinSize.get(conf)
+    plan.statistics.sizeInBytes <= Property.HashJoinSize.get(conf)
   }
 
   def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
@@ -317,7 +318,11 @@ private[sql] object JoinStrategy {
  *
  * Adapted from Spark's Aggregation strategy.
  */
-private[sql] object SnappyAggregationStrategy extends Strategy {
+class SnappyAggregationStrategy(planner: DefaultPlanner)
+    extends Strategy {
+
+  private val maxAggregateInputSize =
+    SparkUtils.byteStringAsBytes(Property.HashAggregateSize.get(planner.conf))
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
@@ -327,7 +332,8 @@ private[sql] object SnappyAggregationStrategy extends Strategy {
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
-    resultExpressions, child) =>
+    resultExpressions, child) if maxAggregateInputSize <= 0 ||
+        child.statistics.sizeInBytes <= maxAggregateInputSize =>
 
       val (functionsWithDistinct, functionsWithoutDistinct) =
         aggregateExpressions.partition(_.isDistinct)
@@ -666,9 +672,8 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
   */
 case class InsertCachedPlanHelper(session: SparkSession) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
-    case ws @ WholeStageCodegenExec(onlychild) => {
+    case ws @ WholeStageCodegenExec(onlychild) =>
       val c = onlychild.asInstanceOf[CodegenSupport]
       ws.copy(child = CachedPlanHelperExec(c))
-    }
   }
 }

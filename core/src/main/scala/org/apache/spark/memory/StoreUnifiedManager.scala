@@ -18,9 +18,9 @@ package org.apache.spark.memory
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkConf, SparkEnv}
@@ -130,7 +130,7 @@ object MemoryManagerCallback extends Logging {
   val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
 
   // This memory manager will be used while GemXD is booting up and SparkEnv is not ready.
-  lazy val tempMemoryManager = {
+  private[memory] lazy val tempMemoryManager = {
     try {
       val conf = new SparkConf()
       Utils.classForName(ummClass)
@@ -190,14 +190,11 @@ object MemoryManagerCallback extends Logging {
           snappyUnifiedManager = unifiedManager
           unifiedManager
         case _ =>
-          // For testing purpose if we want to disable SnappyUnifiedManager
+          // if SnappyUnifiedManager is disabled or for local mode
           defaultManager
       }
     } else { // Spark.env will be null only with gemxd boot time
       tempMemoryManager
     }
   }
-
 }
-
-
