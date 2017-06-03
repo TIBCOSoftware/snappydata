@@ -18,6 +18,7 @@ package org.apache.spark.sql.store
 
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.app.Data1
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -486,6 +487,28 @@ class TokenizationTest
     finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
+  }
+
+  test("Test BUG SNAP-1642") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val maxquery = s"select * from $table where a = (select max(a) from $table)"
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    val rs1 = snc.sql(maxquery)
+    val rows1 = rs1.collect()
+
+    val data = ((11 to 12), (11 to 12), (11 to 12)).zipped.toArray
+    val rdd = sc.parallelize(data, data.length)
+        .map(s => Data(s._1, s._2, s._3))
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.mode(SaveMode.Append).saveAsTable(table)
+
+    val rs2 = snc.sql(maxquery)
+    val rows2 = rs2.collect()
+
+    var uncachedResult = snc.sqlUncached(maxquery).collect()
+    assert(rows2.sameElements(uncachedResult))
   }
 
   test("Test broadcast hash joins and scalar sub-queries - 2") {
