@@ -2,7 +2,9 @@
 The following installation options are available:
 
 * [Install On Premise](#install-on-premise)
+
 * [Setting up Cluster on Amazon Web Services (AWS)](#setting-up-cluster-on-amazon-web-services-aws)
+
 * [Building from Source](#building-from-source)
 
 <note>Note:  Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
@@ -33,10 +35,11 @@ Download the latest version of SnappyData from the [SnappyData Release](https://
 
 The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.
 
-* ** SnappyData 0.8 download link **
+* **SnappyData 0.8 download link**
 [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.zip)
 
 * **SnappyData 0.8 (hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.zip)
+
 <a id="singlehost"></a>
 ### Single Host Installation
 This is the simplest form of deployment and can be used for testing and POCs.
@@ -62,7 +65,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
 
-* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuration#configuring-ssh-login-without-password).
+* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuration.md#configuring-ssh-login-without-password).
 
 #### Steps to Set up the Cluster
 
