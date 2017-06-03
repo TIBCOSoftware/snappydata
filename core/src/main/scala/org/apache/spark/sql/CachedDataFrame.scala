@@ -23,10 +23,11 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
-import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientSharedUtils}
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
@@ -45,13 +46,13 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
+import scala.concurrent.duration.Duration
 
 class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
@@ -81,8 +82,6 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           case None => _v
         }
         Literal(v, _dt)
-    } transform {
-      case CachedPlanHelperExec(childPlan) => childPlan
     })
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
@@ -96,12 +95,10 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           var i = 0
           while (i < numShuffleDeps) {
             val shuffleDependency = shuffleDependencies(i)
-            // Cleaning the  shuffle artifacts synchronously which might not
-            // desired for performance. Ticket SNAP-
-            cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
-            // lastShuffleCleanups(i) = Future {
-            //  cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
-            // }
+            // Cleaning the  shuffle artifacts asynchronously
+            lastShuffleCleanups(i) = Future {
+              cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
+            }
             i += 1
           }
         case None =>
@@ -171,6 +168,9 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       case e: Exception =>
         sparkSession.listenerManager.onFailure(name, queryExecution, e)
         throw e
+    } finally {
+      // clear the shuffle dependencies asynchronously after the execution.
+      clearCachedShuffleDeps(sparkSession.sparkContext)
     }
   }
 
@@ -190,6 +190,14 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   override def collect(): Array[Row] = {
     collectInternal().map(boundEnc.fromRow).toArray
+  }
+
+  override def count(): Long = withCallback("count") { df =>
+    df.groupBy().count().collect().head.getLong(0)
+  }
+
+  override def head(n: Int): Array[Row] = withCallback("head") { df =>
+    df.limit(n).collect()
   }
 
   def collectInternal(): Iterator[InternalRow] = {
@@ -212,7 +220,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       while (index < numShuffles) {
         val cleanup = lastShuffleCleanups(index)
         if (cleanup ne null) {
-          cleanup.onComplete(identity)
+          Await.ready(cleanup, Duration.Inf)
           lastShuffleCleanups(index) = null
         }
         index += 1
@@ -365,8 +373,6 @@ object CachedDataFrame
 
   override def read(kryo: Kryo, input: Input): Unit = {}
 
-  val owner = "CACHED_DF_FINAL_RESULT_BYTES"
-
   private def flushBufferOutput(bufferOutput: Output, position: Int,
       output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
     if (position > 0) {
@@ -426,12 +432,12 @@ object CachedDataFrame
         if (context != null) { // TODO why driver is calling this code with context null ?
           if (!MemoryManagerCallback.memoryManager.
               acquireStorageMemoryForObject(
-                objectName = owner,
+                objectName = BufferAllocator.STORE_DATA_FRAME_OUTPUT,
                 blockId = MemoryManagerCallback.cachedDFBlockId,
                 numBytes = 4L * memSize,
                 memoryMode = MemoryMode.ON_HEAP,
                 buffer = null,
-                shouldEvict = false)) {
+                shouldEvict = true)) {
             throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
               java.util.Collections.emptySet())
           }
@@ -439,7 +445,7 @@ object CachedDataFrame
           context.addTaskCompletionListener { _ =>
             MemoryManagerCallback.memoryManager.
                 releaseStorageMemoryForObject(
-                  objectName = owner,
+                  objectName = BufferAllocator.STORE_DATA_FRAME_OUTPUT,
                   numBytes = 4L * memSize,
                   memoryMode = MemoryMode.ON_HEAP)
           }
