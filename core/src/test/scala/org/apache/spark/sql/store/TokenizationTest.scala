@@ -580,6 +580,23 @@ class TokenizationTest
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
   }
 
+  test("Test CachedDataFrame.head ") {
+    val tableName = "test.table1"
+    snc.sql(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) USING column ")
+    assert(snc.sql("SELECT * FROM " + tableName).collect().length == 0)
+    snc.sql(s" insert into $tableName values ( 1, 2, 3)")
+    snc.sql(s" insert into $tableName values ( 2, 2, 3)")
+    snc.sql(s" insert into $tableName values ( 3, 2, 3)")
+    val df = snc.sql(s"SELECT col1 FROM $tableName")
+    val row = df.head()
+    assert(row.getInt(0) == 1)
+    val rowArray = df.head(2)
+    assert(rowArray(0).getInt(0) == 1)
+    assert(rowArray(1).getInt(0) == 2)
+    assert(rowArray.length == 2)
+    snc.sql(s"DROP TABLE $tableName")
+  }
+
   private def normalizeRow(rows: Array[Row]): Array[String] = {
     val newBuffer: ArrayBuffer[String] = new ArrayBuffer
     val sb = new StringBuilder
