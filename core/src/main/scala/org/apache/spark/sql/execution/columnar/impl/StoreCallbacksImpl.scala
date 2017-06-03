@@ -337,6 +337,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def logMemoryStats(): Unit =
     MemoryManagerCallback.memoryManager.logStats()
+
+  override def shouldStopRecovery(): Boolean =
+    MemoryManagerCallback.memoryManager.shouldStopRecovery()
 }
 
 trait StoreCallback extends Serializable {
