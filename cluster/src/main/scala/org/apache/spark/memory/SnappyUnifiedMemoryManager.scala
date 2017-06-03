@@ -468,6 +468,7 @@ class SnappyUnifiedMemoryManager private[memory](
 
       // Evict only limited amount for owners marked as non-evicting.
       // TODO: this can be removed once these calls are moved to execution
+      // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
       val doEvict = if (shouldEvict &&
           objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
         // don't use more than 30% of pool size for one partition result
@@ -509,7 +510,7 @@ class SnappyUnifiedMemoryManager private[memory](
       if (!enoughMemory) {
 
         // return immediately for OFF_HEAP with shouldEvict=false
-        if (offHeapNoEvict || tempManager) return false
+        if (offHeapNoEvict) return false
 
         if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
@@ -619,6 +620,13 @@ class SnappyUnifiedMemoryManager private[memory](
       super.releaseStorageMemory(allValues.nextLong(), memoryMode)
     }
     memoryForObject.clear()
+  }
+
+  // Recovery is a special case. If any of the storage pool has reached 90% of
+  // max storage pool size stop recovery.
+  override def shouldStopRecovery(): Boolean = synchronized {
+    (offHeapStorageMemoryPool.memoryUsed > (maxOffHeapStorageSize * 0.90) ) ||
+        (onHeapStorageMemoryPool.memoryUsed > (maxHeapStorageSize * 0.90))
   }
 }
 

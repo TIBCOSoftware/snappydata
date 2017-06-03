@@ -58,6 +58,8 @@ trait StoreUnifiedManager {
 
   def logStats(): Unit
 
+  def shouldStopRecovery(): Boolean
+
   /**
     * Change the off-heap owner to mark it being used for storage.
     * Passing the owner as null allows moving ByteBuffers not allocated
@@ -120,6 +122,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
   override def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit = {}
+
+  override def shouldStopRecovery(): Boolean = false
 }
 
 object MemoryManagerCallback extends Logging {
