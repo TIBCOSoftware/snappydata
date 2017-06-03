@@ -126,11 +126,7 @@ class LeadImpl extends ServerImpl with Lead
           } else {
             Constant.STORE_PROPERTY_PREFIX + k
           }
-        } /*
-        else if (k.startsWith(GemFireSparkConnectorCacheImpl.gfeGridPropPrefix)) {
-          Constant.STORE_PROPERTY_PREFIX + k
-        }
-        */
+        } 
         else {
           k
         }
