@@ -50,7 +50,7 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("log-level", "config")
   // Easier to switch ON traces. thats why added this.
   // bootProps.setProperty("gemfirexd.debug.true",
-  //   "QueryDistribution,TraceExecution,TraceActivation")
+  //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
     TestUtils.defaultCores.toString)
