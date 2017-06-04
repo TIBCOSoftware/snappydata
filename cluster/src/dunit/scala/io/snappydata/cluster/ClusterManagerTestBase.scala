@@ -54,9 +54,9 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
     TestUtils.defaultCores.toString)
-  // Keeping it as default for all other dunits as it can create
-  // issues like interacting with heap monitor.
-  bootProps.setProperty("spark.memory.manager", "default")
+  bootProps.setProperty("spark.memory.manager",
+    "org.apache.spark.memory.SnappyUnifiedMemoryManager")
+  bootProps.setProperty("critical-heap-percentage", "95")
 
   var host: Host = _
   var vm0: VM = _
