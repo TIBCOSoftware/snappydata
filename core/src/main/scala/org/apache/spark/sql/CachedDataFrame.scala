@@ -179,7 +179,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     while (cause != null) {
       cause match {
         case sqle: SQLException
-          if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+          if SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH.equals(sqle.getSQLState) =>
           return (true, sqle)
         case _ =>
           cause = cause.getCause
