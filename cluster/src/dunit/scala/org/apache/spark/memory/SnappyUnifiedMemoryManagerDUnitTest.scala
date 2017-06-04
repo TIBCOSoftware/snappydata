@@ -17,20 +17,16 @@
 package org.apache.spark.memory
 
 
-import java.lang.management.ManagementFactory
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
-import com.pivotal.gemfirexd.DistributedSQLTestBase
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionConfBuilder, ConnectionUtil}
-import org.apache.spark.sql.{SaveMode, SnappyContext}
-import SnappyUnifiedMemoryManagerDUnitTest._
-import com.pivotal.gemfirexd.internal.engine.GfxdConstants
-import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
-import io.snappydata.Constant
+import org.apache.spark.memory.SnappyUnifiedMemoryManagerDUnitTest._
+import org.apache.spark.sql.SnappyContext
 
 case class DummyData(col1: Int, col2: Int, col3: Int)
 
@@ -43,7 +39,7 @@ class WaitAssert(val error: Int, clazz: Class[_]) {
   def assertStorageUsed(vm1: VM, vm2: VM, ignoreByteCount: Int = 0): Boolean = {
     value1 = vm1.invoke(clazz, "getStorageMemory").asInstanceOf[Long]
     value2 = vm2.invoke(clazz, "getStorageMemory").asInstanceOf[Long]
-    println(s"vm1_memoryUsed $value1 vm2_memoryUsed $value2")
+    // println(s"vm1_memoryUsed $value1 vm2_memoryUsed $value2")
     excString = s"failed $value1 & $value2 are not within permissable limit \n"
 
     if (value1 == value2) return true
@@ -69,6 +65,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
+    snc.setConf(io.snappydata.Property.ColumnBatchSize.name, "500")
     snc
   }
 
@@ -78,29 +75,13 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm2.invoke(getClass, "resetStorageMemory")
   }
 
-  override def beforeClass(): Unit = {
-    // stop any running lead first to update the "maxErrorAllowed" property
-    ClusterManagerTestBase.stopSpark()
-    bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "500")
-    bootProps.setProperty("spark.memory.manager",
-      "org.apache.spark.memory.SnappyUnifiedMemoryManager")
-    bootProps.setProperty("critical-heap-percentage", "90")
-    super.beforeClass()
-  }
-
-  override def afterClass(): Unit = {
-    super.afterClass()
-    // force restart with default properties in subsequent tests
-    ClusterManagerTestBase.stopSpark()
-  }
-
   override def setUp(): Unit = {
     super.setUp()
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
   }
 
   override def tearDown2(): Unit = {
-    resetMemoryManagers
+    resetMemoryManagers()
     super.tearDown2()
   }
 
