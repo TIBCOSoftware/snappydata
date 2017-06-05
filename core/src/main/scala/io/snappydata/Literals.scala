@@ -229,6 +229,15 @@ object Property extends Enumeration {
     "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
 
+  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashAggregateSize",
+    "Aggregation will use optimized hash aggregation plan but one that does not " +
+        "overflow to disk and can cause OOME if the result of aggregation is large. " +
+        "The limit specifies the input data size (with b/k/m/g/t/p suffixes for units) " +
+        "and not the output size. Set this only if there are known to be queries " +
+        "that can return very large number of rows in aggregation results. " +
+        "Default value is 0b meaning no limit on the size so the optimized " +
+        "hash aggregation is always used.", Some("0b"))
+
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +
