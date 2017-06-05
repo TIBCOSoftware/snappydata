@@ -26,6 +26,7 @@ import scala.util.Random
 
 import io.snappydata.test.dunit.VM
 import io.snappydata.test.util.TestException
+import io.snappydata.util.TestUtils
 import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -57,10 +58,6 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def productDir: String
 
-  protected def locatorProperty: String
-
-  protected def useThinClientConnector: Boolean
-
   protected def locatorClientPort: Int
 
   protected def startNetworkServers(): Unit
@@ -71,8 +68,8 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
-      startArgs :+ "column" :+ Boolean.box(false) :+ props :+ locatorProperty
-     :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+      startArgs :+ "column" :+ Boolean.box(false) :+ props
+      :+ Int.box(locatorClientPort))
 
     // make sure that table dropped from external cluster is not cached
     // in catalog of embedded mode cluster
@@ -94,8 +91,8 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
-      startArgs :+ "row" :+ Boolean.box(false) :+ props :+ locatorProperty
-          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+      startArgs :+ "row" :+ Boolean.box(false) :+ props
+          :+ Int.box(locatorClientPort))
 
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("row", isComplex = false, props)
@@ -109,8 +106,8 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
-      startArgs :+ "column" :+ Boolean.box(true) :+ props :+ locatorProperty
-          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+      startArgs :+ "column" :+ Boolean.box(true) :+ props
+          :+ Int.box(locatorClientPort))
 
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("column", isComplex = true, props)
@@ -119,27 +116,27 @@ trait SplitClusterDUnitTestBase extends Logging {
   def doTestTableFormChanges(skewNetworkServers: Boolean): Unit = {
     // StandAlone Spark Cluster Operations
     // row table
-    vm3.invoke(getClass, "createDropTablesInSplitMode",
-      startArgs :+ locatorProperty
-          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort) :+ "ROW")
+    vm3.invoke(getClass, "createTablesInSplitMode",
+      startArgs
+          :+ Int.box(locatorClientPort) :+ "ROW")
 
-    testObject.createDropEmbeddedModeTables("ROW")
+    testObject.dropAndCreateTablesInEmbeddedMode("ROW")
 
     vm3.invoke(getClass, "verifyTableFormInSplitMOde",
-      startArgs :+ locatorProperty
-          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+      startArgs
+          :+ Int.box(locatorClientPort))
 
     // StandAlone Spark Cluster Operations
     // column table
-    vm3.invoke(getClass, "createDropTablesInSplitMode",
-      startArgs :+ locatorProperty
-          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort) :+ "COLUMN")
+    vm3.invoke(getClass, "createTablesInSplitMode",
+      startArgs
+          :+ Int.box(locatorClientPort) :+ "COLUMN")
 
-    testObject.createDropEmbeddedModeTables("COLUMN")
+    testObject.dropAndCreateTablesInEmbeddedMode("COLUMN")
 
     vm3.invoke(getClass, "verifyTableFormInSplitMOde",
-      startArgs :+ locatorProperty
-          :+ Boolean.box(useThinClientConnector) :+ Int.box(locatorClientPort))
+      startArgs
+          :+ Int.box(locatorClientPort))
   }
 
   protected def skewNetworkServers: Boolean = false
@@ -157,11 +154,7 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
 
-  // snap-1505 is filed to enable this test
-  final def DISABLEDtestTableFormChanges(): Unit = {
-    if (!useThinClientConnector) {
-      return
-    }
+  final def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
 
@@ -180,27 +173,27 @@ trait SplitClusterDUnitTestObject extends Logging {
 
   def assertTableNotCachedInHiveCatalog(tableName: String): Unit
 
-  def createDropEmbeddedModeTables(tableType: String): Unit = {
+  def dropAndCreateTablesInEmbeddedMode(tableType: String): Unit = {
   }
 
-  def createDropTablesInSplitMode(locatorPort: Int,
-      prop: Properties, locatorProp: String,
-      useThinClientConnector: Boolean, locatorClientPort: Int,
+  def createTablesInSplitMode(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int,
       tableType: String): Unit = {
   }
 
   def verifyTableFormInSplitMOde(locatorPort: Int,
-      prop: Properties, locatorProp: String,
-      useThinClientConnector: Boolean, locatorClientPort: Int): Unit = {
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
   }
 
   def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
       prop: Properties, tableType: String, isComplex: Boolean,
-      props: Map[String, String], locatorProp: String,
-      useThinConnectorMode: Boolean, locatorClientPort: Int): Unit = {
+      props: Map[String, String],
+      locatorClientPort: Int): Unit = {
 
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort, locatorProp,
-      useThinConnectorMode, locatorClientPort)
+    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
+      locatorClientPort)
 
     // try to create the table already created in embedded mode.
     // it should throw the table exist exception.
@@ -248,39 +241,18 @@ trait SplitClusterDUnitTestObject extends Logging {
    * Returns the SnappyContext for external(connector) Spark cluster connected to
    * SnappyData cluster
    */
-  def getSnappyContextForConnector(locatorPort: Int, locatorProp: String,
-      useThinConnectorMode: Boolean, locatorClientPort: Int): SnappyContext = {
+  def getSnappyContextForConnector(locatorPort: Int,
+      locatorClientPort: Int): SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
-
-    if (!useThinConnectorMode) {
-      // Test setting locators property via environment variable.
-      // Also enables checking for "spark." or "snappydata." prefix in key.
-      System.setProperty(locatorProp, s"localhost:$locatorPort")
-      val conf = new SparkConf()
-          .setAppName("test Application")
-          .setMaster(s"spark://$hostName:7077")
-          .set("spark.executor.extraClassPath",
-            getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-
-      val sc = SparkContext.getOrCreate(conf)
-      val snc = SnappyContext(sc)
-
-      val mode = SnappyContext.getClusterMode(snc.sparkContext)
-      mode match {
-        case SplitClusterMode(_, _) => // expected
-        case _ => assert(false, "cluster mode is " + mode)
-      }
-      snc
-    } else {
-      System.clearProperty(locatorProp)
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
+          .set("spark.executor.cores", TestUtils.defaultCores.toString)
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-          .set("snappydata.Cluster.URL", connectionURL)
+          .set("snappydata.connection", connectionURL)
 
       val sc = SparkContext.getOrCreate(conf)
 //      sc.setLogLevel("DEBUG")
@@ -294,7 +266,6 @@ trait SplitClusterDUnitTestObject extends Logging {
         case _ => assert(false, "cluster mode is " + mode)
       }
       snc
-    }
   }
 
   def createTableUsingDataSourceAPI(snc: SnappyContext,

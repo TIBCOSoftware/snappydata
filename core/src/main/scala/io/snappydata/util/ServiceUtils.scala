@@ -53,6 +53,8 @@ object ServiceUtils {
       case (k, v) if k.startsWith(Constant.SPARK_STORE_PREFIX) =>
         storeProps.setProperty(k.trim.replaceFirst(
           Constant.SPARK_STORE_PREFIX, ""), v)
+      case (k, v) if k.startsWith(Constant.SPARK_PREFIX) ||
+          k.startsWith(Constant.PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
     storeProps

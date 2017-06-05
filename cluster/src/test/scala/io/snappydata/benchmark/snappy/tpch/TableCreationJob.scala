@@ -28,12 +28,12 @@ object TableCreationJob extends SnappySQLJob {
   var tpchDataPath: String = _
   var buckets_Order_Lineitem: String = _
   var buckets_Cust_Part_PartSupp: String = _
-  var buckets_Nation_Region_Supp: String = _
-  var nation_Region_Supp_col: Boolean = _
+  var buckets_Supplier: String = _
+  var isSupplierColumn: Boolean = _
   var redundancy: String = _
   var persistence: Boolean = _
   var persistence_type: String = _
-  var numberOfloadStages : String = _
+  var numberOfLoadStages : String = _
   var isParquet : Boolean = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
@@ -60,37 +60,35 @@ object TableCreationJob extends SnappySQLJob {
     snc.dropTable("LINEITEM", ifExists = true)
     snc.dropTable("ORDERS", ifExists = true)
 
-    if (nation_Region_Supp_col) {
-      TPCHColumnPartitionedTable.createAndPopulateNationTable(snc, tpchDataPath, isSnappy,
-        buckets_Nation_Region_Supp, loadPerfPrintStream)
-      TPCHColumnPartitionedTable.createAndPopulateRegionTable(snc, tpchDataPath, isSnappy,
-        buckets_Nation_Region_Supp, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
+      loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
+      loadPerfPrintStream)
+
+    if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snc, tpchDataPath, isSnappy,
-        buckets_Nation_Region_Supp, loadPerfPrintStream)
+        buckets_Supplier, loadPerfPrintStream, redundancy, persistence, persistence_type,
+        numberOfLoadStages.toInt, isParquet)
     } else {
-      TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
-        loadPerfPrintStream)
-      TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
-        loadPerfPrintStream)
       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
-        isSnappy, loadPerfPrintStream, numberOfloadStages.toInt)
+        isSnappy, loadPerfPrintStream, numberOfLoadStages.toInt)
     }
 
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
+    TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt, isParquet)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
+      numberOfLoadStages.toInt, isParquet)
+    TPCHColumnPartitionedTable.createPopulateLineItemTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfloadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -113,14 +111,14 @@ object TableCreationJob extends SnappySQLJob {
       "15"
     }
 
-    buckets_Nation_Region_Supp = if (config.hasPath("Buckets_Nation_Region_Supp")) {
-      config.getString("Buckets_Nation_Region_Supp")
+    buckets_Supplier = if (config.hasPath("Buckets_Supplier")) {
+      config.getString("Buckets_Supplier")
     } else {
       "3"
     }
 
-    nation_Region_Supp_col = if (config.hasPath("Nation_Region_Supp_col")) {
-      config.getBoolean("Nation_Region_Supp_col")
+    isSupplierColumn = if (config.hasPath("IsSupplierColumnTable")) {
+      config.getBoolean("IsSupplierColumnTable")
     } else {
       false
     }
@@ -143,7 +141,7 @@ object TableCreationJob extends SnappySQLJob {
       "false"
     }
 
-    numberOfloadStages = if (config.hasPath("NumberOfLoadStages")) {
+    numberOfLoadStages = if (config.hasPath("NumberOfLoadStages")) {
       config.getString("NumberOfLoadStages")
     } else {
       "1"

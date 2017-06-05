@@ -254,6 +254,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
 
     val options = "OPTIONS (BUCKETS '1', " +
       "PARTITION_BY 'Col1', " +
+      "PERSISTENCE 'none', " +
       "EVICTION_BY 'LRUCOUNT 30', " +
       "OVERFLOW 'true')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
@@ -283,7 +284,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
 
     val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', " +
-      "OVERFLOW 'true')"
+      "OVERFLOW 'true', PERSISTENCE 'NONE')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
       ") " + " USING row " +
       options

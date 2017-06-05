@@ -743,8 +743,8 @@ class ColumnTableTest
     val stmt = conn.createStatement()
     var rs = stmt.executeQuery(s"select count (*) from $tableName")
     assert(rs.next())
-    // The row buffer should not have more than 2 rows with small batch size
-    assert(rs.getInt(1) <= 2)
+    // The row buffer should not have more than 3 rows with small batch size
+    assert(rs.getInt(1) <= 3)
     assert(!rs.next())
     rs.close()
 
@@ -753,7 +753,7 @@ class ColumnTableTest
     snc.insert(tableName, dataDF.collect(): _*)
     rs = stmt.executeQuery(s"select count (*) from $tableName")
     assert(rs.next())
-    assert(rs.getInt(1) <= 2)
+    assert(rs.getInt(1) <= 3)
     assert(!rs.next())
     rs.close()
 

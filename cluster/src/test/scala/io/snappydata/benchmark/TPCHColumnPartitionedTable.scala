@@ -119,8 +119,8 @@ object TPCHColumnPartitionedTable {
 
   var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
 
-  def createAndPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+  def createPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -190,8 +190,8 @@ object TPCHColumnPartitionedTable {
   }
 
 
-  def createAndPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+  def createPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -263,7 +263,7 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -312,7 +312,7 @@ object TPCHColumnPartitionedTable {
 
 
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -358,7 +358,7 @@ object TPCHColumnPartitionedTable {
   }
 
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
       isParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
@@ -483,23 +483,45 @@ object TPCHColumnPartitionedTable {
   }
 
   def createAndPopulateSupplierTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
-      buckets: String, loadPerfPrintStream: PrintStream = null): Unit = {
+      buckets: String = "113", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
+      persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStage : Int = 1,
+      isParquet : Boolean = false): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
-    val orderData = sc.textFile(s"$path/supplier.tbl")
-    val suppreadings = orderData.map(s => s.split('|')).map(s => TPCHTableSchema.parseSupplierRow
-    (s))
-    val suppdf = sqlContext.createDataFrame(suppreadings)
-    val newSchema = TPCHTableSchema.newSupplierSchema(suppdf.schema)
-    if (isSnappy) {
-      val p1 = Map(("PARTITION_BY" -> "S_SUPPKEY"), ("BUCKETS" -> buckets))
-      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
-      snappyContext.createTable("SUPPLIER", "column", newSchema, p1)
-      suppdf.write.insertInto("SUPPLIER")
-    } else {
-      suppdf.createOrReplaceTempView("SUPPLIER")
-      sqlContext.cacheTable("SUPPLIER")
-      sqlContext.table("SUPPLIER").count()
+    var suppDF: DataFrame = null
+    for (i <- 1 to numberOfLoadingStage) {
+      // use parquet data if available
+      if (isParquet) {
+        suppDF = sqlContext.read.format("parquet").load(s"$path/parquet_supplier_$i")
+      } else {
+        val suppData = sc.textFile(s"$path/supplier.tbl.$i")
+        val suppReadings = suppData.map(s => s.split('|')).map(s => TPCHTableSchema
+            .parseSupplierRow(s))
+        val suppDF1 = sqlContext.createDataFrame(suppReadings)
+        val newSchema = TPCHTableSchema.newSupplierSchema(suppDF1.schema)
+
+        suppDF = ColumnCacheBenchmark.applySchema(suppDF1, newSchema)
+        if (CREATE_PARQUET) {
+          suppDF.write.format("parquet").save(s"$path/parquet_supplier_$i")
+        }
+      }
+      val newSchema = TPCHTableSchema.newSupplierSchema(suppDF.schema)
+      if (isSnappy) {
+        if (i == 1) {
+          var p1 = Map(("PARTITION_BY" -> "S_SUPPKEY"), ("BUCKETS" -> buckets),
+            ("REDUNDANCY" -> redundancy))
+          if (persistence) {
+            p1 += "PERSISTENT" -> s"$persistence_type"
+          }
+          val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+          snappyContext.createTable("SUPPLIER", "column", newSchema, p1)
+        }
+        suppDF.write.insertInto("SUPPLIER")
+      } else {
+        suppDF.createOrReplaceTempView("SUPPLIER")
+        sqlContext.cacheTable("SUPPLIER")
+        sqlContext.table("SUPPLIER").count()
+      }
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {

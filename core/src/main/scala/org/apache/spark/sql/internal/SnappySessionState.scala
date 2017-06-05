@@ -17,8 +17,7 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.{Calendar, Properties}
-import javassist.bytecode.stackmap.TypeData.NullType
+import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
@@ -68,6 +67,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
+
+  private[sql] var disableStoreOptimizations : Boolean = false
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
@@ -226,7 +227,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog = {
+  override lazy val catalog: SnappyStoreHiveCatalog = {
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
@@ -336,7 +337,8 @@ class SnappyConf(@transient val session: SnappySession)
   private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
-         Property.HashJoinSize.name => session.clearPlanCache()
+         Property.HashJoinSize.name |
+         Property.HashAggregateSize.name => session.clearPlanCache()
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {
