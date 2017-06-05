@@ -52,16 +52,16 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
     // compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    // compile project(':snappy-spark:snappy-spark-sql-kafka-0-10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   } else {
 
-    compile("io.snappydata:snappy-spark-unsafe_${scalaBinaryVersion}:2.0.3-2") {
-      exclude(group: 'org.scala-lang', module: 'scala-library')
-      exclude(group: 'org.scala-lang', module: 'scala-reflect')
-      exclude(group: 'io.snappydata', module: 'snappy-spark-tags_' + scalaBinaryVersion)
-    }
+//    compile("io.snappydata:snappy-spark-unsafe_${scalaBinaryVersion}:2.0.3-2") {
+//      exclude(group: 'org.scala-lang', module: 'scala-library')
+//      exclude(group: 'org.scala-lang', module: 'scala-reflect')
+//      exclude(group: 'io.snappydata', module: 'snappy-spark-tags_' + scalaBinaryVersion)
+//    }
     provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}") {
       exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     }

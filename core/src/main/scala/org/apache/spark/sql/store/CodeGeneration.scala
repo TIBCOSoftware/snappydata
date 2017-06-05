@@ -28,21 +28,21 @@ import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.UnsafeMapData
+import org.apache.spark.sql.row.GemFireXDDialect
+import org.codehaus.janino.CompilerFactory
+
+import scala.collection.JavaConverters._
+import scala.util.hashing.MurmurHash3
+// import org.apache.spark.sql.catalyst.expressions.MutableRow
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
-import org.codehaus.janino.CompilerFactory
-
-import scala.collection.JavaConverters._
-import scala.util.hashing.MurmurHash3
 
 /**
  * Utilities to generate code for exchanging data from Spark layer
@@ -218,9 +218,7 @@ object CodeGeneration extends Logging {
       classOf[Decimal].getName,
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
-      classOf[MapData].getName,
-      classOf[UnsafeMapData].getName,
-      classOf[java.util.Arrays].getName)
+      classOf[MapData].getName)
 
   def getRowSetterFragment(schema: Array[StructField],
       dialect: JdbcDialect, row: String, stmt: String,
@@ -390,8 +388,6 @@ object CodeGeneration extends Logging {
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
       classOf[MapData].getName,
-      classOf[UnsafeMapData].getName,
-      classOf[java.util.Arrays].getName,
       classOf[InternalDataSerializer].getName))
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
