@@ -21,6 +21,7 @@ import java.sql.DriverManager
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable, VM}
@@ -106,7 +107,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
   }
 
   override def tearDownAfter(): Unit = {
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
   }
 
   def setDMLMaxChunkSize(size: Long): Unit = {
@@ -127,17 +128,18 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         s"COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
         s"'5000')")
 
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "setTestHook")
     // Invoking validate result in each VM as a separate thread inorder to resume the code for
     // insertion of records
     invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "validateResults", netPort1)
 
-
     for (i <- 1 to 10) {
       snc.sql(s"insert into $tableName values($i,'${i + 1}',${i + 2})")
+      println(s"Inserting $i")
     }
 
     val cnt = snc.sql(s"select * from $tableName").count()
-
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
     assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
@@ -146,6 +148,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       throw errorInThread
     }
 
+    vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -156,7 +159,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       classType: Class[ValidateMVCCDUnitTest],
       methodName: String, netPort1: Int): Unit = {
 
-    new Thread {
+    val t = new Thread {
 
       override def run: Unit = {
         try {
@@ -166,8 +169,9 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
             errorInThread = e
         }
       }
-    }.start()
+    }
 
+    t.start()
   }
 
 
@@ -185,17 +189,11 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         s" buckets '1',MAXPARTSIZE '200',COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
         s"'5000')")
 
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "setTestHook")
     // Invoking validate result in each VM as a separate thread inorder to resume the code for
     // insertion of records
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "validateResultsWithRollback", netPort1)
+    invokeMethodInVm(vm0,classOf[ValidateMVCCDUnitTest], "validateResultsWithRollback", netPort1)
 
-    /*
-        val rdd1 = sc.parallelize(
-          (1 to 10).map(i => Data(i, i.toString, Decimal(i.toString + '.' + i))))
-
-        val dataDF1 = snc.createDataFrame(rdd1)
-        //Write 5 records as batch size is set to 2 it will trigger the cachebatch creation
-        dataDF1.write.insertInto(tableName) */
     var cnt = snc.sql(s"select * from $tableName").count()
 
     assert(cnt == 0, s"Expected row count is 0 while actual row count is $cnt")
@@ -203,11 +201,14 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     try {
       for (i <- 1 to 10) {
         snc.sql(s"insert into $tableName values($i, '${i + 1}', ${i + 2})")
+        println(s"From: testMVCCForColumnTableWithRollback Inserting $i")
       }
     } catch {
       case rex: Throwable => // As expected
     }
 
+
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
     cnt = snc.sql(s"select * from $tableName").count()
 
     assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
@@ -215,6 +216,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     if (errorInThread != null) {
       throw errorInThread
     }
+    vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -236,13 +238,9 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         s"OPTIONS (REDUNDANCY '1',PARTITION_BY 'col1')")
 
 
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "performMixOperationsOnRowTable",
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "performMixOperationsOnRowTable",
       netPort1)
 
-    if (errorInThread != null) {
-
-      throw errorInThread
-    }
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -264,13 +262,9 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
         s"OPTIONS (REDUNDANCY '1',PARTITION_BY 'col1')")
 
 
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "performBatchInsert",
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "performBatchInsert",
       netPort1)
 
-    if (errorInThread != null) {
-
-      throw errorInThread
-    }
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -299,33 +293,45 @@ object ValidateMVCCDUnitTest {
 
     override def waitOnTestLock(): Unit = {
       lockForTest.synchronized {
-        lockForTest.wait(60000)
+        lockForTest.wait(300000)
       }
     }
 
     override def waitOnOperationLock(): Unit = {
       operationLock.synchronized {
-        operationLock.wait(60000)
+        operationLock.wait(300000)
       }
     }
   }
 
-  def validateResults(netPort: Int): Unit = {
-
+  def setTestHook(): Unit = {
     val cache = GemFireCacheImpl.getInstance()
-    if (null != cache) {
-      cache.setRvvSnapshotTestHook(new MyTestHook)
-      cache.waitOnRvvTestHook()
+    cache.setRvvSnapshotTestHook(new MyTestHook)
+    println("Setting testhook")
 
-    } else {
-      return;
+  }
+
+
+  def printRegionSize(): Unit = {
+    val cache = GemFireCacheImpl.getInstance()
+    println("APP.TESTTABLE Region size : "+cache.getRegion("/APP/TESTTABLE").size())
+    println("SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_  Region size : "+cache.getRegion
+    ("/SNAPPYSYS_INTERNAL/APP__TESTTABLE_COLUMN_STORE_").size())
+  }
+
+
+  def validateResults(netPort: Int): Unit = {
+    val ctmp = Misc.getGemFireCacheNoThrow
+    if (ctmp != null) {
+      println("Validate results invoked in: " + ctmp.getDistributedSystem.getMemberId)
     }
+    val cache = GemFireCacheImpl.getInstance()
+
+    // started waiting on rvv test hook
+    cache.waitOnRvvTestHook()
     // scalastyle:off
     println("Got notification from test hook")
     // scalastyle:on
-    if (null == cache) {
-      return;
-    }
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
@@ -334,7 +340,6 @@ object ValidateMVCCDUnitTest {
 
     val tableName: String = "APP.TESTTABLE"
     val conn = DriverManager.getConnection(url)
-
 
     val s = conn.createStatement()
     s.execute(s"select * from $tableName")
@@ -449,18 +454,9 @@ object ValidateMVCCDUnitTest {
   def validateResultsWithRollback(netPort: Int): Unit = {
 
     val cache = GemFireCacheImpl.getInstance()
-    if (null != cache) {
-      cache.setRvvSnapshotTestHook(new MyTestHook)
-      cache.getCacheTransactionManager.testRollBack = true;
-      cache.waitOnRvvTestHook()
+    cache.getCacheTransactionManager.testRollBack = true;
+    cache.waitOnRvvTestHook()
 
-    } else {
-      return;
-    }
-
-    if (null == cache) {
-      return;
-    }
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
     var url: String = null
@@ -562,9 +558,9 @@ object ValidateMVCCDUnitTest {
 
     val s = conn.createStatement()
     for (i <- 1 to 100) {
-      prepareStatement.setInt(0, i)
-      prepareStatement.setInt(1, i + 1)
-      prepareStatement.setInt(2, i + 2)
+      prepareStatement.setInt(1, i)
+      prepareStatement.setInt(2, i + 1)
+      prepareStatement.setInt(3, i + 2)
       prepareStatement.addBatch()
     }
     prepareStatement.executeBatch()
@@ -595,7 +591,7 @@ object ValidateMVCCDUnitTest {
     val s = conn.createStatement()
 
     for (i <- 1 to 5) {
-      s.executeUpdate(s"insert into $tableName values($i,${i + 1},${i + 2}})")
+      s.executeUpdate(s"insert into $tableName values($i,'${i + 1}',${i + 2})")
     }
 
     s.execute(s"select * from $tableName")
@@ -608,18 +604,18 @@ object ValidateMVCCDUnitTest {
     assert(cnt == 5, s"Expected row count is 5 while actual row count is $cnt")
 
 
-    s.executeUpdate(s"update $tableName set col1=1 where col1>2")
+    s.executeUpdate(s"update $tableName set col3=1 where col1>2")
 
-    s.execute(s"select * from $tableName where col1=1")
+    s.execute(s"select * from $tableName where col3=1")
     cnt = 0
     val rs1 = s.getResultSet
     while (rs1.next) {
       cnt = cnt + 1
     }
-    assert(cnt == 4, s"Expected row count is 4 while actual row count is $cnt")
+    assert(cnt == 3, s"Expected row count is 3 while actual row count is $cnt")
 
 
-    s.executeUpdate(s"delete from $tableName where col1=1")
+    s.executeUpdate(s"delete from $tableName where col3=1")
 
     s.execute(s"select * from $tableName")
     cnt = 0
@@ -627,7 +623,7 @@ object ValidateMVCCDUnitTest {
     while (rs2.next) {
       cnt = cnt + 1
     }
-    assert(cnt == 1, s"Expected row count is 1 while actual row count is $cnt")
+    assert(cnt == 2, s"Expected row count is 1 while actual row count is $cnt")
 
     s.execute(s"drop table if exists $tableName")
 
