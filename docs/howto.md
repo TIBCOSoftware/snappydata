@@ -46,6 +46,8 @@ The following topics are covered in this section:
 
 * [How to Connect using ODBC Driver](#howto-odbc)
 
+* [How to Connect to the Cluster from External Clients](#howto-external-client)
+
 * [How to Use Apache Zeppelin with SnappyData](#howto-zeppelin)
 
 
@@ -210,7 +212,8 @@ For more information on the various modes, refer to the [SnappyData Smart Connec
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
 **Configure a SnappySession**: 
-The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster.
+
+The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster. Its value is consists of  locator host and JDBC client port on which the locator listens for connections (default 1527).
 
 ```
     val spark: SparkSession = SparkSession
@@ -1145,6 +1148,26 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
  When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
+
+<a id="howto-external-client"></a>
+## How to Connect to the Cluster from External Clients
+
+You can also connect to the SnappyData cluster from other networks as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
+
+When [starting the locator and server](configuration.md) set the following properties in the **conf/locators** and **conf/servers** files:
+
+* `-hostname-for-clients`: The public IP address of the locator or server. 
+
+* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-J-Dgemfirexd.hostname-for-clients=192.168.20.208` </br> 
+	<note>By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.</note>
+
+* **Port Settings**: The client, by default, connects to the locator or server at the default port 1527. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the `-client-port` property.
+
+<note> **Note**: </note>
+
+* <note> If the above properties are not set, when a client trys to connect to the cluster from a different network, the connection may fail and an error may be reported. </note>
+
+* <note> For ODBC clients, you must use the host and port details of the server and not the locator.</note> 
 
 <a id="howto-zeppelin"></a>
 ## How to Use Apache Zeppelin with SnappyData

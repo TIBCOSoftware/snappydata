@@ -233,7 +233,7 @@ bin/spark-submit \
     --conf snappydata.connection=localhost:1527 \
     --conf spark.ui.port=4042  quickstart/python/AirlineDataPythonApp.py
 ```
-`snappydata.connection` property denotes the `host:clientPort` combination of the SnappyData cluster and it is used to connect to the SnappyData cluster.
+`snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
 
 
 ### Streaming Jobs

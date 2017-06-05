@@ -161,7 +161,7 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 ```
 <Note>Note: </Note>
 
- * <note> The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster.</note>
+ * <note> The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. Its value is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527).
  
  * <note> In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`</note>
 
