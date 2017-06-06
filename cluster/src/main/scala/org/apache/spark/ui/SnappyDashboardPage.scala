@@ -720,16 +720,27 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     }
 
     val heapUsageDetails = {
-      <span><strong>JVM Heap:</strong>
-        <br/> { Utils.bytesToString(jvmHeapUsed).toString + " / " +
-          Utils.bytesToString(jvmHeapSize).toString }
-        <br/><strong>Storage Memory:</strong>
-        <br/> { Utils.bytesToString(storagePoolUsed).toString + " / " +
-          Utils.bytesToString(storagePoolSize).toString }
-        <br/><strong>Execution Memory:</strong>
-        <br/> { Utils.bytesToString(executionPoolUsed).toString + " / " +
-          Utils.bytesToString(executionPoolSize).toString }
-      </span>
+      if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+        <span><strong>JVM Heap:</strong>
+          <br/> { Utils.bytesToString(jvmHeapUsed).toString + " / " +
+            Utils.bytesToString(jvmHeapSize).toString }
+          <br/><strong>Storage Memory:</strong>
+          <br/> { SnappyDashboardPage.ValueNotApplicable }
+          <br/><strong>Execution Memory:</strong>
+          <br/> { SnappyDashboardPage.ValueNotApplicable }
+        </span>
+      } else {
+        <span><strong>JVM Heap:</strong>
+          <br/> { Utils.bytesToString(jvmHeapUsed).toString + " / " +
+            Utils.bytesToString(jvmHeapSize).toString }
+          <br/><strong>Storage Memory:</strong>
+          <br/> { Utils.bytesToString(storagePoolUsed).toString + " / " +
+            Utils.bytesToString(storagePoolSize).toString }
+          <br/><strong>Execution Memory:</strong>
+          <br/> { Utils.bytesToString(executionPoolUsed).toString + " / " +
+            Utils.bytesToString(executionPoolSize).toString }
+        </span>
+      }
     }
     val heapDetailsId = shortDirName + "-heap"
     val heapDetailsHandler = "$('#" + heapDetailsId + "').toggle();";
@@ -761,8 +772,12 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="width: 80%; float: left; padding-right:10px; text-align:right;">{
-            Utils.bytesToString(heapMemoryUsed).toString + " / " +
-                Utils.bytesToString(heapMemorySize).toString
+            if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+              SnappyDashboardPage.ValueNotApplicable
+            } else {
+              Utils.bytesToString(heapMemoryUsed).toString + " / " +
+                  Utils.bytesToString(heapMemorySize).toString
+            }
           }</div>
         <div style="width: 5px; float: right; padding-right: 10px; cursor: pointer;"
              onclick={heapDetailsHandler}> + </div>
@@ -773,8 +788,12 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       </td>
       <td>
         <div style="text-align:right; padding-right:15px;">{
-            Utils.bytesToString(offHeapMemoryUsed).toString + " / " +
-                Utils.bytesToString(offHeapMemorySize).toString
+            if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+              SnappyDashboardPage.ValueNotApplicable
+            } else {
+              Utils.bytesToString(offHeapMemoryUsed).toString + " / " +
+                  Utils.bytesToString(offHeapMemorySize).toString
+            }
           }</div>
       </td>
     </tr>
@@ -905,6 +924,8 @@ object SnappyDashboardPage{
     val error = "Error"
     val severe = "Severe"
   }
+
+  val ValueNotApplicable = "N/A"
 
   val clusterStatsTitle = "Cluster"
   val clusterStatsTitleTooltip = "SnappyData Clusters Summary"
