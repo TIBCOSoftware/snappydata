@@ -373,9 +373,10 @@ object ValidateMVCCDUnitTest {
     // scalastyle:on
     assert(cnt1 == 10, s"Expected row count is 10 while actual row count is $cnt1")
 
-    var cnt2 = 0;
-    s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    var cnt2 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
     val rs2 = s.getResultSet
     while (rs2.next) {
       cnt2 = cnt2 + 1
@@ -408,9 +409,10 @@ object ValidateMVCCDUnitTest {
     cache.setRvvSnapshotTestHook(null)
 
 
-    var cnt4 = 0;
-    s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    var cnt4 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
     val rs4 = s.getResultSet
     while (rs4.next) {
       cnt4 = cnt4 + 1
@@ -498,9 +500,10 @@ object ValidateMVCCDUnitTest {
     println("Row count before creating the cachebatch in row buffer: " + cnt1)
     assert(cnt1 == 10, s"Expected row count is 10 while actual row count is $cnt1")
 
-    var cnt2 = 0;
-    s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    var cnt2 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
     val rs2 = s.getResultSet
     while (rs2.next) {
       cnt2 = cnt2 + 1
@@ -525,9 +528,10 @@ object ValidateMVCCDUnitTest {
     assert(cnt3 == 10, s"Expected row count is 10 while actual row count is $cnt3")
 
 
-    var cnt4 = 0;
-    s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    var cnt4 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
     val rs4 = s.getResultSet
     while (rs4.next) {
       cnt4 = cnt4 + 1
