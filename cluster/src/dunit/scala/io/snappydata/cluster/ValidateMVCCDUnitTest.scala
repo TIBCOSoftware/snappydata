@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) with Logging {
 
@@ -315,8 +316,8 @@ object ValidateMVCCDUnitTest {
   def printRegionSize(): Unit = {
     val cache = GemFireCacheImpl.getInstance()
     println("APP.TESTTABLE Region size : "+cache.getRegion("/APP/TESTTABLE").size())
-    println("SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_  Region size : "+cache.getRegion
-    ("/SNAPPYSYS_INTERNAL/APP__TESTTABLE_COLUMN_STORE_").size())
+    println("SNAPPYSYS_INTERNAL.APP____TESTTABLE_COLUMN_STORE_  Region size : "+cache.getRegion
+    ("/SNAPPYSYS_INTERNAL/APP____TESTTABLE_COLUMN_STORE_").size())
   }
 
 
