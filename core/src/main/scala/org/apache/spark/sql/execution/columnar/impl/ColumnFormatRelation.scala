@@ -27,7 +27,7 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -130,9 +130,9 @@ abstract class BaseColumnFormatRelation(
     // RDDs needn't have to care for orderless hashing scheme at invocation point.
     val (pruningExpressions, fields) = partitionColumns.map { pc =>
       filters.collectFirst {
-          case EqualTo(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
+          case EqualTo(a, v: DynamicReplacableConstant) if pc.equalsIgnoreCase(a) =>
             (v, schema(a))
-          case EqualNullSafe(a, v@ParamLiteral(_, _, _)) if pc.equalsIgnoreCase(a) =>
+          case EqualNullSafe(a, v: DynamicReplacableConstant) if pc.equalsIgnoreCase(a) =>
             (v, schema(a))
       }
     }.filter(_.nonEmpty).map(_.get).unzip
