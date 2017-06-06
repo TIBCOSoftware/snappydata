@@ -7,7 +7,7 @@
 
 To download and install the Visual C++ Redistributable for Visual Studio 2015:
 
-1. [Download Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-in/download/details.aspx?id=48145.)
+1. [Download Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-in/download/details.aspx?id=48145)
 
 2. Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.
 

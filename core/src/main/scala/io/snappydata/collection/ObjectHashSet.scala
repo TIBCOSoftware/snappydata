@@ -32,20 +32,19 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.execution
+package io.snappydata.collection
 
 import java.util.{Iterator => JIterator}
 
-import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
-import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
-import org.apache.spark.storage.TaskResultBlockId
+import scala.reflect.ClassTag
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
 
-import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.storage.TaskResultBlockId
 import org.apache.spark.{SparkEnv, TaskContext}
-
-import scala.reflect.ClassTag
 
 /**
  * A fast hash set implementation for non-null data. This hash set supports
@@ -68,7 +67,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] val taskContext = TaskContext.get()
 
   private[this] val consumer = if (taskContext ne null) {
-    new ObjectHashSetMemoryConsumer(taskContext.taskMemoryManager())
+    new ObjectHashSetMemoryConsumer(Utils.taskMemoryManager(taskContext))
   } else null
 
   if (!longLived && (taskContext ne null)) {
@@ -78,7 +77,8 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] var objectSize = -1L
   private[this] var totalSize = 0L
 
-  private[this] var _capacity = nextPowerOf2(initialCapacity)
+  private[this] var _capacity = ObjectHashSet.nextPowerOf2(
+    initialCapacity, loadFactor)
   private[this] var _size = 0
   private[this] var _growThreshold = (loadFactor * _capacity).toInt
 
@@ -98,35 +98,6 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   def data: Array[T] = _data
 
   def keyIsUnique: Boolean = _keyIsUnique
-
-  def addString(key: UTF8String, default: UTF8String => T): T = {
-    val hash = key.hashCode()
-    val data = _data
-    val mask = _mask
-    var pos = hash & mask
-    var delta = 1
-    while (true) {
-      val mapKey = data(pos)
-      if (mapKey ne null) {
-        val stringKey = mapKey.asInstanceOf[StringKey]
-        if (stringKey.s.equals(key)) {
-          // update
-          return stringKey.asInstanceOf[T]
-        } else {
-          // quadratic probing with position increase by 1, 2, 3, ...
-          pos = (pos + delta) & mask
-          delta += 1
-        }
-      } else {
-        val entry = default(key)
-        // insert into the map and rehash if required
-        data(pos) = entry
-        handleNewInsert(pos)
-        return entry
-      }
-    }
-    throw new AssertionError("not expected to reach")
-  }
 
   def addLong(key: Long, default: Long => T): T = {
     val hash = ClientResolverUtils.fastHashLong(key)
@@ -253,7 +224,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     }
   }
 
-  private def entrySize(pos : Int): Unit = {
+  private def entrySize(pos: Int): Unit = {
     objectSize = ReflectionSingleObjectSizer.INSTANCE.sizeof(data(pos))
   }
 
@@ -275,7 +246,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     acquireMemory(valSize)
     totalSize += valSize
 
-    val newCapacity = checkCapacity(capacity << 1)
+    val newCapacity = ObjectHashSet.checkCapacity(capacity << 1, loadFactor)
     val newData = newArray(newCapacity)
     val newMask = newCapacity - 1
 
@@ -308,21 +279,6 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     _growThreshold = (loadFactor * newCapacity).toInt
   }
 
-  private def checkCapacity(capacity: Int): Int = {
-    val maxCapacity = 1 << 30
-    if (capacity > 0 && capacity <= maxCapacity) {
-      capacity
-    } else {
-      throw new IllegalStateException(
-        s"Can't contain more than ${(loadFactor * maxCapacity).toInt} elements")
-    }
-  }
-
-  private def nextPowerOf2(n: Int): Int = {
-    val highBit = Integer.highestOneBit(n)
-    checkCapacity(if (highBit == n) n else highBit << 1)
-  }
-
   private def acquireMemory(required: Long) = {
     if (longLived) {
       val blockId = TaskResultBlockId(taskContext.taskAttemptId())
@@ -345,16 +301,22 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   }
 }
 
-abstract class StringKey(val s: UTF8String) {
+object ObjectHashSet {
 
-  override lazy val hashCode: Int = s.hashCode()
-
-  override def equals(obj: Any): Boolean = obj match {
-    case o: StringKey => s == o.s
-    case _ => false
+  def checkCapacity(capacity: Int, loadFactor: Double): Int = {
+    val maxCapacity = 1 << 30
+    if (capacity > 0 && capacity <= maxCapacity) {
+      capacity
+    } else {
+      throw new IllegalStateException(
+        s"Can't contain more than ${(loadFactor * maxCapacity).toInt} elements")
+    }
   }
 
-  override def toString: String = String.valueOf(s)
+  def nextPowerOf2(n: Int, loadFactor: Double): Int = {
+    val highBit = Integer.highestOneBit(n)
+    checkCapacity(if (highBit == n) n else highBit << 1, loadFactor)
+  }
 }
 
 abstract class LongKey(val l: Long) {
@@ -370,6 +332,6 @@ abstract class LongKey(val l: Long) {
 }
 
 final class ObjectHashSetMemoryConsumer(taskMemoryManager: TaskMemoryManager)
-  extends MemoryConsumer(taskMemoryManager) {
+    extends MemoryConsumer(taskMemoryManager) {
   override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
 }

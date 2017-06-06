@@ -1,39 +1,41 @@
+/*
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.CancelException
-import com.gemstone.gemfire.cache.DataPolicy
-import com.gemstone.gemfire.cache.execute.FunctionService
-import com.gemstone.gemfire.i18n.LogWriterI18n
-import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
-import com.gemstone.gemfire.internal.cache.{PartitionedRegion, LocalRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdMessage, GfxdListResultCollector}
-import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
-import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer}
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult, SnappyIndexStats, SnappyRegionStats}
-import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
-import io.snappydata.Constant._
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
 
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.{JDBCSourceAsStore, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.{SparkContext, Logging}
-import org.apache.spark.sql.{SnappySession, SnappyContext}
+import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.{Logging, SparkContext}
 
 trait TableStatsProviderService extends Logging {
 
   @volatile
   private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
-  protected val membersInfo = TrieMap.empty[String, mutable.Map[String, Any]]
+  @volatile
+  private var indexesInfo = Map.empty[String, SnappyIndexStats]
+  protected val membersInfo: TrieMap[String, mutable.Map[String, Any]] =
+    TrieMap.empty[String, mutable.Map[String, Any]]
 
   private var _snc: Option[SnappyContext] = None
 
@@ -59,6 +61,7 @@ trait TableStatsProviderService extends Logging {
         try {
           val (tableStats, indexStats) = getAggregatedStatsOnDemand
           tableSizeInfo = tableStats
+          indexesInfo = indexStats // populating indexes stats
           // get members details
           fillAggregatedMemberStatsOnDemand()
         } finally {
@@ -95,6 +98,11 @@ trait TableStatsProviderService extends Logging {
     membersInfo
   }
 
+  def getMembersStatsOnDemand: mutable.Map[String, mutable.Map[String, Any]] = {
+    fillAggregatedMemberStatsOnDemand()
+    membersInfo
+  }
+
   def stop(): Unit = {
     doRun = false
     // wait for it to end for sometime
@@ -104,7 +112,20 @@ trait TableStatsProviderService extends Logging {
     _snc = None
   }
 
-  def getTableSizeStats(): Map[String, SnappyRegionStats] = {
+  def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
+    // TODO: [SachinK] This code is commented to avoid forced refresh of stats on every call (as indexesInfo could be empty).
+    /*
+    val indexStats = this.indexesInfo
+    if (indexStats.isEmpty) {
+      // force run
+      aggregateStats()
+    }
+    */
+    indexesInfo
+  }
+
+  def getTableSizeStats: Map[String, SnappyRegionStats] = {
+    // TODO: [SachinK] Below conditional check can be commented to avoid forced refresh of stats on every call (tableSizeInfo could be empty).
     val tableSizes = this.tableSizeInfo
     if (tableSizes.isEmpty) {
       // force run

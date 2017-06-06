@@ -18,15 +18,14 @@ package io.snappydata.externalstore
 
 import java.io.File
 
-import org.apache.commons.io.FileUtils
-
 import scala.collection.JavaConverters._
 import scala.util.Random
 
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableCallable, SerializableRunnable}
+import org.apache.commons.io.FileUtils
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
@@ -131,7 +130,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
-    assert(r.length == 1007)
+    assert(r.length == 1007, s"Unexpected elements ${r.length}, expected=1007")
 
     snc.dropTable(tableName, ifExists = true)
     getLogWriter.info("Successful")
@@ -181,7 +180,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
-    assert(r.length == 1008)
+    assert(r.length == 1008, s"Unexpected elements ${r.length}, expected=1008")
 
     snc.dropTable(tableName, ifExists = true)
     getLogWriter.info("Successful")
@@ -253,7 +252,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
-    assert(r.length == 1008)
+    assert(r.length == 1008, s"Unexpected elements ${r.length}, expected=1008")
 
     snc.dropTable(tableName, ifExists = true)
     getLogWriter.info("Successful")
@@ -286,7 +285,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def verifyTableData(snc: SnappyContext, tableName: String = tableName): Unit = {
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
-    assert(r.length == 5)
+    assert(r.length == 5, s"Unexpected elements ${r.length}, expected=5")
   }
 
   def dropTable(snc: SnappyContext, tableName: String = tableName): Unit = {
@@ -312,7 +311,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
 
-    assert(r.length == 1005)
+    assert(r.length == 1005, s"Unexpected elements ${r.length}, expected=1005")
 
     val region = Misc.getRegionForTable(s"APP.${tableName.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
@@ -356,7 +355,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val r = result.collect()
 
-    assert(r.length == 1005)
+    assert(r.length == 1005, s"Unexpected elements ${r.length}, expected=1005")
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(
@@ -521,7 +520,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())
 
-    assert(r.length == 10012)
+    assert(r.length == 10012, s"Unexpected elements ${r.length}, expected=10012")
 
     println("startSparkJob6 " + region.size())
     println("startSparkJob6 " + shadowRegion.size())
@@ -581,7 +580,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())
 
-    assert(r.length == 10012)
+    assert(r.length == 10012, s"Unexpected elements ${r.length}, expected=10012")
 
     println("startSparkJob7 " + region.size())
     println("startSparkJob7 " + shadowRegion.size())

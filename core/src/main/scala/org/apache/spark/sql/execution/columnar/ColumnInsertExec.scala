@@ -16,9 +16,13 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import scala.collection.mutable.ArrayBuffer
+
 import io.snappydata.Property
+
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
@@ -26,8 +30,7 @@ import org.apache.spark.sql.execution.{SparkPlan, TableInsertExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.bitset.BitSetMethods
-
-import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.util.TaskCompletionListener
 
 /**
  * Generated code plan for bulk insertion into a column table.
@@ -225,7 +228,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       s"int $batchSizeTerm = 0;"
     }
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
-    ctx.addMutableState("int", defaultBatchSizeTerm, "")
     val defaultRowSize = ctx.freshName("defaultRowSize")
 
     val childProduce = doChildProduce(ctx)
@@ -242,6 +244,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       case _ =>
     }
 
+    val closeEncoders = new StringBuilder
     val (declarations, cursorDeclarations) = encoderCursorTerms.indices.map { i =>
       val (encoder, cursor) = encoderCursorTerms(i)
       ctx.addMutableState(encoderClass, encoder,
@@ -258,6 +261,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
            |final $encoderClass $encoder = this.$encoder;
            |$defaultRowSize += $encoder.defaultSize($schemaTerm.fields()[$i].dataType());
         """.stripMargin
+      closeEncoders.append(s"if ($encoder != null) $encoder.close();\n")
       (declaration, cursorDeclaration)
     }.unzip
     val checkEnd = if (useMemberVariables) {
@@ -271,6 +275,29 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |@Override
          |protected final boolean shouldStop() {
          |  return false;
+         |}
+      """.stripMargin)
+    val closeEncodersFunction = ctx.freshName("closeEncoders")
+    ctx.addNewFunction(closeEncodersFunction,
+      s"""
+         |private void $closeEncodersFunction() {
+         |  $closeEncoders
+         |}
+      """.stripMargin)
+    // add a task completion listener to close the encoders
+    val contextClass = classOf[TaskContext].getName
+    val listenerClass = classOf[TaskCompletionListener].getName
+    val context = ctx.freshName("taskContext")
+    ctx.addMutableState("int", defaultBatchSizeTerm,
+      s"""
+         |final $contextClass $context = $contextClass.get();
+         |if ($context != null) {
+         |  $context.addTaskCompletionListener(new $listenerClass() {
+         |    @Override
+         |    public void onTaskCompletion($contextClass context) {
+         |      if ($numInsertions >= 0) $closeEncodersFunction();
+         |    }
+         |  });
          |}
       """.stripMargin)
     s"""
@@ -296,15 +323,13 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
+       |if ($numInsertions >= 0 && $contextClass.get() == null) {
+       |  $closeEncodersFunction();
+       |}
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
     """.stripMargin
-  }
-
-  private def genCodeFiledWiseColumnStats(ctx: CodegenContext, field: StructField,
-                                  encoder: String): (String, Seq[Attribute], Seq[ExprCode]) = {
-    genCodeColumnStats(ctx, field, encoder)
   }
 
   /**
@@ -527,7 +552,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  // create ColumnBatch and insert
          |  final java.nio.ByteBuffer[] $buffers =
          |      new java.nio.ByteBuffer[${schema.length}];
-         |  ${buffersCode.toString()}
+         |  $buffersCode
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes());
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
@@ -546,7 +571,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
         """)
     }
 
-    storeColumnBatchArgs = s"$batchSizeTerm, ${cursorArrayTerm}"
+    storeColumnBatchArgs = s"$batchSizeTerm, $cursorArrayTerm"
 
     val writeColumns = genMethodsColumnWriter(ctx, "writeToEncoder",
       MAX_CURSOR_DECLARATIONS, columnWrite, rowReadExprs, mutableRow)
@@ -556,7 +581,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |    $batchSizeTerm > 0) {
        |  // check if batch size has exceeded max allowed
        |  long $sizeTerm = 0L;
-       |  ${calculateSize.toString()}
+       |  $calculateSize
        |  if ($sizeTerm >= $columnBatchSize) {
        |    $storeColumnBatch(-1, $storeColumnBatchArgs);
        |    $batchSizeTerm = 0;
@@ -785,7 +810,8 @@ object ColumnWriter {
           s"$cursorTerm = $encoder.write$typeName($cursorTerm, $input);"
         } else {
           // offsetTerm is non-null for recursive writes of StructType
-          s"$encoder.write${typeName}Unchecked($offsetTerm, $input);"
+          s"$encoder.write${typeName}Unchecked($encoder.baseOffset() + " +
+              s"$offsetTerm, $input);"
         }
       case StringType =>
         if (offsetTerm eq null) {
@@ -800,7 +826,8 @@ object ColumnWriter {
               s"$input, $batchSizeTerm, ${d.precision}, ${d.scale});"
         } else {
           // assume caller has already ensured matching precision+scale
-          s"$encoder.writeLongUnchecked($offsetTerm, $input.toUnscaledLong());"
+          s"$encoder.writeLongUnchecked($encoder.baseOffset() + " +
+              s"$offsetTerm, $input.toUnscaledLong());"
         }
       case d: DecimalType =>
         if (offsetTerm eq null) {
@@ -1004,16 +1031,15 @@ object ColumnWriter {
 
     val getter = ctx.getValue(input, dt, index)
     val bitSetMethodsClass = classOf[BitSetMethods].getName
-    val fieldCursor = ctx.freshName("fieldCursor")
+    val fieldOffset = ctx.freshName("fieldOffset")
     val value = ctx.freshName("value")
     var canBeNull = nullable
     val serializeValue =
       s"""
-         |final long $fieldCursor = $encoder.baseOffset() + $baseDataOffset +
-         |    ($index << 3);
+         |final long $fieldOffset = $baseDataOffset + ($index << 3);
          |${genCodeColumnWrite(ctx, dt, nullable = false, encoder,
             cursorTerm, ExprCode("", "false", value), batchSizeTerm,
-            fieldCursor, baseOffset)}
+            fieldOffset, baseOffset)}
       """.stripMargin
     val (checkNull, assignValue) = dt match {
       case d: DecimalType => val checkNull =

@@ -20,17 +20,12 @@ import java.io.{EOFException, Externalizable, IOException, InputStream, OutputSt
 import java.lang.ref.SoftReference
 import java.nio.ByteBuffer
 
-import org.apache.commons.lang3.time.FastDatePrinter
-
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
-import com.esotericsoftware.kryo.serializers.{ExternalizableSerializer, JavaSerializer => KryoJavaSerializer}
+import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
-import org.apache.commons.logging.impl.SLF4JLocationAwareLog
-import org.slf4j.helpers.NOPLogger
-import org.slf4j.impl.Log4jLoggerAdapter
 
 import org.apache.spark.broadcast.TorrentBroadcast
 import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
@@ -80,8 +75,8 @@ final class PooledKryoSerializer(conf: SparkConf)
     val kryo = super.newKryo()
 
     // specific serialization implementations in Spark and commonly used classes
-    kryo.register(classOf[UnsafeRow], new KryoSerializableSerializer)
-    kryo.register(classOf[UTF8String], new KryoSerializableSerializer)
+    kryo.register(classOf[UnsafeRow])
+    kryo.register(classOf[UTF8String])
     kryo.register(classOf[UpdateBlockInfo], new ExternalizableOnlySerializer)
     kryo.register(classOf[CompressedMapStatus], new ExternalizableOnlySerializer)
     kryo.register(classOf[HighlyCompressedMapStatus],
@@ -146,11 +141,6 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
 
-    // use Externalizable by default as last fallback, if available,
-    // rather than going to FieldSerializer
-    kryo.addDefaultSerializer(classOf[Externalizable], new ExternalizableSerializer)
-    kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
-
     try {
       val launchTasksClass = Utils.classForName(
         "org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.LaunchTasks")
@@ -158,6 +148,16 @@ final class PooledKryoSerializer(conf: SparkConf)
     } catch {
       case _: ClassNotFoundException => // ignore
     }
+
+    // use Externalizable by default as last fallback, if available,
+    // rather than going to FieldSerializer
+    kryo.addDefaultSerializer(classOf[Externalizable],
+      new ExternalizableSerializer)
+
+    // use a custom default serializer factory that will honour
+    // readObject/writeObject, readResolve/writeReplace methods to fall-back
+    // to java serializer else use Kryo's FieldSerializer
+    kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
 
     kryo
   }

@@ -23,13 +23,15 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import org.json4s.JsonAST.JValue
 
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 
 class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
     extends Literal(_value, _dataType) {
+
+  // override def toString: String = s"ParamLiteral ${super.toString}"
 
   private[this] var _foldable = false
 
@@ -252,4 +254,8 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression {
     case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)
     case other => expr.canEqual(other)
   }
+
+  override def nodeName: String = "DynamicExpression"
+
+  override def prettyName: String = "DynamicExpression"
 }

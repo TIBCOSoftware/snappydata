@@ -16,14 +16,12 @@
  */
 package org.apache.spark.sql
 
+
+import io.snappydata. Property
 import io.snappydata.cluster.ClusterManagerTestBase
 
-
+case class TestRecord(col1: Int, col2: Int, col3: Int)
 class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
-
-  def testColumnBatchSkipping(): Unit = {
-
-  }
 
   def _testColumnBatchSkipping(): Unit = {
 
@@ -38,7 +36,7 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // reduce the batch size to ensure that multiple are created
 
     snc.sql(s"create table if not exists airline ($ddlStr) " +
-        s" using column options (Buckets '2', COLUMN_BATCH_SIZE '4')")
+        s" using column options (Buckets '2', COLUMN_BATCH_SIZE '400')")
 
     import snc.implicits._
 
@@ -194,7 +192,108 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     (metricValues.filter(_._1 == seenid).head._2.toInt,
         metricValues.filter(_._1 == skippedid).head._2.toInt)
   }
-}
 
+
+  def testCreateColumnTablesFromOtherTables(): Unit = {
+
+    val props = Map.empty[String, String]
+    val snc = SnappyContext(sc)
+    val rowTable = "rowTable"
+    val colTable = "colTable"
+
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    val rdd = sc.parallelize(
+      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.createTable(rowTable, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(rowTable)
+
+    snc.createTable(colTable, "column", dataDF.schema, props + ("BUCKETS" -> "17"))
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(colTable)
+
+    executeTestWithOptions()
+    executeTestWithOptions(Map.empty,Map.empty+("BUCKETS" -> "17"),"","BUCKETS " +
+      "'13',PARTITION_BY 'COL1', REDUNDANCY '1'")
+
+
+  }
+
+  def executeTestWithOptions(rowTableOptios: Map[String, String] = Map.empty[String,String],
+      colTableOptions: Map[String,String]= Map.empty[String,String],
+       tempRowTableOptions: String = "", tempColTableOptions: String = ""): Unit = {
+
+    val snc = SnappyContext(sc)
+    val rowTable = "rowTable"
+    val colTable = "colTable"
+
+
+    snc.sql("DROP TABLE IF EXISTS " + rowTable)
+    snc.sql("DROP TABLE IF EXISTS " + colTable)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    val rdd = sc.parallelize(
+      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.createTable(rowTable, "row", dataDF.schema, rowTableOptios)
+    dataDF.write.format("row").mode(SaveMode.Append).options(rowTableOptios).saveAsTable(rowTable)
+
+    snc.createTable(colTable, "column", dataDF.schema, colTableOptions)
+    dataDF.write.format("column").mode(SaveMode.Append).options(colTableOptions).saveAsTable(colTable)
+
+    val tempRowTableName = "testRowTable"
+    val tempColTableName = "testcolTable"
+
+
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+    snc.sql(s"CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions)  AS" +
+      s" (SELECT col1 ,col2  FROM " + rowTable + ")")
+    val testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
+    assert(testResults1.length == 113999, s"Expected row count is 113999 while actual count is " +
+      s"${testResults1.length}")
+
+
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+    snc.sql("CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions) AS " +
+      s"(SELECT col1 ,col2  FROM " + colTable + ")")
+    val testResults2 = snc.sql("SELECT * FROM " + tempRowTableName).collect()
+    assert(testResults2.length == 113999, s"Expected row count is 113999 while actual count is " +
+      s"${testResults2.length}")
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+      s"col1 ,col2 FROM " + rowTable + ")")
+
+    val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is " +
+      s"${testResults3.length}")
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+      "col1 ,col2 FROM " + colTable + ")")
+
+    val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is" +
+      s"${testResults4.length}")
+
+
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+      "t1.col1 ,t1.col2 FROM " + colTable + " t1,"+ rowTable +" t2 where t1.col1=t2.col2)")
+
+    // Expected count will be 113998 as first row will not match
+    val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults5.length == 113998, s"Expected row count is 113998 while actual count is" +
+      s"${testResults5.length}")
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+
+    snc.sql("DROP TABLE IF EXISTS " + rowTable)
+    snc.sql("DROP TABLE IF EXISTS " + colTable)
+
+  }
+}
 case class AirlineData(year: Int, month: Int, dayOfMonth: Int,
     depTime: Int, arrDelay: Int, carrier: String)

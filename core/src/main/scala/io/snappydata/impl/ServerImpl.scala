@@ -22,6 +22,8 @@ import java.util.Properties
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl
 import io.snappydata.{ProtocolOverrides, Server}
 
+import org.apache.spark.sql.row.GemFireXDDialect
+
 /**
   * This class ties up few things that is Snappy specific.
   * for e.g. Connection url & ClusterCallback
@@ -29,7 +31,10 @@ import io.snappydata.{ProtocolOverrides, Server}
 class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
   @throws(classOf[SQLException])
-  override def start(bootProperties: Properties): Unit = start(bootProperties, false)
+  override def start(bootProperties: Properties): Unit = {
+    GemFireXDDialect.init()
+    start(bootProperties, false)
+  }
 
   override def isServer: Boolean = true
 }

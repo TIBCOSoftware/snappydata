@@ -186,8 +186,9 @@ class SnappyParser(session: SnappySession)
           "For Prepared Statement, Parameter constants are not provided")
         if (session.sessionState.questionMarkCounter >
             session.sessionState.pvs.get.getParameterCount) {
-          assert(false, s"For Prepared Statement, Got more number of" +
-              s" placeholders = $session.sessionState.questionMarkCounter than given number of parameter" +
+          assert(assertion = false, s"For Prepared Statement, Got more number of" +
+              s" placeholders = ${session.sessionState.questionMarkCounter}" +
+              s" than given number of parameter" +
               s" constants = ${session.sessionState.pvs.get.getParameterCount}")
         }
         val dvd =
@@ -816,27 +817,28 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
-  // Only when wholeStageEnabled try for tokenization. It should be
-  // true
-  private var tokenize = session.sessionState.conf.wholeStageEnabled
+  // Only when wholeStageEnabled try for tokenization. It should be true
+  private val tokenizationDisabled = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
+
+  private var tokenize = !tokenizationDisabled && session.sessionState.conf.wholeStageEnabled
 
   private var isSelect = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
     MATCH ~> (() =>
-      tokenize = isSelect && session.sessionState.conf.wholeStageEnabled)
+      tokenize = !tokenizationDisabled && isSelect && session.sessionState.conf.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
     MATCH ~> {() => tokenize = false}
   }
 
-  protected def SET_SELECT: Rule0 = rule {
-    MATCH ~> {() => isSelect = true}
+  protected final def SET_SELECT: Rule0 = rule {
+    MATCH ~> (() => isSelect = true)
   }
 
-  protected def SET_NOSELECT: Rule0 = rule {
-    MATCH ~> {() => isSelect = false}
+  protected final def SET_NOSELECT: Rule0 = rule {
+    MATCH ~> (() => isSelect = false)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {

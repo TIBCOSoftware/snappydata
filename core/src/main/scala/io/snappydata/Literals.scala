@@ -18,6 +18,9 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
+import com.gemstone.gemfire.distributed.internal.DistributionConfig
+import com.gemstone.gemfire.internal.snappy.StoreCallbacks
+
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
@@ -43,7 +46,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
+  val STORE_PROPERTY_PREFIX = DistributionConfig.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
@@ -72,13 +75,13 @@ object Constant {
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
 
   // Internal Column table store schema
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
+  final val SHADOW_SCHEMA_NAME = StoreCallbacks.SHADOW_SCHEMA_NAME
 
   // Internal Column table store suffix
-  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
+  final val SHADOW_TABLE_SUFFIX = StoreCallbacks.SHADOW_TABLE_SUFFIX
 
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
@@ -176,7 +179,7 @@ object Property extends Enumeration {
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
-  val ClusterURL = Val[String](s"${Constant.PROPERTY_PREFIX}Cluster.URL",
+  val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +
@@ -223,8 +226,17 @@ object Property extends Enumeration {
         s"create table DDL. Default is no compression.", Some("none"))
 
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
-    "The join would be converted into a hash join if the table is of size less" +
+    "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+
+  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashAggregateSize",
+    "Aggregation will use optimized hash aggregation plan but one that does not " +
+        "overflow to disk and can cause OOME if the result of aggregation is large. " +
+        "The limit specifies the input data size (with b/k/m/g/t/p suffixes for units) " +
+        "and not the output size. Set this only if there are known to be queries " +
+        "that can return very large number of rows in aggregation results. " +
+        "Default value is 0b meaning no limit on the size so the optimized " +
+        "hash aggregation is always used.", Some("0b"))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",

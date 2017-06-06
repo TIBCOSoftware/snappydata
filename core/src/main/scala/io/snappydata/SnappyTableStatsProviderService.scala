@@ -21,30 +21,26 @@ package io.snappydata
 
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.control.NonFatal
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.CancelException
-import com.gemstone.gemfire.cache.DataPolicy
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.execute.InternalRegionFunctionContext
-import com.gemstone.gemfire.internal.cache.{PartitionedRegion, LocalRegion}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdMessage, GfxdListResultCollector}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
+import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
-import com.pivotal.gemfirexd.internal.engine.store.{CompactCompositeKey, GemFireContainer}
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult, SnappyIndexStats, SnappyRegionStats}
-import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats, SnappyRegionStatsCollectorFunction, SnappyRegionStatsCollectorResult}
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.execution.columnar.{JDBCSourceAsStore, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
-import org.apache.spark.unsafe.Platform
 
 /*
 * Object that encapsulates the actual stats provider service. Stats provider service
@@ -52,12 +48,13 @@ import org.apache.spark.unsafe.Platform
  */
 object SnappyTableStatsProviderService {
   // var that points to the actual stats provider service
-  private var statsProviderService: TableStatsProviderService = null
+  private var statsProviderService: TableStatsProviderService = _
 
   def start(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        throw new IllegalStateException("Not expected to be called for ThinClientConnectorMode")
+        throw new IllegalStateException(
+          "Not expected to be called for ThinClientConnectorMode")
       case _ =>
         statsProviderService = SnappyEmbeddedTableStatsProviderService
     }
@@ -69,7 +66,8 @@ object SnappyTableStatsProviderService {
       case ThinClientConnectorMode(_, _) =>
         statsProviderService = SnappyThinConnectorTableStatsProvider
       case _ =>
-        throw new IllegalStateException("This is expected to be called for ThinClientConnectorMode only")
+        throw new IllegalStateException(
+          "This is expected to be called for ThinClientConnectorMode only")
     }
     statsProviderService.start(sc, url)
   }
@@ -167,12 +165,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
-    if( dataServers != null && dataServers.size() > 0 ){
-      result = FunctionService.onMembers(dataServers)
-          .withCollector(new GfxdListResultCollector())
-          .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
-          asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
-          .asScala
+    try {
+      if (dataServers != null && dataServers.size() > 0) {
+        result = FunctionService.onMembers(dataServers)
+            .withCollector(new GfxdListResultCollector())
+            .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
+            asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
+            .asScala
+      }
+    }
+    catch {
+      case NonFatal(e) => log.warn(e.getMessage, e)
     }
     (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }
@@ -182,45 +185,38 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
     val regions = asSerializable(Misc.getGemFireCache.getApplicationRegions.asScala)
     for (region: LocalRegion <- regions) {
-      if (region.getDataPolicy == DataPolicy.PARTITION ||
-          region.getDataPolicy == DataPolicy.PERSISTENT_PARTITION) {
+      if (region.getDataPolicy.withPartitioning()) {
         val table = Misc.getFullTableNameFromRegionPath(region.getFullPath)
         val pr = region.asInstanceOf[PartitionedRegion]
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
-        if (table.startsWith(Constant.INTERNAL_SCHEMA_NAME) &&
-            table.endsWith(Constant.SHADOW_TABLE_SUFFIX)) {
-          if (container != null) {
-            val bufferTable = JDBCAppendableRelation.getTableName(table)
-            val numColumnsInBaseTbl = (Misc.getMemStore.getAllContainers.asScala.find(c => {
-              c.getQualifiedTableName.equalsIgnoreCase(bufferTable)}).get.getNumColumns) - 1
-
-            val numColumnsInStatBlob = numColumnsInBaseTbl * ColumnStatsSchema.NUM_STATS_PER_COLUMN
-            val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
-              true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
-            // Resetting PR Numrows in cached batch as this will be calculated every time.
-            // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
-            var rowsInColumnBatch: Long = 0
+        if (ColumnFormatRelation.isColumnTable(table) &&
+            pr.getLocalMaxMemory > 0) {
+          val itr = pr.localEntriesIterator(null.asInstanceOf[InternalRegionFunctionContext],
+            true, false, true, null).asInstanceOf[PartitionedRegion#PRLocalScanIterator]
+          var numColumnsInTable = -1
+          // Resetting PR Numrows in cached batch as this will be calculated every time.
+          // TODO: Decrement count using deleted rows bitset in case of deletes in columntable
+          var rowsInColumnBatch = 0L
+          var offHeapSize = 0L
+          if (container ne null) {
+            // using direct region operations
             while (itr.hasNext) {
-              val rl = itr.next().asInstanceOf[RowLocation]
-              val key = rl.getKeyCopy.asInstanceOf[CompactCompositeKey]
-              val x = key.getKeyColumn(2).getInt
-              val currentBucketRegion = itr.getHostedBucketRegion
-              if (x == JDBCSourceAsStore.STATROW_COL_INDEX) {
-                val v = currentBucketRegion.get(key)
-                if (v ne null) {
-                  val currentVal = v.asInstanceOf[Array[Array[Byte]]]
-                  val rowFormatter = container.
-                      getRowFormatter(currentVal(0))
-                  val statBytes = rowFormatter.getLob(currentVal, 4)
-                  val unsafeRow = new UnsafeRow(numColumnsInStatBlob)
-                  unsafeRow.pointTo(statBytes, Platform.BYTE_ARRAY_OFFSET,
-                    statBytes.length)
-                  rowsInColumnBatch += unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
-                }
+              val re = itr.next().asInstanceOf[AbstractRegionEntry]
+              val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
+              if (numColumnsInTable < 0) {
+                numColumnsInTable = key.getNumColumnsInTable(table)
+              }
+              rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
+                numColumnsInTable)
+              re._getValue() match {
+                case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
+                case _ =>
               }
             }
-            pr.getPrStats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
           }
+          val stats = pr.getPrStats
+          stats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
+          stats.setOffHeapSizeInBytes(offHeapSize)
         }
       }
     }

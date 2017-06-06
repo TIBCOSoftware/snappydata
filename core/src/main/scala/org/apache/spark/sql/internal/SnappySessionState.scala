@@ -17,8 +17,7 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.{Calendar, Properties}
-import javassist.bytecode.stackmap.TypeData.NullType
+import java.util.Properties
 
 import scala.collection.concurrent.TrieMap
 import scala.reflect.{ClassTag, classTag}
@@ -68,6 +67,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
+
+  private[sql] var disableStoreOptimizations : Boolean = false
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
@@ -226,7 +227,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog = {
+  override lazy val catalog: SnappyStoreHiveCatalog = {
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
@@ -336,7 +337,8 @@ class SnappyConf(@transient val session: SnappySession)
   private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
-         Property.HashJoinSize.name => session.clearPlanCache()
+         Property.HashJoinSize.name |
+         Property.HashAggregateSize.name => session.clearPlanCache()
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {
@@ -516,16 +518,16 @@ trait SQLAltName[T] extends AltName[T] {
       case Some(_) => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[T]])
       case None => conf.getConf(entry.entry.asInstanceOf[ConfigEntry[Option[T]]]).get
     }
-
   }
 
   private def get(conf: SQLConf, name: String,
       defaultValue: String): T = {
     configEntry.entry.defaultValue match {
-      case Some(_) => configEntry.valueConverter[T](conf.getConfString(name, defaultValue))
-      case None => configEntry.valueConverter[Option[T]](conf.getConfString(name, defaultValue)).get
+      case Some(_) => configEntry.valueConverter[T](
+        conf.getConfString(name, defaultValue))
+      case None => configEntry.valueConverter[Option[T]](
+        conf.getConfString(name, defaultValue)).get
     }
-
   }
 
   def get(conf: SQLConf): T = if (altName == null) {
@@ -540,6 +542,12 @@ trait SQLAltName[T] extends AltName[T] {
     } else {
       get(conf, altName, configEntry.defaultValueString)
     }
+  }
+
+  def get(properties: Properties): T = {
+    val propertyValue = getProperty(properties)
+    if (propertyValue ne null) configEntry.valueConverter[T](propertyValue)
+    else defaultValue.get
   }
 
   def getOption(conf: SQLConf): Option[T] = if (altName == null) {

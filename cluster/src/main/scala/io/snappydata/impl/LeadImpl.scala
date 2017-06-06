@@ -27,13 +27,13 @@ import scala.collection.JavaConverters._
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl}
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
+import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
@@ -56,7 +56,7 @@ class LeadImpl extends ServerImpl with Lead
     val gfCache = GemFireCacheImpl.getInstance
 
     if (gfCache == null || gfCache.isClosed) {
-      throw new Exception("GemFire Cache not initialized")
+      throw new IllegalStateException("GemFire Cache not initialized")
     }
 
     val dSys = gfCache.getDistributedSystem
@@ -105,9 +105,13 @@ class LeadImpl extends ServerImpl with Lead
 
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
-          setAppName("leaderLauncher").
+          setAppName("SnappyData").
           set(Property.JobServerEnabled.name, "true").
-          set("spark.scheduler.mode", "FAIR")
+          set("spark.scheduler.mode", "FAIR").
+          setIfMissing("spark.memory.manager",
+            ExecutorInitiator.SNAPPY_MEMORY_MANAGER)
+          .setIfMissing("spark.memory.storageMaxFraction", "0.95")
+
       Utils.setDefaultSerializerAndCodec(conf)
 
       // inspect user input and add appropriate prefixes
@@ -122,7 +126,7 @@ class LeadImpl extends ServerImpl with Lead
           } else {
             Constant.STORE_PROPERTY_PREFIX + k
           }
-        }
+        } 
         else {
           k
         }
@@ -235,10 +239,12 @@ class LeadImpl extends ServerImpl with Lead
 
   @throws[SQLException]
   override def stop(shutdownCredentials: Properties): Unit = {
+    /* (sample reservoir region is now persistent by default)
     val servers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null)
     if (servers.size() > 0) {
       SnappyContext.flushSampleTables()
     }
+    */
 
     assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")

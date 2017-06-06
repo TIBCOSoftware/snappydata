@@ -68,7 +68,7 @@ class QueryTest extends SnappyFunSuite {
 
   test("SNAP-1159_1482") {
     val session = SnappyContext(sc).snappySession
-    session.sql(s"set ${SQLConf.COLUMN_BATCH_SIZE.key}=10")
+    session.sql(s"set ${Property.ColumnBatchSize.name}=100")
     session.sql(s"set ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key}=1")
     val data1 = session.range(20).selectExpr("id")
     val data2 = session.range(80).selectExpr("id", "cast ((id / 4) as long) as k",
