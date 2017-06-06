@@ -990,7 +990,7 @@ object SnappyStoreHiveCatalog {
 
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
-  val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
+  val HIVE_METASTORE = Misc.SNAPPY_HIVE_METASTORE
   val cachedSampleTables: LoadingCache[QualifiedTableName,
       Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
     new CacheLoader[QualifiedTableName, Seq[(LogicalPlan, String)]]() {
