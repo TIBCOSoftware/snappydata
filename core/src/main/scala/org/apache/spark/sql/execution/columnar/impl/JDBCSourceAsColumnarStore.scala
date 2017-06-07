@@ -535,15 +535,14 @@ final class SmartConnectorColumnRDD(
       context.addTaskCompletionListener { _ =>
         logDebug(s"The txid going to be committed is $txId " + tableName)
 
-        if ((txId ne null) && !txId.equals("null")
-        /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+        //if ((txId ne null) && !txId.equals("null")) {
           val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
-          ps.setString(1, txId)
+          ps.setString(1, if (txId == null) "null" else txId)
           ps.executeUpdate()
           logDebug(s"The txid being committed is $txId")
           ps.close()
           SparkShellRDDHelper.snapshotTxId.set(null)
-        }
+        //}
       }
     }
     itr
@@ -601,15 +600,14 @@ class SmartConnectorRowRDD(_session: SnappySession,
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
       val txId =  SparkShellRDDHelper.snapshotTxId.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
-      if ((txId ne null) && !txId.equals("null")
-      /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+      //if ((txId ne null) && !txId.equals("null")) {
         val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
-        ps.setString(1, txId)
+        ps.setString(1, if (txId == null) "null" else txId)
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
         SparkShellRDDHelper.snapshotTxId.set(null)
-      }
+      //}
     }
     ))
   }
