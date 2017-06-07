@@ -685,7 +685,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <br/><strong>Process ID:</strong> {processId}
       </span>
     }
-    val memberDescDetailsHandler = "$('#" + shortDirName + "').toggle();";
+
+    val memberDescDetailsBtn = shortDirName + "-btn";
+    val memberDescDetailsHandler = "toggleCellDetails('" + shortDirName + "');";
 
     val memberType = {
       if(memberDetails.getOrElse("lead", false).toString.toBoolean){
@@ -726,7 +728,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     }
 
     val heapDetailsId = shortDirName + "-heap"
-    val heapDetailsHandler = "$('#" + heapDetailsId + "').toggle();";
+    val heapDetailsBtn = heapDetailsId + "-btn"
+    val heapDetailsHandler = "toggleCellDetails('" + heapDetailsId + "');";
     val heapUsageDetails = {
       if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
         <span><strong>JVM Heap:</strong>
@@ -752,7 +755,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     }
 
     val offHeapDetailsId = shortDirName + "-offheap"
-    val offHeapDetailsHandler = "$('#" + offHeapDetailsId + "').toggle();";
+    val offHeapDetailsBtn = offHeapDetailsId + "-btn"
+    val offHeapDetailsHandler = "toggleCellDetails('" + offHeapDetailsId + "');";
     val offHeapUsageDetails = {
       if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
         <span><strong>Storage Memory:</strong>
@@ -782,7 +786,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <td>
         <div style="width: 80%; float: left; padding-left: 10px;">{memberDescription}</div>
         <div style="width: 10px; float: right; padding-right: 10px; cursor: pointer;"
-             onclick={memberDescDetailsHandler}> + </div>
+             onclick={memberDescDetailsHandler}>
+          <span class="caret-downward" id={memberDescDetailsBtn}></span>
+        </div>
         <div class="cellDetailsBox" id={shortDirName}>
           {memberDescriptionDetails}
         </div>
@@ -806,7 +812,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             }
           }</div>
         <div style="width: 5px; float: right; padding-right: 10px; cursor: pointer;"
-             onclick={heapDetailsHandler}> + </div>
+             onclick={heapDetailsHandler}>
+          <span class="caret-downward" id={heapDetailsBtn}></span>
+        </div>
         <div class="cellDetailsBox" id={heapDetailsId}
              style="width: 90%;">
           {heapUsageDetails}
@@ -822,7 +830,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             }
           }</div>
         <div style="width: 5px; float: right; padding-right: 10px; cursor: pointer;"
-             onclick={offHeapDetailsHandler}> + </div>
+             onclick={offHeapDetailsHandler}>
+          <span class="caret-downward" id={offHeapDetailsBtn}></span>
+        </div>
         <div class="cellDetailsBox" id={offHeapDetailsId}
              style="width: 90%;">
           {offHeapUsageDetails}
