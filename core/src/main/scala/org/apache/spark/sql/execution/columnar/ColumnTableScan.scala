@@ -263,9 +263,32 @@ private[sql] final case class ColumnTableScan(
     }
   }
 
+  def splitMoveNextMethods(ctx: CodegenContext, blocks: ArrayBuffer[String],
+      arg: String): String = {
+    if (blocks.length == 1) {
+      // inline execution if only one block
+      blocks.head
+    } else {
+      val apply = ctx.freshName("moveNext")
+      val functions = blocks.zipWithIndex.map { case (body, i) =>
+        val name = s"${apply}_$i"
+        val code =
+          s"""
+             |private void $name(int $arg) {
+             |  $body
+             |}
+         """.stripMargin
+        ctx.addNewFunction(name, code)
+        name
+      }
+      functions.map(name => s"$name($arg);").mkString("\n")
+    }
+  }
+
+
   def convertExprToMethodCall(ctx: CodegenContext, expr: ExprCode,
-                              attr: Attribute, index: Int, producedCode : String,
-                              batchOrdinal : String, notNullVar : String): ExprCode = {
+                              attr: Attribute, index: Int, batchOrdinal : String,
+                              notNullVar : String): ExprCode = {
     val apply = ctx.freshName("apply")
     val retValName = ctx.freshName(s"col$index")
     val nullVarForCol = ctx.freshName(s"nullVarForCol$index")
@@ -276,7 +299,6 @@ private[sql] final case class ColumnTableScan(
     val code =
       s"""
          |private $jt $name(int $batchOrdinal) {
-         |  $producedCode
          |  ${expr.code}
          |  $nullVarForCol = ${expr.isNull};
          |  return ${expr.value};
@@ -386,6 +408,7 @@ private[sql] final case class ColumnTableScan(
       classOf[StructType].getName)
     val columnBufferInitCode = new StringBuilder
     val bufferInitCode = new StringBuilder
+    val moveNextMultCode = new StringBuilder
     val cursorUpdateCode = new StringBuilder
     val moveNextCode = new StringBuilder
     val reservoirRowFetch =
@@ -432,6 +455,7 @@ private[sql] final case class ColumnTableScan(
     val initRowTableDecoders = new StringBuilder
     val columnBufferInitCodeBlocks = new ArrayBuffer[String]()
     val bufferInitCodeBlocks = new ArrayBuffer[String]()
+    val moveNextCodeBlocks = new ArrayBuffer[String]()
 
     val isWideSchema = output.length > MAX_CURSOR_DECLARATIONS
     val batchConsumers = getBatchConsumers(parent)
@@ -523,18 +547,26 @@ private[sql] final case class ColumnTableScan(
 
       if (!isWideSchema) {
         moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
-          cursorVar, batchOrdinal, attr.dataType, notNullVar)).append('\n')
+          cursorVar, batchOrdinal, attr.dataType, notNullVar, false)).append('\n')
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
           cursorVar, attr, notNullVar, weightVarName, false)
         bufferInitCode.append(bufferInit)
         ev
       } else {
+        if (isWideSchema) {
+          if (moveNextMultCode.length > 1024) {
+            moveNextCodeBlocks.append(moveNextMultCode.toString())
+            moveNextMultCode.clear()
+          }
+        }
         val producedCode = genCodeColumnNext(ctx, decoder, bufferVar,
-          cursor, batchOrdinal, attr.dataType, notNullVar)
+          cursor, batchOrdinal, attr.dataType, notNullVar, true)
+        moveNextMultCode.append(producedCode)
+
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoder, bufferVar,
           cursor, attr, notNullVar, weightVarName, true)
         val changedExpr = convertExprToMethodCall(ctx,
-          ev, attr, index, producedCode, batchOrdinal, notNullVar)
+          ev, attr, index, batchOrdinal, notNullVar)
         bufferInitCode.append(bufferInit)
         changedExpr
       }
@@ -543,6 +575,7 @@ private[sql] final case class ColumnTableScan(
     if (isWideSchema) {
       columnBufferInitCodeBlocks.append(columnBufferInitCode.toString())
       bufferInitCodeBlocks.append(bufferInitCode.toString())
+      moveNextCodeBlocks.append(moveNextMultCode.toString())
     }
 
     val columnBufferInitCodeStr = if (isWideSchema) {
@@ -555,6 +588,12 @@ private[sql] final case class ColumnTableScan(
       splitToMethods(ctx, bufferInitCodeBlocks)
     } else {
       bufferInitCode.toString()
+    }
+
+    val moveNextCodeStr = if (isWideSchema) {
+      splitMoveNextMethods(ctx, moveNextCodeBlocks, batchOrdinal)
+    } else {
+      moveNextCode.toString()
     }
 
     // TODO: add filter function for non-embedded mode (using store layer
@@ -668,7 +707,7 @@ private[sql] final case class ColumnTableScan(
        |    final int $numRows = $numBatchRows;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
-       |      ${moveNextCode.toString()}
+       |      ${moveNextCodeStr}
        |      $consumeCode
        |      if (shouldStop()) {
        |        // increment index for return
@@ -702,7 +741,7 @@ private[sql] final case class ColumnTableScan(
 
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,
       buffer: String, cursorVar: String, batchOrdinal: String,
-      dataType: DataType, notNullVar: String): String = {
+      dataType: DataType, notNullVar: String , isWideSchema: Boolean): String = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
     val moveNext = sqlType match {
@@ -730,10 +769,18 @@ private[sql] final case class ColumnTableScan(
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
     if (notNullVar != null) {
-      val nullCode =
-        s"final int $notNullVar = $decoder.notNull($buffer, $batchOrdinal);"
-      if (moveNext.isEmpty) nullCode
-      else s"$nullCode\nif ($notNullVar == 1) $moveNext"
+      if (isWideSchema) {
+        ctx.addMutableState("int", notNullVar, "")
+        val nullCode =
+          s"$notNullVar = $decoder.notNull($buffer, $batchOrdinal);"
+        if (moveNext.isEmpty) nullCode
+        else s"$nullCode\nif ($notNullVar == 1) $moveNext\n"
+      } else {
+        val nullCode =
+          s"final int $notNullVar = $decoder.notNull($buffer, $batchOrdinal);"
+        if (moveNext.isEmpty) nullCode
+        else s"$nullCode\nif ($notNullVar == 1) $moveNext"
+      }
     } else moveNext
   }
 

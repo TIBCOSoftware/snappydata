@@ -219,6 +219,9 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val avgProjections = (1 to num_col).map(i => s"AVG(C$i)").mkString(",")
     val df1 = snappySession.sql(s"select $avgProjections from wide_table")
     df1.collect()
+
+    val df2 = snappySession.sql(s"select $avgProjections from wide_table where C1 = 1 ")
+    df2.collect()
   }
 }
 
