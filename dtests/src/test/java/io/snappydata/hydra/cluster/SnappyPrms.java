@@ -21,8 +21,6 @@ import java.util.Vector;
 import hydra.BasePrms;
 import hydra.HydraVector;
 
-import java.util.Vector;
-
 public class SnappyPrms extends BasePrms {
 
   /**

@@ -24,7 +24,6 @@ import scala.util.{Try, Failure, Success}
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySession, SnappySQLJob}
-import org.apache.spark.streaming.SnappyStreamingContext
 
 class StopSnappyStreamingJob extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {

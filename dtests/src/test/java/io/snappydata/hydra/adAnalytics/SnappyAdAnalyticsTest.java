@@ -365,7 +365,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     try {
         String userJob = (String)jobClassNames.elementAt(0);
         String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-            " --app-name AdAnalytics --class " + userJob + " --app-jar " + userAppJar;
+            " --app-name AdAnalytics --class " + userJob + " --app-jar " + snappyTest.getUserAppJarLocation(userAppJar, jarPath);
+
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "stopSnappyStreamingJobTaskResult.log";
         logFile = new File(dest);
