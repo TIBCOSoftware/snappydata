@@ -2,7 +2,7 @@
 
 Enables a `snappydata.debug.true` trace flag on all members of the distributed system, including locators.
 
-This procedure enables or disables a specific trace flag for the distributed system as a whole. You must be a system user to execute this procedure. See <mark> TO BE CONFIRMED RowStore Link [Using Trace Flags for Advanced Debugging](http://rowstore.docs.snappydata.io/docs/manage_guide/log-debug.html)</mark> for a description of some commonly-used trace flags.
+This procedure enables or disables a specific trace flag for the distributed system as a whole. You must be a system user to execute this procedure. <!-- See <mark> TO BE CONFIRMED RowStore Link [Using Trace Flags for Advanced Debugging](http://rowstore.docs.snappydata.io/docs/manage_guide/log-debug.html)</mark> for a description of some commonly-used trace flags.-->
 
 ##Syntax
 
@@ -27,4 +27,4 @@ This command traces all JAR installation, update, and removal operations in the 
 call sys.set_trace_flag ('TraceJars', 'true');
 ```
 
-s
+

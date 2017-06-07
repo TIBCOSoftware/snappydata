@@ -25,34 +25,37 @@ To start a SnappyData server :
 
 ``` pre
 snappy server start [-J<vmarg>]* [-dir=<workingdir>] [-classpath=<classpath>]
-                  [-sync=<false|true> (default false)]
-                  [-heap-size=<size>] [-off-heap-size=<size>]
-                  [-mcast-port=<port> (default 10334)]
-                  [-mcast-address=<address> (default 239.192.81.1)]
-                  [-locators=<addresses>] [-start-locator=<address>]
-                  [-server-groups=<groups>] [-lock-memory]
+                  
+                  [-heap-size=<size>] [-memory-size=<size>]
+                  **[-mcast-port=<port> (default 10334)]
+                  **[-mcast-address=<address> (default 239.192.81.1)]
+                  [-locators=<addresses>] **[-start-locator=<address>]
+                  ** Later[-server-groups=<groups>] 
                   [-rebalance] [-init-scripts=<sql-files>]
-                  [-run-netserver=<true|false> (default true)]
+                  **[-run-netserver=<true|false> (default true)]
                   [-bind-address=<address> (default is hostname or localhost 
                     if hostname points to a local loopback address)]
                   [-client-bind-address=<clientaddr> (default is localhost)]
                   [-client-port=<clientport> (default 1527)]
-                  [-critical-heap-percentage=<percentage>
+                  Rishi[-critical-heap-percentage=<percentage>
                     (default 90% if -heap-size is provided, otherwise 
                      not configured)]
-                  [-eviction-heap-percentage=<eviction-heap-percentage>
-                    (default 80% of critical-heap-percentage)]
-                  [-critical-off-heap-percentage=<critical-off-heap-percentage>
+                  Rishi[-eviction-heap-percentage=<eviction-heap-percentage>
+                    (default 81% of critical-heap-percentage)]
+                  ** Rishi[-critical-off-heap-percentage=<critical-off-heap-percentage>
                     (default 90% if -off-heap-size is provided, otherwise not
                      configured)]                     
-                  [-eviction-off-heap-percentage=<eviction-off-heap-percentage>
+                  ** Rishi[-eviction-off-heap-percentage=<eviction-off-heap-percentage>
                     (default 80% of critical-off-heap-percentage)]
-                  [-host-data=<true|false> (default true)]
+                  ** [-host-data=<true|false> (default true)]
                   [-log-file=<path> (default gfxdserver.log)]
-                  [-auth-provider=<provider>]
-                  [-server-auth-provider=<provider>]
-                  [-user=<username>] [-password[=<password>]]
-                  [-<prop-name>=<prop-value>]*
+                  ** Later[-auth-provider=<provider>]
+                  ** Later[-server-auth-provider=<provider>]
+                  ** Later[-user=<username>] [-password[=<password>]]
+                  ** Later[-<prop-name>=<prop-value>]*
+                  Need to add properties:
+                  like hostnameforclients .. client bind address
+                  Find out??
 ```
 
 !!! Caution:
@@ -96,7 +99,7 @@ The table describes the options of the snappydata server command. Default values
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
 |-heap-size|Sets the heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, `-heap-size=1024m`. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the eviction-heap-percentage to 80% of the 'critical-heap-percentage' (which when using defaults, corresponds to 72% of the heap size). </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. </br>**Note** The `-initial-heap` and `-max-heap` parameters, used in the earlier SQLFire product, are no longer supported. </br>Use `-heap-size` instead.|
 |-off-heap-size|Specifies the amount of off-heap memory to allocate on the server. </br>You can specify the amount in bytes (b), kilobytes (k), megabytes (m), or gigabytes (g). </br>For example, `-off-heap-size=2g`.|
-|-server-groups|Comma-separated list of server groups to which this member belongs. </br>Used for creating tables in particular sets of servers or for firing data-aware procedures in particular server groups. </br>See [CREATE TABLE](../../reference/api_reference/snappysession.md#createtable_4) and <mark>[SnappyData extends the CALL statement to enable execution of Data-Aware Procedures (DAP)]() To be confirmed</mark>. </br>These procedures can be routed to SnappyData members that host the required data.">CALL</a>. </br>If this option is not specified then the server only belongs to the `default` server group. </br>The default server group has no name and contains all members of the distributed system. </br> **Note**: SnappyData converts server group names to all-uppercase letters before storing the values in the SYS.MEMBERS table. </br>DDL statements and procedures automatically convert any supplied server group values to all-uppercase letters. </br>However, you must specify uppercase values for server groups when you directly query the SYS.MEMBERS table.|
+|-server-groups|Comma-separated list of server groups to which this member belongs. </br>Used for creating tables in particular sets of servers or for firing data-aware procedures in particular server groups. </br> <!-- See [CREATE TABLE](../../reference/api_reference/snappysession.md#createtable_4) and [SnappyData extends the CALL statement to enable execution of Data-Aware Procedures (DAP)](). --> </br>These procedures can be routed to SnappyData members that host the required data.">CALL</a>. </br>If this option is not specified then the server only belongs to the `default` server group. </br>The default server group has no name and contains all members of the distributed system. </br> **Note**: SnappyData converts server group names to all-uppercase letters before storing the values in the SYS.MEMBERS table. </br>DDL statements and procedures automatically convert any supplied server group values to all-uppercase letters. </br>However, you must specify uppercase values for server groups when you directly query the SYS.MEMBERS table.|
 |-lock-memory|Include this option to lock SnappyData heap and off-heap memory pages into RAM. </br>This prevents the operating system from swapping the pages out to disk, which can cause sever performance degradation. </br>As a best practice, SnappyData recommends that you set this option when you run SnappyData and Hadoop on the same machine.</br>**Note**: When you use this command, also configure the operating system limits for locked memory, as described in [Supported Configurations and System Requirements](../../sys_requirement.md).|
 |-run-netserver|If true, starts a network server that can service thin clients. </br>See the `-client-bind-address` and `-client-port` options to specify where the server should listen. </br>Defaults is true.</br>If set to false, the `-client-bind-address` and `-client-port` options have no effect.|
 |-sync|Determines whether the `snappy server` command returns immediately if the server reaches a &quot;waiting&quot; state. </br>A locator or server reaches the &quot;waiting&quot; state on startup if the member depends on another server or locator to provide up-to-date disk store persistence files. </br>This type of dependency can occur if the locator or server that you are starting was not the last member to shut down in the distributed system, and another member stores the most recent version of persisted data for the system.</br>Specifying `-sync=false` (the default) causes the `gfxd` command to return control immediately after the member reaches &quot;waiting&quot; state. </br>With `-sync=true`, the `gfxd` command does not return control until after all dependent members have booted and the member has finished synchronizing disk stores.</br>Always use `-sync=false` (the default) when starting multiple members on the same machine, especially when executing `gfxd` commands from a shell script or batch file, so that the script file does not hang while waiting for a particular SnappyData member to start. </br>You can use the `snappy locator wait` and/or `snappy server wait` later in the script to verify that each server has finished synchronizing and has reached the "running"; state. </br>For example: </br>``` <pre class="pre codeblock"><code>#!/bin/bash` </br># Start all local SnappyData members to waiting state, regardless of which member holds the most recent </br># disk store files: </br>`snappy  locator start -dir=/locator1 -sync=false`</br>`snappy  server start -client-port=1528 -locators=localhost[10334] -dir=/server1 -sync=false`</br>`snappy  server start -client-port=1529 -locators=localhost[10334] -dir=/server2 -sync=false`</br># Wait until all members have finished synchronizing and starting:</br>`snappy  locator wait -dir=/locator1`</br>`snappy  server wait -dir=/server1`</br>`snappy server wait -dir=/server2`</br># Continue any additional tasks that require access to the SnappyData members...```</br>[...]`</pre></br>As an alternative to using `snappy server wait`, you can monitor the current status of SnappyData members using STATUS column in the  [MEMBERS](../../reference/system_tables/members.md) system table.|
@@ -117,13 +120,13 @@ The table describes the options of the snappydata server command. Default values
 |-user|If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|
 |-password|If the servers or locators are configured for authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. </br>If you omit the password, `snappy` prompts you to enter a password from the console.|
 |-log-file|Path of the file to which this member writes log messages (default is <span class="ph filepath">gfxdserver.log</span> in the working directory)|
-|<prop-name>|Any other SnappyData boot property such as &quot;`log-level`&quot;. </br>For example, to start a SnappyData server as a JMX Manager, use the boot properties described in <mark> TO BE CONFIRMED Using Java Management Extensions (JMX)</mark>.</br>See<mark> [Configuration Properties](../../reference/configuration_parameters/config_parameters.md)</mark> for a complete list of boot properties.|
+|`<prop-name>`|Any other SnappyData boot property such as `log-level`. <!-- </br>For example, to start a SnappyData server as a JMX Manager, use the boot properties described in Using Java Management Extensions (JMX).</br> --> See [Configuration Properties](../../reference/configuration_parameters/config_parameters.md) for a complete list of boot properties.|
 
 
 <a id="description"></a>
 ## Description
 
-You can start servers that can host data (*data stores*) or those that do not host data (*accessors*) with the `snappy` utility, but either kind of member can service all SQL statements by routing them to appropriate data stores and aggregating the results. Even for a member hosting data for a table, it is not necessary that all data be available in the same member, for example, for DMLs that reference partitioned tables (<mark>[PARTITION BY Clause](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-table-clauses.html#topic_3F16D93EB7184D7C91C5650F22ECC1E1) TO BE CONFIRMED</mark>). So routing to other stores may be required. In addition it is possible for a member to be a data store but still not host any data for a table due to no common <mark> [SERVER GROUPS Clause](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-table-clauses.html#topic_54F95DD4AC764B2D932218BEC90ED61F). To be confirmed</mark>
+You can start servers that can host data (*data stores*) or those that do not host data (*accessors*) with the `snappy` utility, but either kind of member can service all SQL statements by routing them to appropriate data stores and aggregating the results. Even for a member hosting data for a table, it is not necessary that all data be available in the same member,<!-- for example, for DMLs that reference partitioned tables ([PARTITION BY Clause](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-table-clauses.html#topic_3F16D93EB7184D7C91C5650F22ECC1E1) TO BE CONFIRMED). So routing to other stores may be required. In addition it is possible for a member to be a data store but still not host any data for a table due to no common [SERVER GROUPS Clause](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-table-clauses.html#topic_54F95DD4AC764B2D932218BEC90ED61F). To be confirmed-->
 
 Starting a server generates output similar to the following (XXX is the path of current working directory):
 
@@ -143,22 +146,22 @@ As the output above indicates, a *network server* is also started by default tha
 A SnappyData server that you are starting may require other cluster members (locators or servers) to boot before it can confirm that its data is consistent with those members' data. Even with no persistent or overflow tables, each server locally persists a copy of the data dictionary and may remain in a "waiting" state until dependent locators or server come back online to ensure that it has all the latest updates to the data dictionary:
 
 ``` pre
-<mark>Starting SnappyData Server using locators for peer discovery: localhost[10334]
+Starting SnappyData Server using locators for peer discovery: localhost[10334]
 Starting network server for SnappyData Server at address localhost/127.0.0.1[1528]
-Logs generated in /Users/yozie/snappydata/rowstore/RowStore_13_b48393_Linux/server1/gfxdserver.log <mark> Verify All References to RowStore</mark>
+Logs generated in /Users/user1/snappydata/rowstore/RowStore_13_b48393_Linux/server1/gfxdserver.log 
 SnappyData Server pid: 9502 status: waiting
 Region /_DDL_STMTS_META_REGION has potentially stale data. It is waiting for another member to recover the latest data.
 My persistent id:
-<mark>
+
   DiskStore ID: ff7d62c5-4e03-4c74-975f-c8d3639c1cee
   Name: 
-  Location: /10.0.1.31:/Users/yozie/snappydata/rowstore/RowStore_13_b48393_Linux/server1/./datadictionary<mark> Verify All References to RowStore</mark>
+  Location: /10.0.1.31:/Users/user1/snappydata/rowstore/RowStore_13_b48393_Linux/server1/./datadictionary
 
 Members with potentially new data:
-[<mark>
+[
   DiskStore ID: ea249383-b103-43d5-957b-f9789eadd37c
   Name: 
-  Location: /10.0.1.31:/Users/yozie/snappydata/rowstore/RowStore_13_b48393_Linux/server2/./datadictionary<mark> Verify All References to RowStore</mark>
+  Location: /10.0.1.31:/Users/user1/snappydata/rowstore/RowStore_13_b48393_Linux/server2/./datadictionary
 ]
 Use the "snappy list-missing-disk-stores" command to see all disk stores that are being waited on by other members. - See log file for details.
 ```

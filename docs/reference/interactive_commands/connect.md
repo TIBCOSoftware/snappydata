@@ -2,19 +2,18 @@
 
 Connects to the database indicated by the *ConnectionURLString*.
 
-##Syntax
+## Syntax
 
 ``` pre
 CONNECT ConnectionURLString [ PROTOCOL Identifier ]
     [ AS Identifier ]
 ```
 
-<a id="rtoolsijcomref22318__section_4397917B333C4918B009F5F6A7DDC742"></a>
-##Description
+## Description
 
 Connects to the database indicated by the *ConnectionURLString*. You have the option of specifying a name for your connection. Use the [Set Connection](set_connection.md) command to switch between connections. If you do not name a connection, the system generates a name automatically.
 
-You also have the option of specifying a named protocol previously created with the <mark> TO BE CONFIRMED RowStore link [Protocol](http://rowstore.docs.snappydata.io/docs/reference/store_commands/protocol.html#rtoolsijcomref27997)</mark> command. 
+<!--You also have the option of specifying a named protocol previously created with the <mark> TO BE CONFIRMED RowStore link [Protocol](http://rowstore.docs.snappydata.io/docs/reference/store_commands/protocol.html#rtoolsijcomref27997)</mark> command. -->
 
 !!!Note
 	If the connection requires a user name and password, supply those in the connection URL string, as shown in the example. </p>
@@ -22,7 +21,7 @@ You also have the option of specifying a named protocol previously created with 
 
 All further commands are processed against the new, current connection.
 
-##Example
+## Example
 
 ``` pre
 snappy> protocol 'jdbc:derby:';

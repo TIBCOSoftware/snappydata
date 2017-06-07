@@ -18,3 +18,9 @@ system
 ## Prefix
 
 n/a
+
+## Example
+
+```
+export JAVA_ARGS="-Dgfxd.history=*path-to-file*"
+```

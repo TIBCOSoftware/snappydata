@@ -9,23 +9,23 @@ To start a stand-alone locator use the command:
 ``` pre
 snappy locator start [-J<vmarg>]* [-dir=<workingdir>] 
                    [-classpath=<classpath>]
-                   [-distributed-system-id=<id>]
+                   ** Later[-distributed-system-id=<id>]
                    [-heap-size=<size>]
                    [-peer-discovery-address=<addr> (default is 0.0.0.0)]
                    [-peer-discovery-port=<port> (default 10334)]
-                   [-sync=<true|false> (default false)]
+                   ** [-sync=<true|false> (default false)]
                    [-bind-address=<address> (default is the -peer-discover-address value)]
-                   [-run-netserver=<true|false> (default true)]
+                   ** [-run-netserver=<true|false> (default true)]
                    [-client-bind-address=<addr> (default is
                      bind-address or if not set then loopback)]
                    [-client-port=<clientport> (default 1527)]
                    [-locators=<addresses>] 
                    [-log-file=<path> (default gfxdlocator.log)]
-                   [-remote-locators=<host[port]>[,<host[port]>]...]
-                   [-auth-provider=<provider>]
-                   [-server-auth-provider=<provider>]
-                   [-user=<username>] [-password[=<password>]]
-                   [-<prop-name>=<prop-value>]*
+                   ** Later[-remote-locators=<host[port]>[,<host[port]>]...]
+                   ** Later[-auth-provider=<provider>]
+                   ** Later[-server-auth-provider=<provider>]
+                   ** Later[-user=<username>] [-password[=<password>]]
+                   ** Later[-<prop-name>=<prop-value>]*
 ```
 
 !!! Note:
@@ -123,24 +123,24 @@ If you are restarting a locator that was used in a distributed system, the locat
 ``` pre
 Starting SnappyData Locator using peer discovery on: 0.0.0.0[10334]
 Starting network server for SnappyData Locator at address localhost/127.0.0.1[1527]
-Logs generated in /Users/yozie/snappydata/rowstore/RowStore_13_b48393_Linux/locator1/gfxdlocator.log
+Logs generated in /Users/user1/snappydata/rowstore/RowStore_13_b48393_Linux/locator1/gfxdlocator.log
 RowStore Locator pid: 9496 status: waiting
 Region /_DDL_STMTS_META_REGION has potentially stale data. It is waiting for another member to recover the latest data.
 My persistent id:
 
   DiskStore ID: ff28402d-4fa1-488f-ba47-7bf9dec8248e
   Name: 
-  Location: /10.0.1.31:/Users/yozie/snappydata/rowstore/RowStore_13_b48393_Linux/locator1/./datadictionary
+  Location: /10.0.1.31:/Users/user1/snappydata/rowstore/RowStore_13_b48393_Linux/locator1/./datadictionary
 
 Members with potentially new data:
 [
   DiskStore ID: ea249383-b103-43d5-957b-f9789eadd37c
   Name: 
-  Location: /10.0.1.31:/Users/yozie/snappydata/rowstore/RowStore_13_b48393_Linux/server2/./datadictionary
+  Location: /10.0.1.31:/Users/user1/snappydata/rowstore/RowStore_13_b48393_Linux/server2/./datadictionary
 , 
   DiskStore ID: ff7d62c5-4e03-4c74-975f-c8d3639c1cee
   Name: 
-  Location: /10.0.1.31:/Users/yozie/snappydata/rowstore/RowStore_13_b48393_Linux/server1/./datadictionary
+  Location: /10.0.1.31:/Users/user1/snappydata/rowstore/RowStore_13_b48393_Linux/server1/./datadictionary
 ]
 Use the "snappy list-missing-disk-stores" command to see all disk stores that are being waited on by other members. - See log file for details.
 ```

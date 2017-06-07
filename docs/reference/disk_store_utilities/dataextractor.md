@@ -61,13 +61,13 @@ Started data extraction for Server : exampleserver1
 Started data extraction for Server : exampleserver2
 Extracting disk stores
 Extracting disk stores
-Server : examplelocator1 Attempting extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/yozie/recovery-directory/locator
+Server : examplelocator1 Attempting extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/user1/recovery-directory/locator
 Extracting disk stores
-Server : exampleserver2 Attempting extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/yozie/recovery-directory/server2
-Server : exampleserver1 Attempting extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/yozie/recovery-directory/server1
-Completed extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/yozie/recovery-directory/locator
-Completed extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/yozie/recovery-directory/server2
-Completed extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/yozie/recovery-directory/server1
+Server : exampleserver2 Attempting extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/user1/recovery-directory/server2
+Server : exampleserver1 Attempting extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/user1/recovery-directory/server1
+Completed extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/user1/recovery-directory/locator
+Completed extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/user1/recovery-directory/server2
+Completed extraction of diskstore:GFXD-DEFAULT-DISKSTORE from directory: /Users/user1/recovery-directory/server1
 Total Salvage Time : 15.851s
 Writing out Summary and Recommendation...
 Completed Summary and Recommendation

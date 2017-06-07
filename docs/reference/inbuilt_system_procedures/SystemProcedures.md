@@ -2,8 +2,9 @@
 
 SnappyData provides built-in system procedures to help you manage the distributed system. For example, you can use system procedures to export or import data, install required JAR files, and install listener implementations.
 
+<!--
 !!!Note
-	If you enable SQL authorization, you must use the <mark> TO BE CONFIRMED [GRANT] </mark> command to grant normal users permission to use these procedures.
+	If you enable SQL authorization, you must use the <mark> TO BE CONFIRMED [GRANT] </mark> command to grant normal users permission to use these procedures. -->
 	
 The following built-in procedures are available:
 

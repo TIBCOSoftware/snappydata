@@ -11,7 +11,7 @@ snappy
 The system property `snappydata.history` specifies a file in which to store all of the commands executed during an interactive `snappy` session. For example:
 
 ``` pre
-$ export JAVA_ARGS="-Dsnappydata.history=/Users/yozie/snappydata-history.sql"
+$ export JAVA_ARGS="-Dgfxd.history=/Users/user1/snappydata-history.sql"
 $ snappy
 ```
 

@@ -34,12 +34,12 @@ Replay DDL and load recovered disk store data into a SnappyData distributed syst
 
 ``` pre
 $ dataextractloader host=localhost port=1527 recommended=./EXTRACTED_FILES/Recommended.txt 
-Loading .sql file: /Users/yozie/recovery-directory/EXTRACTED_FILES/examplelocator1/exported_ddl.sql
-Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/yozie/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_36-1400537865621.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
-Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/yozie/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_37-1400537866233.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
-Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/yozie/recovery-directory/EXTRACTED_FILES/exampleserver2/PR-APP-FLIGHTS-_B__APP_FLIGHTS_34-1400537866329.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
-Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/yozie/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_35-1400537865998.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
-Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/yozie/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_38-1400537866224.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
+Loading .sql file: /Users/user1/recovery-directory/EXTRACTED_FILES/examplelocator1/exported_ddl.sql
+Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/user1/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_36-1400537865621.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
+Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/user1/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_37-1400537866233.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
+Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/user1/recovery-directory/EXTRACTED_FILES/exampleserver2/PR-APP-FLIGHTS-_B__APP_FLIGHTS_34-1400537866329.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
+Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/user1/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_35-1400537865998.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
+Executing :CALL SYSCS_UTIL.IMPORT_TABLE_EX ('APP', 'FLIGHTS', '/Users/user1/recovery-directory/EXTRACTED_FILES/exampleserver1/PR-APP-FLIGHTS-_B__APP_FLIGHTS_38-1400537866224.csv' , ',', '"', null, 0, 0, 6, 0, null, null)
 [...]
 ```
 

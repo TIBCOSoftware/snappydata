@@ -16,11 +16,11 @@ TRANSACTION_NONE is the default isolation level.
 
 Changing the current isolation for the connection with *setTransactionIsolation* commits the current transaction and begins a new transaction.
 
-
+<!--
 !!! Note
 		SnappyData provides atomicity and thread safety for row-level operations even in TRANSACTION_NONE isolation level.
 
-For more details about transaction isolation, see <mark> TO BE CONFIRMED RowStore link Transactions and Concurrency </mark>. 
+ For more details about transaction isolation, see <mark> TO BE CONFIRMED RowStore link Transactions and Concurrency </mark>. -->
 
 <a id="connection-functionality"></a>
 

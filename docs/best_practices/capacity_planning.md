@@ -2,72 +2,55 @@
 
 The first rule to observe when planning is to know that no one size fits all capacity planning, as different customers have different requirement and the best solution is to create a plan that is most suitable for your environment. Therefore, capacity planning has been a critical component of successful implementations.
 
-Capacity planning involves:
+### Concurrency and Management of Cores
 
-* The volume of your data
+**Cores**
 
-* The retention policy of the data (how much you hang on to)
+A processor core is a processing unit which receives and processes the assigned tasks. Processors can have a single core or multiple cores. The number of cores available in the processor determines the number of concurrent tasks that can run at the same time. For example, one single-core CPU can only perform one task at a time.
 
-* The kinds of workloads you have (data science is CPU intensive, whereas generalized analytics is heavy on I/O)
+**Number of cores = Concurrent tasks as executor can run** </br>
+Thus, the performance of the tasks are processor (CPU) and processor core capacity bound.
 
-* The storage mechanism for the data (whether you’re using compression, containers, etc.)
+**Cores recommendation**</br>
+We recommend the following core settings:
+The default setting is **CORES = 2 X number of cores on a machine**. 
 
-* How many nodes are required
+Ensure that the number of cores available on all the processers are the same. `spark-executor-cores` is same for all servers.
 
-* The capacity of each node in terms of CPU
+**Concurrency**</br>
+Within SnappyData, multiple tasks may be running concurrently if they were submitted by different threads. This is common if your application is serving requests over the network. SnappyData includes a fair scheduler to schedule resources within each SnappyContext.
 
-* The capacity of each node in terms of memory
+**Fair scheduling**</br> 
+The Fair scheduling method manages the available resources such that all the assigned tasks are completed. It schedules jobs based on the availablity of resources (cores) and memory.
+When a single task is assigned, the entire memory is available. When multiple taks are assiged, the tasks that are submitted first are executed and the tasks that are in the queue are assigned when the current tasks are completed.
 
-### Management of cores
+For example: In the image below, 6 cores are available on 3 systems, and there are 8 tasks. The tasks (1-6) are first assigned to the available cores. New tasks (task 5-6) have to wait for the completion of the current tasks and are assigned to the core is first available/completes current task.
 
-Number of cores = Concurrent tasks as executor can run 
+The Fair Scheduler contains the following configuration:
 
-#### Cores recommendation 
-We recommend using **2 X number of cores** on a machine. If you are starting 3 servers on a machine, divide 2 X number of cores between those machines.
+### Memory Management: Heap and Off-Heap 
+SnappyData supports two distinct data eviction policies memory management is the process of allocating new objects and removing unused objects, to make space for those new object allocations. Java objects reside in an area called the heap. The heap is created when the JVM starts up and may increase or decrease in size while the application runs. Off-Heap memory is bounded only by the physcial memory. 
 
-`spark-executor-cores` is same for all servers.
+**Heap**</br>
+Heap is managed memory and is more useful when _____________ . Row tables are stored in the heap memory. The JVM allocates Java heap memory from the OS and then manages the heap for the Java application. When an application access data, the JVM sub-allocates a contiguous area of heap memory to store it.
+Data that is referenced by a tasks remains in the heap as long as it is in use, and when no longer referenced, the garbage collection (GC) removes these objects making more space in the heap for relevant data.
 
-Concurrency is fair scheduled.
+**Off-Heap**</br>
+Off-Heap memory is bounded only by the physcial memory. It allows the cache to overcome lengthy JVM Garbage Collection (GC) pauses when working with large heap sizes by caching data outside of main Java Heap space, but still in RAM. Column tables are stored in the off-heap memory.
 
-#### Number of tasks per node
+**Garbage Collection**</br>
+The term garbage collection implies a collection of data that is no longer required. 
+The main purpose of garbage collection is to delete all the objects that are either not in use, thus making more heap memory available.
+In other words, when the heap becomes full, garbage is collected, and objects that are no longer used are cleared, thus making space for new objects.
 
-First, let's figure out the number of tasks per node.
+Total available memory (Total Heap) is the most important factor affecting GC performance.
 
-Usually, the count is 1 core per task. If the job is not too heavy on the CPU, the number of tasks can be greater than the number of cores.
-
-Example: 12 cores, jobs use ~75% of CPU
-
-Let's assign free slots= 14 (slightly greater than the number of cores is a good rule of thumb), 
-
-maxMapTasks=8, maxReduceTasks=6.
-
-### Off-Heap and On-Heap
-
-SnappyData supports two distinct data eviction policies
-Memory management is the process of allocating new objects and removing unused objects, to make space for those new object allocations. Java objects reside in an area called the heap. The heap is created when the JVM starts up and may increase or decrease in size while the application runs.
-
-When the heap becomes full, garbage is collected. During the garbage collection, objects that are no longer used are cleared, thus making space for new objects.
-
-The JVM allocates Java heap memory from the OS and then manages the heap for the Java application. When an application creates a new object, the JVM sub-allocates a contiguous area of heap memory to store it. An object in the heap that is referenced by any other object is "live," and remains in the heap as long as it continues to be referenced. Objects that are no longer referenced are garbage and can be cleared out of the heap to reclaim the space they occupy. The JVM performs a garbage collection (GC) to remove these objects, reorganizing the objects remaining in the heap.
-
-<mark>Column table data is on off-heap. Row table data on-heap.
-
-Temporary memory for execution will also be off-heap. There are settings to control. On-Heap is limited by JVM size. Off-heap grows until system memory is exhausted. 
-</mark>
-
-Off-Heap memory allows your cache to overcome lengthy JVM Garbage Collection (GC) pauses when working with large heap sizes by caching data outside of main Java Heap space, but still in RAM.
-
-On-heap caching is useful for scenarios when you do a lot of cache reads on server nodes that work with cache entries in the binary form or invoke cache entries' deserialization. For instance, this might happen when a distributed computation or deployed service gets some data from caches for further processing.
 
 The heap size can be controlled with the following properties:
 
 | Property | Description |
 |--------|--------|
-|`-heap-size`|Sets the heap size for the Java VM, using SnappyData default resource manager settings.</br>
-For example, -heap-size=1024m. </br>If you use the -heap-size option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the eviction-heap-percentage to 80% of the 'critical-heap-percentage' (which when using defaults, corresponds to 72% of the heap size). </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</br>**Note**: <mark> (TO BE CONFIRMED)</mark> </br>The -initial-heap and -max-heap parameters, used in the earlier SQLFire product, are no longer supported. </br>Use -heap-size instead.|
-|`-off-heap-size`|Specifies the amount of off-heap memory to allocate on the server.</br>You can specify the amount in bytes (b), kilobytes (k), megabytes (m), or gigabytes (g). </br>For example, -off-heap-size=2g.|
-
-<mark>Follow up with rishi/sumedh to find out exact settings for offheap and on heap and also recommendations.</mark>
+| Property | TEXT|
 
 ### HA Considerations
 Tables can have redundant copies. So you need to decide how many redundant copies you want. In the case of server HA, there is always another server that can provide you data.
@@ -83,20 +66,6 @@ With HA turned on, clients notice nothing since failover is completely transpare
 Adding a data server is supported from the snappy-shell. The new data server joins the cluster, and if the system is low on redundancy (not enough copies of data exist in memory), it automatically picks up storage for the tables it has defined in it. It starts an executor, connects to the lead node and new Snappy jobs recognize and utilize the new server.
 Removing a data server is supported from the snappy-shell. 	
 When a server is removed and if there is redundancy, the partitions on the removed server are automatically retried on the other servers where they are hosted. The running jobs pass eventually. Jobs running on the server are automatically restarted by the lead node.
-
-### Encoding of column tables
-We have dictionary encoding.
-
-<mark>Hemant will check if integers are delta encoded. We are not efficient as parquet.</mark>
-
-### Concurrency
-Within SnappyData, multiple “jobs” may be running concurrently if they were submitted by different threads. This is common if your application is serving requests over the network. SnappyData includes a fair scheduler to schedule resources within each SnappyContext.
-
-**Fair scheduler**: 
-Fair scheduling is a method of assigning resources to jobs such that all jobs get, on average, an equal share of resources over time. When there is a single job running, that job uses the entire cluster. When other jobs are submitted, tasks slots that free up are assigned to the new jobs, so that each job gets roughly the same amount of CPU time.
-When a query is executed, the query is routed to the lead node which then communicates with the executors and completes the action. The second function of the lead node is to accept Snappy jobs via the REST API and maintain a queue of such jobs and execute them using the specified scheduling mechanism (fair scheduler or FIFO?)
-
-<mark>The Fair Scheduler contains the following configuration</mark>
 
 ## Sizing Process
 Size recommendation based on queries and data is being taken care of by Volume testing. 
@@ -114,4 +83,4 @@ Lead is a scheduler.
 
 For long queries, the lead would be free most of the time. For short queries (for e.g. row table point updates. Column table queries that can be pruned to a single partition), lead is relatively busy.
 **Locator sizing **
-Not compute heavy. Not memory heavy.
+Not compute heavy. Not memory heavy.		

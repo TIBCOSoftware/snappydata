@@ -8,7 +8,6 @@ Using the JDBC SnappyData S thin client driver, connects to a SnappyData member 
 CONNECT CLIENT 'host:port[;property=value]*' [ AS connectionName ]
 ```
 
-<a id="reference_85E77D6BF8C949D6BBAABE485FA02FF2__section_A5670CE37F4B40F8ADAC0FC8CA77B9E0"></a>
 ##Description
 
 Uses the JDBC SnappyData thin client driver to connect to a SnappyData member indicated by the *host:port* values. You can specify an optional name for your connection. Use the [set connection](set_connection.md) to switch between multiple connections. If you do not name a connection, the system generates a name automatically.
@@ -22,7 +21,7 @@ All further commands are processed against the new, current connection.
 ##Example
 
 ``` pre
-snappy version <mark>1.4.0 To Be Confirmed </mark>
+snappy version 1.4.0 
 snappy> connect client 'localhost:1527' as clientConnection;
 snappy> show connections;
 CLIENTCONNECTION* -     jdbc:snappydata://localhost:1527/

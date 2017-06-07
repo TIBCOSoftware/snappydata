@@ -15,8 +15,6 @@ snappy run -file=<path or URL>
      [-ignore-errors]
      [-J-D<property=value>]
      [-locators=<adresses>]
-     [-mcast-address=<address>]
-     [-mcast-port=<port>]
      [-password[=<password>]]
      [-path=<path>]
      [-user=<username>]
@@ -27,7 +25,7 @@ This table describes options for the `snappy run` command. Default values are us
 |Option||Description|
 |-|-|
 |-file|</br>The local path of a SQL command file to execute, or a URL that links to the SQL command file. All commands in the specified file must be compatible with the interactive gfxd shell.</br>This argument is required.|
-|-auth-provider|Sets the authentication provider to use for peer-to-peer connections as well as client-server connections. Valid values are BUILTIN and LDAP. All other members of the SnappyData distributed system must use the same authentication provider and user definitions. If you omit this option, the connection uses no authentication mechanism. See <mark> TO BE CONFIRMED ROWSTORE LINK[Configuring Security](http://rowstore.docs.snappydata.io/docs/deploy_guide/Topics/security/security_chapter.html#concept_6CD7D8A0C41E4BD2B0A5A8A6B192537F) </mark>.|
+|-auth-provider|Sets the authentication provider to use for peer-to-peer connections as well as client-server connections. Valid values are BUILTIN and LDAP. All other members of the SnappyData distributed system must use the same authentication provider and user definitions. If you omit this option, the connection uses no authentication mechanism.|
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default gfxd uses the hostname, or localhost if the hostname points to a local loopback address.|
 |-client-bind-address|</br>The hostname or IP address on which a SnappyData locator listens for client connections. The default is "localhost" </br>Use this option with `-client-port` to attach to a SnappyData cluster as a thin client and perform the command.|
 |-client-port|</br>The port on which a SnappyData locator listens for client connections. The default is 1527.</br>Use this option with `-client-bind-address` to attach to a SnappyData cluster as a thin client and perform the command.|
@@ -37,8 +35,6 @@ This table describes options for the `snappy run` command. Default values are us
 |-ignore-errors|Include this option to ignore any errors that may occur while executing statements in the file, and continue executing the remaining statements. If you omit this option, then gfxd immediately terminates the script's execution if an exception occurs.|
 |-J-D&lt;property=value&gt;|Sets Java system property to the specified value.|
 |-locators|</br>The list of locators as comma-separated host[port] values, used to discover other members of the distributed system.</br>Using `-locators` creates a peer client member to execute the snappy command.|
-|-mcast-address|</br>The multicast address used to discover other members of the distributed system. This value is used only when the `-locators` option is not specified. The default multicast address is 239.192.81.1. </br>Use this option with `-mcast-port` to attach to a SnappyData cluster as a peer client and perform the command.|
-|-mcast-port|</br>The multicast port used to communicate with other members of the distributed system. If zero, multicast is not used for member discovery (specify `-locators` instead). This value is used only if the `-locators` option is not specified.</br>Valid values are in the range 0–65535, with a default value of 10334.</br>Use this option with `-mcast-address` to attach to a SnappyData cluster as a peer client and perform the command.|
 |-password|</br>If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, gfxd prompts you to enter a password from the console.|
 |-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/store_command_reference.md) command.|
 |-user||If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|
@@ -48,7 +44,7 @@ This table describes options for the `snappy run` command. Default values are us
 Specify one of these pairs of options with the command to connect to a SnappyData Distributed system and execute a SQL command file:
 
 -   Use both `-client-bind-address` and `-client-port` to connect to a SnappyData cluster as a thin client and perform the command.
--   Use both `mcast-port` and `-mcast-address`, or use the `-locators` property to connect to a SnappyData cluster as a peer client and perform the command.
+-   Use the `-locators` property to connect to a SnappyData cluster as a peer client and perform the command.
 
 The `-file` argument specifies the location of the SQL script file to execute. If the script file itself calls other script files using `run 'filename'`, also consider using the `-path` option to specify the location of the embedded script files. If an exception occurs while executing the script, GFXD immediately stops executing script commands, unless you include the `-ignore-errors` option.
 
