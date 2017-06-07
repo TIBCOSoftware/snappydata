@@ -144,7 +144,9 @@ abstract class BaseColumnFormatRelation(
           .partitionIdExpression :: Nil, pcFields)
 
     def prunePartitions: Int = {
-      if (pruningExpressions.nonEmpty) {
+      if (pruningExpressions.nonEmpty &&
+          // verify all the partition columns are provided as filters
+          pruningExpressions.length == partitioningColumns.length) {
         pruningExpressions.zipWithIndex.foreach { case (e, i) =>
           mutableRow(i) = e.eval(null)
         }
@@ -179,7 +181,6 @@ abstract class BaseColumnFormatRelation(
       Seq[RDD[InternalRow]]) = {
     val rdd = scanTable(table, requiredColumns, filters, -1)
     val partitionEvaluator = rdd match {
-      case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
       case r => () => r.partitions
     }
     val rowRDD = buildRowBufferRDD(partitionEvaluator, requiredColumns, filters,

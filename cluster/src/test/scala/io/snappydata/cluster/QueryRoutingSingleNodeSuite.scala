@@ -292,7 +292,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       insertRows(tableName2, 1000, serverHostPort)
       // As part of fix to SNAP-1478 thie below query should be enabled
       // and verified.
-      // query1(tableName1, tableName2, serverHostPort)
+      query1(tableName1, tableName2, serverHostPort)
       (0 to 5).foreach(i => query2snc(tableName1, tableName2, serverHostPort, i))
       query2(tableName1, tableName2, serverHostPort)
     } finally {
