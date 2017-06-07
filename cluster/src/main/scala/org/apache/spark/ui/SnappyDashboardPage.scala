@@ -702,10 +702,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       }
     }
 
-    val storagePoolUsed = memberDetails.getOrElse("storagePoolUsed", 0).asInstanceOf[Long]
-    val storagePoolSize = memberDetails.getOrElse("storagePoolSize", 0).asInstanceOf[Long]
-    val executionPoolSize = memberDetails.getOrElse("executionPoolSize", 0).asInstanceOf[Long]
-    val executionPoolUsed = memberDetails.getOrElse("executionPoolUsed", 0).asInstanceOf[Long]
+    val heapStoragePoolUsed = memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
+    val heapStoragePoolSize = memberDetails.getOrElse("heapStoragePoolSize", 0).asInstanceOf[Long]
+    val heapExecutionPoolUsed = memberDetails.getOrElse("heapExecutionPoolUsed", 0).asInstanceOf[Long]
+    val heapExecutionPoolSize = memberDetails.getOrElse("heapExecutionPoolSize", 0).asInstanceOf[Long]
+
+    val offHeapStoragePoolUsed = memberDetails.getOrElse("offHeapStoragePoolUsed", 0).asInstanceOf[Long]
+    val offHeapStoragePoolSize = memberDetails.getOrElse("offHeapStoragePoolSize", 0).asInstanceOf[Long]
+    val offHeapExecutionPoolUsed = memberDetails.getOrElse("offHeapExecutionPoolUsed", 0).asInstanceOf[Long]
+    val offHeapExecutionPoolSize = memberDetails.getOrElse("offHeapExecutionPoolSize", 0).asInstanceOf[Long]
+
     val heapMemorySize = memberDetails.getOrElse("heapMemorySize", 0).asInstanceOf[Long]
     val heapMemoryUsed = memberDetails.getOrElse("heapMemoryUsed", 0).asInstanceOf[Long]
     val offHeapMemorySize = memberDetails.getOrElse("offHeapMemorySize", 0).asInstanceOf[Long]
@@ -719,6 +725,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           (heapMemorySize + offHeapMemorySize)
     }
 
+    val heapDetailsId = shortDirName + "-heap"
+    val heapDetailsHandler = "$('#" + heapDetailsId + "').toggle();";
     val heapUsageDetails = {
       if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
         <span><strong>JVM Heap:</strong>
@@ -734,16 +742,34 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           <br/> { Utils.bytesToString(jvmHeapUsed).toString + " / " +
             Utils.bytesToString(jvmHeapSize).toString }
           <br/><strong>Storage Memory:</strong>
-          <br/> { Utils.bytesToString(storagePoolUsed).toString + " / " +
-            Utils.bytesToString(storagePoolSize).toString }
+          <br/> { Utils.bytesToString(heapStoragePoolUsed).toString + " / " +
+            Utils.bytesToString(heapStoragePoolSize).toString }
           <br/><strong>Execution Memory:</strong>
-          <br/> { Utils.bytesToString(executionPoolUsed).toString + " / " +
-            Utils.bytesToString(executionPoolSize).toString }
+          <br/> { Utils.bytesToString(heapExecutionPoolUsed).toString + " / " +
+            Utils.bytesToString(heapExecutionPoolSize).toString }
         </span>
       }
     }
-    val heapDetailsId = shortDirName + "-heap"
-    val heapDetailsHandler = "$('#" + heapDetailsId + "').toggle();";
+
+    val offHeapDetailsId = shortDirName + "-offheap"
+    val offHeapDetailsHandler = "$('#" + offHeapDetailsId + "').toggle();";
+    val offHeapUsageDetails = {
+      if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+        <span><strong>Storage Memory:</strong>
+          <br/> { SnappyDashboardPage.ValueNotApplicable }
+          <br/><strong>Execution Memory:</strong>
+          <br/> { SnappyDashboardPage.ValueNotApplicable }
+        </span>
+      } else {
+        <span><strong>Storage Memory:</strong>
+          <br/> { Utils.bytesToString(offHeapStoragePoolUsed).toString + " / " +
+            Utils.bytesToString(offHeapStoragePoolSize).toString }
+          <br/><strong>Execution Memory:</strong>
+          <br/> { Utils.bytesToString(offHeapExecutionPoolUsed).toString + " / " +
+            Utils.bytesToString(offHeapExecutionPoolSize).toString }
+        </span>
+      }
+    }
 
     <tr>
       <td>
@@ -787,7 +813,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </div>
       </td>
       <td>
-        <div style="text-align:right; padding-right:15px;">{
+        <div style="width: 80%; float: left; padding-right:10px; text-align:right;">{
             if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
               SnappyDashboardPage.ValueNotApplicable
             } else {
@@ -795,6 +821,12 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                   Utils.bytesToString(offHeapMemorySize).toString
             }
           }</div>
+        <div style="width: 5px; float: right; padding-right: 10px; cursor: pointer;"
+             onclick={offHeapDetailsHandler}> + </div>
+        <div class="cellDetailsBox" id={offHeapDetailsId}
+             style="width: 90%;">
+          {offHeapUsageDetails}
+        </div>
       </td>
     </tr>
   }
