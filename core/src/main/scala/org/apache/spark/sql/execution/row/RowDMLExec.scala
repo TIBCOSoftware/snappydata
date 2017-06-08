@@ -66,7 +66,7 @@ case class RowDMLExec(_child: SparkPlan, putInto: Boolean, delete: Boolean,
         JdbcExtendedUtils.getDeleteString(resolvedName, tableSchema)
       } else {
         JdbcExtendedUtils.getInsertOrPutString(resolvedName,
-          tableSchema, putInto)
+          tableSchema, putInto, escapeQuotes = true)
       }
       (
           s"""final $statementClass $stmt = $conn.prepareStatement(

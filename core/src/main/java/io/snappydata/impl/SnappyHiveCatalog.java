@@ -328,7 +328,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           Object value = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
           String baseTable = value != null ? value.toString() : "";
           String dmls = JdbcExtendedUtils.
-              getInsertOrPutString(fullyQualifiedName, schema, false);
+              getInsertOrPutString(fullyQualifiedName, schema, false, false);
           value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;

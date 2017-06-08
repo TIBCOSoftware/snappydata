@@ -290,4 +290,39 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
 
   }
+
+  test("test table with column name having slash") {
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    val df = snc.sql("CREATE TABLE ColumnTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'col2'," +
+      "BUCKETS '1')")
+
+
+    snc.sql("CREATE TABLE rowTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
+      "USING row " +
+      "options " +
+      "()")
+    snc.sql("insert into ColumnTable(\"a/b\",col2,col3) values(1,2,3)")
+    snc.sql("insert into rowTable(\"a/b\",col2,col3)values(1,2,3)")
+    val result = snc.sql("SELECT col2+1 FROM " + tableName)
+    val r = result.collect
+    result.show()
+    assert(r.length == 1)
+
+
+    val result1 = snc.sql("SELECT \"a/b\"/1 FROM " + tableName)
+    val r1 = result1.collect
+    result1.show()
+    snc.sql("SELECT \"a/b\"/1 FROM rowTable").show
+    assert(r1.length == 1)
+
+
+    snc.sql("drop table if exists columntable")
+    snc.sql("drop table if exists rowtable")
+    logInfo("Successful")
+  }
+
 }

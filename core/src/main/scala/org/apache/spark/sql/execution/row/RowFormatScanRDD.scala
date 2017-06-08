@@ -162,7 +162,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val sb = new StringBuilder()
       columns.foreach { s =>
         if (sb.nonEmpty) sb.append(',')
-        sb.append(s)
+        sb.append('"').append(s).append('"')
       }
       sb.toString()
     } else "1"
