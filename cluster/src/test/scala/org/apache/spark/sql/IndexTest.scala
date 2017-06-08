@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Sort}
 import org.apache.spark.sql.execution.streaming.{Offset, Sink, Source}
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider, StreamSourceProvider}
 import org.apache.spark.sql.streaming.OutputMode
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{BooleanType, IntegerType, StructField, StructType}
 import org.apache.spark.util.Benchmark
 
 class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
@@ -56,22 +56,32 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     super.afterAll()
   }
 
-  test("test PutInto and Delete From") {
+  test("test PutInto and DeleteFrom") {
 
     snc.sql("create table checko (col1 Integer primary key, col2 Integer) using row options " +
         "(partition_by 'col1') ")
 
     // scalastyle:off println
-    val data = sc.parallelize(Seq((1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)))
+    val data = sc.parallelize(Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5),
+      Row(6, 6)))
 
+    val struct = StructType(
+      StructField("i", IntegerType, true) ::
+          StructField("b", IntegerType, false) :: Nil)
+
+    val df = snc.createDataFrame(data, struct)
     import snappy._
-    snc.createDataFrame(data).write.putInto("APP.CHECKO")
+    df.write.putInto("APP.CHECKO")
 
     assert(snc.sql("select * from checko").count() == 6)
 
-    snc.createDataFrame(data).select("col1").where("col1 > 4").write.deleteFrom("APP.CHECKO")
+    df.selectExpr("i as col1", "b as col2").where("i > 4").write.deleteFrom("APP.CHECKO")
 
     assert(snc.sql("select * from checko").count() == 4)
+
+    df.filter("b < 2").selectExpr("i as col1").write.deleteFrom("APP.CHECKO")
+
+    assert(snc.sql("select * from checko").count() == 3)
     // scalastyle:on println
   }
 

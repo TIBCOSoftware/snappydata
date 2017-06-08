@@ -63,7 +63,7 @@ case class RowDMLExec(_child: SparkPlan, putInto: Boolean, delete: Boolean,
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       ctx.addMutableState(connectionClass, conn, "")
       val rowDMLStr = if (delete) {
-        JdbcExtendedUtils.getDeleteString(resolvedName, tableSchema)
+        JdbcExtendedUtils.getDeleteString(resolvedName, tableSchema, escapeQuotes = true)
       } else {
         JdbcExtendedUtils.getInsertOrPutString(resolvedName,
           tableSchema, putInto, escapeQuotes = true)

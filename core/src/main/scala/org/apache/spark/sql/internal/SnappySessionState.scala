@@ -651,15 +651,16 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
             throw new AnalysisException(s"$l requires that the query in the " +
                 "WHERE clause of the DELETE FROM statement " +
-                "generates the same column(s) as in its schema.")
+                "generates the same column name(s) as in its schema but found " +
+                s"${child.output.mkString(",")} instead.")
           }
           l match {
             case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
-              if (!child.output.forall(a => ps.partitionColumns.exists(
-                e => comp(a, e.toUpperCase)))) {
-                throw new AnalysisException(s"$l requires that the query in the " +
-                    "WHERE clause of the DELETE FROM statement " +
-                    s"have all the parititioning column(s) ${ps.partitionColumns}.")
+              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
+                comp(e, a.toUpperCase)))) {
+                throw new AnalysisException(s"${child.output.mkString(",")}" +
+                    s" columns in the WHERE clause of the DELETE FROM statement must " +
+                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
               }
             case _ =>
           }
