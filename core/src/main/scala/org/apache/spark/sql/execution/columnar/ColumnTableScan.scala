@@ -269,9 +269,8 @@ private[sql] final case class ColumnTableScan(
       // inline execution if only one block
       blocks.head
     } else {
-      val apply = ctx.freshName("moveNext")
       val functions = blocks.zipWithIndex.map { case (body, i) =>
-        val name = s"${apply}_$i"
+        val name = ctx.freshName("moveNext")
         val code =
           s"""
              |private void $name(int $arg) {
