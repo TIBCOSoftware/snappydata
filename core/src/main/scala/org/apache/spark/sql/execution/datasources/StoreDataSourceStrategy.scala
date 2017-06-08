@@ -20,7 +20,7 @@ import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToScala
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, Literal, NamedExpression, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, DynamicReplacableConstant, EmptyRow, Expression, Literal, NamedExpression, ParamLiteral}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, expressions}
@@ -213,14 +213,14 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
    */
   protected[sql] def translateFilter(predicate: Expression): Option[Filter] = {
     predicate match {
-      case expressions.EqualTo(a: Attribute, l@Literal(v, t)) =>
+      case expressions.EqualTo(a: Attribute, l: DynamicReplacableConstant) =>
         Some(sources.EqualTo(a.name, l))
-      case expressions.EqualTo(l@Literal(v, t), a: Attribute) =>
+      case expressions.EqualTo(l: DynamicReplacableConstant, a: Attribute) =>
         Some(sources.EqualTo(a.name, l))
 
-      case expressions.EqualNullSafe(a: Attribute, l@Literal(v, t)) =>
+      case expressions.EqualNullSafe(a: Attribute, l: DynamicReplacableConstant) =>
         Some(sources.EqualNullSafe(a.name, l))
-      case expressions.EqualNullSafe(l@Literal(v, t), a: Attribute) =>
+      case expressions.EqualNullSafe(l: DynamicReplacableConstant, a: Attribute) =>
         Some(sources.EqualNullSafe(a.name, l))
 
       case expressions.GreaterThan(a: Attribute, Literal(v, t)) =>
