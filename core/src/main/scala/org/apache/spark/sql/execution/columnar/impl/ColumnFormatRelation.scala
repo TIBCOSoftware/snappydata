@@ -675,16 +675,17 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   final def columnBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
-      table.replace(".", "__")
+      table.replace(".", Constant.SHADOW_SCHEMA_SEPARATOR)
     } else {
-      Constant.DEFAULT_SCHEMA + "__" + table
+      Constant.DEFAULT_SCHEMA + Constant.SHADOW_SCHEMA_SEPARATOR + table
     }
     Constant.SHADOW_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 
   final def getTableName(columnBatchTableName: String): String = {
     columnBatchTableName.substring(Constant.SHADOW_SCHEMA_NAME.length + 1,
-      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).replace("__", ".")
+      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).
+        replaceFirst(Constant.SHADOW_SCHEMA_SEPARATOR, ".")
   }
 
   final def isColumnTable(tableName: String): Boolean = {
