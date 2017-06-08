@@ -21,7 +21,7 @@ All further commands are processed against the new, current connection.
 ##Example
 
 ``` pre
-snappy version 1.4.0 
+snappy version 0.8
 snappy> connect client 'localhost:1527' as clientConnection;
 snappy> show connections;
 CLIENTCONNECTION* -     jdbc:snappydata://localhost:1527/

@@ -12,7 +12,7 @@ Follow these steps to configure table eviction settings. Refer to CREATE TABLE f
 	* Total bytes used.
 
 	* Percentage of JVM heap used. This uses the SnappyData resource manager. When the manager determines that eviction is required, the manager orders the eviction controller to start evicting from all tables where the eviction criterion is set to 'LRUHEAPPERCENT'.
-	You can configure a global heap eviction percentage for all SnappyData data stores, or configure threshold percentage for one or more server groups by using system procedures or by specifying `-eviction-heap-percentage` when starting up your server using `snappy`. [Procedures](../../../reference/inbuilt_system_procedures/SystemProcedures.md) describes how to configure the heap eviction percentage using system procedures. See [server](../../../reference/command_line_utilities/store-server.md) for information on using gfxd to start your servers.
+	You can configure a global heap eviction percentage for all SnappyData data stores, or configure threshold percentage for one or more server groups by using system procedures or by specifying `-eviction-heap-percentage` when starting up your server using `snappy`. [Procedures](../../../reference/inbuilt_system_procedures/SystemProcedures.md) describes how to configure the heap eviction percentage using system procedures. See [server](../../../reference/snappydata_properties/snappydata-properties.md) for information on using gfxd to start your servers.
 	Eviction continues until the resource manager calls a halt. SnappyData evicts the least recently used rows hosted by the member for the table.
     
 2. Decide what action to take when the limit is reached:

@@ -18,7 +18,7 @@ start-locator=port1
 
 * If not already there, this locator is automatically added to the list of locators in this set of SnappyData properties.
 
-* If you set `start-locator`, do not also specify `mcast-port`.
+<!--* If you set `start-locator`, do not also specify `mcast-port`. -->
 
 ## Default Value
 

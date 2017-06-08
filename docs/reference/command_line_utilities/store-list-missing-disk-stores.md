@@ -29,6 +29,7 @@ The table describes options for snappy list-missing-disk-stores.
 
 ``` pre
 snappy list-missing-disk-stores 
+-locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334
 1f811502-f126-4ce4-9839-9549335b734d [curwen.local:/Users/user1/snappydata/rowstore/SnappyData_RowStore_13_bNNNNN_platform/server2/./datadictionary]
 ```

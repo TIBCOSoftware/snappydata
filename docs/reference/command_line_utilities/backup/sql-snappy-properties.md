@@ -1,3 +1,5 @@
+# SQL Properties
+
 These properties can be set in the snappy-shell, using the following SQL commands.
 
 | SQL Property | Description | SQL Command |
