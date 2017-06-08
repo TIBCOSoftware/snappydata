@@ -1,8 +1,8 @@
 # SnappyData Properties
 
-SnappyData, a database server cluster, has three main components - Locator, Server, and Lead.
+The cluster has three main components - Locator, Server, and Lead.
 
-In this document, we provide the syntax and description of the properties you can set for each component. For information refer to [configuring the cluster](configuration.md).
+In this document, we provide the syntax and description of the properties you can set for each component. For information on configuring the cluster refer to [configuring the cluster](configuration.md).
 
 The following topics are covered in this section:
 
