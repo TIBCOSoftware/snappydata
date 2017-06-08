@@ -64,7 +64,7 @@ case class RowInsertExec(_child: SparkPlan, upsert: Boolean,
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       ctx.addMutableState(connectionClass, conn, "")
       val rowInsertStr = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
-        tableSchema, upsert)
+        tableSchema, upsert, escapeQuotes = true)
       (
           s"""final $statementClass $stmt = $conn.prepareStatement(
               "$rowInsertStr");""",
