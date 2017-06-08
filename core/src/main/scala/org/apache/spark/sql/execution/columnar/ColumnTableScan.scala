@@ -243,45 +243,35 @@ private[sql] final case class ColumnTableScan(
   }
 
   def splitToMethods(ctx: CodegenContext, blocks: ArrayBuffer[String]): String = {
-    if (blocks.length == 1) {
-      // inline execution if only one block
-      blocks.head
-    } else {
-      val apply = ctx.freshName("apply")
-      val functions = blocks.zipWithIndex.map { case (body, i) =>
-        val name = s"${apply}_$i"
-        val code =
-          s"""
-             |private void $name() {
-             |  $body
-             |}
+    val apply = ctx.freshName("apply")
+    val functions = blocks.zipWithIndex.map { case (body, i) =>
+      val name = s"${apply}_$i"
+      val code =
+        s"""
+           |private void $name() {
+           |  $body
+           |}
          """.stripMargin
-        ctx.addNewFunction(name, code)
-        name
-      }
-      functions.map(name => s"$name();").mkString("\n")
+      ctx.addNewFunction(name, code)
+      name
     }
+    functions.map(name => s"$name();").mkString("\n")
   }
 
   def splitMoveNextMethods(ctx: CodegenContext, blocks: ArrayBuffer[String],
       arg: String): String = {
-    if (blocks.length == 1) {
-      // inline execution if only one block
-      blocks.head
-    } else {
-      val functions = blocks.zipWithIndex.map { case (body, i) =>
-        val name = ctx.freshName("moveNext")
-        val code =
-          s"""
-             |private void $name(int $arg) {
-             |  $body
-             |}
+    val functions = blocks.zipWithIndex.map { case (body, i) =>
+      val name = ctx.freshName("moveNext")
+      val code =
+        s"""
+           |private void $name(int $arg) {
+           |  $body
+           |}
          """.stripMargin
-        ctx.addNewFunction(name, code)
-        name
-      }
-      functions.map(name => s"$name($arg);").mkString("\n")
+      ctx.addNewFunction(name, code)
+      name
     }
+    functions.map(name => s"$name($arg);").mkString("\n")
   }
 
 
