@@ -116,11 +116,11 @@ trait SplitClusterDUnitTestBase extends Logging {
   def doTestTableFormChanges(skewNetworkServers: Boolean): Unit = {
     // StandAlone Spark Cluster Operations
     // row table
-    vm3.invoke(getClass, "createDropTablesInSplitMode",
+    vm3.invoke(getClass, "createTablesInSplitMode",
       startArgs
           :+ Int.box(locatorClientPort) :+ "ROW")
 
-    testObject.createDropEmbeddedModeTables("ROW")
+    testObject.dropAndCreateTablesInEmbeddedMode("ROW")
 
     vm3.invoke(getClass, "verifyTableFormInSplitMOde",
       startArgs
@@ -128,11 +128,11 @@ trait SplitClusterDUnitTestBase extends Logging {
 
     // StandAlone Spark Cluster Operations
     // column table
-    vm3.invoke(getClass, "createDropTablesInSplitMode",
+    vm3.invoke(getClass, "createTablesInSplitMode",
       startArgs
           :+ Int.box(locatorClientPort) :+ "COLUMN")
 
-    testObject.createDropEmbeddedModeTables("COLUMN")
+    testObject.dropAndCreateTablesInEmbeddedMode("COLUMN")
 
     vm3.invoke(getClass, "verifyTableFormInSplitMOde",
       startArgs
@@ -153,8 +153,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
-
-  // snap-1505 is filed to enable this test
+  // SNAP-1680 is filed to enable this
   final def DISABLEDtestTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
@@ -174,10 +173,10 @@ trait SplitClusterDUnitTestObject extends Logging {
 
   def assertTableNotCachedInHiveCatalog(tableName: String): Unit
 
-  def createDropEmbeddedModeTables(tableType: String): Unit = {
+  def dropAndCreateTablesInEmbeddedMode(tableType: String): Unit = {
   }
 
-  def createDropTablesInSplitMode(locatorPort: Int,
+  def createTablesInSplitMode(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int,
       tableType: String): Unit = {

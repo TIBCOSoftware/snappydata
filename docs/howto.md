@@ -46,6 +46,8 @@ The following topics are covered in this section:
 
 * [How to Connect using ODBC Driver](#howto-odbc)
 
+* [How to Connect to the Cluster from External Clients](#howto-external-client)
+
 * [How to Use Apache Zeppelin with SnappyData](#howto-zeppelin)
 
 
@@ -210,7 +212,8 @@ For more information on the various modes, refer to the [SnappyData Smart Connec
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
 **Configure a SnappySession**: 
-The code below shows how to initialize a SparkSession. Here the property `snappydata.store.locators` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster.
+
+The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster. Its value is consists of  locator host and JDBC client port on which the locator listens for connections (default 1527).
 
 ```
     val spark: SparkSession = SparkSession
@@ -218,8 +221,8 @@ The code below shows how to initialize a SparkSession. Here the property `snappy
         .appName("SmartConnectorExample")
         // It can be any master URL
         .master("local[4]")
-        // snappydata.store.locators property enables the application to interact with SnappyData store
-        .config("snappydata.store.locators", "localhost:10334")
+         // snappydata.connection property enables the application to interact with SnappyData store
+        .config("snappydata.connection", "localhost:1527")
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -1146,6 +1149,26 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
  When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
 
+<a id="howto-external-client"></a>
+## How to Connect to the Cluster from External Clients
+
+You can also connect to the SnappyData cluster from other networks as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
+
+When [starting the locator and server](configuration.md) set the following properties in the **conf/locators** and **conf/servers** files:
+
+* `-hostname-for-clients`: The public IP address of the locator or server. 
+
+* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-J-Dgemfirexd.hostname-for-clients=192.168.20.208` </br> 
+	<note>By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.</note>
+
+* **Port Settings**: The client, by default, connects to the locator or server at the default port 1527. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the `-client-port` property.
+
+<note> **Note**: </note>
+
+* <note> If the above properties are not set, when a client trys to connect to the cluster from a different network, the connection may fail and an error may be reported. </note>
+
+* <note> For ODBC clients, you must use the host and port details of the server and not the locator.</note> 
+
 <a id="howto-zeppelin"></a>
 ## How to Use Apache Zeppelin with SnappyData
 
@@ -1160,25 +1183,27 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 2. [Configure the SnappyData Cluster](configuration.md#configuration-files).
 
-3. Copy the SnappyData Zeppelin interpreter (**snappydata-zeppelin-<_version_number_>.jar**) file to the **jars** (snappydata-<_version_number_>-bin/jars/) directory in the SnappyData home directory.
+3. In [lead node configuration](configuration.md#configuring-leads) set the following properties:
 
-4. Enable the SnappyData Zeppelin interpreter by adding `-zeppelin.interpreter.enable=true` in [lead node configuration](configuration.md#configuring-leads).
+	- Enable the SnappyData Zeppelin interpreter by adding `-zeppelin.interpreter.enable=true` 
 
-5. [Start the SnappyData cluster](howto.md#how-to-start-a-snappydata-cluster)
+    - In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding `-classpath=/<download_location>/snappydata-zeppelin-<version_number>.jar`.
 
-6. Extract the contents of the Zeppelin binary package. </br> 
+4. [Start the SnappyData cluster](howto.md#how-to-start-a-snappydata-cluster)
 
-7. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
+5. Extract the contents of the Zeppelin binary package. </br> 
+
+6. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
 	`./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<snappydata_interpreter_version_number>`. </br>
     Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
 
-8. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
+7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
 
-9. Edit the **zeppeline-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
+8. Edit the **zeppeline-site.xml** file, and in the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`.
 
-10. Restart the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
+9. Restart the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
 
-11. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
+10. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
 
 ### Step 2: Configure SnappyData for Apache Zeppelin
 
@@ -1211,7 +1236,7 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 	|--------|--------| -------- |
 	|default.ur|jdbc:snappydata://localhost:1527/	| Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527` |
 	|default.driver|com.pivotal.gemfirexd.jdbc.ClientDriver| Specify the JDBC driver for SnappyData|
-	|snappydata.store.locators|localhost:10334| Specify the URI of the locator (only local/split mode) |
+	|snappydata.connection|localhost:1527| Specify the `host:clientPort` combination of the locator for the JDBC connection |
 	|master|local[*]| Specify the URI of the spark master (only local/split mode) |
 	|zeppelin.jdbc.concurrent.use|true| Specify the Zeppelin scheduler to be used. </br>Select **True** for Fair and **False** for FIFO | 
 

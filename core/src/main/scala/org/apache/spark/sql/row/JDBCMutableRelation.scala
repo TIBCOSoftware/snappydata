@@ -100,11 +100,11 @@ case class JDBCMutableRelation(
         dialect, sqlContext)
       tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(table,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // Do Nothing
-        }
+//        dialect match {
+//          case d: JdbcExtendedDialect => d.initializeTable(table,
+//            sqlContext.conf.caseSensitiveAnalysis, conn)
+//          case _ => // Do Nothing
+//        }
         return tableSchema
       }
 

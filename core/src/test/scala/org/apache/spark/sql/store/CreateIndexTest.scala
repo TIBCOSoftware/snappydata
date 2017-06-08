@@ -651,6 +651,16 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.createTable(tableName, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
+    snContext.sql("create unique index uidx on " + tableName + " (COL1)")
+    // drop it
+    snContext.sql("drop index uidx")
+    // first try and create a unique index on col1 -- SNAP-1385
+    val tableNameRowReplicated = s"${tableName}_rep"
+    snContext.createTable(tableNameRowReplicated,
+      "row", dataDF.schema, Map.empty[String, String])
+    snContext.sql(s"create unique index uidx_rep on ${tableNameRowReplicated} (COL1)")
+    snContext.sql("drop index uidx_rep")
+
     doPrint("Verify index create and drop for various index types")
     snContext.sql("create index test1 on " + tableName + " (COL1)")
     snContext.sql("drop index test1")

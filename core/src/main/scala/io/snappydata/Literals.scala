@@ -83,6 +83,8 @@ object Constant {
   // Internal Column table store suffix
   final val SHADOW_TABLE_SUFFIX = StoreCallbacks.SHADOW_TABLE_SUFFIX
 
+  final val SHADOW_SCHEMA_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_SEPARATOR
+
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
   val ENABLE_ZEPPELIN_INTERPRETER = "zeppelin.interpreter.enable"
@@ -228,6 +230,15 @@ object Property extends Enumeration {
   val HashJoinSize = SQLVal[Long](s"${Constant.PROPERTY_PREFIX}hashJoinSize",
     "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. Default value is 100 MB.", Some(100L * 1024 * 1024))
+
+  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}hashAggregateSize",
+    "Aggregation will use optimized hash aggregation plan but one that does not " +
+        "overflow to disk and can cause OOME if the result of aggregation is large. " +
+        "The limit specifies the input data size (with b/k/m/g/t/p suffixes for units) " +
+        "and not the output size. Set this only if there are known to be queries " +
+        "that can return very large number of rows in aggregation results. " +
+        "Default value is 0b meaning no limit on the size so the optimized " +
+        "hash aggregation is always used.", Some("0b"))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",

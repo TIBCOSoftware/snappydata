@@ -337,7 +337,8 @@ class SnappyConf(@transient val session: SnappySession)
   private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
-         Property.HashJoinSize.name => session.clearPlanCache()
+         Property.HashJoinSize.name |
+         Property.HashAggregateSize.name => session.clearPlanCache()
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {

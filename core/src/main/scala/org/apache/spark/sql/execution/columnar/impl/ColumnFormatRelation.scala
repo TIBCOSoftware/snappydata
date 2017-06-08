@@ -323,18 +323,13 @@ abstract class BaseColumnFormatRelation(
       if (tableExists) {
         mode match {
           case SaveMode.Ignore =>
-            // TODO: Suranjan for split mode when driver acts as client
-            // we will need to change this code and add a flag to
-            // CREATE_ALL_BUCKETS to create only when no buckets created
-//            if (region.getRegionAdvisor().getCreatedBucketsCount == 0) {
-              dialect match {
-                case GemFireXDDialect =>
-                  GemFireXDDialect.initializeTable(table,
-                    sqlContext.conf.caseSensitiveAnalysis, conn)
-                  GemFireXDDialect.initializeTable(externalColumnTableName,
-                    sqlContext.conf.caseSensitiveAnalysis, conn)
-                case _ => // Do nothing
-              }
+//            dialect match {
+//              case GemFireXDDialect =>
+//                GemFireXDDialect.initializeTable(table,
+//                  sqlContext.conf.caseSensitiveAnalysis, conn)
+//                GemFireXDDialect.initializeTable(externalColumnTableName,
+//                  sqlContext.conf.caseSensitiveAnalysis, conn)
+//              case _ => // Do nothing
 //            }
             return
           case SaveMode.ErrorIfExists =>
@@ -680,16 +675,17 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   final def columnBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
-      table.replace(".", "__")
+      table.replace(".", Constant.SHADOW_SCHEMA_SEPARATOR)
     } else {
-      Constant.DEFAULT_SCHEMA + "__" + table
+      Constant.DEFAULT_SCHEMA + Constant.SHADOW_SCHEMA_SEPARATOR + table
     }
     Constant.SHADOW_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 
   final def getTableName(columnBatchTableName: String): String = {
     columnBatchTableName.substring(Constant.SHADOW_SCHEMA_NAME.length + 1,
-      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).replace("__", ".")
+      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).
+        replaceFirst(Constant.SHADOW_SCHEMA_SEPARATOR, ".")
   }
 
   final def isColumnTable(tableName: String): Boolean = {
