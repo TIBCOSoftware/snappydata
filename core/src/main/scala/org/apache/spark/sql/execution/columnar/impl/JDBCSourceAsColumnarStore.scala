@@ -39,7 +39,7 @@ import io.snappydata.thrift.internal.ClientBlob
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.ParamLiteral
+import org.apache.spark.sql.catalyst.expressions.{DynamicReplacableConstant, ParamLiteral}
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowDMLExec}
@@ -636,6 +636,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args.map {
         case pl: ParamLiteral => pl.convertedLiteral
+        case l : DynamicReplacableConstant => l.eval(null)
         case v => v
       })
     }

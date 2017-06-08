@@ -36,7 +36,7 @@ import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.ParamLiteral
+import org.apache.spark.sql.catalyst.expressions.{DynamicReplacableConstant, ParamLiteral}
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
@@ -193,7 +193,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args.map {
-        case pl: ParamLiteral => pl.value
+        case pl: DynamicReplacableConstant => pl.eval(null)
         case v => v
       })
     }

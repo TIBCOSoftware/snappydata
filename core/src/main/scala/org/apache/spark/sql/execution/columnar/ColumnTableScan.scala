@@ -130,9 +130,9 @@ private[sql] final case class ColumnTableScan(
         if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
         buildFilter(lhs) || buildFilter(rhs)
 
-      case EqualTo(a: AttributeReference, l: Literal) =>
+      case EqualTo(a: AttributeReference, l: DynamicReplacableConstant) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l: Literal, a: AttributeReference) =>
+      case EqualTo(l: DynamicReplacableConstant, a: AttributeReference) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
 
       case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
