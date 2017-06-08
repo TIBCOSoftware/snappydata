@@ -281,9 +281,9 @@ object JdbcExtendedUtils extends Logging {
    * Returns the SQL for prepare to insert or put rows into a table.
    */
   def getInsertOrPutString(table: String, rddSchema: StructType,
-      upsert: Boolean, escapeQuotes: Boolean = false): String = {
+      putInto: Boolean, escapeQuotes: Boolean = false): String = {
     val sql = new StringBuilder()
-    if (upsert) {
+    if (putInto) {
       sql.append(s"PUT INTO $table (")
     } else {
       sql.append(s"INSERT INTO $table (")
@@ -307,6 +307,30 @@ object JdbcExtendedUtils extends Logging {
     }
     sql.toString()
   }
+
+  /**
+   * Returns the SQL for prepare to insert or put rows into a table.
+   */
+  def getDeleteString(table: String, rddSchema: StructType,
+      escapeQuotes: Boolean = false): String = {
+    val sql = new StringBuilder()
+    sql.append(s"DELETE FROM $table WHERE ")
+    var fieldsLeft = rddSchema.fields.length
+    rddSchema.fields.foreach { field =>
+      if(escapeQuotes) {
+        sql.append("""\"""").append(field.name).append("""\"""")
+      } else {
+        sql.append('"').append(field.name).append('"')
+      }
+      sql.append('=').append('?')
+      if (fieldsLeft > 1) sql.append(" AND ")
+      fieldsLeft -= 1
+    }
+
+    sql.toString()
+  }
+
+
 
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
       schema: StructType, resolvedName: String, upsert: Boolean): Int = {

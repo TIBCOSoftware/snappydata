@@ -77,6 +77,9 @@ object StoreStrategy extends Strategy {
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
+    case DeleteFromTable(l@LogicalRelation(p: DeletableRelation, _, _), query) =>
+      ExecutePlan(p.getDeletePlan(l, planLater(query))) :: Nil
+
     case r: ExecuteCommand => ExecutedCommand(r) :: Nil
 
     case _ => Nil
@@ -102,6 +105,24 @@ private[sql] case class ExternalTableDMLCmd(
 }
 
 private[sql] case class PutIntoTable(
+    table: LogicalPlan,
+    child: LogicalPlan)
+    extends LogicalPlan {
+
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
+
+  override def output: Seq[Attribute] = Seq.empty
+
+  override lazy val resolved: Boolean = childrenResolved &&
+      child.output.zip(table.output).forall {
+        case (childAttr, tableAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
+            tableAttr.dataType)
+      }
+}
+
+
+private[sql] case class DeleteFromTable(
     table: LogicalPlan,
     child: LogicalPlan)
     extends LogicalPlan {

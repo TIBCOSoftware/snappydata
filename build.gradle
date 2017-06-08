@@ -598,10 +598,16 @@ task product(type: Zip) {
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def targetProject = clusterProject
   def hasAQPProject = new File(rootDir, 'aqp/build.gradle').exists()
+  def hasJdbcConnectorProject = new File(rootDir,
+      'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 
   if (hasAQPProject) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
     targetProject = project(":snappy-aqp_${scalaBinaryVersion}")
+  }
+
+  if (hasJdbcConnectorProject) {
+    dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
   }
 
   // create snappydata+spark combined python zip

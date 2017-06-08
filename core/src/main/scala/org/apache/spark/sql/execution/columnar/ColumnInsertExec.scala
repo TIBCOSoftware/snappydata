@@ -26,7 +26,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Exp
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.execution.{SparkPlan, TableInsertExec}
+import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.bitset.BitSetMethods
@@ -40,7 +40,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     relation: Option[DestroyRelation], batchParams: (Int, Int, String),
     columnTable: String, onExecutor: Boolean, relationSchema: StructType,
     externalStore: ExternalStore, useMemberVariables: Boolean)
-    extends TableInsertExec(_child, partitionColumns, _partitionExpressions,
+    extends TableExec(_child, partitionColumns, _partitionExpressions,
       _numBuckets, relationSchema, relation, onExecutor) {
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
