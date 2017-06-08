@@ -483,7 +483,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query1(tableName1, tableName2)
       query2(tableName1, tableName2)
       query3(tableName1, tableName2)
-      query4(tableName1, tableName2) // TODO - Enable with SNAP-1478
+      query4(tableName1, tableName2)
       query5(tableName1, tableName2)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false

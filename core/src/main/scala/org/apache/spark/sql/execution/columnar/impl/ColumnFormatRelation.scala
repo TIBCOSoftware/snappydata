@@ -180,10 +180,7 @@ abstract class BaseColumnFormatRelation(
       filters: Array[Filter]): (RDD[Any], RDD[Any],
       Seq[RDD[InternalRow]]) = {
     val rdd = scanTable(table, requiredColumns, filters, -1)
-    val partitionEvaluator = rdd match {
-      case r => () => r.partitions
-    }
-    val rowRDD = buildRowBufferRDD(partitionEvaluator, requiredColumns, filters,
+    val rowRDD = buildRowBufferRDD(() => rdd.partitions, requiredColumns, filters,
       useResultSet = true)
     (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
   }
