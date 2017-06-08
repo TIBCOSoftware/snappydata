@@ -132,12 +132,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   protected final def quotedIdentifier: Rule1[String] = rule {
     atomic('"' ~ capture((noneOf("\"") | "\"\""). +) ~ '"') ~
         ws ~> { (s: String) =>
-      val id = if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
-      if (caseSensitive) id else Utils.toUpperCase(id)
+      if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
     } |
     atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
-      val id = if (s.indexOf("``") >= 0) s.replace("``", "`") else s
-      if (caseSensitive) id else Utils.toUpperCase(id)
+      if (s.indexOf("``") >= 0) s.replace("``", "`") else s
     }
   }
 
