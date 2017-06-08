@@ -318,7 +318,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               otherRDDs = Seq.empty, numBuckets = -1,
               partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
               baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs)
-            val insertPlan = RowDMLExec(tableScan, upsert = true, delete = false,
+            val insertPlan = RowDMLExec(tableScan, putInto = true, delete = false,
               Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
               resolvedName = null, connProperties)
             // now generate the code with the help of WholeStageCodegenExec
@@ -338,7 +338,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         val resolvedName = ExternalStoreUtils.lookupName(tableName,
           connection.getSchema)
         val putSQL = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
-          schema, upsert = true)
+          schema, putInto = true)
         val stmt = connection.prepareStatement(putSQL)
         refs(statementRef) = stmt
         // no harm in passing a references array with extra element at end

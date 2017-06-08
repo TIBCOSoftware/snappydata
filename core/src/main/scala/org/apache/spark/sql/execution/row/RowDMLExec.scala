@@ -29,7 +29,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
 /**
  * Generated code plan for bulk insertion into a row table.
  */
-case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
+case class RowDMLExec(_child: SparkPlan, putInto: Boolean, delete: Boolean,
     partitionColumns: Seq[String], _partitionExpressions: Seq[Expression],
     _numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
     onExecutor: Boolean, resolvedName: String, connProps: ConnectionProperties)
@@ -66,7 +66,7 @@ case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
         JdbcExtendedUtils.getDeleteString(resolvedName, tableSchema)
       } else {
         JdbcExtendedUtils.getInsertOrPutString(resolvedName,
-          tableSchema, upsert)
+          tableSchema, putInto)
       }
       (
           s"""final $statementClass $stmt = $conn.prepareStatement(
@@ -139,16 +139,16 @@ case class RowDMLExec(_child: SparkPlan, upsert: Boolean, delete: Boolean,
     """.stripMargin
   }
 
-  override def opType: String = if (upsert) {
-    "Upserted"
+  override def opType: String = if (putInto) {
+    "PutInto"
   } else if (delete) {
     "Deleted"
   } else {
     "Inserted"
   }
 
-  override def nodeName: String = if (upsert) {
-    "RowUpsert"
+  override def nodeName: String = if (putInto) {
+    "RowPutInto"
   } else if (delete) {
     "RowDelete"
   } else {

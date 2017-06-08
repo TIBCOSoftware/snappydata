@@ -635,7 +635,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         case _ => p
       }
 
-    // Check for PUT
+    // Check for DELETE
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
     // ResolveRelations, no such special rule has been added for PUT

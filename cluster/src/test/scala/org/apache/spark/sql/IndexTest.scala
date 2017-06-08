@@ -56,7 +56,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     super.afterAll()
   }
 
-  test("dd") {
+  test("test PutInto and Delete From") {
 
     snc.sql("create table checko (col1 Integer primary key, col2 Integer) using row options " +
         "(partition_by 'col1') ")
@@ -67,8 +67,11 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     import snappy._
     snc.createDataFrame(data).write.putInto("APP.CHECKO")
 
-    println(snc.sql("select * from checko").count())
+    assert(snc.sql("select * from checko").count() == 6)
 
+    snc.createDataFrame(data).select("col1").where("col1 > 4").write.deleteFrom("APP.CHECKO")
+
+    assert(snc.sql("select * from checko").count() == 4)
     // scalastyle:on println
   }
 

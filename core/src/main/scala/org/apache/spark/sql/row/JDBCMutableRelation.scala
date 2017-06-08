@@ -173,17 +173,17 @@ case class JDBCMutableRelation(
   }
 
   final lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
-    table, schema, upsert = false)
+    table, schema, putInto = false)
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowDMLExec(child, upsert = false, delete = false, Seq.empty, Seq.empty, -1,
+    RowDMLExec(child, putInto = false, delete = false, Seq.empty, Seq.empty, -1,
       schema, Some(this), onExecutor = false, table, connProperties)
   }
 
   override def getDeletePlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowDMLExec(child, upsert = false, delete = true, Seq.empty, Seq.empty, -1,
+    RowDMLExec(child, putInto = false, delete = true, Seq.empty, Seq.empty, -1,
       schema, Some(this), onExecutor = false, table, connProperties)
   }
 

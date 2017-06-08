@@ -83,7 +83,7 @@ abstract class BaseColumnFormatRelation(
     ExternalStoreUtils.getConnectionType(dialect)
 
   lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
-    resolvedName, schema, upsert = false)
+    resolvedName, schema, putInto = false)
 
   @transient override lazy val region: PartitionedRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
