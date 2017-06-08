@@ -124,7 +124,7 @@ object JdbcExtendedUtils extends Logging {
             case _ => throw new IllegalArgumentException(
               s"Don't know how to save $field to JDBC")
           })
-      sb.append(s", ${field.name} $typeString")
+      sb.append(s""", "${field.name}" $typeString""")
       if (!field.nullable) sb.append(" NOT NULL")
     }
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
@@ -281,7 +281,7 @@ object JdbcExtendedUtils extends Logging {
    * Returns the SQL for prepare to insert or put rows into a table.
    */
   def getInsertOrPutString(table: String, rddSchema: StructType,
-      upsert: Boolean): String = {
+      upsert: Boolean, escapeQuotes: Boolean = false): String = {
     val sql = new StringBuilder()
     if (upsert) {
       sql.append(s"PUT INTO $table (")
@@ -290,7 +290,11 @@ object JdbcExtendedUtils extends Logging {
     }
     var fieldsLeft = rddSchema.fields.length
     rddSchema.fields.foreach { field =>
-      sql.append(field.name)
+      if (escapeQuotes) {
+        sql.append("""\"""").append(field.name).append("""\"""")
+      } else {
+        sql.append('"').append(field.name).append('"')
+      }
       if (fieldsLeft > 1) sql.append(',') else sql.append(')')
       fieldsLeft -= 1
     }
