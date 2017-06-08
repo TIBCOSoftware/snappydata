@@ -473,7 +473,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   override def createDataset[T: Encoder](data: RDD[T]): Dataset[T] = {
     val encoder = encoderFor[T]
-    val output = sessionCatalog.normalizeSchema(encoder.schema).toAttributes
+    val output = normalizeSchema(encoder.schema).toAttributes
     val c = encoder.clsTag.runtimeClass
     val isFlat = !(classOf[Product].isAssignableFrom(c) ||
         classOf[DefinedByConstructorParams].isAssignableFrom(c))
@@ -521,7 +521,7 @@ class SnappySession(@transient private val sc: SparkContext,
       samplingOptions: Map[String, String],
       allowExisting: Boolean): DataFrame = {
     val plan = createTable(sessionCatalog.newQualifiedTableName(tableName),
-      SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
+      SnappyContext.SAMPLE_SOURCE, userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
     Dataset.ofRows(this, plan)
@@ -564,7 +564,7 @@ class SnappySession(@transient private val sc: SparkContext,
       samplingOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(sessionCatalog.newQualifiedTableName(tableName),
-      SnappyContext.SAMPLE_SOURCE, Some(schema), schemaDDL = None,
+      SnappyContext.SAMPLE_SOURCE, Some(normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
     Dataset.ofRows(this, plan)
@@ -609,7 +609,7 @@ class SnappySession(@transient private val sc: SparkContext,
       topkOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(sessionCatalog.newQualifiedTableName(topKName),
-      SnappyContext.TOPK_SOURCE, Some(inputDataSchema), schemaDDL = None,
+      SnappyContext.TOPK_SOURCE, Some(normalizeSchema(inputDataSchema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, topkOptions) + ("key" -> keyColumnName),
       isBuiltIn = true)
@@ -654,7 +654,7 @@ class SnappySession(@transient private val sc: SparkContext,
       keyColumnName: String, topkOptions: Map[String, String],
       allowExisting: Boolean): DataFrame = {
     val plan = createTable(sessionCatalog.newQualifiedTableName(topKName),
-      SnappyContext.TOPK_SOURCE, None, schemaDDL = None,
+      SnappyContext.TOPK_SOURCE, userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, topkOptions) + ("key" -> keyColumnName),
       isBuiltIn = true)
@@ -782,7 +782,7 @@ class SnappySession(@transient private val sc: SparkContext,
       options: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(sessionCatalog.newQualifiedTableName(tableName),
-      provider, Some(schema), schemaDDL = None,
+      provider, Some(normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options, isBuiltIn = true)
     Dataset.ofRows(this, plan)
@@ -947,6 +947,9 @@ class SnappySession(@transient private val sc: SparkContext,
       allowExisting)
   }
 
+  private[sql] def normalizeSchema(schema: StructType): StructType =
+    sessionCatalog.normalizeSchema(schema)
+
   /**
    * Create a table with given options.
    */
@@ -986,7 +989,6 @@ class SnappySession(@transient private val sc: SparkContext,
       options + (dbtableProp -> tableIdent.toString)
     }
 
-    val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
     val source = if (isBuiltIn) SnappyContext.getProvider(provider,
       onlyBuiltIn = true) else provider
 
@@ -998,7 +1000,7 @@ class SnappySession(@transient private val sc: SparkContext,
         // add allowExisting in properties used by some implementations
         val r = DataSource(
           self,
-          userSpecifiedSchema = schema,
+          userSpecifiedSchema = userSpecifiedSchema,
           className = source,
           options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
               (mode != SaveMode.ErrorIfExists).toString)).resolveRelation(true)
@@ -1007,7 +1009,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     val plan = LogicalRelation(relation, metastoreTableIdentifier = Some(tableIdent))
     if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
-      sessionCatalog.registerDataSourceTable(tableIdent, schema,
+      sessionCatalog.registerDataSourceTable(tableIdent, userSpecifiedSchema,
         Array.empty[String], source, params, relation)
     }
     snappyContextFunctions.postRelationCreation(relation, this)
@@ -1043,7 +1045,7 @@ class SnappySession(@transient private val sc: SparkContext,
       // further processing to load the data
       case ThinClientConnectorMode(_, _) =>
         val userSchema = userSpecifiedSchema.getOrElse(
-          Dataset.ofRows(sqlContext.sparkSession, query).schema)
+          normalizeSchema(Dataset.ofRows(sqlContext.sparkSession, query).schema))
         sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
           provider, Option(userSchema), schemaDDL, mode, options, isBuiltIn)
         createTableAsSelect(tableIdent, provider, Option(userSchema), schemaDDL,
@@ -1108,7 +1110,6 @@ class SnappySession(@transient private val sc: SparkContext,
       }
     } else None
 
-    val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
     val relation = schemaDDL match {
       case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query))
@@ -1160,7 +1161,7 @@ class SnappySession(@transient private val sc: SparkContext,
     // need to register if not existing in catalog
     if (insertRelation.isEmpty || overwrite) {
       if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
-        sessionCatalog.registerDataSourceTable(tableIdent, schema,
+        sessionCatalog.registerDataSourceTable(tableIdent, userSpecifiedSchema,
           partitionColumns, source, params, relation)
       }
       snappyContextFunctions.postRelationCreation(relation, this)

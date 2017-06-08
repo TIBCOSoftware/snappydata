@@ -83,6 +83,8 @@ object Constant {
   // Internal Column table store suffix
   final val SHADOW_TABLE_SUFFIX = StoreCallbacks.SHADOW_TABLE_SUFFIX
 
+  final val SHADOW_SCHEMA_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_SEPARATOR
+
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
   val ENABLE_ZEPPELIN_INTERPRETER = "zeppelin.interpreter.enable"

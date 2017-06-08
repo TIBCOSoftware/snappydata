@@ -32,7 +32,7 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -636,6 +636,39 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         case _ => p
       }
 
+    // Check for DELETE
+    // Need to eliminate subqueries here. Unlike InsertIntoTable whose
+    // subqueries have already been eliminated by special check in
+    // ResolveRelations, no such special rule has been added for PUT
+    case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
+      EliminateSubqueryAliases(table) match {
+        case l@LogicalRelation(dr: DeletableRelation, _, _) =>
+          def comp(a: Attribute, targetCol: String): Boolean = a match {
+            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
+          }
+          // First, make sure the where column(s) of the delete are in schema of the relation.
+          val expectedOutput = l.output
+          if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
+            throw new AnalysisException(s"$l requires that the query in the " +
+                "WHERE clause of the DELETE FROM statement " +
+                "generates the same column name(s) as in its schema but found " +
+                s"${child.output.mkString(",")} instead.")
+          }
+          l match {
+            case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
+              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
+                comp(e, a.toUpperCase)))) {
+                throw new AnalysisException(s"${child.output.mkString(",")}" +
+                    s" columns in the WHERE clause of the DELETE FROM statement must " +
+                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
+              }
+            case _ =>
+          }
+          castAndRenameChildOutput(d, expectedOutput, dr, l, child)
+
+        case _ => d
+      }
+
     // other cases handled like in PreprocessTableInsertion
     case i@InsertIntoTable(table, _, child, _, _)
       if table.resolved && child.resolved => table match {
@@ -727,10 +760,13 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     if (newChildOutput == child.output) {
       plan match {
         case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
+        case d: DeleteFromTable => d.copy(table = newRelation).asInstanceOf[T]
         case _: InsertIntoTable => plan
       }
     } else plan match {
       case p: PutIntoTable => p.copy(table = newRelation,
+        child = Project(newChildOutput, child)).asInstanceOf[T]
+      case d: DeleteFromTable => d.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
         child)).asInstanceOf[T]

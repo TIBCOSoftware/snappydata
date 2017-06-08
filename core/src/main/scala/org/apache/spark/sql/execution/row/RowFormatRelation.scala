@@ -75,7 +75,7 @@ class RowFormatRelation(
     ExternalStoreUtils.getConnectionType(dialect)
 
   private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
-    table, schema, upsert = true)
+    table, schema, putInto = true)
 
   private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
@@ -201,7 +201,7 @@ class RowFormatRelation(
       relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowInsertExec(child, upsert = false, partitionColumns,
+    RowDMLExec(child, putInto = false, delete = false, partitionColumns,
       partitionExpressions, numBuckets, schema, Some(this), onExecutor = false,
       resolvedName, connProperties)
   }
@@ -212,8 +212,19 @@ class RowFormatRelation(
       relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowInsertExec(child, upsert = true, partitionColumns,
+    RowDMLExec(child, putInto = true, delete = false, partitionColumns,
       partitionExpressions, numBuckets, schema, Some(this),
+      onExecutor = false, resolvedName, connProperties)
+  }
+
+  override def getDeletePlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    val partitionExpressions = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    RowDMLExec(child, putInto = false, delete = true, partitionColumns,
+      partitionExpressions, numBuckets, child.schema, Some(this),
       onExecutor = false, resolvedName, connProperties)
   }
 

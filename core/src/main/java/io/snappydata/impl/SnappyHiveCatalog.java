@@ -114,7 +114,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     return (Boolean)handleFutureResult(f);
   }
 
-  public List<ExternalTableMetaData> getNonStoreTables(boolean skipLocks) {
+  public List<ExternalTableMetaData> getHiveTables(boolean skipLocks) {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
     if (Boolean.TRUE.equals(
@@ -270,8 +270,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               Table table = hmc.getTable(schema, tableName);
               String tableType = table.getParameters().get(
                   JdbcExtendedUtils.TABLETYPE_PROPERTY());
-              if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType) &&
-                  !ExternalTableType.Index().name().equalsIgnoreCase(tableType)) {
+              if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType)) {
                 // TODO: FIX ME: should not convert to upper case blindly
                 // but unfortunately hive meta-store is not case-sensitive
                 ExternalTableMetaData metaData = new ExternalTableMetaData(
@@ -328,7 +327,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           Object value = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
           String baseTable = value != null ? value.toString() : "";
           String dmls = JdbcExtendedUtils.
-              getInsertOrPutString(fullyQualifiedName, schema, false);
+              getInsertOrPutString(fullyQualifiedName, schema, false, false);
           value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;

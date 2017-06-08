@@ -570,7 +570,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"APP__${t + SHADOW_TABLE_SUFFIX}".
+      if (s"APP____${t + SHADOW_TABLE_SUFFIX}".
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))

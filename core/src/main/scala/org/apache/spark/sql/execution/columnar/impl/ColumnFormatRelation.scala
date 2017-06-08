@@ -83,7 +83,7 @@ abstract class BaseColumnFormatRelation(
     ExternalStoreUtils.getConnectionType(dialect)
 
   lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
-    resolvedName, schema, upsert = false)
+    resolvedName, schema, putInto = false)
 
   @transient override lazy val region: PartitionedRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
@@ -144,7 +144,9 @@ abstract class BaseColumnFormatRelation(
           .partitionIdExpression :: Nil, pcFields)
 
     def prunePartitions: Int = {
-      if (pruningExpressions.nonEmpty) {
+      if (pruningExpressions.nonEmpty &&
+          // verify all the partition columns are provided as filters
+          pruningExpressions.length == partitioningColumns.length) {
         pruningExpressions.zipWithIndex.foreach { case (e, i) =>
           mutableRow(i) = e.eval(null)
         }
@@ -178,11 +180,7 @@ abstract class BaseColumnFormatRelation(
       filters: Array[Filter]): (RDD[Any], RDD[Any],
       Seq[RDD[InternalRow]]) = {
     val rdd = scanTable(table, requiredColumns, filters, -1)
-    val partitionEvaluator = rdd match {
-      case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
-      case r => () => r.partitions
-    }
-    val rowRDD = buildRowBufferRDD(partitionEvaluator, requiredColumns, filters,
+    val rowRDD = buildRowBufferRDD(() => rdd.partitions, requiredColumns, filters,
       useResultSet = true)
     (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
   }
@@ -675,16 +673,17 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   final def columnBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
-      table.replace(".", "__")
+      table.replace(".", Constant.SHADOW_SCHEMA_SEPARATOR)
     } else {
-      Constant.DEFAULT_SCHEMA + "__" + table
+      Constant.DEFAULT_SCHEMA + Constant.SHADOW_SCHEMA_SEPARATOR + table
     }
     Constant.SHADOW_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 
   final def getTableName(columnBatchTableName: String): String = {
     columnBatchTableName.substring(Constant.SHADOW_SCHEMA_NAME.length + 1,
-      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).replace("__", ".")
+      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).
+        replaceFirst(Constant.SHADOW_SCHEMA_SEPARATOR, ".")
   }
 
   final def isColumnTable(tableName: String): Boolean = {
