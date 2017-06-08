@@ -301,7 +301,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     this.relationDestroyVersion = globalVersion + 1
   }
 
-  def normalizeType(dataType: DataType): DataType = dataType match {
+  private def normalizeType(dataType: DataType): DataType = dataType match {
     case a: ArrayType => a.copy(elementType = normalizeType(a.elementType))
     case m: MapType => m.copy(keyType = normalizeType(m.keyType),
       valueType = normalizeType(m.valueType))
@@ -309,7 +309,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     case _ => dataType
   }
 
-  def normalizeSchemaField(f: StructField): StructField = {
+  private def normalizeSchemaField(f: StructField): StructField = {
     val name = Utils.toUpperCase(Utils.fieldName(f))
     val dataType = normalizeType(f.dataType)
     val metadata = if (f.metadata.contains("name")) {
@@ -990,7 +990,7 @@ object SnappyStoreHiveCatalog {
 
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
-  val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
+  val HIVE_METASTORE = Misc.SNAPPY_HIVE_METASTORE
   val cachedSampleTables: LoadingCache[QualifiedTableName,
       Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
     new CacheLoader[QualifiedTableName, Seq[(LogicalPlan, String)]]() {
