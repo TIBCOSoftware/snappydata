@@ -291,7 +291,7 @@ pages:
 #        - 'print-stacks': 'reference/command_line_utilities/store-print-stacks.md'
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
-        - 'sde properties': 'reference/command_line_utilities/sde-properties.md'
+#        - 'sde properties': 'reference/command_line_utilities/sde-properties.md'
 #        - 'server': 'reference/command_line_utilities/store-server.md'
 #        - 'show-disk-store-metadata': 'reference/command_line_utilities/store-show-disk-store-metadata.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
