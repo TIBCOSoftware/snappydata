@@ -11,12 +11,193 @@ Release 0.9
 
 - New Features/Fixed Issues
 
-  [SNAP-1481] SQL Tab on UI, Description column now displays actual SQL Query string executed
-  instead of handler description text.
+  [SNAP-1597] Support for Partition Pruning for literal expressions (like CAST)
 
+  [SNAP-1478] Fixed Tokenization related issue for subquery, fixing multi-column partition pruning.
+
+  JDBC CDC Streaming support. (https://github.com/SnappyDataInc/snappydata/pull/622)
+
+  [SNAP-1671] 'show tables in app' query now lists list sample table.
+
+  [SNAP-1655] Support for boolean in row table.
+    
+  [SNAP-1705] Support slash ('/') and special characters in column names.
+
+  [SNAP-1703] Fixed ArrayIndexOutOfBound when query has wide schema and a filter clause.
+
+  [SNAP-1698] Snappy Dashboard UI Enhancements
+
+  [SNAP-1651] Fixed LowMemoryException during TPCH query execution on 1TB of TPCH data.
+
+  [SNAP-1664] Fixed LowMemoryException during cluster restart.
+
+  [SNAP-1601] Cleaning the shuffled artifacts asynchronously.
+    
+  Multi-grid master (https://github.com/SnappyDataInc/snappydata/pull/628)
+    
   [SNAP-1545] Redesigned SnappyData Dashboard. Now displays detailed member description, heap and
   off-heap usage along with snappy storage and execution splits. It also displays cluster level
   aggregate Memory and CPU usage.
+
+  [SNAP-1642] Avoid plan caching for queries with subqueries as the underlying changing data does
+  not reflect in subsequent query. Added a flag to disable tokenization, if required.
+
+  [SNAP-1663] JDBCSourceAsColumnarStore#doInsert gets connectionType as unknown. As a fix 
+  initializing GemFireXDDialect in ServerImpl.start().
+
+  [SNAP-1385] CREATE UNIQUE INDEX fails for replicated tables.
+
+  [SNAP-1221] Unable to restart server nodes in the cluster due to 
+  ConflictingPersistentDataException.
+
+  [SNAP-1461] Scalar subquery is only allowed to return a single row, while executing subquery on
+  partitioned row table. This is fixed by routing any query with more than one table to lead node.
+
+  [SNAP-1523] Fixed cluster restart after loading the full Airline data which used to give 
+  'EmbedSQLException: XCL54.T' earlier.
+    
+  [SNAP-1520] Switched to upstream Spark from snappy-spark-unsafe. Removed explicit 
+  KryoSerializableSerializer registration for UnsafeRow and UTF8String in PooledKryoSerializer and
+  instead call just the .register() method which will determine the serializer to be used by
+  reflection.
+
+  [SNAP-1615] If a column being aggregated has a NULL value while grouping on a string column, the
+  grouping row itself produces a new row with Null column. As a fix, check the actual value while
+  scanning row table for string column to decide whether its Null or not.
+    
+  [SNAP-1486] Remove session field of CachedPlanHelperExec and instead get it from the sqlContext.
+  Issue is with "lazy val cleanArgs" in QueryPlan as the serialization stack also suggests. It will
+  hold all the arguments of a case class whether or not those are transient. cleanArgs should have
+  been a transient lazy val field in Spark (no longer exists in current Spark).
+
+  [SNAP-1454] Support for Off-Heap in column store.
+
+  [SNAP-1610] Remove split connector mode suport as it is replaced by the thin client based smart 
+  connector. When a user tries to use the old smart connector, using property 
+  "snappydata.store.locators", throw an error. This property is replaced by "snappydata.connection"
+
+  [SNAP-1496] Wide table scan for column tables fails due to 64K limitation of JVM. As a fix, we
+  now chunk the different parts of the scan code if the number of columns exceeds 30.
+    
+  [SNAP-1534] CachedPlanHelper is now removed from the plan information for UI.
+
+  [SNAP-892] SnappyData launch script picks localhost as the locator hostname and ignores 
+  conf/locators, when invoked from non-locator host.
+    
+  [SNAP-1518] sbin/snappy-start-all/.sh does not start lead in a large cluster. As a fix, retry if
+  Hive metastore initialization fails due to datastore being no yet available on servers.
+
+  [SNAP-1409] Fixed duplicate result issue with Tokenization. Queries with BroadcastHashJoin and 
+  scalar sub-queries, will not be attempted for plan caching.
+
+  [SNAP-1400] When a server/cluster is restarted, sometimes incorrect results are observed. Added a
+  check to get buckets from initialized members only.
+
+  [SNAP-1498] Added support for snapshot in smart connector mode. Used procedures to get the 
+  snapshot txid for row buffer and use it in column table scan.
+
+  [SNAP-1344] As streaming jobs are recurring jobs, the earlier mechanism of removing dependent jar
+  files were broken. Now we maintain a list of jars in the context itself and remove the jars when
+  the streaming context is stopped.
+
+  [SNAP-1494]: Dashboard shows an exception stack trace when a server goes down. Exception handled 
+  and logged it into log file.
+
+  [SNAP-1399] Updated column stats for complex type which was causing issue while inserting JSON 
+  data to column table.
+    
+  [SNAP-1555] saveAsTable() fails in spark-shell with unknown configuration "column_batch_size".
+  As a fix, skip DDL options in ExternalStoreUtils when creating the set of connection properties.
+
+  [SNAP-1542] Ensure that the size of buffer is at least the minimum required.
+
+  [SNAP-1351] After a low memory exception is encountered, the snappy server does not remain stable.
+  Snappy threads cannot be interrupted.
+
+  [SNAP-1427] Reduce garbage in column allocators and dictionaries. Use flat ByteBuffer for 
+  dictionary key data and added a fully serialized ByteBufferHashMap. Make a clone of StringKey for
+  MIN/MAX limits.
+
+  [SNAP-1481] SQL Tab on UI, Description column now displays actual SQL Query string executed
+  instead of handler description text.
+
+  [SNAP-1442] Registering row table in catalog after its creation.
+
+  [SNAP-1323] Support parameterized prepared statements for routed queries. Changes for improved
+  execution of prepared statement on column table through JDBC route.
+
+  [SNAP-1210] Fix NullPointerException caused when writing dataframe containing timestamp column to
+  csv files by registering FastDatePrinter with KryoSerializer.
+
+  [SNAP-1420] Removed the property "config.trace"->"substitutions" which is generating unneccessary
+  logs.
+
+  [SNAP-1411] Register dummy output transformations for the stream tables so that the streaming
+  context starts from snappy-sql.
+
+  [SNAP-1304] Implementation of Snapshot Isolation in snappydata.
+
+  [SNAP-1435] Added support for off-heap in SnappyMemoryManager.
+
+  [SNAP-1384] Column Table Inserts can fail if generated code is big. Fixed by chunking the code to
+  different methods to make java function size well withing 64K.
+
+  [GITHUB-534][SNAP-1480] Code generation failure for nested GROUP BY. Match against variable name
+  for dictionary optimization.
+
+  [SNAP-1482] Tableau generated query fails with NumberFormatException. Fix parsing of full 
+  engineering format double values.
+
+  [SNAP-1418] Modified JDBC example to accept host and port as user provided args.
+
+  [SNAP-303] Handle non-store hive tables in meta-data queries.
+
+  [SNAP-1459] StackOverflowError running query on Airline (narrow table) with small data set. As a
+  fix, registering the classes with a multimap parameter which differentiates between the hashjoin
+  and hashaggregate.
+
+  [SNAP-1453] Converting CaseKeyWhen to CaseWhen.
+
+  [SNAP-1361] Added support for schema name in udf while querying e.g. select app.udfname(col_name)
+  from table.
+
+  [SNAP-1346] Plan caching ignoring constant values.
+
+  [SNAP-1414] ArrayIndexOutOfBoundsException when creating sample table out of large dataset. As a
+  fix, passing a reasonable initial size for the encoder term.
+
+  Pruning partitions for predicates based on partitioning columns.
+  (https://github.com/SnappyDataInc/snappydata/pull/543)
+
+  [SNAP-1441] Limit query on column table gives less number of rows (JDBC).
+
+  [Snap-1286] Thin Client Smart Connector implementation.
+
+  [SNAP-1235] Overhaul SnappyUnifiedMemoryManager to work properly for overflow.
+
+  [SNAP-1413] install_jar does not work for Streaming jobs. Handled classloader in case of 
+  Streaming factory as well.
+
+  Removing HashingUtil and using the new methods in ClientResolverUtils added recently to store.
+  Added performance benchmark tests for HashSet implementations (Trove, FastUtil, Snappy OpenHashSet)
+  SnappyData's OpenHashSet allows for custom hasher for hashCode/equals (like required for snappy-store
+  region map) and still manages to match or beat the latest FastUtil's ObjectOpenHashMap while it
+  is quite a bit faster compared to older 6.5.x series of FastUtil (as used by parquet-avro, etc.)
+
+  [SNAP-1424] Add a "shouldStop()" call to EncoderScanExec. The "shouldStop()" check is necessary 
+  because if the target is a RowWriter (e.g. the parent is an EXCHANGE) then the same row gets 
+  reused.
+
+  [SNAP-990] Column wise storage in region for better perf instead of full cachedbatch.
+    
+  [SNAP-1398] Modified Object and json examples for simpler APIs.
+
+  [SNAP-1395] ElasticSearch connector gives NullPointerException when used with SnappyData.
+
+  Enhancements in SDE
+
+  - For an external table, the LogicalRelation was not storing the table identifier, thus 
+  sample table replacement was not happening. Now passing table identifier in the logical relation.
 
 
 Release 0.8
