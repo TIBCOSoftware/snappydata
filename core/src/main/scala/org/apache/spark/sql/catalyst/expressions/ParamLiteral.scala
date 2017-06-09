@@ -32,6 +32,8 @@ import org.apache.spark.sql.types._
 // A literal that can change across multiple query execution.
 trait DynamicReplacableConstant {
   def eval(input: InternalRow = null): Any
+
+  def convertedLiteral: Any
 }
 
 // whereever ParamLiteral case matching is required, it must match
@@ -243,6 +245,8 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
   override def nullable: Boolean = expr.nullable
 
   override def eval(input: InternalRow): Any = expr.eval(input)
+
+  def convertedLiteral: Any = createToScalaConverter(dataType)(eval(null))
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val eval = expr.genCode(ctx)
