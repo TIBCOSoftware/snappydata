@@ -139,9 +139,6 @@ Release 0.9
 
   [SNAP-1435] Added support for off-heap in SnappyMemoryManager.
 
-  [SNAP-1384] Column Table Inserts can fail if generated code is big. Fixed by chunking the code to
-  different methods to make java function size well withing 64K.
-
   [GITHUB-534][SNAP-1480] Code generation failure for nested GROUP BY. Match against variable name
   for dictionary optimization.
 
