@@ -14,6 +14,10 @@ Release 0.9
   [SNAP-1481] SQL Tab on UI, Description column now displays actual SQL Query string executed
   instead of handler description text.
 
+  [SNAP-1545] Redesigned SnappyData Dashboard. Now displays detailed member description, heap and
+  off-heap usage along with snappy storage and execution splits. It also displays cluster level
+  aggregate Memory and CPU usage.
+
 
 Release 0.8
 
