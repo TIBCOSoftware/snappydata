@@ -636,7 +636,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args.map {
         case pl: ParamLiteral => pl.convertedLiteral
-        case l : DynamicReplacableConstant => l.eval(null)
+        case l : DynamicReplacableConstant => l.convertedLiteral
         case v => v
       })
     }

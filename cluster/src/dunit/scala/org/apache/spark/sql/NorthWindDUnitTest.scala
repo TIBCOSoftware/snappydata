@@ -93,6 +93,11 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       NorthWindDUnitTest.createAndLoadSparkTables(sqlContext)
       // validatePartitionedColumnTableQueries(snc)
       NorthWindDUnitTest.validateQueriesFullResultSet(snc, "ColumnTable", pw, sqlContext)
+
+      // verify the colocated table queries in smart connector mode
+      val params = Array(locatorNetPort, "ColumnTable").
+          asInstanceOf[Array[AnyRef]]
+      vm3.invoke(classOf[SmartConnectorFunctions], "nwQueryValidationOnConnector", params)
     } finally {
       pw.close()
     }
