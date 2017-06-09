@@ -24,6 +24,8 @@ Release 0.9
   because if the target is a RowWriter (e.g. the parent is an EXCHANGE) then the same row gets 
   reused.
 
+  [SNAP-1304] Implementation of Snapshot Isolation in snappydata.
+
   [SNAP-990] Column wise storage in region for better perf instead of full cachedbatch.
     
   [SNAP-1346] Plan caching ignoring constant values.
@@ -98,8 +100,6 @@ Release 0.9
 
   [SNAP-1420] Removed the property "config.trace"->"substitutions" which is generating unneccessary
   logs.
-
-  [SNAP-1304] Implementation of Snapshot Isolation in snappydata.
 
   [SNAP-1435] Added support for off-heap in SnappyMemoryManager.
 
