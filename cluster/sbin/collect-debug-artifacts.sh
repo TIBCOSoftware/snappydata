@@ -247,6 +247,22 @@ function collect_on_remote {
     do
       files+=($l)
     done
+    for l in $( ls *.jfr* 2> /dev/null )
+    do
+      files+=($l)
+    done
+    for l in $( ls *.conf* 2> /dev/null )
+    do
+      files+=($l)
+    done
+    for l in $( ls *.out* 2> /dev/null )
+    do
+      files+=($l)
+    done
+    for l in $( ls *.bin* 2> /dev/null )
+    do
+      files+=($l)
+    done
   elif [ "${start_epoch}" = "0" ]; then
     if [ "${verbose}" = "1" ]; then
       echo "collecting latest log files and all stats file"
@@ -349,6 +365,7 @@ function collect_on_remote {
         echo "Taking the dump of process ${proc_id} on ${host} -- count ${i}"
       fi
       kill -URG $proc_id
+      kill -QUIT $proc_id
       # record the last modified time of this log
       if [ "$i" = "1" ]; then
         first_dump_file_mod_epoch=`stat -c %Y $latest_log`
@@ -404,7 +421,6 @@ check_configs
 # Assuming each line in the members info file has the following format
 # host pid cwd
 
-all_pids=()
 # Make output directory
 TS=`date +%m.%d.%H.%M.%S`
 if [ -z "${OUTPUT_DIR}" ]; then
@@ -435,20 +451,11 @@ while  read -r line || [[ -n "$line" ]]; do
     echo "host: $host pid: $pid and cwd: $cwd"
   fi
 
-  collect_data $host $cwd $serv_num $out_dir &
+  ( collect_data $host $cwd $serv_num $out_dir )
   serv_num=`expr $serv_num + 1`
-  all_pids+=($!)
 done < $tmp_members_file
 
 rm -rf $tmp_members_file
-
-for p in "${all_pids[@]}"
-do
-  if [ "${VERBOSE}" = "1" ]; then
-    echo "Waiting for pid ${p}"
-  fi
-  wait $p 2> /dev/null
-done
 
 # make tar ball
 echo
