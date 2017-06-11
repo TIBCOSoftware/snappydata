@@ -60,7 +60,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     leftSizeInBytes: BigInt,
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
-    extends BinaryExecNode with HashJoin with BatchConsumer with NonRecursivePlans{
+    extends BinaryExecNode with HashJoin with BatchConsumer with NonRecursivePlans {
 
   override def nodeName: String = "SnappyHashJoin"
 
@@ -232,7 +232,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   override def inputRDDs(): Seq[RDD[InternalRow]] = streamSideRDDs
 
   override def doProduce(ctx: CodegenContext): String = {
-    startProducing
+    startProducing()
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 

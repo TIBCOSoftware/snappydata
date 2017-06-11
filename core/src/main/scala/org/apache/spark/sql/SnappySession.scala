@@ -25,6 +25,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -35,6 +36,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -43,8 +45,8 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, Unresol
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
+import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -57,7 +59,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.{CodeGenerationException, PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -1709,9 +1711,9 @@ object SnappySession extends Logging {
     }
 
     if (key ne null) {
-      val nocaching = session.getContextObject[Boolean](
+      val noCaching = session.getContextObject[Boolean](
         CachedPlanHelperExec.NOCACHING_KEY).getOrElse(false)
-      if (nocaching) {
+      if (noCaching) {
         key.invalidatePlan()
       }
       else {
@@ -1722,11 +1724,9 @@ object SnappySession extends Logging {
       }
     }
     // keep the broadcast hash join plans and their references as well
-    val allbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
+    val allBroadcastPlans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
-
-    // logDebug(s"all bc plans = ${allbroadcastplans} ... size = ${allbroadcastplans.size}")
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
@@ -1760,9 +1760,11 @@ object SnappySession extends Logging {
         (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
     }
 
-    val allallbroadcastplans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
+    /*
+    val allAllBroadcastPlans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
+    */
 
     // keep references as well
     // filter unvisited literals. If the query is on a view for example the
@@ -1814,7 +1816,7 @@ object SnappySession extends Logging {
       logDebug(s"Plan caching will be used for sql ${key.sqlText}")
     }
     val cdf = new CachedDataFrame(df, sqlText, cachedRDD, shuffleDeps, rddId,
-      localCollect, allLiterals, allbroadcastplans)
+      localCollect, allLiterals, allBroadcastPlans)
 
     // Now check if optimization plans have been applied such that
     val queryHints = session.synchronized {
@@ -1831,7 +1833,6 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
         val session = key.session
-        session.sessionState.disableStoreOptimizations = false
         val df = session.executeSQL(key.sqlText)
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
@@ -1839,16 +1840,7 @@ object SnappySession extends Logging {
         if (plan.find(_.isInstanceOf[InMemoryTableScanExec]).isDefined) {
           (null, null)
         } else {
-          try {
-            evaluatePlan(df, session, key.sqlText, key)
-          } catch {
-            case e: CodeGenerationException => {
-              session.sessionState.disableStoreOptimizations = true
-              logInfo("Snappy Code generation failed. Falling back to Spark plans ")
-              val df = session.executeSQL(key.sqlText)
-              evaluatePlan(df, session, key.sqlText, key)
-            }
-          }
+          evaluatePlan(df, session, key.sqlText, key)
         }
       }
     }
@@ -1975,7 +1967,7 @@ object SnappySession extends Logging {
       if (key.valid) {
         // logDebug(s"calling reprepare broadcast with new constants ${currentWrappedConstants}")
         // cachedDF.reprepareBroadcast(lp, currentWrappedConstants)
-        logDebug(s"calling replace constants with new constants ${currentWrappedConstants}" +
+        logDebug(s"calling replace constants with new constants $currentWrappedConstants" +
             s" in Literal values = ${cachedDF.allLiterals.toSet}")
         CachedPlanHelperExec.replaceConstants(cachedDF.allLiterals, lp, currentWrappedConstants)
       }

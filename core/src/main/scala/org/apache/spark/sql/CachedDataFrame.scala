@@ -19,12 +19,20 @@ package org.apache.spark.sql
 import java.nio.ByteBuffer
 import java.sql.SQLException
 
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.reflect.ClassTag
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientSharedUtils}
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientSharedUtils}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
@@ -46,13 +54,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
-import scala.reflect.ClassTag
-import scala.concurrent.duration.Duration
 
 class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
