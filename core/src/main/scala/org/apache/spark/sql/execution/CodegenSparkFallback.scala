@@ -23,6 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.internal.CodeGenerationException
 
 /**
  * Catch exceptions in code generation of SnappyData plans and fallback
@@ -37,6 +38,7 @@ case class CodegenSparkFallback(child: SparkPlan) extends UnaryExecNode {
       f(child)
     } catch {
       case t: Throwable =>
+        var useFallback = false
         t match {
           case e: Error =>
             if (SystemFailure.isJVMFailureError(e)) {
@@ -45,7 +47,19 @@ case class CodegenSparkFallback(child: SparkPlan) extends UnaryExecNode {
               // now, so don't let this thread continue.
               throw e
             }
+            // assume all other errors will be some assert failures
+            // or similar compilation issues in janino for very large code
+            useFallback = true
           case _ =>
+            // search for any janino or code generation exception
+            var cause = t
+            do {
+              if (cause.isInstanceOf[CodeGenerationException] ||
+                  cause.toString.contains("janino")) {
+                useFallback = true
+              }
+              cause = cause.getCause
+            } while ((cause ne null) && !useFallback)
         }
         // Whenever you catch Error or Throwable, you must also
         // check for fatal JVM error (see above).  However, there is
@@ -53,6 +67,8 @@ case class CodegenSparkFallback(child: SparkPlan) extends UnaryExecNode {
         // error condition, so you also need to check to see if the JVM
         // is still usable:
         SystemFailure.checkFailure()
+
+        if (!useFallback) throw t
 
         // fallback to Spark plan
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
