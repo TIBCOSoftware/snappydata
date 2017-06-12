@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import io.snappydata.Property
 
 import org.apache.spark.sql.JoinStrategy._
+import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
@@ -27,14 +28,15 @@ import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Hash
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.util.{Utils => SparkUtils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
+import org.apache.spark.util.{Utils => SparkUtils}
 
 /**
  * This trait is an extension to SparkPlanner and introduces number of
@@ -673,11 +675,22 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
 case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     extends Rule[SparkPlan] {
   private def addFallback(plan: SparkPlan): SparkPlan = {
+    // skip fallback plan when optimizations are already disabled,
+    // or if the plan is not a top-level one e.g. a subquery or inside
+    // CollectAggregateExec (only top-level plan will catch and retry
+    //   with disabled optimizations)
     if (!topLevel || session.sessionState.disableStoreOptimizations) plan
-    else CodegenSparkFallback(plan)
+    else plan match {
+      // TODO: disabled for StreamPlans due to issues but can it require fallback?
+      case _: ExecutedCommandExec | _: ExecutedCommand |
+           _: ExecutePlan | _: LocalTableScanExec | _: StreamPlan => plan
+      case _ => CodegenSparkFallback(plan)
+
+    }
   }
 
   override def apply(plan: SparkPlan): SparkPlan = addFallback(plan.transformUp {
+    case ws@WholeStageCodegenExec(CachedPlanHelperExec(_)) => ws
     case ws @ WholeStageCodegenExec(onlychild) =>
       val c = onlychild.asInstanceOf[CodegenSupport]
       ws.copy(child = CachedPlanHelperExec(c))

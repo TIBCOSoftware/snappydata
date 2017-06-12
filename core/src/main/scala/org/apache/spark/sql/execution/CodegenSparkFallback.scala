@@ -47,7 +47,7 @@ case class CodegenSparkFallback(child: SparkPlan) extends UnaryExecNode {
               // now, so don't let this thread continue.
               throw e
             }
-            // assume all other errors will be some assert failures
+            // assume all other errors will be some stack/assertion failures
             // or similar compilation issues in janino for very large code
             useFallback = true
           case _ =>

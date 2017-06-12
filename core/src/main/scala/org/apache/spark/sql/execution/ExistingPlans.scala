@@ -298,7 +298,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   }
 
   override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output

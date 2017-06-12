@@ -249,6 +249,8 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
       sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
       val executedPlan = queryExecution.executedPlan match {
+        case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) => plan
+        case CodegenSparkFallback(plan) => plan
         case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
         case plan => plan
       }
