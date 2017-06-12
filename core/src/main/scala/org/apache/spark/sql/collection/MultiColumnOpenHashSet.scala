@@ -22,16 +22,13 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.{IterableLike, mutable}
 import scala.util.hashing.MurmurHash3
 
-import org.apache.spark.Partition
-import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
-import org.apache.spark.sql.catalyst.expressions.codegen.{GeneratedClass, CodeGenerator, CodeAndComment}
-import org.apache.spark.sql.{SnappyContext, Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, GeneratedClass}
 import org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler
-import org.apache.spark.sql.execution.{BufferedRowIterator, WholeStageCodegenExec, SparkPlan}
+import org.apache.spark.sql.execution.BufferedRowIterator
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.collection.BitSet
 
 /**
