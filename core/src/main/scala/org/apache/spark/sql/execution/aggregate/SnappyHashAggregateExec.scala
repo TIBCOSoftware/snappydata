@@ -227,7 +227,7 @@ case class SnappyHashAggregateExec(
 
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    startProducing
+    startProducing()
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {
