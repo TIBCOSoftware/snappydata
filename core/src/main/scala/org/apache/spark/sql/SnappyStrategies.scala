@@ -19,7 +19,6 @@ package org.apache.spark.sql
 import io.snappydata.Property
 
 import org.apache.spark.sql.JoinStrategy._
-import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
@@ -30,7 +29,6 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
-import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
@@ -682,10 +680,8 @@ case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     if (!topLevel || session.sessionState.disableStoreOptimizations) plan
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
-      case _: ExecutedCommandExec | _: ExecutedCommand |
-           _: ExecutePlan | _: LocalTableScanExec | _: StreamPlan => plan
+      case _: StreamPlan => plan
       case _ => CodegenSparkFallback(plan)
-
     }
   }
 

@@ -248,11 +248,20 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
       sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
+
+      sparkSession.asInstanceOf[SnappySession].addContextObject(
+        "EXECUTION", () => df.queryExecution)
+      var withFallback: CodegenSparkFallback = null
       val executedPlan = queryExecution.executedPlan match {
-        case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) => plan
-        case CodegenSparkFallback(plan) => plan
+        case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) =>
+          withFallback = CodegenSparkFallback(plan); plan
+        case cg@CodegenSparkFallback(plan) => withFallback = cg; plan
         case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
         case plan => plan
+      }
+      def executeCollect(): Array[InternalRow] = {
+        if (withFallback ne null) withFallback.executeCollect()
+        else executedPlan.executeCollect()
       }
       val results = executedPlan match {
         case plan: CollectLimitExec =>
@@ -268,40 +277,46 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           if (skipLocalCollectProcessing) {
             // special case where caller will do processing of the blocks
             // (returns a AggregatePartialDataIterator)
+            // TODO: handle fallback for this case
             new AggregatePartialDataIterator(plan.generatedSource,
               plan.generatedReferences, plan.child.schema.length,
               plan.executeCollectData()).asInstanceOf[Iterator[R]]
           } else if (skipUnpartitionedDataProcessing) {
             // no processing required
-            plan.executeCollect().iterator.asInstanceOf[Iterator[R]]
+            executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
             val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              plan.executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(converter))._1))
           }
 
         case plan@(_: ExecutedCommandExec | _: LocalTableScanExec
                    | _: ExecutedCommand | _: ExecutePlan) =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
-            plan.executeCollect().iterator.asInstanceOf[Iterator[R]]
+            executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
             val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              plan.executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(converter))._1))
           }
 
         case _ =>
-          val rdd = if (cachedRDD ne null) cachedRDD
-          else df.queryExecution.executedPlan.execute()
-          val numPartitions = rdd.getNumPartitions
-          val results = new Array[R](numPartitions)
-          sc.runJob(rdd, processPartition, 0 until numPartitions,
-            (index: Int, r: (U, Int)) =>
-              results(index) = resultHandler(index, r._1))
-          results.iterator
+          if (skipUnpartitionedDataProcessing) {
+            // no processing required
+            executeCollect().iterator.asInstanceOf[Iterator[R]]
+          } else {
+            val rdd = if (cachedRDD ne null) cachedRDD
+            else df.queryExecution.executedPlan.execute()
+            val numPartitions = rdd.getNumPartitions
+            val results = new Array[R](numPartitions)
+            sc.runJob(rdd, processPartition, 0 until numPartitions,
+              (index: Int, r: (U, Int)) =>
+                results(index) = resultHandler(index, r._1))
+            results.iterator
+          }
       }
       // submit cleanup job for shuffle output
       // clearCachedShuffleDeps(sc)

@@ -1705,9 +1705,11 @@ object SnappySession extends Logging {
   private def evaluatePlan(df: DataFrame,
       session: SnappySession, sqlText: String,
       key: CachedKey = null): (CachedDataFrame, Map[String, String]) = {
+    var withFallback: CodegenSparkFallback = null
     val executedPlan = df.queryExecution.executedPlan match {
-      case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) => plan
-      case CodegenSparkFallback(plan) => plan
+      case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) =>
+        withFallback = CodegenSparkFallback(plan); plan
+      case cg@CodegenSparkFallback(plan) => withFallback = cg; plan
       case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
       case plan => plan
     }
@@ -1734,15 +1736,18 @@ object SnappySession extends Logging {
       case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
-        (null, findShuffleDependencies(plan.childRDD).toArray,
-            plan.childRDD.id, true)
+        val childRDD = if (withFallback ne null) withFallback.execute(plan.child)
+        else plan.childRDD
+        (null, findShuffleDependencies(childRDD).toArray, childRDD.id, true)
       case _: LocalTableScanExec =>
         (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       // case _ if allbroadcastplans.nonEmpty =>
         // (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
         val rdd = executedPlan match {
-          case plan: CollectLimitExec => plan.child.execute()
+          case plan: CollectLimitExec =>
+            if (withFallback ne null) withFallback.execute(plan.child)
+            else plan.child.execute()
           case _ => df.queryExecution.executedPlan.execute()
         }
 

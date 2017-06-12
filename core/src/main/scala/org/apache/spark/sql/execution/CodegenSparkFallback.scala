@@ -29,13 +29,13 @@ import org.apache.spark.sql.internal.CodeGenerationException
  * Catch exceptions in code generation of SnappyData plans and fallback
  * to Spark plans as last resort (including non-code generated paths).
  */
-case class CodegenSparkFallback(child: SparkPlan) extends UnaryExecNode {
+case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   override def output: Seq[Attribute] = child.output
 
-  private def executeWithFallback[T](f: SparkPlan => T): T = {
+  private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {
-      f(child)
+      f(plan)
     } catch {
       case t: Throwable =>
         var useFallback = false
@@ -77,7 +77,11 @@ case class CodegenSparkFallback(child: SparkPlan) extends UnaryExecNode {
             logInfo("SnappyData code generation failed. Falling back to Spark plans.")
             session.sessionState.disableStoreOptimizations = true
             try {
-              f(exec().executedPlan)
+              val plan = exec().executedPlan
+              val result = f(plan)
+              // update child for future executions
+              child = plan
+              result
             } finally {
               session.sessionState.disableStoreOptimizations = false
             }
@@ -87,16 +91,19 @@ case class CodegenSparkFallback(child: SparkPlan) extends UnaryExecNode {
   }
 
   override protected def doExecute(): RDD[InternalRow] =
-    executeWithFallback(child => child.execute())
+    executeWithFallback(_.execute(), child)
 
   override def executeCollect(): Array[InternalRow] =
-    executeWithFallback(child => child.executeCollect())
+    executeWithFallback(_.executeCollect(), child)
 
   override def executeToIterator(): Iterator[InternalRow] =
-    executeWithFallback(child => child.executeToIterator())
+    executeWithFallback(_.executeToIterator(), child)
 
   override def executeTake(n: Int): Array[InternalRow] =
-    executeWithFallback(child => child.executeTake(n))
+    executeWithFallback(_.executeTake(n), child)
+
+  def execute(plan: SparkPlan): RDD[InternalRow] =
+    executeWithFallback(_.execute(), plan)
 
   override def generateTreeString(depth: Int, lastChildren: Seq[Boolean],
       builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
