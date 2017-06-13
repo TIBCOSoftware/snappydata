@@ -83,7 +83,7 @@ Each of the above mentioned bts run on a single host only i.e. they need only on
 
 #### Sample script used in running regression
 
-[Here](https://github.com/SnappyDataInc/snappydata/tree/master/dtests/src/test/java/io/snappydata/hydra/rowStoreRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing:
+[Here](../../test/java/io/snappydata/hydra/rowStoreRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing:
 
 ```
 export SNAPPY_HOME=<checkout_dir>
