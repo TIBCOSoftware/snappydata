@@ -18,7 +18,7 @@
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
-$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> <snappydata-base-directory-path> [-l <local-conf-file-path> -r <num-to-run-test> -m <mailAddresses>] <list-of-bts>
+$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <list-of-bts>
 
 E.g.
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>

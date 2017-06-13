@@ -9,7 +9,7 @@ Following is the list of tests run in snappy regression. Any new bt added and ne
 2. distJoin.bt
 
 3. clusterRestartWithPersistentRecovery.bt
-    *Test upgradtion from gemxd cluster to snappy cluster. Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)*
+    *Test restart for snappy and spark clusters in any sequence and verify all the tables are recovered with persisted data (22GB of csv data) . Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)*
 
 4. northWind.bt
     *Complete feature testing using northWind schema. Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)*

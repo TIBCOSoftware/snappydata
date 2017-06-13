@@ -16,8 +16,8 @@
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
-export JTESTS=$SNAPPY_HOME/store/tests/sql/build-artifacts/linux/classes/main
-$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> <snappydata-base-directory-path> [-l <local-conf-file-path> -r <num-to-run-test> -m <mailAddresses>] <list-of-bts>
+export JTESTS=$SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main
+$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <list-of-bts>
 
 E.g.  For running sql.bt
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
