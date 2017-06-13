@@ -265,7 +265,8 @@ class SnappySessionState(snappySession: SnappySession)
   protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {
     new QueryExecution(snappySession, plan) {
 
-      snappySession.addContextObject("EXECUTION", () => newQueryExecution(plan))
+      snappySession.addContextObject(SnappySession.ExecutionKey,
+        () => newQueryExecution(plan))
 
       override protected def preparations: Seq[Rule[SparkPlan]] =
         queryPreparations(topLevel = true)

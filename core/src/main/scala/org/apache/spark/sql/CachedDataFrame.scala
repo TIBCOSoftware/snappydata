@@ -245,12 +245,12 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     val queryShortForm = if (queryString.length > trimSize) {
       queryString.substring(0, trimSize) + "..."
     } else queryString
+    val session = sparkSession.asInstanceOf[SnappySession]
 
     def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
       sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
 
-      sparkSession.asInstanceOf[SnappySession].addContextObject(
-        "EXECUTION", () => df.queryExecution)
+      session.addContextObject(SnappySession.ExecutionKey, () => df.queryExecution)
       var withFallback: CodegenSparkFallback = null
       val executedPlan = queryExecution.executedPlan match {
         case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) =>
@@ -327,6 +327,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     try {
       withCallback("collect")(_ => execute())
     } finally {
+      session.removeContextObject(SnappySession.ExecutionKey)
       if (!hasLocalCallSite) {
         sc.clearCallSite()
       }
