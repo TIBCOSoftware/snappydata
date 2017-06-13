@@ -1,18 +1,18 @@
-#How To Run RowStore Hydra Tests
+# How To Run RowStore Hydra Tests
 
-##Running the battery tests
+## Running the battery tests
 
-####Perquisites:
+#### Pre-requisites:
 
-* Build the product using ./gradlew clean buildAll
+1. Build the product using ./gradlew clean buildAll
 
-* Ensure that no java processes are running on the machines
+2. Ensure that no java processes are running on the machines
 
-* Result directory path needs to be already created for storing the logs of test run
+3. Result directory path needs to be already created for storing the logs of test run
 
 **Note:** SnappyData is build using 64-bit JVM and tests are also run using 64-bit JVM.
 
-####To run the battery test, execute below commands:
+#### To run the battery test, execute below commands:
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -25,9 +25,9 @@ export JTESTS=$SNAPPY_HOME/store/tests/sql/build-artifacts/linux/classes/main
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDir> $SNAPPYDATA_SOURCE_DIR -l $JTESTS/sql/snappy.local.conf sql/sql.bt
 ```
 
-**Note :** The rowStore tests, by default, are run with snappy.local.conf, until other local.conf is required.
+**Note:** The rowStore tests, by default, are run with snappy.local.conf, until another local.conf is required.
 
-####Options available for  running a batteryTest:
+#### Options available for  running a batteryTest:
 
 ```
  -l <local-conf-file-path> -- path to local conf file
@@ -36,16 +36,16 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
  -d <boolean>              -- whether to delete passed test run logs, the default value is true
 
- -m mail_address           -- email address to send results of run to
+ -m mail_address           -- email address to send results of the run to
 ```
 
-####Running single test/selected tests from a bt
+#### Running single test/selected tests from a bt
 
-If one wants to run just a single test or select tests from the bt, then all the other tests in that bt file needs to be commented out. One can also create a new .bt file with only required tests and use that bt file while execution. Above mentioned procedure for running a battery test needs to be followed after the changes for bt file are done.
+If one wants to run just a single test or selected tests from the bt, then all the other tests in the bt file needs to be commented. One can also create a new .bt file, with only required tests and use that bt file while execution. The above mentioned procedure for running a battery test needs to be followed after changes for bt files and local.conf are done.
 
-##Battery tests included in row store regression
+## Battery tests included in row store regression
 
-####The following battery tests have been selected to run as a part of regression for RowStore:
+#### The following battery tests have been selected to run as a part of regression for RowStore:
 
 1. sql.joins.sqlJoin.bt
 
@@ -79,18 +79,18 @@ If one wants to run just a single test or select tests from the bt, then all the
 
 16. sql.wan.sqlWan.bt (Use local.conf - local.sql.uniqueKeyOnly.conf)
 
-Each of the above mentioned bts run on single host only i.e. they need only one host to run.
+Each of the above mentioned bts run on a single host only i.e. they need only one host to run.
 
-####Sample script used in running regression
+#### Sample script used in running regression
 
-[Here](rowStoreRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing :
+[Here](https://github.com/SnappyDataInc/snappydata/tree/master/dtests/src/test/java/io/snappydata/hydra/rowStoreRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing:
 
 ```
 export SNAPPY_HOME=<checkout_dir>
 export OUTPUT_DIR=<result_directory_path>
 ```
 
-####For additional logging any of the following settings can be added to the local.conf files, as per requirement
+#### For additional logging any of the following settings can be added to the local.conf files, as per requirement
 
 ```
 hydra.GemFirePrms-logLevel                 = fine;
