@@ -1666,6 +1666,7 @@ object SnappySession extends Logging {
 
   private[spark] val INVALID_ID = -1
   private[this] val ID = new AtomicInteger(0)
+  private[sql] val ExecutionKey = "EXECUTION"
 
   private[this] val bucketProfileListener = new ProfileListener {
 
