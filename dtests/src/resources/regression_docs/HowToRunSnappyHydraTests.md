@@ -66,7 +66,7 @@ If one wants to run just a single test or selected tests from the bt, then all t
 
 #### Sample script used in running regression
 
-[Here](https://github.com/SnappyDataInc/snappydata/tree/master/dtests/src/test/java/io/snappydata/hydra/snappyRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing:
+[Here](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing:
 
 ```
 export SNAPPY_HOME=<checkout_dir>
