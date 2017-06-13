@@ -253,26 +253,35 @@ class SnappySessionState(snappySession: SnappySession)
   override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
 
-  protected[sql] def queryPreparations: Seq[Rule[SparkPlan]] = Seq(
+  protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
     python.ExtractPythonUDFs,
     PlanSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
-    InsertCachedPlanHelper(snappySession),
+    InsertCachedPlanHelper(snappySession, topLevel),
     ReuseExchange(snappySession.sessionState.conf))
 
-  override def executePlan(plan: LogicalPlan): QueryExecution = {
-    clearExecutionData()
+  protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {
     new QueryExecution(snappySession, plan) {
+
+      snappySession.addContextObject(SnappySession.ExecutionKey,
+        () => newQueryExecution(plan))
+
       override protected def preparations: Seq[Rule[SparkPlan]] =
-        queryPreparations
+        queryPreparations(topLevel = true)
     }
   }
 
-  private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
+  override def executePlan(plan: LogicalPlan): QueryExecution = {
     clearExecutionData()
-    queryPreparations.foldLeft(plan) { case (sp, rule) => rule.apply(sp) }
+    newQueryExecution(plan)
+  }
+
+  private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
+    queryPreparations(topLevel = false).foldLeft(plan) {
+      case (sp, rule) => rule.apply(sp)
+    }
   }
 
   private[spark] def clearExecutionData(): Unit = {
