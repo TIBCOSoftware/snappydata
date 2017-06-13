@@ -152,14 +152,14 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>0.8</version>
+    <version>0.9</version>
 </dependency>
 ```
 **Example: SBT dependency**:
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.9"
 ```
 
 **Running the Job**: 
@@ -1124,11 +1124,11 @@ To download and install the ODBC driver:
 1. Download the SnappyData ODBC Driver from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases).  
 Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.
 
-    * [For 32-bit Installer for 32-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32.zip)
+    * [For 32-bit Installer for 32-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32.zip)
 
-    * [For 32-bit Installer for 64-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32_64.zip)
+    * [For 32-bit Installer for 64-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32_64.zip)
 
-    * [For 64-bit Installer for 64-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc64.zip)
+    * [For 64-bit Installer for 64-bit Platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc64.zip)
 
 2. Extract the contents of the downloaded file. 
 
@@ -1178,8 +1178,8 @@ When [starting the locator and server](configuration.md) set the following prope
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-	|[Version 0.61](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) and [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) |
-    |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) |
+	|[Version 0.61](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) and [Release 0.9](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9) |
+    |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.9](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9) |
 
 2. [Configure the SnappyData Cluster](configuration.md#configuration-files).
 
@@ -1256,7 +1256,7 @@ When [starting the locator and server](configuration.md) set the following prope
 
 ### Known Issue
 
-If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.9, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
 ### More Information
 Refer to these sections for information:
