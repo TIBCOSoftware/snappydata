@@ -21,17 +21,17 @@ To download and install the ODBC driver:
 
 2. Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.
 
-	* [32-bit for 32-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32.zip)
+	* [32-bit for 32-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32.zip)
 
-	* [32-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32_64.zip) 
+	* [32-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32_64.zip) 
 
-	* [64-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc64.zip) 
+	* [64-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc64.zip) 
 
 3. Extract the contents of the downloaded file.
 
 4. Double-click on the SnappyDataODBCDriverInstaller.msi file, and follow the steps to complete the installation.
 
-<note>Note: Ensure that [SnappyData version 0.8 is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](http://snappydatainc.github.io/snappydata/howto/#howto-startCluster). </note >
+<note>Note: Ensure that [SnappyData version 0.9 is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](http://snappydatainc.github.io/snappydata/howto/#howto-startCluster). </note >
 
 ## Step 3: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit
 
