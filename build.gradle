@@ -24,6 +24,9 @@ if (JavaVersion.current().isJava8Compatible()) {
   allprojects {
     tasks.withType(Javadoc) {
       options.addStringOption('Xdoclint:none', '-quiet')
+      if (javax.tools.ToolProvider.getSystemDocumentationTool().isSupportedOption("--allow-script-in-comments") == 0) {
+        options.addBooleanOption("-allow-script-in-comments", true)
+      }
     }
   }
 }
