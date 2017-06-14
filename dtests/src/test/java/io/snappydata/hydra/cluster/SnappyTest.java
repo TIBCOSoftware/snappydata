@@ -107,7 +107,7 @@ public class SnappyTest implements Serializable {
   public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "snappyStore");
   public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
   //public static final String LEAD_PORT = "8090";
-  //public static final String MASTER_PORT = "7077";
+  public static final String MASTER_PORT = "7077";
   private static int jobSubmissionCount = 0;
   protected static String jarPath = gemfireHome + ".." + sep + ".." + sep + ".." + sep;
 
@@ -399,15 +399,7 @@ public class SnappyTest implements Serializable {
         nodeLogDir = HostHelper.getLocalHost();
         String sparkLogDir = "SPARK_LOG_DIR=" + hd.getUserDir();
         String sparkWorkerDir = "SPARK_WORKER_DIR=" + hd.getUserDir();
-        String sparkMasterPort = (String) SnappyBB.getBB().getSharedMap().get("sparkMasterPort");
         String sparkMasterHost = (String) SnappyBB.getBB().getSharedMap().get("sparkMasterHost");
-        if (sparkMasterPort == null) {
-          int masterPort = PortHelper.getRandomPort();
-          sparkMasterPort = "SPARK_MASTER_PORT=" + masterPort;
-          Log.getLogWriter().info("sparkMasterPort is : " + masterPort);
-          SnappyBB.getBB().getSharedMap().put("masterPort", Integer.toString(masterPort));
-          SnappyBB.getBB().getSharedMap().put("sparkMasterPort", sparkMasterPort);
-        }
         if (sparkMasterHost == null) {
           try {
             String masterHost = HostHelper.getIPAddress().getLocalHost().getHostName();
@@ -579,7 +571,6 @@ public class SnappyTest implements Serializable {
     snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkWorkerDir");
-    snappyTest.writeConfigData("spark-env.sh", "sparkMasterPort");
     snappyTest.writeConfigData("spark-env.sh", "sparkMasterHost");
   }
 
@@ -1035,9 +1026,7 @@ public class SnappyTest implements Serializable {
    */
   protected static void writeSparkMasterConnInfo() {
     String masterHost = getSparkMasterHost();
-    String masterPort = getSparkMasterPort();
     snappyTest.writeNodeConfigData("masterHost", masterHost, false);
-    snappyTest.writeNodeConfigData("masterPort", masterPort, false);
   }
 
   protected static void writePrimaryLocatorHostPortInfo() {
@@ -1923,7 +1912,7 @@ public class SnappyTest implements Serializable {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
         String masterHost = getSparkMasterHost();
-        String masterPort = getSparkMasterPort();
+        String masterPort = MASTER_PORT;
         String locatorsList = getLocatorsList("locators");
         String command = null;
         String primaryLocatorHost = getPrimaryLocatorHost();
@@ -2805,18 +2794,6 @@ public class SnappyTest implements Serializable {
       }
     } else masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
     return masterHost;
-  }
-
-  protected static String getSparkMasterPort() {
-    String masterPort = (String) SnappyBB.getBB().getSharedMap().get("masterPort");
-    if (isLongRunningTest) {
-      masterPort = getDataFromFile("masterPort");
-      if (masterPort == null) {
-        masterPort = (String) SnappyBB.getBB().getSharedMap().get("masterPort");
-        snappyTest.writeNodeConfigData("masterPort", masterPort, false);
-      }
-    }
-    return masterPort;
   }
 
   protected void startSnappyServer() {
