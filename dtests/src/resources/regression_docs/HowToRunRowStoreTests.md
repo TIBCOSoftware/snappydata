@@ -12,12 +12,12 @@
 
 **Note:** SnappyData is build using 64-bit JVM and tests are also run using 64-bit JVM.
 
-#### To run the battery test, execute below commands:
+#### To run the battery test, execute below commands
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
 export JTESTS=$SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main
-$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <list-of-bts>
+$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <space-separated-list-of-bts>
 
 E.g.  For running sql.bt
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -27,7 +27,7 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
 **Note:** The rowStore tests, by default, are run with snappy.local.conf, until another local.conf is required.
 
-#### Options available for  running a batteryTest:
+#### Options available for  running a battery test
 
 ```
  -l <local-conf-file-path> -- path to local conf file
@@ -45,7 +45,7 @@ If one wants to run just a single test or selected tests from the bt, then all t
 
 ## Battery tests included in row store regression
 
-#### The following battery tests have been selected to run as a part of regression for RowStore:
+#### The following battery tests have been selected to run as a part of regression for RowStore
 
 1. sql.joins.sqlJoin.bt
 

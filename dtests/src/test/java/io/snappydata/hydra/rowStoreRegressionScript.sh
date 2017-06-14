@@ -46,4 +46,4 @@ $SNAPPY_HOME/store/tests/core/src/main/java/bin/sample-runbt.sh $OUTPUT_DIR/mast
 sleep 30;
 
 $SNAPPY_HOME/store/tests/core/src/main/java/bin/sample-runbt.sh $OUTPUT_DIR/masterLogs $SNAPPY_HOME -l $JTESTS/sql/snappy.local.conf sql/sqlTx/repeatableRead/sqlRRTx.bt
-sleep 30;
+

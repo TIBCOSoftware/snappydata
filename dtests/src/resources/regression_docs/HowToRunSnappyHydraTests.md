@@ -18,7 +18,7 @@
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
-$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <list-of-bts>
+$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <space-separated-list-of-bts>
 
 E.g.
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -27,7 +27,7 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
 #### Running battery test using local.conf(with modifications in local.conf, as per requirement)
 
-One can also provide a local.conf while running the battery test, to set some global parameters or set multi-hosts parameters to run the test in multiple nodes.
+One can also provide a local.conf while running the battery test, to set some global parameters or set multi-hosts parameters to run the test on multiple nodes.
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -48,7 +48,7 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
 #### Running single test/selected tests from a bt
 
-If one wants to run just a single test or selected tests from the bt, then all the other tests in the bt file needs to be commented. One can also create a new .bt file with only required tests and use that bt file while execution. The above mentioned procedure for running a battery test needs to be followed after changes for bt files and local.conf are done (You can skip Step 1 in case previously done).
+If one wants to run just a single test or selected tests from the bt, then all the other tests in the bt file needs to be commented. One can also create a new .bt file with only required tests and use that bt file while execution. The above mentioned procedure for running a battery test needs to be followed after changes for bt files and local.conf are done (You can skip Step 1 if previously done).
 
 ## Battery tests included in the Snappy regression
 
