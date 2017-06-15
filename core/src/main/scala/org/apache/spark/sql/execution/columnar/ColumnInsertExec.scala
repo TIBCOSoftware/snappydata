@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar
 
 import io.snappydata.Property
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
@@ -384,8 +384,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
 
     val statsRowTerm = ctx.freshName("statsRow")
-    ctx.addMutableState("MutableRow", statsRowTerm,
-      s"$statsRowTerm = new GenericMutableRow(${schema.flatten.length});")
+    ctx.addMutableState("InternalRow", statsRowTerm,
+      s"$statsRowTerm = new GenericInternalRow(${schema.flatten.length});")
 
 
     val blocks = new ArrayBuffer[String]()
@@ -447,8 +447,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     cursorsArrayTerm = ctx.freshName("cursors")
 
     val mutableRow = ctx.freshName("mutableRow")
-    ctx.addMutableState("MutableRow", mutableRow,
-      s"$mutableRow = new GenericMutableRow(${relationSchema.length});")
+    ctx.addMutableState("InternalRow", mutableRow,
+      s"$mutableRow = new GenericInternalRow(${relationSchema.length});")
 
     val rowWriteExprs = schema.indices.map { i =>
       val field = schema(i)
