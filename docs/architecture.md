@@ -69,9 +69,10 @@ SnappyData also has multiple deployment options. For more information refer to, 
 
 ### Interacting with SnappyData
 
-<Note> Note: For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/).
-And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs listed in the Spark guides work in SnappyData as well.
-For the section on SQL, no Spark knowledge is necessary.</Note>
+!!! Note: 
+	For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/).
+	And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs listed in the Spark guides work in SnappyData as well.
+	For the section on SQL, no Spark knowledge is necessary.
 
 To interact with SnappyData, we provide interfaces for developers familiar with Spark programming as well as SQL. JDBC can be used to connect to the SnappyData cluster and interact using SQL. On the other hand, users comfortable with the Spark programming paradigm can write jobs to interact with SnappyData. Jobs can be like a self-contained Spark application or can share the state with other jobs using the SnappyData store.
 

@@ -15,23 +15,149 @@ pages:
 - Download and Install: install.md
 - How Tos: howto.md
 - Architecture: architecture.md
-- Configuring the Cluster: configuration.md
+- 'Configuring the Cluster': 'configuration.md'
+- 'Configuring the Cluster':
+    - 'Configuration': 'configuring_cluster/configuring_cluster.md'
+    - 'SnappyData Properties': 'configuring_cluster/property_description.md'
 - Programming Guide: programming_guide.md
 - Affinity Modes: deployment.md
+- 'Best practices': 'best_practices.md'
+- 'Best practices':
+    - 'Setting up your Cluster ': 'best_practices/capacity_planning.md'
+    - 'Designing your Database and Schema': 'best_practices/design_schema.md'
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
-- API: apidocsintro.md
-- Reference Documents: additional_docs.md
-- About:
+- 'Managing and Monitoring': 'monitoring/monitoring.md'
+# -- Topic - Reference Guide
+- 'Reference Guides': 'reference.md'
+- 'Reference Guides': 
+    - 'SQL Reference Guide': 'sql_reference.md'
+    - 'SQL Reference Guide':
+        - 'CREATE Statements': 'reference/sql_reference/create-statements.md'
+        - 'CREATE Statements':
+            - 'CREATE DISKSTORE': 'reference/sql_reference/create-diskstore.md'
+            - 'CREATE FUNCTION': 'reference/sql_reference/create-function.md'
+            - 'CREATE INDEX': 'reference/sql_reference/create-index.md'
+            - 'CREATE SCHEMA': 'reference/sql_reference/create-schema.md'
+            - 'CREATE TABLE': 'reference/sql_reference/create-table.md'
+            - 'CREATE SAMPLE TABLE': 'reference/sql_reference/create-sample-table.md'
+            - 'CREATE EXTERNAL TABLE': 'reference/sql_reference/create-external-table.md'
+            - 'CREATE TEMPORARY TABLE': 'reference/sql_reference/create-temporary-table.md'
+            - 'CREATE STREAM TABLE': 'reference/sql_reference/create-stream-table.md'
+        - 'DELETE': 'reference/sql_reference/delete.md'
+        - 'DROP Statements': 'reference/sql_reference/drop-statements.md'
+        - 'DROP Statements':
+            - 'DROP DISKSTORE': 'reference/sql_reference/drop-diskstore.md'
+            - 'DROP FUNCTION': 'reference/sql_reference/drop-function.md'
+            - 'DROP INDEX': 'reference/sql_reference/drop-index.md'
+            - 'DROP TABLE': 'reference/sql_reference/drop-table.md'
+        - 'INSERT': 'reference/sql_reference/insert.md'
+        - 'PUT INTO': 'reference/sql_reference/put-into.md'
+        - 'SELECT': 'reference/sql_reference/select.md'
+        - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
+        - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
+        - 'UPDATE': 'reference/sql_reference/update.md'
+    - 'Inbuilt System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
+    - 'Inbuilt System Procedures': 
+        - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
+        - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
+        - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
+#        - 'SET_EVICTION_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_eviction_heap_percentage.md'
+        - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
+    - 'System Tables': 'reference/system_tables/system_tables.md'
+    - 'System Tables': 
+        - 'MEMBERS': 'reference/system_tables/members.md'
+        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'    
+        - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'    
+    - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
+    - 'Command Line Utilities':
+        - 'backup': 'reference/command_line_utilities/store-backup.md'
+#        - 'compact-all-disk-stores': 'reference/command_line_utilities/store-compact-all-disk-stores.md'
+#        - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
+        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md'
+        - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
+        - 'run': 'reference/command_line_utilities/store-run.md'
+        - 'version': 'reference/command_line_utilities/store-version.md'
+    - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
+    - 'Snappy-SQL Shell Interactive Commands':
+        - 'connect client': 'reference/interactive_commands/connect_client.md'
+        - 'connect': 'reference/interactive_commands/connect.md'
+        - 'describe': 'reference/interactive_commands/describe.md'
+        - 'disconnect': 'reference/interactive_commands/disconnect.md'
+        - 'elapsedtime': 'reference/interactive_commands/elapsedtime.md'
+        - 'exit': 'reference/interactive_commands/exit.md'
+        - 'MaximumDisplayWidth': 'reference/interactive_commands/maximumdisplaywidth.md'
+        - 'run': 'reference/interactive_commands/run.md'
+        - 'set connection': 'reference/interactive_commands/set_connection.md'
+        - 'show': 'reference/interactive_commands/show.md'
+    - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
+    - 'Configuration Parameters':         
+        - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
+        - 'ack-wait-threshold': 'reference/configuration_parameters/ack-wait-threshold.md'
+        - 'archive-disk-space-limit': 'reference/configuration_parameters/archive-disk-space-limit.md'
+        - 'archive-file-size-limit': 'reference/configuration_parameters/archive-file-size-limit.md'
+        - 'bind-address': 'reference/configuration_parameters/bind-address.md'
+        - 'enable-network-partition-detection': 'reference/configuration_parameters/enable-network-partition-detection.md'
+        - 'enable-stats': 'reference/configuration_parameters/enable-stats.md'
+        - 'enable-time-statistics': 'reference/configuration_parameters/enable-time-statistics.md'
+        - 'enforce-unique-host': 'reference/configuration_parameters/enforce-unique-host.md'
+        - 'init-scripts': 'reference/configuration_parameters/init-scripts.md'
+        - 'locators': 'reference/configuration_parameters/locators.md'
+#        - 'log-disk-space-limit': 'reference/configuration_parameters/log-disk-space-limit.md'
+        - 'log-file': 'reference/configuration_parameters/log-file.md'
+#        - 'log-file-size-limit': 'reference/configuration_parameters/log-file-size-limit.md'
+        - 'log-level': 'reference/configuration_parameters/log-level.md'
+        - 'member-timeout': 'reference/configuration_parameters/member-timeout.md'
+#        - 'membership-port-range': 'reference/configuration_parameters/membership-port-range.md'
+#        - 'persist-dd': 'reference/configuration_parameters/persist-dd.md'
+#        - 'prefer-netserver-ipaddress': 'reference/configuration_parameters/prefer-netserver-ipaddress.md'
+#        - 'read-timeout': 'reference/configuration_parameters/read-timeout.md'
+        - 'redundancy-zone': 'reference/configuration_parameters/redundancy-zone.md'
+#        - 'secondary-locators': 'reference/configuration_parameters/secondary-locators.md'
+#        - 'shutdown': 'reference/configuration_parameters/shutdown.md'
+#        - 'skip-constraint-checks': 'reference/configuration_parameters/skip-constraint-checks.md'
+#        - 'skip-listeners': 'reference/configuration_parameters/skip-listeners.md'
+#        - 'skip-locks': 'reference/configuration_parameters/skip-locks.md'
+#        - 'socket-buffer-size': 'reference/configuration_parameters/socket-buffer-size.md'
+#        - 'socket-lease-time': 'reference/configuration_parameters/socket-lease-time.md'
+#        - 'snappydata.datadictionary.allow-startup-errors': 'reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md'
+#        - 'snappydata.default-startup-recovery-delay': 'reference/configuration_parameters/snappydata.default-startup-recovery-delay.md'
+#        - 'gfxd.history': 'reference/configuration_parameters/gfxd.history.md'
+#        - 'snappydata.max-lock-wait': 'reference/configuration_parameters/snappydata.max-lock-wait.md'
+#        - 'gemfirexd.properties': 'reference/configuration_parameters/gemfirexd.properties.md'
+#        - 'snappydata.query-cancellation-interval': 'reference/configuration_parameters/snappydata.query-cancellation-interval.md'
+#        - 'snappydata.query-timeout': 'reference/configuration_parameters/snappydata.query-timeout.md'
+#        - 'snappydata.storage.tempDirectory': 'reference/configuration_parameters/snappydata.storage.tempDirectory.md'
+#        - 'snappydata.system.home': 'reference/configuration_parameters/snappydata.system.home.md'
+        - 'start-locator': 'reference/configuration_parameters/start-locator.md'
+        - 'statistic-archive-file': 'reference/configuration_parameters/statistic-archive-file.md'
+        - 'statistic-sample-rate': 'reference/configuration_parameters/statistic-sample-rate.md'
+        - 'statistic-sampling-enabled': 'reference/configuration_parameters/statistic-sampling-enabled.md'
+        - 'sys-disk-dir': 'reference/configuration_parameters/sys-disk-dir.md'
+#        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
+        - 'user': 'reference/configuration_parameters/user.md'
+- API Documentation: apidocsintro.md
+- Additional Information: additional_docs.md
+#- About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
-    - Contact and Support: techsupport.md
-    - License: LICENSE.md
+- Contact and Support: techsupport.md
+- License: LICENSE.md
 
 theme: readthedocs
+theme_dir: 'docs/custom_theme'
 
-theme_dir: docs/custom_theme
+extra_javascript:
+  - 'js/menu.js'
 
-extra_css: [extra.css]
+extra_css:
+    - 'css/toc.css'
+    - 'css/menu.css'
+    - 'css/images.css'
+    - 'css/style.css'
+    - 'extra.css'
+
+markdown_extensions:
+    - admonition:
 
 copyright: Copyright &copy; 2017 SnappyData Inc.
