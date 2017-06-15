@@ -74,6 +74,7 @@ private[sql] final case class ColumnTableScan(
     relationSchema: StructType,
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
+    caseSensitive: Boolean,
     isForSampleReservoirAsRegion: Boolean = false)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, partitionColumnAliases,
@@ -459,7 +460,7 @@ private[sql] final case class ColumnTableScan(
         ctx.addMutableState("Object", bufferVar, s"$bufferVar = null;")
       }
       // projections are not pushed in embedded mode for optimized access
-      val baseIndex = relationSchema.fieldIndex(attr.name)
+      val baseIndex = fieldIndex(schemaAttributes, attr.name)
       val bufferPosition = if (isEmbedded) baseIndex + 1 else index + 1
       val rsPosition = bufferPosition
 

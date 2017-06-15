@@ -21,7 +21,7 @@ import scala.collection.JavaConverters._
 
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{Row, SnappyContext, SparkSession}
+import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SparkSession}
 
 class QueryTest extends SnappyFunSuite {
 
@@ -115,5 +115,37 @@ class QueryTest extends SnappyFunSuite {
         "device_id) a group by sdk_version")
     ColumnCacheBenchmark.collect(r,
       Seq(Row("v1", 2), Row("v2", 1), Row("v3", 1)))
+  }
+
+  test("SNAP-1714") {
+    val snc = this.snc
+    snc.sql("CREATE TABLE ColumnTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'col2'," +
+        "BUCKETS '1')")
+    snc.sql("insert into ColumnTable(\"a/b\",col2,col3) values(1,2,3)")
+    snc.sql("select col2,col3 from columnTable").show()
+    snc.table("columnTable").select("col3", "col2", "a/b").show()
+    snc.table("columnTable").select("col3", "Col2", "A/b").show()
+    snc.table("columnTable").select("COL3", "Col2", "A/B").show()
+
+    snc.setConf("spark.sql.caseSensitive", "true")
+    try {
+      snc.table("columnTable").select("col3", "col2", "a/b").show()
+      fail("expected to fail for case-sensitive=true")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      snc.table("columnTable").select("COL3", "COL2", "A/B").show()
+      fail("expected to fail for case-sensitive=true")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    // hive meta-store is case-insensitive so column table names are not
+    snc.table("columnTable").select("COL3", "COL2", "a/b").show()
+    snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").show()
   }
 }
