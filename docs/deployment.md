@@ -150,6 +150,7 @@ $ sbin/snappy-start-all.sh
 # start members individually
 $ bin/snappy locator start  -dir=/node-a/locator1
 $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
+bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 ```
 
 **Step 2: Launch the Apache Spark program **
@@ -159,11 +160,10 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
-<Note>Note: </Note>
-
- * <note> The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. Its value is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527).
+!!! Note: 
+	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. Its value is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527).
  
- * <note> In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`</note>
+ 	* In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`.
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
 ```scala
