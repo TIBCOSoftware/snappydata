@@ -1,37 +1,13 @@
 # Setting Up SnappyData ODBC Driver and Tableau Desktop
 
 
-<note>Note: This is currently tested and supported only on Windows 10 (32-Bit & 64-Bit systems). Although, versions other than Windows 10 may work, SnappyData is not claiming full testing on other versions.</note>
+!!! Note: 
+	This is currently tested and supported only on Windows 10 (32-Bit & 64-Bit systems). Although, versions other than Windows 10 may work, SnappyData is not claiming full testing on other versions.
 
-## Step 1: Install Visual C++ Redistributable for Visual Studio 2015 
-
-To download and install the Visual C++ Redistributable for Visual Studio 2015:
-
-1. [Download Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-in/download/details.aspx?id=48145)
-
-2. Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.
-
-3. Select **Run** to start the installation, and follow the steps to complete the installation.
-
-## Step 2: Install SnappyData ODBC Driver
-
-To download and install the ODBC driver:
-
-1. Download the SnappyData ODBC Driver from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases).
-
-2. Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.
-
-	* [32-bit for 32-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32.zip)
-
-	* [32-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32_64.zip) 
-
-	* [64-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc64.zip) 
-
-3. Extract the contents of the downloaded file.
-
-4. Double-click on the SnappyDataODBCDriverInstaller.msi file, and follow the steps to complete the installation.
-
-<note>Note: Ensure that [SnappyData version 0.9 is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](http://snappydatainc.github.io/snappydata/howto/#howto-startCluster). </note >
+## Step 1 and 2:
+Ensure that you do the following:
+1. [Install Visual C++ Redistributable for Visual Studio 2015](howto.md/#howto-odbc-step1)
+2. [Install SnappyData ODBC Driver](howto.md/#howto-odbc-step2)
 
 ## Step 3: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit
 
@@ -60,7 +36,8 @@ To create SnappyData DSN from ODBC Data Sources:
 
 	* **Password**: The password required to connect to the server. For example, **app**
 
-<note>Note: Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection will fail. </note>
+!!! Note: 
+	Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. 
 
 ## Step 4. Install Tableau Desktop (10.1 or Higher)
 

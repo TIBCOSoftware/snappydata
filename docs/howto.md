@@ -1,5 +1,5 @@
 # Overview
-This section introduces you to several common operations such as, starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.
+This section introduces you to several common operations such as starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.
 
 **Running the Examples:**
 Topics in this section refer to source code examples that are shipped with the product. Instructions to run these examples can be found in the source code.
@@ -14,7 +14,8 @@ You can run the examples in any of the following ways:
 
 * **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
 
-<Note> Note: SnappyData also supports Java API. Refer to the [documentation](programming_guide/#building-snappy-applications-using-spark-api) for more details on Java API.</note>
+!!! Note: 
+	SnappyData also supports Java API. Refer to the [documentation](programming_guide/#building-snappy-applications-using-spark-api) for more details on Java API.
 
 The following topics are covered in this section:
 
@@ -114,13 +115,13 @@ To start the cluster on multiple hosts:
 
 1. The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
 
-2. Create the configuration files using the templates provided in the **conf** folder. Copy the exiting template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
+2. Create the configuration files using the templates provided in the **conf** folder. Copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
 </br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the [configuration](configuration/#configuration-files) section for more information on properties.
 
 3. Start the cluster using `sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
 
-<Note> Note: It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](install/#install-on-premise) and [cluster configuration](configuration).
-</Note>
+!!! Note: 
+	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](install/#install-on-premise) and [cluster configuration](configuration).
 
 <a id="howto-job"></a>
 ## How to Run Spark Code inside the Cluster
@@ -213,7 +214,7 @@ The code example for this mode is in [SmartConnectorExample.scala](https://githu
 
 **Configure a SnappySession**: 
 
-The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster. Its value is consists of  locator host and JDBC client port on which the locator listens for connections (default 1527).
+The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity and catalog metadata and registers it locally in the Spark cluster. Its value is consists of  locator host and JDBC client port on which the locator listens for connections (default 1527).
 
 ```
     val spark: SparkSession = SparkSession
@@ -335,7 +336,7 @@ The code snippet below shows how to create a replicated row table using API.
 ```
 
 **Create the Table using API**:
-First we define the table schema and then create the table using createTable API
+First, we define the table schema and then create the table using createTable API
 
 ```
     val schema = StructType(Array(StructField("S_SUPPKEY", IntegerType, false),
@@ -629,7 +630,7 @@ You can connect to and execute queries against SnappyData cluster using JDBC dri
 
 **To connect to the SnappyData cluster**: Using JDBC, use URL of the form `jdbc:snappydata://<locatorHostName>:<locatorClientPort>/`
 
-Where the `<locatorHostName>` is the host name of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
+Where the `<locatorHostName>` is the hostname of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
 **Code Example:**
 
@@ -664,7 +665,9 @@ for (x <- 1 to 10) {
 preparedStmt1.executeBatch()
 preparedStmt1.close()
 ```
-<note> Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</note>
+
+!!! Note: 
+	If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.
 
 <a id="howto-JSON"></a>
 ## How to Store and Query JSON Objects
@@ -673,7 +676,7 @@ You can insert JSON data in SnappyData tables and execute queries on the tables.
 
 **Code Example: Loads JSON data from a JSON file into a column table and executes query**
 
-The code snippet given below loads JSON data from a JSON file into a column table and executes the query against it.
+The code snippet loads JSON data from a JSON file into a column table and executes the query against it.
 The source code for JSON example is located at [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala). After creating SnappySession, we read the JSON file using Spark API and load into a SnappyData table
 
 **Get a SnappySession**:
@@ -1116,6 +1119,38 @@ The complete source code for the above example is in [CreateTable.py](https://gi
 ## How to Connect using ODBC Driver
 
 You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.
+<a id="howto-odbc-step1"></a>
+### Step 1: Install Visual C++ Redistributable for Visual Studio 2015 
+
+To download and install the Visual C++ Redistributable for Visual Studio 2015:
+
+1. [Download Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-in/download/details.aspx?id=48145)
+
+2. Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.
+
+3. Select **Run** to start the installation, and follow the steps to complete the installation.
+
+<a id="howto-odbc-step2"></a>
+### Step 2: Install SnappyData ODBC Driver
+
+To download and install the ODBC driver:
+
+1. Download the SnappyData ODBC Driver from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases).
+
+2. Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.
+
+	* [32-bit for 32-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32.zip)
+
+	* [32-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32_64.zip) 
+
+	* [64-bit for 64-bit platform](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc64.zip) 
+
+3. Extract the contents of the downloaded file.
+
+4. Double-click on the SnappyDataODBCDriverInstaller.msi file, and follow the steps to complete the installation.
+
+	!!! Note: 
+		Ensure that [SnappyData version 0.8 or later is installed](http://snappydatainc.github.io/snappydata/install/) and the [SnappyData cluster is running](http://snappydatainc.github.io/snappydata/howto/#howto-startCluster). 
 
 ### Download and Install the ODBC Driver
 
@@ -1147,27 +1182,29 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
- When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
+ When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. 
 
 <a id="howto-external-client"></a>
 ## How to Connect to the Cluster from External Clients
 
-You can also connect to the SnappyData cluster from other networks as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
+You can also connect to the SnappyData cluster from a different network as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
 
 When [starting the locator and server](configuration.md) set the following properties in the **conf/locators** and **conf/servers** files:
 
 * `-hostname-for-clients`: The public IP address of the locator or server. 
 
 * `-client-bind-address`: IP address of the locator or server. </br>For example, add `-J-Dgemfirexd.hostname-for-clients=192.168.20.208` </br> 
-	<note>By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.</note>
+
+	!!! Note: 
+    	By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.
 
 * **Port Settings**: The client, by default, connects to the locator or server at the default port 1527. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the `-client-port` property.
 
-<note> **Note**: </note>
+!!! Note: 
 
-* <note> If the above properties are not set, when a client trys to connect to the cluster from a different network, the connection may fail and an error may be reported. </note>
+	* If the above properties are not set, when a client tries to connect to the cluster from a different network, the connection may fail and an error may be reported. 
 
-* <note> For ODBC clients, you must use the host and port details of the server and not the locator.</note> 
+	* For ODBC clients, you must use the host and port details of the server and not the locator.
 
 <a id="howto-zeppelin"></a>
 ## How to Use Apache Zeppelin with SnappyData
@@ -1178,8 +1215,8 @@ When [starting the locator and server](configuration.md) set the following prope
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-	|[Version 0.61](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) and [Release 0.9](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9) |
-    |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.9](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9) |
+	|[Version 0.6.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) </br> [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) and [future realeases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
+    |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) [and future releases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
 
 2. [Configure the SnappyData Cluster](configuration.md#configuration-files).
 
@@ -1207,18 +1244,19 @@ When [starting the locator and server](configuration.md) set the following prope
 
 ### Step 2: Configure SnappyData for Apache Zeppelin
 
-1. Log on to Zeppelin from your web browser and select **Interpretor** from the **Settings** option.
+1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
 
 2. Click **Create** ![Create](Images/create_interpreter.png) to add an interpreter.	 
 
 3. From the **Interpreter group** drop-down select **snappydata**.
 	 ![Configure Interpreter](Images/snappydata_interpreter_properties.png)
 
-	<note>Note: If **snappydata** is not displayed in the **Interpreter group** drop-down list, try the following options, and then restart Zeppelin daemon: </note>
+	!!! Note: 
+    	If **snappydata** is not displayed in the **Interpreter group** drop-down list, try the following options, and then restart Zeppelin daemon: 
 
-    * <note>Delete the **interpreter.json** file located in the **conf** directory (in the Zeppelin home directory).</note>
+    	* Delete the **interpreter.json** file located in the **conf** directory (in the Zeppelin home directory).
 
-    * <note>Delete the **zeppelin-spark_<_version_number_>.jar** file located in the **interpreter/snappydata** directory (in the Zeppelin home directory).</note>
+    	* Delete the **zeppelin-spark_<_version_number_>.jar** file located in the **interpreter/snappydata** directory (in the Zeppelin home directory).
 
 
 4. Click the **Connect to existing process** option. The fields **Host** and **Port** are displayed.
@@ -1251,12 +1289,13 @@ When [starting the locator and server](configuration.md) set the following prope
 
 9. Click **Save** to apply your changes.
 
-<note >Note: You can modify the default port number of the Zeppelin intrepreter by setting the property:</br> 
-`-zeppelin.interpreter.port=<port_number>` in [lead node configuration](configuration.md#configuring-leads). </note>
+!!! Note: 
+	You can modify the default port number of the Zeppelin interpreter by setting the property:</br>
+	`-zeppelin.interpreter.port=<port_number>` in [lead node configuration](configuration.md#configuring-leads). 
 
 ### Known Issue
 
-If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.9, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
 ### More Information
 Refer to these sections for information:
