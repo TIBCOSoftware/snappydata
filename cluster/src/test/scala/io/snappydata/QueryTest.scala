@@ -127,9 +127,17 @@ class QueryTest extends SnappyFunSuite {
         "BUCKETS '1')")
     snc.sql("insert into ColumnTable(\"a/b\",col2,col3) values(1,2,3)")
     snc.sql("select col2,col3 from columnTable").show()
+    snc.sql("select col2, col3, `a/b` from columnTable").show()
+    snc.sql("select col2, col3, \"a/b\" from columnTable").show()
+    snc.sql("select col2, col3, \"A/B\" from columnTable").show()
+    snc.sql("select col2, col3, `A/B` from columnTable").show()
+
+    snc.sql("select col2,col3 from columnTable").show()
     snc.table("columnTable").select("col3", "col2", "a/b").show()
     snc.table("columnTable").select("col3", "Col2", "A/b").show()
     snc.table("columnTable").select("COL3", "Col2", "A/B").show()
+    snc.table("columnTable").select("COL3", "Col2", "`A/B`").show()
+    snc.table("columnTable").select("COL3", "Col2", "`a/b`").show()
 
     snc.setConf("spark.sql.caseSensitive", "true")
     try {
@@ -144,7 +152,21 @@ class QueryTest extends SnappyFunSuite {
     } catch {
       case _: AnalysisException => // expected
     }
+    try {
+      snc.sql("select col2, col3, \"A/B\" from columnTable").show()
+      fail("expected to fail for case-sensitive=true")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      snc.sql("select COL2, COL3, `A/B` from columnTable").show()
+      fail("expected to fail for case-sensitive=true")
+    } catch {
+      case _: AnalysisException => // expected
+    }
     // hive meta-store is case-insensitive so column table names are not
+    snc.sql("select COL2, COL3, \"a/b\" from columnTable").show()
+    snc.sql("select COL2, COL3, `a/b` from ColumnTable").show()
     snc.table("columnTable").select("COL3", "COL2", "a/b").show()
     snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").show()
   }
