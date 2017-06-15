@@ -38,14 +38,14 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>0.8</version>
+    <version>0.9</version>
 </dependency>
 ```
 **Example: SBT dependency**
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.9"
 
 ```
 **Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program
@@ -63,7 +63,7 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 ```bash
-./bin/spark-shell --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-shell --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 
 
@@ -157,7 +157,7 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 ***_In the Local mode_***
 ```bash
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 <Note>Note: </Note>
 
@@ -173,7 +173,7 @@ $scala > val snSession = new SnappySession(spark.sparkContext)
 
 ***_Using external cluster manager_***
 ```bash
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 

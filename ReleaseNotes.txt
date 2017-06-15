@@ -68,6 +68,9 @@ Release 0.9
   [SNAP-1496] Wide table scan for column tables fails due to 64K limitation of JVM. As a fix, we
   now chunk the different parts of the scan code if the number of columns exceeds 30.
     
+  [SNAP-1384] Column Table Inserts can fail if generated code is big. Modified ColumnInsertExec to
+  handle wides schema to 1012 columns.
+
   [SNAP-892] SnappyData launch script picks localhost as the locator hostname and ignores 
   conf/locators, when invoked from non-locator host.
     
