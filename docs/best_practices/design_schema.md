@@ -45,7 +45,7 @@ Collocating frequently joined partitioned tables is the best practice to improve
 
 If the two tables are not collocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.
 
-For an example on collocated joins, refer to [How to collocate tables for doing a collocated join](howto.md/#how-to-perform-a-collocated-join).
+For an example on collocated joins, refer to [How to collocate tables for doing a collocated join](../howto.md#how-to-perform-a-collocated-join).
 
 <a id="buckets"></a>
 **Buckets**</br>
