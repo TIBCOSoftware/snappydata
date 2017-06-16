@@ -294,13 +294,9 @@ object StoreUtils {
                 .normalizeSchema(schema)
             val schemaFields = Utils.schemaFields(normalizedSchema)
             val cols = v.split(",") map (_.trim)
-            val normalizedCols = cols map { c =>
-              if (context.conf.caseSensitiveAnalysis) {
-                c
-              } else {
-                if (Utils.hasLowerCase(c)) Utils.toUpperCase(c) else c
-              }
-            }
+            // always use case-insensitive analysis for partitioning columns
+            // since table creation can use case-insensitive in creation
+            val normalizedCols = cols.map(Utils.toUpperCase)
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
               normalizedCols)
 
