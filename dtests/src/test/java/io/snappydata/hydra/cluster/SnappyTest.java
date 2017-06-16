@@ -701,8 +701,8 @@ public class SnappyTest implements Serializable {
   /**
    * Returns PIDs for all the processes started in the test, e.g. locator, server, lead .
    */
-  private static synchronized List<String> getPidList() {
-    List<String> pidList = new ArrayList();
+  private static synchronized Set<String> getPidList() {
+    Set<String> pidList = new HashSet<>();
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith("pid")) {
@@ -1604,9 +1604,9 @@ public class SnappyTest implements Serializable {
             pids.add(pid);
             RemoteTestModule.Master.recordPID(hd, pid);
             SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
-            SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" +  HostHelper
-                    .getLocalHost(), HostHelper.getLocalHost());
-            Log.getLogWriter().info("SS - pid : " + pid + ", Host : " + HostHelper.getLocalHost());
+            SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + HostHelper
+                .getLocalHost(), HostHelper.getLocalHost());
+            Log.getLogWriter().info("pid : " + pid + ", Host : " + HostHelper.getLocalHost());
           }
         } catch (RemoteException e) {
           String s = "Unable to access master to record PID: " + pid;
@@ -1633,7 +1633,7 @@ public class SnappyTest implements Serializable {
     ProcessBuilder pb = null;
     File logFile = null, log = null, nukeRunOutput = null;
     try {
-      List<String> pidList = new ArrayList();
+      Set<String> pidList = new HashSet<>();
       HostDescription hd = TestConfig.getInstance().getMasterDescription()
           .getVmDescription().getHostDescription();
       pidList = snappyTest.getPidList();
@@ -2280,6 +2280,20 @@ public class SnappyTest implements Serializable {
       throw new TestException(s, e);
     }
   }
+
+  public static void HydraTask_recordProcessIDWithHost() {
+    snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
+    if (useRowStore) {
+      snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator");
+      snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher");
+    } else {
+      snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
+      snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
+    }
+    snappyTest.recordSnappyProcessIDinNukeRun("Worker");
+    snappyTest.recordSnappyProcessIDinNukeRun("Master");
+  }
+
 
   /**
    * Create and start snappy locator using snappy-locators.sh script.
