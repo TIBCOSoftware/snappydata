@@ -36,7 +36,7 @@ import com.zaxxer.hikari.pool.ProxyResultSet
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.expressions.ParamLiteral
+import org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
@@ -162,7 +162,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val sb = new StringBuilder()
       columns.foreach { s =>
         if (sb.nonEmpty) sb.append(',')
-        sb.append(s)
+        sb.append('"').append(s).append('"')
       }
       sb.toString()
     } else "1"
@@ -193,7 +193,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args.map {
-        case pl: ParamLiteral => pl.value
+        case pl: DynamicReplacableConstant => pl.eval(null)
         case v => v
       })
     }
@@ -214,16 +214,17 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
 
-  def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext) = {
+  def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
       val tx = TXManagerImpl.snapshotTxState.get()
-      if (tx != null /*&& !(tx.asInstanceOf[TXStateProxy]).isClosed()*/) {
-        GemFireCacheImpl.getInstance().getCacheTransactionManager.masqueradeAs(tx)
-        GemFireCacheImpl.getInstance().getCacheTransactionManager.commit()
+      if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+        val txMgr = tx.getTxMgr
+        txMgr.masqueradeAs(tx)
+        txMgr.commit()
       }
-    }
-    ))
+    }))
   }
+
   /**
    * Runs the SQL query against the JDBC driver.
    */
@@ -390,7 +391,7 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
   protected final var hasNextValue = true
   protected final var doMove = true
   // transaction started by row buffer scan should be used here
-  val tx = TXManagerImpl.snapshotTxState.get()
+  private val tx = TXManagerImpl.snapshotTxState.get()
   private[execution] final val itr = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,

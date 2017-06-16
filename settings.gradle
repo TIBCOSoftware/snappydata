@@ -159,3 +159,9 @@ if (new File(rootDir, 'aqp/build.gradle').exists()) {
   include ':snappy-aqp_' + scalaBinaryVersion
   project(':snappy-aqp_' + scalaBinaryVersion).projectDir = "$rootDir/aqp" as File
 }
+
+if (new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()) {
+  include ':snappy-jdbc-connector_' + scalaBinaryVersion
+  project(':snappy-jdbc-connector_' + scalaBinaryVersion).projectDir =
+      "$rootDir/snappy-connectors/jdbc-stream-connector" as File
+}

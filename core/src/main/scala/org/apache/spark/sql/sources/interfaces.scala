@@ -197,6 +197,13 @@ trait DeletableRelation {
    * @return number of rows deleted
    */
   def delete(filterExpr: String): Int
+
+  /**
+   * Get a spark plan for puts. If the row is already present, it gets updated
+   * otherwise it gets inserted into the table represented by this relation.
+   * The result of SparkPlan execution should be a count of number of rows put.
+   */
+  def getDeletePlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
 @DeveloperApi

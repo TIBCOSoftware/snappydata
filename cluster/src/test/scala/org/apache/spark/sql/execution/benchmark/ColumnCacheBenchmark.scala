@@ -197,12 +197,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def createAndTestBigTable(): Unit = {
     snappySession.sql("drop table if exists wide_table")
 
-    val size = 1
+    val size = 100
     val num_col = 300
     val str = (1 to num_col).map(i => s" '$i' as C$i")
     val testDF = snappySession.range(size).select(str.map { expr =>
       Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
     }: _*)
+
 
     testDF.collect()
     val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
@@ -211,14 +212,28 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     testDF.write.insertInto("wide_table")
     testDF.write.insertInto("wide_table1")
 
+    val uniqDf = snappySession.table("wide_table").dropDuplicates(Array("C1"))
+    uniqDf.count()
+    // check fallback plans being invoked via API
+    uniqDf.show()
+    // and also via SQL
+    val s = (2 to num_col).map(i => s"last(C$i)").mkString(",")
+    snappySession.sql(s"select C1, $s from wide_table group by C1").show()
 
     val df = snappySession.sql("select *" +
       " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
     df.collect()
 
+    val df0 = snappySession.sql(s"select * from wide_table")
+    df0.collect()
+    df0.show()
+
     val avgProjections = (1 to num_col).map(i => s"AVG(C$i)").mkString(",")
     val df1 = snappySession.sql(s"select $avgProjections from wide_table")
     df1.collect()
+
+    val df2 = snappySession.sql(s"select $avgProjections from wide_table where C1 = '1' ")
+    df2.collect()
   }
 }
 

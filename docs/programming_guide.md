@@ -154,7 +154,8 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 }
 ```
 
-<Note> Note: The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). </Note>
+!!! Note: 
+	The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
 * `runSnappyJob` contains the implementation of the Job.
 The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
@@ -233,7 +234,7 @@ bin/spark-submit \
     --conf snappydata.connection=localhost:1527 \
     --conf spark.ui.port=4042  quickstart/python/AirlineDataPythonApp.py
 ```
-`snappydata.connection` property denotes the `host:clientPort` combination of the SnappyData cluster and it is used to connect to the SnappyData cluster.
+`snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
 
 
 ### Streaming Jobs
@@ -279,7 +280,9 @@ $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
 
 SnappyData provides system procedures that you can use to install and manage JAR files from a client connection. These can be used to install your custom code (for example code shared across multiple jobs) in SnappyData cluster.
 
-**Installing a JAR** Use SQLJ.INSTALL_JAR procedure to install a JAR file
+**Installing a JAR** 
+
+Use SQLJ.INSTALL_JAR procedure to install a JAR file
 
 Syntax:
 
@@ -287,38 +290,49 @@ Syntax:
 SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
 ```
 * JAR_FILE_PATH  is the full path for the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using a locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
+
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
+
 * DEPLOY: This argument is currently ignored.
 
-Example: Installing a JAR**
+*Example: Installing a JAR*
+
 ```bash
 snappy> call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
 ```
 
-**Replacing a JAR** Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file
+**Replacing a JAR** 
+
+Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file
 
 Syntax:
 ```bash
 SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
 ```
-* JAR_FILE_PATH  is full path for the JAR file. This path must be accessible to server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
+* JAR_FILE_PATH  is full path for the JAR file. This path must be accessible to server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers.
+
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
 
-Example: Replacing a JAR
+*Example: Replacing a JAR*
+
 ```bash
 CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 ```
 
-**Removing a JAR** Use SQLJ.REMOVE_JAR  procedure to remove a JAR file
+**Removing a JAR** 
+
+Use SQLJ.REMOVE_JAR  procedure to remove a JAR file
 
 Syntax:
 ```bash
 SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 ```
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
+
 * UNDEPLOY: This argument is currently ignored.
 
-Example: Removing a JAR
+*Example: Removing a JAR*
+
 ```bash
 CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 ```
@@ -401,7 +415,8 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 // While, clients typically just point to a locator, you could also directly point the 
 //   connection at a server endpoint
 ```
-<Note>Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.</Note>
+!!! Note: 
+	If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.
 
 ## Multiple Language Binding using Thrift Protocol
 SnappyData provides support for Apache Thrift protocol which enables users to access the cluster from other languages that are not supported directly by SnappyData.
@@ -415,7 +430,7 @@ To explicitly start a DRDA server in SnappyData, you can use the `-drda-server-a
 
 Refer to the following documents for information on support provided by SnappyData:</br>
 
- * [**About SnappyData Thrift**]( https://github.com/SnappyDataInc/snappydata/blob/branch-0.8/cluster/README-thrift.md): Contains detailed information about the feature and it's capabilities.
+ * [**About SnappyData Thrift**]( https://github.com/SnappyDataInc/snappydata/blob/branch-0.9/cluster/README-thrift.md): Contains detailed information about the feature and it's capabilities.
 
  * [**The Thrift Interface Definition Language (IDL)**](https://github.com/SnappyDataInc/snappy-store/blob/branch-1.5.4/gemfirexd/shared/src/main/java/io/snappydata/thrift/common/snappydata.thrift): This is a Thrift interface definition file for the SnappyData service.
 
@@ -725,7 +740,8 @@ col6 Struct<a: Int, b: String, c: Decimal(10,5)>
 
 To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
 
-<note>Note : Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.</note>
+!!! Note 
+	Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
 #### Spark API for Managing Tables
 
@@ -760,9 +776,10 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from in-memory table, based on different criteria.
-    For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause. </br> 
-    <note>Note: For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables no such defaults are set. Row tables allow all the eviction settings.</note>
+   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause. 
+
+	!!! Note:
+ 		For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables no such defaults are set. Row tables allow all the eviction settings.
 
    * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
@@ -776,9 +793,13 @@ The below mentioned DDL extensions are required to configure a table based on us
    * COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
 
    * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br> 
-	<note> Note: The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </note> </br>
-    * <note>`snappydata.column.batchSize` - explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property. </note></br>
-    * <note>`snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. </note>
+	 
+    !!! Note: 
+        The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): 
+    	
+		* `snappydata.column.batchSize` - explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property. 
+
+    	* `snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. 
 
    Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
 
@@ -868,7 +889,8 @@ CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
 ```
 
 
-<note>Note: STRING columns are handled differently when queried over a JDBC connection.</note>
+!!! Note: 
+	STRING columns are handled differently when queried over a JDBC connection.
 
 To ensure optimal performance for SELECT queries executed over JDBC connection (more specifically, those that get routed to lead node), the data of STRING columns is returned in VARCHAR format, by default. This also helps the data visualization tools to render the data effectively.
 <br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
@@ -1073,7 +1095,8 @@ Unlike Spark streaming, you do not need to register all your stream output trans
 Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
 The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
 
-<note>Note: Support for UDFs is available in SnappyData 0.8 and higher.</note>
+!!! Note: 
+	Support for UDFs is available in SnappyData version 0.8 and future releases.
 
 ### Create User Defined Function
 
@@ -1084,7 +1107,8 @@ These interfaces can be included in your client application by adding **snappy-s
 
 The number in the interfaces (UDF1 to UDF22) signifies the number of parameters an UDF can take.
 
-<note> Note: Currently, any UDF which can take more than 22 parameters is not supported. </note>
+!!! Note: 
+	Currently, any UDF which can take more than 22 parameters is not supported.
 
 ```
 package some.package
@@ -1109,9 +1133,9 @@ CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USI
 
 You can write a JAVA or SCALA class to write an UDF implementation. 
 
-<note>Note: For input/output types: 
-</br>The framework always returns the Java types to the UDFs. So, if you are writing `scala.math.BigDecimal` as an input type or output type, an exception is reported. You can use `java.math.BigDecimal` in the SCALA code. </note>
-
+!!! Note: 
+	For input/output types: </br>
+	The framework always returns the Java types to the UDFs. So, if you are writing `scala.math.BigDecimal` as an input type or output type, an exception is reported. You can use `java.math.BigDecimal` in the SCALA code. 
 
 **Return Types to UDF program type mapping **
 
