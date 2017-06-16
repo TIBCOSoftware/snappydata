@@ -892,7 +892,7 @@ For a given query on a column table, only the required columns are read (since o
 <strong>Collocated Joins</strong></br>
 Collocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. </p>
 <p>If the two tables are not collocated, partitions with same column values for the two tables can be on different nodes thus requiring the data to be shuffled between nodes causing the query performance to degrade.</p>
-<p>For an example on collocated joins, refer to <a href="../howto.md/#how-to-perform-a-collocated-join">How to collocate tables for doing a collocated join</a>.</p>
+<p>For an example on collocated joins, refer to <a href="../../howto/#how-to-perform-a-collocated-join">How to collocate tables for doing a collocated join</a>.</p>
 <p><a id="buckets"></a>
 <strong>Buckets</strong></br>
 The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, we recommend setting a number of buckets such that each bucket has at least 100-150 MB of data.</br>

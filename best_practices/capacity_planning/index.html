@@ -879,7 +879,7 @@ If a table has 17 partitions (buckets, for row or column tables), a scan query o
 <p>For example: In the image below, 6 cores are available on 3 systems, and 2 jobs have 4 tasks each. Because of fair scheduling, both jobs get 3 cores and hence three tasks are per job execute concurrently.</p>
 <p>Pending tasks have to wait for the completion of the current tasks and are assigned to the core that is first available on completion of the current tasks.</p>
 <p>When you add more servers to SnappyData, the processing capacity of the system increases in terms of available cores. Thus, more cores are available so more tasks can concurrently execute.</p>
-<p><img alt="Concurrency" src="../../../../Images/core_concurrency.png" /></p>
+<p><img alt="Concurrency" src="../../Images/core_concurrency.png" /></p>
 <p><a id="heap"></a></p>
 <h3 id="memory-management-heap-and-off-heap">Memory Management: Heap and Off-Heap</h3>
 <p>SnappyData is a Java application and by default supports on-heap storage. At the same time, to improve the performance for large chunks of data, it also supports off-heap storage. Column tables can be stored on off-heap storage as they are large chunks of columns stored as byte arrays. </p>
@@ -888,7 +888,7 @@ If a table has 17 partitions (buckets, for row or column tables), a scan query o
 <p>This can be altered by specifying the <code>spark.memory.storageFraction</code> property. But, we do not recommend changing this setting. </p>
 <p>Reserved memory: A certain fraction of heap memory is reserved for JVM objects outside of SnappyData storage and eviction. If the critical-heap-percentage store property is set then SnappyData will use only till that limit and the remaining memory is reserved. If no critical-heap-percentage has been specified then it defaults to 90%. There is no reserved memory for off-heap.</p>
 <p>SnappyData tables are by default configured for eviction which means, when there is memory pressure, the tables are evicted to disk. This impacts performance to some degree and hence we recommend sizing your VM before you begin. </p>
-<p><img alt="On-Heap and Off-Heap" src="../../../../Images/on-off-heap.png" /></p>
+<p><img alt="On-Heap and Off-Heap" src="../../Images/on-off-heap.png" /></p>
 <!-- Default values for sizing the VM <mark> Sumedh</mark>-->
 
 <p><a id="ha-consideration"></a></p>
