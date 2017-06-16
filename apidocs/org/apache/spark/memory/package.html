@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>memory - snappydata_2.11 0.8 API - org.apache.spark.memory</title>
-          <meta name="description" content="memory - snappydata 2.11 0.8 API - org.apache.spark.memory" />
-          <meta name="keywords" content="memory snappydata 2.11 0.8 API org.apache.spark.memory" />
+          <title>memory - snappydata_2.11 0.9 API - org.apache.spark.memory</title>
+          <meta name="description" content="memory - snappydata 2.11 0.9 API - org.apache.spark.memory" />
+          <meta name="keywords" content="memory snappydata 2.11 0.9 API org.apache.spark.memory" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -121,7 +121,27 @@ they handle the sizing of their memory pools:</p><ul><li><span class="extype" na
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.memory.MemoryConsumer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.memory.DefaultMemoryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DefaultMemoryManagerextendsStoreUnifiedManagerwithLogging"></a>
+      <a id="DefaultMemoryManager:DefaultMemoryManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DefaultMemoryManager.html"><span class="name">DefaultMemoryManager</span></a><span class="result"> extends <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.package@DefaultMemoryManagerextendsStoreUnifiedManagerwithLogging" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A MemoryManager which simply delegates to configured Spark memory manager.</p><div class="fullcomment"><div class="comment cmt"><p>A MemoryManager which simply delegates to configured Spark memory manager.
+This manager will be used in Connector mode. All SnappyData execution memory
+like encoder etc will account memory here.
+</p></div></div>
+    </li><li name="org.apache.spark.memory.MemoryConsumer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="MemoryConsumerextendsObject"></a>
       <a id="MemoryConsumer:MemoryConsumer"></a>
       <h4 class="signature">
@@ -138,12 +158,12 @@ they handle the sizing of their memory pools:</p><ul><li><span class="extype" na
       </a>
     </span>
       
-    </li><li name="org.apache.spark.memory.MemoryEventListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.memory.MemoryEventListener" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="MemoryEventListenerextendsAnyRef"></a>
       <a id="MemoryEventListener:MemoryEventListener"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">abstract </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
@@ -168,23 +188,6 @@ they handle the sizing of their memory pools:</p><ul><li><span class="extype" na
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.memory.package@MemoryModeextendsEnum[org.apache.spark.memory.MemoryMode]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.memory.NoOpSnappyMemoryManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NoOpSnappyMemoryManagerextendsStoreUnifiedManagerwithLogging"></a>
-      <a id="NoOpSnappyMemoryManager:NoOpSnappyMemoryManager"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="NoOpSnappyMemoryManager.html"><span class="name">NoOpSnappyMemoryManager</span></a><span class="result"> extends <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.package@NoOpSnappyMemoryManagerextendsStoreUnifiedManagerwithLogging" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -247,7 +250,8 @@ to allocate the space.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Base trait for different memory manager used by SnappyData in different modes
+</p>
     </li><li name="org.apache.spark.memory.TaskMemoryManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TaskMemoryManagerextendsObject"></a>
       <a id="TaskMemoryManager:TaskMemoryManager"></a>
@@ -265,28 +269,6 @@ to allocate the space.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.memory.TempMemoryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="TempMemoryManagerextendsStoreUnifiedManagerwithLogging"></a>
-      <a id="TempMemoryManager:TempMemoryManager"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="TempMemoryManager.html"><span class="name">TempMemoryManager</span></a><span class="result"> extends <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.package@TempMemoryManagerextendsStoreUnifiedManagerwithLogging" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">This class will store all the memory usage for GemFireXD boot up time when SparkEnv
-is not initialised.</p><div class="fullcomment"><div class="comment cmt"><p>This class will store all the memory usage for GemFireXD boot up time when SparkEnv
-is not initialised.
-This class will not actually allocate any memory.
-It is just a temp account holder till SnappyUnifiedManager is started.
-</p></div></div>
     </li></ol>
             </div>
 
@@ -341,6 +323,23 @@ It is just a temp account holder till SnappyUnifiedManager is started.
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.memory.package@SnappyStorageEvictor" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyUnifiedMemoryManager"></a>
+      <a id="SnappyUnifiedMemoryManager:SnappyUnifiedMemoryManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyUnifiedMemoryManager$.html"><span class="name">SnappyUnifiedMemoryManager</span></a><span class="result"> extends <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.package@SnappyUnifiedMemoryManager" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

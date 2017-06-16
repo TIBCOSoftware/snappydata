@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DictionaryDecoderNullable - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderNullable</title>
-          <meta name="description" content="DictionaryDecoderNullable - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderNullable" />
-          <meta name="keywords" content="DictionaryDecoderNullable snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderNullable" />
+          <title>DictionaryDecoderNullable - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderNullable</title>
+          <meta name="description" content="DictionaryDecoderNullable - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderNullable" />
+          <meta name="keywords" content="DictionaryDecoderNullable snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderNullable" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -397,7 +397,15 @@
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="DictionaryDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderBase">DictionaryDecoderBase</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
+      <p class="shortcomment cmt">Initialization will fill in the dictionaries as written by the
+DictionaryEncoder.</p><div class="fullcomment"><div class="comment cmt"><p>Initialization will fill in the dictionaries as written by the
+DictionaryEncoder. For string maps it reads in the value array
+written using <span class="extype" name="ByteBufferHashMap">ByteBufferHashMap</span> by the encoder expecting the
+size of UTF8 encoded string followed by the string contents.
+Long and integer dictionaries are still using the old ObjectHashSet
+which needs to be moved to <span class="extype" name="ByteBufferHashMap">ByteBufferHashMap</span> once DictionaryEncoder
+adds support for long/integer dictionary encoding.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="DictionaryDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.DictionaryDecoderBase">DictionaryDecoderBase</a> → <a href="ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.NullableDecoder#initializeNulls" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeNulls(columnBytes:AnyRef,cursor:Long,field:org.apache.spark.sql.types.StructField):Long"></a>
       <a id="initializeNulls(AnyRef,Long,StructField):Long"></a>

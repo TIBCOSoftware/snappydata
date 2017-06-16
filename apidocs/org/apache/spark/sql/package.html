@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>sql - snappydata_2.11 0.8 API - org.apache.spark.sql</title>
-          <meta name="description" content="sql - snappydata 2.11 0.8 API - org.apache.spark.sql" />
-          <meta name="keywords" content="sql snappydata 2.11 0.8 API org.apache.spark.sql" />
+          <title>sql - snappydata_2.11 0.9 API - org.apache.spark.sql</title>
+          <meta name="description" content="sql - snappydata 2.11 0.9 API - org.apache.spark.sql" />
+          <meta name="keywords" content="sql snappydata 2.11 0.9 API org.apache.spark.sql" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -699,7 +699,7 @@ in the <code>open</code> method.</p><p>Scala example:</p><pre>datasetOfString.wr
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InsertCachedPlanHelper.html"><span class="name">InsertCachedPlanHelper</span></a><span class="params">(<span name="session">session: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InsertCachedPlanHelper.html"><span class="name">InsertCachedPlanHelper</span></a><span class="params">(<span name="session">session: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="topLevel">topLevel: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@InsertCachedPlanHelperextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
@@ -1099,6 +1099,26 @@ with each partition handling one or more segments of the hashmap on a node.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SnappyAggregationStrategy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SnappyAggregationStrategyextendsorg.apache.spark.sql.Strategy"></a>
+      <a id="SnappyAggregationStrategy:SnappyAggregationStrategy"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAggregationStrategy.html"><span class="name">SnappyAggregationStrategy</span></a><span class="result"> extends <a href="#Strategy=org.apache.spark.sql.execution.SparkStrategy" class="extmbr" name="org.apache.spark.sql.Strategy">Strategy</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SnappyAggregationStrategyextendsorg.apache.spark.sql.Strategy" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to plan the aggregate operator for expressions using the optimized
+SnappyData aggregation operators.</p><div class="fullcomment"><div class="comment cmt"><p>Used to plan the aggregate operator for expressions using the optimized
+SnappyData aggregation operators.</p><p>Adapted from Spark's Aggregation strategy.
+</p></div></div>
     </li><li name="org.apache.spark.sql.SnappyBaseParser" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="SnappyBaseParserextendsParser"></a>
       <a id="SnappyBaseParser:SnappyBaseParser"></a>
@@ -1650,26 +1670,6 @@ getOrCreate instead of the global one.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.SnappyAggregation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SnappyAggregation"></a>
-      <a id="SnappyAggregation:SnappyAggregation"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappyAggregation$.html"><span class="name">SnappyAggregation</span></a><span class="result"> extends <a href="#Strategy=org.apache.spark.sql.execution.SparkStrategy" class="extmbr" name="org.apache.spark.sql.Strategy">Strategy</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@SnappyAggregation" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Used to plan the aggregate operator for expressions using the optimized
-SnappyData aggregation operators.</p><div class="fullcomment"><div class="comment cmt"><p>Used to plan the aggregate operator for expressions using the optimized
-SnappyData aggregation operators.</p><p>Adapted from Spark's Aggregation strategy.
-</p></div></div>
     </li><li name="org.apache.spark.sql.SnappyContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyContext"></a>
       <a id="SnappyContext:SnappyContext"></a>

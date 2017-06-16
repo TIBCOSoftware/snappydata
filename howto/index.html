@@ -20,6 +20,10 @@
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../css/toc.css" rel="stylesheet">
+  <link href="../css/menu.css" rel="stylesheet">
+  <link href="../css/images.css" rel="stylesheet">
+  <link href="../css/style.css" rel="stylesheet">
   <link href="../extra.css" rel="stylesheet">
 
   
@@ -34,6 +38,7 @@
   <script src="../js/modernizr-2.8.3.min.js"></script>
   <script type="text/javascript" src="../js/highlight.pack.js"></script>
   <script src="../js/theme.js"></script> 
+  <script src="../js/menu.js"></script>
 
   
 </head>
@@ -115,6 +120,8 @@
                 
                     <li><a class="toctree-l4" href="#how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</a></li>
                 
+                    <li><a class="toctree-l4" href="#how-to-connect-to-the-cluster-from-external-clients">How to Connect to the Cluster from External Clients</a></li>
+                
                     <li><a class="toctree-l4" href="#how-to-use-apache-zeppelin-with-snappydata">How to Use Apache Zeppelin with SnappyData</a></li>
                 
             
@@ -138,6 +145,28 @@
 <li>
           
             <li>
+    <ul class="subnav">
+    <li><span>Configuring the Cluster</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuring_cluster/configuring_cluster/">Configuration</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuring_cluster/property_description/">SnappyData Properties</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
         <a class="" href="../programming_guide/">Programming Guide</a>
         
@@ -149,6 +178,35 @@
         <a class="" href="../deployment/">Affinity Modes</a>
         
     </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../best_practices/">Best practices</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Best practices</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../best_practices/capacity_planning/">Setting up your Cluster </a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../best_practices/design_schema/">Designing your Database and Schema</a>
+        
+    </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -167,38 +225,620 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../apidocsintro/">API</a>
+        <a class="" href="../monitoring/monitoring/">Managing and Monitoring</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../additional_docs/">Reference Documents</a>
+        <a class="" href="../reference/">Reference Guides</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>About</span></li>
+    <li><span>Reference Guides</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../techsupport/">Contact and Support</a>
+        <a class="" href="../sql_reference/">SQL Reference Guide</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>SQL Reference Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-statements/">CREATE Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>CREATE Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-diskstore/">CREATE DISKSTORE</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../LICENSE/">License</a>
+        <a class="" href="../reference/sql_reference/create-function/">CREATE FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-index/">CREATE INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-schema/">CREATE SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-table/">CREATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-sample-table/">CREATE SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-temporary-table/">CREATE TEMPORARY TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
         
     </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/delete/">DELETE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-statements/">DROP Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DROP Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-diskstore/">DROP DISKSTORE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-function/">DROP FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-index/">DROP INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-table/">DROP TABLE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/put-into/">PUT INTO</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/select/">SELECT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/set-schema/">SET SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/truncate-table/">TRUNCATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/update/">UPDATE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Inbuilt System Procedures</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/dump-stacks/">DUMP_STACKS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/rebalance-all-buckets/">REBALANCE_ALL_BUCKETS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/set_critical_heap_percentage/">SET_CRITICAL_HEAP_PERCENTAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/set-trace-flag/">SET_TRACE_FLAG</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/system_tables/system_tables/">System Tables</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>System Tables</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/system_tables/members/">MEMBERS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/system_tables/memoryanalytics/">MEMORYANALYTICS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/system_tables/sysdiskstores/">SYSDISKSTORES</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/store-launcher/">Command Line Utilities</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Command Line Utilities</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/store-backup/">backup</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/store-version/">version</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/store_command_reference/">Snappy-SQL Shell Interactive Commands</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Snappy-SQL Shell Interactive Commands</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/connect_client/">connect client</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/connect/">connect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/describe/">describe</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/disconnect/">disconnect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/elapsedtime/">elapsedtime</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/exit/">exit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/maximumdisplaywidth/">MaximumDisplayWidth</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/set_connection/">set connection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/interactive_commands/show/">show</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/config_parameters/">Configuration Parameters</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Configuration Parameters</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/ack-severe-alert-threshold/">ack-severe-alert-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/ack-wait-threshold/">ack-wait-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/archive-disk-space-limit/">archive-disk-space-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/archive-file-size-limit/">archive-file-size-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/bind-address/">bind-address</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/enable-network-partition-detection/">enable-network-partition-detection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/enable-stats/">enable-stats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/enable-time-statistics/">enable-time-statistics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/enforce-unique-host/">enforce-unique-host</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/init-scripts/">init-scripts</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/locators/">locators</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/log-file/">log-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/log-level/">log-level</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/member-timeout/">member-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/redundancy-zone/">redundancy-zone</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/start-locator/">start-locator</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/statistic-archive-file/">statistic-archive-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/statistic-sample-rate/">statistic-sample-rate</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/statistic-sampling-enabled/">statistic-sampling-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/sys-disk-dir/">sys-disk-dir</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/user/">user</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../additional_docs/">Additional Information</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../techsupport/">Contact and Support</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
 <li>
           
         </ul>
@@ -224,13 +864,13 @@
       
     
     <li>How Tos</li>
-    <li class="wy-breadcrumbs-aside">
+<!--    <li class="wy-breadcrumbs-aside">
       
         
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
-    </li>
+    </li> !-->
   </ul>
   <hr/>
 </div>
@@ -238,7 +878,7 @@
             <div class="section">
               
                 <h1 id="overview">Overview</h1>
-<p>This section introduces you to several common operations such as, starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.</p>
+<p>This section introduces you to several common operations such as starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.</p>
 <p><strong>Running the Examples:</strong>
 Topics in this section refer to source code examples that are shipped with the product. Instructions to run these examples can be found in the source code.</p>
 <p>Source code for these examples is located in the <strong>quickstart/src/main/scala/org/apache/spark/examples/snappydata</strong> and in <strong>quickstart/python</strong> directories of the SnappyData product distribution.</p>
@@ -252,7 +892,10 @@ Topics in this section refer to source code examples that are shipped with the p
 <p><strong>As a Job</strong>: Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to <a href="#howto-job">jobs</a> section for details on how to run a job.</p>
 </li>
 </ul>
-<p><Note> Note: SnappyData also supports Java API. Refer to the <a href="../programming_guide/#building-snappy-applications-using-spark-api">documentation</a> for more details on Java API.</note></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SnappyData also supports Java API. Refer to the <a href="../programming_guide/#building-snappy-applications-using-spark-api">documentation</a> for more details on Java API.</p>
+</div>
 <p>The following topics are covered in this section:</p>
 <ul>
 <li>
@@ -296,6 +939,9 @@ Topics in this section refer to source code examples that are shipped with the p
 </li>
 <li>
 <p><a href="#howto-odbc">How to Connect using ODBC Driver</a></p>
+</li>
+<li>
+<p><a href="#howto-external-client">How to Connect to the Cluster from External Clients</a></p>
 </li>
 <li>
 <p><a href="#howto-zeppelin">How to Use Apache Zeppelin with SnappyData</a></p>
@@ -354,15 +1000,17 @@ The SnappyData Locator has stopped.
 <p>The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.</p>
 </li>
 <li>
-<p>Create the configuration files using the templates provided in the <strong>conf</strong> folder. Copy the exiting template files <strong>servers.template</strong>, <strong>locators.template</strong>, <strong>leads.template</strong>, and rename them to <strong>servers</strong>, <strong>locators</strong>, <strong>leads</strong>.
+<p>Create the configuration files using the templates provided in the <strong>conf</strong> folder. Copy the existing template files <strong>servers.template</strong>, <strong>locators.template</strong>, <strong>leads.template</strong>, and rename them to <strong>servers</strong>, <strong>locators</strong>, <strong>leads</strong>.
 </br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the <a href="../configuration/#configuration-files">configuration</a> section for more information on properties.</p>
 </li>
 <li>
 <p>Start the cluster using <code>sbin/snappy-start-all.sh</code>. SnappyData starts the cluster using SSH.</p>
 </li>
 </ol>
-<p><Note> Note: It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on <a href="../install/#install-on-premise">installation</a> and <a href="../configuration">cluster configuration</a>.
-</Note></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on <a href="../install/#install-on-premise">installation</a> and <a href="../configuration">cluster configuration</a>.</p>
+</div>
 <p><a id="howto-job"></a></p>
 <h2 id="how-to-run-spark-code-inside-the-cluster">How to Run Spark Code inside the Cluster</h2>
 <p>A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.</p>
@@ -388,13 +1036,13 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 &lt;dependency&gt;
     &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
     &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
-    &lt;version&gt;0.8&lt;/version&gt;
+    &lt;version&gt;0.9&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre>
 
 <p><strong>Example: SBT dependency</strong>:</p>
 <pre><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.8&quot;
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;0.9&quot;
 </code></pre>
 
 <p><strong>Running the Job</strong>: 
@@ -433,15 +1081,15 @@ For example, the command submits the job and runs it as:</p>
 <p>For more information on the various modes, refer to the <a href="../deployment#snappydata-smart-connector-mode">SnappyData Smart Connector</a> section of the documentation.</p>
 <p><strong>Code Example:</strong>
 The code example for this mode is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample.scala</a></p>
-<p><strong>Configure a SnappySession</strong>: 
-The code below shows how to initialize a SparkSession. Here the property <code>snappydata.store.locators</code> instructs the connector to acquire cluster connectivity and catalog meta data, and registers it locally in the Spark cluster.</p>
+<p><strong>Configure a SnappySession</strong>: </p>
+<p>The code below shows how to initialize a SparkSession. Here the property <code>snappydata.connection</code> instructs the connector to acquire cluster connectivity and catalog metadata and registers it locally in the Spark cluster. Its value is consists of  locator host and JDBC client port on which the locator listens for connections (default 1527).</p>
 <pre><code>    val spark: SparkSession = SparkSession
         .builder
         .appName(&quot;SmartConnectorExample&quot;)
         // It can be any master URL
         .master(&quot;local[4]&quot;)
-        // snappydata.store.locators property enables the application to interact with SnappyData store
-        .config(&quot;snappydata.store.locators&quot;, &quot;localhost:10334&quot;)
+         // snappydata.connection property enables the application to interact with SnappyData store
+        .config(&quot;snappydata.connection&quot;, &quot;localhost:1527&quot;)
         .getOrCreate
 
     val snSession = new SnappySession(spark.sparkContext)
@@ -534,7 +1182,7 @@ A row table can either be replicated to all nodes or partitioned across nodes. I
 </code></pre>
 
 <p><strong>Create the Table using API</strong>:
-First we define the table schema and then create the table using createTable API</p>
+First, we define the table schema and then create the table using createTable API</p>
 <pre><code>    val schema = StructType(Array(StructField(&quot;S_SUPPKEY&quot;, IntegerType, false),
       StructField(&quot;S_NAME&quot;, StringType, false),
       StructField(&quot;S_ADDRESS&quot;, StringType, false),
@@ -774,7 +1422,7 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
 <h2 id="how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</h2>
 <p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.</p>
 <p><strong>To connect to the SnappyData cluster</strong>: Using JDBC, use URL of the form <code>jdbc:snappydata://&lt;locatorHostName&gt;:&lt;locatorClientPort&gt;/</code></p>
-<p>Where the <code>&lt;locatorHostName&gt;</code> is the host name of the node on which the locator is started and <code>&lt;locatorClientPort&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
+<p>Where the <code>&lt;locatorHostName&gt;</code> is the hostname of the node on which the locator is started and <code>&lt;locatorClientPort&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
 <p><strong>Code Example:</strong></p>
 <p><strong>Connect to a SnappyData cluster using JDBC on default client port</strong></p>
 <p>The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala">JDBCExample.scala</a></p>
@@ -806,12 +1454,15 @@ preparedStmt1.executeBatch()
 preparedStmt1.close()
 </code></pre>
 
-<p><note> Note: If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</note></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</p>
+</div>
 <p><a id="howto-JSON"></a></p>
 <h2 id="how-to-store-and-query-json-objects">How to Store and Query JSON Objects</h2>
 <p>You can insert JSON data in SnappyData tables and execute queries on the tables.</p>
 <p><strong>Code Example: Loads JSON data from a JSON file into a column table and executes query</strong></p>
-<p>The code snippet given below loads JSON data from a JSON file into a column table and executes the query against it.
+<p>The code snippet loads JSON data from a JSON file into a column table and executes the query against it.
 The source code for JSON example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala">WorkingWithJson.scala</a>. After creating SnappySession, we read the JSON file using Spark API and load into a SnappyData table</p>
 <p><strong>Get a SnappySession</strong>:</p>
 <pre><code>    val spark: SparkSession = SparkSession
@@ -1187,7 +1838,53 @@ This same table can be created by using createTable API. First we create a schem
 <p>The complete source code for the above example is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py">CreateTable.py</a></p>
 <p><a id="howto-odbc"></a></p>
 <h2 id="how-to-connect-using-odbc-driver">How to Connect using ODBC Driver</h2>
-<p>You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.</p>
+<p>You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.
+<a id="howto-odbc-step1"></a></p>
+<h3 id="step-1-install-visual-c-redistributable-for-visual-studio-2015">Step 1: Install Visual C++ Redistributable for Visual Studio 2015</h3>
+<p>To download and install the Visual C++ Redistributable for Visual Studio 2015:</p>
+<ol>
+<li>
+<p><a href="https://www.microsoft.com/en-in/download/details.aspx?id=48145">Download Visual C++ Redistributable for Visual Studio 2015</a></p>
+</li>
+<li>
+<p>Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.</p>
+</li>
+<li>
+<p>Select <strong>Run</strong> to start the installation, and follow the steps to complete the installation.</p>
+</li>
+</ol>
+<p><a id="howto-odbc-step2"></a></p>
+<h3 id="step-2-install-snappydata-odbc-driver">Step 2: Install SnappyData ODBC Driver</h3>
+<p>To download and install the ODBC driver:</p>
+<ol>
+<li>
+<p>Download the SnappyData ODBC Driver from the <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>.</p>
+</li>
+<li>
+<p>Depending on your Windows installation, download the 32-bit or 64-bit version of the SnappyData ODBC Driver.</p>
+<ul>
+<li>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32.zip">32-bit for 32-bit platform</a></p>
+</li>
+<li>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32_64.zip">32-bit for 64-bit platform</a> </p>
+</li>
+<li>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc64.zip">64-bit for 64-bit platform</a> </p>
+</li>
+</ul>
+</li>
+<li>
+<p>Extract the contents of the downloaded file.</p>
+</li>
+<li>
+<p>Double-click on the SnappyDataODBCDriverInstaller.msi file, and follow the steps to complete the installation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ensure that <a href="http://snappydatainc.github.io/snappydata/install/">SnappyData version 0.8 or later is installed</a> and the <a href="http://snappydatainc.github.io/snappydata/howto/#howto-startCluster">SnappyData cluster is running</a>. </p>
+</div>
+</li>
+</ol>
 <h3 id="download-and-install-the-odbc-driver">Download and Install the ODBC Driver</h3>
 <p>To download and install the ODBC driver:</p>
 <ol>
@@ -1196,13 +1893,13 @@ This same table can be created by using createTable API. First we create a schem
 Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.</p>
 <ul>
 <li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32.zip">For 32-bit Installer for 32-bit Platform</a></p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32.zip">For 32-bit Installer for 32-bit Platform</a></p>
 </li>
 <li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc32_64.zip">For 32-bit Installer for 64-bit Platform</a></p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc32_64.zip">For 32-bit Installer for 64-bit Platform</a></p>
 </li>
 <li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8.0.1-odbc64.zip">For 64-bit Installer for 64-bit Platform</a></p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-odbc64.zip">For 64-bit Installer for 64-bit Platform</a></p>
 </li>
 </ul>
 </li>
@@ -1228,9 +1925,39 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 <li>
 <p>Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
  Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
- When prompted, select the SnappyData ODBC Driver from the drivers list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. </p>
+ When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. </p>
 </li>
 </ul>
+<p><a id="howto-external-client"></a></p>
+<h2 id="how-to-connect-to-the-cluster-from-external-clients">How to Connect to the Cluster from External Clients</h2>
+<p>You can also connect to the SnappyData cluster from a different network as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.</p>
+<p>When <a href="../configuration/">starting the locator and server</a> set the following properties in the <strong>conf/locators</strong> and <strong>conf/servers</strong> files:</p>
+<ul>
+<li>
+<p><code>-hostname-for-clients</code>: The public IP address of the locator or server. </p>
+</li>
+<li>
+<p><code>-client-bind-address</code>: IP address of the locator or server. </br>For example, add <code>-J-Dgemfirexd.hostname-for-clients=192.168.20.208</code> </br> </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.</p>
+</div>
+</li>
+<li>
+<p><strong>Port Settings</strong>: The client, by default, connects to the locator or server at the default port 1527. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the <code>-client-port</code> property.</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>
+<p>If the above properties are not set, when a client tries to connect to the cluster from a different network, the connection may fail and an error may be reported. </p>
+</li>
+<li>
+<p>For ODBC clients, you must use the host and port details of the server and not the locator.</p>
+</li>
+</ul>
+</div>
 <p><a id="howto-zeppelin"></a></p>
 <h2 id="how-to-use-apache-zeppelin-with-snappydata">How to Use Apache Zeppelin with SnappyData</h2>
 <h3 id="step-1-download-install-and-configure-snappydata">Step 1: Download, Install and Configure SnappyData</h3>
@@ -1248,14 +1975,14 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 </thead>
 <tbody>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1">Version 0.61</a></td>
+<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1">Version 0.6.1</a></td>
 <td><a href="https://zeppelin.apache.org/download.html">Version 0.6</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7">Release 0.7</a> and <a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8">Release 0.8</a></td>
+<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7">Release 0.7</a> </br> <a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8">Release 0.8</a> and <a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9">future realeases</a></td>
 </tr>
 <tr>
 <td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1">Version 0.7.1</a></td>
 <td><a href="https://zeppelin.apache.org/download.html">Version 0.7</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8">Release 0.8</a></td>
+<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8">Release 0.8</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9">and future releases</a></td>
 </tr>
 </tbody>
 </table>
@@ -1264,10 +1991,15 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 <p><a href="../configuration/#configuration-files">Configure the SnappyData Cluster</a>.</p>
 </li>
 <li>
-<p>Copy the SnappyData Zeppelin interpreter (<strong>snappydata-zeppelin-&lt;<em>version_number</em>&gt;.jar</strong>) file to the <strong>jars</strong> (snappydata-&lt;<em>version_number</em>&gt;-bin/jars/) directory in the SnappyData home directory.</p>
+<p>In <a href="../configuration/#configuring-leads">lead node configuration</a> set the following properties:</p>
+<ul>
+<li>
+<p>Enable the SnappyData Zeppelin interpreter by adding <code>-zeppelin.interpreter.enable=true</code> </p>
 </li>
 <li>
-<p>Enable the SnappyData Zeppelin interpreter by adding <code>-zeppelin.interpreter.enable=true</code> in <a href="../configuration/#configuring-leads">lead node configuration</a>.</p>
+<p>In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding <code>-classpath=/&lt;download_location&gt;/snappydata-zeppelin-&lt;version_number&gt;.jar</code>.</p>
+</li>
+</ul>
 </li>
 <li>
 <p><a href="./#how-to-start-a-snappydata-cluster">Start the SnappyData cluster</a></p>
@@ -1296,7 +2028,7 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 <h3 id="step-2-configure-snappydata-for-apache-zeppelin">Step 2: Configure SnappyData for Apache Zeppelin</h3>
 <ol>
 <li>
-<p>Log on to Zeppelin from your web browser and select <strong>Interpretor</strong> from the <strong>Settings</strong> option.</p>
+<p>Log on to Zeppelin from your web browser and select <strong>Interpreter</strong> from the <strong>Settings</strong> option.</p>
 </li>
 <li>
 <p>Click <strong>Create</strong> <img alt="Create" src="../Images/create_interpreter.png" /> to add an interpreter.  </p>
@@ -1304,15 +2036,18 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 <li>
 <p>From the <strong>Interpreter group</strong> drop-down select <strong>snappydata</strong>.
      <img alt="Configure Interpreter" src="../Images/snappydata_interpreter_properties.png" /></p>
-<p><note>Note: If <strong>snappydata</strong> is not displayed in the <strong>Interpreter group</strong> drop-down list, try the following options, and then restart Zeppelin daemon: </note></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <strong>snappydata</strong> is not displayed in the <strong>Interpreter group</strong> drop-down list, try the following options, and then restart Zeppelin daemon: </p>
 <ul>
 <li>
-<p><note>Delete the <strong>interpreter.json</strong> file located in the <strong>conf</strong> directory (in the Zeppelin home directory).</note></p>
+<p>Delete the <strong>interpreter.json</strong> file located in the <strong>conf</strong> directory (in the Zeppelin home directory).</p>
 </li>
 <li>
-<p><note>Delete the <strong>zeppelin-spark_&lt;<em>version_number</em>&gt;.jar</strong> file located in the <strong>interpreter/snappydata</strong> directory (in the Zeppelin home directory).</note></p>
+<p>Delete the <strong>zeppelin-spark_&lt;<em>version_number</em>&gt;.jar</strong> file located in the <strong>interpreter/snappydata</strong> directory (in the Zeppelin home directory).</p>
 </li>
 </ul>
+</div>
 </li>
 <li>
 <p>Click the <strong>Connect to existing process</strong> option. The fields <strong>Host</strong> and <strong>Port</strong> are displayed.</p>
@@ -1363,9 +2098,9 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 <td>Specify the JDBC driver for SnappyData</td>
 </tr>
 <tr>
-<td>snappydata.store.locators</td>
-<td>localhost:10334</td>
-<td>Specify the URI of the locator (only local/split mode)</td>
+<td>snappydata.connection</td>
+<td>localhost:1527</td>
+<td>Specify the <code>host:clientPort</code> combination of the locator for the JDBC connection</td>
 </tr>
 <tr>
 <td>master</td>
@@ -1408,10 +2143,13 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
 <p>Click <strong>Save</strong> to apply your changes.</p>
 </li>
 </ol>
-<p><note >Note: You can modify the default port number of the Zeppelin intrepreter by setting the property:</br> 
-<code>-zeppelin.interpreter.port=&lt;port_number&gt;</code> in <a href="../configuration/#configuring-leads">lead node configuration</a>. </note></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can modify the default port number of the Zeppelin interpreter by setting the property:</br>
+<code>-zeppelin.interpreter.port=&lt;port_number&gt;</code> in <a href="../configuration/#configuring-leads">lead node configuration</a>. </p>
+</div>
 <h3 id="known-issue">Known Issue</h3>
-<p>If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8, approximate result does not work on the sample table, when you execute a paragraph with the <code>%sql show-instant-results-first</code> directive.</p>
+<p>If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, approximate result does not work on the sample table, when you execute a paragraph with the <code>%sql show-instant-results-first</code> directive.</p>
 <h3 id="more-information">More Information</h3>
 <p>Refer to these sections for information:</p>
 <ul>
@@ -1446,7 +2184,10 @@ For more information, refer to the documentation on [setting up SnappyData ODBC 
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+<b>DISCLAIMER:</b>
+This document is work-in-progress and will be progressively updated.
+
+ <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
 	  
         </div>

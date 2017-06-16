@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>InsertCachedPlanHelper - snappydata_2.11 0.8 API - org.apache.spark.sql.InsertCachedPlanHelper</title>
-          <meta name="description" content="InsertCachedPlanHelper - snappydata 2.11 0.8 API - org.apache.spark.sql.InsertCachedPlanHelper" />
-          <meta name="keywords" content="InsertCachedPlanHelper snappydata 2.11 0.8 API org.apache.spark.sql.InsertCachedPlanHelper" />
+          <title>InsertCachedPlanHelper - snappydata_2.11 0.9 API - org.apache.spark.sql.InsertCachedPlanHelper</title>
+          <meta name="description" content="InsertCachedPlanHelper - snappydata 2.11 0.9 API - org.apache.spark.sql.InsertCachedPlanHelper" />
+          <meta name="keywords" content="InsertCachedPlanHelper snappydata 2.11 0.9 API org.apache.spark.sql.InsertCachedPlanHelper" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">InsertCachedPlanHelper</span><span class="params">(<span name="session">session: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">InsertCachedPlanHelper</span><span class="params">(<span name="session">session: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="topLevel">topLevel: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -91,7 +91,7 @@ match or are superset of the child distribution.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.InsertCachedPlanHelper#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SparkSession):org.apache.spark.sql.InsertCachedPlanHelper"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,topLevel:Boolean):org.apache.spark.sql.InsertCachedPlanHelper"></a>
       <a id="&lt;init&gt;:InsertCachedPlanHelper"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@ match or are superset of the child distribution.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">InsertCachedPlanHelper</span><span class="params">(<span name="session">session: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span>
+        <span class="name">InsertCachedPlanHelper</span><span class="params">(<span name="session">session: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="topLevel">topLevel: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.InsertCachedPlanHelper@&lt;init&gt;(session:org.apache.spark.sql.SparkSession):org.apache.spark.sql.InsertCachedPlanHelper" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.InsertCachedPlanHelper@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,topLevel:Boolean):org.apache.spark.sql.InsertCachedPlanHelper" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -639,18 +639,18 @@ match or are superset of the child distribution.
     </span>
       <p class="shortcomment cmt">Name for this rule, automatically inferred based on class name.</p><div class="fullcomment"><div class="comment cmt"><p>Name for this rule, automatically inferred based on class name.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.InsertCachedPlanHelper#session" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="session:org.apache.spark.sql.SparkSession"></a>
-      <a id="session:SparkSession"></a>
+      <a id="session:org.apache.spark.sql.SnappySession"></a>
+      <a id="session:SnappySession"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">session</span><span class="result">: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>
+        <span class="name">session</span><span class="result">: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.InsertCachedPlanHelper@session:org.apache.spark.sql.SparkSession" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.InsertCachedPlanHelper@session:org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -672,6 +672,23 @@ match or are superset of the child distribution.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.InsertCachedPlanHelper#topLevel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="topLevel:Boolean"></a>
+      <a id="topLevel:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">topLevel</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.InsertCachedPlanHelper@topLevel:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

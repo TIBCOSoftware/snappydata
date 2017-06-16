@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData Team">
+  
+  <title>SnappyData Properties - SnappyData Documentation</title>
+  
+
+  <link rel="shortcut icon" href="../../favicon.ico">
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/highlight.css">
+  <link href="../../css/toc.css" rel="stylesheet">
+  <link href="../../css/menu.css" rel="stylesheet">
+  <link href="../../css/images.css" rel="stylesheet">
+  <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../extra.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "SnappyData Properties";
+    var mkdocs_page_input_path = "configuring_cluster/property_description.md";
+    var mkdocs_page_url = "/configuring_cluster/property_description/";
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js"></script>
+  <script src="../../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
+  <script src="../../js/theme.js"></script> 
+  <script src="../../js/menu.js"></script>
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../..">Overview</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/">Download and Install</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/">How Tos</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../architecture/">Architecture</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration/">Configuring the Cluster</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Configuring the Cluster</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuring_cluster/">Configuration</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">SnappyData Properties</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#list-of-properties">List of Properties</a></li>
+                
+                    <li><a class="toctree-l4" href="#sql-properties">SQL Properties</a></li>
+                
+                    <li><a class="toctree-l4" href="#sde-properties">SDE Properties</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/">Programming Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../deployment/">Affinity Modes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/">Best practices</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Best practices</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/capacity_planning/">Setting up your Cluster </a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../aqp/">Synopsis Data Engine (SDE)</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitoring/">Managing and Monitoring</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/">Reference Guides</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Reference Guides</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/">SQL Reference Guide</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>SQL Reference Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-statements/">CREATE Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>CREATE Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-diskstore/">CREATE DISKSTORE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-index/">CREATE INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-schema/">CREATE SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-sample-table/">CREATE SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-temporary-table/">CREATE TEMPORARY TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/delete/">DELETE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-statements/">DROP Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DROP Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-diskstore/">DROP DISKSTORE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-function/">DROP FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-index/">DROP INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/put-into/">PUT INTO</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/select/">SELECT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/set-schema/">SET SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/truncate-table/">TRUNCATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Inbuilt System Procedures</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/dump-stacks/">DUMP_STACKS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/">REBALANCE_ALL_BUCKETS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/set_critical_heap_percentage/">SET_CRITICAL_HEAP_PERCENTAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/set-trace-flag/">SET_TRACE_FLAG</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/system_tables/">System Tables</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>System Tables</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/members/">MEMBERS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/memoryanalytics/">MEMORYANALYTICS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/system_tables/sysdiskstores/">SYSDISKSTORES</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-launcher/">Command Line Utilities</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Command Line Utilities</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-backup/">backup</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-version/">version</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/store_command_reference/">Snappy-SQL Shell Interactive Commands</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Snappy-SQL Shell Interactive Commands</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/connect_client/">connect client</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/connect/">connect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/describe/">describe</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/disconnect/">disconnect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/elapsedtime/">elapsedtime</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/exit/">exit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/maximumdisplaywidth/">MaximumDisplayWidth</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/set_connection/">set connection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/interactive_commands/show/">show</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/config_parameters/">Configuration Parameters</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Configuration Parameters</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ack-severe-alert-threshold/">ack-severe-alert-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ack-wait-threshold/">ack-wait-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/archive-disk-space-limit/">archive-disk-space-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/archive-file-size-limit/">archive-file-size-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/bind-address/">bind-address</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/enable-network-partition-detection/">enable-network-partition-detection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/enable-stats/">enable-stats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/enable-time-statistics/">enable-time-statistics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/enforce-unique-host/">enforce-unique-host</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/init-scripts/">init-scripts</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/locators/">locators</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/log-file/">log-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/log-level/">log-level</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/member-timeout/">member-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/redundancy-zone/">redundancy-zone</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/start-locator/">start-locator</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/statistic-archive-file/">statistic-archive-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/statistic-sample-rate/">statistic-sample-rate</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/statistic-sampling-enabled/">statistic-sampling-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/sys-disk-dir/">sys-disk-dir</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/user/">user</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../additional_docs/">Additional Information</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../techsupport/">Contact and Support</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../LICENSE/">License</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">SnappyData Documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Configuring the Cluster &raquo;</li>
+        
+      
+    
+    <li>SnappyData Properties</li>
+<!--    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li> !-->
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="list-of-properties">List of Properties</h1>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+<th>Components</br></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-J</td>
+<td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
+<td>Server</br>Lead</br>Locator</td>
+</tr>
+<tr>
+<td>-dir</td>
+<td>Working directory of the server that will contain the SnappyData Server status file and will be the default location for log file, persistent files, data dictionary, and so forth (defaults to the current directory.</td>
+<td>Server</br>Lead</br>Locator</br></td>
+</tr>
+<tr>
+<td>-classpath</td>
+<td>Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.</td>
+<td>Server</br>Lead</br>Locator</td>
+</tr>
+<tr>
+<td><a id="heap-size">-heap-size</td>
+<td>Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the <code>eviction-heap-percentage</code> to 81% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td>Server</br>Lead</br>Locator</td>
+</tr>
+<tr>
+<td><a id="memory-size"></a>-memory-size</td>
+<td>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
+<td>Server</br>Lead</td>
+</tr>
+<tr>
+<td>-locators</td>
+<td>List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use, and must be configured consistently for every member of the distributed system.</td>
+<td>Server</br>Lead</br>Locator</td>
+</tr>
+<tr>
+<td><a id="rebalance"></a>-rebalance</td>
+<td>Causes the new member to trigger a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option.</td>
+<td>Server</td>
+</tr>
+<tr>
+<td>-bind-address</td>
+<td>IP address on which the locator is bound. The default behavour is to bind to all local addresses.</td>
+<td>Server</br>Lead</br>Locator</td>
+</tr>
+<tr>
+<td>-critical-heap-percentage</td>
+<td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
+<td>Server</br>Lead</td>
+</tr>
+<tr>
+<td>-eviction-heap-percentage</td>
+<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</td>
+<td>Server</br>Lead</br></td>
+</tr>
+<tr>
+<td>-critical-off-heap-percentage</td>
+<td>Sets the critical threshold for off-heap memory usage in percentage, 0-100. </br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of off-heap memory.</td>
+<td>Server</td>
+</tr>
+<tr>
+<td>-eviction-off-heap-percentage</td>
+<td>Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 81% of whatever is set for <code>-critical-off-heap-percentage</code>. </br>Use this switch to override the default.</td>
+<td>Server</td>
+</tr>
+<tr>
+<td>-log-file</td>
+<td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
+<td>Server</br>Lead</br>Locator</td>
+</tr>
+<tr>
+<td>-J-Dgemfirexd.hostname-for-clients</td>
+<td>Hostname or IP address that is sent to clients so they can connect to the locator. The default is the <code>bind-address</code> of the locator.</td>
+<td>Server</td>
+</tr>
+<tr>
+<td>-peer-discovery-address</td>
+<td>Use this as value for port in the "host:port" value of "-locators" property</td>
+<td>Locator</td>
+</tr>
+<tr>
+<td>-peer-discovery-port</td>
+<td>Port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.</td>
+<td>Locator</td>
+</tr>
+<tr>
+<td>-member-timeout</td>
+<td>Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
+<td>Server</br>Locator</br>Lead</td>
+</tr>
+<tr>
+<td>snappydata.column.batchSize</td>
+<td>The default size of blocks to use for storage in the SnappyData column store. The default value is 25165824 (24M).</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td><a id="thrift-properties"></a>thrift-ssl</td>
+<td>Specifies if you want to enable or disable SSL. Values: true or false</td>
+<td>Server</td>
+</tr>
+<tr>
+<td>thrift-ssl-properties</td>
+<td>Comma-separated SSL properties including:</br><code>protocol</code>: default "TLS",</br><code>enabled-protocols</code>: enabled protocols separated by ":"</br><code>cipher-suites</code>: enabled cipher suites separated by ":"</br><code>client-auth</code>=(true or false): if client also needs to be authenticated </br><code>keystore</code>: path to key store file </br><code>keystore-type</code>: the type of key-store (default "JKS") </br><code>keystore-password</code>: password for the key store file</br><code>keymanager-type</code>: the type of key manager factory </br><code>truststore</code>: path to trust store file</br><code>truststore-type</code>: the type of trust-store (default "JKS")</br><code>truststore-password</code>: password for the trust store file </br><code>trustmanager-type</code>: the type of trust manager factory </br></td>
+<td>Server</td>
+</tr>
+<tr>
+<td>spark.driver.maxResultSize</td>
+<td>Limit of total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M, or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in lead.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>spark.executor.cores</td>
+<td>The number of cores to use on each server.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>spark.network.timeout</td>
+<td>Default timeout for all network interactions while running queries.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>spark.local.dir</td>
+<td>Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.</td>
+<td>Lead</td>
+</tr>
+</tbody>
+</table>
+<p><a id="sql-properties"></a></p>
+<h2 id="sql-properties">SQL Properties</h2>
+<p>These properites can be set in the snappy-shell or using the configuration properties in the conf/leads file.</p>
+<p>For example: Set in the snappy SQL shell</p>
+<pre><code>snappy&gt; connect client 'localhost:1527';
+snappy&gt; set snappydata.column.batchSize=108080;
+</code></pre>
+
+<p>This will set the property for the snappy SQL shell's session.</p>
+<p>Set in the conf/leads file</p>
+<pre><code>$ cat conf/leads
+# This goes to the default directory 
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>snappydata.column.batchSize</td>
+<td>The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes) that will be used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the <code>create table</code> DDL.</td>
+</tr>
+<tr>
+<td>snappydata.column.maxDeltaRows</td>
+<td>The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by <code>ColumnBatchSize</code> property, but this allows a lower limit on number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of <code>ColumnBatchSize</code> and this property is hit first. It can also be set for each table in the <code>create table</code> DDL, else this setting is used for the <code>create table</code></td>
+</tr>
+<tr>
+<td>snappydata.hashJoinSize</td>
+<td>The join would be converted into a hash join if the table is of size less than the <code>hashJoinSize</code>. Default value is 100 MB.</td>
+</tr>
+<tr>
+<td>snappydata.hashAggregateSize</td>
+<td>Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (with b/k/m/g/t/p suffixes for units) and not the output size. Set this only if there are queries that can return very large number of rows in aggregation results. Default value is set to 0b which means, no limit is set on the size, so the optimized hash aggregation is always used.</td>
+</tr>
+</tbody>
+</table>
+<p><a id="sde-properties"></a></p>
+<h2 id="sde-properties">SDE Properties</h2>
+<p>These <a href="../../aqp/">SDE</a> properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.</p>
+<p>For example: Set in the snappy SQL shell</p>
+<pre><code>snappy&gt; connect client 'localhost:1527';
+snappy&gt; set snappydata.flushReservoirThreshold=20000;
+</code></pre>
+
+<p>Set in the conf/leads file</p>
+<pre><code>$ cat conf/leads
+# This goes to the default directory 
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080 -spark.sql.aqp.error=0.5
+</code></pre>
+
+<p>This sets the property for the snappy-shell's session.</p>
+<table>
+<thead>
+<tr>
+<th>Properties</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>snappydata.flushReservoirThreshold</td>
+<td>Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.</td>
+</tr>
+<tr>
+<td>spark.sql.aqp.numBootStrapTrials</td>
+<td>Number of bootstrap trials to do for calculating error bounds. Default value is 100.</td>
+</tr>
+<tr>
+<td>spark.sql.aqp.error</td>
+<td>Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. Default value is 0.2}</td>
+</tr>
+<tr>
+<td>spark.sql.aqp.confidence</td>
+<td>Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. Default value is 0.95</td>
+</tr>
+<tr>
+<td>sparksql.aqp.behavior</td>
+<td>The action to be taken if the error computed goes oustide the error tolerance limit. Default value is <code>DO_NOTHING</code></td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../programming_guide/" class="btn btn-neutral float-right" title="Programming Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../configuring_cluster/" class="btn btn-neutral" title="Configuration"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2017 SnappyData Inc.</p>
+    
+  </div>
+
+<b>DISCLAIMER:</b>
+This document is work-in-progress and will be progressively updated.
+
+ <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../configuring_cluster/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../programming_guide/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

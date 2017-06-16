@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>execution - snappydata_2.11 0.8 API - org.apache.spark.sql.execution</title>
-          <meta name="description" content="execution - snappydata 2.11 0.8 API - org.apache.spark.sql.execution" />
-          <meta name="keywords" content="execution snappydata 2.11 0.8 API org.apache.spark.sql.execution" />
+          <title>execution - snappydata_2.11 0.9 API - org.apache.spark.sql.execution</title>
+          <meta name="description" content="execution - snappydata 2.11 0.9 API - org.apache.spark.sql.execution" />
+          <meta name="keywords" content="execution snappydata 2.11 0.9 API org.apache.spark.sql.execution" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -316,7 +316,7 @@ InMemoryRelation.  This relation is automatically substituted query plans that r
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CachedPlanHelperExec.html"><span class="name">CachedPlanHelperExec</span></a><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>, <span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CachedPlanHelperExec.html"><span class="name">CachedPlanHelperExec</span></a><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CachedPlanHelperExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
@@ -403,6 +403,24 @@ the 100 new partitions will claim 10 of the current partitions.
       </a>
     </span>
       <p class="shortcomment cmt">A Partitioner that might group together one or more partitions from the parent.</p>
+    </li><li name="org.apache.spark.sql.execution.CodegenSparkFallback" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CodegenSparkFallbackextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
+      <a id="CodegenSparkFallback:CodegenSparkFallback"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CodegenSparkFallback.html"><span class="name">CodegenSparkFallback</span></a><span class="params">(<span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CodegenSparkFallbackextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Catch exceptions in code generation of SnappyData plans and fallback
+to Spark plans as last resort (including non-code generated paths).</p>
     </li><li name="org.apache.spark.sql.execution.CodegenSupport" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="CodegenSupportextendsSparkPlan"></a>
       <a id="CodegenSupport:CodegenSupport"></a>
@@ -889,23 +907,6 @@ that consumes an RDD iterator of InternalRow.
       </a>
     </span>
       <p class="shortcomment cmt">Logical plan node for scanning data from an RDD.</p>
-    </li><li name="org.apache.spark.sql.execution.LongKey" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="LongKeyextendsAnyRef"></a>
-      <a id="LongKey:LongKey"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="LongKey.html"><span class="name">LongKey</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@LongKeyextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.MapElementsExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MapElementsExecextendsSparkPlanwithObjectConsumerExecwithObjectProducerExecwithCodegenSupportwithProductwithSerializable"></a>
       <a id="MapElementsExec:MapElementsExec"></a>
@@ -965,6 +966,23 @@ all elements in the group.  The result of this function is flattened before bein
       <p class="shortcomment cmt">Applies the given function to input object iterator.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to input object iterator.
 The output of its child must be a single-field row containing the input object.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.NonRecursivePlans" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="NonRecursivePlansextendsAnyRef"></a>
+      <a id="NonRecursivePlans:NonRecursivePlans"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="NonRecursivePlans.html"><span class="name">NonRecursivePlans</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@NonRecursivePlansextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.ObjectConsumerExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ObjectConsumerExecextendsSparkPlanwithUnaryExecNode"></a>
       <a id="ObjectConsumerExec:ObjectConsumerExec"></a>
@@ -1035,48 +1053,6 @@ for a HashJoin.</p><p>Overall this map is 5-10X faster than UnsafeFixedWidthAggr
 and 2-4X faster than VectorizedHashMapGenerator. It is generic enough
 to be used for both group by aggregation as well as for HashJoins.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.ObjectHashSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ObjectHashSet[T&lt;:AnyRef]extendsIterable[T]withSerializable"></a>
-      <a id="ObjectHashSet[T&lt;:AnyRef]:ObjectHashSet[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ObjectHashSet.html"><span class="name">ObjectHashSet</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="result"> extends <span class="extype" name="java.lang.Iterable">Iterable</span>[<span class="extype" name="org.apache.spark.sql.execution.ObjectHashSet.T">T</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ObjectHashSet[T&lt;:AnyRef]extendsIterable[T]withSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A fast hash set implementation for non-null data.</p><div class="fullcomment"><div class="comment cmt"><p>A fast hash set implementation for non-null data. This hash set supports
-insertions and updates, but not deletions. It is much faster than Java's
-standard HashSet while using much less memory overhead.</p><p>A special feature of this set is that it allows using the key objects
-for storing additional data too and allows update of the same by the new
-passed in key when it matches existing key in the map. Hence it can be
-used as a more efficient map that uses a single object for both key and
-value parts (and user's key object can be coded to be so).</p><p>Adapted from Spark's OpenHashSet implementation. It deliberately uses
-java interfaces to keep byte code overheads minimal.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.execution.ObjectHashSetMemoryConsumer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ObjectHashSetMemoryConsumerextendsMemoryConsumer"></a>
-      <a id="ObjectHashSetMemoryConsumer:ObjectHashSetMemoryConsumer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ObjectHashSetMemoryConsumer.html"><span class="name">ObjectHashSetMemoryConsumer</span></a><span class="result"> extends <a href="../../memory/MemoryConsumer.html" class="extype" name="org.apache.spark.memory.MemoryConsumer">MemoryConsumer</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ObjectHashSetMemoryConsumerextendsMemoryConsumer" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.ObjectProducerExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ObjectProducerExecextendsSparkPlan"></a>
       <a id="ObjectProducerExec:ObjectProducerExec"></a>
@@ -1853,23 +1829,6 @@ last time slot and short fall from previous rounds.</p>
 meta-data including number of samples collected, total number of rows
 in the stratum seen so far, the QCS key, reservoir of samples etc.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.StringKey" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="StringKeyextendsAnyRef"></a>
-      <a id="StringKey:StringKey"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StringKey.html"><span class="name">StringKey</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StringKeyextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.SubqueryExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SubqueryExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="SubqueryExec:SubqueryExec"></a>
@@ -1888,19 +1847,19 @@ in the stratum seen so far, the QCS key, reservoir of samples etc.
     </span>
       <p class="shortcomment cmt">Physical plan for a subquery.</p><div class="fullcomment"><div class="comment cmt"><p>Physical plan for a subquery.</p><p>This is used to generate tree string for SparkScalarSubquery.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="TableInsertExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportOnExecutor"></a>
-      <a id="TableInsertExec:TableInsertExec"></a>
+    </li><li name="org.apache.spark.sql.execution.TableExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TableExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportOnExecutor"></a>
+      <a id="TableExec:TableExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="TableInsertExec.html"><span class="name">TableInsertExec</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a></span>
+        <a href="TableExec.html"><span class="name">TableExec</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TableInsertExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportOnExecutor" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TableExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportOnExecutor" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2361,9 +2320,9 @@ pool and connection properties.</p><p>Supports Tomcat-JDBC pool and HikariCP.
 Depends only on the presence of dictionary per batch of rows (where the batch
 must be substantially greater than its dictionary for optimization to help).</p><p>For single column hash maps (groups or joins), it can be turned into a flat
 indexed array instead of a map. Create an array of class objects as stored
-in <a href="ObjectHashSet.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashSet">ObjectHashSet</a> having the length same as dictionary so that dictionary
+in <span class="extype" name="ObjectHashSet">ObjectHashSet</span> having the length same as dictionary so that dictionary
 index can be used to directly lookup the array. Then for the first lookup
-into the array for a dictionary index, lookup the actual <a href="ObjectHashSet.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashSet">ObjectHashSet</a>
+into the array for a dictionary index, lookup the actual <span class="extype" name="ObjectHashSet">ObjectHashSet</span>
 for the key to find the map entry object and insert into the array.
 An alternative would be to pre-populate the array by making one pass through
 the dictionary, but it may not be efficient if many of the entries in the

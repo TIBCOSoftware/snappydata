@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyAQPParser - snappydata_2.11 0.8 API - org.apache.spark.sql.SnappyAQPParser</title>
-          <meta name="description" content="SnappyAQPParser - snappydata 2.11 0.8 API - org.apache.spark.sql.SnappyAQPParser" />
-          <meta name="keywords" content="SnappyAQPParser snappydata 2.11 0.8 API org.apache.spark.sql.SnappyAQPParser" />
+          <title>SnappyAQPParser - snappydata_2.11 0.9 API - org.apache.spark.sql.SnappyAQPParser</title>
+          <meta name="description" content="SnappyAQPParser - snappydata 2.11 0.9 API - org.apache.spark.sql.SnappyAQPParser" />
+          <meta name="keywords" content="SnappyAQPParser snappydata 2.11 0.9 API org.apache.spark.sql.SnappyAQPParser" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -2466,7 +2466,7 @@
       <a id="SET_NOSELECT:Rule0"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -2483,7 +2483,7 @@
       <a id="SET_SELECT:Rule0"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -3567,6 +3567,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Parser</dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyParser#addParamLiteralToContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addParamLiteralToContext(p:org.apache.spark.sql.catalyst.expressions.ParamLiteral):Unit"></a>
+      <a id="addParamLiteralToContext(ParamLiteral):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addParamLiteralToContext</span><span class="params">(<span name="p">p: <a href="catalyst/expressions/ParamLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyAQPParser@addParamLiteralToContext(p:org.apache.spark.sql.catalyst.expressions.ParamLiteral):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyParser.html" class="extype" name="org.apache.spark.sql.SnappyParser">SnappyParser</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyParser#andExpression" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="andExpression:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="andExpression:Rule1[Expression]"></a>
@@ -3755,13 +3772,13 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappyBaseParser#caseSensitive" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.SnappyBaseParser#caseSensitive" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="caseSensitive:Boolean"></a>
       <a id="caseSensitive:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">caseSensitive</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
@@ -3771,7 +3788,7 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
     </li><li name="org.parboiled2.RuleDSLBasics#ch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ch(c:Char):org.parboiled2.Rule0"></a>
       <a id="ch(Char):Rule0"></a>
@@ -5454,6 +5471,23 @@ to incorrect DataType definition.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyParser#paramLiteralQuestionMark" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="paramLiteralQuestionMark:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.expressions.ParamLiteral]"></a>
+      <a id="paramLiteralQuestionMark:Rule1[ParamLiteral]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">paramLiteralQuestionMark</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<a href="catalyst/expressions/ParamLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyAQPParser@paramLiteralQuestionMark:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.expressions.ParamLiteral]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyParser.html" class="extype" name="org.apache.spark.sql.SnappyParser">SnappyParser</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyParser#paramliteral" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="paramliteral:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.expressions.ParamLiteral]"></a>
       <a id="paramliteral:Rule1[ParamLiteral]"></a>
@@ -5476,7 +5510,7 @@ to incorrect DataType definition.
       <a id="parse[T](String,⇒Try[T]):T"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -5670,6 +5704,23 @@ to incorrect DataType definition.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyParser.html" class="extype" name="org.apache.spark.sql.SnappyParser">SnappyParser</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyBaseParser#questionMark" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="questionMark:org.parboiled2.Rule0"></a>
+      <a id="questionMark:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">questionMark</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyAQPParser@questionMark:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
     </li><li name="org.parboiled2.RuleDSLCombinators#quiet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="quiet[I&lt;:shapeless.HList,O&lt;:shapeless.HList](r:org.parboiled2.Rule[I,O]):org.parboiled2.Rule[I,O]"></a>
       <a id="quiet[I&lt;:HList,O&lt;:HList](Rule[I,O]):Rule[I,O]"></a>

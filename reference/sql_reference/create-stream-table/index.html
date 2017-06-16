@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData Team">
+  
+  <title>CREATE STREAM TABLE - SnappyData Documentation</title>
+  
+
+  <link rel="shortcut icon" href="../../../favicon.ico">
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/highlight.css">
+  <link href="../../../css/toc.css" rel="stylesheet">
+  <link href="../../../css/menu.css" rel="stylesheet">
+  <link href="../../../css/images.css" rel="stylesheet">
+  <link href="../../../css/style.css" rel="stylesheet">
+  <link href="../../../extra.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "CREATE STREAM TABLE";
+    var mkdocs_page_input_path = "reference/sql_reference/create-stream-table.md";
+    var mkdocs_page_url = "/reference/sql_reference/create-stream-table/";
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js"></script>
+  <script src="../../../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
+  <script src="../../../js/theme.js"></script> 
+  <script src="../../../js/menu.js"></script>
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../..">Overview</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../install/">Download and Install</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/">How Tos</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../architecture/">Architecture</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuration/">Configuring the Cluster</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Configuring the Cluster</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/configuring_cluster/">Configuration</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/property_description/">SnappyData Properties</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../programming_guide/">Programming Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../deployment/">Affinity Modes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/">Best practices</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Best practices</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/capacity_planning/">Setting up your Cluster </a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../aqp/">Synopsis Data Engine (SDE)</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../">Reference Guides</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Reference Guides</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../sql_reference/">SQL Reference Guide</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>SQL Reference Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-statements/">CREATE Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>CREATE Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-diskstore/">CREATE DISKSTORE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-function/">CREATE FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-index/">CREATE INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-schema/">CREATE SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-table/">CREATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-sample-table/">CREATE SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-temporary-table/">CREATE TEMPORARY TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">CREATE STREAM TABLE</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#create-stream-table">CREATE STREAM TABLE</a></li>
+                
+                    <li><a class="toctree-l4" href="#description">Description</a></li>
+                
+                    <li><a class="toctree-l4" href="#example">Example</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../delete/">DELETE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-statements/">DROP Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DROP Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-diskstore/">DROP DISKSTORE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-function/">DROP FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-index/">DROP INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-table/">DROP TABLE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../put-into/">PUT INTO</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../select/">SELECT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../set-schema/">SET SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../truncate-table/">TRUNCATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../update/">UPDATE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Inbuilt System Procedures</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/dump-stacks/">DUMP_STACKS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/rebalance-all-buckets/">REBALANCE_ALL_BUCKETS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/set_critical_heap_percentage/">SET_CRITICAL_HEAP_PERCENTAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/set-trace-flag/">SET_TRACE_FLAG</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/system_tables/">System Tables</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>System Tables</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/members/">MEMBERS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/memoryanalytics/">MEMORYANALYTICS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/sysdiskstores/">SYSDISKSTORES</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-launcher/">Command Line Utilities</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Command Line Utilities</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-backup/">backup</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/store-version/">version</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/store_command_reference/">Snappy-SQL Shell Interactive Commands</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Snappy-SQL Shell Interactive Commands</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/connect_client/">connect client</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/connect/">connect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/describe/">describe</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/disconnect/">disconnect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/elapsedtime/">elapsedtime</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/exit/">exit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/maximumdisplaywidth/">MaximumDisplayWidth</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/set_connection/">set connection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/show/">show</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/config_parameters/">Configuration Parameters</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Configuration Parameters</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/ack-severe-alert-threshold/">ack-severe-alert-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/ack-wait-threshold/">ack-wait-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/archive-disk-space-limit/">archive-disk-space-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/archive-file-size-limit/">archive-file-size-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/bind-address/">bind-address</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enable-network-partition-detection/">enable-network-partition-detection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enable-stats/">enable-stats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enable-time-statistics/">enable-time-statistics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enforce-unique-host/">enforce-unique-host</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/init-scripts/">init-scripts</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/locators/">locators</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/log-file/">log-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/log-level/">log-level</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/member-timeout/">member-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/redundancy-zone/">redundancy-zone</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/start-locator/">start-locator</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/statistic-archive-file/">statistic-archive-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/statistic-sample-rate/">statistic-sample-rate</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/statistic-sampling-enabled/">statistic-sampling-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/sys-disk-dir/">sys-disk-dir</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/user/">user</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../additional_docs/">Additional Information</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../techsupport/">Contact and Support</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../LICENSE/">License</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">SnappyData Documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>SQL Reference Guide &raquo;</li>
+        
+      
+        
+          <li>CREATE Statements &raquo;</li>
+        
+      
+    
+    <li>CREATE STREAM TABLE</li>
+<!--    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li> !-->
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="create-stream-table">CREATE STREAM TABLE</h1>
+<p><strong>To Create Stream Table:</strong></p>
+<pre><code>// DDL for creating a stream table
+CREATE STREAM TABLE [IF NOT EXISTS] table_name
+    ( column-definition [ , column-definition  ] * )
+    USING kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream
+    OPTIONS (
+    // multiple stream source specific options
+      storagelevel 'cache-data-option',
+      rowConverter 'rowconverter-class-name',
+      topics 'comma-seperated-topic-name',
+      kafkaParams 'kafka-related-params',
+      consumerKey 'consumer-key',
+      consumerSecret 'consumer-secret',
+      accessToken 'access-token',
+      accessTokenSecret 'access-token-secret',
+      hostname 'socket-streaming-hostname',
+      port 'socket-streaming-port-number',
+      directory 'file-streaming-directory'
+    )
+</code></pre>
+
+<p>For more information on column-definition, refer to <a href="../create-table/#column-definition">Column Definition For Column Table</a>.</p>
+<p>Refer to these sections for more information on <a href="../create-table/">Creating Table</a>, <a href="../create-sample-table/">Creating Sample Table</a>, <a href="../create-external-table/">Creating External Table</a> and <a href="../create-temporary-table/">Creating Temporary Table</a>.</p>
+<h2 id="description">Description</h2>
+<p>Create a stream table using a stream data source. If a table with the same name already exists in the database, an exception will be thrown.</p>
+<p><code>USING &lt;data source&gt;</code> </br>
+Specify the streaming source to be used for this table.</p>
+<p><code>storageLevel</code></br>
+Provides different trade-offs between memory usage and CPU efficiency.</p>
+<p><code>rowConverter</code></br>
+Converts the unstructured streaming data to a set of rows.</p>
+<p><code>topics</code></br>
+Subscribed Kafka topics.</p>
+<p><code>kafkaParams</code></br>
+Kafka configuration parameters such as <code>metadata.broker.list</code>, <code>bootstrap.servers</code> etc.</p>
+<p><code>directory</code></br>
+HDFS directory to monitor for the new file.</p>
+<p><code>hostname</code></br>
+Hostname to connect to, for receiving data.</p>
+<p><code>port</code></br>
+Port to connect to, for receiving data.</p>
+<p><code>consumerKey</code></br>
+Consumer Key (API Key) for your Twitter account.</p>
+<p><code>consumerSecret</code></br>
+Consumer Secret key for your Twitter account.</p>
+<p><code>accessToken</code></br>
+Access token for your Twitter account.</p>
+<p><code>accessTokenSecret</code></br>
+Access token secret for your Twitter account.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You need to register to <a href="https://apps.twitter.com/">https://apps.twitter.com/</a> to get the <code>consumerKey</code>, <code>consumerSecret</code>, <code>accessToken</code> and <code>accessTokenSecret</code> credentials.</p>
+</div>
+<h2 id="example">Example</h2>
+<pre><code>//create a connection
+snappy&gt; connect client 'localhost:1527';
+
+// Initialize streaming with batchInterval of 2 seconds
+snappy&gt; streaming init 2secs;
+
+// Create a stream table
+snappy&gt; create stream table streamTable (id long, text string, fullName string, country string,
+        retweets int, hashtag  string) using twitter_stream options (consumerKey '', consumerSecret '',
+        accessToken '', accessTokenSecret '', rowConverter 'org.apache.spark.sql.streaming.TweetToRowsConverter');
+
+// Start the streaming
+snappy&gt; streaming start;
+
+//Run ad-hoc queries on the streamTable on current batch of data
+snappy&gt; select id, text, fullName from streamTable where text like '%snappy%'
+
+// Drop the streamTable
+snappy&gt; drop table streamTable;
+
+// Stop the streaming
+snappy&gt; streaming stop;
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../delete/" class="btn btn-neutral float-right" title="DELETE">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../create-temporary-table/" class="btn btn-neutral" title="CREATE TEMPORARY TABLE"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2017 SnappyData Inc.</p>
+    
+  </div>
+
+<b>DISCLAIMER:</b>
+This document is work-in-progress and will be progressively updated.
+
+ <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../create-temporary-table/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../delete/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

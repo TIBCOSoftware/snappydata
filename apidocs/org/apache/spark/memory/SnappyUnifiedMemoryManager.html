@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyUnifiedMemoryManager - snappydata_2.11 0.8 API - org.apache.spark.memory.SnappyUnifiedMemoryManager</title>
-          <meta name="description" content="SnappyUnifiedMemoryManager - snappydata 2.11 0.8 API - org.apache.spark.memory.SnappyUnifiedMemoryManager" />
-          <meta name="keywords" content="SnappyUnifiedMemoryManager snappydata 2.11 0.8 API org.apache.spark.memory.SnappyUnifiedMemoryManager" />
+          <title>SnappyUnifiedMemoryManager - snappydata_2.11 0.9 API - org.apache.spark.memory.SnappyUnifiedMemoryManager</title>
+          <meta name="description" content="SnappyUnifiedMemoryManager - snappydata 2.11 0.9 API - org.apache.spark.memory.SnappyUnifiedMemoryManager" />
+          <meta name="keywords" content="SnappyUnifiedMemoryManager snappydata 2.11 0.9 API org.apache.spark.memory.SnappyUnifiedMemoryManager" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -28,10 +28,12 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img alt="Class" src="../../../../lib/class_big.png" />
+        <a href="SnappyUnifiedMemoryManager$.html" title="See companion object"><img alt="Class/Object" src="../../../../lib/class_to_object_big.png" /></a>
         <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="package.html" class="extype" name="org.apache.spark.memory">memory</a></p>
-        <h1>SnappyUnifiedMemoryManager</h1><h3><span class="morelinks"><div>Related Doc:
-            <a href="package.html" class="extype" name="org.apache.spark.memory">package memory</a>
+        <h1><a href="SnappyUnifiedMemoryManager$.html" title="See companion object">SnappyUnifiedMemoryManager</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="SnappyUnifiedMemoryManager$.html" title="See companion object">object SnappyUnifiedMemoryManager</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.memory">package memory</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
@@ -108,6 +110,23 @@ to allocate the space.
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@&lt;init&gt;(conf:org.apache.spark.SparkConf,numCores:Int):org.apache.spark.memory.SnappyUnifiedMemoryManager" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(conf:org.apache.spark.SparkConf,numCores:Int,tempManager:Boolean):org.apache.spark.memory.SnappyUnifiedMemoryManager"></a>
+      <a id="&lt;init&gt;:SnappyUnifiedMemoryManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SnappyUnifiedMemoryManager</span><span class="params">(<span name="conf">conf: <a href="../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="numCores">numCores: <span class="extype" name="scala.Int">Int</span></span>, <span name="tempManager">tempManager: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@&lt;init&gt;(conf:org.apache.spark.SparkConf,numCores:Int,tempManager:Boolean):org.apache.spark.memory.SnappyUnifiedMemoryManager" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -278,6 +297,26 @@ memory and acquiring unroll memory. For instance, the memory management model in
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>UnifiedMemoryManager</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#changeOffHeapOwnerToStorage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="changeOffHeapOwnerToStorage(buffer:java.nio.ByteBuffer,allowNonAllocator:Boolean):Unit"></a>
+      <a id="changeOffHeapOwnerToStorage(ByteBuffer,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">changeOffHeapOwnerToStorage</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="allowNonAllocator">allowNonAllocator: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@changeOffHeapOwnerToStorage(buffer:java.nio.ByteBuffer,allowNonAllocator:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Change the off-heap owner to mark it being used for storage.</p><div class="fullcomment"><div class="comment cmt"><p>Change the off-heap owner to mark it being used for storage.
+Passing the owner as null allows moving ByteBuffers not allocated
+by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be also changed and freshly accounted.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -411,69 +450,103 @@ memory and acquiring unroll memory. For instance, the memory management model in
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getExecutionPoolSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getExecutionPoolSize:Long"></a>
-      <a id="getExecutionPoolSize:Long"></a>
+      <a id="getExecutionPoolSize(memoryMode:org.apache.spark.memory.MemoryMode):Long"></a>
+      <a id="getExecutionPoolSize(MemoryMode):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getExecutionPoolSize</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">getExecutionPoolSize</span><span class="params">(<span name="memoryMode">memoryMode: <a href="MemoryMode.html" class="extype" name="org.apache.spark.memory.MemoryMode">MemoryMode</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getExecutionPoolSize:Long" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getExecutionPoolSize(memoryMode:org.apache.spark.memory.MemoryMode):Long" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getExecutionPoolUsedMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getExecutionPoolUsedMemory:Long"></a>
-      <a id="getExecutionPoolUsedMemory:Long"></a>
+      <a id="getExecutionPoolUsedMemory(memoryMode:org.apache.spark.memory.MemoryMode):Long"></a>
+      <a id="getExecutionPoolUsedMemory(MemoryMode):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getExecutionPoolUsedMemory</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">getExecutionPoolUsedMemory</span><span class="params">(<span name="memoryMode">memoryMode: <a href="MemoryMode.html" class="extype" name="org.apache.spark.memory.MemoryMode">MemoryMode</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getExecutionPoolUsedMemory:Long" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getExecutionPoolUsedMemory(memoryMode:org.apache.spark.memory.MemoryMode):Long" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getOffHeapMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getOffHeapMemory(objectName:String):Long"></a>
+      <a id="getOffHeapMemory(String):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getOffHeapMemory</span><span class="params">(<span name="objectName">objectName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getOffHeapMemory(objectName:String):Long" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getStoragePoolMemoryUsed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getStoragePoolMemoryUsed():Long"></a>
-      <a id="getStoragePoolMemoryUsed():Long"></a>
+      <a id="getStoragePoolMemoryUsed(memoryMode:org.apache.spark.memory.MemoryMode):Long"></a>
+      <a id="getStoragePoolMemoryUsed(MemoryMode):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getStoragePoolMemoryUsed</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">getStoragePoolMemoryUsed</span><span class="params">(<span name="memoryMode">memoryMode: <a href="MemoryMode.html" class="extype" name="org.apache.spark.memory.MemoryMode">MemoryMode</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getStoragePoolMemoryUsed():Long" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getStoragePoolMemoryUsed(memoryMode:org.apache.spark.memory.MemoryMode):Long" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getStoragePoolSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getStoragePoolSize:Long"></a>
-      <a id="getStoragePoolSize:Long"></a>
+      <a id="getStoragePoolSize(memoryMode:org.apache.spark.memory.MemoryMode):Long"></a>
+      <a id="getStoragePoolSize(MemoryMode):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getStoragePoolSize</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">getStoragePoolSize</span><span class="params">(<span name="memoryMode">memoryMode: <a href="MemoryMode.html" class="extype" name="org.apache.spark.memory.MemoryMode">MemoryMode</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getStoragePoolSize:Long" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@getStoragePoolSize(memoryMode:org.apache.spark.memory.MemoryMode):Long" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#hasOffHeap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasOffHeap:Boolean"></a>
+      <a id="hasOffHeap:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasOffHeap</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@hasOffHeap:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -716,6 +789,23 @@ memory and acquiring unroll memory. For instance, the memory management model in
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#logStats" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logStats():Unit"></a>
+      <a id="logStats():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logStats</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@logStats():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logTrace(⇒String,Throwable):Unit"></a>
@@ -784,23 +874,6 @@ memory and acquiring unroll memory. For instance, the memory management model in
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#maxExecutionSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="maxExecutionSize:Long"></a>
-      <a id="maxExecutionSize:Long"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">maxExecutionSize</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@maxExecutionSize:Long" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#maxHeapMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="maxHeapMemory:Long"></a>
       <a id="maxHeapMemory:Long"></a>
@@ -855,23 +928,6 @@ memory and acquiring unroll memory. For instance, the memory management model in
 the MemoryManager implementation.
 In this model, this is equivalent to the amount of memory not occupied by execution.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>UnifiedMemoryManager → MemoryManager</dd></dl></div>
-    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#maxStorageSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="maxStorageSize:Long"></a>
-      <a id="maxStorageSize:Long"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">maxStorageSize</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@maxStorageSize:Long" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -1008,23 +1064,6 @@ In this model, this is equivalent to the amount of memory not occupied by execut
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>MemoryManager</dd></dl></div>
-    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#onHeapStorageRegionSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="onHeapStorageRegionSize:Long"></a>
-      <a id="onHeapStorageRegionSize:Long"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">onHeapStorageRegionSize</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@onHeapStorageRegionSize:Long" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.memory.MemoryManager#pageSizeBytes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="pageSizeBytes:Long"></a>
       <a id="pageSizeBytes:Long"></a>
@@ -1135,6 +1174,23 @@ and then divide it by a factor of safety.
       <p class="shortcomment cmt">Set the <span class="extype" name="MemoryStore">MemoryStore</span> used by this manager to evict cached blocks.</p><div class="fullcomment"><div class="comment cmt"><p>Set the <span class="extype" name="MemoryStore">MemoryStore</span> used by this manager to evict cached blocks.
 This must be set after construction due to initialization ordering constraints.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>MemoryManager</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#shouldStopRecovery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="shouldStopRecovery():Boolean"></a>
+      <a id="shouldStopRecovery():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">shouldStopRecovery</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@shouldStopRecovery():Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.MemoryManager#storageMemoryUsed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="storageMemoryUsed:Long"></a>
       <a id="storageMemoryUsed:Long"></a>
@@ -1170,6 +1226,23 @@ This must be set after construction due to initialization ordering constraints.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#tempManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tempManager:Boolean"></a>
+      <a id="tempManager:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tempManager</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@tempManager:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#threadsWaitingForStorage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="threadsWaitingForStorage:java.util.concurrent.atomic.AtomicInteger"></a>
       <a id="threadsWaitingForStorage:AtomicInteger"></a>
@@ -1204,6 +1277,23 @@ This must be set after construction due to initialization ordering constraints.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#tryExplicitGC" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tryExplicitGC():Unit"></a>
+      <a id="tryExplicitGC():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tryExplicitGC</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyUnifiedMemoryManager@tryExplicitGC():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.memory.MemoryManager#tungstenMemoryMode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="tungstenMemoryMode:org.apache.spark.memory.MemoryMode"></a>
       <a id="tungstenMemoryMode:MemoryMode"></a>

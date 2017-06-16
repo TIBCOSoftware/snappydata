@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SerializedArray - snappydata_2.11 0.8 API - org.apache.spark.sql.catalyst.util.SerializedArray</title>
-          <meta name="description" content="SerializedArray - snappydata 2.11 0.8 API - org.apache.spark.sql.catalyst.util.SerializedArray" />
-          <meta name="keywords" content="SerializedArray snappydata 2.11 0.8 API org.apache.spark.sql.catalyst.util.SerializedArray" />
+          <title>SerializedArray - snappydata_2.11 0.9 API - org.apache.spark.sql.catalyst.util.SerializedArray</title>
+          <meta name="description" content="SerializedArray - snappydata 2.11 0.9 API - org.apache.spark.sql.catalyst.util.SerializedArray" />
+          <meta name="keywords" content="SerializedArray snappydata 2.11 0.9 API org.apache.spark.sql.catalyst.util.SerializedArray" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -219,26 +219,6 @@ endian format (little-endian) so is suitable for storage.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.util.SerializedRowData#assertIndexIsValid" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="assertIndexIsValid(index:Int):Unit"></a>
-      <a id="assertIndexIsValid(Int):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">assertIndexIsValid</span><span class="params">(<span name="index">index: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedArray@assertIndexIsValid(index:Int):Unit" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@inline</span><span class="args">()</span>
-              
-        </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.util.SerializedRowData#baseObject" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="baseObject:AnyRef"></a>
       <a id="baseObject:AnyRef"></a>
@@ -816,6 +796,43 @@ endian format (little-endian) so is suitable for storage.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedRowData#indexInvalid" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="indexInvalid(index:Int):AssertionError"></a>
+      <a id="indexInvalid(Int):AssertionError"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">indexInvalid</span><span class="params">(<span name="index">index: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AssertionError">AssertionError</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedArray@indexInvalid(index:Int):AssertionError" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedRowData#indexIsValid" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="indexIsValid(index:Int):Boolean"></a>
+      <a id="indexIsValid(Int):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">indexIsValid</span><span class="params">(<span name="index">index: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.SerializedArray@indexIsValid(index:Int):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>

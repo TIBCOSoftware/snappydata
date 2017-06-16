@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnEncoding - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding</title>
-          <meta name="description" content="ColumnEncoding - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding" />
-          <meta name="keywords" content="ColumnEncoding snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding" />
+          <title>ColumnEncoding - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding</title>
+          <meta name="description" content="ColumnEncoding - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding" />
+          <meta name="keywords" content="ColumnEncoding snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -52,15 +52,16 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Base class for encoding and decoding in columnar form. Memory layout of
-the bytes for a set of column values is:</p><pre>.----------------------- Encoding scheme (<span class="num">4</span> bytes)
-|   .------------------- <span class="std">Null</span> bitset size as number of longs N (<span class="num">4</span> bytes)
-|   |   .--------------- <span class="std">Null</span> bitset longs (<span class="num">8</span> x N bytes,
-|   |   |                                   empty <span class="kw">if</span> <span class="kw">null</span> count is zero)
-|   |   |     .--------- Encoded non-<span class="kw">null</span> elements
-V   V   V     V
-+---+---+-----+---------+
-|   |   | ... | ... ... |
-+---+---+-----+---------+
+the bytes for a set of column values is:</p><pre> .----------------------- Serialization header (<span class="num">8</span> bytes)
+|    .------------------- Encoding scheme (<span class="num">4</span> bytes)
+|   | .------------------ <span class="std">Null</span> bitset size as number of longs N (<span class="num">4</span> bytes)
+|   | | .---------------- <span class="std">Null</span> bitset longs (<span class="num">8</span> x N bytes,
+|   | | |                                    empty <span class="kw">if</span> <span class="kw">null</span> count is zero)
+|   | | |     .---------- Encoded non-<span class="kw">null</span> elements
+V   V V V     V
++---+-+-+-----+---------+
+|   | | | ... | ... ... |
++---+-+-+-----+---------+
  \-----/ \-------------/
   header      body</pre></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>

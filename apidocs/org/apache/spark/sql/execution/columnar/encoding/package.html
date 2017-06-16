@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>encoding - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.encoding</title>
-          <meta name="description" content="encoding - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.encoding" />
-          <meta name="keywords" content="encoding snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.encoding" />
+          <title>encoding - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding</title>
+          <meta name="description" content="encoding - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.encoding" />
+          <meta name="keywords" content="encoding snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.encoding" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -185,40 +185,6 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnAllocator" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="ColumnAllocatorextendsAnyRef"></a>
-      <a id="ColumnAllocator:ColumnAllocator"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="ColumnAllocator.html"><span class="name">ColumnAllocator</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@ColumnAllocatorextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ColumnDataextendsAnyRef"></a>
-      <a id="ColumnData:ColumnData"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ColumnData.html"><span class="name">ColumnData</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@ColumnDataextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ColumnDecoderextendsColumnEncoding"></a>
       <a id="ColumnDecoder:ColumnDecoder"></a>
@@ -270,15 +236,16 @@
       </a>
     </span>
       <p class="shortcomment cmt">Base class for encoding and decoding in columnar form.</p><div class="fullcomment"><div class="comment cmt"><p>Base class for encoding and decoding in columnar form. Memory layout of
-the bytes for a set of column values is:</p><pre>.----------------------- Encoding scheme (<span class="num">4</span> bytes)
-|   .------------------- <span class="std">Null</span> bitset size as number of longs N (<span class="num">4</span> bytes)
-|   |   .--------------- <span class="std">Null</span> bitset longs (<span class="num">8</span> x N bytes,
-|   |   |                                   empty <span class="kw">if</span> <span class="kw">null</span> count is zero)
-|   |   |     .--------- Encoded non-<span class="kw">null</span> elements
-V   V   V     V
-+---+---+-----+---------+
-|   |   | ... | ... ... |
-+---+---+-----+---------+
+the bytes for a set of column values is:</p><pre> .----------------------- Serialization header (<span class="num">8</span> bytes)
+|    .------------------- Encoding scheme (<span class="num">4</span> bytes)
+|   | .------------------ <span class="std">Null</span> bitset size as number of longs N (<span class="num">4</span> bytes)
+|   | | .---------------- <span class="std">Null</span> bitset longs (<span class="num">8</span> x N bytes,
+|   | | |                                    empty <span class="kw">if</span> <span class="kw">null</span> count is zero)
+|   | | |     .---------- Encoded non-<span class="kw">null</span> elements
+V   V V V     V
++---+-+-+-----+---------+
+|   | | | ... | ... ... |
++---+-+-+-----+---------+
  \-----/ \-------------/
   header      body</pre></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -845,23 +812,6 @@ V   V   V     V
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@ColumnStatsSchema" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.columnar.encoding.HeapAllocator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="HeapAllocator"></a>
-      <a id="HeapAllocator:HeapAllocator"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="HeapAllocator$.html"><span class="name">HeapAllocator</span></a><span class="result"> extends <a href="ColumnAllocator.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnAllocator">ColumnAllocator</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@HeapAllocator" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

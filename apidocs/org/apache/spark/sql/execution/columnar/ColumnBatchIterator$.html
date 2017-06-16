@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnBatchIterator - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.ColumnBatchIterator</title>
-          <meta name="description" content="ColumnBatchIterator - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.ColumnBatchIterator" />
-          <meta name="keywords" content="ColumnBatchIterator snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.ColumnBatchIterator" />
+          <title>ColumnBatchIterator - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.ColumnBatchIterator</title>
+          <meta name="description" content="ColumnBatchIterator - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.ColumnBatchIterator" />
+          <meta name="keywords" content="ColumnBatchIterator snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.ColumnBatchIterator" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -147,6 +147,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator#STATROW_COL_INDEX" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="STATROW_COL_INDEX:Int"></a>
+      <a id="STATROW_COL_INDEX:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">STATROW_COL_INDEX</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIterator$@STATROW_COL_INDEX:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="apply(batch:org.apache.spark.sql.execution.columnar.ColumnBatch):org.apache.spark.sql.execution.columnar.ColumnBatchIterator"></a>
       <a id="apply(ColumnBatch):ColumnBatchIterator"></a>
@@ -165,18 +182,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply(container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,bucketIds:java.util.Set[Integer]):org.apache.spark.sql.execution.columnar.ColumnBatchIterator"></a>
-      <a id="apply(GemFireContainer,Set[Integer]):ColumnBatchIterator"></a>
+      <a id="apply(region:com.gemstone.gemfire.internal.cache.LocalRegion,bucketIds:java.util.Set[Integer],context:org.apache.spark.TaskContext):org.apache.spark.sql.execution.columnar.ColumnBatchIterator"></a>
+      <a id="apply(LocalRegion,Set[Integer],TaskContext):ColumnBatchIterator"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="container">container: <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.GemFireContainer">GemFireContainer</span></span>, <span name="bucketIds">bucketIds: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>)</span><span class="result">: <a href="ColumnBatchIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator">ColumnBatchIterator</a></span>
+        <span class="name">apply</span><span class="params">(<span name="region">region: <span class="extype" name="com.gemstone.gemfire.internal.cache.LocalRegion">LocalRegion</span></span>, <span name="bucketIds">bucketIds: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>)</span><span class="result">: <a href="ColumnBatchIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator">ColumnBatchIterator</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIterator$@apply(container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,bucketIds:java.util.Set[Integer]):org.apache.spark.sql.execution.columnar.ColumnBatchIterator" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIterator$@apply(region:com.gemstone.gemfire.internal.cache.LocalRegion,bucketIds:java.util.Set[Integer],context:org.apache.spark.TaskContext):org.apache.spark.sql.execution.columnar.ColumnBatchIterator" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

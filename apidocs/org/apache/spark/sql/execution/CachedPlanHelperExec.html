@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CachedPlanHelperExec - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.CachedPlanHelperExec</title>
-          <meta name="description" content="CachedPlanHelperExec - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.CachedPlanHelperExec" />
-          <meta name="keywords" content="CachedPlanHelperExec snappydata 2.11 0.8 API org.apache.spark.sql.execution.CachedPlanHelperExec" />
+          <title>CachedPlanHelperExec - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.CachedPlanHelperExec</title>
+          <meta name="description" content="CachedPlanHelperExec - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.CachedPlanHelperExec" />
+          <meta name="keywords" content="CachedPlanHelperExec snappydata 2.11 0.9 API org.apache.spark.sql.execution.CachedPlanHelperExec" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -47,7 +47,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CachedPlanHelperExec</span><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>, <span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">CachedPlanHelperExec</span><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -91,7 +91,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.CachedPlanHelperExec#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(childPlan:org.apache.spark.sql.execution.CodegenSupport,session:org.apache.spark.sql.SnappySession):org.apache.spark.sql.execution.CachedPlanHelperExec"></a>
+      <a id="&lt;init&gt;(childPlan:org.apache.spark.sql.execution.CodegenSupport):org.apache.spark.sql.execution.CachedPlanHelperExec"></a>
       <a id="&lt;init&gt;:CachedPlanHelperExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CachedPlanHelperExec</span><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>, <span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span>
+        <span class="name">CachedPlanHelperExec</span><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.CachedPlanHelperExec@&lt;init&gt;(childPlan:org.apache.spark.sql.execution.CodegenSupport,session:org.apache.spark.sql.SnappySession):org.apache.spark.sql.execution.CachedPlanHelperExec" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.CachedPlanHelperExec@&lt;init&gt;(childPlan:org.apache.spark.sql.execution.CodegenSupport):org.apache.spark.sql.execution.CachedPlanHelperExec" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2045,23 +2045,6 @@ can do better should override this function.
       </a>
     </span>
       <p class="shortcomment cmt">Returns the output schema in the tree format.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the output schema in the tree format.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.CachedPlanHelperExec#session" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="session:org.apache.spark.sql.SnappySession"></a>
-      <a id="session:SnappySession"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">session</span><span class="result">: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.CachedPlanHelperExec@session:org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#simpleString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="simpleString:String"></a>
       <a id="simpleString:String"></a>

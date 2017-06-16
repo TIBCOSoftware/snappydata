@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DeletableRelation - snappydata_2.11 0.8 API - org.apache.spark.sql.sources.DeletableRelation</title>
-          <meta name="description" content="DeletableRelation - snappydata 2.11 0.8 API - org.apache.spark.sql.sources.DeletableRelation" />
-          <meta name="keywords" content="DeletableRelation snappydata 2.11 0.8 API org.apache.spark.sql.sources.DeletableRelation" />
+          <title>DeletableRelation - snappydata_2.11 0.9 API - org.apache.spark.sql.sources.DeletableRelation</title>
+          <meta name="description" content="DeletableRelation - snappydata 2.11 0.9 API - org.apache.spark.sql.sources.DeletableRelation" />
+          <meta name="keywords" content="DeletableRelation snappydata 2.11 0.9 API org.apache.spark.sql.sources.DeletableRelation" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -116,6 +116,26 @@
     </span>
       <p class="shortcomment cmt">Delete a set of row matching given criteria.</p><div class="fullcomment"><div class="comment cmt"><p>Delete a set of row matching given criteria.
 </p></div><dl class="paramcmts block"><dt class="param">filterExpr</dt><dd class="cmt"><p>SQL WHERE criteria to select rows that will be deleted</p></dd><dt>returns</dt><dd class="cmt"><p>number of rows deleted</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.DeletableRelation#getDeletePlan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getDeletePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getDeletePlan(LogicalRelation,SparkPlan):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDeletePlan</span><span class="params">(<span name="relation">relation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.DeletableRelation@getDeletePlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get a spark plan for puts.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan for puts. If the row is already present, it gets updated
+otherwise it gets inserted into the table represented by this relation.
+The result of SparkPlan execution should be a count of number of rows put.
+</p></div></div>
     </li></ol>
             </div>
 

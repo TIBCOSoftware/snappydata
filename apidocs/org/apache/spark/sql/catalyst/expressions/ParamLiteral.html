@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ParamLiteral - snappydata_2.11 0.8 API - org.apache.spark.sql.catalyst.expressions.ParamLiteral</title>
-          <meta name="description" content="ParamLiteral - snappydata 2.11 0.8 API - org.apache.spark.sql.catalyst.expressions.ParamLiteral" />
-          <meta name="keywords" content="ParamLiteral snappydata 2.11 0.8 API org.apache.spark.sql.catalyst.expressions.ParamLiteral" />
+          <title>ParamLiteral - snappydata_2.11 0.9 API - org.apache.spark.sql.catalyst.expressions.ParamLiteral</title>
+          <meta name="description" content="ParamLiteral - snappydata 2.11 0.9 API - org.apache.spark.sql.catalyst.expressions.ParamLiteral" />
+          <meta name="keywords" content="ParamLiteral snappydata 2.11 0.9 API org.apache.spark.sql.catalyst.expressions.ParamLiteral" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -47,13 +47,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ParamLiteral</span><span class="result"> extends <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></span>
+        <span class="name">ParamLiteral</span><span class="result"> extends <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> with <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="codegen/CodegenFallback.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">CodegenFallback</a>, <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a>, <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="codegen/CodegenFallback.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">CodegenFallback</a>, <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -71,7 +71,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral"><span>ParamLiteral</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Literal"><span>Literal</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback"><span>CodegenFallback</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.LeafExpression"><span>LeafExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral"><span>ParamLiteral</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant"><span>DynamicReplacableConstant</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Literal"><span>Literal</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback"><span>CodegenFallback</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.LeafExpression"><span>LeafExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -422,7 +422,7 @@ is defined (pre-order), and applies the partial function to it.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#convertedLiteral" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#convertedLiteral" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="convertedLiteral:Any"></a>
       <a id="convertedLiteral:Any"></a>
       <h4 class="signature">
@@ -438,7 +438,7 @@ is defined (pre-order), and applies the partial function to it.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Literal#dataType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dataType:org.apache.spark.sql.types.DataType"></a>
       <a id="dataType:DataType"></a>
@@ -552,7 +552,7 @@ implementations should override this to do actual code generation.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the result of evaluating this expression on a given input Row</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of evaluating this expression on a given input Row</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns the result of evaluating this expression on a given input Row</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of evaluating this expression on a given input Row</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#fastEquals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fastEquals(other:org.apache.spark.sql.catalyst.trees.TreeNode[_]):Boolean"></a>
       <a id="fastEquals(TreeNode[_]):Boolean"></a>
@@ -1600,7 +1600,9 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.catalyst.expressions.Literal">
+        <div class="parent" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">
+              <h3>Inherited from <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.Literal">
               <h3>Inherited from <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></h3>
             </div><div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>

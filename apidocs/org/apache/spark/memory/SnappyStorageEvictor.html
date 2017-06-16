@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyStorageEvictor - snappydata_2.11 0.8 API - org.apache.spark.memory.SnappyStorageEvictor</title>
-          <meta name="description" content="SnappyStorageEvictor - snappydata 2.11 0.8 API - org.apache.spark.memory.SnappyStorageEvictor" />
-          <meta name="keywords" content="SnappyStorageEvictor snappydata 2.11 0.8 API org.apache.spark.memory.SnappyStorageEvictor" />
+          <title>SnappyStorageEvictor - snappydata_2.11 0.9 API - org.apache.spark.memory.SnappyStorageEvictor</title>
+          <meta name="description" content="SnappyStorageEvictor - snappydata 2.11 0.9 API - org.apache.spark.memory.SnappyStorageEvictor" />
+          <meta name="keywords" content="SnappyStorageEvictor snappydata 2.11 0.9 API org.apache.spark.memory.SnappyStorageEvictor" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -242,18 +242,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyStorageEvictor#evictRegionData" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="evictRegionData(bytesRequired:Long):Long"></a>
-      <a id="evictRegionData(Long):Long"></a>
+      <a id="evictRegionData(bytesRequired:Long,offHeap:Boolean):Long"></a>
+      <a id="evictRegionData(Long,Boolean):Long"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">evictRegionData</span><span class="params">(<span name="bytesRequired">bytesRequired: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+        <span class="name">evictRegionData</span><span class="params">(<span name="bytesRequired">bytesRequired: <span class="extype" name="scala.Long">Long</span></span>, <span name="offHeap">offHeap: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyStorageEvictor@evictRegionData(bytesRequired:Long):Long" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyStorageEvictor@evictRegionData(bytesRequired:Long,offHeap:Boolean):Long" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -339,18 +339,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyStorageEvictor#includePartitionedRegion" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="includePartitionedRegion(region:com.gemstone.gemfire.internal.cache.PartitionedRegion):Boolean"></a>
-      <a id="includePartitionedRegion(PartitionedRegion):Boolean"></a>
+      <a id="includePartitionedRegion(region:com.gemstone.gemfire.internal.cache.PartitionedRegion,offHeap:Boolean,hasOffHeap:Boolean):Boolean"></a>
+      <a id="includePartitionedRegion(PartitionedRegion,Boolean,Boolean):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">includePartitionedRegion</span><span class="params">(<span name="region">region: <span class="extype" name="com.gemstone.gemfire.internal.cache.PartitionedRegion">PartitionedRegion</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">includePartitionedRegion</span><span class="params">(<span name="region">region: <span class="extype" name="com.gemstone.gemfire.internal.cache.PartitionedRegion">PartitionedRegion</span></span>, <span name="offHeap">offHeap: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="hasOffHeap">hasOffHeap: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.memory.SnappyStorageEvictor@includePartitionedRegion(region:com.gemstone.gemfire.internal.cache.PartitionedRegion):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.memory.SnappyStorageEvictor@includePartitionedRegion(region:com.gemstone.gemfire.internal.cache.PartitionedRegion,offHeap:Boolean,hasOffHeap:Boolean):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData Team">
+  
+  <title>backup - SnappyData Documentation</title>
+  
+
+  <link rel="shortcut icon" href="../../../favicon.ico">
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/highlight.css">
+  <link href="../../../css/toc.css" rel="stylesheet">
+  <link href="../../../css/menu.css" rel="stylesheet">
+  <link href="../../../css/images.css" rel="stylesheet">
+  <link href="../../../css/style.css" rel="stylesheet">
+  <link href="../../../extra.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "backup";
+    var mkdocs_page_input_path = "reference/command_line_utilities/store-backup.md";
+    var mkdocs_page_url = "/reference/command_line_utilities/store-backup/";
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js"></script>
+  <script src="../../../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
+  <script src="../../../js/theme.js"></script> 
+  <script src="../../../js/menu.js"></script>
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../..">Overview</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../install/">Download and Install</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/">How Tos</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../architecture/">Architecture</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuration/">Configuring the Cluster</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Configuring the Cluster</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/configuring_cluster/">Configuration</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/property_description/">SnappyData Properties</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../programming_guide/">Programming Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../deployment/">Affinity Modes</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/">Best practices</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Best practices</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/capacity_planning/">Setting up your Cluster </a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/design_schema/">Designing your Database and Schema</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../aqp/">Synopsis Data Engine (SDE)</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../aqp_aws/">Using iSight-Cloud</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../">Reference Guides</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Reference Guides</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../sql_reference/">SQL Reference Guide</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>SQL Reference Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-statements/">CREATE Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>CREATE Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-diskstore/">CREATE DISKSTORE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-function/">CREATE FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-index/">CREATE INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-schema/">CREATE SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-table/">CREATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-sample-table/">CREATE SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-temporary-table/">CREATE TEMPORARY TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/delete/">DELETE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/drop-statements/">DROP Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DROP Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/drop-diskstore/">DROP DISKSTORE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/drop-function/">DROP FUNCTION</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/drop-index/">DROP INDEX</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/drop-table/">DROP TABLE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/put-into/">PUT INTO</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/select/">SELECT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/set-schema/">SET SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/truncate-table/">TRUNCATE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/update/">UPDATE</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Inbuilt System Procedures</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/dump-stacks/">DUMP_STACKS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/rebalance-all-buckets/">REBALANCE_ALL_BUCKETS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/set_critical_heap_percentage/">SET_CRITICAL_HEAP_PERCENTAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../inbuilt_system_procedures/set-trace-flag/">SET_TRACE_FLAG</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/system_tables/">System Tables</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>System Tables</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/members/">MEMBERS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/memoryanalytics/">MEMORYANALYTICS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../system_tables/sysdiskstores/">SYSDISKSTORES</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-launcher/">Command Line Utilities</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Command Line Utilities</span></li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">backup</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#backup">backup</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#syntax">Syntax</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#description">Description</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#prerequisites-and-best-practices">Prerequisites and Best Practices</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#specifying-the-backup-directory">Specifying the Backup Directory</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#example">Example</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#output-messages-from-snappy-backup">Output Messages from snappy backup</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#backup-directory-structure-and-its-contents">Backup Directory Structure and Its Contents</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#restoring-an-online-backup">Restoring an Online Backup</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-list-missing-disk-stores/">list-missing-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store-version/">version</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/store_command_reference/">Snappy-SQL Shell Interactive Commands</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Snappy-SQL Shell Interactive Commands</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/connect_client/">connect client</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/connect/">connect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/describe/">describe</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/disconnect/">disconnect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/elapsedtime/">elapsedtime</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/exit/">exit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/maximumdisplaywidth/">MaximumDisplayWidth</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/set_connection/">set connection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/show/">show</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/config_parameters/">Configuration Parameters</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Configuration Parameters</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/ack-severe-alert-threshold/">ack-severe-alert-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/ack-wait-threshold/">ack-wait-threshold</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/archive-disk-space-limit/">archive-disk-space-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/archive-file-size-limit/">archive-file-size-limit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/bind-address/">bind-address</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enable-network-partition-detection/">enable-network-partition-detection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enable-stats/">enable-stats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enable-time-statistics/">enable-time-statistics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/enforce-unique-host/">enforce-unique-host</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/init-scripts/">init-scripts</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/locators/">locators</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/log-file/">log-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/log-level/">log-level</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/member-timeout/">member-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/redundancy-zone/">redundancy-zone</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/start-locator/">start-locator</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/statistic-archive-file/">statistic-archive-file</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/statistic-sample-rate/">statistic-sample-rate</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/statistic-sampling-enabled/">statistic-sampling-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/sys-disk-dir/">sys-disk-dir</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/user/">user</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../additional_docs/">Additional Information</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../techsupport/">Contact and Support</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../../LICENSE/">License</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">SnappyData Documentation</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Reference Guides &raquo;</li>
+        
+      
+        
+          <li>Command Line Utilities &raquo;</li>
+        
+      
+    
+    <li>backup</li>
+<!--    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li> !-->
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="backup">backup</h1>
+<p>Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </p></p>
+</div>
+<ul>
+<li>
+<p><a href="./#syntax">Syntax</a></p>
+</li>
+<li>
+<p><a href="./#description">Description</a></p>
+</li>
+<li>
+<p><a href="./#prereq">Prerequisites and Best Practices</a></p>
+</li>
+<li>
+<p><a href="./#backup_directory">Specifying the Backup Directory</a></p>
+</li>
+<li>
+<p><a href="./#example">Example</a></p>
+</li>
+<li>
+<p><a href="./#output_messages">Output Messages from snappy backup</a></p>
+</li>
+<li>
+<p><a href="./#directory_structure">Backup Directory Structure and Its Contents</a></p>
+</li>
+<li>
+<p><a href="./#restore_online_backup">Restoring an Online Backup</a></p>
+</li>
+</ul>
+<p><a id="syntax"></a></p>
+<h1 id="syntax">Syntax</h1>
+<p>Use the -locator option, on the command line to connect to the SnappyData cluster.</p>
+<pre><code class="pre">snappy backup [-baseline=&lt;baseline directory&gt;] &lt;target directory&gt; [-J-D&lt;vmprop&gt;=&lt;prop-value&gt;]
+ [-locators=&lt;addresses&gt;] [-bind-address=&lt;address&gt;] [-&lt;prop-name&gt;=&lt;prop-value&gt;]*
+</code></pre>
+
+<p>Alternatively, you can specify these and other distributed system properties in a gemfirexd.properties file that is available in the directory where you run the <code>snappy</code> command.</p>
+<p>The table describes options for snappy backup.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-baseline</td>
+<td>The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/gemfireXDBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified <code>-baseline</code> directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. (The command also performs a full backup if you omit the <code>-baseline</code> option.</td>
+</tr>
+<tr>
+<td>target-directory</td>
+<td>The directory in which SnappyData stores the backup content. See <a href="./#backup_directory">Specifying the Backup Directory</a>.</td>
+</tr>
+<tr>
+<td>-locators</td>
+<td>List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.</td>
+</tr>
+<tr>
+<td>-bind-address</td>
+<td>The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.</td>
+</tr>
+<tr>
+<td>-prop-name</td>
+<td>Any other SnappyData distributed system property.</td>
+</tr>
+<tr>
+<td>-J-D<vmprop>=<prop-value></td>
+<td>Sets Java system property to the specified value.</td>
+</tr>
+</tbody>
+</table>
+<p><a id="description"></a></p>
+<h1 id="description">Description</h1>
+<p>An online backup saves the following:</p>
+<ul>
+<li>
+<p>For each member with persistent data, the backup includes disk store files for all stores containing persistent table data.</p>
+</li>
+<li>
+<p>Configuration files from the member startup.</p>
+</li>
+<li>
+<p>gemfirexd.properties, with the properties the member was started with.</p>
+</li>
+<li>
+<p>A restore script, written for the member's operating system, that copies the files back to their original locations. For example, in Windows, the file is restore.bat and in Linux, it is restore.sh.</p>
+</li>
+</ul>
+<p><a id="prereq"></a></p>
+<h1 id="prerequisites-and-best-practices">Prerequisites and Best Practices</h1>
+<ul>
+<li>
+<p>Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.</p>
+</li>
+<li>
+<p>Do not try to create backup files from a running system using file copy commands. You will get incomplete and unusable copies.</p>
+</li>
+<li>
+<p>Make sure the target backup directory exists and has the proper permissions for your members to write to it and create subdirectories. </p>
+</li>
+<li>
+<p>You might want to compact your disk store before running the backup.<!-- See the <a href="store-compact-all-disk-stores.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC">compact-all-disk-stores</a> command.--></p>
+</li>
+<li>
+<p>Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members.)</p>
+</li>
+</ul>
+<p><a id="backup_directory"></a></p>
+<h1 id="specifying-the-backup-directory">Specifying the Backup Directory</h1>
+<p>The directory you specify for backup can be used multiple times. Each backup first creates a top level directory for the backup, under the directory you specify, identified to the minute. You can use one of two formats:</p>
+<ul>
+<li>
+<p>Use a single physical location, such as a network file server. (For example, /export/fileServerDirectory/snappyStoreBackupLocation).</p>
+</li>
+<li>
+<p>Use a directory that is local to all host machines in the system. (For example, ./snappyStoreBackupLocation).</p>
+</li>
+</ul>
+<p><a id="example"></a></p>
+<h1 id="example">Example</h1>
+<p>Using a backup directory that is local to all host machines in the system:</p>
+<pre><code class="pre">snappy backup  ./snappyStoreBackupLocation
+  -locators=localhost:10334
+</code></pre>
+
+<!--
+See also [Backing Up and Restoring Disk Stores](../../concepts/backup/backup_restore_disk_store.md#backup_restore_disk_store).-->
+
+<p>To perform an incremental backup at a later time:</p>
+<pre><code class="pre">snappy backup -baseline=./snappyStoreBackupLocation/2012-10-01-12-30 ./snappyStoreBackupLocation 
+  -locators=localhost:10334
+</code></pre>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.</p></p>
+</div>
+<p><a id="output_messages"></a></p>
+<h1 id="output-messages-from-snappy-backup">Output Messages from snappy backup</h1>
+<p>When you run <code>snappy backup</code>, it reports on the outcome of the operation.</p>
+<p>If any members were offline when you run <code>snappy backup</code>, you get this message:</p>
+<pre><code class="pre">The backup may be incomplete. The following disk
+stores are not online: 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]  
+</code></pre>
+
+<p>A complete backup can still be performed if all table data is available in the running members.</p>
+<p>The tool reports on the success of the operation. If the operation is successful, you see a message like this:</p>
+<pre><code class="pre">Connecting to distributed system: -locators=localhost:10334
+The following disk stores were backed up:
+93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
+    4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
+    9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+    45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+Backup successful.
+</code></pre>
+
+<p>If the operation does not succeed at backing up all known members, you see a message like this:</p>
+<pre><code class="pre">Connecting to distributed system: -locators=localhost:10334
+The following disk stores were backed up:
+93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
+    4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
+    9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
+    45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-sgoel:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+The backup may be incomplete. The following disk stores are not online:
+</code></pre>
+
+<p>A member that fails to complete its backup is noted in this ending status message and leaves the file INCOMPLETE_BACKUP in its highest level backup directory.</p>
+<p><a id="directory_structure"></a></p>
+<h1 id="backup-directory-structure-and-its-contents">Backup Directory Structure and Its Contents</h1>
+<p>Below is the structure of files and directories backed up in a distributed system:</p>
+<pre><code class="pre"> 2011-05-02-18-10 /:
+pc15_8933_v10_10761_54522
+2011-05-02-18-10/pc15_8933_v10_10761_54522:
+config diskstores README.txt restore.sh
+2011-05-02-18-10/pc15_8933_v10_10761_54522/config:
+gemfirexd.properties
+2011-05-02-18-10/pc15_8933_v10_10761_54522/diskstores:
+GFXD_DD_DISKSTORE
+2011-05-02-18-10/pc15_8933_v10_10761_54522/diskstores/GFXD_DD_DISKSTORE:
+dir0
+2011-05-02-18-10/pc15_8933_v10_10761_54522/diskstores/GFXD_DD_DISKSTORE/dir0:
+BACKUPGFXD-DD-DISKSTORE_1.crf
+BACKUPGFXD-DD-DISKSTORE_1.drf BACKUPGFXD-DD-DISKSTORE_2.crf
+BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
+</code></pre>
+
+<p><a id="restore_online_backup"></a></p>
+<h1 id="restoring-an-online-backup">Restoring an Online Backup</h1>
+<p>The restore script (restore.sh restore.bat) copies files back to their original locations. You can do this manually if you wish:</p>
+<ol>
+<li>
+<p>Restore your disk stores when your members are offline and the system is down.</p>
+</li>
+<li>
+<p>Read the restore scripts to see where they will place the files and make sure the destination locations are ready. The restore scripts refuse to copy over files with the same names.</p>
+</li>
+<li>
+<p>Run the restore scripts. Run each script on the host where the backup originated.</p>
+</li>
+</ol>
+<p>The restore copies these back to their original location.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../store-list-missing-disk-stores/" class="btn btn-neutral float-right" title="list-missing-disk-stores">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../store-launcher/" class="btn btn-neutral" title="Command Line Utilities"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2017 SnappyData Inc.</p>
+    
+  </div>
+
+<b>DISCLAIMER:</b>
+This document is work-in-progress and will be progressively updated.
+
+ <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../store-launcher/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../store-list-missing-disk-stores/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

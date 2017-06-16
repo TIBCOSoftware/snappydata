@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>snappydata_2.11 0.8 API</title>
-          <meta name="description" content="snappydata 2.11 0.8 API" />
-          <meta name="keywords" content="snappydata 2.11 0.8 API" />
+          <title>snappydata_2.11 0.9 API</title>
+          <meta name="description" content="snappydata 2.11 0.9 API" />
+          <meta name="keywords" content="snappydata 2.11 0.9 API" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
@@ -464,6 +464,12 @@
       <div class="name">ByteArrayWritableChannel</div>
       <div class="occurrences"><a href="../org/apache/spark/network/util/package.html" class="extype" name="org.apache.spark.network.util">util</a> </div>
     </div><div class="entry">
+      <div class="name">ByteBufferData</div>
+      <div class="occurrences"><a href="../io/snappydata/collection/package.html" class="extype" name="io.snappydata.collection">collection</a> </div>
+    </div><div class="entry">
+      <div class="name">ByteBufferHashMap</div>
+      <div class="occurrences"><a href="../io/snappydata/collection/package.html" class="extype" name="io.snappydata.collection">collection</a> </div>
+    </div><div class="entry">
       <div class="name">ByteMutableRow</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
     </div><div class="entry">
@@ -513,10 +519,10 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> </div>
     </div><div class="entry">
       <div class="name">baseObject</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/util/SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/collection/ByteBufferData.html" class="extype" name="io.snappydata.collection.ByteBufferData">ByteBufferData</a> <a href="../org/apache/spark/sql/catalyst/util/SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a> </div>
     </div><div class="entry">
       <div class="name">baseOffset</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/util/SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a> <a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnData.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnData">ColumnData</a> <a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/collection/ByteBufferData.html" class="extype" name="io.snappydata.collection.ByteBufferData">ByteBufferData</a> <a href="../org/apache/spark/sql/catalyst/util/SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a> <a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a> </div>
     </div><div class="entry">
       <div class="name">baseOn</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/tuning/ParamGridBuilder.html" class="extype" name="org.apache.spark.ml.tuning.ParamGridBuilder">ParamGridBuilder</a> </div>
@@ -529,9 +535,6 @@
     </div><div class="entry">
       <div class="name">basePlan</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/CollectAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.CollectAggregateExec">CollectAggregateExec</a> </div>
-    </div><div class="entry">
-      <div class="name">baseRegion</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ColumnBatchIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator">ColumnBatchIterator</a> </div>
     </div><div class="entry">
       <div class="name">baseRelation</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> <a href="../org/apache/spark/sql/sources/SamplingRelation.html" class="extype" name="org.apache.spark.sql.sources.SamplingRelation">SamplingRelation</a> </div>
@@ -590,9 +593,6 @@
       <div class="name">batchParams</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ColumnInsertExec.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnInsertExec">ColumnInsertExec</a> </div>
     </div><div class="entry">
-      <div class="name">batchProcessed</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ColumnBatchIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator">ColumnBatchIterator</a> </div>
-    </div><div class="entry">
       <div class="name">batchSize</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/InMemoryRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.InMemoryRelation">InMemoryRelation</a> </div>
     </div><div class="entry">
@@ -628,6 +628,12 @@
     </div><div class="entry">
       <div class="name">beforeRun</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/operation/Operation.html" class="extype" name="org.apache.hive.service.cli.operation.Operation">Operation</a> </div>
+    </div><div class="entry">
+      <div class="name">beforeSegmentEnd</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a> </div>
+    </div><div class="entry">
+      <div class="name">beforeSerializationWithValue</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/ColumnFormatKey.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey">ColumnFormatKey</a> </div>
     </div><div class="entry">
       <div class="name">behavior</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/ApproxColumn.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.ApproxColumn">ApproxColumn</a> <a href="../org/apache/spark/sql/execution/closedform/ClosedFormColumnExtractor.html" class="extype" name="org.apache.spark.sql.execution.closedform.ClosedFormColumnExtractor">ClosedFormColumnExtractor</a> <a href="../org/apache/spark/sql/execution/common/AQPInfo.html" class="extype" name="org.apache.spark.sql.execution.common.AQPInfo">AQPInfo</a> <a href="../org/apache/spark/sql/execution/common/ErrorAggregateFunction.html" class="extype" name="org.apache.spark.sql.execution.common.ErrorAggregateFunction">ErrorAggregateFunction</a> <a href="../org/apache/spark/sql/execution/common/ErrorAndConfidence.html" class="extype" name="org.apache.spark.sql.execution.common.ErrorAndConfidence">ErrorAndConfidence</a> <a href="../org/apache/spark/sql/sources/SampleTableQuery.html" class="extype" name="org.apache.spark.sql.sources.SampleTableQuery">SampleTableQuery</a> </div>
@@ -852,7 +858,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/VectorizedHashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator">VectorizedHashMapGenerator</a> </div>
     </div><div class="entry">
       <div class="name">buffer</div>
-      <div class="occurrences"><a href="../org/apache/spark/network/package.html" class="extype" name="org.apache.spark.network">network</a> <a href="../org/apache/spark/sql/catalyst/expressions/aggregate/Collect.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.Collect">Collect</a> <a href="../org/apache/spark/sql/catalyst/expressions/aggregate/CollectList.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.CollectList">CollectList</a> <a href="../org/apache/spark/sql/catalyst/expressions/aggregate/CollectSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.CollectSet">CollectSet</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAsArray.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray">BootstrapAddTrialsAsArray</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAvgCountPart.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgCountPart">BootstrapAddTrialsAvgCountPart</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAvgSumPart.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgSumPart">BootstrapAddTrialsAvgSumPart</a> <a href="../org/apache/spark/sql/execution/closedform/StatCounterUpdater.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterUpdater">StatCounterUpdater</a> <a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/collection/ByteBufferData.html" class="extype" name="io.snappydata.collection.ByteBufferData">ByteBufferData</a> <a href="../org/apache/spark/network/package.html" class="extype" name="org.apache.spark.network">network</a> <a href="../org/apache/spark/sql/catalyst/expressions/aggregate/Collect.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.Collect">Collect</a> <a href="../org/apache/spark/sql/catalyst/expressions/aggregate/CollectList.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.CollectList">CollectList</a> <a href="../org/apache/spark/sql/catalyst/expressions/aggregate/CollectSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.CollectSet">CollectSet</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAsArray.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAsArray">BootstrapAddTrialsAsArray</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAvgCountPart.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgCountPart">BootstrapAddTrialsAvgCountPart</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAddTrialsAvgSumPart.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAddTrialsAvgSumPart">BootstrapAddTrialsAvgSumPart</a> <a href="../org/apache/spark/sql/execution/closedform/StatCounterUpdater.html" class="extype" name="org.apache.spark.sql.execution.closedform.StatCounterUpdater">StatCounterUpdater</a> <a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnEncoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoder">ColumnEncoder</a> </div>
     </div><div class="entry">
       <div class="name">bufferDeserializer</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/TypedAggregateExpression.html" class="extype" name="org.apache.spark.sql.execution.aggregate.TypedAggregateExpression">TypedAggregateExpression</a> </div>
@@ -949,9 +955,6 @@
     </div><div class="entry">
       <div class="name">byteToLiteral</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/dsl/package$$ExpressionConversions.html" class="extype" name="org.apache.spark.sql.catalyst.dsl.ExpressionConversions">ExpressionConversions</a> </div>
-    </div><div class="entry">
-      <div class="name">bytes</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/encoding/ColumnData.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnData">ColumnData</a> </div>
     </div><div class="entry">
       <div class="name">bytesRead</div>
       <div class="occurrences"><a href="../org/apache/spark/executor/InputMetrics.html" class="extype" name="org.apache.spark.executor.InputMetrics">InputMetrics</a> <a href="../org/apache/spark/status/api/v1/InputMetricDistributions.html" class="extype" name="org.apache.spark.status.api.v1.InputMetricDistributions">InputMetricDistributions</a> <a href="../org/apache/spark/status/api/v1/InputMetrics.html" class="extype" name="org.apache.spark.status.api.v1.InputMetrics">InputMetrics</a> </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyAQPSessionState - snappydata_2.11 0.8 API - org.apache.spark.sql.internal.SnappyAQPSessionState</title>
-          <meta name="description" content="SnappyAQPSessionState - snappydata 2.11 0.8 API - org.apache.spark.sql.internal.SnappyAQPSessionState" />
-          <meta name="keywords" content="SnappyAQPSessionState snappydata 2.11 0.8 API org.apache.spark.sql.internal.SnappyAQPSessionState" />
+          <title>SnappyAQPSessionState - snappydata_2.11 0.9 API - org.apache.spark.sql.internal.SnappyAQPSessionState</title>
+          <meta name="description" content="SnappyAQPSessionState - snappydata 2.11 0.9 API - org.apache.spark.sql.internal.SnappyAQPSessionState" />
+          <meta name="keywords" content="SnappyAQPSessionState snappydata 2.11 0.9 API org.apache.spark.sql.internal.SnappyAQPSessionState" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -670,6 +670,23 @@ in the external catalog.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#isPreparePhase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isPreparePhase:Boolean"></a>
+      <a id="isPreparePhase:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isPreparePhase</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@isPreparePhase:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#listenerManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="listenerManager:org.apache.spark.sql.util.ExecutionListenerManager"></a>
       <a id="listenerManager:ExecutionListenerManager"></a>
@@ -741,6 +758,23 @@ that listen for execution metrics.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionState</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#newQueryExecution" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newQueryExecution(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.execution.QueryExecution"></a>
+      <a id="newQueryExecution(LogicalPlan):QueryExecution"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newQueryExecution</span><span class="params">(<span name="plan">plan: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="../execution/QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@newQueryExecution(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.execution.QueryExecution" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -811,6 +845,23 @@ that listen for execution metrics.
     </span>
       <p class="shortcomment cmt">Planner that converts optimized logical plans to physical plans.</p><div class="fullcomment"><div class="comment cmt"><p>Planner that converts optimized logical plans to physical plans.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#pvs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pvs:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]"></a>
+      <a id="pvs:Option[ParameterValueSet]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pvs</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet">ParameterValueSet</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@pvs:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappyAQPSessionState#queryPreparations" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="queryPreparations:Seq[org.apache.spark.sql.catalyst.rules.Rule[org.apache.spark.sql.execution.SparkPlan]]"></a>
       <a id="queryPreparations:Seq[Rule[SparkPlan]]"></a>
@@ -827,7 +878,41 @@ that listen for execution metrics.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#queryPreparations" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="queryPreparations(topLevel:Boolean):Seq[org.apache.spark.sql.catalyst.rules.Rule[org.apache.spark.sql.execution.SparkPlan]]"></a>
+      <a id="queryPreparations(Boolean):Seq[Rule[SparkPlan]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryPreparations</span><span class="params">(<span name="topLevel">topLevel: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@queryPreparations(topLevel:Boolean):Seq[org.apache.spark.sql.catalyst.rules.Rule[org.apache.spark.sql.execution.SparkPlan]]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#questionMarkCounter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="questionMarkCounter:Int"></a>
+      <a id="questionMarkCounter:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">questionMarkCounter</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@questionMarkCounter:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#refreshTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="refreshTable(tableName:String):Unit"></a>
       <a id="refreshTable(String):Unit"></a>
@@ -845,6 +930,23 @@ that listen for execution metrics.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionState</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState#setPreparedQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setPreparedQuery(preparePhase:Boolean,paramSet:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):Unit"></a>
+      <a id="setPreparedQuery(Boolean,Option[ParameterValueSet]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setPreparedQuery</span><span class="params">(<span name="preparePhase">preparePhase: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="paramSet">paramSet: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet">ParameterValueSet</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@setPreparedQuery(preparePhase:Boolean,paramSet:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionState#sharedState" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sharedState:org.apache.spark.sql.internal.SnappySharedState"></a>
       <a id="sharedState:SnappySharedState"></a>

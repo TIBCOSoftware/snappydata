@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnInsertExec - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec</title>
-          <meta name="description" content="ColumnInsertExec - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
-          <meta name="keywords" content="ColumnInsertExec snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
+          <title>ColumnInsertExec - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec</title>
+          <meta name="description" content="ColumnInsertExec - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
+          <meta name="keywords" content="ColumnInsertExec snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,14 +45,14 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnInsertExec</span><span class="params">(<span name="_child">_child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_partitionExpressions">_partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="_numBuckets">_numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="batchParams">batchParams: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>, <span name="columnTable">columnTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="relationSchema">relationSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="useMemberVariables">useMemberVariables: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">ColumnInsertExec</span><span class="params">(<span name="_child">_child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_partitionExpressions">_partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="_numBuckets">_numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="batchParams">batchParams: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>, <span name="columnTable">columnTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="relationSchema">relationSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="externalStore">externalStore: <a href="ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="useMemberVariables">useMemberVariables: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Generated code plan for bulk insertion into a column table.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a>, <a href="../CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a>, <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a>, <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a>, <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a>, <a href="../CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a>, <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a>, <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a>, <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -70,7 +70,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.columnar.ColumnInsertExec"><span>ColumnInsertExec</span></li><li class="in" name="org.apache.spark.sql.execution.TableInsertExec"><span>TableInsertExec</span></li><li class="in" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor"><span>CodegenSupportOnExecutor</span></li><li class="in" name="org.apache.spark.sql.execution.CodegenSupport"><span>CodegenSupport</span></li><li class="in" name="org.apache.spark.sql.execution.UnaryExecNode"><span>UnaryExecNode</span></li><li class="in" name="org.apache.spark.sql.execution.SparkPlan"><span>SparkPlan</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.columnar.ColumnInsertExec"><span>ColumnInsertExec</span></li><li class="in" name="org.apache.spark.sql.execution.TableExec"><span>TableExec</span></li><li class="in" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor"><span>CodegenSupportOnExecutor</span></li><li class="in" name="org.apache.spark.sql.execution.CodegenSupport"><span>CodegenSupport</span></li><li class="in" name="org.apache.spark.sql.execution.UnaryExecNode"><span>UnaryExecNode</span></li><li class="in" name="org.apache.spark.sql.execution.SparkPlan"><span>SparkPlan</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -361,7 +361,7 @@ pasted in the REPL to build an equivalent Tree.
     </span>
       <p class="shortcomment cmt">Canonicalized copy of this query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Canonicalized copy of this query plan.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#child" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#child" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="child:org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="child:SparkPlan"></a>
       <h4 class="signature">
@@ -377,7 +377,7 @@ pasted in the REPL to build an equivalent Tree.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> → <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.UnaryExecNode#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="children:Seq[org.apache.spark.sql.execution.SparkPlan]"></a>
       <a id="children:Seq[SparkPlan]"></a>
@@ -601,7 +601,7 @@ evaluate to <code>true</code> for all rows produced.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#doChildProduce" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#doChildProduce" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doChildProduce(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
       <a id="doChildProduce(CodegenContext):String"></a>
       <h4 class="signature">
@@ -617,7 +617,7 @@ evaluate to <code>true</code> for all rows produced.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnInsertExec#doConsume" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doConsume(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],row:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):String"></a>
       <a id="doConsume(CodegenContext,Seq[ExprCode],ExprCode):String"></a>
@@ -638,7 +638,7 @@ evaluate to <code>true</code> for all rows produced.
   if (isNull1 || !value2) continue;
   # call consume(), which will call parent.doConsume()</p><p>Note: A plan can either consume the rows as UnsafeRow (row), or a list of variables (input).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnInsertExec">ColumnInsertExec</a> → <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#doExecute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#doExecute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecute():org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="doExecute():RDD[InternalRow]"></a>
       <h4 class="signature">
@@ -656,7 +656,7 @@ evaluate to <code>true</code> for all rows produced.
     </span>
       <p class="shortcomment cmt">Overridden by concrete implementations of SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by concrete implementations of SparkPlan.
 Produces the result of the query as an RDD[InternalRow]
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#doExecuteBroadcast" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecuteBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]"></a>
       <a id="doExecuteBroadcast[T]():Broadcast[T]"></a>
@@ -1192,7 +1192,7 @@ appear in the <a href="../../catalyst/plans/QueryPlan.html#outputSet:org.apache.
       <p class="shortcomment cmt">All the nodes that should be shown as a inner nested tree of this node.</p><div class="fullcomment"><div class="comment cmt"><p>All the nodes that should be shown as a inner nested tree of this node.
 For example, this can be used to show sub-queries.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#inputRDDs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#inputRDDs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inputRDDs():Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]]"></a>
       <a id="inputRDDs():Seq[RDD[InternalRow]]"></a>
       <h4 class="signature">
@@ -1209,7 +1209,7 @@ For example, this can be used to show sub-queries.
       </a>
     </span>
       <p class="shortcomment cmt">Returns all the RDDs of InternalRow which generates the input rows.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all the RDDs of InternalRow which generates the input rows.</p><p>Note: right now we support up to two RDDs.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> → <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#inputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="inputSet:AttributeSet"></a>
@@ -1535,6 +1535,23 @@ For example, this can be used to show sub-queries.
     </span>
       <p class="shortcomment cmt">Return a LongSQLMetric according to the name.</p><div class="fullcomment"><div class="comment cmt"><p>Return a LongSQLMetric according to the name.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnInsertExec#loop" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="loop(code:String,numTimes:Int):String"></a>
+      <a id="loop(String,Int):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loop</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numTimes">numTimes: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnInsertExec@loop(code:String,numTimes:Int):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.SparkPlan#makeCopy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="makeCopy(newArgs:Array[AnyRef]):org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="makeCopy(Array[AnyRef]):SparkPlan"></a>
@@ -1625,7 +1642,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Return all metadata that describes more details of this SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Return all metadata that describes more details of this SparkPlan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#metricAdd" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#metricAdd" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="metricAdd:String=&gt;String"></a>
       <a id="metricAdd:(String)⇒String"></a>
       <h4 class="signature">
@@ -1641,7 +1658,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.CodegenSupport#metricTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="metricTerm(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,name:String):String"></a>
       <a id="metricTerm(CodegenContext,String):String"></a>
@@ -1660,7 +1677,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Creates a metric using the specified name.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a metric using the specified name.
 </p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>name of the variable representing the metric</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#metrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#metrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="metrics:Map[String,org.apache.spark.sql.execution.metric.SQLMetric]"></a>
       <a id="metrics:Map[String,SQLMetric]"></a>
       <h4 class="signature">
@@ -1677,7 +1694,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
       </a>
     </span>
       <p class="shortcomment cmt">Return all metrics containing metrics of this SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Return all metrics containing metrics of this SparkPlan.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#missingInput" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="missingInput:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="missingInput:AttributeSet"></a>
@@ -1837,7 +1854,7 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#numBuckets" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#numBuckets" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="numBuckets:Int"></a>
       <a id="numBuckets:Int"></a>
       <h4 class="signature">
@@ -1853,7 +1870,7 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="numberedTreeString:String"></a>
       <a id="numberedTreeString:String"></a>
@@ -1890,6 +1907,23 @@ The numbers can be used with <a href="../../catalyst/trees/TreeNode.html#apply(n
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.TableExec#opType" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="opType:String"></a>
+      <a id="opType:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opType</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnInsertExec@opType:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#origin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="origin:org.apache.spark.sql.catalyst.trees.Origin"></a>
       <a id="origin:Origin"></a>
@@ -1925,7 +1959,7 @@ The numbers can be used with <a href="../../catalyst/trees/TreeNode.html#apply(n
     </span>
       <p class="shortcomment cmt">Args to the constructor that should be copied, but not transformed.</p><div class="fullcomment"><div class="comment cmt"><p>Args to the constructor that should be copied, but not transformed.
 These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
       <a id="output:Seq[Attribute]"></a>
       <h4 class="signature">
@@ -1941,7 +1975,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> → <a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#outputOrdering" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputOrdering:Seq[org.apache.spark.sql.catalyst.expressions.SortOrder]"></a>
       <a id="outputOrdering:Seq[SortOrder]"></a>
@@ -1959,7 +1993,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
       </a>
     </span>
       <p class="shortcomment cmt">Specifies how data is ordered in each partition.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is ordered in each partition.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#outputPartitioning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#outputPartitioning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputPartitioning:org.apache.spark.sql.catalyst.plans.physical.Partitioning"></a>
       <a id="outputPartitioning:Partitioning"></a>
       <h4 class="signature">
@@ -1975,7 +2009,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Specifies how data is partitioned for the table.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is partitioned for the table.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> → <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+      <p class="shortcomment cmt">Specifies how data is partitioned for the table.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies how data is partitioned for the table.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="outputSet:AttributeSet"></a>
@@ -2029,7 +2063,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#partitionExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#partitionExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="partitionExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="partitionExpressions:Seq[Expression]"></a>
       <h4 class="signature">
@@ -2045,8 +2079,8 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#partitioned" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.TableExec#partitioned" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="partitioned:Boolean"></a>
       <a id="partitioned:Boolean"></a>
       <h4 class="signature">
@@ -2062,7 +2096,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#prepare" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prepare():Unit"></a>
       <a id="prepare():Unit"></a>
@@ -2243,7 +2277,7 @@ include attributes that are implicitly referenced by being passed through to the
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.TableInsertExec#requiredChildDistribution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.TableExec#requiredChildDistribution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="requiredChildDistribution:Seq[org.apache.spark.sql.catalyst.plans.physical.Distribution]"></a>
       <a id="requiredChildDistribution:Seq[Distribution]"></a>
       <h4 class="signature">
@@ -2259,7 +2293,7 @@ include attributes that are implicitly referenced by being passed through to the
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Specifies the partition requirements on the child.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the partition requirements on the child.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+      <p class="shortcomment cmt">Specifies the partition requirements on the child.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the partition requirements on the child.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#requiredChildOrdering" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="requiredChildOrdering:Seq[Seq[org.apache.spark.sql.catalyst.expressions.SortOrder]]"></a>
       <a id="requiredChildOrdering:Seq[Seq[SortOrder]]"></a>
@@ -2928,8 +2962,8 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.execution.TableInsertExec">
-              <h3>Inherited from <a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a></h3>
+        <div class="parent" name="org.apache.spark.sql.execution.TableExec">
+              <h3>Inherited from <a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">
               <h3>Inherited from <a href="../CodegenSupportOnExecutor.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupportOnExecutor">CodegenSupportOnExecutor</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.CodegenSupport">

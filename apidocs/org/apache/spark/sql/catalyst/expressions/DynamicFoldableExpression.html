@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DynamicFoldableExpression - snappydata_2.11 0.8 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression</title>
-          <meta name="description" content="DynamicFoldableExpression - snappydata 2.11 0.8 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
-          <meta name="keywords" content="DynamicFoldableExpression snappydata 2.11 0.8 API org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
+          <title>DynamicFoldableExpression - snappydata_2.11 0.9 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression</title>
+          <meta name="description" content="DynamicFoldableExpression - snappydata 2.11 0.9 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
+          <meta name="keywords" content="DynamicFoldableExpression snappydata 2.11 0.9 API org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">DynamicFoldableExpression</span><span class="params">(<span name="expr">expr: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">DynamicFoldableExpression</span><span class="params">(<span name="expr">expr: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -59,7 +59,7 @@ once instead of evaluating every row.
 like queries doesn't converts literal evaluation into init method.
 </p></div><dl class="paramcmts block"><dt class="param">expr</dt><dd class="cmt"><p>minimal expression tree that can be evaluated only once and turn into a constant.</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -77,7 +77,7 @@ like queries doesn't converts literal evaluation into init method.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression"><span>DynamicFoldableExpression</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression"><span>DynamicFoldableExpression</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant"><span>DynamicReplacableConstant</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -445,6 +445,23 @@ is defined (pre-order), and applies the partial function to it.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression#convertedLiteral" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="convertedLiteral:Any"></a>
+      <a id="convertedLiteral:Any"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">convertedLiteral</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression@convertedLiteral:Any" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression">DynamicFoldableExpression</a> → <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression#dataType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dataType:org.apache.spark.sql.types.DataType"></a>
       <a id="dataType:DataType"></a>
@@ -541,7 +558,7 @@ implementations should override this to do actual code generation.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the result of evaluating this expression on a given input Row</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of evaluating this expression on a given input Row</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression">DynamicFoldableExpression</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns the result of evaluating this expression on a given input Row</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of evaluating this expression on a given input Row</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression">DynamicFoldableExpression</a> → <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression#expr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="expr:org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="expr:Expression"></a>
@@ -947,7 +964,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nodeName:String"></a>
       <a id="nodeName:String"></a>
       <h4 class="signature">
@@ -965,7 +982,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Returns the name of this type of TreeNode.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of this type of TreeNode.  Defaults to the class name.
 Note that we remove the &quot;Exec&quot; suffix for physical operators here.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression">DynamicFoldableExpression</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -1088,7 +1105,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#prettyName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression#prettyName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyName:String"></a>
       <a id="prettyName:String"></a>
       <h4 class="signature">
@@ -1106,7 +1123,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
     </span>
       <p class="shortcomment cmt">Returns a user-facing string representation of this expression's name.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a user-facing string representation of this expression's name.
 This should usually match the name of the function in SQL.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression">DynamicFoldableExpression</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#references" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="references:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="references:AttributeSet"></a>
@@ -1525,6 +1542,8 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">
+              <h3>Inherited from <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.Expression">
               <h3>Inherited from <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.trees.TreeNode">

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CachedDataFrame - snappydata_2.11 0.8 API - org.apache.spark.sql.CachedDataFrame</title>
-          <meta name="description" content="CachedDataFrame - snappydata 2.11 0.8 API - org.apache.spark.sql.CachedDataFrame" />
-          <meta name="keywords" content="CachedDataFrame snappydata 2.11 0.8 API org.apache.spark.sql.CachedDataFrame" />
+          <title>CachedDataFrame - snappydata_2.11 0.9 API - org.apache.spark.sql.CachedDataFrame</title>
+          <meta name="description" content="CachedDataFrame - snappydata 2.11 0.9 API - org.apache.spark.sql.CachedDataFrame" />
+          <meta name="keywords" content="CachedDataFrame snappydata 2.11 0.9 API org.apache.spark.sql.CachedDataFrame" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -91,7 +91,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.CachedDataFrame#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(df:org.apache.spark.sql.Dataset[org.apache.spark.sql.Row],cachedRDD:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow],shuffleDependencies:Array[Int],rddId:Int,hasLocalCollectProcessing:Boolean,allLiterals:Array[org.apache.spark.sql.catalyst.expressions.LiteralValue],allbcplans:scala.collection.mutable.Map[org.apache.spark.sql.execution.joins.BroadcastHashJoinExec,scala.collection.mutable.ArrayBuffer[Any]]):org.apache.spark.sql.CachedDataFrame"></a>
+      <a id="&lt;init&gt;(df:org.apache.spark.sql.Dataset[org.apache.spark.sql.Row],queryString:String,cachedRDD:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow],shuffleDependencies:Array[Int],rddId:Int,hasLocalCollectProcessing:Boolean,allLiterals:Array[org.apache.spark.sql.catalyst.expressions.LiteralValue],allbcplans:scala.collection.mutable.Map[org.apache.spark.sql.execution.joins.BroadcastHashJoinExec,scala.collection.mutable.ArrayBuffer[Any]]):org.apache.spark.sql.CachedDataFrame"></a>
       <a id="&lt;init&gt;:CachedDataFrame"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CachedDataFrame</span><span class="params">(<span name="df">df: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="cachedRDD">cachedRDD: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="shuffleDependencies">shuffleDependencies: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="rddId">rddId: <span class="extype" name="scala.Int">Int</span></span>, <span name="hasLocalCollectProcessing">hasLocalCollectProcessing: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="allLiterals">allLiterals: <span class="extype" name="scala.Array">Array</span>[<a href="catalyst/expressions/LiteralValue.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LiteralValue">LiteralValue</a>] = <span class="symbol"><span class="name"><a href="../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="allbcplans">allbcplans: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<a href="execution/joins/BroadcastHashJoinExec.html" class="extype" name="org.apache.spark.sql.execution.joins.BroadcastHashJoinExec">BroadcastHashJoinExec</a>, <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="scala.Any">Any</span>]] = <span class="symbol"><span class="name"><a href="../../../../scala/package.html">mutable.Map.empty</a></span></span></span>)</span>
+        <span class="name">CachedDataFrame</span><span class="params">(<span name="df">df: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>, <span name="queryString">queryString: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="cachedRDD">cachedRDD: <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>, <span name="shuffleDependencies">shuffleDependencies: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="rddId">rddId: <span class="extype" name="scala.Int">Int</span></span>, <span name="hasLocalCollectProcessing">hasLocalCollectProcessing: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="allLiterals">allLiterals: <span class="extype" name="scala.Array">Array</span>[<a href="catalyst/expressions/LiteralValue.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LiteralValue">LiteralValue</a>] = <span class="symbol"><span class="name"><a href="../../../../scala/package.html">Array.empty</a></span></span></span>, <span name="allbcplans">allbcplans: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<a href="execution/joins/BroadcastHashJoinExec.html" class="extype" name="org.apache.spark.sql.execution.joins.BroadcastHashJoinExec">BroadcastHashJoinExec</a>, <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="scala.Any">Any</span>]] = <span class="symbol"><span class="name"><a href="../../../../scala/package.html">mutable.Map.empty</a></span></span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@&lt;init&gt;(df:org.apache.spark.sql.Dataset[org.apache.spark.sql.Row],cachedRDD:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow],shuffleDependencies:Array[Int],rddId:Int,hasLocalCollectProcessing:Boolean,allLiterals:Array[org.apache.spark.sql.catalyst.expressions.LiteralValue],allbcplans:scala.collection.mutable.Map[org.apache.spark.sql.execution.joins.BroadcastHashJoinExec,scala.collection.mutable.ArrayBuffer[Any]]):org.apache.spark.sql.CachedDataFrame" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@&lt;init&gt;(df:org.apache.spark.sql.Dataset[org.apache.spark.sql.Row],queryString:String,cachedRDD:org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow],shuffleDependencies:Array[Int],rddId:Int,hasLocalCollectProcessing:Boolean,allLiterals:Array[org.apache.spark.sql.catalyst.expressions.LiteralValue],allbcplans:scala.collection.mutable.Map[org.apache.spark.sql.execution.joins.BroadcastHashJoinExec,scala.collection.mutable.ArrayBuffer[Any]]):org.apache.spark.sql.CachedDataFrame" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -587,7 +587,7 @@ doing so on a very large dataset can crash the driver process with OutOfMemoryEr
     </span>
       <p class="shortcomment cmt">Returns all column names as an array.</p><div class="fullcomment"><div class="comment cmt"><p>Returns all column names as an array.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.Dataset#count" visbl="pub" data-isabs="false" fullComment="yes" group="action">
+    </li><li name="org.apache.spark.sql.CachedDataFrame#count" visbl="pub" data-isabs="false" fullComment="yes" group="action">
       <a id="count():Long"></a>
       <a id="count():Long"></a>
       <h4 class="signature">
@@ -603,7 +603,7 @@ doing so on a very large dataset can crash the driver process with OutOfMemoryEr
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the number of rows in the Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the number of rows in the Dataset.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+      <p class="shortcomment cmt">Returns the number of rows in the Dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the number of rows in the Dataset.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.CachedDataFrame">CachedDataFrame</a> → <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#createOrReplaceTempView" visbl="pub" data-isabs="false" fullComment="yes" group="basic">
       <a id="createOrReplaceTempView(viewName:String):Unit"></a>
       <a id="createOrReplaceTempView(String):Unit"></a>
@@ -1464,6 +1464,25 @@ single partition result.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.CachedDataFrame#head" visbl="pub" data-isabs="false" fullComment="yes" group="action">
+      <a id="head(n:Int):Array[org.apache.spark.sql.Row]"></a>
+      <a id="head(Int):Array[Row]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">head</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@head(n:Int):Array[org.apache.spark.sql.Row]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the first <code>n</code> rows.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the first <code>n</code> rows.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.CachedDataFrame">CachedDataFrame</a> → <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>this method should only be used if the resulting array is expected to be small, as
+all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.sql.Dataset#head" visbl="pub" data-isabs="false" fullComment="yes" group="action">
       <a id="head():T"></a>
       <a id="head():Row"></a>
@@ -1481,25 +1500,6 @@ single partition result.</p>
       </a>
     </span>
       <p class="shortcomment cmt">Returns the first row.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the first row.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.Dataset#head" visbl="pub" data-isabs="false" fullComment="yes" group="action">
-      <a id="head(n:Int):Array[T]"></a>
-      <a id="head(Int):Array[Row]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">head</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@head(n:Int):Array[T]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Returns the first <code>n</code> rows.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the first <code>n</code> rows.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>this method should only be used if the resulting array is expected to be small, as
-all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
@@ -2378,6 +2378,57 @@ This is an alias of the <code>sort</code> function.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.CachedDataFrame#queryExecutionString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryExecutionString:String"></a>
+      <a id="queryExecutionString:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryExecutionString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@queryExecutionString:String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.CachedDataFrame#queryPlanInfo" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryPlanInfo:org.apache.spark.sql.execution.SparkPlanInfo"></a>
+      <a id="queryPlanInfo:SparkPlanInfo"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryPlanInfo</span><span class="result">: <a href="execution/SparkPlanInfo.html" class="extype" name="org.apache.spark.sql.execution.SparkPlanInfo">SparkPlanInfo</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@queryPlanInfo:org.apache.spark.sql.execution.SparkPlanInfo" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.CachedDataFrame#queryString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryString:String"></a>
+      <a id="queryString:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@queryString:String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.Dataset#randomSplit" visbl="pub" data-isabs="false" fullComment="yes" group="typedrel">
       <a id="randomSplit(weights:Array[Double]):Array[org.apache.spark.sql.Dataset[T]]"></a>
       <a id="randomSplit(Array[Double]):Array[Dataset[Row]]"></a>
@@ -2585,23 +2636,6 @@ The resulting Dataset is hash partitioned.</p><p>This is the same operation as &
     </span>
       <p class="shortcomment cmt">Returns a new Dataset that has exactly <code>numPartitions</code> partitions.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new Dataset that has exactly <code>numPartitions</code> partitions.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a></dd><dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.CachedDataFrame#reprepareBroadcast" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="reprepareBroadcast(lp:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,newpls:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.catalyst.expressions.ParamLiteral]):Unit"></a>
-      <a id="reprepareBroadcast(LogicalPlan,ArrayBuffer[ParamLiteral]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">reprepareBroadcast</span><span class="params">(<span name="lp">lp: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="newpls">newpls: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="catalyst/expressions/ParamLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame@reprepareBroadcast(lp:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,newpls:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.catalyst.expressions.ParamLiteral]):Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.Dataset#rollup" visbl="pub" data-isabs="false" fullComment="yes" group="untypedrel">
       <a id="rollup(col1:String,cols:String*):org.apache.spark.sql.RelationalGroupedDataset"></a>
       <a id="rollup(String,String*):RelationalGroupedDataset"></a>

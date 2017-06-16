@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JdbcExtendedUtils - snappydata_2.11 0.8 API - org.apache.spark.sql.sources.JdbcExtendedUtils</title>
-          <meta name="description" content="JdbcExtendedUtils - snappydata 2.11 0.8 API - org.apache.spark.sql.sources.JdbcExtendedUtils" />
-          <meta name="keywords" content="JdbcExtendedUtils snappydata 2.11 0.8 API org.apache.spark.sql.sources.JdbcExtendedUtils" />
+          <title>JdbcExtendedUtils - snappydata_2.11 0.9 API - org.apache.spark.sql.sources.JdbcExtendedUtils</title>
+          <meta name="description" content="JdbcExtendedUtils - snappydata 2.11 0.9 API - org.apache.spark.sql.sources.JdbcExtendedUtils" />
+          <meta name="keywords" content="JdbcExtendedUtils snappydata 2.11 0.9 API org.apache.spark.sql.sources.JdbcExtendedUtils" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -447,19 +447,36 @@ string specification.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#getInsertOrPutString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getInsertOrPutString(table:String,rddSchema:org.apache.spark.sql.types.StructType,upsert:Boolean):String"></a>
-      <a id="getInsertOrPutString(String,StructType,Boolean):String"></a>
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#getDeleteString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDeleteString(table:String,rddSchema:org.apache.spark.sql.types.StructType,escapeQuotes:Boolean):String"></a>
+      <a id="getDeleteString(String,StructType,Boolean):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getInsertOrPutString</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rddSchema">rddSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="upsert">upsert: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">getDeleteString</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rddSchema">rddSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="escapeQuotes">escapeQuotes: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getInsertOrPutString(table:String,rddSchema:org.apache.spark.sql.types.StructType,upsert:Boolean):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getDeleteString(table:String,rddSchema:org.apache.spark.sql.types.StructType,escapeQuotes:Boolean):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the SQL for prepare to insert or put rows into a table.</p>
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#getInsertOrPutString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getInsertOrPutString(table:String,rddSchema:org.apache.spark.sql.types.StructType,putInto:Boolean,escapeQuotes:Boolean):String"></a>
+      <a id="getInsertOrPutString(String,StructType,Boolean,Boolean):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getInsertOrPutString</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rddSchema">rddSchema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="putInto">putInto: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="escapeQuotes">escapeQuotes: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getInsertOrPutString(table:String,rddSchema:org.apache.spark.sql.types.StructType,putInto:Boolean,escapeQuotes:Boolean):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

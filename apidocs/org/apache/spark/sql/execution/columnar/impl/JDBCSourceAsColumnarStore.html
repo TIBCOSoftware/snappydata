@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JDBCSourceAsColumnarStore - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore</title>
-          <meta name="description" content="JDBCSourceAsColumnarStore - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
-          <meta name="keywords" content="JDBCSourceAsColumnarStore snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
+          <title>JDBCSourceAsColumnarStore - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore</title>
+          <meta name="description" content="JDBCSourceAsColumnarStore - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
+          <meta name="keywords" content="JDBCSourceAsColumnarStore snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -240,23 +240,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> → <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#connectionType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="connectionType:org.apache.spark.sql.execution.columnar.ConnectionType.Value"></a>
-      <a id="connectionType:ConnectionType.Value"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">connectionType</span><span class="result">: <a href="../ConnectionType$.html#ValueextendsOrdered[Enumeration.this.Value]withSerializable" class="extmbr" name="org.apache.spark.sql.execution.columnar.ConnectionType.Value">ConnectionType.Value</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@connectionType:org.apache.spark.sql.execution.columnar.ConnectionType.Value" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#doGFXDInsert" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doGFXDInsert(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,batchId:Option[String],partitionId:Int,maxDeltaRows:Int):java.sql.Connection=&gt;Any"></a>
       <a id="doGFXDInsert(String,ColumnBatch,Option[String],Int,Int):(Connection)⇒Any"></a>
@@ -295,6 +278,27 @@ batches for now.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#doSnappyInsert" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="doSnappyInsert(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,batchId:Option[String],partitionId:Int,maxDeltaRows:Int):Unit"></a>
+      <a id="doSnappyInsert(String,ColumnBatch,Option[String],Int,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">doSnappyInsert</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="batch">batch: <a href="../ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>, <span name="batchId">batchId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="maxDeltaRows">maxDeltaRows: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@doSnappyInsert(tableName:String,batch:org.apache.spark.sql.execution.columnar.ColumnBatch,batchId:Option[String],partitionId:Int,maxDeltaRows:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Insert the base entry and n column entries in Snappy.</p><div class="fullcomment"><div class="comment cmt"><p>Insert the base entry and n column entries in Snappy. Insert the base entry
+in the end to ensure that the partial inserts of a cached batch are ignored
+during iteration. We are not cleaning up the partial inserts of cached
+batches for now.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -539,23 +543,6 @@ batches for now.
       </a>
     </span>
       <p class="shortcomment cmt">Acquires a read lock on the cache for the duration of <code>f</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Acquires a read lock on the cache for the duration of <code>f</code>.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#makeInsertStmnt" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="makeInsertStmnt(tableName:String,numOfColumns:Int):String"></a>
-      <a id="makeInsertStmnt(String,Int):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">makeInsertStmnt</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numOfColumns">numOfColumns: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@makeInsertStmnt(tableName:String,numOfColumns:Int):String" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

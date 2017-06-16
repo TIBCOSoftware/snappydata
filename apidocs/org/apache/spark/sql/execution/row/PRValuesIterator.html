@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>PRValuesIterator - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.row.PRValuesIterator</title>
-          <meta name="description" content="PRValuesIterator - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.row.PRValuesIterator" />
-          <meta name="keywords" content="PRValuesIterator snappydata 2.11 0.8 API org.apache.spark.sql.execution.row.PRValuesIterator" />
+          <title>PRValuesIterator - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.row.PRValuesIterator</title>
+          <meta name="description" content="PRValuesIterator - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.row.PRValuesIterator" />
+          <meta name="keywords" content="PRValuesIterator snappydata 2.11 0.9 API org.apache.spark.sql.execution.row.PRValuesIterator" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -92,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.row.PRValuesIterator#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,bucketIds:java.util.Set[Integer]):org.apache.spark.sql.execution.row.PRValuesIterator[T]"></a>
+      <a id="&lt;init&gt;(container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,region:com.gemstone.gemfire.internal.cache.LocalRegion,bucketIds:java.util.Set[Integer]):org.apache.spark.sql.execution.row.PRValuesIterator[T]"></a>
       <a id="&lt;init&gt;:PRValuesIterator[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">PRValuesIterator</span><span class="params">(<span name="container">container: <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.GemFireContainer">GemFireContainer</span></span>, <span name="bucketIds">bucketIds: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>)</span>
+        <span class="name">PRValuesIterator</span><span class="params">(<span name="container">container: <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.GemFireContainer">GemFireContainer</span></span>, <span name="region">region: <span class="extype" name="com.gemstone.gemfire.internal.cache.LocalRegion">LocalRegion</span></span>, <span name="bucketIds">bucketIds: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.PRValuesIterator@&lt;init&gt;(container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,bucketIds:java.util.Set[Integer]):org.apache.spark.sql.execution.row.PRValuesIterator[T]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.PRValuesIterator@&lt;init&gt;(container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,region:com.gemstone.gemfire.internal.cache.LocalRegion,bucketIds:java.util.Set[Integer]):org.apache.spark.sql.execution.row.PRValuesIterator[T]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -438,23 +438,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TraversableOnce</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.row.PRValuesIterator#container" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer"></a>
-      <a id="container:GemFireContainer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">container</span><span class="result">: <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.GemFireContainer">GemFireContainer</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.PRValuesIterator@container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.collection.Iterator#contains" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="contains(elem:Any):Boolean"></a>
       <a id="contains(Any):Boolean"></a>
@@ -1056,23 +1039,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterator → GenTraversableOnce</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.row.PRValuesIterator#itr" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="itr:com.gemstone.gemfire.internal.cache.PartitionedRegion#PRLocalScanIterator"></a>
-      <a id="itr:PRLocalScanIterator"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">itr</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.PartitionedRegion.PRLocalScanIterator">PRLocalScanIterator</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.PRValuesIterator@itr:com.gemstone.gemfire.internal.cache.PartitionedRegion#PRLocalScanIterator" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.collection.Iterator#length" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="length:Int"></a>
       <a id="length:Int"></a>

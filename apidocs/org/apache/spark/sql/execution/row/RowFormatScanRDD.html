@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>RowFormatScanRDD - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.row.RowFormatScanRDD</title>
-          <meta name="description" content="RowFormatScanRDD - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.row.RowFormatScanRDD" />
-          <meta name="keywords" content="RowFormatScanRDD snappydata 2.11 0.8 API org.apache.spark.sql.execution.row.RowFormatScanRDD" />
+          <title>RowFormatScanRDD - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.row.RowFormatScanRDD</title>
+          <meta name="description" content="RowFormatScanRDD - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.row.RowFormatScanRDD" />
+          <meta name="keywords" content="RowFormatScanRDD snappydata 2.11 0.9 API org.apache.spark.sql.execution.row.RowFormatScanRDD" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -94,7 +94,7 @@ This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitionEvaluator:()=&gt;Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitionEvaluator:()=&gt;Array[org.apache.spark.Partition],commitTx:Boolean):org.apache.spark.sql.execution.row.RowFormatScanRDD"></a>
       <a id="&lt;init&gt;:RowFormatScanRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -103,10 +103,10 @@ This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
       </span>
       <span class="symbol">
         <span class="name">RowFormatScanRDD</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isPartitioned">isPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="columns">columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="pushProjections">pushProjections: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="useResultSet">useResultSet: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="connProperties">connProperties: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">Array.empty[Filter]</a></span></span></span>, <span name="partitionEvaluator">partitionEvaluator: () ⇒ <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">() =&gt;
-      Array.empty[Partition]</a></span></span></span>)</span>
+      Array.empty[Partition]</a></span></span></span>, <span name="commitTx">commitTx: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitionEvaluator:()=&gt;Array[org.apache.spark.Partition]):org.apache.spark.sql.execution.row.RowFormatScanRDD" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,isPartitioned:Boolean,columns:Array[String],pushProjections:Boolean,useResultSet:Boolean,connProperties:org.apache.spark.sql.sources.ConnectionProperties,filters:Array[org.apache.spark.sql.sources.Filter],partitionEvaluator:()=&gt;Array[org.apache.spark.Partition],commitTx:Boolean):org.apache.spark.sql.execution.row.RowFormatScanRDD" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -438,6 +438,40 @@ all the data is loaded into the driver's memory.</p></span></dd></dl></div>
     </span>
       <p class="shortcomment cmt"><code>columns</code>, but as a String suitable for injection into a SQL query.</p><div class="fullcomment"><div class="comment cmt"><p><code>columns</code>, but as a String suitable for injection into a SQL query.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#commitTx" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="commitTx:Boolean"></a>
+      <a id="commitTx:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">commitTx</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@commitTx:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#commitTxBeforeTaskCompletion" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="commitTxBeforeTaskCompletion(conn:Option[java.sql.Connection],context:org.apache.spark.TaskContext):Unit"></a>
+      <a id="commitTxBeforeTaskCompletion(Option[Connection],TaskContext):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">commitTxBeforeTaskCompletion</span><span class="params">(<span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatScanRDD@commitTxBeforeTaskCompletion(conn:Option[java.sql.Connection],context:org.apache.spark.TaskContext):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.row.RowFormatScanRDD#compute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="compute(thePart:org.apache.spark.Partition,context:org.apache.spark.TaskContext):Iterator[Any]"></a>
       <a id="compute(Partition,TaskContext):Iterator[Any]"></a>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>examples - snappydata_2.11 0.8 API - io.snappydata.examples</title>
-          <meta name="description" content="examples - snappydata 2.11 0.8 API - io.snappydata.examples" />
-          <meta name="keywords" content="examples snappydata 2.11 0.8 API io.snappydata.examples" />
+          <title>examples - snappydata_2.11 0.9 API - io.snappydata.examples</title>
+          <meta name="description" content="examples - snappydata 2.11 0.9 API - io.snappydata.examples" />
+          <meta name="keywords" content="examples snappydata 2.11 0.9 API io.snappydata.examples" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -206,7 +206,7 @@ connect to a Snappy cluster to fetch and query the tables
 using Scala APIs in a Spark App.</p><p>Run this on your local machine:</p><p>Start snappy cluster</p><p><code>$ sbin/snappy-start-all.sh</code></p><p>Start spark cluster</p><p><code>$ sbin/start-all.sh</code></p><p>Create tables</p><p><code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
 --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
 --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p><p><code>$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
---master spark://&lt;hostname&gt;:7077 --conf snappydata.store.locators=localhost:10334 \
+--master spark://&lt;hostname&gt;:7077 --conf snappydata.connection=localhost:1527 \
 $SNAPPY_HOME/examples/jars/quickstart.jar</code></p></div></div>
     </li><li name="io.snappydata.examples.CreateAndLoadAirlineDataJob" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CreateAndLoadAirlineDataJob"></a>

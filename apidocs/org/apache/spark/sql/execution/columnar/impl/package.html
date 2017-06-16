@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>impl - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl</title>
-          <meta name="description" content="impl - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.columnar.impl" />
-          <meta name="keywords" content="impl snappydata 2.11 0.8 API org.apache.spark.sql.execution.columnar.impl" />
+          <title>impl - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.columnar.impl</title>
+          <meta name="description" content="impl - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.columnar.impl" />
+          <meta name="keywords" content="impl snappydata 2.11 0.9 API org.apache.spark.sql.execution.columnar.impl" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -95,6 +95,40 @@ One can insert a single or multiple rows into this table as well
 as do a bulk insert by a Spark DataFrame.
 Bulk insert example is shown above.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatEncoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnFormatEncoderextendsRowEncoder"></a>
+      <a id="ColumnFormatEncoder:ColumnFormatEncoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnFormatEncoder.html"><span class="name">ColumnFormatEncoder</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.RowEncoder">RowEncoder</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatEncoderextendsRowEncoder" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnFormatKeyextendsGfxdDataSerializablewithColumnBatchKeywithRegionKeywithSerializable"></a>
+      <a id="ColumnFormatKey:ColumnFormatKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnFormatKey.html"><span class="name">ColumnFormatKey</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.engine.GfxdDataSerializable">GfxdDataSerializable</span> with <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey">ColumnBatchKey</span> with <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.RegionKey">RegionKey</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatKeyextendsGfxdDataSerializablewithColumnBatchKeywithRegionKeywithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Key object in the column store.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ColumnFormatRelationextendsBaseColumnFormatRelationwithParentRelationwithDependentRelation"></a>
       <a id="ColumnFormatRelation:ColumnFormatRelation"></a>
@@ -112,6 +146,50 @@ Bulk insert example is shown above.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ColumnFormatValueextendsSerializedDiskBufferwithGfxdSerializablewithSizeable"></a>
+      <a id="ColumnFormatValue:ColumnFormatValue"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnFormatValue.html"><span class="name">ColumnFormatValue</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer">SerializedDiskBuffer</span> with <span class="extype" name="com.pivotal.gemfirexd.internal.engine.GfxdSerializable">GfxdSerializable</span> with <span class="extype" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">Sizeable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatValueextendsSerializedDiskBufferwithGfxdSerializablewithSizeable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Value object in the column store simply encapsulates binary data as a
+ByteBuffer.</p><div class="fullcomment"><div class="comment cmt"><p>Value object in the column store simply encapsulates binary data as a
+ByteBuffer. This can be either a direct buffer or a heap buffer depending
+on the system off-heap configuration. The reason for a separate type is to
+easily store data off-heap without any major changes to engine otherwise as
+well as efficiently serialize/deserialize them directly to Oplog/socket.</p><p>This class extends <span class="extype" name="SerializedDiskBuffer">SerializedDiskBuffer</span> to avoid a copy when
+reading/writing from Oplog. Consequently it has a pre-serialized buffer
+that has the serialization header at the start (typeID + classID + size).
+This helps it avoid additional byte writes when transferring data to the
+channels as well as avoiding trimming of buffer when reading from it.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnPartitionResolverextendsInternalPartitionResolver[org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey,org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue]"></a>
+      <a id="ColumnPartitionResolver:ColumnPartitionResolver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnPartitionResolver.html"><span class="name">ColumnPartitionResolver</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.internal.cache.InternalPartitionResolver">InternalPartitionResolver</span>[<a href="ColumnFormatKey.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey">ColumnFormatKey</a>, <a href="ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnPartitionResolverextendsInternalPartitionResolver[org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey,org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Partition resolver for the column store.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ColumnarStorePartitionedRDDextendsRDDKryo[Any]withKryoSerializable"></a>
       <a id="ColumnarStorePartitionedRDD:ColumnarStorePartitionedRDD"></a>
@@ -239,7 +317,24 @@ to allow adding of any index specific functionality in future.</p>
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnFormatEntry"></a>
+      <a id="ColumnFormatEntry:ColumnFormatEntry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ColumnFormatEntry$.html"><span class="name">ColumnFormatEntry</span></a><span class="result"> extends <a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@ColumnFormatEntry" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Utility methods for column format storage keys and values.</p>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ColumnFormatRelation"></a>
       <a id="ColumnFormatRelation:ColumnFormatRelation"></a>
       <h4 class="signature">

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>row - snappydata_2.11 0.8 API - org.apache.spark.sql.execution.row</title>
-          <meta name="description" content="row - snappydata 2.11 0.8 API - org.apache.spark.sql.execution.row" />
-          <meta name="keywords" content="row snappydata 2.11 0.8 API org.apache.spark.sql.execution.row" />
+          <title>row - snappydata_2.11 0.9 API - org.apache.spark.sql.execution.row</title>
+          <meta name="description" content="row - snappydata 2.11 0.9 API - org.apache.spark.sql.execution.row" />
+          <meta name="keywords" content="row snappydata 2.11 0.9 API org.apache.spark.sql.execution.row" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -190,6 +190,23 @@ expected to explicitly invoke ResultSet.next()/get*.</p><div class="fullcomment"
 expected to explicitly invoke ResultSet.next()/get*.
 This is primarily intended to be used for cleanup.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.row.RowDMLExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RowDMLExecextendsTableExecwithProductwithSerializable"></a>
+      <a id="RowDMLExec:RowDMLExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="RowDMLExec.html"><span class="name">RowDMLExec</span></a><span class="params">(<span name="_child">_child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="putInto">putInto: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="delete">delete: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_partitionExpressions">_partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="_numBuckets">_numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="tableSchema">tableSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="resolvedName">resolvedName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="connProps">connProps: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>)</span><span class="result"> extends <a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.package@RowDMLExecextendsTableExecwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generated code plan for bulk insertion into a row table.</p>
     </li><li name="org.apache.spark.sql.execution.row.RowFormatRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RowFormatRelationextendsJDBCMutableRelationwithPartitionedDataSourceScanwithRowPutRelationwithParentRelationwithDependentRelation"></a>
       <a id="RowFormatRelation:RowFormatRelation"></a>
@@ -227,23 +244,6 @@ are retrieved using a JDBC URL or DataSource.</p>
       <p class="shortcomment cmt">A scanner RDD which is very specific to Snappy store row tables.</p><div class="fullcomment"><div class="comment cmt"><p>A scanner RDD which is very specific to Snappy store row tables.
 This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.row.RowInsertExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RowInsertExecextendsTableInsertExecwithProductwithSerializable"></a>
-      <a id="RowInsertExec:RowInsertExec"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="RowInsertExec.html"><span class="name">RowInsertExec</span></a><span class="params">(<span name="_child">_child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="upsert">upsert: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="partitionColumns">partitionColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_partitionExpressions">_partitionExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="_numBuckets">_numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="tableSchema">tableSchema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="relation">relation: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a>]</span>, <span name="onExecutor">onExecutor: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="resolvedName">resolvedName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="connProps">connProps: <a href="../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>)</span><span class="result"> extends <a href="../TableInsertExec.html" class="extype" name="org.apache.spark.sql.execution.TableInsertExec">TableInsertExec</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.package@RowInsertExecextendsTableInsertExecwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Generated code plan for bulk insertion into a row table.</p>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="UnsafeRowDecoderextendsColumnDecoder"></a>
       <a id="UnsafeRowDecoder:UnsafeRowDecoder"></a>
