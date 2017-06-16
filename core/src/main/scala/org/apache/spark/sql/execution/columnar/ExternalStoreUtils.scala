@@ -388,21 +388,6 @@ object ExternalStoreUtils extends Logging {
     })
   }
 
-  def columnIndicesAndDataTypes(requestedSchema: StructType,
-      schema: StructType): Seq[(Int, StructField)] = {
-    if (requestedSchema.isEmpty) {
-      val (narrowestOrdinal, narrowestField) =
-        schema.fields.zipWithIndex.map(f => f._2 -> f._1).minBy { f =>
-          ColumnType(f._2.dataType).defaultSize
-        }
-      Seq(narrowestOrdinal -> narrowestField)
-    } else {
-      requestedSchema.map { a =>
-        schema.fieldIndex(Utils.fieldName(a)) -> a
-      }
-    }
-  }
-
   def setStatementParameters(stmt: PreparedStatement,
       row: mutable.ArrayBuffer[Any]): Unit = {
     var col = 1

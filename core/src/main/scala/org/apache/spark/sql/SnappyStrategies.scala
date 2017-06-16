@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import io.snappydata.Property
 
 import org.apache.spark.sql.JoinStrategy._
+import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
@@ -159,8 +160,10 @@ private[sql] trait SnappyStrategies {
           // send back numPartitions=1 for replicated table since collocated
           if (scan.numBuckets == 1) return (Nil, Nil, 1)
 
+          // use case-insensitive resolution since partitioning columns during
+          // creation could be using the same as opposed to during scan
           val partCols = scan.partitionColumns.map(colName =>
-            r.resolveQuoted(colName, self.snappySession.sessionState.analyzer.resolver)
+            r.resolveQuoted(colName, analysis.caseInsensitiveResolution)
                 .getOrElse(throw new AnalysisException(
                   s"""Cannot resolve column "$colName" among (${r.output})""")))
           // check if join keys match (or are subset of) partitioning columns

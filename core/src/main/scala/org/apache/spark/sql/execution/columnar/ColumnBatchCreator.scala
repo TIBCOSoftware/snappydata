@@ -83,7 +83,7 @@ final class ColumnBatchCreator(
         val gen = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
             dataRDD = null, numBuckets = -1, partitionColumns = Seq.empty,
-            partitionColumnAliases = Seq.empty, baseRelation = null)
+            partitionColumnAliases = Seq.empty, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
           val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,

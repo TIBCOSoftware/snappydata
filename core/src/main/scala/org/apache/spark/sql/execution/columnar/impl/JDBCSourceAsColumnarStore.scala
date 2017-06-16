@@ -317,7 +317,8 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
               otherRDDs = Seq.empty, numBuckets = -1,
               partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
-              baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs)
+              baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
+              caseSensitive = true)
             val insertPlan = RowDMLExec(tableScan, putInto = true, delete = false,
               Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
               resolvedName = null, connProperties)
