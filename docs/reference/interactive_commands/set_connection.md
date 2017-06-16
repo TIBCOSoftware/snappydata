@@ -10,7 +10,7 @@ SET CONNECTION Identifier
 
 ##Description
 
-Allows you to specify which connection to make current when you have more than one connection open. Use the [Show Connections]() command to display open connections.
+Allows you to specify which connection to make current when you have more than one connection open. Use the [Show Connections](show.md) command to display open connections.
 
 If there is no such connection, an error results and the current connection is unchanged.
 

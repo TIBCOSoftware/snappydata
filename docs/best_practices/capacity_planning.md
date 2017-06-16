@@ -23,7 +23,7 @@ Pending tasks have to wait for the completion of the current tasks and are assig
 
 When you add more servers to SnappyData, the processing capacity of the system increases in terms of available cores. Thus, more cores are available so more tasks can concurrently execute.
 
-![Concurrency](/../../Images/core_concurrency.png)
+![Concurrency](../Images/core_concurrency.png)
 
 
 <a id="heap"></a>
@@ -41,7 +41,7 @@ Reserved memory: A certain fraction of heap memory is reserved for JVM objects o
 
 SnappyData tables are by default configured for eviction which means, when there is memory pressure, the tables are evicted to disk. This impacts performance to some degree and hence we recommend sizing your VM before you begin. 
 
-![On-Heap and Off-Heap](/../../Images/on-off-heap.png)
+![On-Heap and Off-Heap](../Images/on-off-heap.png)
 
 <!-- Default values for sizing the VM <mark> Sumedh</mark>-->
 
