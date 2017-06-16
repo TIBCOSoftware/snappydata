@@ -1,13 +1,15 @@
 # Setting Up SnappyData ODBC Driver and Tableau Desktop
 
-
 !!! Note: 
-	This is currently tested and supported only on Windows 10 (32-Bit & 64-Bit systems). Although, versions other than Windows 10 may work, SnappyData is not claiming full testing on other versions.
+	This is currently tested and supported only on Windows 10 (32-Bit & 64-Bit systems). Although versions other than Windows 10 may work, SnappyData is not claiming full testing on other versions.
 
 ## Step 1 and 2:
+
 Ensure that you do the following:
-1. [Install Visual C++ Redistributable for Visual Studio 2015](howto.md/#howto-odbc-step1)
-2. [Install SnappyData ODBC Driver](howto.md/#howto-odbc-step2)
+
+1. [Install Visual C++ Redistributable for Visual Studio 2015](/../howto.md#howto-odbc-step1)
+
+2. [Install SnappyData ODBC Driver](howto.md#howto-odbc-step2)
 
 ## Step 3: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit
 
@@ -26,11 +28,12 @@ To create SnappyData DSN from ODBC Data Sources:
 4. From the list of drivers, select **SnappyData ODBC Driver** and click **Finish**.
 
 5. The **SnappyData ODBC Configuration Dialog** is displayed. Enter the following details to create DSN:
+
 	* **Data Source Name**: Name of the Data Source. For example, snappydsn.  
 
 	* **Server (Hostname or IP)**: IP address of the data server which is running in the SnappyData cluster.
 
-	* **Port**: Port number of the server. By default it is **1528** for the first data server in the cluster.
+	* **Port**: Port number of the server. By default, it is **1528** for the first data server in the cluster.
 
 	* **Login ID**: The login ID required to connect to the server. Fir example, **app**
 
@@ -68,7 +71,7 @@ The **Other Databases (ODBC)** window is displayed.
 
 6. Click **Connect**.
 
-7. When connection to the SnappyData Server is established, the **Sign In** option is enabled. 
+7. When a connection to SnappyData Server is established, the **Sign In** option is enabled. 
 
 8. Click **Sign In** to log into Tableau.
 
@@ -76,10 +79,10 @@ The **Other Databases (ODBC)** window is displayed.
 
 10. All Tables from the selected schema is listed.
 
-11. Select required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click **Update Now** to see your changes.
+11. Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click **Update Now** to see your changes.
 
 12. Click the **Worksheets **tab > **sheet** to start the analysis.</br> 
 
-13. On this screen, you can click and drag a field from the **Dimensions** area to** Rows** or **Columns**. Refer to the Tableau documenation for more information on data visualization.
+13. On this screen, you can click and drag a field from the **Dimensions** area to** Rows** or **Columns**. Refer to the Tableau documentation for more information on data visualization.
 
 
