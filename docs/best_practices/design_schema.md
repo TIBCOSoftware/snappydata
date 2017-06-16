@@ -5,7 +5,7 @@ A columnar table data is stored in a sequence of columns, whereas, in a row tabl
 <a id="column-table"></a>
 ## Using Column Tables
 
-**OLAP Queries**: A column table has distinct advantages for OLAP queries and therefore large tables involved in OLAP queries are recommended to be created as columnar tables. These tables are rarely mutated (deleted/updated).
+**Analytical Queries**: A column table has distinct advantages for OLAP queries and therefore large tables involved in such queries are recommended to be created as columnar tables. These tables are rarely mutated (deleted/updated).
 For a given query on a column table, only the required columns are read (since only the required subset columns are to be scanned), which gives a better scan performance. Thus, aggregation queries execute faster on a column table compared  to a  row table.
 
 **Compression of Data**: Another advantage that the column table offers is it allows highly efficient compression of data which reduces the total storage footprint for large tables.

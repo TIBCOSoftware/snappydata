@@ -1,7 +1,8 @@
 # Overview
-SnappyData Dashboard is a monitoring system that gives you a high-level overview of the status and performance of the cluster. It provides a simple widget based view which helps you easily navigate and monitor your cluster.</br>
 
-To access the SnappyData Dashboard, start your cluster and open http:`<leadhost>`:5050/dashboard/ in your web browser. </br>
+SnappyData Pulse is a monitoring system that gives you a high-level overview of the status and performance of the cluster. It provides a simple widget based view which helps you easily navigate and monitor your cluster.</br>
+
+To access the SnappyData Pulse, start your cluster and open http:`<leadhost>`:5050/dashboard/ in your web browser. </br>
 `<leadhost>` is the hostname or IP of the lead node in your cluster.
 
 The Dashboard also displays the **Last Updated Date** and **Time of statistics** on the top-left side of the page.
