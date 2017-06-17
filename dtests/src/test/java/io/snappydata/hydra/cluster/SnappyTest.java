@@ -1575,7 +1575,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected void recordSnappyProcessIDinNukeRun(String pName) {
+  protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
       String command;
@@ -1587,7 +1587,8 @@ public class SnappyTest implements Serializable {
       ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
       File log = new File(".");
       pb.redirectErrorStream(true);
-      String dest = log.getCanonicalPath() + File.separator + "PIDs.log";
+      String dest = log.getCanonicalPath() + File.separator + "PIDs_" + HostHelper.getLocalHost() +
+      ".log";
       File logFile = new File(dest);
       pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
       pr = pb.start();
