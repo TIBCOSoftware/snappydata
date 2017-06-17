@@ -1588,7 +1588,7 @@ public class SnappyTest implements Serializable {
       File log = new File(".");
       pb.redirectErrorStream(true);
       String dest = log.getCanonicalPath() + File.separator + "PIDs_" + HostHelper.getLocalHost() +
-      ".log";
+          ".log";
       File logFile = new File(dest);
       pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
       pr = pb.start();
