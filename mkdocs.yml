@@ -136,7 +136,8 @@ pages:
         - 'sys-disk-dir': 'reference/configuration_parameters/sys-disk-dir.md'
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
-- API Documentation: apidocsintro.md
+    - 'API Documentation': 'apidocsintro.md'
+    - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - Additional Information: additional_docs.md
 #- About:
 #   - Release Notes: about/release-notes.md

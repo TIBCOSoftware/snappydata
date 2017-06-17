@@ -23,8 +23,8 @@ See <mark> TO BE CONFIRMED RowStore Link [Distributed System Membership Informat
 |LOCATOR   |VARCHAR  |32672 | No |Host and port information for locator members. |
 |SERVERGROUPS   |VARCHAR  | 32672 |No |A comma-separated list of server groups of which this member is a part. <br> **Note**: SnappyData converts server group names to all uppercase letters before storing the values in the SYS.MEMBERS table. DDL statements and procedures automatically convert any supplied server group values to all uppercase letters. However, you must specify uppercase values for server groups when you directly query the SYS.MEMBERS table.|
 |SYSTEMPROPS   |CLOB  | 2147483647  |No  | A list of all system properties used to start this member. This includes properties such as the classpath, JVM version, and so forth.|	
-|GEMFIREPROPS   |CLOB  |2147483647   | No  |The names and values of GemFire core system properties that the member uses. See [Configuration Properties](http://rowstore.docs.snappydata.io/docs/reference/configuration/ConnectionAttributes.html#jdbc_connection_attributes) for property descriptions.|	
-|BOOTPROPS   |CLOB  |2147483647   | No |All of the SnappyData boot properties names and values that a member uses. <!--See [Configuration Properties](http://rowstore.docs.snappydata.io/docs/reference/configuration/ConnectionAttributes.html#jdbc_connection_attributes) for property descriptions. -->|	
+|GEMFIREPROPS   |CLOB  |2147483647   | No  |The names and values of GemFire core system properties that the member uses. |	
+|BOOTPROPS   |CLOB  |2147483647   | No |All of the SnappyData boot properties names and values that a member uses.|	
 
 
 
