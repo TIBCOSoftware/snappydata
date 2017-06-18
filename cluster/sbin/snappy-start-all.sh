@@ -34,7 +34,7 @@ fi
 
 # Check for background start
 BACKGROUND=
-if [ "$1" = "-b" -o "$1" = "--background" ]; then
+if [ "$1" = "-bg" -o "$1" = "--background" ]; then
   BACKGROUND="$1"
   shift
 fi

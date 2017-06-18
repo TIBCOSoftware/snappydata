@@ -25,7 +25,7 @@
 #   SPARK_SSH_OPTS Options passed to ssh when running remote commands.
 ##
 
-usage="Usage: snappy-nodes.sh locator/server/lead [-b|--background] [--config <conf-dir>] command..."
+usage="Usage: snappy-nodes.sh locator/server/lead [-bg|--background] [--config <conf-dir>] command..."
 
 # if no args specified, show usage
 if [ $# -le 0 ]; then
@@ -45,7 +45,7 @@ shift
 
 # Whether to apply the operation in background
 RUN_IN_BACKGROUND=0
-if [ "$1" = "-b" -o "$1" = "--background" ]; then
+if [ "$1" = "-bg" -o "$1" = "--background" ]; then
   RUN_IN_BACKGROUND=1
   shift
 fi
