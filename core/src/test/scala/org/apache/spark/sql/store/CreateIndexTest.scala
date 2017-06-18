@@ -21,13 +21,12 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.collection.mutable.ListBuffer
 
 import io.snappydata.app.{Data1, Data2, Data3}
-import io.snappydata.{QueryHint, SnappyFunSuite}
+import io.snappydata.{Property, QueryHint, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation,
-IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.row.RowFormatRelation
@@ -596,8 +595,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val index31 = s"${table3}_IdxOne"
 
     val snContext = context.get
-    // snc.sessionState.conf.setConf(SQLConf.COLUMN_BATCH_SIZE, batchSize)
-    snContext.setConf(SQLConf.COLUMN_BATCH_SIZE.key, "3")
+    // Property.ColumnBatchSize.set(snContext.conf, 30)
 
     createBase3Tables(snContext, table1, table2, table3)
 
@@ -652,6 +650,16 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val dataDF = snContext.createDataFrame(rdd)
     snContext.createTable(tableName, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
+    snContext.sql("create unique index uidx on " + tableName + " (COL1)")
+    // drop it
+    snContext.sql("drop index uidx")
+    // first try and create a unique index on col1 -- SNAP-1385
+    val tableNameRowReplicated = s"${tableName}_rep"
+    snContext.createTable(tableNameRowReplicated,
+      "row", dataDF.schema, Map.empty[String, String])
+    snContext.sql(s"create unique index uidx_rep on ${tableNameRowReplicated} (COL1)")
+    snContext.sql("drop index uidx_rep")
 
     doPrint("Verify index create and drop for various index types")
     snContext.sql("create index test1 on " + tableName + " (COL1)")

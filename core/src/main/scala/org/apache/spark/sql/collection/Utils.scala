@@ -31,6 +31,7 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.fasterxml.jackson.core.JsonGenerator
+import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
@@ -44,7 +45,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
@@ -56,6 +57,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
@@ -737,6 +739,18 @@ object Utils {
 
   def taskMemoryManager(context: TaskContext): TaskMemoryManager =
     context.taskMemoryManager()
+
+  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
+    val row = new UnsafeRow(numColumns)
+    if (buffer.isDirect) {
+      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
+          buffer.position(), buffer.remaining())
+    } else {
+      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
+          buffer.arrayOffset() + buffer.position(), buffer.remaining())
+    }
+    row
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
@@ -857,7 +871,7 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       bucket = bucketSet.nextSetBit(bucket + 1)
     }
     // trim trailing comma
-    sb.setLength(sb.length - 1)
+    if (sb.nonEmpty) sb.setLength(sb.length - 1)
     sb.toString()
   }
 

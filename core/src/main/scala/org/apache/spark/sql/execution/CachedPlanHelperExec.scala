@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution
 
+
 import java.util.Calendar
 
 import scala.collection.mutable
@@ -33,9 +34,10 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.CachedPlanHelperExec.REFERENCES_KEY
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
+import org.apache.spark.sql.internal.CodeGenerationException
 import org.apache.spark.unsafe.types.UTF8String
 
-case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: SnappySession)
+case class CachedPlanHelperExec(childPlan: CodegenSupport)
     extends UnaryExecNode with CodegenSupport {
 
   override def output: Seq[Attribute] = child.output
@@ -52,6 +54,7 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     // cannot flatten out the references buffer here since the values may not
     // have been populated yet
     session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](REFERENCES_KEY) match {
@@ -65,6 +68,8 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
     var alreadyGotBroadcastNode = false
     childPlan transformDown {
       case bchj: BroadcastHashJoinExec =>
+        logDebug(s"Got a bchj = $bchj and nextstagestarted = $nextStageStarted")
+
         if (!nextStageStarted) {
           // The below assertion was kept thinking that there will be just one
           // broadcasthashjoin in one stage but there can be more than one and so
@@ -86,6 +91,15 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
           }
           alreadyGotBroadcastNode = true
         }
+        bchj transformAllExpressions {
+          case pl: ParamLiteral =>
+            session.getContextObject[mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]]](
+              CachedPlanHelperExec.NOCACHING_KEY) match {
+              case Some(_) =>
+              case None => session.addContextObject(CachedPlanHelperExec.NOCACHING_KEY, true)
+            }
+            pl
+        }
         bchj
       case cp: CachedPlanHelperExec =>
         nextStageStarted = true
@@ -97,7 +111,19 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport, @transient session: S
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode], row: ExprCode): String =
     parent.doConsume(ctx, input, row)
 
-  override protected def doExecute(): RDD[InternalRow] = childPlan.execute()
+  override protected def doExecute(): RDD[InternalRow] = {
+    // This does not handle nested aggregates or joins. Should we handle ?
+    val repeatSeq = childPlan.collect {
+      case p: NonRecursivePlans => !p.producedForPlanInstance
+      case _ => true
+    }
+    val shouldExecute = repeatSeq.reduce((a, b) => a && b)
+    if (shouldExecute) {
+      childPlan.execute()
+    } else {
+      throw new CodeGenerationException("Code generation failed for some of the child plans")
+    }
+  }
 }
 
 object CachedPlanHelperExec extends Logging {

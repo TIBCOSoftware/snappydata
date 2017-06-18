@@ -342,14 +342,15 @@ class QueryRoutingDUnitTest(val s: String)
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    createTableAndInsertData2()
+    createTableAndInsertData2(netPort1)
     val conn = getANetConnection(netPort1)
     val stmt = conn.createStatement()
 
     val numExpectedRows = 188894
     var rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
     assert(rs.next())
-    assert(rs.getInt(1) == numExpectedRows, "got rows=" + rs.getInt(1))
+    val numRows = rs.getInt(1)
+    assert(numRows == numExpectedRows, s"got rows=$numRows")
     assert(!rs.next())
 
     val md = rs.getMetaData
@@ -563,13 +564,13 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, INTERNAL_SCHEMA_NAME, null,
+    val rSet2 = dbmd.getTables(null, SHADOW_SCHEMA_NAME, null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"APP__${t + SHADOW_TABLE_SUFFIX}".
+      if (s"APP____${t + SHADOW_TABLE_SUFFIX}".
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
@@ -597,7 +598,7 @@ class QueryRoutingDUnitTest(val s: String)
         .saveAsTable(tableName)
   }
 
-  def createTableAndInsertData2(): Unit = {
+  def createTableAndInsertData2(netPort1: Int): Unit = {
     val snc = SnappyContext(sc)
     val tableName: String = "Airline"
 
@@ -605,6 +606,16 @@ class QueryRoutingDUnitTest(val s: String)
     val dataDF = snc.read.load(hfile)
     snc.createTable(tableName, "column", dataDF.schema,
       Map.empty[String, String])
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+
+    val numExpectedRows = 0
+    var rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
+    assert(rs.next())
+    val numRows = rs.getInt(1)
+    assert(numRows == numExpectedRows, s"got rows=$numRows")
+    assert(!rs.next())
+
     dataDF.write.format("column").mode(SaveMode.Append)
         .saveAsTable(tableName)
   }
@@ -647,7 +658,7 @@ class QueryRoutingDUnitTest(val s: String)
 
   }
 
-  def testNodesPruning(): Unit = {
+  def DISABLED_SNAP_1597_testNodesPruning(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val snc = SnappyContext(sc)

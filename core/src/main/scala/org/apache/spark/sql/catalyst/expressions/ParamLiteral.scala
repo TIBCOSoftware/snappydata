@@ -23,13 +23,26 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import org.json4s.JsonAST.JValue
 
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 
+// A marker interface to extend usage of Literal case matching.
+// A literal that can change across multiple query execution.
+trait DynamicReplacableConstant {
+  def eval(input: InternalRow = null): Any
+
+  def convertedLiteral: Any
+}
+
+// whereever ParamLiteral case matching is required, it must match
+// for DynamicReplacableConstant and use .eval(..) for code generation.
+// see SNAP-1597 for more details.
 class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
-    extends Literal(_value, _dataType) {
+    extends Literal(_value, _dataType) with DynamicReplacableConstant {
+
+  // override def toString: String = s"ParamLiteral ${super.toString}"
 
   private[this] var _foldable = false
 
@@ -227,10 +240,13 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
  *
  * @param expr minimal expression tree that can be evaluated only once and turn into a constant.
  */
-case class DynamicFoldableExpression(expr: Expression) extends Expression {
+case class DynamicFoldableExpression(expr: Expression) extends Expression
+    with DynamicReplacableConstant {
   override def nullable: Boolean = expr.nullable
 
   override def eval(input: InternalRow): Any = expr.eval(input)
+
+  def convertedLiteral: Any = createToScalaConverter(dataType)(eval(null))
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val eval = expr.genCode(ctx)
@@ -252,4 +268,8 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression {
     case thatExpr: DynamicFoldableExpression => expr.canEqual(thatExpr.expr)
     case other => expr.canEqual(other)
   }
+
+  override def nodeName: String = "DynamicExpression"
+
+  override def prettyName: String = "DynamicExpression"
 }

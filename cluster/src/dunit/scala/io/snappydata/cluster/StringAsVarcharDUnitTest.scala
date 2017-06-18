@@ -118,7 +118,7 @@ class StringAsVarcharDUnitTest(val s: String)
     eNv(s, extTab1, stringType, true, 0)
     if (!useDDL) {
       eNv(s, rowTab2, "CLOB")
-      eNv(s, extTab2, stringType, true, 5)
+      eNv(s, extTab2, "CLOB", true, 5)
     }
 
     def testCastOperator(s: Statement, t: String, expectedCount: Int): Unit = {
@@ -157,20 +157,24 @@ class StringAsVarcharDUnitTest(val s: String)
     assert(md.getColumnTypeName(1).equals("INTEGER"))
 
     assert(md.getColumnName(2).equals("COL_STRING"))
-    assert(md.getColumnTypeName(2).equals(stringType))
+    assert(md.getColumnTypeName(2).equals(stringType),
+      s"Expected type to be $stringType but got ${md.getColumnTypeName(2)}")
     if (stringType.equals("VARCHAR")) {
       assert(md.getPrecision(2) == Constant.MAX_VARCHAR_SIZE)
     }
 
     assert(md.getColumnName(3).equals("COL_VARCHAR"))
-    assert(md.getColumnTypeName(3).equals("VARCHAR"))
+    assert(md.getColumnTypeName(3).equals("VARCHAR"),
+      s"Expected type to be VARCHAR but got ${md.getColumnTypeName(3)}")
     assert(md.getPrecision(3) == varcharSize)
 
     assert(md.getColumnName(4).equals("COL_CLOB"))
-    assert(md.getColumnTypeName(4).equals("CLOB"))
+    assert(md.getColumnTypeName(4).equals("CLOB"),
+      s"Expected type to be CLOB but got ${md.getColumnTypeName(4)}")
 
     assert(md.getColumnName(5).equals("COL_CHAR"))
-    assert(md.getColumnTypeName(5).equals("CHAR"))
+    assert(md.getColumnTypeName(5).equals("CHAR"),
+      s"Expected type to be CHAR but got ${md.getColumnTypeName(5)}")
     assert(md.getPrecision(5) == charSize)
 
     assert(md.getTableName(1).equalsIgnoreCase(tName),

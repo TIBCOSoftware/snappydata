@@ -16,7 +16,10 @@
  */
 package org.apache.spark.sql
 
+import io.snappydata.Property
+
 import org.apache.spark.sql.JoinStrategy._
+import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
@@ -32,6 +35,7 @@ import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, Sh
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
+import org.apache.spark.util.{Utils => SparkUtils}
 
 /**
  * This trait is an extension to SparkPlanner and introduces number of
@@ -46,6 +50,10 @@ private[sql] trait SnappyStrategies {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
       sampleSnappyCase(plan)
     }
+  }
+
+  def isDisabled: Boolean = {
+    snappySession.sessionState.disableStoreOptimizations
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
@@ -64,67 +72,70 @@ private[sql] trait SnappyStrategies {
   }
 
   object LocalJoinStrategies extends Strategy {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-
-      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
-      left, right) if canBuildRight(joinType) && canLocalJoin(right) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-          joinType, joins.BuildRight, replicatedTableJoin = true)
-      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
-      left, right) if canBuildLeft(joinType) && canLocalJoin(left) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-          joinType, joins.BuildLeft, replicatedTableJoin = true)
-
-      // check for collocated joins before going for broadcast
-      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-        if isCollocatedJoin(joinType, left, leftKeys, right, rightKeys) =>
-        val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
-        if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
+      Nil
+    } else {
+      plan match {
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
+        left, right) if canBuildRight(joinType) && canLocalJoin(right) =>
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildLeft, replicatedTableJoin = false)
-        } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
+            joinType, joins.BuildRight, replicatedTableJoin = true)
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition,
+        left, right) if canBuildLeft(joinType) && canLocalJoin(left) =>
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildRight, replicatedTableJoin = false)
-        } else if (buildLeft) {
-          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildLeft, replicatedTableJoin = false)
-        } else if (RowOrdering.isOrderable(leftKeys)) {
-          joins.SortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
-            planLater(left), planLater(right)) :: Nil
-        } else Nil
+            joinType, joins.BuildLeft, replicatedTableJoin = true)
 
-      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-        if canBuildRight(joinType) && canBroadcast(right, conf) =>
-        if (skipBroadcastRight(joinType, left, right, conf)) {
+        // check for collocated joins before going for broadcast
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+          if isCollocatedJoin(joinType, left, leftKeys, right, rightKeys) =>
+          val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
+          if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+              joinType, joins.BuildLeft, replicatedTableJoin = false)
+          } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
+            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+              joinType, joins.BuildRight, replicatedTableJoin = false)
+          } else if (buildLeft) {
+            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+              joinType, joins.BuildLeft, replicatedTableJoin = false)
+          } else if (RowOrdering.isOrderable(leftKeys)) {
+            joins.SortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
+              planLater(left), planLater(right)) :: Nil
+          } else Nil
+
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+          if canBuildRight(joinType) && canBroadcast(right, conf) =>
+          if (skipBroadcastRight(joinType, left, right, conf)) {
+            Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+              BuildLeft, condition, planLater(left), planLater(right)))
+          } else {
+            Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+              BuildRight, condition, planLater(left), planLater(right)))
+          }
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+          if canBuildLeft(joinType) && canBroadcast(left, conf) =>
           Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
             BuildLeft, condition, planLater(left), planLater(right)))
-        } else {
-          Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
-            BuildRight, condition, planLater(left), planLater(right)))
-        }
-      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-        if canBuildLeft(joinType) && canBroadcast(left, conf) =>
-        Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
-          BuildLeft, condition, planLater(left), planLater(right)))
 
-      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-        if canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+          if canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
             !RowOrdering.isOrderable(leftKeys) =>
-        if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
+          if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
             left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+              joinType, joins.BuildLeft, replicatedTableJoin = false)
+          } else {
+            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+              joinType, joins.BuildRight, replicatedTableJoin = false)
+          }
+        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
+          if canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) ||
+            !RowOrdering.isOrderable(leftKeys) =>
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
             joinType, joins.BuildLeft, replicatedTableJoin = false)
-        } else {
-          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-            joinType, joins.BuildRight, replicatedTableJoin = false)
-        }
-      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right)
-        if canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) ||
-            !RowOrdering.isOrderable(leftKeys) =>
-        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-          joinType, joins.BuildLeft, replicatedTableJoin = false)
 
-      case _ => Nil
+        case _ => Nil
+      }
     }
 
     private def getCollocatedPartitioning(joinType: JoinType,
@@ -149,8 +160,10 @@ private[sql] trait SnappyStrategies {
           // send back numPartitions=1 for replicated table since collocated
           if (scan.numBuckets == 1) return (Nil, Nil, 1)
 
+          // use case-insensitive resolution since partitioning columns during
+          // creation could be using the same as opposed to during scan
           val partCols = scan.partitionColumns.map(colName =>
-            r.resolveQuoted(colName, self.snappySession.sessionState.analyzer.resolver)
+            r.resolveQuoted(colName, analysis.caseInsensitiveResolution)
                 .getOrElse(throw new AnalysisException(
                   s"""Cannot resolve column "$colName" among (${r.output})""")))
           // check if join keys match (or are subset of) partitioning columns
@@ -234,6 +247,14 @@ private[sql] trait SnappyStrategies {
         replicatedTableJoin) :: Nil
     }
   }
+
+  object SnappyAggregation extends Strategy {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
+      Nil
+    } else {
+      new SnappyAggregationStrategy(self).apply(plan)
+    }
+  }
 }
 
 private[sql] object JoinStrategy {
@@ -256,8 +277,7 @@ private[sql] object JoinStrategy {
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <=
-        io.snappydata.Property.HashJoinSize.get(conf)
+    plan.statistics.sizeInBytes <= Property.HashJoinSize.get(conf)
   }
 
   def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
@@ -301,7 +321,11 @@ private[sql] object JoinStrategy {
  *
  * Adapted from Spark's Aggregation strategy.
  */
-object SnappyAggregation extends Strategy {
+class SnappyAggregationStrategy(planner: DefaultPlanner)
+    extends Strategy {
+
+  private val maxAggregateInputSize =
+    SparkUtils.byteStringAsBytes(Property.HashAggregateSize.get(planner.conf))
 
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ReturnAnswer(rootPlan) => applyAggregation(rootPlan, isRootPlan = true)
@@ -311,7 +335,8 @@ object SnappyAggregation extends Strategy {
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
     case PhysicalAggregation(groupingExpressions, aggregateExpressions,
-    resultExpressions, child) =>
+    resultExpressions, child) if maxAggregateInputSize <= 0 ||
+        child.statistics.sizeInBytes <= maxAggregateInputSize =>
 
       val (functionsWithDistinct, functionsWithoutDistinct) =
         aggregateExpressions.partition(_.isDistinct)
@@ -633,7 +658,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
         case _ => agg
       }
 
-    case t: TableInsertExec =>
+    case t: TableExec =>
       if (t.partitioned &&
           t.child.outputPartitioning.numPartitions != t.numBuckets) {
         // force shuffle when inserting into a table with different partitions
@@ -648,11 +673,25 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
   * Rule to collapse the partial and final aggregates if the grouping keys
   * match or are superset of the child distribution.
   */
-case class InsertCachedPlanHelper(session: SparkSession) extends Rule[SparkPlan] {
-  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
-    case ws @ WholeStageCodegenExec(onlychild) => {
-      val c = onlychild.asInstanceOf[CodegenSupport]
-      ws.copy(child = CachedPlanHelperExec(c, session.asInstanceOf[SnappySession]))
+case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
+    extends Rule[SparkPlan] {
+  private def addFallback(plan: SparkPlan): SparkPlan = {
+    // skip fallback plan when optimizations are already disabled,
+    // or if the plan is not a top-level one e.g. a subquery or inside
+    // CollectAggregateExec (only top-level plan will catch and retry
+    //   with disabled optimizations)
+    if (!topLevel || session.sessionState.disableStoreOptimizations) plan
+    else plan match {
+      // TODO: disabled for StreamPlans due to issues but can it require fallback?
+      case _: StreamPlan => plan
+      case _ => CodegenSparkFallback(plan)
     }
   }
+
+  override def apply(plan: SparkPlan): SparkPlan = addFallback(plan.transformUp {
+    case ws@WholeStageCodegenExec(CachedPlanHelperExec(_)) => ws
+    case ws @ WholeStageCodegenExec(onlychild) =>
+      val c = onlychild.asInstanceOf[CodegenSupport]
+      ws.copy(child = CachedPlanHelperExec(c))
+  })
 }

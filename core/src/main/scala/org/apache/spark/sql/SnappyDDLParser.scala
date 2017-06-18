@@ -293,9 +293,9 @@ abstract class SnappyDDLParser(session: SnappySession)
             .getOrElse(Map.empty[String, String])
         val options = indexType.asInstanceOf[Option[Boolean]] match {
           case Some(false) =>
-            parameters + (ExternalStoreUtils.INDEX_TYPE -> "unique")
-          case Some(true) =>
             parameters + (ExternalStoreUtils.INDEX_TYPE -> "global hash")
+          case Some(true) =>
+            parameters + (ExternalStoreUtils.INDEX_TYPE -> "unique")
           case None => parameters
         }
         CreateIndex(indexName, tableName, cols, options)

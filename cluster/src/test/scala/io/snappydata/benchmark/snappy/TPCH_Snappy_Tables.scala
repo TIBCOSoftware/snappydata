@@ -73,9 +73,9 @@ object TPCH_Snappy_Tables extends SnappySQLJob {
         loadPerfPrintStream)
     }
 
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(snc, tpchDataPath, isSnappy,
+    TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(snc, tpchDataPath, isSnappy,
+    TPCHColumnPartitionedTable.createPopulateLineItemTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream)

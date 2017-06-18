@@ -21,8 +21,8 @@ import scala.collection.mutable
 import io.snappydata.Constant
 import org.parboiled2._
 
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types._
@@ -33,7 +33,7 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
  */
 abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
-  val caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
+  protected var caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
 
   private[sql] final val queryHints = new mutable.HashMap[String, String]
 
@@ -130,14 +130,11 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
   }
 
   protected final def quotedIdentifier: Rule1[String] = rule {
-    atomic('"' ~ capture((noneOf("\"") | "\"\""). +) ~ '"') ~
-        ws ~> { (s: String) =>
-      val id = if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
-      if (caseSensitive) id else Utils.toUpperCase(id)
-    } |
     atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
-      val id = if (s.indexOf("``") >= 0) s.replace("``", "`") else s
-      if (caseSensitive) id else Utils.toUpperCase(id)
+      if (s.indexOf("``") >= 0) s.replace("``", "`") else s
+    } |
+    atomic('"' ~ capture((noneOf("\"") | "\"\""). +) ~ '"') ~ ws ~> { (s: String) =>
+      if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
     }
   }
 

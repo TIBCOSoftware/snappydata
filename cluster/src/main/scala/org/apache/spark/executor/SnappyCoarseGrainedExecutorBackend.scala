@@ -19,6 +19,7 @@ package org.apache.spark.executor
 import java.net.URL
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ExecutorInitiator
 
@@ -73,7 +74,11 @@ class SnappyCoarseGrainedExecutorBackend(
       notifyDriver: Boolean = true): Unit = {
     exitWithoutRestart()
     // See if the VM is going down
-    Misc.checkIfCacheClosing(null)
+    try {
+      Misc.checkIfCacheClosing(null)
+    } catch {
+      case _: CancelException => return
+    }
     // Executor may fail to connect to the driver because of
     // https://issues.apache.org/jira/browse/SPARK-9820 and
     // https://issues.apache.org/jira/browse/SPARK-8592. To overcome such

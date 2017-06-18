@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
-import org.apache.spark.sql.sources.PutIntoTable
+import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -193,6 +193,31 @@ object snappy extends Serializable {
         session.sessionState.catalog.newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
     }
+
+    def deleteFrom(tableName: String): Unit = {
+      val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
+      val session = df.sparkSession match {
+        case sc: SnappySession => sc
+        case _ => sys.error("Expected a SnappyContext for putInto operation")
+      }
+      val normalizedParCols = parColsMethod.invoke(writer)
+          .asInstanceOf[Option[Seq[String]]]
+      // A partitioned relation's schema can be different from the input
+      // logicalPlan, since partition columns are all moved after data columns.
+      // We Project to adjust the ordering.
+      // TODO: this belongs to the analyzer.
+      val input = normalizedParCols.map { parCols =>
+        val (inputPartCols, inputDataCols) = df.logicalPlan.output.partition {
+          attr => parCols.contains(attr.name)
+        }
+        Project(inputDataCols ++ inputPartCols, df.logicalPlan)
+      }.getOrElse(df.logicalPlan)
+
+      df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
+        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+          .executedPlan.executeCollect()
+    }
+
   }
 }
 

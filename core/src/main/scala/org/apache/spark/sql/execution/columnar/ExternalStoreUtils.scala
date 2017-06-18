@@ -63,6 +63,9 @@ object ExternalStoreUtils extends Logging {
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
+  val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
+    COLUMN_MAX_DELTA_ROWS, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
       schema + '.' + tableName
@@ -174,11 +177,11 @@ object ExternalStoreUtils extends Logging {
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
                 "skip-constraint-checks=true"
           case ThinClientConnectorMode(_, url) =>
-            url + ";route-query=false"
+            url + ";route-query=false;skip-constraint-checks=true"
           case SplitClusterMode(_, _) =>
             ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
           case LocalMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
           case ExternalClusterMode(_, url) =>
@@ -237,8 +240,10 @@ object ExternalStoreUtils extends Logging {
     val connProps = new Properties()
     val executorConnProps = new Properties()
     parameters.foreach { kv =>
-      connProps.setProperty(kv._1, kv._2)
-      executorConnProps.setProperty(kv._1, kv._2)
+      if (!ddlOptions.contains(Utils.toUpperCase(kv._1))) {
+        connProps.setProperty(kv._1, kv._2)
+        executorConnProps.setProperty(kv._1, kv._2)
+      }
     }
     connProps.remove("poolProperties")
     executorConnProps.remove("poolProperties")
@@ -246,12 +251,12 @@ object ExternalStoreUtils extends Logging {
     executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
-
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
         true
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
+        connProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
@@ -380,21 +385,6 @@ object ExternalStoreUtils extends Logging {
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))
     })
-  }
-
-  def columnIndicesAndDataTypes(requestedSchema: StructType,
-      schema: StructType): Seq[(Int, StructField)] = {
-    if (requestedSchema.isEmpty) {
-      val (narrowestOrdinal, narrowestField) =
-        schema.fields.zipWithIndex.map(f => f._2 -> f._1).minBy { f =>
-          ColumnType(f._2.dataType).defaultSize
-        }
-      Seq(narrowestOrdinal -> narrowestField)
-    } else {
-      requestedSchema.map { a =>
-        schema.fieldIndex(Utils.fieldName(a)) -> a
-      }
-    }
   }
 
   def setStatementParameters(stmt: PreparedStatement,
@@ -571,12 +561,15 @@ object ExternalStoreUtils extends Logging {
           val p = math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP),
             Int.MaxValue).toInt
           (p, -1)
-        } else (Limits.DB2_LOB_MAXWIDTH, -1)
+        } else (Limits.DB2_VARCHAR_MAXWIDTH, -1)
         case _: NumericType => (-1, 0)
         case _ => (-1, -1)
       }
-      val jdbcTypeOpt = GemFireXDDialect.getJDBCType(dataType).orElse(
+      val jdbcTypeOpt = if (dataType eq StringType) {
+        Some(org.apache.spark.sql.jdbc.JdbcType("VARCHAR", java.sql.Types.VARCHAR))
+      } else { GemFireXDDialect.getJDBCType(dataType).orElse(
         JdbcUtils.getCommonJDBCType(dataType))
+      }
       jdbcTypeOpt match {
         case Some(jdbcType) =>
           val (precision, width) = if (prec == -1) {

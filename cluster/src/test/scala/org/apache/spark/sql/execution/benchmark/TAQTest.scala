@@ -17,14 +17,14 @@
 package org.apache.spark.sql.execution.benchmark
 
 import java.sql.{Date, DriverManager, Timestamp}
-import java.util.{Calendar, GregorianCalendar}
+import java.time.{ZoneId, ZonedDateTime}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
+import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
-import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{Decimal, DecimalType, StringType, StructField, StructType}
@@ -36,34 +36,39 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 class TAQTest extends SnappyFunSuite {
 
   override protected def newSparkConf(
-      addOn: SparkConf => SparkConf = null): SparkConf = {
-    val conf = new SparkConf()
-        .setIfMissing("spark.master", "local[*]")
-        .setAppName("microbenchmark")
-    conf.set("snappydata.store.eviction-heap-percentage", "90")
-    conf.set("snappydata.store.critical-heap-percentage", "95")
-    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    if (addOn != null) {
-      addOn(conf)
+      addOn: SparkConf => SparkConf = null): SparkConf =
+    TAQTest.newSparkConf(addOn)
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
     }
-    conf
   }
 
-  ignore("select queries with random data - insert") {
+  override def afterAll(): Unit = {
+    super.afterAll()
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
+    }
+  }
+
+  test("select queries with random data (eviction) - insert") {
     val quoteSize = 34000000L
     val tradeSize = 5000000L
     val numDays = 1
     val numIters = 5
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true,
-      op = CreateOp.Quote)
+      op = CreateOp.Quote, runSparkCaching = false)
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       tradeSize, numDays, queryNumber = 2, numIters, doInit = false,
-      op = CreateOp.Trade)
+      op = CreateOp.Trade, runSparkCaching = false)
   }
 
-  test("select queries with random data - query") {
+  test("select queries with random data (eviction) - query") {
     val quoteSize = 3400000L
     val tradeSize = 500000L
     val numDays = 1
@@ -273,6 +278,22 @@ object TAQTest extends Logging with Assertions {
     System.runFinalization()
   }
 
+  def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
+    val cores = math.min(8, Runtime.getRuntime.availableProcessors())
+    val conf = new SparkConf()
+        .setIfMissing("spark.master", s"local[$cores]")
+        .setAppName("microbenchmark")
+    conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("snappydata.store.memory-size", "1200m")
+    conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
+    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    if (addOn != null) {
+      addOn(conf)
+    }
+    conf
+  }
+
   /**
    * Benchmark caching randomized keys created from a range.
    */
@@ -294,9 +315,10 @@ object TAQTest extends Logging with Assertions {
       val exs = EXCHANGES.map(UTF8String.fromString)
       val numExs = exs.length
       var day = 0
-      // month is 0 based
-      var cal = new GregorianCalendar(2016, 5, day + 6)
-      var date = new Date(cal.getTimeInMillis)
+      val zoneId = ZoneId.systemDefault()
+      var cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+      var millisTime = cal.toInstant.toEpochMilli
+      var date = new Date(millisTime)
       var dayCounter = 0
       itr.map { id =>
         val sym = syms(math.abs(rnd.nextInt() % numSyms))
@@ -306,20 +328,22 @@ object TAQTest extends Logging with Assertions {
           // change date after some number of iterations
           if (dayCounter == 10000) {
             day = (day + 1) % numDays
-            cal = new GregorianCalendar(2016, 5, day + 6)
-            date = new Date(cal.getTimeInMillis)
+            cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+            millisTime = cal.toInstant.toEpochMilli
+            date = new Date(millisTime)
             dayCounter = 0
           }
         }
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
-          cal.set(Calendar.HOUR, rnd.nextInt() & 0x07)
-          cal.set(Calendar.MINUTE, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.SECOND, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.MILLISECOND, math.abs(rnd.nextInt() % 1000))
+          // seconds < 59 so that millis+gid does not overflow into next hour
+          cal = ZonedDateTime.of(2016, 6, day + 6, rnd.nextInt() & 0x07,
+            math.abs(rnd.nextInt() % 60), math.abs(rnd.nextInt() % 59),
+            math.abs(rnd.nextInt() % 1000000000), zoneId)
+          millisTime = cal.toInstant.toEpochMilli
         }
-        val time = new Timestamp(cal.getTimeInMillis + gid)
+        val time = new Timestamp(millisTime + gid)
         Quote(sym, ex, rnd.nextDouble() * 1000.0, time, date)
       }
     }
@@ -330,9 +354,10 @@ object TAQTest extends Logging with Assertions {
       val exs = EXCHANGES.map(UTF8String.fromString)
       val numExs = exs.length
       var day = 0
-      // month is 0 based
-      var cal = new GregorianCalendar(2016, 5, day + 6)
-      var date = new Date(cal.getTimeInMillis)
+      val zoneId = ZoneId.systemDefault()
+      var cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+      var millisTime = cal.toInstant.toEpochMilli
+      var date = new Date(millisTime)
       var dayCounter = 0
       itr.map { id =>
         val sym = syms(math.abs(rnd.nextInt() % numSyms))
@@ -343,20 +368,22 @@ object TAQTest extends Logging with Assertions {
           if (dayCounter == 10000) {
             // change date
             day = (day + 1) % numDays
-            cal = new GregorianCalendar(2016, 5, day + 6)
-            date = new Date(cal.getTimeInMillis)
+            cal = ZonedDateTime.of(2016, 6, day + 6, 0, 0, 0, 0, zoneId)
+            millisTime = cal.toInstant.toEpochMilli
+            date = new Date(millisTime)
             dayCounter = 0
           }
         }
         val gid = (id % 400).toInt
         // reset the timestamp every once in a while
         if (gid == 0) {
-          cal.set(Calendar.HOUR, rnd.nextInt() & 0x07)
-          cal.set(Calendar.MINUTE, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.SECOND, math.abs(rnd.nextInt() % 60))
-          cal.set(Calendar.MILLISECOND, math.abs(rnd.nextInt() % 1000))
+          // seconds < 59 so that millis+gid does not overflow into next hour
+          cal = ZonedDateTime.of(2016, 6, day + 6, rnd.nextInt() & 0x07,
+            math.abs(rnd.nextInt() % 60), math.abs(rnd.nextInt() % 59),
+            math.abs(rnd.nextInt() % 1000000000), zoneId)
+          millisTime = cal.toInstant.toEpochMilli
         }
-        val time = new Timestamp(cal.getTimeInMillis + gid)
+        val time = new Timestamp(millisTime + gid)
         val dec = Decimal(math.abs(rnd.nextInt() % 100000000), 10, 4)
         val c1 = Array(sym, ex, sym)
         val bid = rnd.nextDouble() * 1000
@@ -462,8 +489,8 @@ object TAQTest extends Logging with Assertions {
         }
       }
 
-      addCaseWithCleanup(benchmark, name, numIters, prepare,
-        cleanup, testCleanup) { _ =>
+      ColumnCacheBenchmark.addCaseWithCleanup(benchmark, name, numIters,
+        prepare, cleanup, testCleanup) { _ =>
         op match {
           case CreateOp.Read =>
             if (snappy) {

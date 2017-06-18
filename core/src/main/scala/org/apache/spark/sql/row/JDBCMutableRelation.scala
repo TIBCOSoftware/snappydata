@@ -28,7 +28,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.execution.row.RowInsertExec
+import org.apache.spark.sql.execution.row.RowDMLExec
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -103,11 +103,11 @@ case class JDBCMutableRelation(
         dialect, sqlContext)
       tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(table,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // Do Nothing
-        }
+//        dialect match {
+//          case d: JdbcExtendedDialect => d.initializeTable(table,
+//            sqlContext.conf.caseSensitiveAnalysis, conn)
+//          case _ => // Do Nothing
+//        }
         return tableSchema
       }
 
@@ -176,11 +176,17 @@ case class JDBCMutableRelation(
   }
 
   final lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
-    table, schema, upsert = false)
+    table, schema, putInto = false)
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowInsertExec(child, upsert = false, Seq.empty, Seq.empty, -1,
+    RowDMLExec(child, putInto = false, delete = false, Seq.empty, Seq.empty, -1,
+      schema, Some(this), onExecutor = false, table, connProperties)
+  }
+
+  override def getDeletePlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    RowDMLExec(child, putInto = false, delete = true, Seq.empty, Seq.empty, -1,
       schema, Some(this), onExecutor = false, table, connProperties)
   }
 

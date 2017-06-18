@@ -72,7 +72,7 @@ final class SparkShellRDDHelper {
   }
 
   def executeQuery(conn: Connection, tableName: String,
-      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet) = {
+      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
@@ -103,8 +103,14 @@ final class SparkShellRDDHelper {
 //      }
     }
 
+    val txId = SparkShellRDDHelper.snapshotTxId.get()
+    if (!txId.equals("null")) {
+      statement.execute(
+        s"call sys.USE_SNAPSHOT_TXID('$txId')")
+    }
+
     val rs = statement.executeQuery(query)
-    (statement, rs)
+    (statement, rs, txId)
   }
 
   def getConnection(connectionProperties: ConnectionProperties,
@@ -131,6 +137,7 @@ final class SparkShellRDDHelper {
     // enable direct ByteBuffers for best performance
     val executorProps = connProperties.executorConnProps
     executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
+    executorProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
     // setup pool properties
     val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
@@ -150,6 +157,8 @@ final class SparkShellRDDHelper {
 }
 
 object SparkShellRDDHelper {
+
+  var snapshotTxId: ThreadLocal[String] = new ThreadLocal[String]
 
   def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
     val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)

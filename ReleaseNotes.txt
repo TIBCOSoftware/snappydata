@@ -11,8 +11,131 @@ Release 0.9
 
 - New Features/Fixed Issues
 
+  [Snap-1286] Thin Client Smart Connector implementation.
+
+  [SNAP-1235] Overhaul SnappyUnifiedMemoryManager to work properly for overflow.
+
+  [SNAP-1454] Support for Off-Heap in column store.
+
+  [SNAP-1413] install_jar does not work for Streaming jobs. Handled classloader in case of 
+  Streaming factory as well.
+
+  [SNAP-1424] Add a "shouldStop()" call to EncoderScanExec. The "shouldStop()" check is necessary 
+  because if the target is a RowWriter (e.g. the parent is an EXCHANGE) then the same row gets 
+  reused.
+
+  [SNAP-1304] Implementation of Snapshot Isolation in snappydata.
+
+  [SNAP-990] Column wise storage in region for better perf instead of full cachedbatch.
+    
+  [SNAP-1346] Plan caching ignoring constant values.
+
+  [SNAP-1323] Support parameterized prepared statements for routed queries. Changes for improved
+  execution of prepared statement on column table through JDBC route.
+
+  JDBC CDC Streaming support. (https://github.com/SnappyDataInc/snappydata/pull/622)
+
+  [SNAP-1655] Support for boolean in row table.
+    
+  [SNAP-1705] Support slash ('/') and special characters in column names.
+
+  [SNAP-1698] Snappy Dashboard UI Enhancements
+
+  Multi-grid master (https://github.com/SnappyDataInc/snappydata/pull/628)
+    
+  [SNAP-1545] Redesigned SnappyData Dashboard. Now displays detailed member description, heap and
+  off-heap usage along with snappy storage and execution splits. It also displays cluster level
+  aggregate Memory and CPU usage.
+
+  [SNAP-1642] Avoid plan caching for queries with subqueries as the underlying changing data does
+  not reflect in subsequent query.
+
+  [SNAP-1221] Unable to restart server nodes in the cluster due to 
+  ConflictingPersistentDataException.
+
+  [SNAP-1461] Scalar subquery is only allowed to return a single row, while executing subquery on
+  partitioned row table. This is fixed by routing any query with more than one table to lead node.
+
+  [SNAP-1520] Switched to upstream Spark from snappy-spark-unsafe. Removed explicit 
+  KryoSerializableSerializer registration for UnsafeRow and UTF8String in PooledKryoSerializer and
+  instead call just the .register() method which will determine the serializer to be used by
+  reflection.
+
+  [SNAP-1615] If a column being aggregated has a NULL value while grouping on a string column, the
+  grouping row itself produces a new row with Null column. As a fix, check the actual value while
+  scanning row table for string column to decide whether its Null or not.
+    
+  [SNAP-1496] Wide table scan for column tables fails due to 64K limitation of JVM. As a fix, we
+  now chunk the different parts of the scan code if the number of columns exceeds 30.
+    
+  [SNAP-1384] Column Table Inserts can fail if generated code is big. Modified ColumnInsertExec to
+  handle wides schema to 1012 columns.
+
+  [SNAP-892] SnappyData launch script picks localhost as the locator hostname and ignores 
+  conf/locators, when invoked from non-locator host.
+    
+  [SNAP-1518] sbin/snappy-start-all/.sh does not start lead in a large cluster. As a fix, retry if
+  Hive metastore initialization fails due to datastore being no yet available on servers.
+
+  [SNAP-1400] When a server/cluster is restarted, sometimes incorrect results are observed. Added a
+  check to get buckets from initialized members only.
+
+  [SNAP-1344] As streaming jobs are recurring jobs, the earlier mechanism of removing dependent jar
+  files were broken. Now we maintain a list of jars in the context itself and remove the jars when
+  the streaming context is stopped.
+
+  [SNAP-1494]: Dashboard shows an exception stack trace when a server goes down. Exception handled 
+  and logged it into log file.
+
+  [SNAP-1399] Updated column stats for complex type which was causing issue while inserting JSON 
+  data to column table.
+    
+  [SNAP-1351] After a low memory exception is encountered, the snappy server does not remain stable.
+  Snappy threads cannot be interrupted.
+
   [SNAP-1481] SQL Tab on UI, Description column now displays actual SQL Query string executed
   instead of handler description text.
+
+  [SNAP-1442] Registering row table in catalog after its creation.
+
+  [SNAP-1210] Fix NullPointerException caused when writing dataframe containing timestamp column to
+  csv files by registering FastDatePrinter with KryoSerializer.
+
+  [SNAP-1420] Removed the property "config.trace"->"substitutions" which is generating unneccessary
+  logs.
+
+  [SNAP-1435] Added support for off-heap in SnappyMemoryManager.
+
+  [GITHUB-534][SNAP-1480] Code generation failure for nested GROUP BY. Match against variable name
+  for dictionary optimization.
+
+  [SNAP-1482] Tableau generated query fails with NumberFormatException. Fix parsing of full 
+  engineering format double values.
+
+  [SNAP-303] Handle non-store hive tables in meta-data queries.
+
+  [SNAP-1459] StackOverflowError running query on Airline (narrow table) with small data set. As a
+  fix, registering the classes with a multimap parameter which differentiates between the hashjoin
+  and hashaggregate.
+
+  [SNAP-1361] Added support for schema name in udf while querying e.g. select app.udfname(col_name)
+  from table.
+
+  [SNAP-1414] ArrayIndexOutOfBoundsException when creating sample table out of large dataset. As a
+  fix, passing a reasonable initial size for the encoder term.
+
+  Pruning partitions for predicates based on partitioning columns.
+  (https://github.com/SnappyDataInc/snappydata/pull/543)
+
+  [SNAP-1441] Limit query on column table gives less number of rows (JDBC).
+
+  [SNAP-1395] ElasticSearch connector gives NullPointerException when used with SnappyData.
+
+  Enhancements in SDE
+
+  - For an external table, the LogicalRelation was not storing the table identifier, thus 
+  sample table replacement was not happening. Now passing table identifier in the logical relation.
+
 
 Release 0.8
 
@@ -74,6 +197,7 @@ Release 0.8
     bootstrap are now more accurate.
 
   - Improved performance of closed-form and bootstrap error estimations.
+
 
 Release 0.7
 
