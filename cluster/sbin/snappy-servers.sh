@@ -30,7 +30,7 @@ sbin="`cd "$sbin"; pwd`"
 
 # Check for background specification
 BACKGROUND=
-if [ "$1" = "-b" -o "$1" = "--background" ]; then
+if [ "$1" = "-bg" -o "$1" = "--background" ]; then
   BACKGROUND="$1"
   shift
 fi
