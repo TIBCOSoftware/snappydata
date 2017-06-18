@@ -217,7 +217,7 @@ function collect_on_remote {
   start_epoch="$8"
   end_epoch="$9"
 
-  tmp_dir="$(mktemp -d --tmpdir="$data_dir" data.XXXX)"
+  tmp_dir="$(mktemp -d "$data_dir/data.XXXX")"
   retval=$?
   if [ ! -d ${tmp_dir} ]; then
     echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
@@ -436,7 +436,7 @@ if [ "${VERBOSE}" = "1" ]; then
 fi
 
 # get the uniq lines from the members file
-tmp_members_file="$(mktemp --tmpdir="$data_dir" tmp_mem.XXXX)"
+tmp_members_file="$(mktemp /tmp/debug_mem.XXXX)"
 
 sort $MEMBERS_FILE | uniq >  $tmp_members_file
 
