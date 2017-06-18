@@ -32,11 +32,18 @@ if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
 
+# Check for background start
+BACKGROUND=
+if [ "$1" = "-b" -o "$1" = "--background" ]; then
+  BACKGROUND="$1"
+  shift
+fi
+  
 # Start Locators
 "$sbin"/snappy-locators.sh start "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh start "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND start "$@"
 
 # Start Leads
 if [ "$1" != "rowstore" ]; then

@@ -28,9 +28,16 @@ sbin="`cd "$sbin"; pwd`"
 . "$SPARK_HOME/bin/load-snappy-env.sh"
 
 
+# Check for background specification
+BACKGROUND=
+if [ "$1" = "-b" -o "$1" = "--background" ]; then
+  BACKGROUND="$1"
+  shift
+fi
+
 # Launch the slaves
 if echo $@ | grep -qw start; then
-  "$sbin/snappy-nodes.sh" server cd "$SPARK_HOME" \; "$sbin/snappy-server.sh"  $@ $SERVER_STARTUP_OPTIONS
+  "$sbin/snappy-nodes.sh" server $BACKGROUND cd "$SPARK_HOME" \; "$sbin/snappy-server.sh"  $@ $SERVER_STARTUP_OPTIONS
 else
-  "$sbin/snappy-nodes.sh" server cd "$SPARK_HOME" \; "$sbin/snappy-server.sh"  $@
+  "$sbin/snappy-nodes.sh" server $BACKGROUND cd "$SPARK_HOME" \; "$sbin/snappy-server.sh"  $@
 fi

@@ -29,6 +29,13 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/snappy-config.sh"
 
 
+# Check for background stop
+BACKGROUND=
+if [ "$1" = "-b" -o "$1" = "--background" ]; then
+  BACKGROUND="$1"
+  shift
+fi
+
 # Stop Leads
 leadStatus=`"$sbin"/snappy-leads.sh status`
 if ! echo $leadStatus | grep -qw "status: stopped"; then
@@ -36,7 +43,7 @@ if ! echo $leadStatus | grep -qw "status: stopped"; then
 fi
 
 # Stop Servers
-"$sbin"/snappy-servers.sh stop
+"$sbin"/snappy-servers.sh $BACKGROUND stop
 
 # Stop locators
 "$sbin"/snappy-locators.sh stop

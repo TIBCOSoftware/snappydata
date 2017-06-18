@@ -25,7 +25,7 @@
 #   SPARK_SSH_OPTS Options passed to ssh when running remote commands.
 ##
 
-usage="Usage: snappy-nodes.sh locator/server/lead [--config <conf-dir>] command..."
+usage="Usage: snappy-nodes.sh locator/server/lead [-b|--background] [--config <conf-dir>] command..."
 
 # if no args specified, show usage
 if [ $# -le 0 ]; then
@@ -43,6 +43,14 @@ sbin="`cd "$sbin"; pwd`"
 componentType=$1
 shift
 
+# Whether to apply the operation in background
+RUN_IN_BACKGROUND=0
+if [ "$1" = "-b" -o "$1" = "--background" ]; then
+  RUN_IN_BACKGROUND=1
+  shift
+fi
+export RUN_IN_BACKGROUND
+  
 # Check if --config is passed as an argument. It is an optional parameter.
 # Exit if the argument is not a directory.
 if [ "$1" == "--config" ]
@@ -115,6 +123,8 @@ fi
 
 MEMBERS_FILE="$SPARK_HOME/work/members.txt"
 
+FIRST_NODE=1
+export FIRST_NODE
 function execute() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
 
@@ -132,7 +142,7 @@ function execute() {
       args="${args} $LOCATOR_ARGS"
       # inject start-locators argument if not present
       if [[ "${componentType}" == "locator" && -z "$(echo  $args $"${@// /\\ }" | grep 'start-locator=')" ]]; then
-        port=$(echo $args | grep -woP "peer-discovery-port=.*?[^ ]" | sed 's#peer-discovery-port=##g')
+        port=$(echo $args | grep -wo "peer-discovery-port=[^ ]*" | sed 's#peer-discovery-port=##g')
         if [ -z "$port" ]; then
           port=$default_loc_port
         fi
@@ -156,16 +166,34 @@ function execute() {
     args="${dirparam}"
   fi
 
+  if [ ! -d "${SPARK_HOME}/work" ]; then
+    mkdir -p "${SPARK_HOME}/work"
+    ret=$?
+    if [ "$ret" != "0" ]; then
+      echo "Could not create work directory ${SPARK_HOME}/work"
+      exit 1
+    fi
+  fi
+
   if [ "$host" != "localhost" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
-      ssh $SPARK_SSH_OPTS "$host" \
-        "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" < /dev/null \
-        2>&1 | sed "s/^/$host: /"
+      (ssh $SPARK_SSH_OPTS "$host" \
+        "{ if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi; } && " $"${@// /\\ } ${args};" < /dev/null \
+        2>&1 | sed "s/^/$host: /") &
+      LAST_PID="$!"
     else
       # ssh reads from standard input and eats all the remaining lines.Connect its standard input to nowhere:
-      ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
-        2>&1 | sed "s/^/$host: /"
+      (ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
+        2>&1 | sed "s/^/$host: /") &
+      LAST_PID="$!"
+    fi
+    if [ "${RUN_IN_BACKGROUND}" = "0" -o "${FIRST_NODE}" = "1" ]; then
+      if wait $LAST_PID; then
+        FIRST_NODE=0
+      fi
+    else
+      sleep 3
     fi
   else
     if [ "$dirfolder" != "" ]; then
@@ -181,15 +209,6 @@ function execute() {
   df=${dirfolder}
   if [ -z "${df}" ]; then
     df=$(echo ${dirparam} | cut -d'=' -f2)
-  fi
-
-  if [ ! -d "${SPARK_HOME}/work" ]; then
-    mkdir -p "${SPARK_HOME}/work"
-    ret=$?
-    if [ "$ret" != "0" ]; then
-      echo "Could not create work directory ${SPARK_HOME}/work"
-      exit 1
-    fi
   fi
 
   if [ -z "${df}" ]; then
