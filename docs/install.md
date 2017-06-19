@@ -51,7 +51,7 @@ Start a basic cluster with one data node, one lead, and one locator
 ```
 ./sbin/snappy-start-all.sh
 ```
-For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](configuration.md)
+For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](configuring_cluster/configuring_cluster.md).
 
 ### Multi-Host Installation
 For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
@@ -63,7 +63,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
 
-* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuration.md#configuring-ssh-login-without-password).
+* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuring_cluster/configuring_cluster.md#configuring-ssh-login-without-password).
 
 #### Steps to Set up the Cluster
 
@@ -74,7 +74,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 		$ tar -xzf snappydata-0.9-bin.tar.gz
 		$ cd snappydata-0.9-bin/
 
-3. Configure the cluster as described in [How to Configure SnappyData cluster](configuration.md).
+3. Configure the cluster as described in [How to Configure SnappyData cluster](configuring_cluster/configuring_cluster.md).
 
 4. After configuring each of the components, run the `snappy-start-all.sh` script:
 
@@ -99,7 +99,7 @@ If SSH is not supported then follow the instructions in the Machines without a S
 2. Individually configure and start each member
 
 !!! Note: 
-	We are providing all configuration parameter as command line arguments rather than reading from a conf file.
+	All configuration parameter are provided as command line arguments rather than reading from a conf file.
 
 The example below starts a cluster by individually launching locator, server and lead processes.
 
@@ -232,7 +232,7 @@ To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedd
 
 ##### Specifying Properties
 
-If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuration/#configuration-files) for example on how to write these conf files.
+If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuring_cluster/configuring_cluster.md#configuration-files) for example on how to write these conf files.
 
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.
 
@@ -539,7 +539,9 @@ To import into IntelliJ IDEA:
 	!!! Note:
 		
         * Ignore the **"Gradle location is unknown warning"**.
+
         * Ensure that the JDK 8 installation has been selected.
+
         * Ignore and dismiss the **"Unindexed remote maven repositories found"** warning message if seen.
 
 * When import is completed, go to **File> Settings> Editor> Code Style> Scala**. Set the scheme as **Project**. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IDEA. Check that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display Indent as 2 and continuation indent as 4 (same as Scala).

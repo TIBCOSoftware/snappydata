@@ -39,15 +39,16 @@ Create the configuration file (**servers**) for data servers in the *SnappyData_
 
 The following are the few important SnappyData properties that you can configure:
 
-* **-peer-discovery-port**: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334. 
+* **-peer-discovery-port**: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334.
 
 * **-client-port**: Port that a member listens on for client connections. 
 
-* **-locators**: List of other locators as comma-separated host:port values. For locators, the list must include all other locators in use. For Servers and Leads, the list must include all the locators of the distributed system.
+* **-locators**: List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system.</br>
+The list must include all locators in use, and must be configured consistently for every member of the distributed system.
 
 * **-dir**: SnappyData members need to have the working directory. The member working directory provides a default location for the log file, persistence, and status files for each member.<br> If not specified, SnappyData creates the member directory in *SnappyData_HomeDirectory/work*. 
 
-* **-classpath**: This can be used to provide any application specific code to the lead and servers. We envisage having setJar like functionality going forward but for now, the application jars have to be provided during startup. 
+* **-classpath**: Location of user classes required by the SnappyData Server. This path is appended to the current classpath.
 
 * **-heap-size**: Set a fixed heap size and for the Java VM. 
 
@@ -94,7 +95,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 ```
 
 !!! Note:
-	Configuration files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the configuration files when the cluster is running. 
+	Configuration files are consulted when servers are started and also when they are stopped. So, it is recommended to not change the configuration files when the cluster is running. 
 
 <a id="env-setting"></a>
 ## Environment Settings
@@ -176,7 +177,7 @@ The thrift servers use the Thrift Compact Protocol by default which is not SSL e
 
 In the **conf/locators** and **conf/servers** files, you need to add `-thrift-ssl` and required SSL setup in `-thrift-ssl-properties`. Refer to the [SnappyData thrift properties](property_description.md#thrift-properties) section for more information.
 
-From the Snappy-shell:
+From the Snappy SQL shell:
 
 ```bash
 snappy> connect client 'host:port;ssl=true;ssl-properties=...';

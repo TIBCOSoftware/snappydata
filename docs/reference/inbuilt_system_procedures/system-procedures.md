@@ -1,4 +1,4 @@
-#Procedures
+# Procedures
 
 SnappyData provides built-in system procedures to help you manage the distributed system. For example, you can use system procedures to install required JAR files.
 

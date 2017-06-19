@@ -12,7 +12,7 @@ snappy revoke-missing-disk-store <disk-store-id>
 
 The table describes options and arguments for snappy revoke-missing-disk-store. If no multicast or locator options are specified on the command-line, the command uses the gemfirexd.properties file (if available) to determine the distributed system to which it should connect.
 
-|Option<|Description|
+|Option|Description|
 |-|-|
 |disk-store-id|(Required.) Specifies the unique ID of the disk store to revoke.| 
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values.|
