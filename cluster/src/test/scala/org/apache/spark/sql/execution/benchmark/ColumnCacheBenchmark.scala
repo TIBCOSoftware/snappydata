@@ -79,8 +79,8 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createAndTestBigTable()
 
-    createAndTestBigTableWithNulls()
-    createAndTestTableWithNulls()
+    createAndTestTableWithNulls(size = 20000, numCols = 300)
+    createAndTestTableWithNulls(size = 100000, numCols = 20)
 
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key,
       SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
@@ -240,41 +240,20 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     df2.collect()
   }
 
-  private def createAndTestBigTableWithNulls(): Unit = {
-    snappySession.sql("drop table if exists wide_table")
+  private def createAndTestTableWithNulls(size: Int, numCols: Int): Unit = {
+    snappySession.sql("drop table if exists nulls_table")
 
-    val size = 20000
-    val num_col = 300
-    val str = (1 to num_col).map(i =>
+    val str = (1 to numCols).map(i =>
       s" (case when rand() < 0.5 then null else '$i' end) as C$i")
     val testDF = snappySession.range(size).select(str.map { expr =>
       Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
     }: _*)
 
-    val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
-    snappySession.sql(s"create table wide_table($sql) using column")
-    testDF.write.insertInto("wide_table")
+    val sql = (1 to numCols).map(i => s"C$i STRING").mkString(",")
+    snappySession.sql(s"create table nulls_table($sql) using column")
+    testDF.write.insertInto("nulls_table")
 
-    assert(snappySession.sql(s"select count(*) from wide_table")
-        .collect()(0).getLong(0) == size)
-  }
-
-  private def createAndTestTableWithNulls(): Unit = {
-    snappySession.sql("drop table if exists normal_table")
-
-    val size = 100000
-    val num_col = 20
-    val str = (1 to num_col).map(i =>
-      s" (case when rand() < 0.5 then null else '$i' end) as C$i")
-    val testDF = snappySession.range(size).select(str.map { expr =>
-      Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
-    }: _*)
-
-    val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
-    snappySession.sql(s"create table normal_table($sql) using column")
-    testDF.write.insertInto("normal_table")
-
-    assert(snappySession.sql(s"select count(*) from normal_table")
+    assert(snappySession.sql(s"select count(*) from nulls_table")
         .collect()(0).getLong(0) == size)
   }
 }
