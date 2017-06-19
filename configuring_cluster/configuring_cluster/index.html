@@ -909,19 +909,20 @@
 <p>The following are the few important SnappyData properties that you can configure:</p>
 <ul>
 <li>
-<p><strong>-peer-discovery-port</strong>: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334. </p>
+<p><strong>-peer-discovery-port</strong>: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334.</p>
 </li>
 <li>
 <p><strong>-client-port</strong>: Port that a member listens on for client connections. </p>
 </li>
 <li>
-<p><strong>-locators</strong>: List of other locators as comma-separated host:port values. For locators, the list must include all other locators in use. For Servers and Leads, the list must include all the locators of the distributed system.</p>
+<p><strong>-locators</strong>: List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system.</br>
+The list must include all locators in use, and must be configured consistently for every member of the distributed system.</p>
 </li>
 <li>
 <p><strong>-dir</strong>: SnappyData members need to have the working directory. The member working directory provides a default location for the log file, persistence, and status files for each member.<br> If not specified, SnappyData creates the member directory in <em>SnappyData_HomeDirectory/work</em>. </p>
 </li>
 <li>
-<p><strong>-classpath</strong>: This can be used to provide any application specific code to the lead and servers. We envisage having setJar like functionality going forward but for now, the application jars have to be provided during startup. </p>
+<p><strong>-classpath</strong>: Location of user classes required by the SnappyData Server. This path is appended to the current classpath.</p>
 </li>
 <li>
 <p><strong>-heap-size</strong>: Set a fixed heap size and for the Java VM. </p>
@@ -969,7 +970,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Configuration files are consulted when servers are started and also when they are stopped. So, we do not recommend changing the configuration files when the cluster is running. </p>
+<p>Configuration files are consulted when servers are started and also when they are stopped. So, it is recommended to not change the configuration files when the cluster is running. </p>
 </div>
 <p><a id="env-setting"></a></p>
 <h2 id="environment-settings">Environment Settings</h2>
@@ -1040,7 +1041,7 @@ This setting needs to be modified to allow you to login to the remote host throu
 <p>SnappyData store now has support for Thrift protocol that provides functionality equivalent to JDBC/ODBC protocols and can be used to access the store from other languages that are not yet supported directly by SnappyData. In the command-line, SnappyData locators and servers accept the <code>-thrift-server-address</code> and -<code>thrift-server-port</code> arguments to start a Thrift server.</p>
 <p>The thrift servers use the Thrift Compact Protocol by default which is not SSL enabled. When using the snappy-start-all.sh script, these properties can be specified in the conf/locators and conf/servers files in the product directory like any other locator/server properties.</p>
 <p>In the <strong>conf/locators</strong> and <strong>conf/servers</strong> files, you need to add <code>-thrift-ssl</code> and required SSL setup in <code>-thrift-ssl-properties</code>. Refer to the <a href="../property_description/#thrift-properties">SnappyData thrift properties</a> section for more information.</p>
-<p>From the Snappy-shell:</p>
+<p>From the Snappy SQL shell:</p>
 <pre><code class="bash">snappy&gt; connect client 'host:port;ssl=true;ssl-properties=...';
 </code></pre>
 

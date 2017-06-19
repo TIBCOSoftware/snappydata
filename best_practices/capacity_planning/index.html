@@ -872,7 +872,7 @@
 <p>Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job has multiple tasks. The number of tasks is determined by the number of partitions of the underlying data.<br />
 Concurrency in SnappyData is tightly bound with the capacity of the cluster, which means, the number of cores available in the cluster determines the number of concurrent tasks that can be run. </p>
 <p>The default setting is <strong>CORES = 2 X number of cores on a machine</strong>. </p>
-<p>We recommend using 2 X number of cores on a machine. If more than one server is running on a machine, the cores should be divided accordingly and specified using the <code>spark.executor.cores</code> property.
+<p>It is recommended to use 2 X number of cores on a machine. If more than one server is running on a machine, the cores should be divided accordingly and specified using the <code>spark.executor.cores</code> property.
 <code>spark.executor.cores</code> is used to override a number of cores per server.</p>
 <p>For example, for a cluster with 2 servers running on two different machines with  4 CPU cores each, a maximum number of tasks that can run concurrently in the cluster will be 16. </br> 
 If a table has 17 partitions (buckets, for row or column tables), a scan query on this table creates 17 tasks. This means, 16 tasks runs concurrently and the last task will run when one of these 16 tasks have finished execution. </p>
@@ -885,11 +885,11 @@ If a table has 17 partitions (buckets, for row or column tables), a scan query o
 <p><a id="heap"></a></p>
 <h3 id="memory-management-heap-and-off-heap">Memory Management: Heap and Off-Heap</h3>
 <p>SnappyData is a Java application and by default supports on-heap storage. At the same time, to improve the performance for large chunks of data, it also supports off-heap storage. Column tables can be stored on off-heap storage as they are large chunks of columns stored as byte arrays. </p>
-<p>We recommend using off-heap storage for column tables. Row tables are always stored on on-heap. The <a href="../../configuring_cluster/property_description/">memory-size and heap-size</a> properties control the off-heap and on-heap size behavior of the SnappyData server process. </p>
+<p>It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The <a href="../../configuring_cluster/property_description/">memory-size and heap-size</a> properties control the off-heap and on-heap size behavior of the SnappyData server process. </p>
 <p>The memory pool (off-heap and on-heap) available in SnappyData's cluster is divided into two parts – Execution and Storage memory pool. The storage memory pool as the name indicates is for the table storage. The amount of memory that is available for storage is 50% of the total memory but it can grow to 90% (or <code>eviction-heap-percentage</code> store property for heap memory if set) if the execution memory is unused.</p>
-<p>This can be altered by specifying the <code>spark.memory.storageFraction</code> property. But, we do not recommend changing this setting. </p>
+<p>This can be altered by specifying the <code>spark.memory.storageFraction</code> property. But, it is recommend to not change this setting. </p>
 <p>Reserved memory: A certain fraction of heap memory is reserved for JVM objects outside of SnappyData storage and eviction. If the critical-heap-percentage store property is set then SnappyData will use only till that limit and the remaining memory is reserved. If no critical-heap-percentage has been specified then it defaults to 90%. There is no reserved memory for off-heap.</p>
-<p>SnappyData tables are by default configured for eviction which means, when there is memory pressure, the tables are evicted to disk. This impacts performance to some degree and hence we recommend sizing your VM before you begin. </p>
+<p>SnappyData tables are by default configured for eviction which means, when there is memory pressure, the tables are evicted to disk. This impacts performance to some degree and hence it is recommended to size your VM before you begin. </p>
 <p><img alt="On-Heap and Off-Heap" src="../../Images/on-off-heap.png" /></p>
 <!-- Default values for sizing the VM <mark> Sumedh</mark>-->
 
@@ -899,7 +899,7 @@ If a table has 17 partitions (buckets, for row or column tables), a scan query o
 <p><strong>Lead HA</strong> </br> 
 SnappyData supports secondary lead nodes. If the primary lead becomes unavailable, one of  the secondary lead nodes takes over immediately. 
 Setting up the secondary lead node is highly recommended because the system cannot function if the lead node is unavailable. Currently, the queries that are executing when the primary lead becomes unavailable, are not re-tried and have to be resubmitted.</p>
-<p><strong>Locator </strong></br><br />
+<p><strong>Locator</strong></br><br />
 SnappyData supports multiple locators in the cluster for high availability. 
 It is recommended to set up multiple locators as if a locator becomes unavailable, the cluster continues to be available, but new members cannot join the cluster.
 With multiple locators, clients notice nothing and the failover recovery is completely transparent.</p>
@@ -914,7 +914,7 @@ However, the redundant copies double the memory requirements. If there are no re
 If there are more buckets in a table than required, it means there is fewer data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. 
 Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently.
 Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.</p>
-<p>For column tables, we recommend setting a number of buckets such that each bucket has at least 100-150 MB of data.  </p>
+<p>For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.  </p>
 <h4 id="member-timeout">member-timeout</h4>
 <p>SnappyData efficiently uses CPU for running OLAP queries. This results in 100% of the CPU being used when the cluster is running to its full capacity. In such cases, due to the amount of garbage generated and CPU being occupied, the system may experience a minor freeze. These freezes are rare and can also be minimized by the setting the off-heap property. </br>
 However, for such cases, the <code>member-timeout</code> should be increased to a higher value. This ensures that the members are not thrown out of the cluster in case of a system freeze. </p>
@@ -925,7 +925,7 @@ However, for such cases, the <code>member-timeout</code> should be increased to 
 <h4 id="sparklocaldir">spark.local.dir</h4>
 <p>SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using <code>-dir</code> option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. 
-To achieve better performance, we recommend storing temporary data on a different disk than the table data. This can be done by setting the <code>spark.local.dir</code> parameter.</p>
+To achieve better performance, it is recommended to store temporary data on a different disk than the table data. This can be done by setting the <code>spark.local.dir</code> parameter.</p>
 <p><a id="os_setting"></a></p>
 <h3 id="operating-system-settings">Operating System Settings</h3>
 <p>For best performance, the following operating system settings are recommended on the lead and server nodes:</p>
@@ -946,7 +946,7 @@ ec2-user          soft    sigpending  524288
 <li><code>ec2-user</code> is the user running SnappyData.    </li>
 </ul>
 <p><strong>OS Cache Size</strong></br> 
-When there is lot of disk activity especially during table joins and during eviction, the process may experience GC pauses. To avoid such situations, we recommend reducing the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
+When there is lot of disk activity especially during table joins and during eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
 The following are the typical configuration to be done on the machines that are running SnappyData processes. </p>
 <pre><code>sudo sysctl -w vm.dirty_background_ratio=2
 sudo sysctl -w vm.dirty_ratio=4
@@ -955,8 +955,8 @@ sudo sysctl -w vm.dirty_writeback_centisecs=300
 </code></pre>
 
 <p><strong>Swap File</strong> </br> 
-Since moderen OSes do lazy allocation, we have observed that despite setting <code>-Xmx</code> and <code>-Xms</code> settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in process going down.</br>
-We recommend setting swap space on your system using the following commands.</p>
+Since moderen operating systems perform lazy allocation, it has been observed that despite setting <code>-Xmx</code> and <code>-Xms</code> settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in process going down.</br>
+It is recommended to set swap space on your system using the following commands.</p>
 <pre><code># sets a swap space of 32 GB
 sudo dd if=/dev/zero of=/var/swapfile.1 bs=1M count=32768
 sudo chmod 600 /var/swapfile.1

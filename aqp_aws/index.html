@@ -893,7 +893,7 @@
 <p>iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. </p>
 <p>The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
 With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.</p>
-<p>In this document, we describe the features provided by SnappyData for analyzing your data. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.</p>
+<p>In this document, the features provided by SnappyData for analyzing your data is described. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.</p>
 <p>Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.</p>
 <h3 id="key-components">Key Components</h3>
 <p>This section provides a brief description of the key terms used in this document. </p>
@@ -980,15 +980,15 @@ Refer to the Amazon documentation for more information on  <a href="http://docs.
 <img alt="STEP" src="../Images/aws_ec2keypair.png" /></p>
 </li>
 <li>
-<p>Select an instance based on the capacity that you require. 
+<p>Select an instance based on the capacity that you require. </br>
 <img alt="STEP" src="../Images/aws_instancetype.png" /></p>
 </li>
 <li>
-<p>Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the <strong>EBS Volume Size(gigabytes)</strong> field.
+<p>Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the <strong>EBS Volume Size(gigabytes)</strong> field.</br>
 <img alt="STEP" src="../Images/aws_ebsvolumesize.png" /></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Currently only Amazon Elastic Block Storage (EBS) is supported. </p>
+<p>Currently only Amazon Elastic Block Storage (EBS) is supported.</p>
 </div>
 </li>
 <li>
@@ -1003,8 +1003,12 @@ Refer to the Amazon documentation for more information on  <a href="http://docs.
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <ul>
-<li>The region you select must match the EC2 Key Pair you created.</li>
-<li>If you are not already logged into AWS, you are redirected to the AWS sign-in page.   </li>
+<li>
+<p>The region you select must match the EC2 Key Pair you created.</p>
+</li>
+<li>
+<p>If you are not already logged into AWS, you are redirected to the AWS sign-in page.   </p>
+</li>
 </ul>
 </div>
 <p><img alt="STEP" src="../Images/aws_selectedregion.png" /></p>
@@ -1097,7 +1101,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10</code></p>
 </li>
 </ul>
 <h4 id="launching-snappydata-cluster">Launching SnappyData Cluster</h4>
-<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the <strong>aws/ec2</strong> directory where the <strong>snappy-cloud-tools</strong> <a href="https://github.com/SnappyDataInc/snappydata-cloud-tools">repository</a> is cloned locally.</p>
+<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the <strong>aws/ec2</strong> directory where the <strong>snappy-cloud-tools</strong> <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">repository</a> is cloned locally.</p>
 <p>Enter the command in the following format:</p>
 <pre><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;
 </code></pre>

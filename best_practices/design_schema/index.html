@@ -897,7 +897,7 @@ Collocating frequently joined partitioned tables is the best practice to improve
 <p>For an example on collocated joins, refer to <a href="../../howto/#how-to-perform-a-collocated-join">How to collocate tables for doing a collocated join</a>.</p>
 <p><a id="buckets"></a>
 <strong>Buckets</strong></br>
-The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, we recommend setting a number of buckets such that each bucket has at least 100-150 MB of data.</br>
+The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
 Unit of data movement is a bucket, and buckets of collocated tables move together. When a new server joins, the  <a href="../../configuring_cluster/property_description/#rebalance">-rebalance</a> option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY&gt;0 has been specified). </br>
 There is also a system procedure <a href="../../reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets">call sys.rebalance_all_buckets()</a> that can be used to trigger rebalance.
 For more information on BUCKETS, refer to <a href="../capacity_planning/#buckets">BUCKETS</a>.</p>

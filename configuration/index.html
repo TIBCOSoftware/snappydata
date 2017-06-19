@@ -846,50 +846,49 @@
             <div class="section">
               
                 <h1 id="overview">Overview</h1>
-<p>SnappyData, a database server cluster, has three main components - Locator, Server, and Lead.</p>
+<p>SnappyData has three main components - Locator, Server, and Lead.</p>
 <p>The Lead node embeds a Spark driver and the Server node embeds a Spark Executor. The server node also embeds a SnappyData store.</p>
-<p>SnappyData cluster can be started with the default configurations using script <code>sbin/snappy-start-all.sh</code>. This script starts up a locator, one data server, and one lead node. However, SnappyData can be configured to start multiple components on different nodes. 
-Also, each component can be configured individually using configuration files. In this document, 
-we discuss how the components can be individually configured. We also discuss various other configurations of SnappyData.</p>
+<p>SnappyData cluster can be started with the default configurations using script <code>sbin/snappy-start-all.sh</code>. This script starts up a locator, one data server, and one lead node. However, SnappyData can be configured to start multiple components on different nodes. </br>
+Also, each component can be configured individually using configuration files. In this section, you can learn how the components can be individually configured and also learn about various other configurations of SnappyData.</p>
 <p>The following topics are covered in this section:</p>
 <ul>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#configuration-files">Configuration Files</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#configuration-files">Configuration Files</a></p>
 <ul>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#locator">Configuring Locators</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#locator">Configuring Locators</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#lead">Configuring Leads</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#lead">Configuring Leads</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#dataserver">Configuring Data Servers</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#dataserver">Configuring Data Servers</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#properties">SnappyData Specific Properties</a> </br></p>
+<p><a href="../configuring_cluster/configuring_cluster/#properties">SnappyData Specific Properties</a> </br></p>
 </li>
 </ul>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#hdfs">HDFS with SnappyData Store</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#hdfs">HDFS with SnappyData Store</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#multi-host">Example for Multiple-Host Configuration</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#multi-host">Example for Multiple-Host Configuration</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#env-setting">Environment Settings</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#env-setting">Environment Settings</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#hadoop-setting">Hadoop Provided Settings</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#hadoop-setting">Hadoop Provided Settings</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#per-component">Per Component Configuration</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#per-component">Per Component Configuration</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#command-line">Snappy Command Line Utility</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#command-line">Snappy Command Line Utility</a></p>
 </li>
 <li>
-<p><a href="../../configuring_cluster/configuring_cluster#logging">Logging</a></p>
+<p><a href="../configuring_cluster/configuring_cluster/#logging">Logging</a></p>
 </li>
 <li>
 <p><a href="../configuring_cluster/configuring_cluster/#ssh">Configuring SSH Login without Password</a></p>

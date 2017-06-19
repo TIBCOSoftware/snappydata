@@ -870,7 +870,7 @@
 </tr>
 <tr>
 <td>-dir</td>
-<td>Working directory of the server that will contain the SnappyData Server status file and will be the default location for log file, persistent files, data dictionary, and so forth (defaults to the current directory.</td>
+<td>Working directory of the server that contains the SnappyData Server status file and the default location for log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
 <td>Server</br>Lead</br>Locator</br></td>
 </tr>
 <tr>
@@ -987,7 +987,7 @@
 </table>
 <p><a id="sql-properties"></a></p>
 <h2 id="sql-properties">SQL Properties</h2>
-<p>These properites can be set in the snappy-shell or using the configuration properties in the conf/leads file.</p>
+<p>These properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.</p>
 <p>For example: Set in the snappy SQL shell</p>
 <pre><code>snappy&gt; connect client 'localhost:1527';
 snappy&gt; set snappydata.column.batchSize=108080;
@@ -1040,7 +1040,7 @@ snappy&gt; set snappydata.flushReservoirThreshold=20000;
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080 -spark.sql.aqp.error=0.5
 </code></pre>
 
-<p>This sets the property for the snappy-shell's session.</p>
+<p>This sets the property for the snappy SQL shell's session.</p>
 <table>
 <thead>
 <tr>

@@ -893,7 +893,7 @@
 <p>Sets the buffer size in bytes to use when persisting data to disk. The default is 32768 bytes.</p>
 <p><strong>QUEUESIZE</strong></p>
 <p>Sets the maximum number of row operations that SnappyData asynchronously queues to disk. After this number of asynchronous operations are queued, additional asynchronous operations block until existing writes are flushed to disk. A single DML operation may affect multiple rows, and each row modification, insertion, and deletion are considered a separate operation. The default QUEUESIZE value is 0, which specifies no limit.</p>
-<p><strong><em>dir-name</em></strong></p>
+<p><strong>dir-name</strong></p>
 <p>The optional <code>dir-name</code> entry defines a specific host system directory to use for the disk store. You can include one or more <code>dir-name</code> entries using the syntax:</p>
 <pre><code class="pre">[ ( 'dir-name' [ disk-space-in-mb ] [,'dir-name' [ disk-space-in-mb ] ]* ) ]
 </code></pre>

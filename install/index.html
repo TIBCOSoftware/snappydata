@@ -907,7 +907,7 @@ $ cd snappydata-0.9-bin/
 <pre><code>./sbin/snappy-start-all.sh
 </code></pre>
 
-<p>For custom configuration and to start more nodes,  see the section <a href="../configuration/">How to Configure the SnappyData cluster</a></p>
+<p>For custom configuration and to start more nodes,  see the section <a href="../configuring_cluster/configuring_cluster/">How to Configure the SnappyData cluster</a>.</p>
 <h3 id="multi-host-installation">Multi-Host Installation</h3>
 <p>For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.</p>
 <h3 id="machines-with-a-shared-path">Machines with a Shared Path</h3>
@@ -918,7 +918,7 @@ $ cd snappydata-0.9-bin/
 <p>Ensure that the <strong>/etc/hosts</strong> correctly configures the host and IP address of each SnappyData member machine.</p>
 </li>
 <li>
-<p>Ensure that SSH is supported and you have configured all machines to be accessed by <a href="../configuration/#configuring-ssh-login-without-password">passwordless SSH</a>.</p>
+<p>Ensure that SSH is supported and you have configured all machines to be accessed by <a href="../configuring_cluster/configuring_cluster/#configuring-ssh-login-without-password">passwordless SSH</a>.</p>
 </li>
 </ul>
 <h4 id="steps-to-set-up-the-cluster">Steps to Set up the Cluster</h4>
@@ -933,7 +933,7 @@ $ cd snappydata-0.9-bin/
 </code></pre>
 </li>
 <li>
-<p>Configure the cluster as described in <a href="../configuration/">How to Configure SnappyData cluster</a>.</p>
+<p>Configure the cluster as described in <a href="../configuring_cluster/configuring_cluster/">How to Configure SnappyData cluster</a>.</p>
 </li>
 <li>
 <p>After configuring each of the components, run the <code>snappy-start-all.sh</code> script:</p>
@@ -965,7 +965,7 @@ $ cd snappydata-0.9-bin/
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>We are providing all configuration parameter as command line arguments rather than reading from a conf file.</p>
+<p>All configuration parameter are provided as command line arguments rather than reading from a conf file.</p>
 </div>
 <p>The example below starts a cluster by individually launching locator, server and lead processes.</p>
 <pre><code class="bash">$ bin/snappy locator start  -dir=/node-a/locator1
@@ -1106,7 +1106,7 @@ The script identifies each cluster by its unique cluster name (you provided) and
 
 <p>To start Apache Zeppelin on a separate instance, use <code>--with-zeppelin=non-embedded</code>.</p>
 <h5 id="specifying-properties">Specifying Properties</h5>
-<p>If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named <strong>locators</strong>, <strong>leads</strong> or <strong>servers</strong>, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to <a href="../configuration/#configuration-files">this SnappyData documentation page</a> for example on how to write these conf files.</p>
+<p>If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named <strong>locators</strong>, <strong>leads</strong> or <strong>servers</strong>, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to <a href="../configuring_cluster/configuring_cluster/#configuration-files">this SnappyData documentation page</a> for example on how to write these conf files.</p>
 <p>This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the <code>sbin/snappy-start-all.sh</code> script.</p>
 <p>The important difference here is that, instead of the host names of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script replaces these with the actual host name of the members when they are launched.</p>
 <p>The sample conf files for a cluster with 2 locators, 1 lead and 2 stores are given below:</p>
@@ -1380,9 +1380,15 @@ Options:
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <ul>
-<li>Ignore the <strong>"Gradle location is unknown warning"</strong>.</li>
-<li>Ensure that the JDK 8 installation has been selected.</li>
-<li>Ignore and dismiss the <strong>"Unindexed remote maven repositories found"</strong> warning message if seen.</li>
+<li>
+<p>Ignore the <strong>"Gradle location is unknown warning"</strong>.</p>
+</li>
+<li>
+<p>Ensure that the JDK 8 installation has been selected.</p>
+</li>
+<li>
+<p>Ignore and dismiss the <strong>"Unindexed remote maven repositories found"</strong> warning message if seen.</p>
+</li>
 </ul>
 </div>
 </li>

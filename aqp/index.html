@@ -916,10 +916,10 @@
 <p>SnappyData SDE relies on two methods for approximations - <strong>Stratified Sampling</strong> and <strong>Sketching</strong>. A brief introduction to these concepts is provided below.</p>
 <h3 id="stratified-sampling">Stratified Sampling</h3>
 <p>Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population (the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling does not work well for general purpose querying.</p>
-<p>Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
+<p>Take this simple example table that manages AdImpressions. If random sample is created that is a third of the original size two records is picked in random. 
 This is depicted in the following figure:</p>
 <p><img alt="Uniform Random Sampling" src="../Images/aqp_stratifiedsampling1.png" /></p>
-<p>If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. </p>
+<p>If a query is executed, like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. </p>
 <p><img alt="Uniform Random Sampling" src="../Images/aqp_stratifiedsampling2.png" /></p>
 <p>But, if the data distribution along this 'GEO' dimension is skewed, you could still keep picking any records or have too few records to produce a good answer to queries. </p>
 <p>Stratified sampling, on the other hand, allows the user to specify the common dimensions used for querying and ensures that each dimension or strata have enough representation in the sampled data set. For instance, as shown in the following figure, a sample stratified on 'Geo' would provide a much better answer. </p>
@@ -927,9 +927,9 @@ This is depicted in the following figure:</p>
 <p>To understand these concepts in further detail, refer to the <a href="https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf">handbook</a>. It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.</p>
 <h3 id="online-sampling">Online Sampling</h3>
 <p>SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark DataFrame APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a> for each startum in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
-There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5-minute time window, while still ensuring that all GEOs have good representation in the sample. </p>
+There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, SnappyData can ensure having enough samples over each 5-minute time window, while still ensuring that all GEOs have good representation in the sample.</p>
 <h3 id="sketching">Sketching</h3>
-<p>While stratified sampling ensures that data dimensions with low representation are captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that it captures how often we see an element in a stream for the top-N such elements. 
+<p>While stratified sampling ensures that data dimensions with low representation are captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, other data structures like a Count-min-sketch are relied on to capture data frequencies in a stream. This is a data structure that requires that it captures how often an element is seen in a stream for the top-N such elements. 
 While a <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch">Count-min-sketch</a> is well described, SDE extends this with support for providing top-K estimates over time series data. </p>
 <h2 id="working-with-stratified-samples">Working with Stratified Samples</h2>
 <h3 id="create-sample-tables">Create Sample Tables</h3>
@@ -982,10 +982,10 @@ For instance, in the above example, taxi drivers that have very few records may 
 <p>Start by identifying the most common columns used in GroupBy/Where and Having clauses. </p>
 </li>
 <li>
-<p>Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. </p>
+<p>Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above 'hack_license' is picked (one license per driver) as the strata and 1% of the records associated with each driver is sampled. </p>
 </li>
 <li>
-<p>Avoid using unique columns or timestamps for your QCS. For instance, in the example above, 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is a possibility that each record in the Dataset has a different timesstamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. </p>
+<p>Avoid using unique columns or timestamps for your QCS. For instance, in the example above, 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is a possibility that each record in the Dataset has a different timesstamp. Instead, when dealing with time series the 'hour' function is used to capture data for each hour. </p>
 </li>
 <li>
 <p>When the accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. </p>
@@ -1025,7 +1025,7 @@ SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by 
 </code></pre>
 
 <h4 id="using-the-spark-dataframe-api">Using the Spark DataFrame API</h4>
-<p>We extend the Spark DataFrame API with support for approximate queries. Here is 'withError' API on DataFrames.</p>
+<p>The Spark DataFrame API is extended with support for approximate queries. Here is 'withError' API on DataFrames.</p>
 <pre><code>def withError(error: Double,
 confidence: Double = Constant.DEFAULT_CONFIDENCE,
 behavior: String = &quot;DO_NOTHING&quot;): DataFrame
@@ -1064,7 +1064,7 @@ set spark.sql.aqp.behavior=$behavior;
   lower_bound(avgTripDist),upper_bound(avgTripDist) 
   from nyctaxi group by medallion order by medallion desc limit 100
   with error;
-  // We explain these built-in error functions in a section below.
+  //These built-in error functions is explained in a section below.
 </code></pre>
 
 <p><strong>DataFrame API Query:</strong></p>
@@ -1162,13 +1162,13 @@ set spark.sql.aqp.behavior=$behavior;
 <p>The following four methods are available to be used in query projection when running approximate queries:</p>
 <ul>
 <li>
-<p><strong>absolute_error(column alias</strong>) : Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap) </p>
+<p><strong>absolute_error(column alias)</strong>: Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap) </p>
 </li>
 <li>
-<p><strong>relative_error(column alias)</strong> : Indicates ratio of absolute error to estimate.</p>
+<p><strong>relative_error(column alias)</strong>: Indicates ratio of absolute error to estimate.</p>
 </li>
 <li>
-<p><strong>lower_bound(column alias)</strong> : Lower value of an estimate interval for a given confidence.</p>
+<p><strong>lower_bound(column alias)</strong>: Lower value of an estimate interval for a given confidence.</p>
 </li>
 <li>
 <p><strong>upper_bound(column alias)</strong>: Upper value of an estimate interval for a given confidence.</p>

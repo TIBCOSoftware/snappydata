@@ -942,7 +942,7 @@ Select all rows from both relations, filling with null values on the side that d
 Select only rows from the side of the SEMI JOIN where there is a match. If one row matches multiple rows, only the first match is returned.</p>
 <p><code>LEFT ANTI JOIN</code></br>
 Select only rows from the left side that match no rows on the right side.</p>
-<p><strong>Example</strong></p>
+<p><strong>Example</strong>:</p>
 <pre><code>    SELECT * FROM boxes INNER JOIN rectangles ON boxes.width = rectangles.width
     SELECT * FROM boxes FULL OUTER JOIN rectangles USING (width, length)
     SELECT * FROM boxes NATURAL JOIN rectangles
