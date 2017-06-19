@@ -17,7 +17,7 @@
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
 export JTESTS=$SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main
-$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <space-separated-list-of-bts>
+$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mail_address>] <space-separated-list-of-bts>
 
 E.g.  For running sql.bt
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -36,7 +36,7 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
  -d <boolean>              -- whether to delete passed test run logs, the default value is true
 
- -m mail_address           -- email address to send results of the run to
+ -m <mail_address>         -- email address to send results of the run to
 ```
 
 #### Running single test/selected tests from a bt
@@ -98,7 +98,7 @@ hydra.gemfirexd.FabricServerPrms-logLevel = fine;
 
 hydra.VmPrms-extraVMArgs += "-DDistributionManager.VERBOSE=true";
 hydra.VmPrms-extraVMArgs += "-Dgemfire.GetInitialImage.TRACE_GII_FINER=true";
-hydra.VmPrms-extraVMArgs += "-ea -Dgemfirexd.debug.true=QueryDistribution,TraceQuery,TraceTranVerbose,TraceIndex,TraceFabricServiceBoot";
+hydra.VmPrms-extraVMArgs += "-ea -Dgemfirexd.debug.true=QueryDistribution,TraceJars,TraceTranVerbose,TraceIndex,TraceFabricServiceBoot";
 
 //to increase VM memory
 hydra.VmPrms-extraVMArgs += "-Xms1000m -Xmx1000m";

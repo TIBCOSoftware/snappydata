@@ -18,7 +18,7 @@
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
-$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mailAddresses>] <space-separated-list-of-bts>
+$SNAPPYDATA_SOURCE_DIR/sample-runbt.sh <result-directory-path> $SNAPPYDATA_SOURCE_DIR [-l <local-conf-file-path> -r <num-times-to-run-test> -m <mail_address>] <space-separated-list-of-bts>
 
 E.g.
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -27,7 +27,7 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
 #### Running battery test using local.conf(with modifications in local.conf, as per requirement)
 
-One can also provide a local.conf while running the battery test, to set some global parameters or set multi-hosts parameters to run the test on multiple nodes.
+One can also provide a local.conf while running the battery test, for setting some global parameters or setting multi-hosts parameters to run the test on multiple nodes.
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -43,7 +43,7 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
  -d <boolean>              -- whether to delete passed test run logs, the default value is true
 
- -m mail_address           -- email address to send results of the run to
+ -m <mail_address>           -- email address to send results of the run to
 ```
 
 #### Running single test/selected tests from a bt
@@ -79,6 +79,6 @@ io.snappydata.hydra.cluster.SnappyPrms-logLevel = fine;
 
 hydra.VmPrms-extraVMArgs += "-DDistributionManager.VERBOSE=true";
 hydra.VmPrms-extraVMArgs += "-Dgemfire.GetInitialImage.TRACE_GII_FINER=true";
-hydra.VmPrms-extraVMArgs += "-ea -Dgemfirexd.debug.true=QueryDistribution,TraceQuery,TraceTranVerbose,TraceIndex,TraceFabricServiceBoot";
+hydra.VmPrms-extraVMArgs += "-ea -Dgemfirexd.debug.true=QueryDistribution,TraceJars,TraceTranVerbose,TraceIndex,TraceFabricServiceBoot";
 
 ```

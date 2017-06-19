@@ -2,7 +2,7 @@
 
 ## Functional tests to be run in regressions
 
-Following is the list of tests run in snappy regression. Any new bt added and needs to be run must be added here and in the [snappyRegressionScript.sh](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh)
+Following is the list of tests run in snappy regression. Any new bt that needs to be run as a part of regression must be added here and in the [snappyRegressionScript.sh](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh)
 
 1. sample.bt
 
@@ -43,3 +43,5 @@ Following is the list of tests run in snappy regression. Any new bt added and ne
 export SNAPPY_HOME=<checkout_dir>
 export OUTPUT_DIR=<result_directory_path>
 ```
+
+#### For details on how to run a hydra test for snappy, please refer [How To Run Snappy Hydra Tests](HowToRunSnappyHydraTests.md)
