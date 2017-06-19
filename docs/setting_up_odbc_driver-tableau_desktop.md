@@ -7,7 +7,7 @@
 
 Ensure that you do the following:
 
-1. [Install Visual C++ Redistributable for Visual Studio 2015](/../howto.md#howto-odbc-step1)
+1. [Install Visual C++ Redistributable for Visual Studio 2015](howto.md#howto-odbc-step1)
 
 2. [Install SnappyData ODBC Driver](howto.md#howto-odbc-step2)
 
@@ -81,7 +81,7 @@ The **Other Databases (ODBC)** window is displayed.
 
 11. Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click **Update Now** to see your changes.
 
-12. Click the **Worksheets **tab > **sheet** to start the analysis.</br> 
+12. Click the **Worksheets** tab > **sheet** to start the analysis.</br> 
 
 13. On this screen, you can click and drag a field from the **Dimensions** area to** Rows** or **Columns**. Refer to the Tableau documentation for more information on data visualization.
 

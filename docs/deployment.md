@@ -1,5 +1,5 @@
 # Overview
-In this section, we discuss the various modes available for collocation of related data and computation.
+In this section, the various modes available for collocation of related data and computation is discussed.
 
 You can run the SnappyData store in the following modes:
 
@@ -89,16 +89,15 @@ In this mode, one can write Spark programs using jobs. For more details, refer t
 bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 ```
 
-Also, you can use [SnappySQL](howto/#howto-snappyShell) to create and query tables.
+Also, you can use [SnappySQL](howto.md#howto-snappyShell) to create and query tables.
 
 You can either [start SnappyData members](install.md) using the `snappy-start-all.sh` script or you can start them individually.
 
 Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:
 
-* If the join expression matches the partitioning scheme of tables, we do a partition to partition join instead of a shuffle based join.
-  Moreover, if two tables are collocated (while defining the tables) we can avoid costly data movement.
+* If the join expression matches the partitioning scheme of tables, a partition to partition join instead of a shuffle based join is done. </br> Moreover, if two tables are collocated (while defining the tables) costly data movement can be avoided.
 
-* For replicated tables, which we know are present in all the data nodes,  a simple local join( local look up)  is done instead of a broadcast join.
+* For replicated tables, that are present in all the data nodes, a simple local join (local look up)  is done instead of a broadcast join.
 
 * Similarly inserts to tables groups rows according to table partitioning keys, and route to the JVM hosting the partition. This results in higher ingestion rate.
 
@@ -153,7 +152,7 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 ```
 
-**Step 2: Launch the Apache Spark program **
+**Step 2: Launch the Apache Spark program**
 
 ***_In the Local mode_***
 ```bash

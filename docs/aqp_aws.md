@@ -6,7 +6,7 @@ iSight-Cloud uses Apache Zeppelin as the front end notebook to display results a
 The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
 With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.
 
-In this document, we describe the features provided by SnappyData for analyzing your data. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.
+In this document, the features provided by SnappyData for analyzing your data is described. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.
 
 Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
@@ -79,14 +79,14 @@ The names and details of the members are automatically derived from the provided
 Refer to the Amazon documentation for more information on  [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>
 ![STEP](Images/aws_ec2keypair.png)
 
-3. Select an instance based on the capacity that you require. 
+3. Select an instance based on the capacity that you require. </br>
 ![STEP](Images/aws_instancetype.png)
  
-4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.
+4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.</br>
 ![STEP](Images/aws_ebsvolumesize.png)
 
-	!!! Note: 
-    	Currently only Amazon Elastic Block Storage (EBS) is supported. 
+	!!! Note
+    	Currently only Amazon Elastic Block Storage (EBS) is supported.
 
 5. Enter your email address.  <br>
 ![STEP](Images/aws_email.png)
@@ -95,9 +95,10 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
 
-    !!! Note: 
+    !!! Note
 
 		* The region you select must match the EC2 Key Pair you created.
+
 		* If you are not already logged into AWS, you are redirected to the AWS sign-in page. 	
 ![STEP](Images/aws_selectedregion.png)
 
@@ -108,7 +109,7 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 	* **Stack name**: You can change the stack name.</br>
 
-	!!! Note: 
+	!!! Note 
     	The stack name must contain only letters, numbers, dashes and should start with an alpha character.
     
     * **VPCID**: From the drop-down list, select the Virtual Private Cloud (VPC) ID that is set as default. Your instances will be launched within this VPC.
@@ -175,7 +176,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 
 #### Launching SnappyData Cluster
 
-In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappydata-cloud-tools) is cloned locally.
+In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
 Enter the command in the following format:
 
