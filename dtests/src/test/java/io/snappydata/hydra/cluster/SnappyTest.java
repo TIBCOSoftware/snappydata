@@ -1607,7 +1607,6 @@ public class SnappyTest implements Serializable {
             SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
             SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + HostHelper
                 .getLocalHost(), HostHelper.getLocalHost());
-            Log.getLogWriter().info("pid : " + pid + ", Host : " + HostHelper.getLocalHost());
           }
         } catch (RemoteException e) {
           String s = "Unable to access master to record PID: " + pid;
@@ -2283,13 +2282,13 @@ public class SnappyTest implements Serializable {
   }
 
   public static void HydraTask_recordProcessIDWithHost() {
-    snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
     if (useRowStore) {
       snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator");
       snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher");
     } else {
       snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
       snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
+      snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
     }
     snappyTest.recordSnappyProcessIDinNukeRun("Worker");
     snappyTest.recordSnappyProcessIDinNukeRun("Master");
