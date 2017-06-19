@@ -784,7 +784,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * PERSISTENCE:  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
 
-   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
+   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](reference/sql_reference/create-diskstore.md).
 
    * EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
 

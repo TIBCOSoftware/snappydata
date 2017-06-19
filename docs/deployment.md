@@ -82,7 +82,7 @@ Some of the advantages of this mode are:
 
 ![Embedded Mode](Images/SnappyEmbeddedMode.png)
 
-In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide#snappydata-jobs) section.
+In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide.md#snappydata-jobs) section.
 
 **Example: Submit a Spark Job to the SnappyData Cluster**
 ```
