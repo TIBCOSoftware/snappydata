@@ -42,10 +42,10 @@ import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
-import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Benchmark
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
@@ -78,6 +78,10 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   test("insert more than 64K data") {
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createAndTestBigTable()
+
+    createAndTestTableWithNulls(size = 20000, numCols = 300)
+    createAndTestTableWithNulls(size = 100000, numCols = 20)
+
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key,
       SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
   }
@@ -234,6 +238,23 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
     val df2 = snappySession.sql(s"select $avgProjections from wide_table where C1 = '1' ")
     df2.collect()
+  }
+
+  private def createAndTestTableWithNulls(size: Int, numCols: Int): Unit = {
+    snappySession.sql("drop table if exists nulls_table")
+
+    val str = (1 to numCols).map(i =>
+      s" (case when rand() < 0.5 then null else '$i' end) as C$i")
+    val testDF = snappySession.range(size).select(str.map { expr =>
+      Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
+    }: _*)
+
+    val sql = (1 to numCols).map(i => s"C$i STRING").mkString(",")
+    snappySession.sql(s"create table nulls_table($sql) using column")
+    testDF.write.insertInto("nulls_table")
+
+    assert(snappySession.sql(s"select count(*) from nulls_table")
+        .collect()(0).getLong(0) == size)
   }
 }
 
