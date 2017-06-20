@@ -316,7 +316,6 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
           (numUsedIndexes << 2) / 3)
       }
     }
-    updateCount()
     // write the index
     writeIndex(position, index)
   }

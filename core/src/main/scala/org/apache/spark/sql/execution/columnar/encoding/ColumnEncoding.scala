@@ -225,7 +225,6 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final var _upperStr: UTF8String = _
   protected final var _lowerDecimal: Decimal = _
   protected final var _upperDecimal: Decimal = _
-  protected final var _count: Int = 0
 
   /**
    * Get the allocator for the final data to be sent for storage.
@@ -285,7 +284,6 @@ trait ColumnEncoder extends ColumnEncoding {
     _upperStr = null
     _lowerDecimal = null
     _upperDecimal = null
-    _count = 0
   }
 
   def initialize(field: StructField, initSize: Int,
@@ -427,8 +425,6 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def upperDecimal: Decimal = _upperDecimal
 
-  final def count: Int = _count
-
   protected final def updateLongStats(value: Long): Unit = {
     val lower = _lowerLong
     if (value < lower) {
@@ -438,7 +434,6 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperLong) {
       _upperLong = value
     }
-    updateCount()
   }
 
   protected final def updateDoubleStats(value: Double): Unit = {
@@ -450,7 +445,6 @@ trait ColumnEncoder extends ColumnEncoding {
     } else if (value > _upperDouble) {
       _upperDouble = value
     }
-    updateCount()
   }
 
   protected final def updateStringStats(value: UTF8String): Unit = {
@@ -486,11 +480,6 @@ trait ColumnEncoder extends ColumnEncoding {
         _upperDecimal = value
       }
     }
-    updateCount()
-  }
-
-  @inline final def updateCount(): Unit = {
-    _count += 1
   }
 
   def nullCount: Int
@@ -656,7 +645,6 @@ trait ColumnEncoder extends ColumnEncoding {
     if (writeNumElements) {
       writeIntUnchecked(position + skipBytes - 4, numElements)
     }
-    updateCount()
     position + fixedWidth
   }
 
@@ -963,17 +951,18 @@ case class ColumnStatsSchema(fieldName: String,
     fieldName + ".lowerBound", dataType)()
   val nullCount: AttributeReference = AttributeReference(
     fieldName + ".nullCount", IntegerType, nullable = false)()
-  val count: AttributeReference = AttributeReference(
-    fieldName + ".count", IntegerType, nullable = false)()
 
-  val schema = Seq(lowerBound, upperBound, nullCount, count)
+  val schema = Seq(lowerBound, upperBound, nullCount)
 
   assert(schema.length == ColumnStatsSchema.NUM_STATS_PER_COLUMN)
 }
 
 object ColumnStatsSchema {
-  val NUM_STATS_PER_COLUMN = 4
-  val COUNT_INDEX_IN_SCHEMA = 3
+  val NUM_STATS_PER_COLUMN = 3
+  val COUNT_INDEX_IN_SCHEMA = 0
+
+  val COUNT_ATTRIBUTE: AttributeReference = AttributeReference(
+    "batchCount", IntegerType, nullable = false)()
 }
 
 trait NotNullDecoder extends ColumnDecoder {
