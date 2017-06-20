@@ -388,21 +388,6 @@ object ExternalStoreUtils extends Logging {
     })
   }
 
-  def columnIndicesAndDataTypes(requestedSchema: StructType,
-      schema: StructType): Seq[(Int, StructField)] = {
-    if (requestedSchema.isEmpty) {
-      val (narrowestOrdinal, narrowestField) =
-        schema.fields.zipWithIndex.map(f => f._2 -> f._1).minBy { f =>
-          ColumnType(f._2.dataType).defaultSize
-        }
-      Seq(narrowestOrdinal -> narrowestField)
-    } else {
-      requestedSchema.map { a =>
-        schema.fieldIndex(Utils.fieldName(a)) -> a
-      }
-    }
-  }
-
   def setStatementParameters(stmt: PreparedStatement,
       row: mutable.ArrayBuffer[Any]): Unit = {
     var col = 1
@@ -575,12 +560,15 @@ object ExternalStoreUtils extends Logging {
           val p = math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP),
             Int.MaxValue).toInt
           (p, -1)
-        } else (Limits.DB2_LOB_MAXWIDTH, -1)
+        } else (Limits.DB2_VARCHAR_MAXWIDTH, -1)
         case _: NumericType => (-1, 0)
         case _ => (-1, -1)
       }
-      val jdbcTypeOpt = GemFireXDDialect.getJDBCType(dataType).orElse(
+      val jdbcTypeOpt = if (dataType eq StringType) {
+        Some(org.apache.spark.sql.jdbc.JdbcType("VARCHAR", java.sql.Types.VARCHAR))
+      } else { GemFireXDDialect.getJDBCType(dataType).orElse(
         JdbcUtils.getCommonJDBCType(dataType))
+      }
       jdbcTypeOpt match {
         case Some(jdbcType) =>
           val (precision, width) = if (prec == -1) {

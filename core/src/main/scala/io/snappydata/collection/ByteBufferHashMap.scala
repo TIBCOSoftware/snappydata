@@ -19,9 +19,10 @@ package io.snappydata.collection
 
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnAllocator, ColumnEncoding}
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
@@ -58,7 +59,7 @@ import org.apache.spark.unsafe.types.UTF8String
  */
 final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     keySize: Int, private val valueSize: Int,
-    private val allocator: ColumnAllocator,
+    private val allocator: BufferAllocator,
     var keyData: ByteBufferData = null,
     var valueData: ByteBufferData = null,
     var valueDataPosition: Long = 0L) {
@@ -73,14 +74,14 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   private var mask = _capacity - 1
 
   if (keyData eq null) {
-    val buffer = allocator.allocate(_capacity * fixedKeySize)
+    val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
     // clear the key data
     allocator.clearPostAllocate(buffer)
     keyData = new ByteBufferData(buffer, allocator)
   }
   if (valueData eq null) {
-    valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize),
-      allocator)
+    valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize,
+      "HASHMAP"), allocator)
     valueDataPosition = valueData.baseOffset
   }
 
@@ -184,7 +185,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
     val fixedKeySize = this.fixedKeySize
     val newCapacity = ObjectHashSet.checkCapacity(_capacity << 1, loadFactor)
-    val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize)
+    val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
     // clear the key data
     allocator.clearPostAllocate(newKeyBuffer)
     val newKeyData = new ByteBufferData(newKeyBuffer, allocator)
@@ -237,7 +238,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
     this(buffer, baseObject, baseOffset, baseOffset + buffer.capacity())
   }
 
-  def this(buffer: ByteBuffer, allocator: ColumnAllocator) = {
+  def this(buffer: ByteBuffer, allocator: BufferAllocator) = {
     this(buffer, allocator.baseObject(buffer), allocator.baseOffset(buffer))
   }
 
@@ -254,14 +255,16 @@ final class ByteBufferData private(val buffer: ByteBuffer,
       size: Int): Boolean = {
     val baseObject = this.baseObject
     val offset = this.baseOffset + srcOffset
+    // below is ColumnEncoding.readInt and not Platform.readInt because the
+    // write is using ColumnEncoding.writeUTF8String which writes the size
+    // using former (which respects endianness)
     ColumnEncoding.readInt(baseObject, offset) == size && ByteArrayMethods
         .arrayEquals(baseObject, offset + 4, oBase, oBaseOffset, size)
   }
 
   def resize(cursor: Long, required: Int,
-      allocator: ColumnAllocator): ByteBufferData = {
-    val buffer = allocator.expand(this.buffer, cursor, this.baseOffset,
-      required)
+      allocator: BufferAllocator): ByteBufferData = {
+    val buffer = allocator.expand(this.buffer, required, "HASHMAP")
     val baseOffset = allocator.baseOffset(buffer)
     new ByteBufferData(buffer, allocator.baseObject(buffer), baseOffset,
       baseOffset + buffer.limit())
@@ -281,7 +284,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
     buffer.clear()
   }
 
-  def release(allocator: ColumnAllocator): Unit = {
+  def release(allocator: BufferAllocator): Unit = {
     allocator.release(buffer)
   }
 }

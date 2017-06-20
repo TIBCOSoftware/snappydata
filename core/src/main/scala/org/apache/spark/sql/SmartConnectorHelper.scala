@@ -39,6 +39,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
   private var conn: Connection = null
+  private var connectionURL: String = null
   private val createSnappyTblString = "call sys.CREATE_SNAPPY_TABLE(?, ?, ?, ?, ?, ?, ?)"
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
@@ -56,12 +57,16 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   clusterMode match {
     case ThinClientConnectorMode(_, url) =>
+      connectionURL = url
       initializeConnection()
     case _ =>
   }
 
   def initializeConnection(): Unit = {
-    conn = SmartConnectorHelper.getConn()
+    val props = new Properties()
+    props.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
+    conn = JdbcUtils.createConnectionFactory(
+      connectionURL + ";route-query=false;" , props)()
     createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
     dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
     createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)
@@ -78,7 +83,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       case e: SQLException if isConnectionException(e) =>
         // attempt to create a new connection if connection
         // is closed
-        SmartConnectorHelper.close()
+        conn.close()
         initializeConnection()
         function
     }
@@ -98,9 +103,12 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       options: Map[String, String],
       isBuiltIn: Boolean): LogicalPlan = {
 
+    snappySession.sessionCatalog.invalidateTable(tableIdent)
+
     runStmtWithExceptionHandling(executeCreateTableStmt(tableIdent,
       provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn))
 
+    SnappySession.clearAllCache()
     snappySession.sessionCatalog.lookupRelation(tableIdent)
   }
 
@@ -125,6 +133,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     snappySession.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
     SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappySession.clearAllCache()
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,
@@ -244,40 +253,6 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 }
 
 object SmartConnectorHelper {
-  private lazy val conn: ThreadLocal[Connection] = new ThreadLocal[Connection]() {
-    protected override def initialValue(): Connection = {
-      null
-    }
-
-    override def remove() {
-      if (this.get != null) {
-        this.get.close()
-      }
-      super.remove()
-    }
-  }
-
-  private lazy val clusterMode = SnappyContext.getClusterMode(null)
-
-  private lazy val connFactory = {
-    clusterMode match {
-      case ThinClientConnectorMode(_, url) =>
-        JdbcUtils.createConnectionFactory(
-          url + ";route-query=false;" , new Properties())
-      case _ =>
-        throw new AnalysisException("Not expected to be called for " + clusterMode)
-    }
-  }
-
-  def getConn(): Connection = {
-    conn.set(connFactory())
-    conn.get()
-  }
-
-  def close(): Unit = {
-    conn.remove()
-  }
-
   def getBlob(value: Any, conn: Connection): java.sql.Blob = {
     val serializedValue: Array[Byte] = serialize(value)
     val blob = conn.createBlob()

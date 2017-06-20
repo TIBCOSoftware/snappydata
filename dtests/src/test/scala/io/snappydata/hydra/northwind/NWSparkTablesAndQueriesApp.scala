@@ -22,13 +22,15 @@ import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
 object NWSparkTablesAndQueriesApp {
-  val conf = new SparkConf().
-      setAppName("NWSparkTablesAndQueriesApp Application")
-  val sc = new SparkContext(conf)
-  val sqlContext = SQLContext.getOrCreate(sc)
-  val snc = SnappyContext(sc)
 
   def main(args: Array[String]) {
+    val connectionURL = args(args.length - 1)
+    val conf = new SparkConf().
+        setAppName("NWSparkTablesAndQueriesApp Application").
+        set("snappydata.connection", connectionURL)
+    val sc = SparkContext.getOrCreate(conf)
+    val sqlContext = SQLContext.getOrCreate(sc)
+    val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)
     snc.sql("set spark.sql.shuffle.partitions=6")
     snc.setConf("dataFilesLocation", dataFilesLocation)

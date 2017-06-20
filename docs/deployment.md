@@ -1,5 +1,5 @@
 # Overview
-In this section, we discuss the various modes available for collocation of related data and computation.
+In this section, the various modes available for collocation of related data and computation is discussed.
 
 You can run the SnappyData store in the following modes:
 
@@ -38,14 +38,14 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>0.8</version>
+    <version>0.9</version>
 </dependency>
 ```
 **Example: SBT dependency**
 
 ```
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.9"
 
 ```
 **Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program
@@ -63,7 +63,7 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "0.8"
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 ```bash
-./bin/spark-shell --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-shell --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 
 
@@ -82,23 +82,22 @@ Some of the advantages of this mode are:
 
 ![Embedded Mode](Images/SnappyEmbeddedMode.png)
 
-In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide#snappydata-jobs) section.
+In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide.md#snappydata-jobs) section.
 
 **Example: Submit a Spark Job to the SnappyData Cluster**
 ```
 bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 ```
 
-Also, you can use [SnappySQL](howto/#howto-snappyShell) to create and query tables.
+Also, you can use [SnappySQL](howto.md#howto-snappyShell) to create and query tables.
 
 You can either [start SnappyData members](install.md) using the `snappy-start-all.sh` script or you can start them individually.
 
 Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:
 
-* If the join expression matches the partitioning scheme of tables, we do a partition to partition join instead of a shuffle based join.
-  Moreover, if two tables are collocated (while defining the tables) we can avoid costly data movement.
+* If the join expression matches the partitioning scheme of tables, a partition to partition join instead of a shuffle based join is done. </br> Moreover, if two tables are collocated (while defining the tables) costly data movement can be avoided.
 
-* For replicated tables, which we know are present in all the data nodes,  a simple local join( local look up)  is done instead of a broadcast join.
+* For replicated tables, that are present in all the data nodes, a simple local join (local look up)  is done instead of a broadcast join.
 
 * Similarly inserts to tables groups rows according to table partitioning keys, and route to the JVM hosting the partition. This results in higher ingestion rate.
 
@@ -150,20 +149,20 @@ $ sbin/snappy-start-all.sh
 # start members individually
 $ bin/snappy locator start  -dir=/node-a/locator1
 $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
+bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 ```
 
-**Step 2: Launch the Apache Spark program **
+**Step 2: Launch the Apache Spark program**
 
 ***_In the Local mode_***
 ```bash
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
-<Note>Note: </Note>
-
- * <note> The `spark.snappydata.store.locators` property points to the locator of a running SnappyData cluster.</note>
+!!! Note: 
+	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. Its value is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527).
  
- * <note> In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`</note>
+ 	* In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`.
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
 ```scala
@@ -173,7 +172,7 @@ $scala > val snSession = new SnappySession(spark.sparkContext)
 
 ***_Using external cluster manager_***
 ```bash
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.store.locators=localhost:10334 --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 

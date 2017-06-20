@@ -43,7 +43,8 @@ private[sql] final case class RowTableScan(
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     partitionColumnAliases: Seq[Seq[Attribute]],
-    @transient baseRelation: PartitionedDataSourceScan)
+    @transient baseRelation: PartitionedDataSourceScan,
+    caseSensitive: Boolean)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) {
@@ -86,8 +87,9 @@ private[sql] final case class RowTableScan(
     val holder = ctx.freshName("nullHolder")
     val holderClass = classOf[ResultSetNullHolder].getName
     val compactRowClass = classOf[AbstractCompactExecRow].getName
+    val baseSchemaOutput = baseSchema.toAttributes
     val columnsRowInput = output.map(a => genCodeCompactRowColumn(ctx,
-      row, holder, baseSchema.fieldIndex(a.name), a.dataType, a.nullable))
+      row, holder, fieldIndex(baseSchemaOutput, a.name), a.dataType, a.nullable))
     s"""
        |final scala.collection.Iterator $iterator = $input;
        |final $holderClass $holder = new $holderClass();

@@ -217,7 +217,7 @@ function collect_on_remote {
   start_epoch="$8"
   end_epoch="$9"
 
-  tmp_dir="$(mktemp -d --tmpdir="$data_dir" data.XXXX)"
+  tmp_dir="$(mktemp -d "$data_dir/data.XXXX")"
   retval=$?
   if [ ! -d ${tmp_dir} ]; then
     echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
@@ -244,6 +244,22 @@ function collect_on_remote {
       files+=($l)
     done
     for l in $( ls *.gfs* 2> /dev/null )
+    do
+      files+=($l)
+    done
+    for l in $( ls *.jfr* 2> /dev/null )
+    do
+      files+=($l)
+    done
+    for l in $( ls *.conf* 2> /dev/null )
+    do
+      files+=($l)
+    done
+    for l in $( ls *.out* 2> /dev/null )
+    do
+      files+=($l)
+    done
+    for l in $( ls *.bin* 2> /dev/null )
     do
       files+=($l)
     done
@@ -349,6 +365,7 @@ function collect_on_remote {
         echo "Taking the dump of process ${proc_id} on ${host} -- count ${i}"
       fi
       kill -URG $proc_id
+      kill -QUIT $proc_id
       # record the last modified time of this log
       if [ "$i" = "1" ]; then
         first_dump_file_mod_epoch=`stat -c %Y $latest_log`
@@ -404,7 +421,6 @@ check_configs
 # Assuming each line in the members info file has the following format
 # host pid cwd
 
-all_pids=()
 # Make output directory
 TS=`date +%m.%d.%H.%M.%S`
 if [ -z "${OUTPUT_DIR}" ]; then
@@ -420,7 +436,7 @@ if [ "${VERBOSE}" = "1" ]; then
 fi
 
 # get the uniq lines from the members file
-tmp_members_file="$(mktemp --tmpdir="$data_dir" tmp_mem.XXXX)"
+tmp_members_file="$(mktemp /tmp/debug_mem.XXXX)"
 
 sort $MEMBERS_FILE | uniq >  $tmp_members_file
 
@@ -435,20 +451,11 @@ while  read -r line || [[ -n "$line" ]]; do
     echo "host: $host pid: $pid and cwd: $cwd"
   fi
 
-  collect_data $host $cwd $serv_num $out_dir &
+  ( collect_data $host $cwd $serv_num $out_dir )
   serv_num=`expr $serv_num + 1`
-  all_pids+=($!)
 done < $tmp_members_file
 
 rm -rf $tmp_members_file
-
-for p in "${all_pids[@]}"
-do
-  if [ "${VERBOSE}" = "1" ]; then
-    echo "Waiting for pid ${p}"
-  fi
-  wait $p 2> /dev/null
-done
 
 # make tar ball
 echo

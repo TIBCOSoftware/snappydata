@@ -19,6 +19,7 @@ package org.apache.spark.memory
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappySession}
@@ -37,7 +38,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
   val options = Map("PARTITION_BY" -> "col1",
     "EVICTION_BY" -> "LRUHEAPPERCENT",
-    "OVERFLOW" -> "true")
+    "OVERFLOW" -> "true", "PERSISTENCE" -> "none")
   val coptions = Map("PARTITION_BY" -> "col1",
     "BUCKETS" -> "1", "EVICTION_BY" -> "LRUHEAPPERCENT",
     "OVERFLOW" -> "true")
@@ -47,23 +48,23 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   val memoryMode = MemoryMode.ON_HEAP
 
   test("Test UnRollMemory") {
-    val sparkSession = createSparkSession(1, 0)
+    val sparkSession = createSparkSession(1, 0, 10000)
     val snSession = new SnappySession(sparkSession.sparkContext)
-    SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+    val memoryManager = SparkEnv.get.memoryManager
+        .asInstanceOf[SnappyUnifiedMemoryManager]
+    memoryManager.dropAllObjects(memoryMode)
+    assert(memoryManager.storageMemoryUsed == 0)
     val blockId = TestBlockId(s"SNAPPY_STORAGE_BLOCK_ID_test")
-    SparkEnv.get.memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
+    memoryManager.acquireUnrollMemory(blockId, 500, memoryMode)
 
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 500)
-    assert(SparkEnv.get.memoryManager.
-      asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject("_SPARK_CACHE_")
-      == 500)
-    SparkEnv.get.memoryManager.releaseUnrollMemory(500, memoryMode)
+    assert(memoryManager.storageMemoryUsed == 500)
+    val key = "_SPARK_CACHE_" -> memoryMode
+    assert(memoryManager.memoryForObject.getLong(key) == 500)
+    memoryManager.releaseUnrollMemory(500, memoryMode)
 
-    assert(SparkEnv.get.memoryManager.asInstanceOf[SnappyUnifiedMemoryManager].
-      getStoragePoolMemoryUsed() == 0)
-    assert(SparkEnv.get.memoryManager.
-      asInstanceOf[SnappyUnifiedMemoryManager].memoryForObject("_SPARK_CACHE_") == 0)
+    assert(memoryManager.getStoragePoolMemoryUsed(MemoryMode.OFF_HEAP) +
+        memoryManager.getStoragePoolMemoryUsed(MemoryMode.ON_HEAP) == 0)
+    assert(memoryManager.memoryForObject.getLong(key) == 0)
   }
 
 
@@ -76,9 +77,11 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
     val row = Row(1, 1, 1)
     snSession.insert("t1", row)
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
+    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert( afterInsertSize > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+    val afterDeleteSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterDeleteSize < afterInsertSize)
     snSession.dropTable("t1")
   }
 
@@ -121,6 +124,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
         assert(memoryIncreaseDuetoEviction > 0)
       }
     }
+    snappyMemoryManager.dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count == rows)
     snSession.dropTable("t1")
