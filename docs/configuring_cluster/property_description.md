@@ -2,7 +2,7 @@
 |Property|Description|Components</br>|
 |-|-|-|
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|Server</br>Lead</br>Locator|
-|-dir|Working directory of the server that will contain the SnappyData Server status file and will be the default location for log file, persistent files, data dictionary, and so forth (defaults to the current directory.|Server</br>Lead</br>Locator</br>|
+|-dir|Working directory of the server that contains the SnappyData Server status file and the default location for log file, persistent files, data dictionary, and so forth (defaults to the current directory).| Server</br>Lead</br>Locator</br>|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|Server</br>Lead</br>Locator|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |Server</br>Lead</br>Locator|
 |-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)|Server</br>Lead|
@@ -29,7 +29,7 @@
 <a id="sql-properties"></a>
 ## SQL Properties
 
-These properites can be set in the snappy-shell or using the configuration properties in the conf/leads file.
+These properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.
 
 For example: Set in the snappy SQL shell
 ```
@@ -56,7 +56,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 ## SDE Properties
 
-These [SDE](/../aqp.md) properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.
+These [SDE](../aqp.md) properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.
 
 For example: Set in the snappy SQL shell
 ```
@@ -69,7 +69,7 @@ $ cat conf/leads
 # This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080 -spark.sql.aqp.error=0.5
 ```
-This sets the property for the snappy-shell's session.
+This sets the property for the snappy SQL shell's session.
 
 | Properties | Description |
 |--------|--------|

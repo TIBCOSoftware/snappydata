@@ -9,11 +9,11 @@ Delete rows from a table.
 }
 ```
 
-##Description
+## Description
 
 This form is called a searched delete, removes all rows identified by the table name and WHERE clause.
 
-##Example
+## Example
 
 ``` pre
 -- Delete rows from the CUSTOMERS table where the CID is equal to 10.

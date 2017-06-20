@@ -1,6 +1,6 @@
 # Best Practices for Deploying and Managing SnappyData
 
-The best practices section provides you guidelines for setting up your cluster and designing your database and the schema to use. 
+The best practices section provides you guidelines for setting up your cluster and designing your database and the schema to use.
 
 The following topics are covered in this section:
 

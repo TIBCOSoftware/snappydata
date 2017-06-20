@@ -2,7 +2,7 @@
 
 Lists all disk stores with the most recent data for which other members are waiting.
 
-##Syntax
+## Syntax
 
 ``` pre
 snappy list-missing-disk-stores 
@@ -25,7 +25,7 @@ The table describes options for snappy list-missing-disk-stores.
 [Handling Missing Disk Stores](../../concepts/tables/persisting_table_data/handling_missing_disk_stores.md#handling_missing_disk_stores) provides more details about listing and revoking missing disk stores.
 -->
 
-##Example
+## Example
 
 ``` pre
 snappy list-missing-disk-stores 

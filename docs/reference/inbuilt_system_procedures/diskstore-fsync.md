@@ -4,7 +4,7 @@ Flush and fsync all data to configured disk stores, including data in asynchrono
 
 Use this procedure to ensure that all in-memory data is written to configured disk stores. You may want to fsync data in disk stores before copying or backing up disk store files at the operating system level, to ensure that they represent the current state of the SnappyData data.
 
-##Syntax
+## Syntax
 
 ``` pre
 SYS.diskstore_fsync (

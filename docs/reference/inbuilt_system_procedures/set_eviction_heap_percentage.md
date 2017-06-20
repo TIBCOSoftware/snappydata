@@ -5,7 +5,7 @@ Sets the percentage threshold of Java heap memory usage that triggers a SnappyDa
 
 This procedure sets the percentage threshold for evicting table data from the Java heap for the local SnappyData data store. When the used heap reaches the percentage, SnappyData begins to evict rows, using a LRU algorithm, from tables that are configured with LRU_HEAP eviction. The default eviction heap percentage is 81% of the critical heap percentage value.
 
-##Syntax
+## Syntax
 
 ``` pre
 SYS.SET_EVICTION_HEAP_PERCENTAGE (
