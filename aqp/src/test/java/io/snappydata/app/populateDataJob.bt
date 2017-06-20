@@ -1,0 +1,5 @@
+io/snappydata/hydra/aqp/populateDataJob.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="$GEMFIRE/../../../aqp/src/test/java/io/snappydata/app/ParquetData"
