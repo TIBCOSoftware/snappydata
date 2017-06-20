@@ -317,7 +317,7 @@ object JdbcExtendedUtils extends Logging {
     sql.append(s"DELETE FROM $table WHERE ")
     var fieldsLeft = rddSchema.fields.length
     rddSchema.fields.foreach { field =>
-      if(escapeQuotes) {
+      if (escapeQuotes) {
         sql.append("""\"""").append(field.name).append("""\"""")
       } else {
         sql.append('"').append(field.name).append('"')
