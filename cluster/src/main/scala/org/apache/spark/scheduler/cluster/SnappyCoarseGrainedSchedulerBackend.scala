@@ -97,16 +97,12 @@ class BlockManagerIdListener(sc: SparkContext)
 
   override def onExecutorAdded(
       msg: SparkListenerExecutorAdded): Unit = synchronized {
-    val executorCores = msg.executorInfo.totalCores
-    val profile = Misc.getMemStore.getDistributionAdvisor
-        .getProfile(msg.executorId)
-    val numProcessors = if (profile != null) profile.getNumProcessors
-    else executorCores
+    val numCores = sc.schedulerBackend.defaultParallelism()
     SnappyContext.getBlockId(msg.executorId) match {
       case None => SnappyContext.addBlockId(msg.executorId,
-        new BlockAndExecutorId(null, executorCores, numProcessors))
-      case Some(b) => b._executorCores = executorCores
-        b._numProcessors = numProcessors
+        new BlockAndExecutorId(null, numCores, numCores))
+      case Some(b) => b._executorCores = numCores
+        b._numProcessors = numCores
     }
   }
 
