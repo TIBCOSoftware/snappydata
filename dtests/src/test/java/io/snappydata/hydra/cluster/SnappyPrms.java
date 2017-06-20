@@ -22,6 +22,7 @@ import hydra.HydraVector;
 import java.util.Vector;
 
 public class SnappyPrms extends BasePrms {
+
   /**
    * Parameter used to get the user specified script names.
    * (VectosetValues of Strings) A list of values for script Names to execute.
@@ -302,6 +303,21 @@ public class SnappyPrms extends BasePrms {
   public static Long appPropsForJobServer;
 
   /**
+   * Parameter used to get the user list of pointLookUP queries to execute concurrently using
+   * jdbc clients.
+   * (VectorsetValues of Strings) A list of values for pointLookUp queries.
+   */
+  public static Long pointLookUpQueryList;
+
+  /**
+   * Parameter used to get the user list of analytical queries to execute concurrently using
+   * jdbc clients.
+   * (VectorsetValues of Strings) A list of values for analytical queries.
+   */
+  public static Long analyticalQueryList;
+
+
+  /**
    * Parameter used to get the leaderLauncher properties specified by user while launching
    * the lead node.
    * (VectosetValues of Strings) A space seperated list of values for leaderLauncher properties.
@@ -529,6 +545,16 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
+  public static Vector getPointLookUpQueryList() {
+    Long key = pointLookUpQueryList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getAnalyticalQueryList() {
+    Long key = analyticalQueryList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
   public static String getLeaderLauncherProps() {
     Long key = leaderLauncherProps;
     String leaderLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
@@ -724,7 +750,6 @@ public class SnappyPrms extends BasePrms {
     return executorMem;
   }
 
-
   static {
     BasePrms.setValues(SnappyPrms.class);
   }
@@ -732,4 +757,5 @@ public class SnappyPrms extends BasePrms {
   public static void main(String args[]) {
     BasePrms.dumpKeys();
   }
+
 }
