@@ -30,8 +30,8 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.exchange.ShuffleExchange
-import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
+import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
@@ -177,8 +177,24 @@ private[sql] object PartitionedPhysicalScan {
           partitionColumns, partitionColumnAliases, relation)
     }
 
-  def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =
-    SparkPlanInfo.fromSparkPlan(plan)
+  def getSparkPlanInfo(fullPlan: SparkPlan): SparkPlanInfo = {
+    val plan = fullPlan match {
+      case CodegenSparkFallback(CachedPlanHelperExec(child)) => child
+      case CodegenSparkFallback(child) => child
+      case CachedPlanHelperExec(child) => child
+      case _ => fullPlan
+    }
+    val children = plan match {
+      case ReusedExchangeExec(_, child) => child :: Nil
+      case _ => plan.children ++ plan.subqueries
+    }
+    val metrics = plan.metrics.toSeq.map { case (key, metric) =>
+      new SQLMetricInfo(metric.name.getOrElse(key), metric.id, metric.metricType)
+    }
+
+    new SparkPlanInfo(plan.nodeName, plan.simpleString,
+      children.map(getSparkPlanInfo), plan.metadata, metrics)
+  }
 }
 
 /**
@@ -195,7 +211,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     val callSite = sqlContext.sparkContext.getCallSite()
     CachedDataFrame.withNewExecutionId(sqlContext.sparkSession,
       callSite.shortForm, callSite.longForm,
-      child.treeString(verbose = true), SparkPlanInfo.fromSparkPlan(child)) {
+      child.treeString(verbose = true), PartitionedPhysicalScan.getSparkPlanInfo(child)) {
       child.executeCollect()
     }
   }

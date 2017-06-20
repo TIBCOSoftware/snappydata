@@ -108,12 +108,10 @@ private[sql] final case class ColumnTableScan(
       case _: BaseColumnFormatRelation =>
         val allStats = schemaAttributes.map(a => a ->
             ColumnStatsSchema(a.name, a.dataType))
-        (AttributeMap(allStats), allStats.flatMap(_._2.schema))
-      case _ => (null, null)
+        (AttributeMap(allStats),
+            ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
+      case _ => (null, Nil)
     }
-
-    def getColumnBatchStatSchema: Seq[AttributeReference] =
-      if (columnBatchStats ne null) columnBatchStats else Nil
 
     def statsFor(a: Attribute) = columnBatchStatsMap(a)
 
@@ -197,10 +195,9 @@ private[sql] final case class ColumnTableScan(
       }
     }
 
-    val columnBatchStatsSchema = getColumnBatchStatSchema
     val predicate = ExpressionCanonicalizer.execute(
       BindReferences.bindReference(columnBatchStatFilters
-          .reduceOption(And).getOrElse(Literal(true)), columnBatchStatsSchema))
+          .reduceOption(And).getOrElse(Literal(true)), columnBatchStats))
     val statsRow = ctx.freshName("statsRow")
     ctx.INPUT_ROW = statsRow
     ctx.currentVars = null
@@ -590,7 +587,8 @@ private[sql] final case class ColumnTableScan(
     val filterFunction = generateStatPredicate(ctx, numBatchRows)
     val unsafeRow = ctx.freshName("unsafeRow")
     val colNextBytes = ctx.freshName("colNextBytes")
-    val numColumnsInStatBlob = relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN
+    val numColumnsInStatBlob =
+      relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(numBatchRows)};"
