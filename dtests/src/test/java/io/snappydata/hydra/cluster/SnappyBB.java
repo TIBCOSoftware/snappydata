@@ -68,6 +68,7 @@ public class SnappyBB extends Blackboard {
     public static int doneExecution;
     public static int stopStartVms;
     public static int stopStartLeadVms;
+    public static int stopStartLocatorVms;
     public static int updateCounter;
     public static int insertCounter;
     public static int deleteCounter;
