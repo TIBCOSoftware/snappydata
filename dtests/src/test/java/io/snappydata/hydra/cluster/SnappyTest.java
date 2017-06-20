@@ -2271,9 +2271,6 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
         File logFile = new File(dest);
         snappyTest.executeProcess(pb, logFile);
-        snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
-        snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
-        snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
       }
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
@@ -2361,8 +2358,6 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
         File logFile = new File(dest);
         snappyTest.executeProcess(pb, logFile);
-        snappyTest.recordSnappyProcessIDinNukeRun("Worker");
-        snappyTest.recordSnappyProcessIDinNukeRun("Master");
       }
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
