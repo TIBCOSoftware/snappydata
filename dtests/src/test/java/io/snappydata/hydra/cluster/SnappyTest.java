@@ -2704,7 +2704,7 @@ public class SnappyTest implements Serializable {
         pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locator.sh"), "stop",
             "-dir=" + vmDir);
         log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
+        String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
         logFile = new File(dest);
       }
       snappyTest.executeProcess(pb, logFile);

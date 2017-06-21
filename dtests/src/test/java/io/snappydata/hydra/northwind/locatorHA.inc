@@ -1,7 +1,5 @@
-io.snappydata.hydra.cluster.SnappyPrms-waitTimeBeforeNextCycleVM = 120; //how long to wait before nodes will be cycled.
+io.snappydata.hydra.cluster.SnappyPrms-waitTimeBeforeNextCycleVM = 30; //how long to wait before nodes will be cycled.
 io.snappydata.hydra.cluster.SnappyPrms-cycleVms = true;
-
-hydra.Prms-totalTaskTimeSec           = 240;
 
 util.StopStartPrms-stopModes = NICE_KILL;
 util.StopStartPrms-numVMsToStop = RANGE 1 ${numVMsToStop} EGNAR;
