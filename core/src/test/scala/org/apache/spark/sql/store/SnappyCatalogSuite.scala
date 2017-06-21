@@ -71,6 +71,20 @@ class SnappyCatalogSuite extends SnappyFunSuite
     }
   }
 
+  after {
+    try {
+      snappySession.catalog.listDatabases().collect().foreach(db =>
+        snappySession.catalog.listTables(db.name).collect().foreach(
+          table => dropTable(table.name, Option(table.database))
+        )
+      )
+    } finally {
+    }
+  }
+
+  override def afterAll(): Unit = {
+  }
+
   private val utils = new CatalogTestUtils {
     override val tableInputFormat: String = "org.apache.hadoop.mapred.SequenceFileInputFormat"
     override val tableOutputFormat: String = "org.apache.hadoop.mapred.SequenceFileOutputFormat"
@@ -159,15 +173,14 @@ class SnappyCatalogSuite extends SnappyFunSuite
         Set("APP", "MY_DB2", "DEFAULT"))
   }
 
-  // SNAP-1641 is filed to enable this test
-  ignore("list tables") {
+  test("list tables") {
     assert(snappySession.catalog.listTables().collect().isEmpty)
     createTable("my_table1")
     createTable("my_table2")
     createTempTable("my_temp_table")
     assert(snappySession.catalog.listTables().collect().map(_.name.toLowerCase).toSet ==
         Set("my_table1", "my_table2", "my_temp_table"))
-    dropTable("my_table1")
+    dropTable("my_table1", Option("app"))
     assert(snappySession.catalog.listTables().collect().map(_.name.toLowerCase).toSet ==
         Set("my_table2", "my_temp_table"))
     dropTable("my_temp_table")
@@ -175,8 +188,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
         .map(_.name.toLowerCase).toSet == Set("my_table2"))
   }
 
-  // SNAP-1641 is filed to enable this test
-  ignore("list tables with database") {
+  test("list tables with database") {
     assert(snappySession.catalog.listTables("default").collect().isEmpty)
     createDatabase("my_db1")
     createDatabase("my_db2")
@@ -263,8 +275,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
     assert(e.getMessage.contains("unknown_db"))
   }
 
-  // SNAP-1641 is filed to enable this test
-  ignore("list columns") {
+  test("list columns") {
     createTable("tab1")
     testListColumns("tab1", dbName = None)
   }
@@ -274,8 +285,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
     snappySession.catalog.listColumns("temp1")
   }
 
-  // SNAP-1641 is filed to enable this test
-  ignore("list columns in database") {
+  test("list columns in database") {
     createDatabase("db1")
     createTable("tab1", Some("db1"))
     testListColumns("tab1", dbName = Some("db1"))

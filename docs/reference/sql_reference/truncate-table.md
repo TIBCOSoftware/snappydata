@@ -6,11 +6,11 @@ Remove all content from a table and return it to its initial, empty state. TRUNC
 TRUNCATE TABLE table-name
 ```
 
-##Description
+## Description
 
 To truncate a table, you must be the table's owner. You cannot use this command to truncate system tables.
 
-##Example
+## Example
 
 To truncate the "flights" table in the current schema:
 

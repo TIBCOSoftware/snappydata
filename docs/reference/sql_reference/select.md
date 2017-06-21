@@ -100,7 +100,7 @@ Select only rows from the side of the SEMI JOIN where there is a match. If one r
 `LEFT ANTI JOIN`</br>
 Select only rows from the left side that match no rows on the right side.
 
-**Example**
+**Example**:
 
 ```
     SELECT * FROM boxes INNER JOIN rectangles ON boxes.width = rectangles.width

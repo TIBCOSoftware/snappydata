@@ -59,7 +59,7 @@ An online backup saves the following:
 
 <a id="prereq"></a>
 
-#Prerequisites and Best Practices
+# Prerequisites and Best Practices
 
 -   Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
 
@@ -73,7 +73,7 @@ An online backup saves the following:
 
 <a id="backup_directory"></a>
 
-#Specifying the Backup Directory
+# Specifying the Backup Directory
 
 The directory you specify for backup can be used multiple times. Each backup first creates a top level directory for the backup, under the directory you specify, identified to the minute. You can use one of two formats:
 
@@ -106,7 +106,7 @@ snappy backup -baseline=./snappyStoreBackupLocation/2012-10-01-12-30 ./snappySto
 
 <a id="output_messages"></a>
 
-#Output Messages from snappy backup
+# Output Messages from snappy backup
 
 When you run `snappy backup`, it reports on the outcome of the operation.
 

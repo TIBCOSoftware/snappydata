@@ -6,7 +6,7 @@ Statistics timing is an attribute associated with a connection that you turn on 
 
 Turn statistics timing on by calling this procedure with a non-zero argument. Turn statistics timing off by calling the procedure with a zero argument.<mark> To be confirmed See Capture Query Plans for All Statements </mark>.
 
-##Syntax
+## Syntax
 
 ``` pre
 SYSCS_UTIL.SET_STATISTICS_TIMING(IN SMALLINT ENABLE)

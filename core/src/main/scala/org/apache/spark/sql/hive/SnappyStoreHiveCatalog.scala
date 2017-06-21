@@ -94,10 +94,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   // private val sessionTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
 
-  override def dropTable(name: TableIdentifier,
-      ignoreIfNotExists: Boolean, purge: Boolean): Unit = synchronized {
-    snappySession.dropTable(newQualifiedTableName(name), ignoreIfNotExists)
-  }
+//  override def dropTable(name: TableIdentifier,
+//      ignoreIfNotExists: Boolean): Unit = synchronized {
+//    snappySession.dropTable(newQualifiedTableName(name), ignoreIfNotExists)
+//  }
 
   protected var currentSchema: String = {
     val defaultName = Constant.DEFAULT_SCHEMA

@@ -2,13 +2,13 @@
 
 Treats the value of the string as a valid file name, and redirects `snappy` processing to read from that file until it ends or an exit command is executed.
 
-##Syntax
+## Syntax
 
 ``` pre
 RUN String
 ```
 
-##Description
+## Description
 
 Treats the value of the string as a valid file name, and redirects `snappy` processing to read from that file until it ends or an [Exit](../../reference/interactive_commands/exit/) command is executed. If the end of the file is reached without `snappy` exiting, reading continues from the previous input source once the end of the file is reached. Files can contain Run commands.
 
@@ -16,7 +16,7 @@ Treats the value of the string as a valid file name, and redirects `snappy` proc
 
 Any changes made to the `snappy` environment by the file are visible in the environment when processing resumes.
 
-##Example
+## Example
 
 ``` pre
 snappy> run 'ToursDB_schema.sql';

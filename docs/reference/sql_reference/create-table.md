@@ -199,7 +199,7 @@ Note that only the column names and datatypes from the queried table are used wh
 
 ### Example: Create Table using Spark DataFrame API
 
-For information on using the Apache Spark API, refer to [Using the Spark DataFrame API](/../../aqp.md#using-the-spark-dataframe-api).
+For information on using the Apache Spark API, refer to [Using the Spark DataFrame API](../../aqp.md#using-the-spark-dataframe-api).
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)
