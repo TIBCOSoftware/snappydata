@@ -193,7 +193,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args.map {
-        case pl: DynamicReplacableConstant => pl.eval(null)
+        case pl: DynamicReplacableConstant => pl.convertedLiteral
         case v => v
       })
     }
