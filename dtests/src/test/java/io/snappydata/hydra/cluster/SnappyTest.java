@@ -1137,11 +1137,40 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
+  protected static List<String> validateServerEndpointData() {
+    List<String> endpoints = getNetworkServerEndpoints();
+    /*if (endpoints.size() == 0) {
+      if (isLongRunningTest) {
+        endpoints = getServerConnection();
+      }
+    }*/
+    if (endpoints.size() == 0) {
+      String s = "No network server endpoints found";
+      throw new TestException(s);
+    }
+    return endpoints;
+  }
+
   /**
    * Gets Client connection.
    */
   public static Connection getLocatorConnection() throws SQLException {
     List<String> endpoints = validateLocatorEndpointData();
+    Connection conn = null;
+    if (!runGemXDQuery) {
+      String url = "jdbc:snappydata://" + endpoints.get(0);
+      Log.getLogWriter().info("url is " + url);
+      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+    } else {
+      String url = "jdbc:gemfirexd://" + endpoints.get(0);
+      Log.getLogWriter().info("url is " + url);
+      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+    }
+    return conn;
+  }
+
+  public static Connection getServerConnection() throws SQLException {
+    List<String> endpoints = validateServerEndpointData();
     Connection conn = null;
     if (!runGemXDQuery) {
       String url = "jdbc:snappydata://" + endpoints.get(0);
@@ -2483,7 +2512,7 @@ public class SnappyTest implements Serializable {
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
       Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
       snappyTest.cycleVM(numToKill, stopStartVms, "storeVmCycled", lastCycledTimeForStoreFromBB,
-          lastCycledTime, "server");
+          lastCycledTime, "server", false, false);
     }
   }
 
@@ -2492,13 +2521,12 @@ public class SnappyTest implements Serializable {
    * restart to complete before returning.
    */
   public static void HydraTask_cycleLocatorVms() {
-
     if (cycleVms) {
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
       Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
       snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForStoreFromBB,
-          lastCycledTime, "locator");
+          lastCycledTime, "locator", false, false);
     }
   }
 
@@ -2512,13 +2540,13 @@ public class SnappyTest implements Serializable {
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
       Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
       snappyTest.cycleVM(numToKill, stopStartVms, "leadVmCycled", lastCycledTimeForLeadFromBB,
-          lastCycledTimeForLead, "lead");
+          lastCycledTimeForLead, "lead", false, false);
     }
   }
 
   protected void
   cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
-      lastCycledTime, String vmName) {
+      lastCycledTime, String vmName, boolean isDmlOp, boolean restart) {
     if (!cycleVms) {
       Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
       return;
@@ -2529,9 +2557,12 @@ public class SnappyTest implements Serializable {
       if (vmCycled == null) {
         while (true) {
           try {
-            if (vmName.equalsIgnoreCase("lead")) vms = stopStartVMs(numToKill, "lead");
-            else if (vmName.equalsIgnoreCase("server")) vms = stopStartVMs(numToKill, "server");
-            else if (vmName.equalsIgnoreCase("locator")) vms = stopStartVMs(numToKill, "locator");
+            if (vmName.equalsIgnoreCase("lead"))
+              vms = stopStartVMs(numToKill, "lead", isDmlOp, restart);
+            else if (vmName.equalsIgnoreCase("server")) vms = stopStartVMs(numToKill, "server",
+                isDmlOp, restart);
+            else if (vmName.equalsIgnoreCase("locator")) vms = stopStartVMs(numToKill,
+                "locator", isDmlOp, restart);
             break;
           } catch (TestException te) {
           }
@@ -2568,9 +2599,12 @@ public class SnappyTest implements Serializable {
                 "at:" + currentTime);
           }
         }
-        if (vmName.equalsIgnoreCase("lead")) vms = stopStartVMs(numToKill, "lead");
-        else if (vmName.equalsIgnoreCase("server")) vms = stopStartVMs(numToKill, "server");
-        else if (vmName.equalsIgnoreCase("locator")) vms = stopStartVMs(numToKill, "locator");
+        if (vmName.equalsIgnoreCase("lead"))
+          vms = stopStartVMs(numToKill, "lead", isDmlOp, restart);
+        else if (vmName.equalsIgnoreCase("server")) vms = stopStartVMs(numToKill, "server",
+            isDmlOp, restart);
+        else if (vmName.equalsIgnoreCase("locator")) vms = stopStartVMs(numToKill, "locator",
+            isDmlOp, restart);
       }
       if (vms == null || vms.size() == 0) {
         if (vmName.equalsIgnoreCase("lead")) {
@@ -2606,25 +2640,27 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName) {
+  protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
+                                            boolean restart) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
-      return stopStartVMs(numToKill, cycleLeadVMTarget, vmName);
+      return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart);
     } else if (vmName.equalsIgnoreCase("server")) {
       log().info("stopStartVMs : cycle store vm starts at: " + System.currentTimeMillis());
-      return stopStartVMs(numToKill, cycleVMTarget, vmName);
+      return stopStartVMs(numToKill, cycleVMTarget, vmName, isDmlOp, restart);
     } else if (vmName.equalsIgnoreCase("locator"))
       log().info("stopStartVMs : cycle store vm starts at: " + System.currentTimeMillis());
-    return stopStartVMs(numToKill, cycleLocatorVMTarget, vmName);
+    return stopStartVMs(numToKill, cycleLocatorVMTarget, vmName, isDmlOp, restart);
   }
 
   protected List<ClientVmInfo> stopStartLeadVM(int numToKill) {
     log().info("cycle lead vm starts at: " + System.currentTimeMillis());
-    return stopStartVMs(numToKill, cycleLeadVMTarget, "lead");
+    return stopStartVMs(numToKill, cycleLeadVMTarget, "lead", false, false);
   }
 
   @SuppressWarnings("unchecked")
-  protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, String vmName) {
+  protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, String vmName, boolean
+      isDmlOp, boolean restart) {
     Object[] tmpArr = null;
     if (vmName.equalsIgnoreCase("lead")) tmpArr = snappyTest.getPrimaryLeadVMWithHA(target);
     else tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
@@ -2653,12 +2689,13 @@ public class SnappyTest implements Serializable {
       }//clear bb info for the vms to be stopped/started
     }
     if (vmList.size() != 0) {
-      stopStartVMs(vmList, stopModeList, vmName);
+      stopStartVMs(vmList, stopModeList, vmName, isDmlOp, restart);
     }
     return vmList;
   }
 
-  protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList, String vmName) {
+  protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList, String
+      vmName, boolean isDmlOp, boolean restart) {
     Set<String> myDirList = new LinkedHashSet<String>();
     myDirList = getFileContents("logDir_", myDirList);
     if (vmList.size() != stopModeList.size()) {
@@ -2673,17 +2710,24 @@ public class SnappyTest implements Serializable {
       String clientName = targetVm.getClientName();
       for (String vmDir : myDirList) {
         if (vmDir.contains(clientName)) {
-          recycleVM(vmDir, stopMode, clientName, vmName);
+          recycleVM(vmDir, stopMode, clientName, vmName, isDmlOp, restart);
         }
       }
     }
   }
 
-  protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName) {
-    if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL")) {
-      killVM(vmDir, clientName, vmName);
+  protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
+                           boolean isDmlOp, boolean restart) {
+    if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
+      SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
+    } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {
+      SnappyLocatorHATest.ddlOpAfterLocatorStop_ClusterRestart(vmDir, clientName, vmName);
+    } else {
+      if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL")) {
+        killVM(vmDir, clientName, vmName);
+      }
+      startVM(vmDir, clientName, vmName);
     }
-    startVM(vmDir, clientName, vmName);
   }
 
   protected void killVM(String vmDir, String clientName, String vmName) {
