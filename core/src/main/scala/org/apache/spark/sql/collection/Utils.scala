@@ -19,7 +19,7 @@ package org.apache.spark.sql.collection
 import java.io.ObjectOutputStream
 import java.nio.ByteBuffer
 import java.sql.DriverManager
-import java.util.TimeZone
+import java.util.{Locale, TimeZone}
 
 import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
@@ -31,6 +31,7 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.fasterxml.jackson.core.JsonGenerator
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -650,27 +651,92 @@ object Utils {
 
   def codecCompress(codec: CompressionCodec, input: Array[Byte],
       inputLen: Int): Array[Byte] = codec match {
-    case _: LZFCompressionCodec => LZFEncoder.encode(input, 0, inputLen)
     case _: LZ4CompressionCodec =>
       LZ4Factory.fastestInstance().fastCompressor().compress(input, 0, inputLen)
+    case _: LZFCompressionCodec => LZFEncoder.encode(input, 0, inputLen)
     case _: SnappyCompressionCodec =>
       Snappy.rawCompress(input, inputLen)
+  }
+
+  private[this] val COMPRESSION_HEADER_SIZE = 8
+  private[this] val MIN_COMPRESSION_RATIO = 0.8
+
+  private def writeCompressionHeader(codec: CompressionCodecId.Type,
+      uncompressedLen: Int, buffer: ByteBuffer): Unit = {
+    buffer.rewind()
+    // write the codec and uncompressed size for fastest decompression
+    buffer.putInt(0, codec.id)
+    buffer.putInt(4, uncompressedLen)
+  }
+
+  def codecCompress(codec: CompressionCodecId.Type, input: ByteBuffer, len: Int,
+      allocator: BufferAllocator): ByteBuffer = codec match {
+    case CompressionCodecId.LZ4 =>
+      // LZF is also mapped to LZ4 since it does not have ByteBuffer APIs
+      val compressor = LZ4Factory.fastestInstance().fastCompressor()
+      val maxLength = compressor.maxCompressedLength(len)
+      val result = allocator.allocate(maxLength + COMPRESSION_HEADER_SIZE, "COMPRESSOR")
+      val resultLen = compressor.compress(input, input.position(), len,
+        result, COMPRESSION_HEADER_SIZE, maxLength)
+      // check if there was at least 20% reduction
+      if (resultLen < len * MIN_COMPRESSION_RATIO) {
+        // no need to trim since this should be written to output stream right away
+        writeCompressionHeader(codec, len, result)
+        result.limit(resultLen + COMPRESSION_HEADER_SIZE)
+        result
+      } else input
+    case CompressionCodecId.Snappy =>
+      val maxLength = Snappy.maxCompressedLength(len)
+      val result = allocator.allocate(maxLength + COMPRESSION_HEADER_SIZE, "COMPRESSOR")
+      val resultLen = if (input.isDirect) {
+        result.position(COMPRESSION_HEADER_SIZE)
+        Snappy.compress(input, result)
+      } else {
+        Snappy.compress(input.array(), input.arrayOffset() + input.position(),
+          len, result.array(), COMPRESSION_HEADER_SIZE)
+      }
+      if (resultLen < len * MIN_COMPRESSION_RATIO) {
+        // no need to trim since this should be written to output stream right away
+        writeCompressionHeader(codec, len, result)
+        result.limit(resultLen + COMPRESSION_HEADER_SIZE)
+        result
+      } else input
   }
 
   def codecDecompress(codec: CompressionCodec, input: Array[Byte],
       inputOffset: Int, inputLen: Int,
       outputLen: Int): Array[Byte] = codec match {
+    case _: LZ4CompressionCodec =>
+      LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
+        inputOffset, outputLen)
     case _: LZFCompressionCodec =>
       val output = new Array[Byte](outputLen)
       LZFDecoder.decode(input, inputOffset, inputLen, output)
       output
-    case _: LZ4CompressionCodec =>
-      LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
-        inputOffset, outputLen)
     case _: SnappyCompressionCodec =>
       val output = new Array[Byte](outputLen)
       Snappy.uncompress(input, inputOffset, inputLen, output, 0)
       output
+  }
+
+  def codecDecompress(input: ByteBuffer,
+      allocator: BufferAllocator): ByteBuffer = {
+    val codec = CompressionCodecId(input.getInt)
+    val outputLen = input.getInt
+    val result = allocator.allocate(outputLen, "DECOMPRESSOR")
+    codec match {
+      case CompressionCodecId.LZ4 =>
+        LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
+          input.position(), result, 0, outputLen)
+      case CompressionCodecId.Snappy =>
+        if (input.isDirect) {
+          Snappy.uncompress(input, result)
+        } else {
+          Snappy.uncompress(input.array(), input.arrayOffset() +
+              input.position(), input.remaining(), result.array(), 0)
+        }
+    }
+    result
   }
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
@@ -750,6 +816,21 @@ object Utils {
     }
     row
   }
+}
+
+object CompressionCodecId extends Enumeration {
+  type Type = Value
+
+  val LZ4 = Value(1, "LZ4")
+  val Snappy = Value(2, "Snappy")
+
+  def fromCodecName(name: String): CompressionCodecId.Type =
+    name.toLowerCase(Locale.ENGLISH) match {
+      case "lz4" | "lzf" => LZ4
+      case "snappy" => Snappy
+      case _ => throw new IllegalArgumentException(
+        s"Unknown compression scheme '$name'")
+    }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,

@@ -23,7 +23,6 @@ import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{ByteBufferHashMap, LongKey, ObjectHashSet}
 
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -362,14 +361,12 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val numNullWords = getNumNullWords
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
     val storageAllocator = this.storageAllocator
-    // serialization header size + typeId + number of nulls
-    val headerSize = ColumnFormatEntry.VALUE_HEADER_SIZE + 8L
+    // header of size 8 includes typeId + number of nulls
     val columnData = storageAllocator.allocateForStorage(ColumnEncoding
-        .checkBufferSize(headerSize + (numNullWords << 3L) + dataSize))
+        .checkBufferSize(8L + (numNullWords << 3L) + dataSize))
     val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
-    // skip serialization header which will be filled in by ColumnFormatValue
-    var cursor = baseOffset + ColumnFormatEntry.VALUE_HEADER_SIZE
+    var cursor = baseOffset
     // typeId
     ColumnEncoding.writeInt(columnBytes, cursor, typeId)
     cursor += 4

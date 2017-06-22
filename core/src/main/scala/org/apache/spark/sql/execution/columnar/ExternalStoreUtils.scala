@@ -80,7 +80,7 @@ object ExternalStoreUtils extends Logging {
   }
 
   private def defaultMaxExternalPoolSize: String =
-    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 4))
+    String.valueOf(math.max(128, Runtime.getRuntime.availableProcessors() * 8))
 
   private def defaultMaxEmbeddedPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
