@@ -49,7 +49,7 @@ public class SnappyLocatorHATest extends SnappyTest {
 
   protected static void ddlOpDuringLocatorHA(String vmDir, String clientName, String vmName) {
     snappyTest.killVM(vmDir, clientName, vmName);
-    Log.getLogWriter().info("SS - snappy locator stopped successfully...." + vmDir);
+    Log.getLogWriter().info("snappy locator stopped successfully...." + vmDir);
     Connection conn = null;
     ResultSet rs = null;
     String query = "create table tab1 (id int, name String, address String) USING  column " +
@@ -57,18 +57,17 @@ public class SnappyLocatorHATest extends SnappyTest {
     try {
       conn = getServerConnection();
       conn.createStatement().executeUpdate(query);
-      Log.getLogWriter().info("SS - query executed successfully: " + query);
-      rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
+      Log.getLogWriter().info("query executed successfully: " + query);
+      /*rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
       StructTypeImpl sti = ResultSetHelper.getStructType(rs);
-      List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
-      Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());
+      List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);*/
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
       throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
     }
     snappyTest.startVM(vmDir, clientName, vmName);
-    Log.getLogWriter().info("SS - snappy locator restarted successfully...." + vmDir);
+    Log.getLogWriter().info("snappy locator restarted successfully...." + vmDir);
   }
 
   /**
@@ -88,7 +87,7 @@ public class SnappyLocatorHATest extends SnappyTest {
   protected static void ddlOpAfterLocatorStop_ClusterRestart(String vmDir, String clientName,
                                                              String vmName) {
     snappyTest.killVM(vmDir, clientName, vmName);
-    Log.getLogWriter().info("SS - snappy locator stopped successfully...." + vmDir);
+    Log.getLogWriter().info("snappy locator stopped successfully...." + vmDir);
     Connection conn = null;
     ResultSet rs = null;
     String query = "create table tab1 (id int, name String, address String) USING  column " +
@@ -96,19 +95,19 @@ public class SnappyLocatorHATest extends SnappyTest {
     try {
       conn = getServerConnection();
       conn.createStatement().executeUpdate(query);
-      Log.getLogWriter().info("SS - query executed successfully: " + query);
-      rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
+      Log.getLogWriter().info("query executed successfully: " + query);
+      /*rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
       StructTypeImpl sti = ResultSetHelper.getStructType(rs);
       List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
-      Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());
+      Log.getLogWriter().info("Result for query : " + query + "\n" + queryResult.toString());*/
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
       throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
     }
     HydraTask_stopSnappyCluster();
-    Log.getLogWriter().info("SS - snappy cluster stopped successfully...." + vmDir);
+    Log.getLogWriter().info("snappy cluster stopped successfully...." + vmDir);
     HydraTask_startSnappyCluster();
-    Log.getLogWriter().info("SS - snappy cluster restarted successfully...." + vmDir);
+    Log.getLogWriter().info("snappy cluster restarted successfully...." + vmDir);
   }
 }
