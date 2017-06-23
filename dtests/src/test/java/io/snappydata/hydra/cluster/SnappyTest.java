@@ -2599,12 +2599,7 @@ public class SnappyTest implements Serializable {
                 "at:" + currentTime);
           }
         }
-        if (vmName.equalsIgnoreCase("lead"))
-          vms = stopStartVMs(numToKill, "lead", isDmlOp, restart);
-        else if (vmName.equalsIgnoreCase("server")) vms = stopStartVMs(numToKill, "server",
-            isDmlOp, restart);
-        else if (vmName.equalsIgnoreCase("locator")) vms = stopStartVMs(numToKill, "locator",
-            isDmlOp, restart);
+        vms = stopStartVMs(numToKill, vmName, isDmlOp, restart);
       }
       if (vms == null || vms.size() == 0) {
         if (vmName.equalsIgnoreCase("lead")) {
