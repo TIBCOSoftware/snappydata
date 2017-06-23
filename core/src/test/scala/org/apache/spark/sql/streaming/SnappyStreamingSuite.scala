@@ -31,8 +31,7 @@ import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.commons.lang3.RandomUtils
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{DataTypes, StringType, StructField, StructType}
-import org.apache.spark.sql.types.DataTypes._
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -193,38 +192,7 @@ class SnappyStreamingSuite
     }
   }
 
-  test("kafka structured streaming") {
-
-    val topic = "kafka_struct_topic"
-    var sent = Map("1" -> 5, "2" -> 5, "3" -> 5)
-    kafkaUtils.createTopic(topic)
-    kafkaUtils.sendMessages(topic, sent)
-
-    import org.apache.spark.sql.functions._
-
-    val query = snc.snappySession.readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", s"${kafkaUtils.brokerAddress}")
-      .option("subscribe", s"$topic")
-      .load
-      .select(col("value") cast StringType)
-      .writeStream
-      .format("console")
-      .outputMode(OutputMode.Append)
-      .start()
-    var i = 0
-    while (i<10) {
-      Thread.sleep(2000)
-      kafkaUtils.sendMessages(topic, sent)
-      // scalastyle:off println
-      println("YOGSSSSSSSSSSS" + query.lastProgress)
-      // scalastyle:on println
-      i = i + 1
-    }
-  }
-
-
-    test("Test stream plan optimizations") {
+  test("Test stream plan optimizations") {
     val topic1 = "direct_kafka_topic1"
     kafkaUtils.createTopic(topic1)
 
