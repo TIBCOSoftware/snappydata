@@ -19,7 +19,7 @@ package io.snappydata.benchmark
 import java.io.PrintStream
 import java.sql.Statement
 
-import org.apache.spark.sql.{SQLContext, SnappyContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext}
 
 object TPCHReplicatedTable {
 
@@ -123,6 +123,8 @@ object TPCHReplicatedTable {
       : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
+    var unionSupplierDF : DataFrame = null
+
     for(i <- 1 to numberOfLoadingStage) {
       val supplierData = sc.textFile(s"$path/supplier.tbl.$i")
       val supplierReadings = supplierData.map(s => s.split('|')).map(s => TPCHTableSchema
@@ -147,11 +149,19 @@ object TPCHReplicatedTable {
         }
         supplierDF.write.insertInto("SUPPLIER")
       } else {
-        supplierDF.createOrReplaceTempView("SUPPLIER")
-        sqlContext.cacheTable("SUPPLIER")
-        sqlContext.table("SUPPLIER").count()
+        if (i == 1) {
+          unionSupplierDF = supplierDF
+        } else {
+          unionSupplierDF = unionSupplierDF.union(supplierDF)
+        }
       }
     }
+    if(!isSnappy){
+      unionSupplierDF.createOrReplaceTempView("SUPPLIER")
+      sqlContext.cacheTable("SUPPLIER")
+      sqlContext.table("SUPPLIER").count()
+    }
+
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
       loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime - startTime}")

@@ -40,8 +40,10 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   private var _url: String = null
 
   def initializeConnection(): Unit = {
+    val props = new Properties()
+    props.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
     conn = JdbcUtils.createConnectionFactory(
-      _url + ";route-query=false;" , new Properties())()
+      _url + ";route-query=false;" , props)()
     getStatsStmt = conn.prepareCall("call sys.GET_SNAPPY_TABLE_STATS(?)")
     getStatsStmt.registerOutParameter(1, java.sql.Types.BLOB)
   }

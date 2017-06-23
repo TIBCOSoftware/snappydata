@@ -84,7 +84,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
         try {
           val state: TXStateInterface = TXManagerImpl.getCurrentTXState
-          tc.setActiveTXState(state, true)
+          if (state != null) {
+            tc.setActiveTXState(state, true)
+          }
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
             TransactionController.MODE_RECORD,
@@ -335,6 +337,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def logMemoryStats(): Unit =
     MemoryManagerCallback.memoryManager.logStats()
+
+  override def shouldStopRecovery(): Boolean =
+    MemoryManagerCallback.memoryManager.shouldStopRecovery()
 }
 
 trait StoreCallback extends Serializable {

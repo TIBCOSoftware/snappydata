@@ -83,28 +83,13 @@ trait SingleRowInsertableRelation {
  * API for updates and deletes to a relation.
  */
 @DeveloperApi
-trait MutableRelation extends InsertableRelation with DestroyRelation {
+trait MutableRelation extends DestroyRelation {
 
   /**
    * Get the "key" columns for the table that need to be projected out by
    * UPDATE and DELETE operations for affecting the selected rows.
    */
   def getKeyColumns: Seq[String]
-
-  /**
-   * Get a spark plan to update rows in the relation. The result of SparkPlan
-   * execution should be a count of number of updated rows.
-   */
-  def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
-      updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan
-
-  /**
-   * Get a spark plan to delete rows the relation. The result of SparkPlan
-   * execution should be a count of number of updated rows.
-   */
-  def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
-      keyColumns: Seq[Attribute]): SparkPlan
 }
 
 /**
@@ -200,7 +185,7 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
 }
 
 @DeveloperApi
-trait UpdatableRelation extends SingleRowInsertableRelation {
+trait UpdatableRelation extends SingleRowInsertableRelation with MutableRelation {
 
   /**
    * Update a set of rows matching given criteria.
@@ -214,10 +199,18 @@ trait UpdatableRelation extends SingleRowInsertableRelation {
    */
   def update(filterExpr: String, newColumnValues: Row,
       updateColumns: Seq[String]): Int
+
+  /**
+   * Get a spark plan to update rows in the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
+      updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
+      keyColumns: Seq[Attribute]): SparkPlan
 }
 
 @DeveloperApi
-trait DeletableRelation {
+trait DeletableRelation extends MutableRelation {
 
   /**
    * Delete a set of row matching given criteria.
@@ -227,6 +220,13 @@ trait DeletableRelation {
    * @return number of rows deleted
    */
   def delete(filterExpr: String): Int
+
+  /**
+   * Get a spark plan to delete rows the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
+      keyColumns: Seq[Attribute]): SparkPlan
 }
 
 @DeveloperApi

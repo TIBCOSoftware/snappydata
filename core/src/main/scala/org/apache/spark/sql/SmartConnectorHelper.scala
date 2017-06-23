@@ -63,8 +63,10 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def initializeConnection(): Unit = {
+    val props = new Properties()
+    props.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
     conn = JdbcUtils.createConnectionFactory(
-      connectionURL + ";route-query=false;" , new Properties())()
+      connectionURL + ";route-query=false;" , props)()
     createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
     dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
     createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)
@@ -101,9 +103,12 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       options: Map[String, String],
       isBuiltIn: Boolean): LogicalPlan = {
 
+    snappySession.sessionCatalog.invalidateTable(tableIdent)
+
     runStmtWithExceptionHandling(executeCreateTableStmt(tableIdent,
       provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn))
 
+    SnappySession.clearAllCache()
     snappySession.sessionCatalog.lookupRelation(tableIdent)
   }
 
@@ -128,6 +133,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     snappySession.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
     SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappySession.clearAllCache()
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,

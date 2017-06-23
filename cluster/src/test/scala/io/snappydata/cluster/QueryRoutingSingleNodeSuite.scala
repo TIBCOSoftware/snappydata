@@ -290,9 +290,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       // println("network server started")
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
-      // As part of fix to SNAP-1478 thie below query should be enabled
-      // and verified.
-      // query1(tableName1, tableName2, serverHostPort)
+      query1(tableName1, tableName2, serverHostPort)
       (0 to 5).foreach(i => query2snc(tableName1, tableName2, serverHostPort, i))
       query2(tableName1, tableName2, serverHostPort)
     } finally {
@@ -351,5 +349,78 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       stmt.close()
       conn.close()
     }
+  }
+
+  def insertBooleanRows(numRows: Int): Unit = {
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    val rows = (1 to numRows).toSeq
+    val stmt = conn.createStatement()
+    try {
+      var i = 1
+      rows.foreach(d => {
+        stmt.addBatch(s"insert into order_line_row_bool values(${i % 2 == 0}, $i)")
+        i += 1
+        if (i % 1000 == 0) {
+          stmt.executeBatch()
+          i = 0
+        }
+      })
+      stmt.executeBatch()
+      // scalastyle:off println
+      println(s"committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  def queryBooleanRows(): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    val stmt = conn.createStatement()
+    try {
+      val query = s"select distinct ol_w_id  from order_line_row_bool"
+
+      snc.sql(query).show()
+      val count = snc.sql(query).count()
+      assert(count == 2)
+      // scalastyle:off println
+      println("snc: Number of rows read " + count)
+      // scalastyle:on println
+
+      val rs = stmt.executeQuery(query)
+      var index = 0
+      while (rs.next()) {
+        rs.getInt(1)
+        index += 1
+      }
+      // scalastyle:off println
+      println("jdbc: Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      rs.close()
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  test("1655: test Boolean in Row Table") {
+
+    snc.sql("create table order_line_row_bool (ol_w_id  Boolean, ol_d_id Integer) using row " +
+        "options( partition_by 'ol_w_id, ol_d_id', buckets '5')")
+
+    serverHostPort = TestUtil.startNetServer()
+    // scalastyle:off println
+    println("network server started")
+    // scalastyle:on println
+    insertBooleanRows(1000)
+
+    (1 to 5).foreach(d => queryBooleanRows())
   }
 }

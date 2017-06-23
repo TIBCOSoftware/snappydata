@@ -48,7 +48,6 @@ object StoreUtils {
   val PERSISTENT = "PERSISTENT"
   val DISKSTORE = "DISKSTORE"
   val SERVER_GROUPS = "SERVER_GROUPS"
-  val OFFHEAP = "OFFHEAP"
   val EXPIRE = "EXPIRE"
   val OVERFLOW = "OVERFLOW"
 
@@ -63,7 +62,6 @@ object StoreUtils {
   val GEM_EVICTION_BY = "EVICTION BY"
   val GEM_PERSISTENT = "PERSISTENT"
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
-  val GEM_OFFHEAP = "OFFHEAP"
   val GEM_EXPIRE = "EXPIRE"
   val GEM_OVERFLOW = "EVICTACTION OVERFLOW"
   val GEM_HEAPPERCENT = "EVICTION BY LRUHEAPPERCENT "
@@ -91,7 +89,7 @@ object StoreUtils {
 
   val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
     COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENCE, PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW,
+    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW,
     GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
@@ -296,13 +294,9 @@ object StoreUtils {
                 .normalizeSchema(schema)
             val schemaFields = Utils.schemaFields(normalizedSchema)
             val cols = v.split(",") map (_.trim)
-            val normalizedCols = cols map { c =>
-              if (context.conf.caseSensitiveAnalysis) {
-                c
-              } else {
-                if (Utils.hasLowerCase(c)) Utils.toUpperCase(c) else c
-              }
-            }
+            // always use case-insensitive analysis for partitioning columns
+            // since table creation can use case-insensitive in creation
+            val normalizedCols = cols.map(Utils.toUpperCase)
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
               normalizedCols)
 
@@ -427,9 +421,6 @@ object StoreUtils {
     }
     sb.append(parameters.remove(SERVER_GROUPS)
         .map(v => s"$GEM_SERVER_GROUPS ($v) ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(OFFHEAP).map(v =>
-      if (v.equalsIgnoreCase("true")) s"$GEM_OFFHEAP " else EMPTY_STRING)
         .getOrElse(EMPTY_STRING))
 
     sb.append(parameters.remove(EXPIRE).map(v => {

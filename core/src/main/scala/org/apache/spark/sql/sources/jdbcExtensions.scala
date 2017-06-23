@@ -124,7 +124,7 @@ object JdbcExtendedUtils extends Logging {
             case _ => throw new IllegalArgumentException(
               s"Don't know how to save $field to JDBC")
           })
-      sb.append(s", ${field.name} $typeString")
+      sb.append(s""", "${field.name}" $typeString""")
       if (!field.nullable) sb.append(" NOT NULL")
     }
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
@@ -286,16 +286,20 @@ object JdbcExtendedUtils extends Logging {
    * Returns the SQL for prepare to insert or put rows into a table.
    */
   def getInsertOrPutString(table: String, rddSchema: StructType,
-      upsert: Boolean): String = {
+      putInto: Boolean, escapeQuotes: Boolean = false): String = {
     val sql = new StringBuilder()
-    if (upsert) {
+    if (putInto) {
       sql.append(s"PUT INTO $table (")
     } else {
       sql.append(s"INSERT INTO $table (")
     }
     var fieldsLeft = rddSchema.fields.length
     rddSchema.fields.foreach { field =>
-      sql.append(field.name)
+      if (escapeQuotes) {
+        sql.append("""\"""").append(field.name).append("""\"""")
+      } else {
+        sql.append('"').append(field.name).append('"')
+      }
       if (fieldsLeft > 1) sql.append(',') else sql.append(')')
       fieldsLeft -= 1
     }
@@ -309,15 +313,33 @@ object JdbcExtendedUtils extends Logging {
     sql.toString()
   }
 
+  /**
+   * Returns the SQL for creating the WHERE clause for a set of columns.
+   */
+  def fillColumnsClause(sql: StringBuilder, fields: Seq[String],
+      escapeQuotes: Boolean = false): Unit = {
+    var fieldsLeft = fields.length
+    fields.foreach { field =>
+      if (escapeQuotes) {
+        sql.append("""\"""").append(field).append("""\"""")
+      } else {
+        sql.append('"').append(field).append('"')
+      }
+      sql.append("=?")
+      if (fieldsLeft > 1) sql.append(" AND ")
+      fieldsLeft -= 1
+    }
+  }
+
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
-      schema: StructType, resolvedName: String, upsert: Boolean): Int = {
+      schema: StructType, resolvedName: String, putInto: Boolean): Int = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val sessionState = session.sessionState
     val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
     val encoder = RowEncoder(schema)
     val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
       rows.map(encoder.toRow)), schema)
-    val plan = if (upsert) {
+    val plan = if (putInto) {
       PutIntoTable(
         table = UnresolvedRelation(tableIdent),
         child = ds.logicalPlan)

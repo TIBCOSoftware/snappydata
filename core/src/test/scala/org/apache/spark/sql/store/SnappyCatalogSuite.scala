@@ -70,6 +70,20 @@ class SnappyCatalogSuite extends SnappyFunSuite
     }
   }
 
+  after {
+    try {
+      snappySession.catalog.listDatabases().collect().foreach(db =>
+        snappySession.catalog.listTables(db.name).collect().foreach(
+          table => dropTable(table.name, Option(table.database))
+        )
+      )
+    } finally {
+    }
+  }
+
+  override def afterAll(): Unit = {
+  }
+
   private val utils = new CatalogTestUtils {
     override val tableInputFormat: String = "org.apache.hadoop.mapred.SequenceFileInputFormat"
     override val tableOutputFormat: String = "org.apache.hadoop.mapred.SequenceFileOutputFormat"
@@ -165,7 +179,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
     createTempTable("my_temp_table")
     assert(snappySession.catalog.listTables().collect().map(_.name.toLowerCase).toSet ==
         Set("my_table1", "my_table2", "my_temp_table"))
-    dropTable("my_table1")
+    dropTable("my_table1", Option("app"))
     assert(snappySession.catalog.listTables().collect().map(_.name.toLowerCase).toSet ==
         Set("my_table2", "my_temp_table"))
     dropTable("my_temp_table")

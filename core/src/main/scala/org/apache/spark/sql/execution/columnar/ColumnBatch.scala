@@ -191,18 +191,21 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
         currentColumns = new ArrayBuffer[ColumnFormatValue](numColumns)
       }
       while (itr.hasNext) {
+        // println to see if we are coming here.
         val re = itr.next().asInstanceOf[RegionEntry]
         currentBucketRegion = itr.getHostedBucketRegion
         // get the stat row region entries only. region entries for individual
         // columns will be fetched on demand
-        if ((currentBucketRegion ne null) ||
-            re.isInstanceOf[NonLocalRegionEntry]) {
+        if (((currentBucketRegion ne null) ||
+          re.isInstanceOf[NonLocalRegionEntry]) && !re.isDestroyedOrRemoved) {
+          // re could be NonLocalRegionEntry in case of snapshot isolation
+          // in some cases, old value could be TOMBSTONE and not a ColumnFormatValue
           val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
           if (key.columnIndex == ColumnBatchIterator.STATROW_COL_INDEX) {
             // if currentBucketRegion is null then its the case of
             // NonLocalRegionEntry where RegionEntryContext arg is not required
             val v = re.getValue(currentBucketRegion)
-            if (v ne null) {
+            if (v ne null ) {
               val columnValue = v.asInstanceOf[ColumnFormatValue]
               val buffer = columnValue.getBufferRetain
               // empty buffer indicates value removed from region

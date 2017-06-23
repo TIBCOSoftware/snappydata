@@ -177,12 +177,12 @@ abstract case class JDBCAppendableRelation(
       tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
-        dialect match {
-          case d: JdbcExtendedDialect =>
-            d.initializeTable(table,
-              sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // do nothing
-        }
+//        dialect match {
+//          case d: JdbcExtendedDialect =>
+//            d.initializeTable(table,
+//              sqlContext.conf.caseSensitiveAnalysis, conn)
+//          case _ => // do nothing
+//        }
       }
       else if (mode == SaveMode.ErrorIfExists && tableExists) {
         sys.error(s"Table $table already exists.")

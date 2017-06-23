@@ -868,15 +868,16 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
-  // Only when wholeStageEnabled try for tokenization. It should be
-  // true
-  private var tokenize = session.sessionState.conf.wholeStageEnabled
+  // Only when wholeStageEnabled try for tokenization. It should be true
+  private val tokenizationDisabled = java.lang.Boolean.getBoolean("DISABLE_TOKENIZATION")
+
+  private var tokenize = !tokenizationDisabled && session.sessionState.conf.wholeStageEnabled
 
   private var isSelect = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
     MATCH ~> (() =>
-      tokenize = isSelect && session.sessionState.conf.wholeStageEnabled)
+      tokenize = !tokenizationDisabled && isSelect && session.sessionState.conf.wholeStageEnabled)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
@@ -896,9 +897,10 @@ class SnappyParser(session: SnappySession)
         (SET_NOSELECT ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
   }
 
-  def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
+  final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
     session.clearQueryData()
     session.sessionState.clearExecutionData()
+    caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
     parseSQL(sqlText, parseRule)
   }
 

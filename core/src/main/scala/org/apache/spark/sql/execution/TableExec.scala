@@ -34,9 +34,9 @@ import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
 
 /**
- * Common methods for bulk inserts into column and row tables.
+ * Base class for bulk insert/mutation operations for column and row tables.
  */
-abstract class TableInsertExec(partitionColumns: Seq[String],
+abstract class TableExec(partitionColumns: Seq[String],
     relationSchema: StructType, relation: Option[DestroyRelation],
     onExecutor: Boolean) extends UnaryExecNode with CodegenSupportOnExecutor {
 
@@ -75,10 +75,12 @@ abstract class TableInsertExec(partitionColumns: Seq[String],
     } else UnspecifiedDistribution :: Nil
   }
 
+  protected def opType: String
+
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
-    else Map("numInsertedRows" -> SQLMetrics.createMetric(sparkContext,
-      "number of inserted rows"))
+    else Map(s"num${opType}Rows" -> SQLMetrics.createMetric(sparkContext,
+      s"number of ${opType.toLowerCase} rows"))
   }
 
   override protected def doExecute(): RDD[InternalRow] = {

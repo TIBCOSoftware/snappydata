@@ -21,7 +21,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.backwardcomp.{ExecuteCommand, ExecutedCommand}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -32,19 +32,25 @@ import org.apache.spark.sql.types.{DataType, LongType}
 object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
-    case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
+    case CreateTableUsing(tableIdent, schema, provider,
     false, opts, _, _, allowExisting, _) =>
+      val userSpecifiedSchema = schema.flatMap(s => SparkSession.getActiveSession.map(
+        _.asInstanceOf[SnappySession].normalizeSchema(s)))
       ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
           onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
+
     case a@CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
     _, mode, opts, _) =>
       val query = a.productElement(6).asInstanceOf[LogicalPlan]
 
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both +builtin and external tables
-      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent, None,
-        None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
+      val userSpecifiedSchema = SparkSession.getActiveSession.map(
+        _.asInstanceOf[SnappySession].normalizeSchema(query.schema))
+      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent,
+        baseTable = None, userSpecifiedSchema, schemaDDL = None,
+        SnappyContext.getProvider(provider, onlyBuiltIn = false),
         temporary = false, partitionCols, mode, opts, query,
         isBuiltIn = false)) :: Nil
 
@@ -71,14 +77,17 @@ object StoreStrategy extends Strategy {
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
-    case Update(l@LogicalRelation(m: MutableRelation, _, _), child,
+    case Update(l@LogicalRelation(u: UpdatableRelation, _, _), child,
     keyColumns, updateColumns, updateExpressions) =>
-      ExecutePlan(m.getUpdatePlan(l, planLater(child), updateColumns,
+      ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
         updateExpressions, keyColumns)) :: Nil
 
-    case Delete(l@LogicalRelation(m: MutableRelation, _, _), child,
+    case Delete(l@LogicalRelation(d: DeletableRelation, _, _), child,
     keyColumns) =>
-      ExecutePlan(m.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
+      ExecutePlan(d.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
+
+    case DeleteFromTable(l@LogicalRelation(d: DeletableRelation, _, _), query) =>
+      ExecutePlan(d.getDeletePlan(l, planLater(query), query.output)) :: Nil
 
     case r: ExecuteCommand => ExecutedCommand(r) :: Nil
 
@@ -140,4 +149,21 @@ case class Delete(table: LogicalPlan, child: LogicalPlan,
     "count", LongType)() :: Nil
 
   override lazy val resolved: Boolean = childrenResolved
+}
+
+private[sql] case class DeleteFromTable(
+    table: LogicalPlan,
+    child: LogicalPlan)
+    extends LogicalPlan {
+
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
+
+  override def output: Seq[Attribute] = Seq.empty
+
+  override lazy val resolved: Boolean = childrenResolved &&
+      child.output.zip(table.output).forall {
+        case (childAttr, tableAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
+            tableAttr.dataType)
+      }
 }

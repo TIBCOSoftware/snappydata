@@ -1,7 +1,7 @@
 # Getting Started in 5 Minutes or Less
 
 Welcome to the Getting Started section! <br>
-We provide you multiple choices for getting started with SnappyData. 
+Multiple options are provided for getting started with SnappyData. 
 Depending on your preference you can try any of the following options:
 
 * [Option 1: Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
@@ -12,14 +12,15 @@ Depending on your preference you can try any of the following options:
 * [Option 6: Getting Started on AWS](#getting-started-on-aws)
 * [Option 7: Getting Started with Docker Image](#getting-started-with-docker-image)
 
-<Note>Note: Support for Microsoft Azure will be provided in future releases</Note>
+!!! Note: 
+	Support for Microsoft Azure will be provided in future releases.
 
 <a id="getting-started-with-your-spark-distribution"></a>
 ## Option 1: Getting Started with your Spark Distribution
 
 If you are a Spark developer and already using Spark 2.0.0, 2.0.1 or 2.0.2 the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
 
-This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.
+This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. You are encouraged to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.
 
 
 **Open a command terminal and go to the location of the Spark installation directory:**
@@ -27,14 +28,14 @@ This section contains instructions and examples using which, you can try out Sna
 $ cd <Spark_Install_dir>
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.8-s_2.11"
+$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 
 This opens a Spark Shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files. 
 All SnappyData metadata as well as persistent data is stored in the directory **quickstartdatadir**.
 
 <a id="Start_quickStart"></a>
-In this document, we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables.
+In this document, it is assumed that you are either familiar with Spark or SQL (not necessarily both). Basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables is showcased.
 
 Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the [detailed documentation](programming_guide.md#ddl). 
 
@@ -137,10 +138,11 @@ scala>  snappy.dropTable("colTable", ifExists = true)
 <a id="Start Benchmark"></a>
 <a id="start_benchmark"></a>
 ## Option 3: 20X Faster than Spark 2.0.2
-Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
-We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
+Here you are walked through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
+Millions of rows are loaded into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
 
- <Note> Note: It is recommended that you should have at least 4GB of RAM reserved for this test. </Note>
+!!! Note: 
+	It is recommended that you should have at least 4GB of RAM reserved for this test. 
  
 
 **Start the Spark Shell using any of the options mentioned below:**
@@ -150,10 +152,10 @@ We load millions of rows into a cached Spark DataFrame, run some analytic querie
 ```bash
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.8-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+$ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.9-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
-**If you have downloaded SnappyData **:
+**If you have downloaded SnappyData**:
 
 ```bash
 # Create a directory for SnappyData artifacts
@@ -161,7 +163,7 @@ $ mkdir quickstartdatadir
 $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
-** If you are using Docker**:
+**If you are using Docker**:
 ```bash
 $ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
@@ -212,7 +214,7 @@ scala>  System.runFinalization()
 scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 ```
 
-** Create similar 100 million record DataFrame**:
+**Create similar 100 million record DataFrame**:
 ```scala
 scala>  testDF = snappy.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
 ```
@@ -237,14 +239,13 @@ scala>  benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTab
 scala> :q // Quit the Spark Shell
 ```
 
-<Note>  We have tested this benchmark code in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS
-t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.0.2 .
-</Note>
+!!! Note:
+	This benchmark code is tested in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.0.2 .
 
 <a id="getting-started-using-sql"></a> 
 ## Option 4: Getting Started using SQL
 
-We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](howto.md#howto-snappyShell) section.
+SQL using Spark SQL-invoked using the Session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](howto.md#howto-snappyShell) section.
 
 **Create a column table with a simple schema [Int, String] and default options.**
 For details on the options refer to the [Row and Column Tables](programming_guide.md#tables-in-snappydata) section.
@@ -297,15 +298,15 @@ scala>  snappy.sql("drop table if exists colTable ")
 scala> :q //Quit the Spark Shell
 ```
 
-Now that we have seen the basic working of SnappyData tables, let us run the [benchmark](#start_benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
+Now that you have seen the basic working of SnappyData tables, let us run the [benchmark](#start_benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
 
 <a id="getting-started-by-installing-snappydata-on-premise"></a>
 ## Option 5: Getting Started by Installing SnappyData On-Premise
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
 ```bash
-$ tar -xzf snappydata-0.8-bin.tar.gz
-$ cd snappydata-0.8-bin/
+$ tar -xzf snappydata-0.9-bin.tar.gz
+$ cd snappydata-0.9-bin/
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
@@ -333,10 +334,11 @@ To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloud
 1. The AWS Login Screen is displayed. Enter your AWS login credentials. 
  
 2. The **Select Template page** is displayed. The URL for the template (JSON format) is pre-populated. Click **Next** to continue.<br/>
-<note> Note: You are placed in your default region. You can either continue in the selected region or change it in the console. </Note>
+
+    !!! Note:
+        You are placed in your default region. You can either continue in the selected region or change it in the console. 
 ![STEP](Images/cluster_selecttemplate.png)
 <br>
-
 
 3. On the **Specify Details** page, you can:<br>
     * Provide the stack name: Enter a name for the stack. The stack name must contain only letters, numbers, dashes and should start with an alpha character. This is a mandatory field.
@@ -361,12 +363,15 @@ To launch the cluster from EC2 click [here](https://console.aws.amazon.com/cloud
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. This process may take 4-5 minutes to complete.<br>
 ![Refresh](Images/cluster_refresh.png)
 <a id="Stack"></a>
-<Note>Note: If the status of the stack displays as **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common causes of the failure are:
 
-	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
-	> * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
-	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
-</Note>
+    !!! Note: 
+	    If the status of the stack displays as **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common causes of the failure are:
+
+	    * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
+
+	    * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
+
+	    * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
 
 9. Your cluster is now running. You can explore it using Apache Zeppelin, which provides web-based notebooks for data exploration. The Apache Zeppelin server has already been started on the instance for you. Simply follow its link (URL) from the **Outputs** tab.<br>
 	![Public IP](Images/cluster_links.png)
@@ -374,10 +379,11 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 For more information, refer to the [Apache Zeppelin](aqp_aws#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 
-<Note>Note: </Note>
+!!! Note:
 
-* <Note> Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the [EC2 scripts](install.md#EC2).</Note>
-* <Note>To stop incurring charges for the instance, you can either terminate the instance or delete the stack after you are done playing with the cluster. However, you cannot connect to or restart an instance after you have terminated it.</Note>
+    * Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the [EC2 scripts](install.md#EC2).
+
+    * To stop incurring charges for the instance, you can either terminate the instance or delete the stack after you are done playing with the cluster. However, you cannot connect to or restart an instance after you have terminated it.
 
 <a id="getting-started-with-docker-image"></a>
 ## Option 7: Getting Started with Docker Image
@@ -392,9 +398,10 @@ $ docker run hello-world
 
 ```
 
-<Note>Note: Ensure that the Docker containers have access to at least 4GB of RAM on your machine</Note>
+!!! Note: 
+	Ensure that the Docker containers have access to at least 4GB of RAM on your machine.
 
-**Get the Docker Image: ** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
+**Get the Docker Image:** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
 ```scala
 $  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 ```

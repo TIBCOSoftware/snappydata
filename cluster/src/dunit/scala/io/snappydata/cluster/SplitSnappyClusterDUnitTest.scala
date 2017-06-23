@@ -25,7 +25,7 @@ import scala.language.postfixOps
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Property, SnappyTableStatsProviderService}
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
@@ -66,6 +66,12 @@ class SplitSnappyClusterDUnitTest(s: String)
     ClusterManagerTestBase.stopNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
     super.afterClass()
+  }
+
+  def testCreateTablesFromOtherTables(): Unit = {
+    vm3.invoke(getClass, "createTablesFromOtherTablesTest",
+      startArgs :+
+          Int.box(locatorClientPort))
   }
 
   override protected def locatorClientPort = { locatorNetPort }
@@ -658,7 +664,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("DROP TABLE CUSTOMER_TEMP")
   }
 
-  override def createDropEmbeddedModeTables(
+  override def dropAndCreateTablesInEmbeddedMode(
       tableType: String): Unit = {
     val snc = SnappyContext(sc)
     val df = snc.table("APP.T1")
@@ -666,17 +672,19 @@ object SplitSnappyClusterDUnitTest
     snc.dropTable("APP.T1")
 
     snc.sql(s"CREATE TABLE T1(COL1 STRING, COL2 STRING) " +
-        s"USING $tableType OPTIONS (PARTITION_BY 'COL1')")
+        s"USING $tableType OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("INSERT INTO T1 VALUES('AA', 'AA')")
     snc.sql("INSERT INTO T1 VALUES('BB', 'BB')")
     snc.sql("INSERT INTO T1 VALUES('CC', 'CC')")
     snc.sql("INSERT INTO T1 VALUES('DD', 'DD')")
     snc.sql("INSERT INTO T1 VALUES('EE', 'EE')")
 
+    val rs = snc.sql("select * from t1").collect()
+    assert(rs.length == 5)
   }
 
   var connectorSnc: SnappyContext = null
-  override def createDropTablesInSplitMode(locatorPort: Int,
+  override def createTablesInSplitMode(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int,
       tableType: String): Unit = {
@@ -686,7 +694,7 @@ object SplitSnappyClusterDUnitTest
     }
     // row table
     connectorSnc.sql(s"CREATE TABLE T1(C1 INT, C2 INT, C3 INT) " +
-        s"USING $tableType OPTIONS (PARTITION_BY 'C1')")
+       s"USING $tableType OPTIONS (PARTITION_BY 'C1', COLUMN_MAX_DELTA_ROWS '1')")
     connectorSnc.sql("INSERT INTO T1 VALUES(1, 1, 1)")
     connectorSnc.sql("INSERT INTO T1 VALUES(2, 2, 2)")
     connectorSnc.sql("INSERT INTO T1 VALUES(3, 3, 3)")
@@ -711,10 +719,10 @@ object SplitSnappyClusterDUnitTest
   override def verifyTableFormInSplitMOde(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
-    if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
-      connectorSnc = getSnappyContextForConnector(locatorPort,
-        locatorClientPort)
-    }
+//    if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
+//      connectorSnc = getSnappyContextForConnector(locatorPort,
+//        locatorClientPort)
+//    }
     var resultDF = connectorSnc.sql("select * from t1 order by col1")
     var rs: Array[Row] = null
     try {
@@ -726,10 +734,116 @@ object SplitSnappyClusterDUnitTest
         rs = resultDF.collect()
       case e: Exception => throw e
     }
-    assert(rs.length == 5)
+    assert(rs.length == 5, s"Expected 5 but got ${rs.length}")
     assert(rs(0).getAs[String]("COL1").equals("AA"))
     assert(rs(0).getAs[String]("COL2").equals("AA"))
 
     connectorSnc.dropTable("APP.T1")
+  }
+
+  def createTablesFromOtherTablesTest(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+
+    val props = Map.empty[String, String]
+    val snc = getSnappyContextForConnector(locatorPort,
+      locatorClientPort)
+    val rowTable = "rowTable"
+    val colTable = "colTable"
+
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    val rdd = sc.parallelize(
+      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.createTable(rowTable, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(rowTable)
+
+    snc.createTable(colTable, "column", dataDF.schema, props + ("BUCKETS" -> "17"))
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(colTable)
+
+    executeTestWithOptions(locatorPort, locatorClientPort)
+    executeTestWithOptions(locatorPort, locatorClientPort,
+      Map.empty,Map.empty+("BUCKETS" ->"17"),"","BUCKETS " +
+          "'13',PARTITION_BY 'COL1', REDUNDANCY '1'")
+
+  }
+
+  def executeTestWithOptions(locatorPort:Int, locatorClientPort: Int,
+      rowTableOptios: Map[String, String] = Map.empty[String,String],
+      colTableOptions: Map[String,String]= Map.empty[String,String],
+      tempRowTableOptions: String = "",
+      tempColTableOptions: String = ""): Unit = {
+
+    val snc = getSnappyContextForConnector(locatorPort,
+      locatorClientPort)
+    val rowTable = "rowTable"
+    val colTable = "colTable"
+
+
+    snc.sql("DROP TABLE IF EXISTS " + rowTable)
+    snc.sql("DROP TABLE IF EXISTS " + colTable)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    val rdd = sc.parallelize(
+      (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.createTable(rowTable, "row", dataDF.schema, rowTableOptios)
+    dataDF.write.format("row").mode(SaveMode.Append).options(rowTableOptios).saveAsTable(rowTable)
+
+    snc.createTable(colTable, "column", dataDF.schema, colTableOptions)
+    dataDF.write.format("column").mode(SaveMode.Append).options(colTableOptions).saveAsTable(colTable)
+
+    val tempRowTableName = "testRowTable1"
+    val tempColTableName = "testcolTable1"
+
+
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+    snc.sql(s"CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions)  AS" +
+        s" (SELECT col1 ,col2  FROM " + rowTable + ")")
+    val testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
+    assert(testResults1.length == 113999, s"Expected row count is 113999 while actual count is " +
+        s"${testResults1.length}")
+
+
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+    snc.sql("CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions) AS " +
+        s"(SELECT col1 ,col2  FROM " + colTable + ")")
+    val testResults2 = snc.sql("SELECT * FROM " + tempRowTableName).collect()
+    assert(testResults2.length == 113999, s"Expected row count is 113999 while actual count is " +
+        s"${testResults2.length}")
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+        s"col1 ,col2 FROM " + rowTable + ")")
+
+    val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is " +
+        s"${testResults3.length}")
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+        "col1 ,col2 FROM " + colTable + ")")
+
+    val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is" +
+        s"${testResults4.length}")
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
+        "t1.col1 ,t1.col2 FROM " + colTable + " t1," + rowTable + " t2 where t1.col1=t2.col2)")
+    // Expected count will be 113998 as first row will not match
+    val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect
+
+    assert(testResults5.length == 113998, s"Expected row count is 113998 while actual count is" +
+        s"${testResults5.length}")
+
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+
+    snc.sql("DROP TABLE IF EXISTS " + rowTable)
+    snc.sql("DROP TABLE IF EXISTS " + colTable)
+
   }
 }

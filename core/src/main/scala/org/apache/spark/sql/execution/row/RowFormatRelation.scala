@@ -23,14 +23,13 @@ import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
-import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -75,12 +74,12 @@ class RowFormatRelation(
     ExternalStoreUtils.getConnectionType(dialect)
 
   private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
-    table, schema, upsert = true)
+    table, schema, putInto = true)
 
   @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
-  @transient lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
+  @transient private lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
   private[this] def indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
     clusterMode match {
@@ -134,7 +133,7 @@ class RowFormatRelation(
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
-    val isPartitioned = (numBuckets != 1)
+    val isPartitioned = numBuckets > 0
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
@@ -160,7 +159,7 @@ class RowFormatRelation(
           handledFilters,
           _partEval = () => relInfo.partitions,
           relInfo.embdClusterRelDestroyVersion,
-          _commitTx=true
+          _commitTx = true
         )
     }
     (rdd, Nil)
@@ -172,7 +171,7 @@ class RowFormatRelation(
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-         new RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+         RelationInfo(numBuckets, partitionColumns, Array.empty[String],
            Array.empty[String], Array.empty[Partition], -1)
     }
   }
@@ -192,25 +191,19 @@ class RowFormatRelation(
     }
   }
 
-  override def getInsertPlan(relation: LogicalRelation,
-      child: SparkPlan): SparkPlan = {
-    val partitionExpressions = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+  override def partitionExpressions(relation: LogicalRelation): Seq[Expression] = {
+    // use case-insensitive resolution since partitioning columns during
+    // creation could be using the same as opposed to during insert
+    partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowInsertExec(child, upsert = false, partitionColumns,
-      partitionExpressions, numBuckets, schema, Some(this), onExecutor = false,
-      resolvedName, connProperties)
   }
 
   override def getPutPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    val partitionExpressions = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
-          .getOrElse(throw new AnalysisException(
-            s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowInsertExec(child, upsert = true, partitionColumns,
-      partitionExpressions, numBuckets, schema, Some(this),
+    RowInsertExec(child, putInto = true, partitionColumns,
+      partitionExpressions(relation), numBuckets, schema, Some(this),
       onExecutor = false, resolvedName, connProperties)
   }
 
@@ -232,7 +225,7 @@ class RowFormatRelation(
     // use bulk insert using put plan for large number of rows
     if (numRows > (batchSize * 4)) {
       JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        table, upsert = true)
+        table, putInto = true)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
         connProperties.poolProps, connProps, connProperties.hikariCP)

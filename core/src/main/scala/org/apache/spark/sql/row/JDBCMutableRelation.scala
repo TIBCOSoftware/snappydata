@@ -31,7 +31,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
+import org.apache.spark.sql.execution.row.{RowInsertExec, RowDeleteExec, RowUpdateExec}
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -58,7 +58,6 @@ case class JDBCMutableRelation(
     with InsertableRelation
     with PlanInsertableRelation
     with RowInsertableRelation
-    with MutableRelation
     with UpdatableRelation
     with DeletableRelation
     with DestroyRelation
@@ -92,6 +91,12 @@ case class JDBCMutableRelation(
   final lazy val schemaFields: Map[String, StructField] =
     Utils.schemaFields(schema)
 
+  def partitionColumns: Seq[String] = Seq.empty
+
+  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Seq.empty
+
+  def numBuckets: Int = -1
+
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
@@ -107,11 +112,11 @@ case class JDBCMutableRelation(
         dialect, sqlContext)
       tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(table,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // Do Nothing
-        }
+//        dialect match {
+//          case d: JdbcExtendedDialect => d.initializeTable(table,
+//            sqlContext.conf.caseSensitiveAnalysis, conn)
+//          case _ => // Do Nothing
+//        }
         return tableSchema
       }
 
@@ -180,12 +185,13 @@ case class JDBCMutableRelation(
   }
 
   final lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
-    table, schema, upsert = false)
+    table, schema, putInto = false)
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowInsertExec(child, upsert = false, Seq.empty, Seq.empty, -1,
-      schema, Some(this), onExecutor = false, resolvedName, connProperties)
+    RowInsertExec(child, putInto = false, partitionColumns,
+      partitionExpressions(relation), numBuckets, schema, Some(this),
+      onExecutor = false, table, connProperties)
   }
 
   /**
@@ -195,8 +201,9 @@ case class JDBCMutableRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    RowUpdateExec(child, resolvedName, schema, updateColumns,
-      updateExpressions, keyColumns, connProperties, onExecutor = false)
+    RowUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, schema, Some(this), updateColumns, updateExpressions, keyColumns,
+      connProperties, onExecutor = false)
   }
 
   /**
@@ -205,8 +212,8 @@ case class JDBCMutableRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    RowDeleteExec(child, resolvedName, schema, keyColumns, connProperties,
-      onExecutor = false)
+    RowDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, schema, Some(this), keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -256,7 +263,7 @@ case class JDBCMutableRelation(
     // use bulk insert using insert plan for large number of rows
     if (numRows > (batchSize * 4)) {
       JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        table, upsert = false)
+        table, putInto = false)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
         connProperties.poolProps, connProps, connProperties.hikariCP)

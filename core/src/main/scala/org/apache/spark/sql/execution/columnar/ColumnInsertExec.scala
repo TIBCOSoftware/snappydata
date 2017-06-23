@@ -26,7 +26,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Exp
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.execution.{SparkPlan, TableInsertExec}
+import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.bitset.BitSetMethods
@@ -40,7 +40,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     relation: Option[DestroyRelation], batchParams: (Int, Int, String),
     columnTable: String, onExecutor: Boolean, tableSchema: StructType,
     externalStore: ExternalStore, useMemberVariables: Boolean)
-    extends TableInsertExec(partitionColumns, tableSchema, relation, onExecutor) {
+    extends TableExec(partitionColumns, tableSchema, relation, onExecutor) {
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
       partitionExpressions: Seq[Expression],
@@ -74,6 +74,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   def columnBatchSize: Int = batchParams._1
 
   def columnMaxDeltaRows: Int = batchParams._2
+
+  override protected def opType: String = "Inserted"
 
   /** Frequency of rows to check for total size exceeding batch size. */
   private val (checkFrequency, checkMask) = {
@@ -397,13 +399,15 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val statsRowTerm = ctx.freshName("statsRow")
     ctx.addMutableState("MutableRow", statsRowTerm,
-      s"$statsRowTerm = new GenericMutableRow(${schema.flatten.length});")
+      s"$statsRowTerm = new GenericMutableRow(${schema.flatten.length} + 1);")
 
 
     val blocks = new ArrayBuffer[String]()
     val blockBuilder = new StringBuilder()
     val statsCodeWithIndex = statsCode.zipWithIndex
-    var ordinal = 0
+    var ordinal = 1
+
+    blockBuilder.append(s"$statsRowTerm.setInt(0, $batchSizeTerm);\n")
     for ((code, index) <- statsCodeWithIndex) {
       // We can't know how many bytecode will be generated, so use the length of source code
       // as metric. A method should not go beyond 8K, otherwise it will not be JITted, should
@@ -519,8 +523,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
     val (statsCode, statsSchema, stats) = columnStats.unzip3
-    val statsVars = stats.flatten
-    val statsExprs = statsSchema.flatten.zipWithIndex.map { case (a, i) =>
+    val statsVars = ExprCode("", "false", batchSizeTerm) +: stats.flatten
+    val statsExprs = (ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten)
+        .zipWithIndex.map { case (a, i) =>
       a.dataType match {
         // some types will always be null so avoid unnecessary generated code
         case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
@@ -641,8 +646,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
     val (statsCode, statsSchema, stats) = columnStats.unzip3
-    val statsVars = stats.flatten
-    val statsExprs = statsSchema.flatten.zipWithIndex.map { case (a, i) =>
+    val statsVars = ExprCode("", "false", batchSizeTerm) +: stats.flatten
+    val statsExprs = (ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten)
+        .zipWithIndex.map { case (a, i) =>
       a.dataType match {
         // some types will always be null so avoid unnecessary generated code
         case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
@@ -708,7 +714,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     var upperIsNull = "false"
     var canBeNull = false
     val nullCount = ctx.freshName("nullCount")
-    val count = ctx.freshName("count")
     val sqlType = Utils.getSQLDataType(field.dataType)
     val jt = ctx.javaType(sqlType)
     val boundsCode = sqlType match {
@@ -760,15 +765,17 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"""
          |$boundsCode
          |$nullsCode
-         |final int $nullCount = $encoder.nullCount();
-         |final int $count = $encoder.count();""".stripMargin
+         |final int $nullCount = $encoder.nullCount();""".stripMargin
 
     (code, ColumnStatsSchema(field.name, field.dataType).schema, Seq(
       ExprCode("", lowerIsNull, lower),
       ExprCode("", upperIsNull, upper),
-      ExprCode("", "false", nullCount),
-      ExprCode("", "false", count)))
+      ExprCode("", "false", nullCount)))
   }
+
+  override def simpleString: String = s"ColumnInsert($columnTable) partitionColumns=" +
+      s"${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets" +
+      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows"
 }
 
 object ColumnWriter {
