@@ -16,19 +16,15 @@
  */
 package io.snappydata.hydra.cluster;
 
-import com.gemstone.gemfire.cache.query.Struct;
-import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.Log;
 import hydra.TestConfig;
 import sql.SQLHelper;
-import sql.sqlutil.ResultSetHelper;
 import util.TestException;
 import util.TestHelper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 
 public class SnappyLocatorHATest extends SnappyTest {
@@ -41,8 +37,9 @@ public class SnappyLocatorHATest extends SnappyTest {
     if (cycleVms) {
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
-      Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
-      snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForStoreFromBB,
+      Long lastCycledTimeForLocatorFromBB = (Long) SnappyBB.getBB().getSharedMap().get
+          (LASTCYCLEDTIMEFORLOCATOR);
+      snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForLocatorFromBB,
           lastCycledTime, "locator", true, false);
     }
   }
@@ -78,8 +75,9 @@ public class SnappyLocatorHATest extends SnappyTest {
     if (cycleVms) {
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
-      Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
-      snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForStoreFromBB,
+      Long lastCycledTimeForLocatorFromBB = (Long) SnappyBB.getBB().getSharedMap().get
+          (LASTCYCLEDTIMEFORLOCATOR);
+      snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForLocatorFromBB,
           lastCycledTime, "locator", true, true);
     }
   }

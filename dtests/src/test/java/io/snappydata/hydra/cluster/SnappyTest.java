@@ -100,7 +100,8 @@ public class SnappyTest implements Serializable {
   protected static boolean cycleVms = TestConfig.tab().booleanAt(SnappyPrms.cycleVms, false);
   public static final String LASTCYCLEDTIME = "lastCycledTime"; //used in SnappyBB
   public static final String LASTCYCLEDTIMEFORLEAD = "lastCycledTimeForLead"; //used in SnappyBB
-  public static final String LASTCYCLEDTIMEFORLOCATOR = "lastCycledTimeForLead"; //used in SnappyBB
+  public static final String LASTCYCLEDTIMEFORLOCATOR = "lastCycledTimeForLocator"; //used in
+  // SnappyBB
   public static long lastCycledTime = 0;
   public static long lastCycledTimeForLead = 0;
   public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
@@ -2524,8 +2525,9 @@ public class SnappyTest implements Serializable {
     if (cycleVms) {
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
-      Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
-      snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForStoreFromBB,
+      Long lastCycledTimeForLocatorFromBB = (Long) SnappyBB.getBB().getSharedMap().get
+          (LASTCYCLEDTIMEFORLOCATOR);
+      snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForLocatorFromBB,
           lastCycledTime, "locator", false, false);
     }
   }
