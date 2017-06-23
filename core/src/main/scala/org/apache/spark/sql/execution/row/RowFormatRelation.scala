@@ -113,7 +113,7 @@ class RowFormatRelation(
     val equalToColumns = getEqualToColumns(filters)
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
-        if (relInfo.pkCols.forall(equalToColumns.contains)) return relInfo.pkCols
+        if (relInfo.pkCols.forall(equalToColumns.contains)) relInfo.pkCols else Array.empty[String]
       case _ =>
         val cols = new Array[String](1)
         GfxdSystemProcedures.getPKColumns(cols, region)
@@ -121,9 +121,8 @@ class RowFormatRelation(
         if (cols(0) != null) {
           pkCols = cols(0).split(":")
         }
-        if (pkCols.forall(equalToColumns.contains)) return pkCols
+        if (pkCols.forall(equalToColumns.contains)) pkCols else Array.empty[String]
     }
-    Array.empty[String]
   }
 
 
