@@ -640,7 +640,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     snc.sql(s"create table t1 using com.databricks.spark.csv options(path " +
       s"'${(getClass.getResource("/northwind/orders.csv").getPath)}', header 'true', " +
-      s"inferschema 'true')")
+      s"inferschema 'true', maxCharsPerColumn, '4096')")
     snc.sql("select * from t1").printSchema()
     snc.sql("select * from t1").show
     val tempPath = "/tmp/" + System.currentTimeMillis()
