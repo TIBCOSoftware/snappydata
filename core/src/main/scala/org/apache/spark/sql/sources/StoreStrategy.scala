@@ -32,15 +32,19 @@ object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTable(tableDesc, mode, None) =>
+      val userSpecifiedSchema = SparkSession.getActiveSession
+        .asInstanceOf[SnappySession].normalizeSchema(tableDesc.schema)
       val cmd =
-        CreateMetastoreTableUsing(tableDesc.identifier, None, Some(tableDesc.schema),
+        CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
           None, SnappyContext.getProvider(tableDesc.provider.get, false), false,
           tableDesc.storage.properties, false)
       ExecutedCommand(cmd) :: Nil
 
     case CreateTable(tableDesc, mode, Some(query)) =>
+      val userSpecifiedSchema = SparkSession.getActiveSession.get
+        .asInstanceOf[SnappySession].normalizeSchema(query.schema)
       val cmd =
-        CreateMetastoreTableUsingSelect(tableDesc.identifier, None, None, None,
+        CreateMetastoreTableUsingSelect(tableDesc.identifier, None, Some(userSpecifiedSchema), None,
           SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
           temporary = false, tableDesc.partitionColumnNames.toArray, mode,
           tableDesc.storage.properties, query, isBuiltIn = false)
