@@ -21,7 +21,6 @@ import java.util.Properties
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.fasterxml.jackson.core.JsonGenerator
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonUtils}
@@ -109,10 +108,10 @@ object TypeUtilities {
   }
 
   private[spark] val jacksonApply: (StructType, JsonGenerator,
-      InternalRow) => Unit = {
+    InternalRow) => Unit = {
     val applyMethod = JacksonUtils.getClass.getMethods
-        .find(_.getName == "apply")
-    if(applyMethod != None) {
+      .find(_.getName == "apply")
+    if (applyMethod != None) {
       applyMethod.get.getParameterTypes.length match {
         case 3 => // Spark 2.0.0
           (rowSchema: StructType, gen: JsonGenerator, row: InternalRow) =>
@@ -124,8 +123,13 @@ object TypeUtilities {
               new JSONOptions(Map.empty[String, String]), row).asInstanceOf[Unit]
       }
     } else {
-      null
+      val verifySchema = JacksonUtils.getClass.getMethods
+        .find(_.getName == "verifySchema")
+      verifySchema.get.getParameterTypes.length match {
+        case 1 =>
+          (rowSchema: StructType, gen: JsonGenerator, row: InternalRow) =>
+        // verifySchema.get.invoke(rowSchema)
+      }
     }
   }
-
 }
