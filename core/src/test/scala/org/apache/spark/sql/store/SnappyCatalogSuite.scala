@@ -214,7 +214,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
     val e = intercept[AnalysisException] {
       snappySession.catalog.listTables("unknown_db")
     }
-    assert(e.getMessage.contains("unknown_db"))
+    assert(e.getMessage.contains("UNKNOWN_DB"))
   }
 
   test("list functions") {
@@ -224,14 +224,14 @@ class SnappyCatalogSuite extends SnappyFunSuite
     createFunction("my_func2")
     createTempFunction("my_temp_func")
     val funcNames1 = snappySession.catalog.listFunctions().collect().map(_.name).toSet
-    assert(funcNames1.contains("my_func1"))
-    assert(funcNames1.contains("my_func2"))
+    assert(funcNames1.contains("APP.my_func1"))
+    assert(funcNames1.contains("APP.my_func2"))
     assert(funcNames1.contains("my_temp_func"))
     dropFunction("my_func1")
     dropTempFunction("my_temp_func")
     val funcNames2 = snappySession.catalog.listFunctions().collect().map(_.name).toSet
-    assert(!funcNames2.contains("my_func1"))
-    assert(funcNames2.contains("my_func2"))
+    assert(!funcNames2.contains("APP.my_func1"))
+    assert(funcNames2.contains("APP.my_func2"))
     assert(!funcNames2.contains("my_temp_func"))
   }
 
@@ -245,29 +245,29 @@ class SnappyCatalogSuite extends SnappyFunSuite
     createTempFunction("my_temp_func")
     val funcNames1 = snappySession.catalog.listFunctions("my_db1").collect().map(_.name).toSet
     val funcNames2 = snappySession.catalog.listFunctions("my_db2").collect().map(_.name).toSet
-    assert(funcNames1.contains("my_func1"))
-    assert(!funcNames1.contains("my_func2"))
+    assert(funcNames1.contains("MY_DB1.my_func1"))
+    assert(!funcNames1.contains("MY_DB2.my_func2"))
     assert(funcNames1.contains("my_temp_func"))
-    assert(!funcNames2.contains("my_func1"))
-    assert(funcNames2.contains("my_func2"))
+    assert(!funcNames2.contains("MY_DB1.my_func1"))
+    assert(funcNames2.contains("MY_DB2.my_func2"))
     assert(funcNames2.contains("my_temp_func"))
 
     // Make sure database is set properly.
     assert(
       snappySession.catalog.listFunctions("my_db1").collect()
-          .map(_.database).toSet == Set("MY_DB1", null))
+          .map(_.database).toSet == Set(null))
     assert(
       snappySession.catalog.listFunctions("my_db2").collect()
-          .map(_.database).toSet == Set("MY_DB2", null))
+          .map(_.database).toSet == Set(null))
 
     // Remove the function and make sure they no longer appear.
     dropFunction("my_func1", Some("my_db1"))
     dropTempFunction("my_temp_func")
     val funcNames1b = snappySession.catalog.listFunctions("my_db1").collect().map(_.name).toSet
     val funcNames2b = snappySession.catalog.listFunctions("my_db2").collect().map(_.name).toSet
-    assert(!funcNames1b.contains("my_func1"))
+    assert(!funcNames1b.contains("MY_DB1.my_func1"))
     assert(!funcNames1b.contains("my_temp_func"))
-    assert(funcNames2b.contains("my_func2"))
+    assert(funcNames2b.contains("MY_DB2.my_func2"))
     assert(!funcNames2b.contains("my_temp_func"))
     val e = intercept[AnalysisException] {
       snappySession.catalog.listFunctions("unknown_db")
