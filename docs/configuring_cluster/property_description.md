@@ -29,7 +29,7 @@
 <a id="sql-properties"></a>
 ## SQL Properties
 
-These properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.
+These properites can be set in the snappy SQL shell or using the configuration properties in the *conf/leads* file.
 
 For example: Set in the snappy SQL shell
 ```
@@ -38,7 +38,7 @@ snappy> set snappydata.column.batchSize=108080;
 ```
 This will set the property for the snappy SQL shell's session.
 
-Set in the conf/leads file
+Set in the *conf/leads* file
 ```
 $ cat conf/leads
 # This goes to the default directory 
@@ -56,14 +56,14 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 ## SDE Properties
 
-These [SDE](../aqp.md) properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.
+These [SDE](../aqp.md) properites can be set in the snappy SQL shell or using the configuration properties in the *conf/leads* file.
 
 For example: Set in the snappy SQL shell
 ```
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.flushReservoirThreshold=20000;
 ```
-Set in the conf/leads file
+Set in the *conf/leads* file
 ```
 $ cat conf/leads
 # This goes to the default directory 
@@ -73,9 +73,9 @@ This sets the property for the snappy SQL shell's session.
 
 | Properties | Description |
 |--------|--------|
-|snappydata.flushReservoirThreshold|Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.|
-|spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. Default value is 100.|
-|spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. Default value is 0.2}|
-|spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. Default value is 0.95|
-|sparksql.aqp.behavior|The action to be taken if the error computed goes oustide the error tolerance limit. Default value is `DO_NOTHING`|
+|snappydata.flushReservoirThreshold|Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.</br> This property must be set in the *conf/servers* and *conf/leads* file. |
+|spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. Default value is 100. </br>This property must be set in the *conf/leads* file.|
+|spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. Default value is 0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
+|spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> Default value is 0.95. </br>This property can be set as connection property in the Snappy SQL shell|
+|sparksql.aqp.behavior|The action to be taken if the error computed goes oustide the error tolerance limit. Default value is `DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell|
 

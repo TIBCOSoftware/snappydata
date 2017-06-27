@@ -61,7 +61,7 @@ Refer to the [SnappyData properties](property_description.md) for the list of Sn
 <a id="hdfs"></a>
 # HDFS with SnappyData Store
 
-If using SnappyData store persistence to Hadoop as documented [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/disk_storage/persist-hdfs.html), then add the [hbase jar](http://search.maven.org/#artifactdetails|org.apache.hbase|hbase|0.94.27|jar) explicitly to CLASSPATH. The jar is now packed in the product tree, so that can be used or download from Apache Maven. Then add to conf/spark-env.sh:
+If using SnappyData store persistence to Hadoop as documented [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/disk_storage/persist-hdfs.html), then add the [hbase jar](http://search.maven.org/#artifactdetails|org.apache.hbase|hbase|0.94.27|jar) explicitly to CLASSPATH. The jar is now packed in the product tree, so that can be used or download from Apache Maven. Then add to *conf/spark-env.sh*:
 
 ```export SPARK_DIST_CLASSPATH=</path/to/>hbase-0.94.27.jar```
 
@@ -114,7 +114,7 @@ export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 <a id="per-component"></a>
 ## Per Component Configuration 
 
-Most of the time, components would be sharing the same properties. For example, you would want all servers to start with 4096m while leads to start with 2048m. You can configure these by specifying LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, LEAD_STARTUP_OPTIONS environment variables in conf/snappy-env.sh. 
+Most of the time, components would be sharing the same properties. For example, you would want all servers to start with 4096m while leads to start with 2048m. You can configure these by specifying LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, LEAD_STARTUP_OPTIONS environment variables in *conf/snappy-env.sh*. 
 
 ```bash 
 $ cat conf/snappy-env.sh
@@ -122,7 +122,7 @@ SERVER_STARTUP_OPTIONS="-heap-size=4096m"
 LEAD_STARTUP_OPTIONS="-heap-size=2048m"
 ```
 <a id="command-line"></a>
-## Snappy Command Line Utility
+## SnappyData Command Line Utility
 
 Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using the command line. 
 
@@ -142,7 +142,7 @@ Refer to the [SnappyData properties](property_description.md) for the list of Sn
 ## Logging 
 
 Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
-The logging levels can be modified by adding a conf/log4j.properties file in the product directory. 
+The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory. 
 
 ```bash
 $ cat conf/log4j.properties 
@@ -173,9 +173,9 @@ To install and configure SSH, do the following:
 ## SSL Setup for Client-Server
 SnappyData store now has support for Thrift protocol that provides functionality equivalent to JDBC/ODBC protocols and can be used to access the store from other languages that are not yet supported directly by SnappyData. In the command-line, SnappyData locators and servers accept the `-thrift-server-address` and -`thrift-server-port` arguments to start a Thrift server.
 
-The thrift servers use the Thrift Compact Protocol by default which is not SSL enabled. When using the snappy-start-all.sh script, these properties can be specified in the conf/locators and conf/servers files in the product directory like any other locator/server properties.
+The thrift servers use the Thrift Compact Protocol by default which is not SSL enabled. When using the snappy-start-all.sh script, these properties can be specified in the *conf/locators* and *conf/servers* files in the product directory like any other locator/server properties.
 
-In the **conf/locators** and **conf/servers** files, you need to add `-thrift-ssl` and required SSL setup in `-thrift-ssl-properties`. Refer to the [SnappyData thrift properties](property_description.md#thrift-properties) section for more information.
+In the *conf/locators* and *conf/servers* files, you need to add `-thrift-ssl` and required SSL setup in `-thrift-ssl-properties`. Refer to the [SnappyData thrift properties](property_description.md#thrift-properties) section for more information.
 
 From the Snappy SQL shell:
 
@@ -189,7 +189,7 @@ jdbc:snappydata://host:port/;ssl=true;ssl-properties=...
 ```
 For example:
 
-For a self-signed RSA certificate in keystore.jks, you can have the following configuration in the conf/locators and conf/servers files:
+For a self-signed RSA certificate in keystore.jks, you can have the following configuration in the *conf/locators* and *conf/servers* files:
 
 ```
 localhost -thrift-ssl=true -thrift-ssl-properties=keystore=keystore.jks,keystore-password=password,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
