@@ -32,7 +32,7 @@ object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTable(tableDesc, mode, None) =>
-      val userSpecifiedSchema = SparkSession.getActiveSession
+      val userSpecifiedSchema = SparkSession.getActiveSession.get
         .asInstanceOf[SnappySession].normalizeSchema(tableDesc.schema)
       val cmd =
         CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
