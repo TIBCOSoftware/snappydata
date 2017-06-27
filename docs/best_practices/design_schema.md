@@ -1,9 +1,19 @@
-# Using Column vs Row Table
+# Overview
+The following topics are covered in this section:
+
+* [Using Column vs Row Table](#column-row)
+* [Using Partitioned vs Replicated Row Table](#partition-replicate)
+* [Applying Partitioning Scheme](#partition-scheme)
+* [Using Redundancy](#redundancy)
+* [Overflow Configuration](#overflow)
+
+<a id="column-row"></a>
+## Using Column vs Row Table
 
 A columnar table data is stored in a sequence of columns, whereas, in a row table it stores table records in a sequence of rows.
 
 <a id="column-table"></a>
-## Using Column Tables
+### Using Column Tables
 
 **Analytical Queries**: A column table has distinct advantages for OLAP queries and therefore large tables involved in such queries are recommended to be created as columnar tables. These tables are rarely mutated (deleted/updated).
 For a given query on a column table, only the required columns are read (since only the required subset columns are to be scanned), which gives a better scan performance. Thus, aggregation queries execute faster on a column table compared  to a  row table.
@@ -13,7 +23,7 @@ For a given query on a column table, only the required columns are read (since o
 Column tables are not suitable for OLTP scenarios. In this case, row tables are recommended.
 
 <a id="row-table"></a>
-## Using Row Tables
+### Using Row Tables
 
 **OLTP Queries**: Row tables are designed to return the entire row efficiently and are suited for OLTP scenarios when the tables are required to be mutated frequently (when the table rows need to be updated/deleted based on some conditions). In these cases, row tables offer distinct advantages over the column tables.
 
@@ -27,7 +37,7 @@ Column tables are not suitable for OLTP scenarios. In this case, row tables are 
 	In the current release of SnappyData, updates and deletes are not supported on column tables. This feature will be added in a future release.
 
 <a id="partition-replicate"></a>
-# Using Partitioned vs Replicated Row Table
+## Using Partitioned vs Replicated Row Table
 
 In SnappyData, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas, dimension tables can be replicated.
 
@@ -37,7 +47,8 @@ Most databases follow the [star schema](http://en.wikipedia.org/wiki/Star_schema
 
 When designing a database schema for SnappyData, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.
 
-# Applying Partitioning Scheme
+<a id="partition-scheme"></a>
+## Applying Partitioning Scheme
 
 <a id="collocated-joins"></a>
 **Collocated Joins**</br>
@@ -60,7 +71,7 @@ SnappyData partition is mainly for distributed and collocated joins. It is recom
 If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.
 
 <a id="redundancy"></a>
-# Using Redundancy
+## Using Redundancy
 
 REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md) specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. 
 
@@ -69,7 +80,7 @@ A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table
 For an example of the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide.md#tables-in-snappydata).
 
 <a id="overflow"></a>
-# Overflow Configuration
+## Overflow Configuration
 
 In SnappyData, column tables by default overflow to disk.  For row tables, the use EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria.  
 

@@ -27,7 +27,7 @@ pages:
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
-- 'Managing and Monitoring': 'monitoring/monitoring.md'
+- 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'
 # -- Topic - Reference Guide
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
@@ -57,8 +57,8 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
-    - 'Inbuilt System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
-    - 'Inbuilt System Procedures': 
+    - 'Built-in System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
+    - 'Built-in System Procedures': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'

@@ -1,4 +1,4 @@
-### Overview
+# Overview
 SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). 
 All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.</br>
 It is therefore recommend that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
@@ -782,7 +782,12 @@ The below mentioned DDL extensions are required to configure a table based on us
    * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
 
-   * PERSISTENCE:  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   * PERSISTENCE: When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   	
+!!! Note:
+   	* By default, both row and column tables are persistent.
+
+   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
    * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](reference/sql_reference/create-diskstore.md).
 
