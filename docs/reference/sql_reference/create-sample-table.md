@@ -21,7 +21,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
     [AS select_statement];
 ```    
 
-** Mode 2**
+**Mode 2**
 ```
 CREATE SAMPLE TABLE table_name ON base_table_name
     OPTIONS (

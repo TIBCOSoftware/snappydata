@@ -20,7 +20,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
 
 ### To Create a SnappySession
 
-**Scala **
+**Scala**
 
 ```scala
  val spark: SparkSession = SparkSession
