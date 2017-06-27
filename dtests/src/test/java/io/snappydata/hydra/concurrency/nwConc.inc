@@ -77,6 +77,10 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             runMode = always
             threadGroups = snappyThreads;
 
+INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_recordProcessIDWithHost
+            runMode = always
+            threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads;
+
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
             io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.northwind.CreateAndLoadNWTablesJob
             io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer =
