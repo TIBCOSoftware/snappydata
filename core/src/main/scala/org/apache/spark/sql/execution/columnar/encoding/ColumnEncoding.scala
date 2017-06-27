@@ -262,7 +262,7 @@ trait ColumnEncoder extends ColumnEncoding {
     initSize * defSize
   }
 
-  protected def initializeNulls(initSize: Int): Int
+  protected[encoding] def initializeNulls(initSize: Int): Int
 
   final def initialize(field: StructField, initSize: Int,
       withHeader: Boolean): Long = {
@@ -290,10 +290,14 @@ trait ColumnEncoder extends ColumnEncoding {
     _upperDecimal = null
   }
 
-  def initialize(field: StructField, initSize: Int,
+  final def initialize(field: StructField, initSize: Int,
+      withHeader: Boolean, allocator: BufferAllocator): Long =
+    initialize(Utils.getSQLDataType(field.dataType), field.nullable,
+      initSize, withHeader, allocator)
+
+  def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
     setAllocator(allocator)
-    val dataType = Utils.getSQLDataType(field.dataType)
     val defSize = defaultSize(dataType)
 
     this.forComplexType = dataType match {
@@ -713,9 +717,9 @@ trait ColumnEncoder extends ColumnEncoding {
     clearSource(newSize = 0, releaseData = true)
   }
 
-  protected def getNumNullWords: Int
+  protected[encoding] def getNumNullWords: Int
 
-  protected def writeNulls(columnBytes: AnyRef, cursor: Long,
+  protected[encoding] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long
 
   protected final def releaseForReuse(newSize: Int): Unit = {
@@ -798,13 +802,16 @@ object ColumnEncoding {
     decoder
   }
 
-  def getColumnEncoder(field: StructField): ColumnEncoder = {
+  def getColumnEncoder(field: StructField): ColumnEncoder =
+    getColumnEncoder(Utils.getSQLDataType(field.dataType), field.nullable)
+
+  def getColumnEncoder(dataType: DataType, nullable: Boolean): ColumnEncoder = {
     // TODO: SW: add RunLength by default (others on explicit
     //    compression level with LZ4/LZF for binary/complex data)
-    Utils.getSQLDataType(field.dataType) match {
-      case StringType => createDictionaryEncoder(StringType, field.nullable)
-      case BooleanType => createBooleanBitSetEncoder(BooleanType, field.nullable)
-      case dataType => createUncompressedEncoder(dataType, field.nullable)
+    dataType match {
+      case StringType => createDictionaryEncoder(StringType, nullable)
+      case BooleanType => createBooleanBitSetEncoder(BooleanType, nullable)
+      case _ => createUncompressedEncoder(dataType, nullable)
     }
   }
 
@@ -1036,7 +1043,7 @@ trait NullableDecoder extends ColumnDecoder {
 
 trait NotNullEncoder extends ColumnEncoder {
 
-  override protected def initializeNulls(initSize: Int): Int = 0
+  override protected[encoding] def initializeNulls(initSize: Int): Int = 0
 
   override def nullCount: Int = 0
 
@@ -1045,9 +1052,9 @@ trait NotNullEncoder extends ColumnEncoder {
   override def writeIsNull(ordinal: Int): Unit =
     throw new UnsupportedOperationException(s"writeIsNull for $toString")
 
-  override protected def getNumNullWords: Int = 0
+  override protected[encoding] def getNumNullWords: Int = 0
 
-  override protected def writeNulls(columnBytes: AnyRef, cursor: Long,
+  override protected[encoding] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = cursor
 
   override def finish(cursor: Long): ByteBuffer = {
@@ -1082,14 +1089,14 @@ trait NullableEncoder extends NotNullEncoder {
   protected final var nullWords: Array[Long] = _
   protected final var initialNumWords: Int = _
 
-  override protected def getNumNullWords: Int = {
+  override protected[encoding] def getNumNullWords: Int = {
     val nullWords = this.nullWords
     var numWords = nullWords.length
     while (numWords > 0 && nullWords(numWords - 1) == 0L) numWords -= 1
     numWords
   }
 
-  override protected def initializeNulls(initSize: Int): Int = {
+  override protected[encoding] def initializeNulls(initSize: Int): Int = {
     if (nullWords eq null) {
       val numWords = calculateBitSetWidthInBytes(initSize) >>> 3
       maxNulls = numWords.toLong << 6L
@@ -1138,7 +1145,7 @@ trait NullableEncoder extends NotNullEncoder {
     }
   }
 
-  override protected def writeNulls(columnBytes: AnyRef, cursor: Long,
+  override protected[encoding] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = {
     var position = cursor
     var index = 0

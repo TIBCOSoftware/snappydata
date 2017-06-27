@@ -142,7 +142,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val initEncoderCode =
       s"""
          |this.$encoderArrayTerm[i] = $encodingClass$$.MODULE$$.getColumnEncoder(
-         |           |  $schemaTerm.fields()[i]);
+         |    $schemaTerm.fields()[i]);
        """.stripMargin
 
     val initEncoderArray = loop(initEncoderCode, schemaLength)

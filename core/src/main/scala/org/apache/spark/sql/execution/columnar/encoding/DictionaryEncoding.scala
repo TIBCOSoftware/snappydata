@@ -224,12 +224,12 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     }
   }
 
-  override def initialize(field: StructField, initSize: Int,
+  override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
     assert(withHeader, "DictionaryEncoding not supported without header")
 
     setAllocator(allocator)
-    Utils.getSQLDataType(field.dataType) match {
+    dataType match {
       case StringType =>
         if (stringMap eq null) {
           // assume some level of compression with dictionary encoding
@@ -355,7 +355,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       numElements = stringMap.size
       stringMap.valueDataSize
     } else {
-      numElements = longArray.size
+      numElements = longArray.size()
       if (isIntMap) numElements << 2
       else numElements << 4
     }

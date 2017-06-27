@@ -21,6 +21,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
+import org.apache.spark.unsafe.Platform
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
 
@@ -91,9 +92,10 @@ trait BooleanBitSetEncoderBase
       s"Unexpected BooleanBitSet encoding for $dataType")
   }
 
-  override def initialize(field: StructField, initSize: Int,
+  override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
-    byteCursor = super.initialize(field, initSize, withHeader, allocator)
+    byteCursor = super.initialize(dataType, nullable, initSize,
+      withHeader, allocator)
     currentWord = 0L
     // returns the index into currentWord
     0L
@@ -128,6 +130,25 @@ trait BooleanBitSetEncoderBase
       byteCursor = writeCurrentWord() + 8
       currentWord = if (value) 1L else 0L
       1L
+    }
+  }
+
+  /**
+   * Set the boolean at given position. Assumes withHeader was false in initialization.
+   */
+  final def writeBooleanAtPosition(position: Int, value: Boolean): Unit = {
+    if (((columnEndPosition - columnBeginPosition) << 3) > position) {
+      val bytePosition = columnBeginPosition + (position >>> 3)
+      val mask = 1 << (position & 0x7) // mod 8 and shift
+      val currentByte = Platform.getByte(columnBytes, bytePosition)
+      if (value) {
+        Platform.putByte(columnBytes, bytePosition, (currentByte | mask).toByte)
+      } else {
+        Platform.putByte(columnBytes, bytePosition, (currentByte & ~mask).toByte)
+      }
+    } else {
+      throw new IndexOutOfBoundsException(s"Cannot write at position = $position " +
+          s"sizeInBytes=${columnEndPosition - columnBeginPosition}")
     }
   }
 
