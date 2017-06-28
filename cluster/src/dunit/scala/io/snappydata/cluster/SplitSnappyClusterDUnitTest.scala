@@ -641,7 +641,7 @@ object SplitSnappyClusterDUnitTest
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
         "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL)" +
-        s"USING csv OPTIONS (path '$customerFile', maxCharsPerColumn, '4096')")
+        s"USING csv OPTIONS (path '$customerFile', maxCharsPerColumn '4096')")
 
     snc.sql(s"CREATE TABLE CUSTOMER AS SELECT * FROM CUSTOMER_STAGING")
     val count = snc.sql("select * from customer").count()
