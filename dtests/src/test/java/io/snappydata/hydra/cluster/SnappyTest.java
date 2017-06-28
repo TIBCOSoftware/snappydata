@@ -90,6 +90,7 @@ public class SnappyTest implements Serializable {
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
   private static Boolean logDirExists = false;
   private static Boolean doneCopying = false;
+  protected static Boolean doneRandomizing = false;
   private static Boolean doneRestore = false;
   private static Boolean diskDirExists = false;
   private static Boolean runGemXDQuery = false;
@@ -718,10 +719,11 @@ public class SnappyTest implements Serializable {
     return pidList;
   }
 
+
   /**
    * Returns hostname of the process
    */
-  private static synchronized String getPidHost(String pid) {
+  protected static synchronized String getPidHost(String pid) {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     String pidHost = null;
     for (String key : keys) {
