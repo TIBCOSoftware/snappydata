@@ -570,7 +570,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"APP__${t + SHADOW_TABLE_SUFFIX}".
+      if (s"APP____${t + SHADOW_TABLE_SUFFIX}".
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
@@ -586,6 +586,7 @@ class QueryRoutingDUnitTest(val s: String)
   def createTableAndInsertData(): Unit = {
     val snc = SnappyContext(sc)
     val tableName: String = "TEST.ColumnTableQR"
+    snc.sql(s" drop table if exists $tableName")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
       Seq(4, 2, 3), Seq(5, 6, 7))

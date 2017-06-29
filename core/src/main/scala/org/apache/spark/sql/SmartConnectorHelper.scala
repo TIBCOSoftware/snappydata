@@ -63,8 +63,10 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def initializeConnection(): Unit = {
+    val props = new Properties()
+    props.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
     conn = JdbcUtils.createConnectionFactory(
-      connectionURL + ";route-query=false;" , new Properties())()
+      connectionURL + ";route-query=false;" , props)()
     createSnappyTblStmt =  conn.prepareCall(createSnappyTblString)
     dropSnappyTblStmt = conn.prepareCall(dropSnappyTblString)
     createSnappyIdxStmt = conn.prepareCall(createSnappyIdxString)

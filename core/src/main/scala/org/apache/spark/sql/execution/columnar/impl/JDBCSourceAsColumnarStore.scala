@@ -39,10 +39,10 @@ import io.snappydata.thrift.internal.ClientBlob
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.ParamLiteral
+import org.apache.spark.sql.catalyst.expressions.{DynamicReplacableConstant, ParamLiteral}
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
-import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
+import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowDMLExec, RowFormatScanRDD}
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter, JdbcExtendedUtils}
@@ -317,8 +317,9 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
               otherRDDs = Seq.empty, numBuckets = -1,
               partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
-              baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs)
-            val insertPlan = RowInsertExec(tableScan, upsert = true,
+              baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
+              caseSensitive = true)
+            val insertPlan = RowDMLExec(tableScan, putInto = true, delete = false,
               Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
               resolvedName = null, connProperties)
             // now generate the code with the help of WholeStageCodegenExec
@@ -338,7 +339,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         val resolvedName = ExternalStoreUtils.lookupName(tableName,
           connection.getSchema)
         val putSQL = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
-          schema, upsert = true)
+          schema, putInto = true)
         val stmt = connection.prepareStatement(putSQL)
         refs(statementRef) = stmt
         // no harm in passing a references array with extra element at end
@@ -535,15 +536,14 @@ final class SmartConnectorColumnRDD(
       context.addTaskCompletionListener { _ =>
         logDebug(s"The txid going to be committed is $txId " + tableName)
 
-        if ((txId ne null) && !txId.equals("null")
-        /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+        // if ((txId ne null) && !txId.equals("null")) {
           val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
-          ps.setString(1, txId)
+          ps.setString(1, if (txId == null) "null" else txId)
           ps.executeUpdate()
           logDebug(s"The txid being committed is $txId")
           ps.close()
           SparkShellRDDHelper.snapshotTxId.set(null)
-        }
+        // }
       }
     }
     itr
@@ -597,21 +597,20 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _filters, _partEval, _commitTx) {
 
 
-  override def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext) = {
+  override def commitTxBeforeTaskCompletion(conn: Option[Connection],
+      context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      val txId =  SparkShellRDDHelper.snapshotTxId.get
+      val txId = SparkShellRDDHelper.snapshotTxId.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
-      if ((txId ne null) && !txId.equals("null")
-      /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
+      // if ((txId ne null) && !txId.equals("null")) {
         val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
-        ps.setString(1, txId)
+        ps.setString(1, if (txId == null) "null" else txId)
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
         SparkShellRDDHelper.snapshotTxId.set(null)
-      }
-    }
-    ))
+      // }
+    }))
   }
 
   override def computeResultSet(
@@ -638,6 +637,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args.map {
         case pl: ParamLiteral => pl.convertedLiteral
+        case l : DynamicReplacableConstant => l.convertedLiteral
         case v => v
       })
     }
@@ -665,9 +665,9 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val txid: String = getSnapshotTXId.getString(1)
       getSnapshotTXId.close()
       SparkShellRDDHelper.snapshotTxId.set(txid)
-      logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
+      logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
     }
-    logDebug(s"The previous snapshot tx id is ${txId} and tablename is ${tableName}")
+    logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)
   }
 

@@ -24,14 +24,15 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
+import org.apache.spark.sql.catalyst.plans.logical.LocalRelation
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.exchange.ShuffleExchange
-import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
+import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
@@ -75,6 +76,19 @@ private[sql] abstract class PartitionedPhysicalScan(
     dataRDD.getNumPartitions
   } else {
     -1
+  }
+
+  def caseSensitive: Boolean
+
+  protected def fieldIndex(relationOutput: Seq[Attribute], columnName: String): Int = {
+    // lookup as per case-sensitivity (SNAP-1714)
+    val resolver = if (caseSensitive) analysis.caseSensitiveResolution
+    else analysis.caseInsensitiveResolution
+    LocalRelation(relationOutput).resolveQuoted(columnName, resolver) match {
+      case Some(a) => relationOutput.indexWhere(_.semanticEquals(a))
+      case None => throw new IllegalArgumentException(
+        s"""Field "$columnName" does not exist in "$relationOutput".""")
+    }
   }
 
   @transient val (metricAdd, metricValue): (String => String, String => String) =
@@ -135,9 +149,10 @@ private[sql] object PartitionedPhysicalScan {
       scanBuilderArgs: => (Seq[AttributeReference], Seq[Filter])): SparkPlan =
     relation match {
       case i: IndexColumnFormatRelation =>
+        val caseSensitive = i.sqlContext.conf.caseSensitiveAnalysis
         val columnScan = ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, partitionColumnAliases, relation, relation.schema,
-          allFilters, schemaAttributes)
+          allFilters, schemaAttributes, caseSensitive)
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(() => Array.empty,
@@ -147,7 +162,7 @@ private[sql] object PartitionedPhysicalScan {
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
         val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
-          output), baseTableRDD, numBuckets, Seq.empty, Seq.empty, table)
+          output), baseTableRDD, numBuckets, Seq.empty, Seq.empty, table, caseSensitive)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +
@@ -158,27 +173,45 @@ private[sql] object PartitionedPhysicalScan {
           ClusteredDistribution(columnScan.partitionColumns)))
         ZipPartitionScan(columnScan, columnScan.partitionColumns,
           rowBufferScan, otherPartKeys)
-      case _: BaseColumnFormatRelation =>
+      case c: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, partitionColumnAliases, relation, relation.schema,
-          allFilters, schemaAttributes)
+          allFilters, schemaAttributes, c.sqlContext.conf.caseSensitiveAnalysis)
       case r: SamplingRelation =>
         if (r.isReservoirAsRegion) {
           ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
             partitionColumnAliases, relation, relation.schema, allFilters,
-            schemaAttributes, isForSampleReservoirAsRegion = true)
+            schemaAttributes, r.sqlContext.conf.caseSensitiveAnalysis,
+            isForSampleReservoirAsRegion = true)
         } else {
           ColumnTableScan(output, rdd, otherRDDs, numBuckets,
             partitionColumns, partitionColumnAliases, relation, relation.schema,
-            allFilters, schemaAttributes)
+            allFilters, schemaAttributes, r.sqlContext.conf.caseSensitiveAnalysis)
         }
-      case _: RowFormatRelation =>
+      case r: RowFormatRelation =>
         RowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
-          partitionColumns, partitionColumnAliases, relation)
+          partitionColumns, partitionColumnAliases, relation,
+          r.sqlContext.conf.caseSensitiveAnalysis)
     }
 
-  def getSparkPlanInfo(plan: SparkPlan): SparkPlanInfo =
-    SparkPlanInfo.fromSparkPlan(plan)
+  def getSparkPlanInfo(fullPlan: SparkPlan): SparkPlanInfo = {
+    val plan = fullPlan match {
+      case CodegenSparkFallback(CachedPlanHelperExec(child)) => child
+      case CodegenSparkFallback(child) => child
+      case CachedPlanHelperExec(child) => child
+      case _ => fullPlan
+    }
+    val children = plan match {
+      case ReusedExchangeExec(_, child) => child :: Nil
+      case _ => plan.children ++ plan.subqueries
+    }
+    val metrics = plan.metrics.toSeq.map { case (key, metric) =>
+      new SQLMetricInfo(metric.name.getOrElse(key), metric.id, metric.metricType)
+    }
+
+    new SparkPlanInfo(plan.nodeName, plan.simpleString,
+      children.map(getSparkPlanInfo), plan.metadata, metrics)
+  }
 }
 
 /**
@@ -195,7 +228,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     val callSite = sqlContext.sparkContext.getCallSite()
     CachedDataFrame.withNewExecutionId(sqlContext.sparkSession,
       callSite.shortForm, callSite.longForm,
-      child.treeString(verbose = true), SparkPlanInfo.fromSparkPlan(child)) {
+      child.treeString(verbose = true), PartitionedPhysicalScan.getSparkPlanInfo(child)) {
       child.executeCollect()
     }
   }
@@ -298,7 +331,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   }
 
   override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output

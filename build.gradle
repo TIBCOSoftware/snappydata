@@ -24,6 +24,9 @@ if (JavaVersion.current().isJava8Compatible()) {
   allprojects {
     tasks.withType(Javadoc) {
       options.addStringOption('Xdoclint:none', '-quiet')
+      if (javax.tools.ToolProvider.getSystemDocumentationTool().isSupportedOption("--allow-script-in-comments") == 0) {
+        options.addBooleanOption("-allow-script-in-comments", true)
+      }
     }
   }
 }
@@ -62,7 +65,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '0.8'
+  version = '0.9'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -96,7 +99,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.0.0'
-    snappySparkVersion = '2.0.2.3'
+    snappySparkVersion = '2.0.2.5'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -109,7 +112,7 @@ allprojects {
     thriftVersion = '0.9.3'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.5.4'
+    snappyStoreVersion = '1.5.5'
     pulseVersion = '1.5.1'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -119,7 +122,7 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.3'
+    sparkJobServerVersion = '0.6.2.5'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -598,10 +601,16 @@ task product(type: Zip) {
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def targetProject = clusterProject
   def hasAQPProject = new File(rootDir, 'aqp/build.gradle').exists()
+  def hasJdbcConnectorProject = new File(rootDir,
+      'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 
   if (hasAQPProject) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
     targetProject = project(":snappy-aqp_${scalaBinaryVersion}")
+  }
+
+  if (hasJdbcConnectorProject) {
+    dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
   }
 
   // create snappydata+spark combined python zip

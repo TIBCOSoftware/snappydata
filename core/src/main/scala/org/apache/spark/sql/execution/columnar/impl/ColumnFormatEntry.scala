@@ -116,7 +116,7 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
 
   override def getColumnBatchRowCount(itr: PREntriesIterator[_],
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
-    val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN
+    val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
     val currentBucketRegion = itr.getHostedBucketRegion
     if (columnIndex == ColumnBatchIterator.STATROW_COL_INDEX &&
         !re.isDestroyedOrRemoved) {
@@ -124,12 +124,14 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
           .asInstanceOf[ColumnFormatValue]
       if (value ne null) {
         val buffer = value.getBufferRetain
-        if (buffer.remaining() > 0) {
-          val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
-          val n = unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+        try {
+          if (buffer.remaining() > 0) {
+            val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
+            unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+          } else 0
+        } finally {
           value.release()
-          n
-        } else 0
+        }
       } else 0
     } else 0
   }

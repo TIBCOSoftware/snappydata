@@ -1,4 +1,4 @@
-## Overview
+# Overview
 iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine ([SDE](aqp.md)), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
 
 iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
@@ -6,11 +6,11 @@ iSight-Cloud uses Apache Zeppelin as the front end notebook to display results a
 The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
 With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.
 
-In this document, we describe the features provided by SnappyData for analyzing your data. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.
+In this document, the features provided by SnappyData for analyzing your data is described. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.
 
 Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.
 
-### Key Components
+## Key Components
 This section provides a brief description of the key terms used in this document. 
 
 * **Amazon Web Services (AWS**):  Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
@@ -79,12 +79,14 @@ The names and details of the members are automatically derived from the provided
 Refer to the Amazon documentation for more information on  [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).<br>
 ![STEP](Images/aws_ec2keypair.png)
 
-3. Select an instance based on the capacity that you require. 
+3. Select an instance based on the capacity that you require. </br>
 ![STEP](Images/aws_instancetype.png)
  
-4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.
+4. Enter the size of the EBS storage volume to be attached to the Amazon EC2 instance in the **EBS Volume Size(gigabytes)** field.</br>
 ![STEP](Images/aws_ebsvolumesize.png)
-<Note>Note: Currently only Amazon Elastic Block Storage (EBS) is supported. </Note>
+
+	!!! Note
+    	Currently only Amazon Elastic Block Storage (EBS) is supported.
 
 5. Enter your email address.  <br>
 ![STEP](Images/aws_email.png)
@@ -93,10 +95,11 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 7. On the next page, select the AWS region, and then click **Launch Cluster** to launch your single-node cluster.
 
-    <Note> Note: </Note>
+    !!! Note
 
-	* <Note> The region you select must match the EC2 Key Pair you created.</Note>
-	* <Note>  If you are not already logged into AWS, you are redirected to the AWS sign-in page. 	</Note>
+		* The region you select must match the EC2 Key Pair you created.
+
+		* If you are not already logged into AWS, you are redirected to the AWS sign-in page. 	
 ![STEP](Images/aws_selectedregion.png)
 
 8. On the **Select Template** page, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
@@ -105,7 +108,9 @@ Refer to the Amazon documentation for more information on  [generating your own 
 9. On the **Specify Details** page:
 
 	* **Stack name**: You can change the stack name.</br>
-	<Note> Note: The stack name must contain only letters, numbers, dashes and should start with an alpha character.</Note>
+
+	!!! Note 
+    	The stack name must contain only letters, numbers, dashes and should start with an alpha character.
     
     * **VPCID**: From the drop-down list, select the Virtual Private Cloud (VPC) ID that is set as default. Your instances will be launched within this VPC.
 
@@ -117,7 +122,8 @@ Refer to the Amazon documentation for more information on  [generating your own 
 
 11. On the **Review** page, verify the details and click **Create** to create a stack.
 
-	<Note> Note: This operation may take a few minutes to complete.</Note>
+	!!! Note: 
+    	This operation may take a few minutes to complete.
 
 12. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation.
 When the cluster has started, the status of the stack changes to **CREATE_COMPLETE**. <br>
@@ -126,13 +132,17 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 13. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
 	![Public IP](Images/aws_links.png)
 
-	<Note> Note: If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
+	!!! Note: 
+    	If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
 
-	> * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
-	> * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
-	> * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*</Note>
+		* **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
 
-<Note> Note: To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.</Note>
+		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the iSight CloudBuilder creation steps.
+
+		* **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*
+
+!!! Note: 
+	To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
 
 
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
@@ -166,7 +176,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 
 #### Launching SnappyData Cluster
 
-In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappydata-cloud-tools) is cloned locally.
+In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
 Enter the command in the following format:
 
@@ -200,22 +210,18 @@ For a comprehensive list of command options, simply run `./snappy-ec2` in the co
 SnappyData provides you with predefined buckets which contain datasets. When data is loaded, the table reads from the files available at the specified external location (AWS S3). 
 
 
-<Note> Notes:</Note>
+!!! Note
+    * 	The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.
 
-*	<Note> The Amazon S3 buckets and files are private by default. Ensure that you set the permissions required to make the data publicly accessible. Please refer to the [documentation provided by Amazon S3](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) for detailed information on creating a bucket, adding files and setting required permissions.</Note>
-	
-* <Note> You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.</Note>
+	* 	You can also find AWS related information on the AWS homepage, from the **Account** > **Security Credentials** > **Access Credentials** option.
 
-* <Note> Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
-</Note>
+	* 	Information related to the Bucket Name and Folder Location can be found on the AWS S3 site.
 
-* <Note> If the Secret Access Key contains a slash, it causes the Spark job to fail. When you create the Secret Access Key, ensure that it only contains alpha-numeric characters.
-</Note> 
+	* 	If the Secret Access Key contains a slash, it causes the Spark job to fail. When you create the Secret Access Key, ensure that it only contains alpha-numeric characters. 
 
-* <Note>	When reading or writing CSV/Parquet to and from S3, the *ConnectionPoolTimeoutException* error may be reported. To avoid this error, in the Spark context, set the value of the `fs.s3a.connection.maximum` property to a number greater than the possible number of partitions. </br> For example, `snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000")`</br></note>
+	* 	When reading or writing CSV/Parquet to and from S3, the *ConnectionPoolTimeoutException* error may be reported. To avoid this error, in the Spark context, set the value of the `fs.s3a.connection.maximum` property to a number greater than the possible number of partitions. </br> For example, `snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000")`
 
-* <Note> To access data from AWS S3, copy the **aws-java-sdk-`<version_number>`** and **hadoop-aws-`<version_number>`** files (available in the Maven repository), to the **jars** directory (snappydata-`<version_number>`-bin/jars) in the SnappyData home directory.
-</Note> 
+	* 	To access data from AWS S3, copy the **aws-java-sdk-`<version_number>`** and **hadoop-aws-`<version_number>`** files (available in the Maven repository), to the **jars** directory (snappydata-`<version_number>`-bin/jars) in the SnappyData home directory. 
 
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
@@ -262,13 +268,12 @@ Connecting the SnappyData Interpreter to the SnappyData cluster is represented i
 SnappyData Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
 
-<Note>  Note:</Note>
+!!! Note:
+    	*	The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.
 
-* <Note>  The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.</Note>
- 
-* <Note>  It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter. </Note>
+        * 	It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter. 
 
-* <Note> Each paragraph has its own SnappyData context. When you set a property on one paragraph, the property is applicable only to that paragraph and not to other paragraphs in the notebook.</Note>
+        * 	Each paragraph has its own SnappyData context. When you set a property on one paragraph, the property is applicable only to that paragraph and not to other paragraphs in the notebook.
 
 
 ### SQL Interpreter
@@ -298,7 +303,8 @@ select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howMa
 ```
 ![Example](Images/DirectivesinApacheZeppelin.png)
 
-<Note> Note: This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.</Note>
+!!! Note: 
+	This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.
 
 ### Scala Interpreter
 The `%snappydata.spark` code specifies the default Scala interpreter. This interpreter is used to write Scala code in the paragraph.
