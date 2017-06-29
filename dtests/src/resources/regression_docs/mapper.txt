@@ -1,0 +1,4 @@
+TRADE.SECURITIES.SEC_ID = ::format 999999
+TRADE.SECURITIES.symbol = ::random [5]
+TRADE.SECURITIES.exchange = ::valuelist {nasdaq,nye,amex,lse,fse,hkse,tse}
+TRADE.SECURITIES.PRICE = ::format 9999.9999

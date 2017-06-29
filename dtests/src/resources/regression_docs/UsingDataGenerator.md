@@ -1,6 +1,6 @@
 #Using Data Generator
 
-####You can use the data generator for a table/schema using DataGenerator.java byt followign the below mentioned steps
+####You can use the data generator for a table/schema using DataGenerator_.java by following the below steps
 
 1. Create mapper file as per requirement.
 ```
@@ -11,14 +11,14 @@
 	::format 999999   		                 -- number format of fixed length
 	::format 999.99    		                -- decimal format of fixed length
 	::random [5] length  	                  -- fixed length for both number and characters
-	::ramdom [2-3] length	                  -- variable length values values for number or characters
+	::ramdom [2-3] length	                  -- variable length values for number or characters
 	::valuelist {val1,val2,val3} 		      -- select value from given list sequentially
 	::valuelist {val1,val2,val3} randomize	 -- select value randomly from given list
 ```
 
 Example for mapper file can be found [here]().
 
-2. Start row cluster using ‘./sbin/snappy-start-all rowstore’.
+2. Start row cluster using ‘./sbin/snappy-start-all.sh rowstore’.
 
 3. Run snappy-sql using ‘./bin/snappy-sql rowstore’ and connect using ‘connect client 'localhost:1527';’
 

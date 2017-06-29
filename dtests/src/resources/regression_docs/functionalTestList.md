@@ -1,43 +1,56 @@
-#### This is the list of Hydra tests that should be run for a full regression for Snappy.
+# Functional tests to be run in regressions
 
-## Functional tests to be run in regressions
+The list of tests executed in SnappyData regression. Any new bt added and needs to be executed as a part of regression, must be listed below in this file and in [snappyRegressionScript.sh](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh)
 
-Following is the list of tests run in snappy regression. Any new bt that needs to be run as a part of regression must be added here and in the [snappyRegressionScript.sh](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh)
+* sample.bt
 
-1. sample.bt
+* distJoin.bt
 
-2. distJoin.bt
+* clusterRestartWithPersistentRecovery.bt
 
-3. clusterRestartWithPersistentRecovery.bt
-    *Test restart for snappy and spark clusters in any sequence and verify all the tables are recovered with persisted data (22GB of csv data) . Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)*
+    - Test restart for snappy and spark clusters in any sequence and verify all the tables are recovered with persisted data (22GB of csv data). Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)
 
-4. northWind.bt
-    *Complete feature testing using northWind schema. Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)*
+* northWind.bt
 
-5. ct.bt
-    *Complete feature testing using ct schema. Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)*
+    - Complete feature testing using northWind schema. Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)
 
-6. installJar.bt
-    *Test installJar feature*
+* ct.bt
 
-7. distIndex.bt
-    *Test distributed Index feature. Modify and use [local.embeddedMode.conf](../../test/java/io/snappydata/hydra/local.embeddedMode.conf)*
+    - Complete feature testing using ct schema. Modify and use [local.smartConnectorMode.conf](../../test/java/io/snappydata/hydra/local.smartConnectorMode.conf)
 
-8. snapshotIsolation.bt
-    *Test snapshotIsolation feature*
+* installJar.bt
 
-9. adAnalytics.bt
-    *Test Kafka streaming*
+    - Test installJar feature
+
+* distIndex.bt
+
+    - Test distributed Index feature. Modify and use [local.embeddedMode.conf](../../test/java/io/snappydata/hydra/local.embeddedMode.conf)
+
+* snapshotIsolation.bt
+
+    - Test snapshotIsolation feature
+
+* adAnalytics.bt
+
+    - Test Kafka streaming
 
 ## Long running tests
 
-1. longRunningTest.bt
-    *To test the system behavior after keeping the cluster running for long duration e.g. 40hrs split mode with HA, also test will be using different schemas. Modify and use local.longRun.conf*
+* longRunningTest.bt
+
+    - To test the system behavior after keeping the cluster running for long duration e.g. 40hrs split mode with HA, also test will be using different schemas. Modify and use local.longRun.conf*
 
 
 #### Sample script used in running regression
 
-[Here](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing:
+[Here](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh) is the sample for regression script, which includes all the battery tests to be run in the regression. 
+
+Set the following two variables required by the script, before starting the execution:
+
+```
+export SNAPPY_HOME=<checkout_dir>
+export OUTPUT_DIR=<result_directory_path>
+```
 
 ```
 export SNAPPY_HOME=<checkout_dir>

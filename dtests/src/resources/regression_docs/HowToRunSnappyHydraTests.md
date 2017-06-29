@@ -25,9 +25,9 @@ export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDir> $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/northwind/northWind.bt
 ```
 
-#### Running battery test using local.conf(with modifications in local.conf, as per requirement)
+#### Running battery test using local.conf (with modifications in local.conf, as per requirement)
 
-One can also provide a local.conf while running the battery test, for setting some global parameters or setting multi-hosts parameters to run the test on multiple nodes.
+To set some global parameters or to set multi-hosts parameters to run the test on multiple nodes, you can provide a local.conf while running the battery test.
 
 ```
 export SNAPPYDATA_SOURCE_DIR=<product checkout dir>
@@ -36,43 +36,45 @@ $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh <logDi
 
 #### Options available for running a battery test
 
-```
- -l <local-conf-file-path> -- path to local conf file
+| Options | Description |
+|--------|--------|
+|`-l <local-conf-file-path>`|Path to local conf file|
+|`-r <n>`|Run test suite n number of times, the default is 1|
+|`-d <boolean>`|Whether to delete passed test run logs, the default value is true|
+|`-m mail_address`|Email address to send results of the run to|
 
- -r <n>                    -- run test suite n number of times, the default is 1
+#### Running single test/selected tests from a bt file:
 
- -d <boolean>              -- whether to delete passed test run logs, the default value is true
+If you want to run just a single test or selected tests from the bt, then all the other tests in the bt file needs to be commented. You can also create a new **.bt** file, with only required tests and use that file during execution.</br>
+Step 2 should be done everytime after changing the **bt** files and **local.conf**.
 
- -m <mail_address>           -- email address to send results of the run to
-```
-
-#### Running single test/selected tests from a bt
-
-If one wants to run just a single test or selected tests from the bt, then all the other tests in the bt file needs to be commented. One can also create a new .bt file with only required tests and use that bt file while execution. The above mentioned procedure for running a battery test needs to be followed after changes for bt files and local.conf are done (You can skip Step 1 if previously done).
 
 ## Battery tests included in the Snappy regression
 
-#### The list of bts that are run as a part of regression for snappy can be found at [FunctionalTestList](functionalTestList.md), few of them are listed below
+#### The list of battery tests that are run as a part of regression for SnappyData can be found at [FunctionalTestList](functionalTestList.md), few of them are listed below:
 
-1. northWind.bt
+* northWind.bt
 
-2. ct.bt
+* ct.bt
 
-3. sample.bt
+* sample.bt
 
-4. distJoin.bt
+* distJoin.bt
 
-5. clusterRestartWithPersistentRecovery.bt
+* clusterRestartWithPersistentRecovery.bt
 
 #### Sample script used in running regression
 
-[Here](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh) is the sample for regression script, which includes all the bts to be run in the regression. Please set the following two variables required by the script, before executing:
+[Here](../../test/java/io/snappydata/hydra/snappyRegressionScript.sh) is the sample for regression script, which includes all the battery tests to be run in the regression. 
+
+Set the following two variables required by the script, before starting the execution:
 
 ```
 export SNAPPY_HOME=<checkout_dir>
 export OUTPUT_DIR=<result_directory_path>
 ```
-#### For additional logging, any of the following settings can be added to the local.conf files, as per requirement
+
+#### For additional logging, any of the following settings can be added to the **local.conf** files, as per requirement:
 
 ```
 io.snappydata.hydra.cluster.SnappyPrms-logLevel = fine;
