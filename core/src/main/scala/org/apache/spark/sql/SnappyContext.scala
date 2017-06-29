@@ -997,7 +997,7 @@ object SnappyContext extends Logging {
   }
 
   private def resolveClusterMode(sc: SparkContext): ClusterMode = {
-    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+    val mode = if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
         throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
             " from SnappyData tools package")
@@ -1035,6 +1035,13 @@ object SnappyContext extends Logging {
         else ExternalClusterMode(sc, sc.master)
       }
     }
+    mode match {
+      case LocalMode(_, _) =>
+        logWarning(s"Initializing SnappyData in cluster mode: $mode")
+      case _ =>
+        logInfo(s"Initializing SnappyData in cluster mode: $mode")
+    }
+    mode
   }
 
   private[sql] def initGlobalSnappyContext(sc: SparkContext,
@@ -1162,6 +1169,11 @@ object SnappyContext extends Logging {
 abstract class ClusterMode {
   val sc: SparkContext
   val url: String
+  val description: String = "Cluster mode"
+
+  override def toString: String = {
+    description + s": sc = $sc, url = $url"
+  }
 }
 
 final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
@@ -1207,7 +1219,9 @@ final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
  * Spark driver that also hosts a job-server and GemFireXD accessor.
  */
 case class SnappyEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Embedded cluster mode"
+}
 
 /**
  * This is for the two cluster mode: one is the normal snappy cluster, and
@@ -1215,7 +1229,9 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
  * the snappy cluster on demand that just remains like an external datastore.
  */
 case class SplitClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Split cluster mode"
+}
 
 /**
  * Similar to SplitClusterMode but this will use thin client driver for making
@@ -1228,27 +1244,35 @@ case class SplitClusterMode(override val sc: SparkContext,
  *
  */
 case class ThinClientConnectorMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Smart connector mode"
+}
 
 /**
  * This is for the "old-way" of starting GemFireXD inside an existing
  * Spark/Yarn cluster where cluster nodes themselves boot up as GemXD cluster.
  */
 case class ExternalEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "External embedded mode"
+}
 
 /**
  * The local mode which hosts the data, executor, driver
  * (and optionally even jobserver) all in the same node.
  */
 case class LocalMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Local mode"
+}
 
 /**
  * A regular Spark/Yarn/Mesos or any other non-snappy cluster.
  */
 case class ExternalClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "External cluster mode"
+}
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)
     extends AnalysisException(message) with Serializable
