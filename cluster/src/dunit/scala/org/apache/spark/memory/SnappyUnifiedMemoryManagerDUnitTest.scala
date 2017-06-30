@@ -81,6 +81,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
   override def tearDown2(): Unit = {
+    val snc = SnappyContext(sc).newSession()
+    snc.dropTable(col_table, ifExists = true)
+    snc.dropTable(rr_table, ifExists = true)
     resetMemoryManagers()
     super.tearDown2()
   }
@@ -144,7 +147,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     assertApproximate(vm1_memoryUsed, vm2_memoryUsed)
   }
 
-  def testMemoryUsedInBucketRegions_ColumntTables(): Unit = {
+  def testMemoryUsedInBucketRegions_ColumnTables(): Unit = {
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
     val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>

@@ -412,7 +412,6 @@ object CachedDataFrame
     val buffer = new Array[Byte](4 << 10) // 4K
     // final output is written to this buffer
     val output = new ByteBufferDataOutput(4 << 10,
-      DirectBufferAllocator.instance(),
       null,
       ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
     // holds intermediate bytes which are compressed and flushed to output
