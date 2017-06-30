@@ -10,7 +10,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
+    PERSISTENCE  ‘ASYNCHRONOUS | SYNCHRONOUS’,
     DISKSTORE 'diskstore-name', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time-to-live-in-seconds',
@@ -21,7 +21,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
     [AS select_statement];
 ```    
 
-** Mode 2**
+**Mode 2**
 ```
 CREATE SAMPLE TABLE table_name ON base_table_name
     OPTIONS (
@@ -29,7 +29,7 @@ CREATE SAMPLE TABLE table_name ON base_table_name
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-redundant-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
+    PERSISTENCE  ‘ASYNCHRONOUS | SYNCHRONOUS’,
     DISKSTORE 'diskstore-name', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time-to-live-in-seconds',
@@ -62,24 +62,24 @@ Refer to these sections for more information on [Creating Table](create-table.md
 
 ```
 snappy>CREATE TABLE CUSTOMER_SAMPLE ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL)
-    USING COLUMN_SAMPLE OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
-    strataReservoirSize '50', baseTable 'CUSTOMER_BASE')
+      C_CUSTKEY     INTEGER NOT NULL,
+      C_NAME        VARCHAR(25) NOT NULL,
+      C_ADDRESS     VARCHAR(40) NOT NULL,
+      C_NATIONKEY   INTEGER NOT NULL,
+      C_PHONE       VARCHAR(15) NOT NULL,
+      C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+      C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+      C_COMMENT     VARCHAR(117) NOT NULL)
+      USING COLUMN_SAMPLE OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
+      strataReservoirSize '50', baseTable 'CUSTOMER_BASE');
 ```
 
 ### Mode 2 Example
 
 ```
 snappy>CREATE SAMPLE TABLE CUSTOMER_SAMPLE on CUSTOMER_BASE
-    OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
-    strataReservoirSize '50') AS (SELECT * FROM CUSTOMER_BASE);
+      OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
+      strataReservoirSize '50') AS (SELECT * FROM CUSTOMER_BASE);
 ```    
 
 !!! Note
