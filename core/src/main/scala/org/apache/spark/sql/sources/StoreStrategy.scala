@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
 import org.apache.spark.sql.types.DataType
+
 /**
  * Support for DML and other operations on external tables.
  */
@@ -34,45 +35,23 @@ object StoreStrategy extends Strategy {
     case CreateTable(tableDesc, mode, None) =>
       val userSpecifiedSchema = SparkSession.getActiveSession.get
         .asInstanceOf[SnappySession].normalizeSchema(tableDesc.schema)
+      val options = Map.empty[String, String] ++ tableDesc.storage.properties
       val cmd =
         CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
           None, SnappyContext.getProvider(tableDesc.provider.get, false), false,
-          tableDesc.storage.properties, false)
+          options, false)
       ExecutedCommand(cmd) :: Nil
 
     case CreateTable(tableDesc, mode, Some(query)) =>
       val userSpecifiedSchema = SparkSession.getActiveSession.get
         .asInstanceOf[SnappySession].normalizeSchema(query.schema)
+      val options = Map.empty[String, String] ++ tableDesc.storage.properties
       val cmd =
         CreateMetastoreTableUsingSelect(tableDesc.identifier, None, Some(userSpecifiedSchema), None,
           SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
           temporary = false, tableDesc.partitionColumnNames.toArray, mode,
-          tableDesc.storage.properties, query, isBuiltIn = false)
+          options, query, isBuiltIn = false)
       ExecutedCommand(cmd) :: Nil
-// =======
-//    case CreateTableUsing(tableIdent, schema, provider,
-//    false, opts, _, _, allowExisting, _) =>
-//      val userSpecifiedSchema = schema.flatMap(s => SparkSession.getActiveSession.map(
-//        _.asInstanceOf[SnappySession].normalizeSchema(s)))
-//      ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
-//        userSpecifiedSchema, None, SnappyContext.getProvider(provider,
-//          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
-//
-//    case a@CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
-//    _, mode, opts, _) =>
-//      val query = a.productElement(6).asInstanceOf[LogicalPlan]
-//
-//      // CreateTableUsingSelect is only invoked by DataFrameWriter etc
-//      // so that should support both +builtin and external tables
-//      val userSpecifiedSchema = SparkSession.getActiveSession.map(
-//        _.asInstanceOf[SnappySession].normalizeSchema(query.schema))
-//      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent,
-//        baseTable = None, userSpecifiedSchema, schemaDDL = None,
-//        SnappyContext.getProvider(provider, onlyBuiltIn = false),
-//        temporary = false, partitionCols, mode, opts, query,
-//        isBuiltIn = false)) :: Nil
-//
-// >>>>>>> master
     case create: CreateMetastoreTableUsing =>
       ExecutedCommand(create) :: Nil
     case createSelect: CreateMetastoreTableUsingSelect =>
