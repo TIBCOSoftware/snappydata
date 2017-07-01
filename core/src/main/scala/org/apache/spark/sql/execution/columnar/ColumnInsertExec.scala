@@ -195,7 +195,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  $childProduce
        |}
        |if ($batchSizeTerm > 0) {
-       |  $storeColumnBatch(-1, $storeColumnBatchArgs);
+       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
        |${if (numInsertedRowsMetric eq null) ""

@@ -416,7 +416,9 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     columnData.position(position)
 
     // reuse this index data in next round if possible
-    releaseForReuse(numIndexBytes)
+    // releaseForReuse(numIndexBytes)
+    // SNAP-1760: clearing somehow fixes the issue
+    clearSource(numIndexBytes, releaseData = true)
 
     columnData
   }

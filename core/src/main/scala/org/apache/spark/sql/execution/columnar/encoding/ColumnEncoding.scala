@@ -356,14 +356,14 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def setSource(buffer: ByteBuffer,
       releaseOld: Boolean): Unit = {
     if (buffer ne columnData) {
-      if ((columnData ne null) && releaseOld) {
+      if (releaseOld && (columnData ne null)) {
         allocator.release(columnData)
       }
       columnData = buffer
       columnBytes = allocator.baseObject(buffer)
       columnBeginPosition = allocator.baseOffset(buffer)
-      columnEndPosition = columnBeginPosition + buffer.limit()
     }
+    columnEndPosition = columnBeginPosition + buffer.limit()
   }
 
   protected final def clearSource(newSize: Int, releaseData: Boolean): Unit = {
@@ -387,7 +387,7 @@ trait ColumnEncoder extends ColumnEncoding {
     val limit = src.limit()
 
     if (position != srcOffset) src.position(srcOffset)
-    if (limit > endOffset) src.limit(endOffset)
+    if (limit != endOffset) src.limit(endOffset)
 
     dest.put(src)
 
@@ -713,7 +713,7 @@ trait ColumnEncoder extends ColumnEncoding {
       numWords: Int): Long
 
   protected final def releaseForReuse(newSize: Int): Unit = {
-    columnData.clear()
+    columnData.rewind()
     reuseUsedSize = newSize
   }
 }
