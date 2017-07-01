@@ -622,13 +622,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     snappySession.sqlUncached(sqlText)
 
   /**
-   * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
-   * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
-   * }}}
+    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
+    * {{{
+    *        snc.insert(tableName, dataDF.collect(): _*)
+    * }}}
    * @param tableName
    * @param rows
    * @return number of rows inserted
@@ -640,11 +637,9 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *        snc.insert(tableName, rows)
    * }}}
    *
    * @param tableName
@@ -658,11 +653,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *         snSession.put(tableName, dataDF.collect(): _*)
    * }}}
    * @param tableName
    * @param rows
@@ -714,11 +706,9 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *         snSession.put(tableName, rows)
    * }}}
    *
    * @param tableName

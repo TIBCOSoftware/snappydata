@@ -333,6 +333,14 @@ class SnappyParser(session: SnappySession)
     )
   }
 
+  final def parsedDataType: Rule1[DataType] = rule {
+    ws ~ dataType
+  }
+
+  final def parsedExpression: Rule1[Expression] = rule {
+    ws ~ namedExpression
+  }
+
   protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*

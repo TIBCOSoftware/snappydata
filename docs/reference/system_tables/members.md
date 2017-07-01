@@ -10,7 +10,7 @@ See <mark> TO BE CONFIRMED RowStore Link [Distributed System Membership Informat
 
 |Column Name|Type |Length |Nullable|Contents|
 | ------------ | ------------- | ------------ | ------------ | ------------- |
-|ID|VARCHAR|128|No|The unique ID of the member. This ID has the format: <br>`hostname(process_id)&lt;member_number&gt;:udp_port/tcp_port`<br>For example:<br>10.0.1.31(66878)&lt;v0&gt;:41715/63386|
+|ID|VARCHAR|128|No|The unique ID of the member. This ID has the format: <br>`hostname(process_id);member_number;:udp_port/tcp_port`<br>For example:<br>10.0.1.31(66878);v0;:41715/63386|
 |KIND  |VARCHAR   | 24 |No   | Specifies the type of SnappyData member process: <br> * datastore—A member that hosts data.<br> * peer—A member that does not host data.<br> * locator—Provides discovery services for a cluster.<br> Member types can also be qualified with additional keywords <br>  * normal—The member can communicate with other members in a cluster. <br> * loner—The member is standalone and cannot communicate with other members. Loners use no locators for discovery.<br> * admin—The member also acts as a JMX manager node. |
 |HOSTDATA  | BOOLEAN  | | Yes  |A value of ‘1’ indicates that this member is a data store and can host data. Otherwise, the member is a peer client with no hosted data. |	
 |ISELDER  | BOOLEAN  |  |No |	Is this the eldest member of the distributed system. Typically, this is the member who first joins the cluster.|

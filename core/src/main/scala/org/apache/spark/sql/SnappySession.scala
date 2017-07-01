@@ -1436,11 +1436,8 @@ class SnappySession(@transient private val sc: SparkContext,
 
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        snSession.insert(tableName, dataDF.collect(): _*)
    * }}}
    * If insert is on a column table then a row insert can trigger an overflow
    * to column store form row buffer. If the overflow fails due to some condition like
@@ -1462,11 +1459,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *         snSession.insert(tableName, rows)
    * }}}
    *
    * @param tableName table name for the insert operation
@@ -1486,11 +1481,8 @@ class SnappySession(@transient private val sc: SparkContext,
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        snSession.put(tableName, dataDF.collect(): _*)
    * }}}
    *
    * @param tableName table name for the put operation
@@ -1558,11 +1550,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *         snSession.put(tableName, rows)
    * }}}
    *
    * @param tableName table name for the put operation
