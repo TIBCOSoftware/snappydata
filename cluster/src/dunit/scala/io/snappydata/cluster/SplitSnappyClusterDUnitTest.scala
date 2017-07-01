@@ -20,23 +20,21 @@ import java.net.InetAddress
 import java.sql.SQLException
 import java.util.Properties
 
-import scala.language.postfixOps
-
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.{Property, SnappyTableStatsProviderService}
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
-import org.junit.Assert
-
+import io.snappydata.{Property, SnappyTableStatsProviderService}
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.store.SnappyJoinSuite
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.junit.Assert
+
+import scala.language.postfixOps
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -649,7 +647,8 @@ object SplitSnappyClusterDUnitTest
 
     val customerWithHeadersFile: String = getClass.getResource("/customer_with_headers.csv").getPath
     val customer_csv_DF = snc.read.option("header", "true")
-        .option("inferSchema", "true").csv(customerWithHeadersFile)
+      .option("inferSchema", "true")
+      .option("maxCharsPerColumn", "4096").csv(customerWithHeadersFile)
     val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
     customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER_2")
     val count2 = snc.sql("select * from customer_2").count()
