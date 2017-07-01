@@ -144,7 +144,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   def duplicate(): ByteBufferHashMap = {
     new ByteBufferHashMap(_capacity - 1, loadFactor, keySize, valueSize,
-      allocator, keyData.duplicate(), valueData.duplicate(), valueDataPosition)
+      allocator, keyData.duplicate(), valueData.duplicate(), valueData.baseOffset)
   }
 
   def reset(): Unit = {
@@ -157,8 +157,8 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   def release(): Unit = {
     keyData.release(allocator)
-    keyData = null
     valueData.release(allocator)
+    keyData = null
     valueData = null
   }
 
@@ -282,7 +282,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
         // will be more efficient
         buffer.capacity(), 0)
     }
-    buffer.clear()
+    buffer.rewind()
   }
 
   def release(allocator: BufferAllocator): Unit = {
