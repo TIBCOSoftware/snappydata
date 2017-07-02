@@ -119,7 +119,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
         // first compare the hash codes
         val mapKeyHash = mapKey.toInt
         // equalsSize will include check for 4 bytes of numBytes itself
-        if (hash == mapKeyHash && valueData.equalsSize((mapKey >>> 32).toInt - 4,
+        if (hash == mapKeyHash && valueData.equalsSize((mapKey >>> 32L).toInt - 4,
           key.getBaseObject, key.getBaseOffset, key.numBytes())) {
           return Platform.getInt(mapKeyObject, mapKeyOffset + 8)
         } else {
