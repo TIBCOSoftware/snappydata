@@ -86,8 +86,9 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
-  private val maxHeapStorageSize =
-    (maxHeapMemory * evictionFraction).toLong
+  private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
+
+  private val maxHeapExecutionSize = (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
@@ -343,6 +344,15 @@ class SnappyUnifiedMemoryManager private[memory](
           getMinOffHeapEviction(numBytes))
     }
 
+    // Stop execution pool to grow beyond eviction percentage of heap.
+    if (memoryMode eq MemoryMode.ON_HEAP) {
+      if (executionPool.poolSize + numBytes > maxHeapExecutionSize) {
+        logWarning(s"MemoryManager can't allocate $numBytes bytes as it " +
+            s"would exceed maxHeapExecutionSize = $maxHeapExecutionSize")
+        return 0L
+      }
+    }
+
     /**
       * Grow the execution pool by evicting cached blocks, thereby shrinking the storage pool.
       *
@@ -466,15 +476,6 @@ class SnappyUnifiedMemoryManager private[memory](
             getMinOffHeapEviction(numBytes))
       }
 
-      // Evict only limited amount for owners marked as non-evicting.
-      // TODO: this can be removed once these calls are moved to execution
-      // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
-      val doEvict = if (shouldEvict &&
-          objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
-        // don't use more than 30% of pool size for one partition result
-        numBytes < math.min(0.3 * storagePool.poolSize,
-          math.max(maxPartResultSize, storagePool.memoryFree))
-      } else shouldEvict
 
       if (numBytes > maxMemory) {
         // Fail fast if the block simply won't fit
@@ -486,7 +487,7 @@ class SnappyUnifiedMemoryManager private[memory](
       // don't borrow from execution for off-heap if shouldEvict=false since it
       // will try clearing references before calling with shouldEvict=true again
       val offHeap = memoryMode eq MemoryMode.OFF_HEAP
-      val offHeapNoEvict = !doEvict && offHeap
+      val offHeapNoEvict = !shouldEvict && offHeap
       if (numBytes > storagePool.memoryFree && !offHeapNoEvict) {
         // There is not enough free memory in the storage pool, so try to borrow free memory from
         // the execution pool.
@@ -518,7 +519,7 @@ class SnappyUnifiedMemoryManager private[memory](
           return false
         }
 
-        if (doEvict) {
+        if (shouldEvict) {
           // Sufficient memory could not be freed. Time to evict from SnappyData store.
           // val requiredBytes = numBytes - storagePool.memoryFree
           // Evict data a little more than required based on waiting tasks

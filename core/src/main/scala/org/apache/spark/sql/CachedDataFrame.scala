@@ -409,18 +409,21 @@ object CachedDataFrame
   override def apply(context: TaskContext,
       iter: Iterator[InternalRow]): PartitionResult = {
     var count = 0
-    val buffer = new Array[Byte](4 << 10) // 4K
+    val buffer = new Array[Byte](4 << 10)
+    // 4K
     // final output is written to this buffer
-    val output = new ByteBufferDataOutput(4 << 10,
-      DirectBufferAllocator.instance(),
-      null,
-      ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
+    var output: ByteBufferDataOutput = null
     // holds intermediate bytes which are compressed and flushed to output
-    val maxOutputBufferSize = 64 << 10 // 64K
+    val maxOutputBufferSize = 64 << 10
+    // 64K
     // can't enforce maxOutputBufferSize due to a row larger than that limit
     val bufferOutput = new Output(4 << 10, -1)
-    var outputRetained = false
     try {
+      output = new ByteBufferDataOutput(4 << 10,
+        DirectBufferAllocator.instance(),
+        null,
+        ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
+
       val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
       while (iter.hasNext) {
         val row = iter.next().asInstanceOf[UnsafeRow]
@@ -438,7 +441,6 @@ object CachedDataFrame
       flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
       if (count > 0) {
         val finalBuffer = output.getBufferRetain
-        outputRetained = true
         finalBuffer.flip
         val memSize = finalBuffer.limit().toLong
         // Ask UMM before getting the array to heap.
@@ -453,13 +455,13 @@ object CachedDataFrame
             override def spill(size: Long, trigger: MemoryConsumer): Long = {
               0L
             }
-            override def getMode: MemoryMode = MemoryMode.ON_HEAP
           }
           // TODO Remove the 4 times check once SNAP-1759 is fixed
           val required = 4L * memSize
           val granted = memoryConsumer.acquireMemory(4L * memSize)
           if (granted < required) {
-            throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
+            throw new LowMemoryException(s"Could not obtain ${memoryConsumer.getMode} " +
+                s"memory of size $required ",
               java.util.Collections.emptySet())
           }
         }
@@ -469,12 +471,17 @@ object CachedDataFrame
       } else {
         new PartitionResult(Array.empty, 0)
       }
+    } catch {
+      case oom: OutOfMemoryError if (oom.getMessage.contains("Direct buffer")) =>
+        throw new LowMemoryException(s"Could not allocate Direct buffer for" +
+            s" result data. Please check -XX:MaxDirectMemorySize while starting the server",
+          java.util.Collections.emptySet())
     } finally {
       // Not handling DirectByteBuffer case which gives a OOM exception.
       // Assumption is most of the big workload will use off-heap
       bufferOutput.clear()
       // one additional release for the explicit getBufferRetain
-      if (outputRetained) {
+      if (output ne null) {
         output.release()
       }
       output.release()
