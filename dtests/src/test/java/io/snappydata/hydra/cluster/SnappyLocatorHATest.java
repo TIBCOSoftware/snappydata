@@ -108,4 +108,26 @@ public class SnappyLocatorHATest extends SnappyTest {
     HydraTask_startSnappyCluster();
     Log.getLogWriter().info("snappy cluster restarted successfully...." + vmDir);
   }
+
+  public static void HydraTask_ddlOpAfterAllLocatorStop_ClusterRestart() {
+    HydraTask_stopSnappyLocator();
+    Log.getLogWriter().info("snappy locators stopped successfully...." );
+    Connection conn = null;
+    ResultSet rs = null;
+    String query = "create table tab1 (id int, name String, address String) USING  column " +
+        "OPTIONS(partition_by 'id')";
+    try {
+      conn = getServerConnection();
+      conn.createStatement().executeUpdate(query);
+      Log.getLogWriter().info("query executed successfully: " + query);
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+    }
+    HydraTask_stopSnappyCluster();
+    Log.getLogWriter().info("snappy cluster stopped successfully...." );
+    HydraTask_startSnappyCluster();
+    Log.getLogWriter().info("snappy cluster restarted successfully...." );
+  }
 }

@@ -99,6 +99,7 @@ public class SnappyStartUpTest extends SnappyTest {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith("pid") && key.contains("_ServerLauncher")) {
+        Log.getLogWriter().info("SS - pid entry in blackboard: " + key);
         String pid = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
         pidList.add(pid);
       }
