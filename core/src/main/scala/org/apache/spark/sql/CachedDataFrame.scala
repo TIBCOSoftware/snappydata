@@ -38,7 +38,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
+import org.apache.spark.memory.{MemoryConsumer, MemoryManagerCallback, MemoryMode}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
@@ -442,34 +442,27 @@ object CachedDataFrame
         finalBuffer.flip
         val memSize = finalBuffer.limit().toLong
         // Ask UMM before getting the array to heap.
-        // Taking unroll memory as this memory is cleaned up on task completion.
+        // Taking execution memory as this memory is cleaned up on task completion.
         // On connector mode also this should account to the overall memory usage.
         // We will ensure that sufficient memory is available by reserving
         // four times as Kryo serialization will expand its buffer accordingly
         // and transport layer can create another copy.
-
-        if (context != null) { // TODO why driver is calling this code with context null ?
-          if (!MemoryManagerCallback.memoryManager.
-              acquireStorageMemoryForObject(
-                objectName = BufferAllocator.STORE_DATA_FRAME_OUTPUT,
-                blockId = MemoryManagerCallback.cachedDFBlockId,
-                numBytes = 4L * memSize,
-                memoryMode = MemoryMode.ON_HEAP,
-                buffer = null,
-                shouldEvict = true)) {
+        if (context != null) {
+          // TODO why driver is calling this code with context null ?
+          val memoryConsumer = new MemoryConsumer(context.taskMemoryManager()) {
+            override def spill(size: Long, trigger: MemoryConsumer): Long = {
+              0L
+            }
+            override def getMode: MemoryMode = MemoryMode.ON_HEAP
+          }
+          // TODO Remove the 4 times check once SNAP-1759 is fixed
+          val required = 4L * memSize
+          val granted = memoryConsumer.acquireMemory(4L * memSize)
+          if (granted < required) {
             throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
               java.util.Collections.emptySet())
           }
-
-          context.addTaskCompletionListener { _ =>
-            MemoryManagerCallback.memoryManager.
-                releaseStorageMemoryForObject(
-                  objectName = BufferAllocator.STORE_DATA_FRAME_OUTPUT,
-                  numBytes = 4L * memSize,
-                  memoryMode = MemoryMode.ON_HEAP)
-          }
         }
-
 
         val bytes = ClientSharedUtils.toBytes(finalBuffer)
         new PartitionResult(bytes, count)
