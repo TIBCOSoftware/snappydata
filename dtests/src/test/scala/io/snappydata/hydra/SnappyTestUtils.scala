@@ -26,7 +26,7 @@ import scala.io.Source
 
 object SnappyTestUtils {
   def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-      tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+                              tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     sqlContext.sql("set spark.sql.crossJoin.enabled = true")
     assertQueryFullResultSet(snc, sqlString, queryNum, tableType, pw, sqlContext)
@@ -85,7 +85,7 @@ object SnappyTestUtils {
   }
 
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-      tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+                               tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     var snappyDF = snc.sql(sqlString)
     var sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"

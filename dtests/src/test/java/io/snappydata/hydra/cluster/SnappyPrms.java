@@ -16,12 +16,13 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.util.Vector;
+
 import hydra.BasePrms;
 import hydra.HydraVector;
 
-import java.util.Vector;
-
 public class SnappyPrms extends BasePrms {
+
   /**
    * Parameter used to get the user specified script names.
    * (VectosetValues of Strings) A list of values for script Names to execute.
@@ -302,6 +303,21 @@ public class SnappyPrms extends BasePrms {
   public static Long appPropsForJobServer;
 
   /**
+   * Parameter used to get the user list of pointLookUP queries to execute concurrently using
+   * jdbc clients.
+   * (VectorsetValues of Strings) A list of values for pointLookUp queries.
+   */
+  public static Long pointLookUpQueryList;
+
+  /**
+   * Parameter used to get the user list of analytical queries to execute concurrently using
+   * jdbc clients.
+   * (VectorsetValues of Strings) A list of values for analytical queries.
+   */
+  public static Long analyticalQueryList;
+
+
+  /**
    * Parameter used to get the leaderLauncher properties specified by user while launching
    * the lead node.
    * (VectosetValues of Strings) A space seperated list of values for leaderLauncher properties.
@@ -402,6 +418,27 @@ public class SnappyPrms extends BasePrms {
    * (int) number of shuffle partitions to be used in test
    */
   public static Long shufflePartitions;
+
+  /**
+   * (String) path for kafka directory
+   */
+  public static Long kafkaDir;
+
+  /**
+   * (String) snappy-poc jar path
+   */
+  public static Long snappyPocJarPath;
+
+  /**
+   * (String) log file name where the output of task(snappy-shell output/snappyJob/sparkApp) to
+   * be written
+   */
+  public static Long logFileName;
+
+  /**
+   * kafka topic name
+   */
+  public static Long kafkaTopic;
 
   /**
    * (String) Memory to be used for spark executor while executing spark-submit. Defaults to
@@ -527,6 +564,16 @@ public class SnappyPrms extends BasePrms {
   public static String getCommaSepAPPProps() {
     Long key = appPropsForJobServer;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+  public static Vector getPointLookUpQueryList() {
+    Long key = pointLookUpQueryList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getAnalyticalQueryList() {
+    Long key = analyticalQueryList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
   public static String getLeaderLauncherProps() {
@@ -724,6 +771,10 @@ public class SnappyPrms extends BasePrms {
     return executorMem;
   }
 
+  public static Vector getKafkaTopic() {
+    Long key = kafkaTopic;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+  }
 
   static {
     BasePrms.setValues(SnappyPrms.class);
@@ -732,4 +783,5 @@ public class SnappyPrms extends BasePrms {
   public static void main(String args[]) {
     BasePrms.dumpKeys();
   }
+
 }

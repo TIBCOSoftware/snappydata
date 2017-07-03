@@ -26,8 +26,8 @@ import io.snappydata.Constant
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, ParamLiteral, SortDirection, SpecificMutableRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, SortDirection, SpecificMutableRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -36,7 +36,6 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -230,8 +229,10 @@ abstract class BaseColumnFormatRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
+    // use case-insensitive resolution since partitioning columns during
+    // creation could be using the same as opposed to during insert
     val partitionExpressions = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
     new ColumnInsertExec(child, partitionColumns, partitionExpressions, this,

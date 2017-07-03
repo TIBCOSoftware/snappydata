@@ -398,13 +398,15 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
     val statsRowTerm = ctx.freshName("statsRow")
     ctx.addMutableState("MutableRow", statsRowTerm,
-      s"$statsRowTerm = new GenericMutableRow(${schema.flatten.length});")
+      s"$statsRowTerm = new GenericMutableRow(${schema.flatten.length} + 1);")
 
 
     val blocks = new ArrayBuffer[String]()
     val blockBuilder = new StringBuilder()
     val statsCodeWithIndex = statsCode.zipWithIndex
-    var ordinal = 0
+    var ordinal = 1
+
+    blockBuilder.append(s"$statsRowTerm.setInt(0, $batchSizeTerm);\n")
     for ((code, index) <- statsCodeWithIndex) {
       // We can't know how many bytecode will be generated, so use the length of source code
       // as metric. A method should not go beyond 8K, otherwise it will not be JITted, should
@@ -520,8 +522,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
     val (statsCode, statsSchema, stats) = columnStats.unzip3
-    val statsVars = stats.flatten
-    val statsExprs = statsSchema.flatten.zipWithIndex.map { case (a, i) =>
+    val statsVars = ExprCode("", "false", batchSizeTerm) +: stats.flatten
+    val statsExprs = (ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten)
+        .zipWithIndex.map { case (a, i) =>
       a.dataType match {
         // some types will always be null so avoid unnecessary generated code
         case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
@@ -653,8 +656,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
     val (statsCode, statsSchema, stats) = columnStats.unzip3
-    val statsVars = stats.flatten
-    val statsExprs = statsSchema.flatten.zipWithIndex.map { case (a, i) =>
+    val statsVars = ExprCode("", "false", batchSizeTerm) +: stats.flatten
+    val statsExprs = (ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten)
+        .zipWithIndex.map { case (a, i) =>
       a.dataType match {
         // some types will always be null so avoid unnecessary generated code
         case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
@@ -730,7 +734,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     var upperIsNull = "false"
     var canBeNull = false
     val nullCount = ctx.freshName("nullCount")
-    val count = ctx.freshName("count")
     val sqlType = Utils.getSQLDataType(field.dataType)
     val jt = ctx.javaType(sqlType)
     val boundsCode = sqlType match {
@@ -782,14 +785,12 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       s"""
          |$boundsCode
          |$nullsCode
-         |final int $nullCount = $encoder.nullCount();
-         |final int $count = $encoder.count();""".stripMargin
+         |final int $nullCount = $encoder.nullCount();""".stripMargin
 
     (code, ColumnStatsSchema(field.name, field.dataType).schema, Seq(
       ExprCode("", lowerIsNull, lower),
       ExprCode("", upperIsNull, upper),
-      ExprCode("", "false", nullCount),
-      ExprCode("", "false", count)))
+      ExprCode("", "false", nullCount)))
   }
 }
 

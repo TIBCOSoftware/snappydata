@@ -333,6 +333,14 @@ class SnappyParser(session: SnappySession)
     )
   }
 
+  final def parsedDataType: Rule1[DataType] = rule {
+    ws ~ dataType
+  }
+
+  final def parsedExpression: Rule1[Expression] = rule {
+    ws ~ namedExpression
+  }
+
   protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
@@ -846,9 +854,10 @@ class SnappyParser(session: SnappySession)
         dmlOperation | ctes | ddl | set | cache | uncache | desc))
   }
 
-  def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
+  final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
     session.clearQueryData()
     session.sessionState.clearExecutionData()
+    caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
     parseSQL(sqlText, parseRule)
   }
 

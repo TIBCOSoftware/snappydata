@@ -1,0 +1,35 @@
+io/snappydata/hydra/concurrency/nwPointLookUpConcTest.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=snappyClientP snappyClientPHosts=10 snappyClientPVMsPerHost=1 snappyClientPThreadsPerVM=1
+  E=snappyClientA snappyClientAHosts=10 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Column"
+  runPLQueries = true
+  runAnalyticalQueries = false
+  runMixedQueries = false
+
+io/snappydata/hydra/concurrency/nwAnalyticalConcTest.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=snappyClientP snappyClientPHosts=5 snappyClientPVMsPerHost=1 snappyClientPThreadsPerVM=1
+  E=snappyClientA snappyClientAHosts=5 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Column"
+  runPLQueries = false
+  runAnalyticalQueries = true
+  runMixedQueries = false
+
+io/snappydata/hydra/concurrency/nwMixedConcTest.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=snappyClientP snappyClientPHosts=20 snappyClientPVMsPerHost=1 snappyClientPThreadsPerVM=1
+  E=snappyClientA snappyClientAHosts=5 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Column"
+  runPLQueries = false
+  runAnalyticalQueries = false
+  runMixedQueries = true

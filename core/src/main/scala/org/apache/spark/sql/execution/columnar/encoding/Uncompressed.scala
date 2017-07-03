@@ -354,7 +354,6 @@ trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
       position = expand(position, size + 4)
     }
     updateStringStats(value)
-    updateCount()
     ColumnEncoding.writeUTF8String(columnBytes, position,
       value.getBaseObject, value.getBaseOffset, size)
   }

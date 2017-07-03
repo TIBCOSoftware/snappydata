@@ -423,4 +423,76 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
     (1 to 5).foreach(d => queryBooleanRows())
   }
+
+  test("1737: Failure to convert UTF8String error with index") {
+
+    snc.sql("CREATE TABLE IF NOT EXISTS app.ds_property (" +
+        "ds_name VARCHAR(250) NOT NULL," +
+        "ds_column VARCHAR(150) NOT NULL," +
+        "property VARCHAR(150) NOT NULL," +
+        "ds_class_id CHAR(1) NOT NULL," +
+        "string_value VARCHAR(1024)," +
+        "long_value BIGINT," +
+        "double_value DOUBLE," +
+        "updated_ts TIMESTAMP NOT NULL," +
+        "PRIMARY KEY (ds_name, ds_column, property))" +
+        "USING ROW OPTIONS (" +
+        "PARTITION_BY 'ds_name'," +
+        "buckets '2'," +
+        "PERSISTENT 'SYNCHRONOUS')")
+
+    snc.sql("CREATE INDEX app.ds_property_colprop_idx ON app.ds_property(ds_column, property)")
+    snc.sql("CREATE INDEX app.ds_property_property_idx ON app.ds_property(property)")
+    snc.sql("CREATE INDEX app.ds_property_dsnameprop_idx ON app.ds_property(ds_name, property)")
+
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + TestUtil.startNetServer())
+    // scalastyle:off println
+    println("network server started")
+    // scalastyle:on println
+
+    val stmt = conn.createStatement()
+    try {
+      stmt.execute(s"insert into app.ds_property " +
+          s"values ('a', 'b', 'c', 'x', 'd', 1, 1.1, '1995-12-30 11:12:30')")
+      stmt.execute(s"insert into app.ds_property values " +
+          s"('a', '-', 'FAMILY', 'C', 'FindDatasetTestFamily_1', 1, 0.1, '1995-12-30 11:12:30')")
+      stmt.execute(s"insert into app.ds_property values " +
+          s"('b', '-', 'DOUBLE_PROP', 'C', 'FindDatasetTestFamily_1', 1, 0.3," +
+          s"'1995-12-30 11:12:30')")
+
+
+      val query = s"SELECT p.ds_name,p.ds_column,p.property,p.ds_class_id,p.string_value," +
+          s" p.long_value,p.double_value FROM app.ds_property p " +
+          s" WHERE (p.ds_column = '-' AND p.property = 'FAMILY' AND p.string_value =" +
+          s" 'FindDatasetTestFamily_1') OR" +
+          s" (p.ds_column = '-' AND p.property = 'DOUBLE_PROP' AND p.double_value <= 0.2) OR " +
+          s" (p.ds_class_id = 'C' AND p.property = 'DOUBLE_PROP' AND p.double_value > 0.2) OR " +
+          s" (p.ds_class_id = 'C' AND p.property = 'DOUBLE_PROP' AND p.double_value < 0.2)"
+
+      snc.sql(query).show()
+      val count = snc.sql(query).count()
+      assert(count == 2)
+      // scalastyle:off println
+      println("snc: Number of rows read " + count)
+      // scalastyle:on println
+
+      val rs = stmt.executeQuery(query)
+      var index = 0
+      while (rs.next()) {
+        index += 1
+        // scalastyle:off println
+        println(s"$index: ${rs.getString(1)} ${rs.getString(2)} ${rs.getString(3)} " +
+            s"${rs.getString(4)} ${rs.getString(5)} ${rs.getLong(6)} ${rs.getBigDecimal(7)}")
+        // scalastyle:on println
+      }
+      // scalastyle:off println
+      println("jdbc: Number of rows read " + index)
+      // scalastyle:on println
+      assert(index == 2)
+      rs.close()
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
 }
