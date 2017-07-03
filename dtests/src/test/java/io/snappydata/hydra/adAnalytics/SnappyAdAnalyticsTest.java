@@ -181,7 +181,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         generatePropFile(myPropFile,"port=",Integer.toString(initialBrokerPort));
         initialBrokerPort = initialBrokerPort + 2;
         generatePropFile(myPropFile,"broker.id",Integer.toString(initialBrokerId++));
-        Log.getLogWriter().info("[Sonal] " + broker + " properties files is  " + myPropFile);
+        Log.getLogWriter().info(broker + " properties files is  " + myPropFile);
 
         command = "nohup " + script + " " + myPropFilePath + " > " + logFile + " &";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
