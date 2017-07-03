@@ -23,7 +23,7 @@ The Dashboard offers the following capabilities and benefits:
     | Status | Description |
 	|--------|--------|
 	|**Normal**|All nodes in the cluster are running|
-    |**Warning **|Some nodes in the cluster are stopped or unavailable|
+    |**Warning**|Some nodes in the cluster are stopped or unavailable|
 
 * **CPU Usage** </br>
    Displays the average CPU utilization of all the nodes present in the cluster.
