@@ -1176,7 +1176,7 @@ When [starting the locator and server](configuring_cluster/configuring_cluster.m
 
 * `-hostname-for-clients`: The public IP address of the locator or server. 
 
-* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-J-Dgemfirexd.hostname-for-clients=192.168.20.208` </br> 
+* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-hostname-for-clients=192.168.20.208` </br> 
 
 	!!! Note: 
     	By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.
