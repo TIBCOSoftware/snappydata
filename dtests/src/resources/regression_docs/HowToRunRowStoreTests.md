@@ -98,7 +98,7 @@ hydra.gemfirexd.FabricServerPrms-logLevel = fine;
 
 hydra.VmPrms-extraVMArgs += "-DDistributionManager.VERBOSE=true";
 hydra.VmPrms-extraVMArgs += "-Dgemfire.GetInitialImage.TRACE_GII_FINER=true";
-hydra.VmPrms-extraVMArgs += "-ea -Dgemfirexd.debug.true=QueryDistribution,TraceJars,TraceTranVerbose,TraceIndex,TraceFabricServiceBoot";
+hydra.VmPrms-extraVMArgs += "-ea -Dgemfirexd.debug.true=QueryDistribution,TraceJars,TraceTranVerbose,TraceIndex,TraceFabricServiceBoot,TraceExecution,TraceActivation,TraceTran";
 
 //to increase VM memory
 hydra.VmPrms-extraVMArgs += "-Xms1000m -Xmx1000m";
