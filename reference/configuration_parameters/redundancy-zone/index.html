@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/">How Tos</a>
         
     </li>
@@ -184,7 +206,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -388,14 +410,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -867,11 +889,11 @@
 <h2 id="description">Description</h2>
 <p>Defines this member's redundancy zone. Used to separate members into different groups for satisfying partitioned table redundancy. If this property is set, SnappyData does not put redundant copies of data in members with the same redundancy zone setting.</p>
 <p>For example, if you had redundancy set to 1, so you have one primary and one secondary copy of each data entry, you could split primary and secondary data copies between two machine racks by defining one redundancy zone for each rack. </p>
-<p>You set one redundancy zone in the <strong>conf/server</strong> file for all members that run on one rack:</p>
+<p>You set one redundancy zone in the <em>conf/server</em> file for all members that run on one rack:</p>
 <pre><code>-gemfire.redundancy-zone=rack1
 </code></pre>
 
-<p>You can also set another redundancy zone in the <strong>conf/server</strong> file for all members that run on another rack:</p>
+<p>You can also set another redundancy zone in the <em>conf/server</em> file for all members that run on another rack:</p>
 <pre><code>-gemfire.redundancy-zone=rack2
 </code></pre>
 

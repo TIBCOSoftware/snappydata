@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/">How Tos</a>
         
     </li>
@@ -195,7 +217,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -399,14 +421,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -987,14 +1009,14 @@
 </table>
 <p><a id="sql-properties"></a></p>
 <h2 id="sql-properties">SQL Properties</h2>
-<p>These properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.</p>
+<p>These properites can be set in the snappy SQL shell or using the configuration properties in the <em>conf/leads</em> file.</p>
 <p>For example: Set in the snappy SQL shell</p>
 <pre><code>snappy&gt; connect client 'localhost:1527';
 snappy&gt; set snappydata.column.batchSize=108080;
 </code></pre>
 
 <p>This will set the property for the snappy SQL shell's session.</p>
-<p>Set in the conf/leads file</p>
+<p>Set in the <em>conf/leads</em> file</p>
 <pre><code>$ cat conf/leads
 # This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080
@@ -1028,13 +1050,13 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 </table>
 <p><a id="sde-properties"></a></p>
 <h2 id="sde-properties">SDE Properties</h2>
-<p>These <a href="../../aqp/">SDE</a> properites can be set in the snappy SQL shell or using the configuration properties in the conf/leads file.</p>
+<p>These <a href="../../aqp/">SDE</a> properites can be set in the snappy SQL shell or using the configuration properties in the <em>conf/leads</em> file.</p>
 <p>For example: Set in the snappy SQL shell</p>
 <pre><code>snappy&gt; connect client 'localhost:1527';
 snappy&gt; set snappydata.flushReservoirThreshold=20000;
 </code></pre>
 
-<p>Set in the conf/leads file</p>
+<p>Set in the <em>conf/leads</em> file</p>
 <pre><code>$ cat conf/leads
 # This goes to the default directory 
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080 -spark.sql.aqp.error=0.5
@@ -1051,23 +1073,23 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tbody>
 <tr>
 <td>snappydata.flushReservoirThreshold</td>
-<td>Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.</td>
+<td>Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on baset table of size more than flushReservoirThreshold. Default value is 10,000.</br> This property must be set in the <em>conf/servers</em> and <em>conf/leads</em> file.</td>
 </tr>
 <tr>
 <td>spark.sql.aqp.numBootStrapTrials</td>
-<td>Number of bootstrap trials to do for calculating error bounds. Default value is 100.</td>
+<td>Number of bootstrap trials to do for calculating error bounds. Default value is 100. </br>This property must be set in the <em>conf/leads</em> file.</td>
 </tr>
 <tr>
 <td>spark.sql.aqp.error</td>
-<td>Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. Default value is 0.2}</td>
+<td>Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. Default value is 0.2. </br>This property can be set as connection property in the Snappy SQL shell.</td>
 </tr>
 <tr>
 <td>spark.sql.aqp.confidence</td>
-<td>Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. Default value is 0.95</td>
+<td>Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> Default value is 0.95. </br>This property can be set as connection property in the Snappy SQL shell</td>
 </tr>
 <tr>
 <td>sparksql.aqp.behavior</td>
-<td>The action to be taken if the error computed goes oustide the error tolerance limit. Default value is <code>DO_NOTHING</code></td>
+<td>The action to be taken if the error computed goes oustide the error tolerance limit. Default value is <code>DO_NOTHING</code>. </br>This property can be set as connection property in the Snappy SQL shell</td>
 </tr>
 </tbody>
 </table>

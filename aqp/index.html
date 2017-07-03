@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../howto/">How Tos</a>
         
     </li>
@@ -178,61 +200,21 @@
                 
                     <li><a class="toctree-l4" href="#how-does-it-work">How does it work?</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#key-concepts">Key Concepts</a></li>
+                    <li><a class="toctree-l4" href="#key-concepts">Key Concepts</a></li>
                 
-                    <li><a class="toctree-l4" href="#stratified-sampling">Stratified Sampling</a></li>
+                    <li><a class="toctree-l4" href="#working-with-stratified-samples">Working with Stratified Samples</a></li>
                 
-                    <li><a class="toctree-l4" href="#online-sampling">Online Sampling</a></li>
+                    <li><a class="toctree-l4" href="#running-queries">Running Queries</a></li>
                 
-                    <li><a class="toctree-l4" href="#sketching">Sketching</a></li>
+                    <li><a class="toctree-l4" href="#more-examples">More Examples</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#working-with-stratified-samples">Working with Stratified Samples</a></li>
+                    <li><a class="toctree-l4" href="#sample-selection">Sample Selection</a></li>
                 
-                    <li><a class="toctree-l4" href="#create-sample-tables">Create Sample Tables</a></li>
+                    <li><a class="toctree-l4" href="#high-level-accuracy-contracts-hac">High-level Accuracy Contracts (HAC)</a></li>
                 
-                    <li><a class="toctree-l4" href="#qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample Selection</a></li>
+                    <li><a class="toctree-l4" href="#sketching_1">Sketching</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#running-queries">Running Queries</a></li>
-                
-                    <li><a class="toctree-l4" href="#using-the-spark-dataframe-api">Using the Spark DataFrame API</a></li>
-                
-                    <li><a class="toctree-l4" href="#supporting-bi-tools-or-existing-apps">Supporting BI tools or existing Apps</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#more-examples">More Examples</a></li>
-                
-                    <li><a class="toctree-l4" href="#example-1">Example 1</a></li>
-                
-                    <li><a class="toctree-l4" href="#example-2">Example 2</a></li>
-                
-                    <li><a class="toctree-l4" href="#example-3">Example 3</a></li>
-                
-                    <li><a class="toctree-l4" href="#example-4">Example 4</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#sample-selection">Sample Selection</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#high-level-accuracy-contracts-hac">High-level Accuracy Contracts (HAC)</a></li>
-                
-                    <li><a class="toctree-l4" href="#behavior-clause">Behavior Clause</a></li>
-                
-                    <li><a class="toctree-l4" href="#error-functions">Error Functions</a></li>
-                
-                    <li><a class="toctree-l4" href="#reserved-keywords">Reserved Keywords</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#sketching_1">Sketching</a></li>
-                
-                    <li><a class="toctree-l4" href="#creating-topk-tables">Creating TopK tables</a></li>
-                
-                    <li><a class="toctree-l4" href="#approximate-topk-analytics-for-time-series-data">Approximate TopK analytics for time series data</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#using-sde">Using SDE</a></li>
+                    <li><a class="toctree-l4" href="#using-sde">Using SDE</a></li>
                 
             
             </ul>
@@ -249,7 +231,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -453,14 +435,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -903,7 +885,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="overview-of-synopsis-data-engine-sde">Overview of Synopsis Data Engine (SDE)</h2>
+                <h1 id="overview-of-synopsis-data-engine-sde">Overview of Synopsis Data Engine (SDE)</h1>
 <p>The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. </p>
 <p>For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering), while the engineer continues to slice and dice the data sets without any interruptions. </p>
 <p>When accessed using a visualization tool (Apache Zeppelin), users immediately get their almost-perfect answer to analytical queries within a couple of seconds, while the full answer can be computed in the background. Depending on the immediate answer, users can choose to cancel the full execution early, if they are either satisfied with the almost-perfect initial answer or if after viewing the initial results they are no longer interested in viewing the final results. This can lead to dramatically higher productivity and significantly less resource consumption in multi-tenant and concurrent workloads on shared clusters.</p>

@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/">How Tos</a>
         
     </li>
@@ -184,7 +206,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -388,14 +410,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -884,18 +906,18 @@
 <p>To start multiple locators in a cluster modify the following files: </p>
 <ul>
 <li>
-<p><strong>conf/locators</strong></p>
+<p><strong><em>conf/locators</em></strong></p>
 <pre><code>localhost -peer-discovery-address=localhost -peer-discovery-port=3241 -locators=localhost:3242
 localhost -peer-discovery-address=localhost -peer-discovery-port=3242 -locators=localhost:3241
 </code></pre>
 </li>
 <li>
-<p><strong>conf/servers</strong></p>
+<p><strong><em>conf/servers</em></strong></p>
 <pre><code>localhost -locators=localhost:3241,localhost:3242
 </code></pre>
 </li>
 <li>
-<p><strong>conf/leads</strong></p>
+<p><strong><em>conf/leads</em></strong></p>
 <pre><code>localhost -locators=localhost:3241,localhost:3242
 </code></pre>
 </li>

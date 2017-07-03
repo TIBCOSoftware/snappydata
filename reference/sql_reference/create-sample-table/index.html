@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/">How Tos</a>
         
     </li>
@@ -184,7 +206,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -399,14 +421,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -867,7 +889,7 @@
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
+    PERSISTENCE  ‘ASYNCHRONOUS | SYNCHRONOUS’,
     DISKSTORE 'diskstore-name', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time-to-live-in-seconds',
@@ -878,14 +900,14 @@
     [AS select_statement];
 </code></pre>
 
-<p><strong> Mode 2</strong></p>
+<p><strong>Mode 2</strong></p>
 <pre><code>CREATE SAMPLE TABLE table_name ON base_table_name
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-redundant-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS’,
+    PERSISTENCE  ‘ASYNCHRONOUS | SYNCHRONOUS’,
     DISKSTORE 'diskstore-name', //empty string maps to default diskstore
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time-to-live-in-seconds',
@@ -918,22 +940,22 @@ For sample tables, the overflow property is set to <strong>False</strong> by def
 <h2 id="examples">Examples:</h2>
 <h3 id="mode-1-example">Mode 1 Example</h3>
 <pre><code>snappy&gt;CREATE TABLE CUSTOMER_SAMPLE ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL)
-    USING COLUMN_SAMPLE OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
-    strataReservoirSize '50', baseTable 'CUSTOMER_BASE')
+      C_CUSTKEY     INTEGER NOT NULL,
+      C_NAME        VARCHAR(25) NOT NULL,
+      C_ADDRESS     VARCHAR(40) NOT NULL,
+      C_NATIONKEY   INTEGER NOT NULL,
+      C_PHONE       VARCHAR(15) NOT NULL,
+      C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+      C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+      C_COMMENT     VARCHAR(117) NOT NULL)
+      USING COLUMN_SAMPLE OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
+      strataReservoirSize '50', baseTable 'CUSTOMER_BASE');
 </code></pre>
 
 <h3 id="mode-2-example">Mode 2 Example</h3>
 <pre><code>snappy&gt;CREATE SAMPLE TABLE CUSTOMER_SAMPLE on CUSTOMER_BASE
-    OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
-    strataReservoirSize '50') AS (SELECT * FROM CUSTOMER_BASE);
+      OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
+      strataReservoirSize '50') AS (SELECT * FROM CUSTOMER_BASE);
 </code></pre>
 
 <div class="admonition note">

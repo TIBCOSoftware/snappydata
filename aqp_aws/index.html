@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../howto/">How Tos</a>
         
     </li>
@@ -185,46 +207,23 @@
                 
                     <li><a class="toctree-l4" href="#key-components">Key Components</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#quick-start-steps">Quick Start Steps</a></li>
+                    <li><a class="toctree-l4" href="#quick-start-steps">Quick Start Steps</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</a></li>
+                    <li><a class="toctree-l4" href="#setting-up-snappydata-cloud-cluster">Setting Up SnappyData Cloud Cluster</a></li>
                 
-                    <li><a class="toctree-l4" href="#deploying-snappydata-cloud-cluster-with-isight-cloudbuilder">Deploying SnappyData Cloud Cluster with iSight CloudBuilder</a></li>
+                    <li><a class="toctree-l4" href="#loading-data-from-aws-s3">Loading Data from AWS S3</a></li>
                 
-                    <li><a class="toctree-l4" href="#deploying-snappydata-cloud-cluster-on-aws-using-scripts">Deploying SnappyData Cloud Cluster on AWS using Scripts</a></li>
+                    <li><a class="toctree-l4" href="#using-apache-zeppelin">Using Apache Zeppelin</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#loading-data-from-aws-s3">Loading Data from AWS S3</a></li>
+                    <li><a class="toctree-l4" href="#using-the-interpreter">Using the Interpreter</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#using-apache-zeppelin">Using Apache Zeppelin</a></li>
+                    <li><a class="toctree-l4" href="#using-predefined-notebooks">Using Predefined Notebooks</a></li>
                 
-                    <li><a class="toctree-l4" href="#functioning-of-the-snappydata-interpreter-and-snappydata-cluster">Functioning of the SnappyData Interpreter and SnappyData Cluster</a></li>
+                    <li><a class="toctree-l4" href="#creating-notebooks-try-it-yourself">Creating Notebooks - Try it Yourself!</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#using-the-interpreter">Using the Interpreter</a></li>
+                    <li><a class="toctree-l4" href="#monitoring-the-snappydata-cloud-cluster">Monitoring the SnappyData Cloud Cluster</a></li>
                 
-                    <li><a class="toctree-l4" href="#sql-interpreter">SQL Interpreter</a></li>
-                
-                    <li><a class="toctree-l4" href="#scala-interpreter">Scala Interpreter</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#using-predefined-notebooks">Using Predefined Notebooks</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#creating-notebooks-try-it-yourself">Creating Notebooks - Try it Yourself!</a></li>
-                
-                    <li><a class="toctree-l4" href="#examples-of-queries-and-results">Examples of Queries and Results</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#monitoring-the-snappydata-cloud-cluster">Monitoring the SnappyData Cloud Cluster</a></li>
-                
-                    <li><a class="toctree-l4" href="#accessing-the-console">Accessing the Console</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#the-technology-powering-isight-cloud">The Technology Powering iSight Cloud</a></li>
+                    <li><a class="toctree-l4" href="#the-technology-powering-isight-cloud">The Technology Powering iSight Cloud</a></li>
                 
             
             </ul>
@@ -234,7 +233,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -438,14 +437,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -888,14 +887,14 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="overview">Overview</h2>
+                <h1 id="overview">Overview</h1>
 <p>iSight-Cloud is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine (<a href="../aqp/">SDE</a>), users interact with iSight-Cloud to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. </p>
 <p>iSight-Cloud uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. </p>
 <p>The service provides a web URL that spins up a cluster instance on AWS or users can download the iSight-Cloud EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
 With iSight-Cloud, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.</p>
 <p>In this document, the features provided by SnappyData for analyzing your data is described. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.</p>
 <p>Refer to the examples and guidelines provided in this document to help you create notebooks using which, you can execute SQL queries or data frame API to analyze your data.</p>
-<h3 id="key-components">Key Components</h3>
+<h2 id="key-components">Key Components</h2>
 <p>This section provides a brief description of the key terms used in this document. </p>
 <ul>
 <li>
@@ -1316,7 +1315,7 @@ It also displays data information for various tables created in the cluster on d
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../monitoring/monitoring/" class="btn btn-neutral float-right" title="Managing and Monitoring">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../monitoring/monitoring/" class="btn btn-neutral float-right" title="Monitoring - SnappyData Pulse">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../aqp/" class="btn btn-neutral" title="Synopsis Data Engine (SDE)"><span class="icon icon-circle-arrow-left"></span> Previous</a>

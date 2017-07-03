@@ -83,6 +83,28 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
     <li class="toctree-l1 current">
         <a class="current" href="./">How Tos</a>
         
@@ -225,7 +247,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -429,14 +451,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -954,7 +976,7 @@ Topics in this section refer to source code examples that are shipped with the p
 <h3 id="start-snappydata-cluster-on-a-single-machine">Start SnappyData Cluster on a Single Machine</h3>
 <p>If you have <a href="../install/#install-on-premise">downloaded and extracted</a> the SnappyData product distribution, navigate to the SnappyData product root directory.</p>
 <p><strong>Start the Cluster</strong>: Run the <code>sbin/snappy-start-all.sh</code> script to start SnappyData cluster on your single machine using default settings. This starts one lead node, one locator, and one data server.</p>
-<pre><code>$ sbin/snappy-start-all.sh
+<pre><code class="bash">$ sbin/snappy-start-all.sh
 </code></pre>
 
 <p>It may take 30 seconds or more to bootstrap the entire cluster on your local machine.</p>
@@ -977,7 +999,7 @@ SnappyData Leader pid: 9699 status: running
 </code></pre>
 
 <p><strong>Check Status</strong>: You can check the status of a running cluster using the following command:</p>
-<pre><code>$ sbin/snappy-status-all.sh
+<pre><code class="bash">$ sbin/snappy-status-all.sh
 SnappyData Locator pid: 9368 status: running
 SnappyData Server pid: 9519 status: running
   Distributed system now has 2 members.
@@ -1195,9 +1217,9 @@ First, define the table schema and then create the table using createTable API</
     ))
 
     // props1 map specifies the properties for the table to be created
-    // &quot;PERSISTENT&quot; flag indicates that the table data should be persisted to
+    // &quot;PERSISTENCE&quot; flag indicates that the table data should be persisted to
     // disk asynchronously
-    val props1 = Map(&quot;PERSISTENT&quot; -&gt; &quot;asynchronous&quot;)
+    val props1 = Map(&quot;PERSISTENCE&quot; -&gt; &quot;asynchronous&quot;)
     // create a row table using createTable API
     snSession.createTable(&quot;SUPPLIER&quot;, &quot;row&quot;, schema, props1)
 </code></pre>
@@ -1207,7 +1229,7 @@ The same table can be created using SQL as shown below:</p>
 <pre><code>    // First drop the table if it exists
     snSession.sql(&quot;DROP TABLE IF EXISTS SUPPLIER&quot;)
     // Create a row table using SQL
-    // &quot;PERSISTENT&quot; that the table data should be persisted to disk asynchronously
+    // &quot;PERSISTENCE&quot; that the table data should be persisted to disk asynchronously
     // For complete list of attributes refer the documentation
     snSession.sql(
       &quot;CREATE TABLE SUPPLIER ( &quot; +
@@ -1218,7 +1240,7 @@ The same table can be created using SQL as shown below:</p>
           &quot;S_PHONE STRING NOT NULL, &quot; +
           &quot;S_ACCTBAL DECIMAL(15, 2) NOT NULL, &quot; +
           &quot;S_COMMENT STRING NOT NULL &quot; +
-          &quot;) USING ROW OPTIONS (PERSISTENT 'asynchronous')&quot;)
+          &quot;) USING ROW OPTIONS (PERSISTENCE 'asynchronous')&quot;)
 </code></pre>
 
 <p>You can perform various operations such as inset data, mutate it (update/delete), select data from the table. All these operations can be done either through APIs or by using SQL queries.
@@ -1887,7 +1909,6 @@ This same table can be created by using createTable API. First create a schema a
 </div>
 </li>
 </ol>
-<p>Refer to the documentation for detailed information on <a href="../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>.  </p>
 <h3 id="connect-to-the-snappydata-cluster">Connect to the SnappyData cluster</h3>
 <p>Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:</p>
 <ul>
@@ -1898,20 +1919,20 @@ This same table can be created by using createTable API. First create a schema a
 </li>
 <li>
 <p>Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver.</br> 
- Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. 
- When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. </p>
+ Please refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>When prompted, select the SnappyData ODBC Driver from the driver's list and enter a Data Source name, SnappyData Server Host, Port, User Name and Password. </p>
 </li>
 </ul>
+<p>Refer to the documentation for detailed information on <a href="../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>.  </p>
 <p><a id="howto-external-client"></a></p>
 <h2 id="how-to-connect-to-the-cluster-from-external-clients">How to Connect to the Cluster from External Clients</h2>
 <p>You can also connect to the SnappyData cluster from a different network as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.</p>
-<p>When <a href="../configuring_cluster/configuring_cluster/">starting the locator and server</a> set the following properties in the <strong>conf/locators</strong> and <strong>conf/servers</strong> files:</p>
+<p>When <a href="../configuring_cluster/configuring_cluster/">starting the locator and server</a> set the following properties in the <em>conf/locators</em> and <em>conf/servers</em> files:</p>
 <ul>
 <li>
 <p><code>-hostname-for-clients</code>: The public IP address of the locator or server. </p>
 </li>
 <li>
-<p><code>-client-bind-address</code>: IP address of the locator or server. </br>For example, add <code>-J-Dgemfirexd.hostname-for-clients=192.168.20.208</code> </br> </p>
+<p><code>-client-bind-address</code>: IP address of the locator or server. </br>For example, add <code>-hostname-for-clients=192.168.20.208</code> </br> </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.</p>
@@ -1990,10 +2011,10 @@ This same table can be created by using createTable API. First create a schema a
 <p>Rename the <strong>zeppelin-site.xml.template</strong> file (located in zeppelin-&lt;<em>version_number</em>&gt;-bin-all/conf directory) to <strong>zeppelin-site.xml</strong>.</p>
 </li>
 <li>
-<p>Edit the <strong>zeppeline-site.xml</strong> file, and in the <code>zeppelin.interpreters</code> property, add the following interpreter class names: <code>org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter</code>.</p>
+<p>Edit the <strong>zeppelin-site.xml</strong> file, and in the <code>zeppelin.interpreters</code> property, add the following interpreter class names: <code>org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter</code>.</p>
 </li>
 <li>
-<p>Restart the Zeppelin daemon using the command: </br> <code>bin/zeppelin-daemon.sh start</code>.</p>
+<p>Start the Zeppelin daemon using the command: </br> <code>bin/zeppelin-daemon.sh start</code>.</p>
 </li>
 <li>
 <p>To ensure that the installation is successful, log into the Zeppelin UI (<strong>http://localhost:8080</strong>) from your web browser.</p>
@@ -2144,7 +2165,7 @@ This same table can be created by using createTable API. First create a schema a
         <a href="../architecture/" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../install/" class="btn btn-neutral" title="Download and Install"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../migration/migration-0.8-0.9/" class="btn btn-neutral" title="Migrating from Version 0.8 to Version 0.9"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -2176,7 +2197,7 @@ This same table can be created by using createTable API. First create a schema a
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../install/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../migration/migration-0.8-0.9/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../architecture/" style="color: #fcfcfc">Next &raquo;</a></span>

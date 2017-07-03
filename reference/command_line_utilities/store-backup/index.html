@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/">How Tos</a>
         
     </li>
@@ -184,7 +206,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -388,14 +410,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -507,7 +529,7 @@
                 <li class="toctree-l3"><a href="#backup-directory-structure-and-its-contents">Backup Directory Structure and Its Contents</a></li>
                 
             
-                <li class="toctree-l3"><a href="#restoring-an-online-backup">Restoring an Online Backup</a></li>
+                <li class="toctree-l3"><a href="#restoring-files">Restoring Files</a></li>
                 
             
             </ul>
@@ -1068,20 +1090,20 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
 </code></pre>
 
 <p><a id="restore_online_backup"></a></p>
-<h1 id="restoring-an-online-backup">Restoring an Online Backup</h1>
+<h1 id="restoring-files">Restoring Files</h1>
 <p>The restore script (restore.sh restore.bat) copies files back to their original locations. You can do this manually if you wish:</p>
 <ol>
 <li>
 <p>Restore your disk stores when your members are offline and the system is down.</p>
 </li>
 <li>
-<p>Read the restore scripts to see where they will place the files and make sure the destination locations are ready. The restore scripts refuse to copy over files with the same names.</p>
+<p>Read the restore scripts to see where they the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.</p>
 </li>
 <li>
 <p>Run the restore scripts. Run each script on the host where the backup originated.</p>
 </li>
 </ol>
-<p>The restore copies these back to their original location.</p>
+<p>The restore operation copies the files back to their original location.</p>
               
             </div>
           </div>

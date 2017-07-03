@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/">How Tos</a>
         
     </li>
@@ -164,23 +186,17 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#using-column-vs-row-table">Using Column vs Row Table</a></li>
+                <li class="toctree-l3"><a href="#overview">Overview</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-column-tables">Using Column Tables</a></li>
+                    <li><a class="toctree-l4" href="#using-column-vs-row-table">Using Column vs Row Table</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-row-tables">Using Row Tables</a></li>
+                    <li><a class="toctree-l4" href="#using-partitioned-vs-replicated-row-table">Using Partitioned vs Replicated Row Table</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#using-partitioned-vs-replicated-row-table">Using Partitioned vs Replicated Row Table</a></li>
+                    <li><a class="toctree-l4" href="#applying-partitioning-scheme">Applying Partitioning Scheme</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#applying-partitioning-scheme">Applying Partitioning Scheme</a></li>
+                    <li><a class="toctree-l4" href="#using-redundancy">Using Redundancy</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#using-redundancy">Using Redundancy</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#overflow-configuration">Overflow Configuration</a></li>
+                    <li><a class="toctree-l4" href="#overflow-configuration">Overflow Configuration</a></li>
                 
             
             </ul>
@@ -207,7 +223,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -411,14 +427,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -865,16 +881,26 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="using-column-vs-row-table">Using Column vs Row Table</h1>
+                <h1 id="overview">Overview</h1>
+<p>The following topics are covered in this section:</p>
+<ul>
+<li><a href="#column-row">Using Column vs Row Table</a></li>
+<li><a href="#partition-replicate">Using Partitioned vs Replicated Row Table</a></li>
+<li><a href="#partition-scheme">Applying Partitioning Scheme</a></li>
+<li><a href="#redundancy">Using Redundancy</a></li>
+<li><a href="#overflow">Overflow Configuration</a></li>
+</ul>
+<p><a id="column-row"></a></p>
+<h2 id="using-column-vs-row-table">Using Column vs Row Table</h2>
 <p>A columnar table data is stored in a sequence of columns, whereas, in a row table it stores table records in a sequence of rows.</p>
 <p><a id="column-table"></a></p>
-<h2 id="using-column-tables">Using Column Tables</h2>
+<h3 id="using-column-tables">Using Column Tables</h3>
 <p><strong>Analytical Queries</strong>: A column table has distinct advantages for OLAP queries and therefore large tables involved in such queries are recommended to be created as columnar tables. These tables are rarely mutated (deleted/updated).
 For a given query on a column table, only the required columns are read (since only the required subset columns are to be scanned), which gives a better scan performance. Thus, aggregation queries execute faster on a column table compared  to a  row table.</p>
 <p><strong>Compression of Data</strong>: Another advantage that the column table offers is it allows highly efficient compression of data which reduces the total storage footprint for large tables.</p>
 <p>Column tables are not suitable for OLTP scenarios. In this case, row tables are recommended.</p>
 <p><a id="row-table"></a></p>
-<h2 id="using-row-tables">Using Row Tables</h2>
+<h3 id="using-row-tables">Using Row Tables</h3>
 <p><strong>OLTP Queries</strong>: Row tables are designed to return the entire row efficiently and are suited for OLTP scenarios when the tables are required to be mutated frequently (when the table rows need to be updated/deleted based on some conditions). In these cases, row tables offer distinct advantages over the column tables.</p>
 <p><strong>Point queries</strong>: Row tables are also suitable for point queries (for example, queries that select only a few records based on certain where clause conditions). </p>
 <p><strong>Small Dimension Tables</strong>: Row tables are also suitable to create small dimension tables as these can be created as replicated tables (table data replicated on all data servers).</p>
@@ -884,12 +910,13 @@ For a given query on a column table, only the required columns are read (since o
 <p>In the current release of SnappyData, updates and deletes are not supported on column tables. This feature will be added in a future release.</p>
 </div>
 <p><a id="partition-replicate"></a></p>
-<h1 id="using-partitioned-vs-replicated-row-table">Using Partitioned vs Replicated Row Table</h1>
+<h2 id="using-partitioned-vs-replicated-row-table">Using Partitioned vs Replicated Row Table</h2>
 <p>In SnappyData, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas, dimension tables can be replicated.</p>
 <p>The SnappyData architecture encourages you to denormalize “dimension” tables into fact tables when possible, and then replicate remaining dimension tables to all datastores in the distributed system.</p>
 <p>Most databases follow the <a href="http://en.wikipedia.org/wiki/Star_schema">star schema</a> design pattern where large “fact” tables store key information about the events in a system or a business process. For example, a fact table would store rows for events like product sales or bank transactions. Each fact table generally has foreign key relationships to multiple “dimension” tables, which describe further aspects of each row in the fact table.</p>
 <p>When designing a database schema for SnappyData, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.</p>
-<h1 id="applying-partitioning-scheme">Applying Partitioning Scheme</h1>
+<p><a id="partition-scheme"></a></p>
+<h2 id="applying-partitioning-scheme">Applying Partitioning Scheme</h2>
 <p><a id="collocated-joins"></a>
 <strong>Collocated Joins</strong></br>
 Collocating frequently joined partitioned tables is the best practice to improve the performance of join queries. When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's  local data. </p>
@@ -906,12 +933,12 @@ For more information on BUCKETS, refer to <a href="../capacity_planning/#buckets
 SnappyData partition is mainly for distributed and collocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query are executed concurrently.</br>
 If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.</p>
 <p><a id="redundancy"></a></p>
-<h1 id="using-redundancy">Using Redundancy</h1>
+<h2 id="using-redundancy">Using Redundancy</h2>
 <p>REDUNDANCY clause of <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. </p>
 <p>A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.</p>
 <p>For an example of the REDUNDANCY clause refer to <a href="../../programming_guide/#tables-in-snappydata">Tables in SnappyData</a>.</p>
 <p><a id="overflow"></a></p>
-<h1 id="overflow-configuration">Overflow Configuration</h1>
+<h2 id="overflow-configuration">Overflow Configuration</h2>
 <p>In SnappyData, column tables by default overflow to disk.  For row tables, the use EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria.  </p>
 <p>This allows table data to be either evicted or destroyed based on the current memory consumption of the server. Use the <code>OVERFLOW</code> clause to specify the action to be taken upon the eviction event. </p>
 <p>For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.</p>

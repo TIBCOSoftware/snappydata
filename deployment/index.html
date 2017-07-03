@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../howto/">How Tos</a>
         
     </li>
@@ -197,7 +219,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -401,14 +423,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -887,7 +909,7 @@
 </li>
 </ul>
 <p><img alt="Local Mode" src="../Images/SnappyLocalMode.png" /></p>
-<p><strong>Example</strong>: <strong>Using the Local mode for developing SnappyData programs</strong></p>
+<p><strong>Example: Using the Local mode for developing SnappyData programs</strong></p>
 <p>You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:</p>
 <p><strong>Example: Maven dependency</strong></p>
 <pre><code>&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 --&gt;
@@ -989,13 +1011,14 @@ Spark executors are dynamically launched when the first Spark Job arrives.</p>
 <p>Optimized column batch inserts like in the Embedded mode with job routing to same machines as data stores if possible.</p>
 </li>
 </ul>
-<p><strong>Example: Launch a Spark local mode cluster and uses Smart Connector to access SnappyData cluster</strong></p>
+<p><strong>Example: Launch a Spark local mode cluster and use Smart Connector to access SnappyData cluster</strong></p>
 <p><strong>Step 1: Start the SnappyData cluster</strong>:
 You can either start SnappyData members using the <code>_snappy_start_all_</code> script or you can start them individually.</p>
 <pre><code class="bash"># start members using the ssh scripts
 $ sbin/snappy-start-all.sh
 </code></pre>
 
+<p>OR</p>
 <pre><code># start members individually
 $ bin/snappy locator start  -dir=/node-a/locator1
 $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
@@ -1012,7 +1035,7 @@ bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 <p class="admonition-title">Note</p>
 <ul>
 <li>
-<p>The <code>spark.snappydata.connection</code> property points to the locator of a running SnappyData cluster. Its value is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527).</p>
+<p>The <code>spark.snappydata.connection</code> property points to the locator of a running SnappyData cluster. The value of this property is a combination of locator host and JDBC client port on which the locator listens for connections (default is 1527).</p>
 </li>
 <li>
 <p>In the Smart Connector mode, all <code>snappydata.*</code> SQL configuration properties should be prefixed with <code>spark</code>. For example, <code>spark.snappydata.column.batchSize</code>.</p>

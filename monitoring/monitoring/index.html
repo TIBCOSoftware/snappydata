@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Managing and Monitoring - SnappyData Documentation</title>
+  <title>Monitoring - SnappyData Pulse - SnappyData Documentation</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -29,7 +29,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Managing and Monitoring";
+    var mkdocs_page_name = "Monitoring - SnappyData Pulse";
     var mkdocs_page_input_path = "monitoring/monitoring.md";
     var mkdocs_page_url = "/monitoring/monitoring/";
   </script>
@@ -80,6 +80,28 @@
         <a class="" href="../../install/">Download and Install</a>
         
     </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -184,11 +206,11 @@
           
             <li>
     <li class="toctree-l1 current">
-        <a class="current" href="./">Managing and Monitoring</a>
+        <a class="current" href="./">Monitoring - SnappyData Pulse</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#overview">Overview</a></li>
+                <li class="toctree-l3"><a href="#snappydata-pulse">SnappyData Pulse</a></li>
                 
                     <li><a class="toctree-l4" href="#the-dashboard">The Dashboard</a></li>
                 
@@ -397,14 +419,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -831,7 +853,7 @@
     
       
     
-    <li>Managing and Monitoring</li>
+    <li>Monitoring - SnappyData Pulse</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -847,14 +869,16 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="overview">Overview</h1>
+                <h1 id="snappydata-pulse">SnappyData Pulse</h1>
 <p>SnappyData Pulse is a monitoring system that gives you a high-level overview of the status and performance of the cluster. It provides a simple widget based view which helps you easily navigate and monitor your cluster.</br></p>
 <p>To access the SnappyData Pulse, start your cluster and open http:<code>&lt;leadhost&gt;</code>:5050/dashboard/ in your web browser. </br>
 <code>&lt;leadhost&gt;</code> is the hostname or IP of the lead node in your cluster.</p>
 <p>The Dashboard also displays the <strong>Last Updated Date</strong> and <strong>Time of statistics</strong> on the top-left side of the page.</p>
 <h2 id="the-dashboard">The Dashboard</h2>
-<p>SnappyData Dashboard offers the following capabilities and benefits:</p>
-<h3 id="clusters-statistics">Clusters Statistics</h3>
+<p>The Dashboard offers the following capabilities and benefits:</p>
+<p><img alt="Dashboard" src="../../Images/monitoring_topnav.png" /></p>
+<h3 id="cluster-statistics">Cluster Statistics</h3>
+<p><img alt="Cluster" src="../../Images/monitoring_cluster.png" /></p>
 <ul>
 <li>
 <p><strong>Cluster Status</strong></br>
@@ -872,7 +896,7 @@
 <td>All nodes in the cluster are running</td>
 </tr>
 <tr>
-<td><strong>Warning </strong></td>
+<td><strong>Warning</strong></td>
 <td>Some nodes in the cluster are stopped or unavailable</td>
 </tr>
 </tbody>
@@ -891,14 +915,15 @@
    Displays the collective JVM Heap usage by all nodes in the cluster.</p>
 </li>
 </ul>
-<h3 id="members-statistics">Members Statistics</h3>
+<h3 id="member-statistics">Member Statistics</h3>
+<p><img alt="Dashboard" src="../../Images/monitoring_member.png" /></p>
 <ul>
 <li>
 <p><strong>Members Count</strong></br>
    Displays the total number of members (leads, locators and data servers) that exist in the cluster. The tooltip displays the count for each member.</p>
 </li>
 <li>
-<p><strong>Members status</strong></br>
+<p><strong>Members Status</strong></br>
    Displays the status of the members, which can be either Running or Stopped.</p>
 </li>
 <li>
@@ -928,7 +953,8 @@
    Displays the members total off-heap memory and used off-heap memory.</br> You can also view the member's off-heap storage and off-heap execution memory and utilizations by clicking on the arrow next to the member name.</p>
 </li>
 </ul>
-<h3 id="tables-statistics">Tables Statistics</h3>
+<h3 id="table-statistics">Table Statistics</h3>
+<p><img alt="Dashboard" src="../../Images/monitoring_table.png" /></p>
 <ul>
 <li>
 <p><strong>Tables Count</strong></br>

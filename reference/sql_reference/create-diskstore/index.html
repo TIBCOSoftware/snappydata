@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/">How Tos</a>
         
     </li>
@@ -184,7 +206,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -399,14 +421,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -919,22 +941,22 @@
 </code></pre>
 
 <p>This example configures disk store parameters and specifies a storage directory:</p>
-<pre><code class="pre">snappy&gt; CREATE DISKSTORE STORE1 
-    MAXLOGSIZE 1024 
-    AUTOCOMPACT TRUE
-    ALLOWFORCECOMPACTION  FALSE 
-    COMPACTIONTHRESHOLD  80
-    TIMEINTERVAL  223344
-    WRITEBUFFERSIZE 19292393
-    QUEUESIZE 17374
-    ('dir1' 10240);
+<pre><code class="pre">snappy&gt; CREATE DISKSTORE STORE1
+      MAXLOGSIZE 1024 
+      AUTOCOMPACT TRUE
+      ALLOWFORCECOMPACTION  FALSE 
+      COMPACTIONTHRESHOLD  80
+      TIMEINTERVAL  223344
+      WRITEBUFFERSIZE 19292393
+      QUEUESIZE 17374
+      ('dir1' 10240);
 </code></pre>
 
 <p>This example specifies multiple storage directories and directory sizes for oplog files:</p>
 <pre><code class="pre">snappy&gt; CREATE DISKSTORE STORE1 
-    WRITEBUFFERSIZE 19292393
-    QUEUESIZE 17374
-    ('dir1' 456 , 'dir2', 'dir3' 532 );
+      WRITEBUFFERSIZE 19292393
+      QUEUESIZE 17374
+      ('dir1' 456 , 'dir2', 'dir3' 532 );
 </code></pre>
               
             </div>

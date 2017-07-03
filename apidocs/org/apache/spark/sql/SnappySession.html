@@ -1350,11 +1350,8 @@ common Scala objects into <a href="package.html#DataFrame=org.apache.spark.sql.D
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-A user can insert a DataFrame using foreachPartition...</p><div class="fullcomment"><div class="comment cmt"><p>Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-A user can insert a DataFrame using foreachPartition...</p><pre>someDataFrame.foreachPartition (x <span class="kw">=&gt;</span> snappyContext.insert
-   (<span class="lit">"MyTable"</span>, x.toSeq)
-)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>table name for the insert operation</p></dd><dt class="param">rows</dt><dd class="cmt"><p>list of rows to be inserted into the table</p></dd><dt>returns</dt><dd class="cmt"><p>number of rows inserted</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><div class="fullcomment"><div class="comment cmt"><p>Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><pre>java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+ snSession.insert(tableName, rows)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>table name for the insert operation</p></dd><dt class="param">rows</dt><dd class="cmt"><p>list of rows to be inserted into the table</p></dd><dt>returns</dt><dd class="cmt"><p>number of rows inserted</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -1374,11 +1371,7 @@ A user can insert a DataFrame using foreachPartition...</p><pre>someDataFrame.fo
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-A user can insert a DataFrame using foreachPartition...</p><div class="fullcomment"><div class="comment cmt"><p>Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-A user can insert a DataFrame using foreachPartition...</p><pre>someDataFrame.foreachPartition (x <span class="kw">=&gt;</span> snappyContext.insert
-   (<span class="lit">"MyTable"</span>, x.toSeq)
-)</pre><p>If insert is on a column table then a row insert can trigger an overflow
+      <p class="shortcomment cmt">Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><div class="fullcomment"><div class="comment cmt"><p>Insert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><pre>snSession.insert(tableName, dataDF.collect(): _*)</pre><p>If insert is on a column table then a row insert can trigger an overflow
 to column store form row buffer. If the overflow fails due to some condition like
 low memory , then the overflow fails and exception is thrown,
 but row buffer values are kept as it is. Any user level counter of number of rows inserted
@@ -1810,11 +1803,8 @@ It is only used by PySpark.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-upsert a DataFrame using foreachPartition...</p><div class="fullcomment"><div class="comment cmt"><p>Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-upsert a DataFrame using foreachPartition...</p><pre>someDataFrame.foreachPartition (x <span class="kw">=&gt;</span> snappyContext.put
-   (<span class="lit">"MyTable"</span>, x.toSeq)
-)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>table name for the put operation</p></dd><dt class="param">rows</dt><dd class="cmt"><p>list of rows to be put on the table</p></dd><dt>returns</dt><dd class="cmt"><p>number of rows successfully put</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><div class="fullcomment"><div class="comment cmt"><p>Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><pre>java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+ snSession.put(tableName, rows)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>table name for the put operation</p></dd><dt class="param">rows</dt><dd class="cmt"><p>list of rows to be put on the table</p></dd><dt>returns</dt><dd class="cmt"><p>number of rows successfully put</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
               
         </dd></dl></div>
@@ -1834,11 +1824,7 @@ upsert a DataFrame using foreachPartition...</p><pre>someDataFrame.foreachPartit
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-upsert a DataFrame using foreachPartition...</p><div class="fullcomment"><div class="comment cmt"><p>Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table
-upsert a DataFrame using foreachPartition...</p><pre>someDataFrame.foreachPartition (x <span class="kw">=&gt;</span> snappyContext.put
-   (<span class="lit">"MyTable"</span>, x.toSeq)
-)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>table name for the put operation</p></dd><dt class="param">rows</dt><dd class="cmt"><p>list of rows to be put on the table</p></dd><dt>returns</dt><dd class="cmt"><p>number of rows successfully put</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+      <p class="shortcomment cmt">Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><div class="fullcomment"><div class="comment cmt"><p>Upsert one or more <a href="Row.html" class="extype" name="org.apache.spark.sql.Row">org.apache.spark.sql.Row</a> into an existing table</p><pre>snSession.put(tableName, dataDF.collect(): _*)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>table name for the put operation</p></dd><dt class="param">rows</dt><dd class="cmt"><p>list of rows to be put on the table</p></dd><dt>returns</dt><dd class="cmt"><p>number of rows successfully put</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>

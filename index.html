@@ -69,9 +69,11 @@
             
                 <li class="toctree-l3"><a href="#introduction">Introduction</a></li>
                 
-                    <li><a class="toctree-l4" href="#the-challenge-with-spark-and-remote-data-sources">The Challenge with Spark and Remote Data Sources</a></li>
+            
+                <li class="toctree-l3"><a href="#the-challenge-with-spark-and-remote-data-sources">The Challenge with Spark and Remote Data Sources</a></li>
                 
-                    <li><a class="toctree-l4" href="#the-snappydata-approach">The SnappyData Approach</a></li>
+            
+                <li class="toctree-l3"><a href="#the-snappydata-approach">The SnappyData Approach</a></li>
                 
             
                 <li class="toctree-l3"><a href="#key-features">Key Features</a></li>
@@ -100,6 +102,28 @@
         <a class="" href="install/">Download and Install</a>
         
     </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -204,7 +228,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -408,14 +432,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -860,10 +884,10 @@
               
                 <h2 id="introduction">Introduction</h2>
 <p>SnappyData fuses Apache Spark with an in-memory database to deliver a data engine capable of processing streams, transactions and interactive analytics in a single cluster.</p>
-<h3 id="the-challenge-with-spark-and-remote-data-sources">The Challenge with Spark and Remote Data Sources</h3>
+<h2 id="the-challenge-with-spark-and-remote-data-sources">The Challenge with Spark and Remote Data Sources</h2>
 <p>Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and can access disparate data sources in a highly parallelized manner for its distributed computations. Typically, data is fetched lazily as a result of SQL query or a Dataset (RDD) getting materialized. This can be quite inefficient and expensive if the data set has to be repeatedly processed. Caching within Spark is immutable and still requires the application to periodically refresh the data set, let alone having to bear the burden of duplicating the dataset. </p>
 <p>Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance. For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. Caching within Spark is immutable and results in stale insight.</p>
-<h3 id="the-snappydata-approach">The SnappyData Approach</h3>
+<h2 id="the-snappydata-approach">The SnappyData Approach</h2>
 <p>At SnappyData, a very different approach is taken. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark. All query engine operators are more optimized through better vectorization and code generation. The net effect is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.</p>
 <p>Essentially, Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries.</p>
 <p><img alt="SnappyData Architecture" src="./Images/SnappyArchitecture.png" /></p>
@@ -1013,5 +1037,5 @@ While Spark deserves much of the credit for being the first of its kind to offer
 
 <!--
 MkDocs version : 0.15.3
-Build Date UTC : 2017-06-19 13:52:44.556591
+Build Date UTC : 2017-07-03 12:35:05.672518
 -->

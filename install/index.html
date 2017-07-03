@@ -97,6 +97,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../howto/">How Tos</a>
         
     </li>
@@ -197,7 +219,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -401,14 +423,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -867,18 +889,17 @@
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the <strong>/etc/security/limits.conf</strong> file. </br>A minimum of <strong>8192</strong> is recommended for open file descriptors limit and <strong>&gt;128K</strong> is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:</p>
-<pre><code>```
-snappydata          hard    nofile      81920
+</div>
+<pre><code>snappydata          hard    nofile      81920
 snappydata          soft    nofile      8192
 snappydata          hard    nproc       unlimited
 snappydata          soft    nproc       524288
 snappydata          hard    sigpending  unlimited
 snappydata          soft    sigpending  524288
-
-```
 </code></pre>
+
 <p>Here <code>snappydata</code> is the user name under which the SnappyData processes are started. </p>
-</div>
+<p><a id="install-on-premise"></a></p>
 <h2 id="install-on-premise">Install On-Premise</h2>
 <p>SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.</p>
 <h3 id="prerequisites">Prerequisites</h3>
@@ -892,7 +913,7 @@ snappydata          soft    sigpending  524288
 <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.zip">(zip)</a></p>
 </li>
 <li>
-<p><strong>SnappyData 0.9 (hadoop provided) download link</strong> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.zip">(zip)</a></p>
+<p><strong>SnappyData 0.9 (user-provided Hadoop) download link</strong> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.tar.gz">(tar.gz)</a> <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.zip">(zip)</a></p>
 </li>
 </ul>
 <p><a id="singlehost"></a></p>
@@ -977,6 +998,7 @@ $ bin/snappy server stop -dir=/node-b/server1
 $ bin/snappy leader stop -dir=/node-c/lead1top
 </code></pre>
 
+<p><a id="setting-up-cluster-on-amazon-web-services-aws"></a></p>
 <h2 id="setting-up-cluster-on-amazon-web-services-aws">Setting up Cluster on Amazon Web Services (AWS)</h2>
 <h3 id="using-aws-management-console">Using AWS Management Console</h3>
 <p>You can launch a SnappyData cluster on Amazon EC2 instance(s) using AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html">AWS documentation</a>.</p>
@@ -1276,6 +1298,7 @@ Options:
 <p>Support for option --user is incomplete</p>
 </li>
 </ul>
+<p><a id="building-from-source"></a></p>
 <h2 id="building-from-source">Building from Source</h2>
 <p>Building SnappyData requires JDK 8 installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>).</p>
 <p>Quickstart to build all components of SnappyData:</p>
@@ -1357,7 +1380,7 @@ Options:
                            and also full SnappyData store testsuite
 </code></pre>
 
-<p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em>build-artifacts/&lt;os&gt;</em> where <em>&lt;os&gt;</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
+<p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em>build-artifacts/;os;</em> where <em>;os;</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
 <p>The usual Gradle test run targets (<em>test</em>, <em>check</em>) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (<em>scalaTest</em>) while the <em>check</em> target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <em>--tests</em> option:</p>
 <pre><code class="sh">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
 &gt; ./gradlew core:scalaTest \
@@ -1434,7 +1457,7 @@ Options:
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../howto/" class="btn btn-neutral float-right" title="How Tos">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../migration/migration/" class="btn btn-neutral float-right" title="Migration Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../quickstart/" class="btn btn-neutral" title="Getting Started"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -1472,7 +1495,7 @@ Options:
         <span><a href="../quickstart/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../howto/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../migration/migration/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

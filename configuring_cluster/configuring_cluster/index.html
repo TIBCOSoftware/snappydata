@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/">How Tos</a>
         
     </li>
@@ -135,7 +157,7 @@
                 
                     <li><a class="toctree-l4" href="#per-component-configuration">Per Component Configuration</a></li>
                 
-                    <li><a class="toctree-l4" href="#snappy-command-line-utility">Snappy Command Line Utility</a></li>
+                    <li><a class="toctree-l4" href="#snappydata-command-line-utility">SnappyData Command Line Utility</a></li>
                 
                     <li><a class="toctree-l4" href="#logging">Logging</a></li>
                 
@@ -218,7 +240,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -422,14 +444,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -937,7 +959,7 @@ The list must include all locators in use, and must be configured consistently f
 <p>Refer to the <a href="../property_description/">SnappyData properties</a> for the list of SnappyData properties for Locators, Leads and Servers.</p>
 <p><a id="hdfs"></a></p>
 <h1 id="hdfs-with-snappydata-store">HDFS with SnappyData Store</h1>
-<p>If using SnappyData store persistence to Hadoop as documented <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/disk_storage/persist-hdfs.html">here</a>, then add the <a href="http://search.maven.org/#artifactdetails|org.apache.hbase|hbase|0.94.27|jar">hbase jar</a> explicitly to CLASSPATH. The jar is now packed in the product tree, so that can be used or download from Apache Maven. Then add to conf/spark-env.sh:</p>
+<p>If using SnappyData store persistence to Hadoop as documented <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/disk_storage/persist-hdfs.html">here</a>, then add the <a href="http://search.maven.org/#artifactdetails|org.apache.hbase|hbase|0.94.27|jar">hbase jar</a> explicitly to CLASSPATH. The jar is now packed in the product tree, so that can be used or download from Apache Maven. Then add to <em>conf/spark-env.sh</em>:</p>
 <p><code>export SPARK_DIST_CLASSPATH=&lt;/path/to/&gt;hbase-0.94.27.jar</code></p>
 <p>Substitute the actual path for <code>&lt;/path/to/&gt;</code> above</p>
 <p><a id="multi-host"></a></p>
@@ -985,18 +1007,18 @@ This allows you to provide Hadoop at runtime.</p>
 
 <p><a id="per-component"></a></p>
 <h2 id="per-component-configuration">Per Component Configuration</h2>
-<p>Most of the time, components would be sharing the same properties. For example, you would want all servers to start with 4096m while leads to start with 2048m. You can configure these by specifying LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, LEAD_STARTUP_OPTIONS environment variables in conf/snappy-env.sh. </p>
+<p>Most of the time, components would be sharing the same properties. For example, you would want all servers to start with 4096m while leads to start with 2048m. You can configure these by specifying LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, LEAD_STARTUP_OPTIONS environment variables in <em>conf/snappy-env.sh</em>. </p>
 <pre><code class="bash">$ cat conf/snappy-env.sh
 SERVER_STARTUP_OPTIONS=&quot;-heap-size=4096m&quot;
 LEAD_STARTUP_OPTIONS=&quot;-heap-size=2048m&quot;
 </code></pre>
 
 <p><a id="command-line"></a></p>
-<h2 id="snappy-command-line-utility">Snappy Command Line Utility</h2>
+<h2 id="snappydata-command-line-utility">SnappyData Command Line Utility</h2>
 <p>Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using the command line. </p>
 <pre><code class="bash">$ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
+$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334]
+$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334]
 
 $ bin/snappy locator stop -dir=/node-a/locator1
 $ bin/snappy server stop -dir=/node-b/server1
@@ -1007,12 +1029,16 @@ $ bin/snappy leader stop -dir=/node-c/lead1
 <p><a id="logging"></a></p>
 <h2 id="logging">Logging</h2>
 <p>Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property <em>-log-file</em> as the path of the directory. </br>
-The logging levels can be modified by adding a conf/log4j.properties file in the product directory. </p>
+The logging levels can be modified by adding a <em>conf/log4j.properties</em> file in the product directory. </p>
 <pre><code class="bash">$ cat conf/log4j.properties 
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 </code></pre>
 
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a set of applicable class names and default values see the file <strong>conf/log4j.properties.template</strong>, which can be used as a starting point. Consult the <a href="http://logging.apache.org/log4j/">log4j 1.2.x documentation</a> for more details on the configuration file.</p>
+</div>
 <p><a id="ssh"></a></p>
 <h2 id="configuring-ssh-login-without-password">Configuring SSH Login without Password</h2>
 <p>By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.
@@ -1039,8 +1065,8 @@ This setting needs to be modified to allow you to login to the remote host throu
 <p><a id="ssl"></a></p>
 <h2 id="ssl-setup-for-client-server">SSL Setup for Client-Server</h2>
 <p>SnappyData store now has support for Thrift protocol that provides functionality equivalent to JDBC/ODBC protocols and can be used to access the store from other languages that are not yet supported directly by SnappyData. In the command-line, SnappyData locators and servers accept the <code>-thrift-server-address</code> and -<code>thrift-server-port</code> arguments to start a Thrift server.</p>
-<p>The thrift servers use the Thrift Compact Protocol by default which is not SSL enabled. When using the snappy-start-all.sh script, these properties can be specified in the conf/locators and conf/servers files in the product directory like any other locator/server properties.</p>
-<p>In the <strong>conf/locators</strong> and <strong>conf/servers</strong> files, you need to add <code>-thrift-ssl</code> and required SSL setup in <code>-thrift-ssl-properties</code>. Refer to the <a href="../property_description/#thrift-properties">SnappyData thrift properties</a> section for more information.</p>
+<p>The thrift servers use the Thrift Compact Protocol by default which is not SSL enabled. When using the snappy-start-all.sh script, these properties can be specified in the <em>conf/locators</em> and <em>conf/servers</em> files in the product directory like any other locator/server properties.</p>
+<p>In the <em>conf/locators</em> and <em>conf/servers</em> files, you need to add <code>-thrift-ssl</code> and required SSL setup in <code>-thrift-ssl-properties</code>. Refer to the <a href="../property_description/#thrift-properties">SnappyData thrift properties</a> section for more information.</p>
 <p>From the Snappy SQL shell:</p>
 <pre><code class="bash">snappy&gt; connect client 'host:port;ssl=true;ssl-properties=...';
 </code></pre>
@@ -1050,7 +1076,7 @@ This setting needs to be modified to allow you to login to the remote host throu
 </code></pre>
 
 <p>For example:</p>
-<p>For a self-signed RSA certificate in keystore.jks, you can have the following configuration in the conf/locators and conf/servers files:</p>
+<p>For a self-signed RSA certificate in keystore.jks, you can have the following configuration in the <em>conf/locators</em> and <em>conf/servers</em> files:</p>
 <pre><code>localhost -thrift-ssl=true -thrift-ssl-properties=keystore=keystore.jks,keystore-password=password,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 </code></pre>
 

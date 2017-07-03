@@ -84,6 +84,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration/">Migration Guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Migration Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../migration/migration-0.8-0.9/">Migrating from Version 0.8 to Version 0.9</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/">How Tos</a>
         
     </li>
@@ -184,7 +206,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../monitoring/monitoring/">Managing and Monitoring</a>
+        <a class="" href="../../../monitoring/monitoring/">Monitoring - SnappyData Pulse</a>
         
     </li>
 <li>
@@ -397,14 +419,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Inbuilt System Procedures</a>
+        <a class="" href="../../inbuilt_system_procedures/system-procedures/">Built-in System Procedures</a>
         
     </li>
 
         
             
     <ul class="subnav">
-    <li><span>Inbuilt System Procedures</span></li>
+    <li><span>Built-in System Procedures</span></li>
 
         
             
@@ -867,7 +889,7 @@
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS| NONE’,
+    PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
@@ -940,8 +962,19 @@ The optional BUCKETS attribute specifies the fixed number of "buckets" to use fo
 Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. By default, REDUNDANCY is set to 0 (zero).</p>
 <p><code>EVICTION_BY</code></br>
 Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. </p>
-<p><code>PERSISTENT</code></br>
-Persists the in-memory table data to a local SnappyData disk store. i.e. each node in the cluster will persist its managed partitions to configured local disk.</p>
+<p><code>PERSISTENCE</code></br>
+When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>
+<p>By default, both row and column tables are persistent.</p>
+</li>
+<li>
+<p>The option <code>PERSISTENT</code> has been deprecated as of SnappyData 0.9. Although it does work, it is recommended to use <code>PERSISTENCE</code> instead.</p>
+</li>
+</ul>
+</div>
 <p><code>DISKSTORE</code></br>
 The disk directories where you want to persist the table data. By default, SnappyData creates a "default" disk store on each member node. You can use this option to control the location where data will be stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, <a href="../create-diskstore/">refer to this document</a>.</p>
 <p><code>OVERFLOW</code></br> 
@@ -964,57 +997,57 @@ The maximum number of rows that can be in the delta buffer of a column table for
 <p>For example, <code>create table if not exists Table1 (a int)</code> is equivalent to <code>create table if not exists Table1 (a int) using row</code>.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="example-column-table-partitioned-on-a-single-column">Example: Column Table Partitioned on a Single Column</h3>
-<pre><code>    snappy&gt;CREATE TABLE CUSTOMER ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL))
-        USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
+<pre><code>snappy&gt;CREATE TABLE CUSTOMER ( 
+    C_CUSTKEY     INTEGER NOT NULL,
+    C_NAME        VARCHAR(25) NOT NULL,
+    C_ADDRESS     VARCHAR(40) NOT NULL,
+    C_NATIONKEY   INTEGER NOT NULL,
+    C_PHONE       VARCHAR(15) NOT NULL,
+    C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+    C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+    C_COMMENT     VARCHAR(117) NOT NULL))
+    USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
 </code></pre>
 
 <h3 id="example-column-table-partitioned-with-10-buckets-and-persistence-enabled">Example: Column Table Partitioned with 10 Buckets and Persistence Enabled</h3>
-<pre><code>    snappy&gt;CREATE TABLE CUSTOMER ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL))
-        USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENT 'SYNCHRONOUS');
+<pre><code>snappy&gt;CREATE TABLE CUSTOMER ( 
+    C_CUSTKEY     INTEGER NOT NULL,
+    C_NAME        VARCHAR(25) NOT NULL,
+    C_ADDRESS     VARCHAR(40) NOT NULL,
+    C_NATIONKEY   INTEGER NOT NULL,
+    C_PHONE       VARCHAR(15) NOT NULL,
+    C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+    C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+    C_COMMENT     VARCHAR(117) NOT NULL))
+    USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENCE 'SYNCHRONOUS');
 </code></pre>
 
 <h3 id="example-replicated-persistent-row-table">Example: Replicated, Persistent Row Table</h3>
-<pre><code>    snappy&gt;CREATE TABLE SUPPLIER ( 
-          S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
-          S_NAME STRING NOT NULL, 
-          S_ADDRESS STRING NOT NULL, 
-          S_NATIONKEY INTEGER NOT NULL, 
-          S_PHONE STRING NOT NULL, 
-          S_ACCTBAL DECIMAL(15, 2) NOT NULL,
-          S_COMMENT STRING NOT NULL)
-          USING ROW OPTIONS (PERSISTENT);
+<pre><code>snappy&gt;CREATE TABLE SUPPLIER ( 
+      S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
+      S_NAME STRING NOT NULL, 
+      S_ADDRESS STRING NOT NULL, 
+      S_NATIONKEY INTEGER NOT NULL, 
+      S_PHONE STRING NOT NULL, 
+      S_ACCTBAL DECIMAL(15, 2) NOT NULL,
+      S_COMMENT STRING NOT NULL)
+      USING ROW OPTIONS (PERSISTENCE 'ASYNCHRONOUS');
 </code></pre>
 
 <h3 id="example-row-table-partitioned-with-10-buckets-and-overflow-enabled">Example: Row Table Partitioned with 10 Buckets and Overflow Enabled</h3>
-<pre><code>    snappy&gt;CREATE TABLE SUPPLIER ( 
-          S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
-          S_NAME STRING NOT NULL, 
-          S_ADDRESS STRING NOT NULL, 
-          S_NATIONKEY INTEGER NOT NULL, 
-          S_PHONE STRING NOT NULL, 
-          S_ACCTBAL DECIMAL(15, 2) NOT NULL,
-          S_COMMENT STRING NOT NULL)
-          USING ROW OPTIONS (BUCKETS '10',
-          &quot;PARTITION_BY 'S_SUPPKEY',
-          &quot;PERSISTENT 'ASYNCHRONOUS',
-          &quot;EVICTION_BY 'LRUCOUNT 3',
-          &quot;OVERFLOW 'true');
+<pre><code>snappy&gt;CREATE TABLE SUPPLIER ( 
+      S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
+      S_NAME STRING NOT NULL, 
+      S_ADDRESS STRING NOT NULL, 
+      S_NATIONKEY INTEGER NOT NULL, 
+      S_PHONE STRING NOT NULL, 
+      S_ACCTBAL DECIMAL(15, 2) NOT NULL,
+      S_COMMENT STRING NOT NULL)
+      USING ROW OPTIONS (BUCKETS '10',
+      PARTITION_BY 'S_SUPPKEY',
+      PERSISTENCE 'ASYNCHRONOUS',
+      EVICTION_BY 'LRUCOUNT 3',
+      OVERFLOW 'true');
 </code></pre>
 
 <h3 id="example-create-table-using-select-query">Example: Create Table using Select Query</h3>
