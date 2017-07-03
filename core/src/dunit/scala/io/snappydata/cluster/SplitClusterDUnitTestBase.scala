@@ -32,7 +32,7 @@ import org.junit.Assert
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SnappyContext, SplitClusterMode, ThinClientConnectorMode}
+import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 

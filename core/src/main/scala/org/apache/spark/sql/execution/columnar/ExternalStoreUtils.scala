@@ -179,8 +179,6 @@ object ExternalStoreUtils extends Logging {
                 "skip-constraint-checks=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false;skip-constraint-checks=true"
-          case SplitClusterMode(_, _) =>
-            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
           case LocalMode(_, url) =>
@@ -192,9 +190,9 @@ object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isSplitOrLocalMode(sparkContext: SparkContext): Boolean = {
+  def isLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
-      case SplitClusterMode(_, _) | LocalMode(_, _) => true
+      case LocalMode(_, _) => true
       case _ => false
     }
   }
