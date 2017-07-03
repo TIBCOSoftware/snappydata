@@ -1071,7 +1071,7 @@ trait NullableEncoder extends NotNullEncoder {
 
   override protected def initializeNulls(initSize: Int): Int = {
     if (nullWords eq null) {
-      val numWords = calculateBitSetWidthInBytes(initSize) >>> 3
+      val numWords = math.max(1, calculateBitSetWidthInBytes(initSize) >>> 3)
       maxNulls = numWords.toLong << 6L
       nullWords = new Array[Long](numWords)
       initialNumWords = numWords
@@ -1093,7 +1093,7 @@ trait NullableEncoder extends NotNullEncoder {
   override def nullCount: Int = {
     var sum = 0
     var i = 0
-    val numWords = nullWords.length
+    val numWords = getNumNullWords
     while (i < numWords) {
       sum += java.lang.Long.bitCount(nullWords(i))
       i += 1
@@ -1107,11 +1107,12 @@ trait NullableEncoder extends NotNullEncoder {
     } else {
       // expand
       val oldNulls = nullWords
-      val oldLen = oldNulls.length
-      val newLen = oldLen << 1
+      val oldLen = getNumNullWords
+      // ensure that ordinal fits (SNAP-1760)
+      val newLen = math.max(oldNulls.length << 1, (ordinal >> 6) + 1)
       nullWords = new Array[Long](newLen)
-      maxNulls = newLen << 6L
-      System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
+      maxNulls = newLen.toLong << 6L
+      if (oldLen > 0) System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
       BitSetMethods.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
     }
   }
