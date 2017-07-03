@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.io.{DataInput, DataOutput}
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.Blob
 import java.util.concurrent.locks.LockSupport
 
@@ -367,6 +367,22 @@ final class ColumnFormatValue
     } finally {
       release()
     }
+  }
+
+  override def writeSerializationHeader(src: ByteBuffer,
+      writeBuf: ByteBuffer): Boolean = {
+    if (writeBuf.remaining() >= 8) {
+      writeBuf.put(DSCODE.DS_FIXED_ID_BYTE)
+      writeBuf.put(DataSerializableFixedID.GFXD_TYPE)
+      writeBuf.put(GfxdSerializable.COLUMN_FORMAT_VALUE)
+      writeBuf.put(0.toByte) // padding
+      if (writeBuf.order() eq ByteOrder.BIG_ENDIAN) {
+        writeBuf.putInt(src.remaining())
+      } else {
+        writeBuf.putInt(Integer.reverseBytes(src.remaining()))
+      }
+      true
+    } else false
   }
 
   override def channelSize(): Int = 8 /* header */ + columnBuffer.remaining()
