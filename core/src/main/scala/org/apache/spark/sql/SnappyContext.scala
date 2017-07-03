@@ -1035,12 +1035,7 @@ object SnappyContext extends Logging {
         else ExternalClusterMode(sc, sc.master)
       }
     }
-    mode match {
-      case LocalMode(_, _) =>
-        logWarning(s"Initializing SnappyData in cluster mode: $mode")
-      case _ =>
-        logInfo(s"Initializing SnappyData in cluster mode: $mode")
-    }
+    logInfo(s"Initializing SnappyData in cluster mode: $mode")
     mode
   }
 
@@ -1172,7 +1167,7 @@ abstract class ClusterMode {
   val description: String = "Cluster mode"
 
   override def toString: String = {
-    description + s": sc = $sc, url = $url"
+    s"$description: sc = $sc, url = $url"
   }
 }
 
