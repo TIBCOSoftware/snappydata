@@ -344,15 +344,6 @@ class SnappyUnifiedMemoryManager private[memory](
           getMinOffHeapEviction(numBytes))
     }
 
-    // Stop execution pool to grow beyond eviction percentage of heap.
-    if (memoryMode eq MemoryMode.ON_HEAP) {
-      if (executionPool.poolSize + numBytes > maxHeapExecutionSize) {
-        logWarning(s"MemoryManager can't allocate $numBytes bytes as it " +
-            s"would exceed maxHeapExecutionSize = $maxHeapExecutionSize")
-        return 0L
-      }
-    }
-
     /**
       * Grow the execution pool by evicting cached blocks, thereby shrinking the storage pool.
       *
@@ -368,6 +359,15 @@ class SnappyUnifiedMemoryManager private[memory](
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return
+        }
+
+        // Stop execution pool to grow beyond eviction percentage of heap.
+        if (memoryMode eq MemoryMode.ON_HEAP) {
+          if (executionPool.memoryUsed + extraMemoryNeeded > maxHeapExecutionSize) {
+            logWarning(s"MemoryManager can't allocate $numBytes bytes as it " +
+                s"would exceed maxHeapExecutionSize = $maxHeapExecutionSize")
+            return
+          }
         }
 
         // There is not enough free memory in the execution pool, so try to reclaim memory from
@@ -498,8 +498,10 @@ class SnappyUnifiedMemoryManager private[memory](
           } else {
             memoryBorrowedFromExecution
           }
-        executionPool.decrementPoolSize(actualBorrowedMemory)
-        storagePool.incrementPoolSize(actualBorrowedMemory)
+        if (actualBorrowedMemory > 0) {
+          executionPool.decrementPoolSize(actualBorrowedMemory)
+          storagePool.incrementPoolSize(actualBorrowedMemory)
+        }
       }
       // First let spark try to free some memory
       val enoughMemory = if (tempManager) {

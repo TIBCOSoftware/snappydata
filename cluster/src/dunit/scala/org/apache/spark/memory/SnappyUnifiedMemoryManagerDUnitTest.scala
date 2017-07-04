@@ -81,6 +81,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
   override def tearDown2(): Unit = {
+    val snc = SnappyContext(sc).newSession()
+    snc.dropTable(col_table, ifExists = true)
+    snc.dropTable(rr_table, ifExists = true)
     resetMemoryManagers()
     super.tearDown2()
   }

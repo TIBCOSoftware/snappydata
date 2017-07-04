@@ -597,14 +597,14 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     awaitAll(20000000L, tasks: _*)
 
     // Rough estimation of 120 bytes per row
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 *5 )
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 * 5 )
     val count = snSession.sql("select * from t1").count()
     assert(count == 500)
     snSession.dropTable("t1")
   }
 
   test("CachedDataFrame accounting") {
-    val sparkSession = createSparkSession(1, 0, 1000)
+    val sparkSession = createSparkSession(1, 1, 1000)
     // create SnappySession to boot GemFireCache which is required for SnappyUMM
     new SnappySession(sparkSession.sparkContext)
     val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
@@ -617,11 +617,13 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     val unsafeRow: UnsafeRow = converter.apply(row)
 
-    assert(SparkEnv.get.memoryManager
-      .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 200, memoryMode))
+    SparkEnv.get.memoryManager
+          .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 300, memoryMode)
 
+    val taskMemoryManager =
+      new TaskMemoryManager(sparkSession.sparkContext.env.memoryManager, 0L)
     val taskContext =
-      new TaskContextImpl(0, 0, taskAttemptId = 1, 0, null, new Properties, null)
+      new TaskContextImpl(0, 0, taskAttemptId = 1, 0, taskMemoryManager, new Properties, null)
     try {
       CachedDataFrame(taskContext, Seq(unsafeRow).iterator)
       assert(false , "Should not have obtained memory")
