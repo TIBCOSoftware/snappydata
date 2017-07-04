@@ -75,7 +75,12 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
   private def createStatsBuffer(statsData: Array[Byte],
       allocator: BufferAllocator): ByteBuffer = {
-    allocator.fromBytesToStorage(statsData, 0, statsData.length)
+    // need to create a copy since underlying Array[Byte] can be re-used
+    val statsLen = statsData.length
+    val statsBuffer = allocator.allocateForStorage(statsLen)
+    statsBuffer.put(statsData, 0, statsLen)
+    statsBuffer.rewind()
+    statsBuffer
   }
 
   /**
