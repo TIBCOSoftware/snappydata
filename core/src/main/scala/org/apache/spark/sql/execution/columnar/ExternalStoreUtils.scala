@@ -203,9 +203,6 @@ object ExternalStoreUtils extends Logging {
   def validateAndGetAllProps(session: Option[SparkSession],
       parameters: mutable.Map[String, String]): ConnectionProperties = {
 
-    val urlSecureSuffixFromUser = ";user=userone;password=userone;"
-    val snc = session.get.sqlContext
-
     val url = parameters.remove("url").getOrElse(defaultStoreURL(
       session.map(_.sparkContext)))
 
@@ -255,41 +252,27 @@ object ExternalStoreUtils extends Logging {
     connProps.setProperty("driver", driver)
     executorConnProps.setProperty("driver", driver)
 
-    snc match {
-      case s => {
-        var uname = snc.conf.getConfString("user", "")
-        uname match {
-          case "" => {
-            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"ABS ESUtils no user, password in " +
-                s"sqlConf")
-            Thread.currentThread().getStackTrace.foreach(st => Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
-            // Check in sparkConf (coming from smart connector)
-            uname = session.get.sparkContext.getConf.get("spark.snappydata.store.user", "")
-            uname match {
-              case "" =>
-                Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"ABS ESUtils no user, password in sparkConf")
-              case _ => {
-                val pass = snc.conf.getConfString("spark.snappydata.store.password")
-                Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"ABS ESUtils user $uname, password $pass in sparkConf")
-                connProps.setProperty("user", uname)
-                connProps.setProperty("password", pass)
-                executorConnProps.setProperty("user", uname)
-                executorConnProps.setProperty("password", pass)
-              }
-            }
-          }
-          case _ => {
-            val pass = snc.conf.getConfString("password")
-            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"ABS ESUtils user $uname, password $pass in sqlConf")
-            Thread.currentThread().getStackTrace.foreach(st => Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
-            connProps.setProperty("user", uname)
-            connProps.setProperty("password", pass)
-            executorConnProps.setProperty("user", uname)
-            executorConnProps.setProperty("password", pass)
-          }
+    val EMPTY_URL = ""
+    val urlSecureSuffixFromUser = session match {
+      case Some(s) =>
+        val username = s.sqlContext.conf.getConfString("user", EMPTY_URL)
+        username match {
+          case EMPTY_URL =>
+            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"ABS ESUtils no user," +
+                s"password in sqlConf")
+            Thread.currentThread().getStackTrace.foreach(st =>
+              Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
+            EMPTY_URL
+          case _ =>
+            val pass = s.sqlContext.conf.getConfString("password", EMPTY_URL)
+            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL,
+              s"ABS ESUtils user $username, password $pass in sqlConf")
+            Thread.currentThread().getStackTrace.foreach(st =>
+              Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
+            s";user=$username;password=$pass;"
         }
-      }
-      case _ =>
+
+      case _ => EMPTY_URL
     }
 
     val isEmbedded = dialect match {
@@ -317,8 +300,7 @@ object ExternalStoreUtils extends Logging {
         false
       case _ => false
     }
-    val allPoolProps = getAllPoolProperties(url, driver,
-      poolProps, hikariCP, isEmbedded)
+    val allPoolProps = getAllPoolProperties(url, driver, poolProps, hikariCP, isEmbedded)
     ConnectionProperties(url, urlSecureSuffixFromUser, driver, dialect, allPoolProps,
       connProps, executorConnProps, hikariCP)
   }
