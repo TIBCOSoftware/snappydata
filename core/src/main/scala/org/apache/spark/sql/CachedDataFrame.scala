@@ -477,11 +477,10 @@ object CachedDataFrame
             s" result data. Please check -XX:MaxDirectMemorySize while starting the server",
           java.util.Collections.emptySet())
     } finally {
-      // Not handling DirectByteBuffer case which gives a OOM exception.
-      // Assumption is most of the big workload will use off-heap
       bufferOutput.clear()
       // one additional release for the explicit getBufferRetain
       if (output ne null) {
+        output.release()
         output.release()
       }
     }
