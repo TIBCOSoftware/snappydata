@@ -169,14 +169,14 @@ BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
 
 <a id="restore_online_backup"></a>
 
-# Restoring an Online Backup
+# Restoring Files
 
 The restore script (restore.sh restore.bat) copies files back to their original locations. You can do this manually if you wish:
 
 1.  Restore your disk stores when your members are offline and the system is down.
 
-2.  Read the restore scripts to see where they will place the files and make sure the destination locations are ready. The restore scripts refuse to copy over files with the same names.
+2.  Read the restore scripts to see where they the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.
 
 3.  Run the restore scripts. Run each script on the host where the backup originated.
 
-The restore copies these back to their original location.
+The restore operation copies the files back to their original location.
