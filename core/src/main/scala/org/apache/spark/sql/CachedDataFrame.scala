@@ -484,7 +484,6 @@ object CachedDataFrame
       if (output ne null) {
         output.release()
       }
-      output.release()
     }
   }
 
