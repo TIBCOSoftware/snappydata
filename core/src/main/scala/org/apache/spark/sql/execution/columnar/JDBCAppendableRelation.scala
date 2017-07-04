@@ -29,7 +29,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -65,7 +65,15 @@ abstract case class JDBCAppendableRelation(
     externalStore.connProperties
 
   protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(connProperties.url, connProperties.connProps)
+      .createConnectionFactory(connProperties.url + connProperties.urlSecureSuffix,
+        connProperties.connProps)
+
+  protected final val sysConnFactory: () => Connection = {
+    val url = connProperties.url +
+        ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE +
+        ";password=" + SnappyStoreHiveCatalog.HIVE_METASTORE
+    JdbcUtils.createConnectionFactory(url, connProperties.connProps)
+  }
 
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
@@ -227,7 +235,7 @@ abstract case class JDBCAppendableRelation(
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName,
-              sqlContext.conf.caseSensitiveAnalysis, conn)
+              sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory())
             case _ => // do nothing
           }
         }

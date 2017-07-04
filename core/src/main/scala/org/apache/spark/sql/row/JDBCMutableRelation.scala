@@ -30,7 +30,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.row.RowDMLExec
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
-import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
@@ -78,7 +78,7 @@ case class JDBCMutableRelation(
   var tableSchema: String = _
 
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
-    connProperties.url, table, connProperties.connProps)
+    connProperties.url + connProperties.urlSecureSuffix, table, connProperties.connProps)
 
   var tableExists: Boolean = _
 
@@ -89,7 +89,15 @@ case class JDBCMutableRelation(
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(connProperties.url, connProperties.connProps)
+      .createConnectionFactory(connProperties.url + connProperties.urlSecureSuffix,
+        connProperties.connProps)
+
+  protected final val sysConnFactory: () => Connection = {
+    val url = connProperties.url +
+        ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE +
+        ";password=" + SnappyStoreHiveCatalog.HIVE_METASTORE
+    JdbcUtils.createConnectionFactory(url, connProperties.connProps)
+  }
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -136,7 +144,7 @@ case class JDBCMutableRelation(
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
+            sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory())
           case _ => // Do Nothing
         }
       }
@@ -163,7 +171,7 @@ case class JDBCMutableRelation(
     val rdd = JDBCRDD.scanTable(
       sqlContext.sparkContext,
       schema,
-      connProperties.url,
+      connProperties.url + connProperties.urlSecureSuffix,
       connProperties.executorConnProps,
       table,
       requiredColumns,
@@ -208,7 +216,7 @@ case class JDBCMutableRelation(
         table, upsert = false)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP)
+        connProperties.poolProps, connProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,
@@ -225,7 +233,7 @@ case class JDBCMutableRelation(
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
+      connProperties.hikariCP, connProperties.urlSecureSuffix)
     try {
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()
@@ -256,7 +264,7 @@ case class JDBCMutableRelation(
     }
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
+      connProperties.hikariCP, connProperties.urlSecureSuffix)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
       val whereStr = if (filterExpr == null || filterExpr.isEmpty) ""
@@ -276,7 +284,7 @@ case class JDBCMutableRelation(
   override def delete(filterExpr: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
+      connProperties.hikariCP, connProperties.urlSecureSuffix)
     try {
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""

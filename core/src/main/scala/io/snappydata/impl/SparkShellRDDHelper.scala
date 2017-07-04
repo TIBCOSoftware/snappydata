@@ -127,7 +127,7 @@ final class SparkShellRDDHelper {
     var index = -1
 
     val jdbcUrl = if (useLocatorURL) {
-      connProperties.url
+      connProperties.url + connProperties.urlSecureSuffix
     } else {
       if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
       if (index < 0) index = Random.nextInt(hostList.size)
@@ -144,7 +144,7 @@ final class SparkShellRDDHelper {
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
       ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect, props,
-        executorProps, connProperties.hikariCP)
+        executorProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
     } catch {
       case sqle: SQLException => if (hostList.size == 1 || useLocatorURL) {
         throw sqle

@@ -375,13 +375,18 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver");
       DriverRegistry.register("io.snappydata.jdbc.ClientDriver");
 
-      String url = "jdbc:snappydata:;user=" +
-          SnappyStoreHiveCatalog.HIVE_METASTORE() +
+      String urlSecure = "jdbc:snappydata:" +
+          ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
+          ";password=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
           ";disable-streaming=true;default-persistent=true";
       HiveConf metadataConf = new HiveConf();
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+          Misc.SNAPPY_HIVE_METASTORE);
+      metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD,
+          Misc.SNAPPY_HIVE_METASTORE);
 
       final short numRetries = 40;
       short count = 0;

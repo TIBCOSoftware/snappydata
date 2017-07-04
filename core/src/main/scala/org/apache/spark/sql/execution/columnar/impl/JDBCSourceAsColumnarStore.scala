@@ -255,7 +255,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     val connProps = if (onExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP)
+      connProperties.poolProps, connProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
   }
 
   override def getConnectedExternalStore(table: String,
@@ -295,6 +295,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
         new SmartConnectorColumnRDD(snappySession,
           tableName, requiredColumns, ConnectionProperties(connProperties.url,
+            connProperties.urlSecureSuffix,
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
             connProperties.hikariCP), schema, this, parts, embdClusterRelDestroyVersion)

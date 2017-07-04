@@ -25,8 +25,10 @@ import scala.collection.mutable
 
 import com.zaxxer.hikari.util.PropertyElf
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
+import io.snappydata.Constant
+import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 
@@ -132,8 +134,16 @@ object ConnectionPool {
    */
   def getPoolConnection(id: String, dialect: JdbcDialect,
       poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean): Connection = {
-    val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
+      hikariCP: Boolean, urlSuffix: String): Connection = {
+    val url = poolProps.get("url")
+    val poolPropsSecure = if (url.isDefined) {
+      val urlSecure = if (id.startsWith(Constant.SHADOW_SCHEMA_NAME)) {
+        url.get + ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE +
+            ";password=" + SnappyStoreHiveCatalog.HIVE_METASTORE
+      } else url.get + urlSuffix
+      poolProps + ("url" -> urlSecure)
+    } else poolProps
+    val ds = getPoolDataSource(id, poolPropsSecure, connProps, hikariCP)
     val conn = ds.getConnection
     dialect match {
       case GemFireXDDialect | GemFireXDClientDialect =>

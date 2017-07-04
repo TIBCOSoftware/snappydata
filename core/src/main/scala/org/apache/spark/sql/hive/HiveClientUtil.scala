@@ -148,11 +148,15 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
     val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
-      logInfo(s"Using SnappyStore as metastore database, dbURL = $dbURL")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        dbDriver)
+      var secureDbURL = if (dbURL.toLowerCase.contains(";user")) {
+        dbURL +";user=" + Misc.SNAPPY_HIVE_METASTORE + ";password=" + Misc.SNAPPY_HIVE_METASTORE
+      } else dbURL
+      logInfo(s"Using SnappyStore as metastore database, dbURL = $secureDbURL")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        Misc.SNAPPY_HIVE_METASTORE)
+      metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD,
         Misc.SNAPPY_HIVE_METASTORE)
     } else if (dbURL != null) {
       logInfo(s"Using specified metastore database, dbURL = $dbURL")

@@ -207,6 +207,7 @@ object ConnectionPropertiesSerializer
   override def write(kryo: Kryo, output: Output,
       connProps: ConnectionProperties): Unit = {
     output.writeString(connProps.url)
+    output.writeString(connProps.urlSecureSuffix)
     output.writeString(connProps.driver)
     connProps.dialect match {
       case GemFireXDDialect => output.writeByte(0)
@@ -244,6 +245,7 @@ object ConnectionPropertiesSerializer
 
   def read(kryo: Kryo, input: Input): ConnectionProperties = {
     val url = input.readString()
+    val urlSecureSuffix = input.readString()
     val driver = input.readString()
     val dialect = input.readByte() match {
       case 0 => GemFireXDDialect
@@ -263,7 +265,7 @@ object ConnectionPropertiesSerializer
     }
     val connProps = TypeUtilities.readProperties(input)
     val hikariCP = input.readBoolean()
-    ConnectionProperties(url, driver, dialect, poolProps, connProps,
+    ConnectionProperties(url, urlSecureSuffix, driver, dialect, poolProps, connProps,
       connProps, hikariCP)
   }
 }

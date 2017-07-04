@@ -23,6 +23,7 @@ import io.snappydata.Constant
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
@@ -154,7 +155,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   }
 
   override def initializeTable(tableName: String, caseSensitive: Boolean,
-      conn: Connection): Unit = {
+      conn: Connection, sysConn: Connection): Unit = {
     val dotIndex = tableName.indexOf('.')
     val (schema, table) = if (dotIndex > 0) {
       (tableName.substring(0, dotIndex), tableName.substring(dotIndex + 1))
@@ -171,7 +172,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
         "PERSISTENT_PARTITION".equalsIgnoreCase(result)) {
 
       JdbcExtendedUtils.executeUpdate(
-        s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
+        s"call sys.CREATE_ALL_BUCKETS('$tableName')", sysConn)
     }
   }
 

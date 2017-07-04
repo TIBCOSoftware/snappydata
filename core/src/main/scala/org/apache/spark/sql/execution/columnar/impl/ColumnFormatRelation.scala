@@ -260,7 +260,7 @@ abstract class BaseColumnFormatRelation(
     } else {
       // insert into the row buffer
       val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP)
+        connProperties.poolProps, connProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,
@@ -397,7 +397,7 @@ abstract class BaseColumnFormatRelation(
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
+            sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory())
         }
         createExternalTableForColumnBatches(externalColumnTableName,
           externalStore)
@@ -426,7 +426,7 @@ abstract class BaseColumnFormatRelation(
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
+      connProperties.hikariCP, connProperties.urlSecureSuffix)
     try {
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()

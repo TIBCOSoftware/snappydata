@@ -202,6 +202,7 @@ object ExternalStoreUtils extends Logging {
   def validateAndGetAllProps(session: Option[SparkSession],
       parameters: mutable.Map[String, String]): ConnectionProperties = {
 
+    val urlSecureSuffixFromUser = ";user=userone;password=userone;"
     val url = parameters.remove("url").getOrElse(defaultStoreURL(
       session.map(_.sparkContext)))
 
@@ -277,7 +278,7 @@ object ExternalStoreUtils extends Logging {
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP, isEmbedded)
-    ConnectionProperties(url, driver, dialect, allPoolProps,
+    ConnectionProperties(url, urlSecureSuffixFromUser, driver, dialect, allPoolProps,
       connProps, executorConnProps, hikariCP)
   }
 
@@ -287,7 +288,7 @@ object ExternalStoreUtils extends Logging {
     val connProps = if (forExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP)
+      connProperties.poolProps, connProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
   }
 
   def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
