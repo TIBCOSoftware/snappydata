@@ -418,6 +418,7 @@ object CachedDataFrame
     // 64K
     // can't enforce maxOutputBufferSize due to a row larger than that limit
     val bufferOutput = new Output(4 << 10, -1)
+    var outputRetained = false
     try {
       output = new ByteBufferDataOutput(4 << 10,
         DirectBufferAllocator.instance(),
@@ -441,6 +442,7 @@ object CachedDataFrame
       flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
       if (count > 0) {
         val finalBuffer = output.getBufferRetain
+        outputRetained = true
         finalBuffer.flip
         val memSize = finalBuffer.limit().toLong
         // Ask UMM before getting the array to heap.
@@ -480,7 +482,9 @@ object CachedDataFrame
       bufferOutput.clear()
       // one additional release for the explicit getBufferRetain
       if (output ne null) {
-        output.release()
+        if (outputRetained) {
+          output.release()
+        }
         output.release()
       }
     }
