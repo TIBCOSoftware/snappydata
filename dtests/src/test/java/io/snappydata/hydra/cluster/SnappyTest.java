@@ -88,6 +88,7 @@ public class SnappyTest implements Serializable {
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
   private static Boolean logDirExists = false;
   private static Boolean doneCopying = false;
+  protected static Boolean doneRandomizing = false;
   private static Boolean doneRestore = false;
   private static Boolean diskDirExists = false;
   private static Boolean runGemXDQuery = false;
@@ -716,10 +717,11 @@ public class SnappyTest implements Serializable {
     return pidList;
   }
 
+
   /**
    * Returns hostname of the process
    */
-  private static synchronized String getPidHost(String pid) {
+  protected static synchronized String getPidHost(String pid) {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     String pidHost = null;
     for (String key : keys) {
@@ -1635,43 +1637,50 @@ public class SnappyTest implements Serializable {
   protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
-      String command;
-      if (pName.equals("Master"))
-        command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
-      else command = "jps | grep " + pName + " | awk '{print $1}'";
-      hd = TestConfig.getInstance().getMasterDescription()
-          .getVmDescription().getHostDescription();
-      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
       File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "PIDs_" + pName + "_" + HostHelper
+          .getLocalHost() +
+          ".log";
+      File logFile = new File(dest);
+      if (!logFile.exists()) {
+        String command;
+        if (pName.equals("Master"))
+          command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
+        else command = "jps | grep " + pName + " | awk '{print $1}'";
+        hd = TestConfig.getInstance().getMasterDescription()
+            .getVmDescription().getHostDescription();
+        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
+      /*File log = new File(".");
       pb.redirectErrorStream(true);
       String dest = log.getCanonicalPath() + File.separator + "PIDs_" + HostHelper.getLocalHost() +
           ".log";
-      File logFile = new File(dest);
-      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
-      pr = pb.start();
-      pr.waitFor();
-      FileInputStream fis = new FileInputStream(logFile);
-      BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-      String str = null;
-      while ((str = br.readLine()) != null) {
-        int pid = Integer.parseInt(str);
-        try {
-          if (pids.contains(pid)) {
-            Log.getLogWriter().info("Pid is already recorded with Master" + pid);
-          } else {
-            pids.add(pid);
-            RemoteTestModule.Master.recordPID(hd, pid);
-            SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
-            SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + HostHelper
-                .getLocalHost(), HostHelper.getLocalHost());
+      File logFile = new File(dest);*/
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+        pr = pb.start();
+        pr.waitFor();
+        FileInputStream fis = new FileInputStream(logFile);
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        String str = null;
+        while ((str = br.readLine()) != null) {
+          int pid = Integer.parseInt(str);
+          try {
+            if (pids.contains(pid)) {
+              Log.getLogWriter().info("Pid is already recorded with Master" + pid);
+            } else {
+              pids.add(pid);
+              RemoteTestModule.Master.recordPID(hd, pid);
+              SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
+              SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + HostHelper
+                  .getLocalHost(), HostHelper.getLocalHost());
+            }
+          } catch (RemoteException e) {
+            String s = "Unable to access master to record PID: " + pid;
+            throw new HydraRuntimeException(s, e);
           }
-        } catch (RemoteException e) {
-          String s = "Unable to access master to record PID: " + pid;
-          throw new HydraRuntimeException(s, e);
+          Log.getLogWriter().info("pid value successfully recorded with Master");
         }
-        Log.getLogWriter().info("pid value successfully recorded with Master");
+        br.close();
       }
-      br.close();
     } catch (IOException e) {
       String s = "Problem while starting the process : " + pr;
       throw new TestException(s, e);
@@ -2335,7 +2344,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_recordProcessIDWithHost() {
+  public static synchronized void HydraTask_recordProcessIDWithHost() {
     if (useRowStore) {
       snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator");
       snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher");
@@ -2343,9 +2352,9 @@ public class SnappyTest implements Serializable {
       snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
       snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
       snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
+      snappyTest.recordSnappyProcessIDinNukeRun("Worker");
+      snappyTest.recordSnappyProcessIDinNukeRun("Master");
     }
-    snappyTest.recordSnappyProcessIDinNukeRun("Worker");
-    snappyTest.recordSnappyProcessIDinNukeRun("Master");
   }
 
 
