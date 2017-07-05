@@ -42,9 +42,8 @@ public class SnappyStartUpTest extends SnappyTest {
           .getVmDescription().getHostDescription();
       pidList = getServerPidList();
       log = new File(".");
-//      if(logFile.exists()) logFile.renameTo("server.sh");
-        String server = log.getCanonicalPath() + File.separator + "server.sh";
-        logFile = new File(server);
+      String server = log.getCanonicalPath() + File.separator + "server.sh";
+      logFile = new File(server);
       String serverKillLog = log.getCanonicalPath() + File.separator + "serverKill.log";
       serverKillOuput = new File(serverKillLog);
       FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
@@ -54,7 +53,7 @@ public class SnappyStartUpTest extends SnappyTest {
       String pidString = String.valueOf(asList.get(0));
       Log.getLogWriter().info("pidString : " + pidString);
       int pid = Integer.parseInt(pidString);
-      if(pids.contains(pid)) {
+      if (pids.contains(pid)) {
         pidList.remove(pidString);
         asList = new ArrayList(pidList);
         Collections.shuffle(asList);
@@ -130,11 +129,11 @@ public class SnappyStartUpTest extends SnappyTest {
       srcFile = new File(srcFilePath);
       List<String> values = Files.readAllLines(Paths.get(srcFile.getPath()));
       for (String s : values) {
-        Log.getLogWriter().info("SS - before shuffle : " + s);
+        Log.getLogWriter().info("Before shuffle : " + s);
       }
       Collections.shuffle(values);
       for (String s : values) {
-        Log.getLogWriter().info("SS - after shuffle : " + s);
+        Log.getLogWriter().info("After shuffle : " + s);
       }
     } catch (IOException e) {
       throw new TestException("Error occurred while writing to file: " + srcFile + "\n " + e
