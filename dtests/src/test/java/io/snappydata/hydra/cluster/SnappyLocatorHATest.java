@@ -55,9 +55,20 @@ public class SnappyLocatorHATest extends SnappyTest {
       conn = getServerConnection();
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("query executed successfully: " + query);
-      /*rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
-      StructTypeImpl sti = ResultSetHelper.getStructType(rs);
-      List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);*/
+      query = "insert into tab1 values(111, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(222, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(333, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(444, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(555, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(666, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "select * from tab1";
+      conn.createStatement().executeQuery(query);
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
