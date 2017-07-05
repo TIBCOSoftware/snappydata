@@ -208,10 +208,17 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
     preAction()
-    val callSite = sqlContext.sparkContext.getCallSite()
-    CachedDataFrame.withNewExecutionId(sqlContext.sparkSession,
-      callSite.shortForm, callSite.longForm,
-      child.treeString(verbose = true), PartitionedPhysicalScan.getSparkPlanInfo(child)) {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val (queryStringShortForm, queryString, planInfo) = session.currentKey match {
+      case null =>
+        val callSite = sqlContext.sparkContext.getCallSite()
+        (callSite.shortForm, callSite.longForm,
+            PartitionedPhysicalScan.getSparkPlanInfo(child))
+      case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
+          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
+    }
+    CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+      queryString, child.treeString(verbose = true), planInfo) {
       child.executeCollect()
     }
   }

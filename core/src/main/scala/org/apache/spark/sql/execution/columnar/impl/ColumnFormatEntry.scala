@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.io.{DataInput, DataOutput}
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.Blob
 import java.util.concurrent.locks.LockSupport
 
@@ -66,35 +66,7 @@ object ColumnFormatEntry extends Logging {
     GfxdDataSerializable.registerSqlSerializable(classOf[ColumnFormatValue])
   }
 
-  /**
-   * Size of the serialization type/class IDs of [[ColumnFormatValue]].
-   */
-  private[columnar] val VALUE_HEADER_CLASSID_SIZE = 3
-
-  /**
-   * Size of the serialization header of [[ColumnFormatValue]] including the
-   * serialization type/class IDs (3 bytes), padding (1 byte), and size (4).
-   * Padding is added for 8 byte alignment.
-   */
-  private[columnar] val VALUE_HEADER_SIZE = VALUE_HEADER_CLASSID_SIZE + 1 + 4
-
-  private[columnar] val VALUE_EMPTY_BUFFER = {
-    val buffer = ByteBuffer.wrap(new Array[Byte](VALUE_HEADER_SIZE))
-    writeValueSerializationHeader(buffer, 0)
-    buffer
-  }
-
   private[columnar] def alignedSize(size: Int) = ((size + 7) >>> 3) << 3
-
-  private[columnar] def writeValueSerializationHeader(buffer: ByteBuffer,
-      size: Int): Unit = {
-    // write the typeId + classId and size
-    buffer.put(DSCODE.DS_FIXED_ID_BYTE)
-    buffer.put(DataSerializableFixedID.GFXD_TYPE)
-    buffer.put(GfxdSerializable.COLUMN_FORMAT_VALUE)
-    buffer.put(0.toByte) // padding
-    buffer.putInt(size) // assume big-endian buffer
-  }
 }
 
 /**
@@ -258,16 +230,16 @@ final class ColumnPartitionResolver(tableName: TableName)
  * well as efficiently serialize/deserialize them directly to Oplog/socket.
  *
  * This class extends [[SerializedDiskBuffer]] to avoid a copy when
- * reading/writing from Oplog. Consequently it has a pre-serialized buffer
- * that has the serialization header at the start (typeID + classID + size).
- * This helps it avoid additional byte writes when transferring data to the
- * channels as well as avoiding trimming of buffer when reading from it.
+ * reading/writing from Oplog. Consequently it writes the serialization header
+ * itself (typeID + classID + size) into stream as would be written by
+ * DataSerializer.writeObject. This helps it avoid additional byte writes when
+ * transferring data to the channels.
  */
 final class ColumnFormatValue
     extends SerializedDiskBuffer with GfxdSerializable with Sizeable {
 
   @volatile
-  @transient private var columnBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
+  @transient private var columnBuffer = DiskEntry.Helper.NULL_BUFFER
   @transient private var diskId: DiskId = _
   @transient private var diskRegion: DiskRegionView = _
 
@@ -277,18 +249,12 @@ final class ColumnFormatValue
   }
 
   def setBuffer(buffer: ByteBuffer,
-      changeOwnerToStorage: Boolean = true,
-      writeSerializationHeader: Boolean = true): Unit = synchronized {
+      changeOwnerToStorage: Boolean = true): Unit = synchronized {
     val columnBuffer = GemFireCacheImpl.getCurrentBufferAllocator
         .transfer(buffer, ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
     if (changeOwnerToStorage && columnBuffer.isDirect) {
       MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
         columnBuffer, allowNonAllocator = true)
-    }
-    if (writeSerializationHeader) {
-      // write the serialization header and move ahead to start of data
-      ColumnFormatEntry.writeValueSerializationHeader(columnBuffer,
-        buffer.remaining() - ColumnFormatEntry.VALUE_HEADER_SIZE)
     }
     this.columnBuffer = columnBuffer
     // reference count is required to be 1 at this point
@@ -298,6 +264,11 @@ final class ColumnFormatValue
 
   def isDirect: Boolean = columnBuffer.isDirect
 
+  @inline private def duplicateBuffer(buffer: ByteBuffer): ByteBuffer = {
+    // slice buffer for non-zero position so callers don't have to deal with it
+    if (buffer.position() == 0) buffer.duplicate() else buffer.slice()
+  }
+
   /**
    * Callers of this method should have a corresponding release method
    * for eager release to work else off-heap object may keep around
@@ -305,15 +276,19 @@ final class ColumnFormatValue
    * whether to keep the [[release]] method in a finally block to ensure
    * its invocation, or do it only in normal paths because JVM reference
    * collector will eventually clean it in any case.
+   *
+   * Calls to this specific class are guaranteed to always return buffers
+   * which have position as zero so callers can make simplifying assumptions
+   * about the same.
    */
   override def getBufferRetain: ByteBuffer = {
     if (retain()) {
-      columnBuffer.duplicate()
+      duplicateBuffer(columnBuffer)
     } else synchronized {
       // check if already read from disk by another thread and still valid
       val buffer = this.columnBuffer
-      if ((buffer ne ColumnFormatEntry.VALUE_EMPTY_BUFFER) && retain()) {
-        return buffer.duplicate()
+      if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && retain()) {
+        return duplicateBuffer(buffer)
       }
 
       // try to read using DiskId
@@ -330,7 +305,7 @@ final class ColumnFormatValue
                 val updatedRefCount = if (refCount <= 0) 1 else refCount + 1
                 if (SerializedDiskBuffer.refCountUpdate.compareAndSet(
                   this, refCount, updatedRefCount)) {
-                  return columnBuffer.duplicate()
+                  return duplicateBuffer(columnBuffer)
                 }
               }
             case null | _: Token => // return empty buffer
@@ -346,7 +321,7 @@ final class ColumnFormatValue
             // processors like gateway event processors will not expect it.
         }
       }
-      ColumnFormatEntry.VALUE_EMPTY_BUFFER.duplicate()
+      DiskEntry.Helper.NULL_BUFFER.duplicate()
     }
   }
 
@@ -357,7 +332,7 @@ final class ColumnFormatValue
     // done either using DiskId, or will return empty if no DiskId is available
     val buffer = this.columnBuffer
     if (buffer.isDirect) {
-      this.columnBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
+      this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
       ManagedDirectBufferAllocator.instance().release(buffer)
     }
   }
@@ -379,16 +354,40 @@ final class ColumnFormatValue
     // write the pre-serialized buffer as is
     val buffer = getBufferRetain
     try {
-      // rewind buffer to the start for the write;
+      // first write the serialization header
+      // write the typeId + classId and size
+      channel.write(DSCODE.DS_FIXED_ID_BYTE)
+      channel.write(DataSerializableFixedID.GFXD_TYPE)
+      channel.write(GfxdSerializable.COLUMN_FORMAT_VALUE)
+      channel.write(0.toByte) // padding
+      channel.writeInt(buffer.limit())
+
       // no need to change position back since this is a duplicate ByteBuffer
-      buffer.rewind()
       write(channel, buffer)
     } finally {
       release()
     }
   }
 
-  override def size(): Int = columnBuffer.limit()
+  override def writeSerializationHeader(src: ByteBuffer,
+      writeBuf: ByteBuffer): Boolean = {
+    if (writeBuf.remaining() >= 8) {
+      writeBuf.put(DSCODE.DS_FIXED_ID_BYTE)
+      writeBuf.put(DataSerializableFixedID.GFXD_TYPE)
+      writeBuf.put(GfxdSerializable.COLUMN_FORMAT_VALUE)
+      writeBuf.put(0.toByte) // padding
+      if (writeBuf.order() eq ByteOrder.BIG_ENDIAN) {
+        writeBuf.putInt(src.remaining())
+      } else {
+        writeBuf.putInt(Integer.reverseBytes(src.remaining()))
+      }
+      true
+    } else false
+  }
+
+  override def channelSize(): Int = 8 /* header */ + columnBuffer.remaining()
+
+  override def size(): Int = columnBuffer.remaining()
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_VALUE
 
@@ -399,7 +398,7 @@ final class ColumnFormatValue
   override def toData(out: DataOutput): Unit = {
     val buffer = getBufferRetain
     try {
-      val numBytes = buffer.remaining()
+      val numBytes = buffer.limit()
       out.writeByte(0) // padding for 8-byte alignment
       out.writeInt(numBytes)
       if (numBytes > 0) {
@@ -441,11 +440,7 @@ final class ColumnFormatValue
 
         case channel: InputStreamChannel =>
           // order is BIG_ENDIAN by default
-          val buffer = allocator.allocateForStorage(numBytes +
-              ColumnFormatEntry.VALUE_HEADER_SIZE)
-          ColumnFormatEntry.writeValueSerializationHeader(buffer,
-            numBytes)
-          val position = buffer.position()
+          val buffer = allocator.allocateForStorage(numBytes)
           do {
             if (channel.read(buffer) == 0) {
               // wait for a bit before retrying
@@ -453,22 +448,19 @@ final class ColumnFormatValue
             }
           } while (buffer.hasRemaining)
           // move to the start of data
-          buffer.position(position)
+          buffer.rewind()
           columnBuffer = buffer
 
         case _ =>
           // order is BIG_ENDIAN by default
-          val bytes = new Array[Byte](numBytes +
-              ColumnFormatEntry.VALUE_HEADER_SIZE)
-          in.readFully(bytes, ColumnFormatEntry.VALUE_HEADER_SIZE, numBytes)
-          // extra copy of empty 8-byte header too
-          val buffer = allocator.fromBytesToStorage(bytes, 0,
-            numBytes + ColumnFormatEntry.VALUE_HEADER_SIZE)
+          val bytes = new Array[Byte](numBytes)
+          in.readFully(bytes, 0, numBytes)
+          val buffer = allocator.fromBytesToStorage(bytes, 0, numBytes)
           // owner is already marked for storage
           setBuffer(buffer, changeOwnerToStorage = false)
       }
     } else {
-      columnBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
+      columnBuffer = DiskEntry.Helper.NULL_BUFFER
     }
   }
 
@@ -528,9 +520,7 @@ final class ColumnFormatEncoder extends RowEncoder {
     row.setColumn(1, new SQLVarchar(batchKey.uuid))
     row.setColumn(2, new SQLInteger(batchKey.partitionId))
     row.setColumn(3, new SQLInteger(batchKey.columnIndex))
-    // set value reference which will be released after thrift write;
-    // this written blob does not include the serialization header
-    // unlike in fromRow which does include it
+    // set value reference which will be released after thrift write
     row.setColumn(4, new SQLBlob(new ClientBlob(batchValue)))
     row
   }
@@ -544,9 +534,6 @@ final class ColumnFormatEncoder extends RowEncoder {
       case blob: BufferedBlob => blob.getAsLastChunk.chunk
       case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
     }
-    // the incoming blob includes the space for serialization header to avoid
-    // a copy when transferring to ColumnFormatValue, so just move to
-    // the start of data and write the serialization header
     columnBuffer.rewind()
     // set the buffer into ColumnFormatValue
     val batchValue = new ColumnFormatValue(columnBuffer)

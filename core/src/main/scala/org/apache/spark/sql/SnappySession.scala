@@ -213,6 +213,9 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private val contextObjects = new mutable.HashMap[Any, Any]
 
+  @transient
+  private[sql] var currentKey: SnappySession.CachedKey = _
+
   /**
    * Get a previously registered context object using [[addContextObject]].
    */
@@ -346,6 +349,19 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   private[sql] def getHashVar(ctx: CodegenContext,
       keyVars: Seq[String]): Option[String] = getContextObject(ctx, "H", keyVars)
+
+  private[sql] def getAllLiterals(key: SnappySession.CachedKey): Array[LiteralValue] = {
+    var allLiterals: Array[LiteralValue] = Array.empty
+    if (key != null && key.valid) {
+      allLiterals = CachedPlanHelperExec.allLiterals(
+        getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
+          CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty)
+      ).filter(!_.collectedForPlanCaching)
+
+      allLiterals.foreach(_.collectedForPlanCaching = true)
+    }
+    allLiterals
+  }
 
   private[sql] def clearContext(): Unit = synchronized {
     // println(s"clearing context")
@@ -1777,15 +1793,7 @@ object SnappySession extends Logging {
     // keep references as well
     // filter unvisited literals. If the query is on a view for example the
     // modified tpch query no 15, It even picks those literal which we don't want.
-    var allLiterals: Array[LiteralValue] = Array.empty
-    if (key != null && key.valid) {
-      allLiterals = CachedPlanHelperExec.allLiterals(
-        session.getContextObject[ArrayBuffer[ArrayBuffer[Any]]](
-          CachedPlanHelperExec.REFERENCES_KEY).getOrElse(Seq.empty)
-      ).filter(!_.collectedForPlanCaching)
-
-      allLiterals.foreach(_.collectedForPlanCaching = true)
-    }
+    val allLiterals = session.getAllLiterals(key)
 
     logDebug(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
 
@@ -1841,7 +1849,13 @@ object SnappySession extends Logging {
       override def load(key: CachedKey): (CachedDataFrame,
           Map[String, String]) = {
         val session = key.session
-        val df = session.executeSQL(key.sqlText)
+        session.currentKey = key
+        var df: DataFrame = null
+        try {
+          df = session.executeSQL(key.sqlText)
+        } finally {
+          session.currentKey = null
+        }
         val plan = df.queryExecution.executedPlan
         // if this has in-memory caching then don't cache the first time
         // since plan can change once caching is done (due to size stats)

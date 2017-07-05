@@ -75,12 +75,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
   private def createStatsBuffer(statsData: Array[Byte],
       allocator: BufferAllocator): ByteBuffer = {
+    // need to create a copy since underlying Array[Byte] can be re-used
     val statsLen = statsData.length
-    val statsBuffer = allocator.allocateForStorage(statsLen +
-        ColumnFormatEntry.VALUE_HEADER_SIZE)
-    statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+    val statsBuffer = allocator.allocateForStorage(statsLen)
     statsBuffer.put(statsData, 0, statsLen)
-    // move to start for ColumnFormatValue to write the serialization header
     statsBuffer.rewind()
     statsBuffer
   }
