@@ -255,23 +255,28 @@ object ExternalStoreUtils extends Logging {
     val EMPTY_URL = ""
     val urlSecureSuffixFromUser = session match {
       case Some(s) =>
+        def logMessage(s: String) = {
+          Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s)
+          // TODO remove dumpThread
+          Thread.currentThread().getStackTrace.foreach(st =>
+            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
+        }
         val username = s.sqlContext.conf.getConfString("user", EMPTY_URL)
         username match {
           case EMPTY_URL =>
-            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"ABS ESUtils no user," +
-                s"password in sqlConf")
-            Thread.currentThread().getStackTrace.foreach(st =>
-              Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
+            logMessage(s"ABS ESUtils no user, password in sqlConf")
             EMPTY_URL
           case _ =>
             val pass = s.sqlContext.conf.getConfString("password", EMPTY_URL)
-            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL,
-              s"ABS ESUtils user $username, password $pass in sqlConf")
-            Thread.currentThread().getStackTrace.foreach(st =>
-              Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
-            s";user=$username;password=$pass;"
+            pass match {
+              case EMPTY_URL =>
+                logMessage(s"ABS ESUtils no password for user $username in sqlConf")
+                EMPTY_URL
+              case _ =>
+                logMessage(s"ABS ESUtils user $username, password $pass in sqlConf")
+                s";user=$username;password=$pass;"
+            }
         }
-
       case _ => EMPTY_URL
     }
 

@@ -64,14 +64,24 @@ abstract case class JDBCAppendableRelation(
   protected final val connProperties: ConnectionProperties =
     externalStore.connProperties
 
-  protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(connProperties.url + connProperties.urlSecureSuffix,
-        connProperties.connProps)
+  protected final val connFactory: () => Connection = {
+    val EMPTY_URL = ""
+    val user = sqlContext.conf.getConfString("snappydata.store.user", EMPTY_URL)
+    val password = sqlContext.conf.getConfString("snappydata.store.password", EMPTY_URL)
+    val url = if (!user.equals(EMPTY_URL) && !password.equals(EMPTY_URL)) {
+      connProperties.url + connProperties.urlSecureSuffix
+    } else connProperties.url
+    JdbcUtils.createConnectionFactory(url, connProperties.connProps)
+  }
 
   protected final val sysConnFactory: () => Connection = {
-    val url = connProperties.url +
-        ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE +
-        ";password=" + SnappyStoreHiveCatalog.HIVE_METASTORE
+    val EMPTY_URL = ""
+    val user = sqlContext.conf.getConfString("snappydata.store.user", EMPTY_URL)
+    val password = sqlContext.conf.getConfString("snappydata.store.password", EMPTY_URL)
+    val url = if (!user.equals(EMPTY_URL) && !password.equals(EMPTY_URL)) {
+      connProperties.url + ";user=" + user + ";password=" + password +
+          ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE + ";"
+    } else connProperties.url
     JdbcUtils.createConnectionFactory(url, connProperties.connProps)
   }
 
@@ -235,7 +245,8 @@ abstract case class JDBCAppendableRelation(
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName,
-              sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory())
+              sqlContext.conf.caseSensitiveAnalysis,
+              conn, sysConnFactory()) // TODO: avoid calling if not needed
             case _ => // do nothing
           }
         }

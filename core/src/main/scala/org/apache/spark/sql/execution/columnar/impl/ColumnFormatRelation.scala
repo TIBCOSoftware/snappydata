@@ -260,7 +260,8 @@ abstract class BaseColumnFormatRelation(
     } else {
       // insert into the row buffer
       val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
+        connProperties.poolProps, connProps, connProperties.hikariCP,
+        connProperties.urlSecureSuffix)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,

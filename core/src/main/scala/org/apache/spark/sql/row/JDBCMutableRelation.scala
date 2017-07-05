@@ -88,14 +88,24 @@ case class JDBCMutableRelation(
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
-  protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(connProperties.url + connProperties.urlSecureSuffix,
-        connProperties.connProps)
+  protected final val connFactory: () => Connection = {
+    val EMPTY_URL = ""
+    val user = sqlContext.conf.getConfString("snappydata.store.user", EMPTY_URL)
+    val password = sqlContext.conf.getConfString("snappydata.store.password", EMPTY_URL)
+    val url = if (!user.equals(EMPTY_URL) && !password.equals(EMPTY_URL)) {
+      connProperties.url + connProperties.urlSecureSuffix
+    } else connProperties.url
+    JdbcUtils.createConnectionFactory(url, connProperties.connProps)
+  }
 
   protected final val sysConnFactory: () => Connection = {
-    val url = connProperties.url +
-        ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE +
-        ";password=" + SnappyStoreHiveCatalog.HIVE_METASTORE
+    val EMPTY_URL = ""
+    val user = sqlContext.conf.getConfString("snappydata.store.user", EMPTY_URL)
+    val password = sqlContext.conf.getConfString("snappydata.store.password", EMPTY_URL)
+    val url = if (!user.equals(EMPTY_URL) && !password.equals(EMPTY_URL)) {
+      connProperties.url + ";user=" + user + ";password=" + password +
+          ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE + ";"
+    } else connProperties.url
     JdbcUtils.createConnectionFactory(url, connProperties.connProps)
   }
 
@@ -216,7 +226,8 @@ case class JDBCMutableRelation(
         table, upsert = false)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
+        connProperties.poolProps, connProps, connProperties.hikariCP,
+        connProperties.urlSecureSuffix)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,

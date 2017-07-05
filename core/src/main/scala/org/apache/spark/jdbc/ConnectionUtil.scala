@@ -62,7 +62,8 @@ object ConnectionUtil {
       case _ => connectionProps.executorConnProps
     }
 
-    JdbcUtils.createConnectionFactory(connectionProps.url + connectionProps.urlSecureSuffix, connProps)()
+    JdbcUtils.createConnectionFactory(connectionProps.url +
+        connectionProps.urlSecureSuffix, connProps)()
   }
 
 }
