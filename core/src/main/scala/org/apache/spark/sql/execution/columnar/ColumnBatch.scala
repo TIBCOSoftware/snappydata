@@ -29,7 +29,7 @@ import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.{Logging, TaskContext}
 
@@ -135,10 +135,6 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   if (region ne null) {
     assert(!region.getEnableOffHeapMemory,
       s"Unexpected buffer iterator call for off-heap $region")
-  } else {
-    // skip the serialization headers in the ByteBuffers
-    batch.buffers.foreach(buffer => buffer.position(buffer.position() +
-        ColumnFormatEntry.VALUE_HEADER_SIZE))
   }
 
   if (context ne null) {
