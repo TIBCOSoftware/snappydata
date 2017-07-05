@@ -361,13 +361,11 @@ class SnappyUnifiedMemoryManager private[memory](
           return
         }
 
-        // Stop execution pool to grow beyond eviction percentage of heap.
-        if (memoryMode eq MemoryMode.ON_HEAP) {
-          if (executionPool.memoryUsed + extraMemoryNeeded > maxHeapExecutionSize) {
-            logWarning(s"MemoryManager can't allocate $numBytes bytes as it " +
-                s"would exceed maxHeapExecutionSize = $maxHeapExecutionSize")
-            return
-          }
+        // Stop execution pool to grow beyond storage fraction.
+        if (executionPool.memoryUsed + extraMemoryNeeded > storageRegionSize) {
+          logWarning(s"MemoryManager can't allocate $numBytes bytes as it " +
+              s"would exceed storageRegionSize = $storageRegionSize")
+          return
         }
 
         // There is not enough free memory in the execution pool, so try to reclaim memory from
