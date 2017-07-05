@@ -456,7 +456,6 @@ check_configs
 # host pid cwd
 
 if [ -n "${TAR_FILE}" ]; then
-  echo "Calling extract function"
   extract "${TAR_FILE}"
   exit 0
 fi
@@ -491,19 +490,19 @@ while  read -r line || [[ -n "$line" ]]; do
     echo "host: $host pid: $pid and cwd: $cwd"
   fi
 
-  ( collect_data $host $cwd )
-#  all_pids+=($!) 
+  collect_data $host $cwd &
+  all_pids+=($!) 
 done < $tmp_members_file
 
 # wait for all the collection to end on respective hosts
 # Then rsync 1 by 1
-#for p in "${all_pids[@]}"
-#do
-#  if [ "${VERBOSE}" = "1" ]; then
-#    echo "Waiting for pid ${p}"
-#  fi
-#  wait $p 2> /dev/null
-#done
+for p in "${all_pids[@]}"
+do
+  if [ "${VERBOSE}" = "1" ]; then
+    echo "Waiting for pid ${p}"
+  fi
+  wait $p 2> /dev/null
+done
 
 while  read -r line || [[ -n "$line" ]]; do
   read host cwd <<< $line
