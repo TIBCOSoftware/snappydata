@@ -13,6 +13,9 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
+- 'Migration Guide': 'migration/migration.md'
+- 'Migration Guide':
+    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 - How Tos: howto.md
 - Architecture: architecture.md
 - 'Configuring the Cluster': 'configuration.md'
