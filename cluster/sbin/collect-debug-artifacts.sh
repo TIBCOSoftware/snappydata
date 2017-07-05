@@ -479,7 +479,7 @@ tmp_members_file="$(mktemp /tmp/debug_mem.XXXX)"
 
 sort $MEMBERS_FILE | uniq >  $tmp_members_file
 
-#all_pids=()
+all_pids=()
 while  read -r line || [[ -n "$line" ]]; do
   if [ "${VERBOSE}" = "1" ]; then
     echo "Line read from file: $line"
