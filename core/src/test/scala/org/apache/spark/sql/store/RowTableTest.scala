@@ -617,4 +617,17 @@ class RowTableTest
     assert(df2.count()==4)
     snc.sql("DROP table t2")
   }
+
+  test("Test Long Datatype for Row table - SNAP-1722") {
+    // Also test long varchar to see if its not breaking the previous implementation
+    snc.sql("create table table1 (col1  long, col2 Long varchar) using row " +
+      "options( partition_by 'col1,col2', buckets '5')")
+    for(i <- 1 to 1000){
+      snc.sql(s"insert into table1 values($i,'${i+1}')")
+    }
+    val cnt = snc.sql("select * from table1").count
+    snc.sql("drop table table1")
+    assert(cnt == 1000,s"Expceted count is 1000 but actual count is $cnt")
+
+  }
 }
