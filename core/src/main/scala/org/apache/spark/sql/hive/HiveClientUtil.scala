@@ -170,8 +170,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       logInfo("Using Hive metastore database, dbURL = " +
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS,
-      "org.apache.spark.sql.hive.SnappyHiveMetaStoreEventListener")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
