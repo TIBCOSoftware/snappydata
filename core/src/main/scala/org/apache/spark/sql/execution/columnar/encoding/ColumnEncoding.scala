@@ -31,7 +31,6 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthI
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.bitset.BitSetMethods
@@ -42,16 +41,16 @@ import org.apache.spark.util.collection.BitSet
  * Base class for encoding and decoding in columnar form. Memory layout of
  * the bytes for a set of column values is:
  * {{{
- *    .----------------------- Serialization header (8 bytes)
- *   |    .------------------- Encoding scheme (4 bytes)
- *   |   | .------------------ Null bitset size as number of longs N (4 bytes)
- *   |   | | .---------------- Null bitset longs (8 x N bytes,
- *   |   | | |                                    empty if null count is zero)
- *   |   | | |     .---------- Encoded non-null elements
- *   V   V V V     V
- *   +---+-+-+-----+---------+
- *   |   | | | ... | ... ... |
- *   +---+-+-+-----+---------+
+ *    .----------------------- Encoding scheme (4 bytes)
+ *   |    .------------------- Null bitset size as number of longs N (4 bytes)
+ *   |   |
+ *   |   |   .---------------- Null bitset longs (8 x N bytes,
+ *   |   |   |                                    empty if null count is zero)
+ *   |   |   |     .---------- Encoded non-null elements
+ *   V   V   V     V
+ *   +---+---+-----+---------+
+ *   |   |   | ... | ... ... |
+ *   +---+---+-----+---------+
  *    \-----/ \-------------/
  *     header      body
  * }}}
@@ -214,7 +213,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final var columnBeginPosition: Long = _
   protected final var columnEndPosition: Long = _
   protected final var columnBytes: AnyRef = _
-  protected final var reuseUsedSize: Int = _
+  protected[encoding] final var reuseUsedSize: Int = _
   protected final var forComplexType: Boolean = _
 
   protected final var _lowerLong: Long = _
@@ -315,8 +314,6 @@ trait ColumnEncoder extends ColumnEncoding {
 
     var baseSize: Long = numNullBytes
     if (withHeader) {
-      // add header size for serialized form to avoid a copy in Oplog layer
-      baseSize += ColumnFormatEntry.VALUE_HEADER_SIZE
       baseSize += 8L /* typeId + nullsSize */
     }
     if ((columnData eq null) || (columnData.limit() < (baseSize + defSize))) {
@@ -343,9 +340,7 @@ trait ColumnEncoder extends ColumnEncoding {
     }
     reuseUsedSize = 0
     if (withHeader) {
-      // skip serialization header which will be filled in by ColumnFormatValue
-      var cursor = ensureCapacity(columnBeginPosition, 8 + numNullBytes.toInt) +
-          ColumnFormatEntry.VALUE_HEADER_SIZE
+      var cursor = ensureCapacity(columnBeginPosition, 8 + numNullBytes.toInt)
       // typeId followed by nulls bitset size and space for values
       ColumnEncoding.writeInt(columnBytes, cursor, typeId)
       cursor += 4
@@ -364,14 +359,14 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def setSource(buffer: ByteBuffer,
       releaseOld: Boolean): Unit = {
     if (buffer ne columnData) {
-      if ((columnData ne null) && releaseOld) {
+      if (releaseOld && (columnData ne null)) {
         allocator.release(columnData)
       }
       columnData = buffer
       columnBytes = allocator.baseObject(buffer)
       columnBeginPosition = allocator.baseOffset(buffer)
-      columnEndPosition = columnBeginPosition + buffer.limit()
     }
+    columnEndPosition = columnBeginPosition + buffer.limit()
   }
 
   protected final def clearSource(newSize: Int, releaseData: Boolean): Unit = {
@@ -395,7 +390,7 @@ trait ColumnEncoder extends ColumnEncoding {
     val limit = src.limit()
 
     if (position != srcOffset) src.position(srcOffset)
-    if (limit > endOffset) src.limit(endOffset)
+    if (limit != endOffset) src.limit(endOffset)
 
     dest.put(src)
 
@@ -723,7 +718,7 @@ trait ColumnEncoder extends ColumnEncoding {
       numWords: Int): Long
 
   protected final def releaseForReuse(newSize: Int): Unit = {
-    columnData.clear()
+    columnData.rewind()
     reuseUsedSize = newSize
   }
 }
@@ -1098,7 +1093,7 @@ trait NullableEncoder extends NotNullEncoder {
 
   override protected[encoding] def initializeNulls(initSize: Int): Int = {
     if (nullWords eq null) {
-      val numWords = calculateBitSetWidthInBytes(initSize) >>> 3
+      val numWords = math.max(1, calculateBitSetWidthInBytes(initSize) >>> 3)
       maxNulls = numWords.toLong << 6L
       nullWords = new Array[Long](numWords)
       initialNumWords = numWords
@@ -1120,7 +1115,7 @@ trait NullableEncoder extends NotNullEncoder {
   override def nullCount: Int = {
     var sum = 0
     var i = 0
-    val numWords = nullWords.length
+    val numWords = getNumNullWords
     while (i < numWords) {
       sum += java.lang.Long.bitCount(nullWords(i))
       i += 1
@@ -1136,11 +1131,12 @@ trait NullableEncoder extends NotNullEncoder {
     } else {
       // expand
       val oldNulls = nullWords
-      val oldLen = oldNulls.length
-      val newLen = oldLen << 1
+      val oldLen = getNumNullWords
+      // ensure that ordinal fits (SNAP-1760)
+      val newLen = math.max(oldNulls.length << 1, (ordinal >> 6) + 1)
       nullWords = new Array[Long](newLen)
-      maxNulls = newLen << 6L
-      System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
+      maxNulls = newLen.toLong << 6L
+      if (oldLen > 0) System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
       BitSetMethods.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
     }
   }
@@ -1164,9 +1160,8 @@ trait NullableEncoder extends NotNullEncoder {
     val maxWastedWords = 8
     // check if the number of words to be written matches the space that
     // was left at initialization; as an optimization allow for larger
-    // space left at initialization when one full data copy can be avoided;
-    // add serialization header which will be filled in by ColumnFormatValue
-    val baseOffset = columnBeginPosition + ColumnFormatEntry.VALUE_HEADER_SIZE
+    // space left at initialization when one full data copy can be avoided
+    val baseOffset = columnBeginPosition
     if (initialNumWords == numWords) {
       writeNulls(columnBytes, baseOffset + 8, numWords)
       super.finish(cursor)
@@ -1181,14 +1176,14 @@ trait NullableEncoder extends NotNullEncoder {
       // make space (or shrink) for writing nulls at the start
       val numNullBytes = numWords << 3
       val initialNullBytes = initialNumWords << 3
-      val oldSize = cursor - baseOffset + ColumnFormatEntry.VALUE_HEADER_SIZE
+      val oldSize = cursor - baseOffset
       val newSize = checkBufferSize(oldSize + numNullBytes - initialNullBytes)
       val storageAllocator = this.storageAllocator
       val newColumnData = storageAllocator.allocateForStorage(newSize)
 
       // first copy the rest of the bytes skipping header and nulls
-      val srcOffset = ColumnFormatEntry.VALUE_HEADER_SIZE + 8 + initialNullBytes
-      val destOffset = ColumnFormatEntry.VALUE_HEADER_SIZE + 8 + numNullBytes
+      val srcOffset = 8 + initialNullBytes
+      val destOffset = 8 + numNullBytes
       newColumnData.position(destOffset)
       copyTo(newColumnData, srcOffset, oldSize.toInt)
       newColumnData.rewind()
@@ -1204,8 +1199,6 @@ trait NullableEncoder extends NotNullEncoder {
       // now write the header including nulls
       val newColumnBytes = storageAllocator.baseObject(newColumnData)
       var position = storageAllocator.baseOffset(newColumnData)
-      // skip serialization header which will be filled in by ColumnFormatValue
-      position += ColumnFormatEntry.VALUE_HEADER_SIZE
       ColumnEncoding.writeInt(newColumnBytes, position, typeId)
       position += 4
       ColumnEncoding.writeInt(newColumnBytes, position, numWords)

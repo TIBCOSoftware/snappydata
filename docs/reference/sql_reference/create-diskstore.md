@@ -88,24 +88,22 @@ snappy> CREATE DISKSTORE STORE1;
 This example configures disk store parameters and specifies a storage directory:
 
 ``` pre
-snappy> CREATE DISKSTORE STORE1 
-    MAXLOGSIZE 1024 
-    AUTOCOMPACT TRUE
-    ALLOWFORCECOMPACTION  FALSE 
-    COMPACTIONTHRESHOLD  80
-    TIMEINTERVAL  223344
-    WRITEBUFFERSIZE 19292393
-    QUEUESIZE 17374
-    ('dir1' 10240);
+snappy> CREATE DISKSTORE STORE1
+      MAXLOGSIZE 1024 
+      AUTOCOMPACT TRUE
+      ALLOWFORCECOMPACTION  FALSE 
+      COMPACTIONTHRESHOLD  80
+      TIMEINTERVAL  223344
+      WRITEBUFFERSIZE 19292393
+      QUEUESIZE 17374
+      ('dir1' 10240);
 ```
 
 This example specifies multiple storage directories and directory sizes for oplog files:
 
 ``` pre
 snappy> CREATE DISKSTORE STORE1 
-    WRITEBUFFERSIZE 19292393
-    QUEUESIZE 17374
-    ('dir1' 456 , 'dir2', 'dir3' 532 );
+      WRITEBUFFERSIZE 19292393
+      QUEUESIZE 17374
+      ('dir1' 456 , 'dir2', 'dir3' 532 );
 ```
-
-

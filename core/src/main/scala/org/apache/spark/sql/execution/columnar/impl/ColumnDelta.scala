@@ -17,16 +17,15 @@
 
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.io.{DataInput, DataOutput}
 import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
+import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
-import com.gemstone.gemfire.internal.shared.BufferAllocator
+import com.gemstone.gemfire.internal.cache.{DiskEntry, DiskId}
+import com.gemstone.gemfire.internal.shared.{OutputStreamChannel, Version}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
-
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnEncoding}
-import org.apache.spark.sql.types.{DataType, Decimal, StructField}
-import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 /**
  * Encodes a delta value for a [[ColumnFormatValue]] obtained after an
@@ -61,9 +60,34 @@ final class ColumnDelta
     extends SerializedDiskBuffer with GfxdSerializable with Sizeable {
 
   @volatile
-  @transient private var deltaBuffer = ColumnFormatEntry.VALUE_EMPTY_BUFFER
+  @transient private var deltaBuffer = DiskEntry.Helper.NULL_BUFFER
   @transient private var hierarchy: Byte = _
 
+  override protected def releaseBuffer(): Unit = ???
+
+  override def setDiskId(id: DiskId, dr: DiskRegionView): Unit = ???
+
+  override def write(channel: OutputStreamChannel): Unit = ???
+
+  override def getOffHeapSizeInBytes: Int = ???
+
+  override def getSizeInBytes: Int = ???
+
+  override def getDSFID: Int = ???
+
+  override def toData(out: DataOutput): Unit = ???
+
+  override def fromData(in: DataInput): Unit = ???
+
+  override def getSerializationVersions: Array[Version] = ???
+
+  override def getGfxdID: Byte = ???
+
+  override def getBufferRetain: ByteBuffer = ???
+
+  override def needsRelease(): Boolean = ???
+
+  override def size(): Int = ???
 }
 
 object ColumnDelta {

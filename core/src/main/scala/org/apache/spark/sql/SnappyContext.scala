@@ -621,13 +621,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     snappySession.sqlUncached(sqlText)
 
   /**
-   * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
-   * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
-   * }}}
+    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
+    * {{{
+    *        snc.insert(tableName, dataDF.collect(): _*)
+    * }}}
    * @param tableName
    * @param rows
    * @return number of rows inserted
@@ -639,11 +636,9 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * A user can insert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.insert
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *        snc.insert(tableName, rows)
    * }}}
    *
    * @param tableName
@@ -657,11 +652,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *         snSession.put(tableName, dataDF.collect(): _*)
    * }}}
    * @param tableName
    * @param rows
@@ -713,11 +705,9 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * upsert a DataFrame using foreachPartition...
    * {{{
-   *         someDataFrame.foreachPartition (x => snappyContext.put
-   *            ("MyTable", x.toSeq)
-   *         )
+   *        java.util.ArrayList[java.util.ArrayList[_] rows = ...    *
+   *         snSession.put(tableName, rows)
    * }}}
    *
    * @param tableName
@@ -997,7 +987,7 @@ object SnappyContext extends Logging {
   }
 
   private def resolveClusterMode(sc: SparkContext): ClusterMode = {
-    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+    val mode = if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
         throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
             " from SnappyData tools package")
@@ -1035,6 +1025,8 @@ object SnappyContext extends Logging {
         else ExternalClusterMode(sc, sc.master)
       }
     }
+    logInfo(s"Initializing SnappyData in cluster mode: $mode")
+    mode
   }
 
   private[sql] def initGlobalSnappyContext(sc: SparkContext,
@@ -1162,6 +1154,11 @@ object SnappyContext extends Logging {
 abstract class ClusterMode {
   val sc: SparkContext
   val url: String
+  val description: String = "Cluster mode"
+
+  override def toString: String = {
+    s"$description: sc = $sc, url = $url"
+  }
 }
 
 final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
@@ -1207,7 +1204,9 @@ final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
  * Spark driver that also hosts a job-server and GemFireXD accessor.
  */
 case class SnappyEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Embedded cluster mode"
+}
 
 /**
  * This is for the two cluster mode: one is the normal snappy cluster, and
@@ -1215,7 +1214,9 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
  * the snappy cluster on demand that just remains like an external datastore.
  */
 case class SplitClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Split cluster mode"
+}
 
 /**
  * Similar to SplitClusterMode but this will use thin client driver for making
@@ -1228,27 +1229,35 @@ case class SplitClusterMode(override val sc: SparkContext,
  *
  */
 case class ThinClientConnectorMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Smart connector mode"
+}
 
 /**
  * This is for the "old-way" of starting GemFireXD inside an existing
  * Spark/Yarn cluster where cluster nodes themselves boot up as GemXD cluster.
  */
 case class ExternalEmbeddedMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "External embedded mode"
+}
 
 /**
  * The local mode which hosts the data, executor, driver
  * (and optionally even jobserver) all in the same node.
  */
 case class LocalMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "Local mode"
+}
 
 /**
  * A regular Spark/Yarn/Mesos or any other non-snappy cluster.
  */
 case class ExternalClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode
+    override val url: String) extends ClusterMode {
+  override val description: String = "External cluster mode"
+}
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)
     extends AnalysisException(message) with Serializable

@@ -89,9 +89,46 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   def loop(code: String, numTimes: Int): String = {
     s"""
-      for(int i=0;i< $numTimes; i++){
+      for (int i = 0;i < $numTimes; i++) {
           $code
       }"""
+  }
+
+  /**
+   * Add a task listener to close encoders as part of defining
+   * "defaultBatchSizeTerm". Also return a string as a fallback check
+   * to be added at the end of doProduce code before returning in case
+   * this is generated on executor that has no TaskContext.
+   */
+  private def addBatchSizeAndCloseEncoders(ctx: CodegenContext,
+      closeEncoders: String): String = {
+    val closeEncodersFunction = ctx.freshName("closeEncoders")
+    ctx.addNewFunction(closeEncodersFunction,
+      s"""
+         |private void $closeEncodersFunction() {
+         |  $closeEncoders
+         |}
+      """.stripMargin)
+    // add a task completion listener to close the encoders
+    val contextClass = classOf[TaskContext].getName
+    val listenerClass = classOf[TaskCompletionListener].getName
+    val context = ctx.freshName("taskContext")
+    ctx.addMutableState("int", defaultBatchSizeTerm,
+      s"""
+         |final $contextClass $context = $contextClass.get();
+         |if ($context != null) {
+         |  $context.addTaskCompletionListener(new $listenerClass() {
+         |    @Override
+         |    public void onTaskCompletion($contextClass context) {
+         |      if ($numInsertions >= 0) $closeEncodersFunction();
+         |    }
+         |  });
+         |}
+      """.stripMargin)
+    s"""
+       |if ($numInsertions >= 0 && $contextClass.get() == null) {
+       |  $closeEncodersFunction();
+       |}""".stripMargin
   }
 
   /**
@@ -122,7 +159,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"int $batchSizeTerm = 0;"
     }
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
-    ctx.addMutableState("int", defaultBatchSizeTerm, "")
     val defaultRowSize = ctx.freshName("defaultRowSize")
     val childProduce = doChildProduce(ctx)
 
@@ -179,6 +215,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |}
       """.stripMargin)
 
+    val closeEncoders = loop(
+      s"if ($encoderArrayTerm[i] != null) $encoderArrayTerm[i].close();",
+      schema.length)
+    val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
     s"""
        |$checkEnd; // already done
        |$batchSizeDeclaration
@@ -196,9 +236,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $childProduce
        |}
        |if ($batchSizeTerm > 0) {
-       |  $storeColumnBatch(-1, $storeColumnBatchArgs);
+       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
+       |$closeForNoContext
        |${if (numInsertedRowsMetric eq null) ""
         else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
@@ -278,29 +319,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  return false;
          |}
       """.stripMargin)
-    val closeEncodersFunction = ctx.freshName("closeEncoders")
-    ctx.addNewFunction(closeEncodersFunction,
-      s"""
-         |private void $closeEncodersFunction() {
-         |  $closeEncoders
-         |}
-      """.stripMargin)
-    // add a task completion listener to close the encoders
-    val contextClass = classOf[TaskContext].getName
-    val listenerClass = classOf[TaskCompletionListener].getName
-    val context = ctx.freshName("taskContext")
-    ctx.addMutableState("int", defaultBatchSizeTerm,
-      s"""
-         |final $contextClass $context = $contextClass.get();
-         |if ($context != null) {
-         |  $context.addTaskCompletionListener(new $listenerClass() {
-         |    @Override
-         |    public void onTaskCompletion($contextClass context) {
-         |      if ($numInsertions >= 0) $closeEncodersFunction();
-         |    }
-         |  });
-         |}
-      """.stripMargin)
+    val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
     s"""
        |$checkEnd; // already done
        |$batchSizeDeclaration
@@ -324,9 +343,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
-       |if ($numInsertions >= 0 && $contextClass.get() == null) {
-       |  $closeEncodersFunction();
-       |}
+       |$closeForNoContext
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
@@ -393,13 +410,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private def genMultipleStatsMethods(ctx: CodegenContext,
                                       methodName: String,
                                       statsCode: IndexedSeq[String],
-                                      schema : IndexedSeq[Seq[Attribute]],
+                                      schema: IndexedSeq[Seq[Attribute]],
+                                      statsAttrs: IndexedSeq[Attribute],
                                       exprs: IndexedSeq[Seq[ExprCode]]): (String, String) = {
 
 
     val statsRowTerm = ctx.freshName("statsRow")
-    ctx.addMutableState("MutableRow", statsRowTerm,
-      s"$statsRowTerm = new GenericMutableRow(${schema.flatten.length} + 1);")
+    val statsSchema = StructType.fromAttributes(statsAttrs)
+    val statsSchemaVar = ctx.addReferenceObj("statsSchema", statsSchema)
+    ctx.addMutableState("SpecificMutableRow", statsRowTerm,
+      s"$statsRowTerm = new SpecificMutableRow($statsSchemaVar);")
 
 
     val blocks = new ArrayBuffer[String]()
@@ -425,7 +445,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
           if (${e._1.isNull}) {
              $statsRowTerm.setNullAt($ordinal);
           } else {
-             ${ctx.setColumn(statsRowTerm, e._2.dataType, ordinal, e._1.value)};
+             ${setColumn(ctx, statsRowTerm, e._2.dataType, ordinal, e._1.value)};
           }
          """.stripMargin
         blockBuilder.append(s"$writerCode\n")
@@ -452,6 +472,20 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   }
 
+  /**
+   * Returns the code to update a column in Row for a given DataType.
+   */
+  private def setColumn(ctx: CodegenContext, row: String, dataType: DataType,
+      ordinal: Int, value: String): String = {
+    val jt = ctx.javaType(dataType)
+    dataType match {
+      case _ if ctx.isPrimitiveType(jt) =>
+        s"$row.set${ctx.primitiveTypeName(jt)}($ordinal, $value)"
+      case t: DecimalType => s"$row.setDecimal($ordinal, $value, ${t.precision})"
+      case udt: UserDefinedType[_] => setColumn(ctx, row, udt.sqlType, ordinal, value)
+      case _ => s"$row.update($ordinal, $value)"
+    }
+  }
 
   private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode],
                                   row: ExprCode): String = {
@@ -463,8 +497,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     cursorsArrayTerm = ctx.freshName("cursors")
 
     val mutableRow = ctx.freshName("mutableRow")
-    ctx.addMutableState("MutableRow", mutableRow,
-      s"$mutableRow = new GenericMutableRow(${schema.length});")
+    ctx.addMutableState("SpecificMutableRow", mutableRow,
+      s"$mutableRow = new SpecificMutableRow($schemaTerm);")
 
     val rowWriteExprs = schema.indices.map { i =>
       val field = schema(i)
@@ -475,7 +509,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          if (${evaluationCode.isNull}) {
            $mutableRow.setNullAt($i);
          } else {
-           ${ctx.setColumn(mutableRow, dataType, i, evaluationCode.value)};
+           ${setColumn(ctx, mutableRow, dataType, i, evaluationCode.value)};
          }
       """
     }
@@ -524,8 +558,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       "java.lang.String")
     val (statsCode, statsSchema, stats) = columnStats.unzip3
     val statsVars = ExprCode("", "false", batchSizeTerm) +: stats.flatten
-    val statsExprs = (ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten)
-        .zipWithIndex.map { case (a, i) =>
+    val statsAttrs = ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten
+    val statsExprs = statsAttrs.zipWithIndex.map { case (a, i) =>
       a.dataType match {
         // some types will always be null so avoid unnecessary generated code
         case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
@@ -537,8 +571,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"""$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n""".stripMargin
     val buffersCode = loop(bufferLoopCode, schema.length)
 
-    val (statsSplitCode, statsRowTerm) =
-      genMultipleStatsMethods(ctx, "writeStats", statsCode, statsSchema, stats)
+    val (statsSplitCode, statsRowTerm) = genMultipleStatsMethods(ctx,
+      "writeStats", statsCode, statsSchema, statsAttrs, stats)
 
     ctx.INPUT_ROW = statsRowTerm
     ctx.currentVars = null

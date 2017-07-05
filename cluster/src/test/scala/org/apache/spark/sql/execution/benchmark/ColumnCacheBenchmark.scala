@@ -205,7 +205,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val num_col = 300
     val str = (1 to num_col).map(i => s" '$i' as C$i")
     val testDF = snappySession.range(size).select(str.map { expr =>
-      Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
+      Column(snappySession.sessionState.sqlParser.parseExpression(expr))
     }: _*)
 
 
@@ -246,7 +246,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val str = (1 to numCols).map(i =>
       s" (case when rand() < 0.5 then null else '$i' end) as C$i")
     val testDF = snappySession.range(size).select(str.map { expr =>
-      Column(sparkSession.sessionState.sqlParser.parseExpression(expr))
+      Column(snappySession.sessionState.sqlParser.parseExpression(expr))
     }: _*)
 
     val sql = (1 to numCols).map(i => s"C$i STRING").mkString(",")
