@@ -61,7 +61,7 @@ class SnappyUnifiedMemoryManager private[memory](
   private val managerId = if (!tempManager) "RuntimeManager" else "BootTimeManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
-           conf.getDouble("spark.memory.storageMaxFraction", 0.9)).toLong
+      conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
 
   /**
    * An estimate of the maximum result size handled by a single partition.

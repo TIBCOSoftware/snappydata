@@ -13,7 +13,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS| NONE’,
+    PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
@@ -97,8 +97,14 @@ Use the REDUNDANCY clause to specify the number of redundant copies that should 
 `EVICTION_BY`</br>
 Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. 
 
-`PERSISTENT`</br>
-Persists the in-memory table data to a local SnappyData disk store. i.e. each node in the cluster will persist its managed partitions to configured local disk.
+`PERSISTENCE`</br>
+When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member. 
+
+!!! Note:
+
+   	* By default, both row and column tables are persistent.
+
+   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
 `DISKSTORE`</br>
 The disk directories where you want to persist the table data. By default, SnappyData creates a "default" disk store on each member node. You can use this option to control the location where data will be stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, [refer to this document](create-diskstore.md).
@@ -129,60 +135,60 @@ For example, `create table if not exists Table1 (a int)` is equivalent to `creat
 
 ### Example: Column Table Partitioned on a Single Column
 ```
-	snappy>CREATE TABLE CUSTOMER ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL))
-        USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
+snappy>CREATE TABLE CUSTOMER ( 
+    C_CUSTKEY     INTEGER NOT NULL,
+    C_NAME        VARCHAR(25) NOT NULL,
+    C_ADDRESS     VARCHAR(40) NOT NULL,
+    C_NATIONKEY   INTEGER NOT NULL,
+    C_PHONE       VARCHAR(15) NOT NULL,
+    C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+    C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+    C_COMMENT     VARCHAR(117) NOT NULL))
+    USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
 ```
 
 ### Example: Column Table Partitioned with 10 Buckets and Persistence Enabled
 ```
-	snappy>CREATE TABLE CUSTOMER ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL))
-        USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENT 'SYNCHRONOUS');
+snappy>CREATE TABLE CUSTOMER ( 
+    C_CUSTKEY     INTEGER NOT NULL,
+    C_NAME        VARCHAR(25) NOT NULL,
+    C_ADDRESS     VARCHAR(40) NOT NULL,
+    C_NATIONKEY   INTEGER NOT NULL,
+    C_PHONE       VARCHAR(15) NOT NULL,
+    C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+    C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+    C_COMMENT     VARCHAR(117) NOT NULL))
+    USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENCE 'SYNCHRONOUS');
 ```
 
 ### Example: Replicated, Persistent Row Table
 ```
-	snappy>CREATE TABLE SUPPLIER ( 
-          S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
-          S_NAME STRING NOT NULL, 
-          S_ADDRESS STRING NOT NULL, 
-          S_NATIONKEY INTEGER NOT NULL, 
-          S_PHONE STRING NOT NULL, 
-          S_ACCTBAL DECIMAL(15, 2) NOT NULL,
-          S_COMMENT STRING NOT NULL)
-          USING ROW OPTIONS (PERSISTENT);
+snappy>CREATE TABLE SUPPLIER ( 
+      S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
+      S_NAME STRING NOT NULL, 
+      S_ADDRESS STRING NOT NULL, 
+      S_NATIONKEY INTEGER NOT NULL, 
+      S_PHONE STRING NOT NULL, 
+      S_ACCTBAL DECIMAL(15, 2) NOT NULL,
+      S_COMMENT STRING NOT NULL)
+      USING ROW OPTIONS (PERSISTENCE 'ASYNCHRONOUS');
 ```
 
 ### Example: Row Table Partitioned with 10 Buckets and Overflow Enabled
 ```
-	snappy>CREATE TABLE SUPPLIER ( 
-          S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
-          S_NAME STRING NOT NULL, 
-          S_ADDRESS STRING NOT NULL, 
-          S_NATIONKEY INTEGER NOT NULL, 
-          S_PHONE STRING NOT NULL, 
-          S_ACCTBAL DECIMAL(15, 2) NOT NULL,
-          S_COMMENT STRING NOT NULL)
-          USING ROW OPTIONS (BUCKETS '10',
-    	  "PARTITION_BY 'S_SUPPKEY',
-       	  "PERSISTENT 'ASYNCHRONOUS',
-          "EVICTION_BY 'LRUCOUNT 3',
-          "OVERFLOW 'true');
+snappy>CREATE TABLE SUPPLIER ( 
+      S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
+      S_NAME STRING NOT NULL, 
+      S_ADDRESS STRING NOT NULL, 
+      S_NATIONKEY INTEGER NOT NULL, 
+      S_PHONE STRING NOT NULL, 
+      S_ACCTBAL DECIMAL(15, 2) NOT NULL,
+      S_COMMENT STRING NOT NULL)
+      USING ROW OPTIONS (BUCKETS '10',
+      PARTITION_BY 'S_SUPPKEY',
+      PERSISTENCE 'ASYNCHRONOUS',
+      EVICTION_BY 'LRUCOUNT 3',
+      OVERFLOW 'true');
 ```
 
 ### Example: Create Table using Select Query

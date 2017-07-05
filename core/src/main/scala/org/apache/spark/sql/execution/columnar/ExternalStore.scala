@@ -27,7 +27,7 @@ import org.apache.spark.sql.types.StructType
 
 trait ExternalStore extends Serializable {
 
-  final val columnPrefix = "Col_"
+  final val columnPrefix = "COL_"
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit

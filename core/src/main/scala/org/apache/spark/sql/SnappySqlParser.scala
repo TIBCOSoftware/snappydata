@@ -32,12 +32,12 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   /** Creates/Resolves DataType for a given SQL string. */
   override def parseDataType(sqlText: String): DataType = {
-    sqlParser.parse(sqlText, sqlParser.dataType.run())
+    sqlParser.parse(sqlText, sqlParser.parsedDataType.run())
   }
 
   /** Creates Expression for a given SQL string. */
   override def parseExpression(sqlText: String): Expression = {
-    sqlParser.parse(sqlText, sqlParser.namedExpression.run())
+    sqlParser.parse(sqlText, sqlParser.parsedExpression.run())
   }
 
   /** Creates TableIdentifier for a given SQL string. */
