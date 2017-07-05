@@ -415,11 +415,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
 
     val statsRowTerm = ctx.freshName("statsRow")
-    ctx.addMutableState("InternalRow", statsRowTerm,
-      s"$statsRowTerm = new GenericInternalRow(${schema.flatten.length} + 1);")
     val statsSchema = StructType.fromAttributes(statsAttrs)
     val statsSchemaVar = ctx.addReferenceObj("statsSchema", statsSchema)
-    ctx.addMutableState("InternalRow", statsRowTerm,
+    ctx.addMutableState("SpecificInternalRow", statsRowTerm,
       s"$statsRowTerm = new SpecificInternalRow($statsSchemaVar);")
 
     val blocks = new ArrayBuffer[String]()
