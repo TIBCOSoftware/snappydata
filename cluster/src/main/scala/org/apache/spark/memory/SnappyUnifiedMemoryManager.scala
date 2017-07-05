@@ -479,8 +479,11 @@ class SnappyUnifiedMemoryManager private[memory](
       // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
       val doEvict = if (shouldEvict &&
           objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
-        // don't use more than 30% of pool size for one partition result
-        numBytes < math.min(0.3 * storagePool.poolSize,
+        // don't use more than 10% of pool size for one partition result
+        // 30% of storagePool size is still large. WIth retries it virtually evicts all data.
+        // Hence taking 30% of initial storage pool size. Once retry of LowMemoryException is
+        // stopped it would be much cleaner.
+        numBytes < math.min(0.3 * maxStorageSize,
           math.max(maxPartResultSize, storagePool.memoryFree))
       } else shouldEvict
 
