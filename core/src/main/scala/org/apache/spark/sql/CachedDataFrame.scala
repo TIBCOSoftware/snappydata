@@ -410,12 +410,12 @@ object CachedDataFrame
       iter: Iterator[InternalRow]): PartitionResult = {
     var count = 0
     val buffer = new Array[Byte](4 << 10)
-    // 4K
+
     // final output is written to this buffer
     var output: ByteBufferDataOutput = null
     // holds intermediate bytes which are compressed and flushed to output
     val maxOutputBufferSize = 64 << 10
-    // 64K
+
     // can't enforce maxOutputBufferSize due to a row larger than that limit
     val bufferOutput = new Output(4 << 10, -1)
     var outputRetained = false

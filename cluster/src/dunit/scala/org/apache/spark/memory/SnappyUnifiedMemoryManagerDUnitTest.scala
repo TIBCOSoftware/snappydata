@@ -196,7 +196,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(col_table)
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(10, getClass)
+    val waitAssert = new WaitAssert(20, getClass)
     // Setting ignore bytecount as VM doing GII does have a valid value, hence key is kept as null
     // This decreases the size of entry overhead. @TODO find out why only column table needs this ?
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
@@ -232,7 +232,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(rr_table)
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(2, getClass)
+    val waitAssert = new WaitAssert(10, getClass)
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
       20000, 5000, true)
@@ -269,7 +269,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(rr_table)
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(2, getClass)
+    val waitAssert = new WaitAssert(10, getClass)
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
       20000, 5000, true)
@@ -314,7 +314,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(5, getClass)
+    val waitAssert = new WaitAssert(10, getClass)
     // The delete operation takes time to propagate
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
       waitAssert.exceptionString(),
