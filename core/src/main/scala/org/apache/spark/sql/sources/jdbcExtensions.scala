@@ -64,7 +64,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
       ifExists: Boolean): Unit
 
   def initializeTable(tableName: String, caseSensitive: Boolean,
-      conn: Connection, sysConn: Connection): Unit = {
+      conn: Connection, sysConn: () => Connection): Unit = {
   }
 
   def addExtraDriverProperties(isLoner: Boolean, props: Properties): Unit = {

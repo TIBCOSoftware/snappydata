@@ -398,7 +398,7 @@ abstract class BaseColumnFormatRelation(
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
-            sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory())
+            sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory)
         }
         createExternalTableForColumnBatches(externalColumnTableName,
           externalStore)
