@@ -38,7 +38,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
+import org.apache.spark.memory.{MemoryConsumer, MemoryManagerCallback, MemoryMode}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
@@ -401,18 +401,22 @@ object CachedDataFrame
   override def apply(context: TaskContext,
       iter: Iterator[InternalRow]): PartitionResult = {
     var count = 0
-    val buffer = new Array[Byte](4 << 10) // 4K
+    val buffer = new Array[Byte](4 << 10)
+
     // final output is written to this buffer
-    val output = new ByteBufferDataOutput(4 << 10,
-      DirectBufferAllocator.instance(),
-      null,
-      ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
+    var output: ByteBufferDataOutput = null
     // holds intermediate bytes which are compressed and flushed to output
-    val maxOutputBufferSize = 64 << 10 // 64K
+    val maxOutputBufferSize = 64 << 10
+
     // can't enforce maxOutputBufferSize due to a row larger than that limit
     val bufferOutput = new Output(4 << 10, -1)
     var outputRetained = false
     try {
+      output = new ByteBufferDataOutput(4 << 10,
+        DirectBufferAllocator.instance(),
+        null,
+        ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
+
       val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
       while (iter.hasNext) {
         val row = iter.next().asInstanceOf[UnsafeRow]
@@ -434,49 +438,47 @@ object CachedDataFrame
         finalBuffer.flip
         val memSize = finalBuffer.limit().toLong
         // Ask UMM before getting the array to heap.
-        // Taking unroll memory as this memory is cleaned up on task completion.
+        // Taking execution memory as this memory is cleaned up on task completion.
         // On connector mode also this should account to the overall memory usage.
         // We will ensure that sufficient memory is available by reserving
         // four times as Kryo serialization will expand its buffer accordingly
         // and transport layer can create another copy.
-
-        if (context != null) { // TODO why driver is calling this code with context null ?
-          if (!MemoryManagerCallback.memoryManager.
-              acquireStorageMemoryForObject(
-                objectName = BufferAllocator.STORE_DATA_FRAME_OUTPUT,
-                blockId = MemoryManagerCallback.cachedDFBlockId,
-                numBytes = 4L * memSize,
-                memoryMode = MemoryMode.ON_HEAP,
-                buffer = null,
-                shouldEvict = true)) {
-            throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
+        if (context != null) {
+          // TODO why driver is calling this code with context null ?
+          val memoryConsumer = new MemoryConsumer(context.taskMemoryManager()) {
+            override def spill(size: Long, trigger: MemoryConsumer): Long = {
+              0L
+            }
+          }
+          // TODO Remove the 4 times check once SNAP-1759 is fixed
+          val required = 4L * memSize
+          val granted = memoryConsumer.acquireMemory(4L * memSize)
+          if (granted < required) {
+            throw new LowMemoryException(s"Could not obtain ${memoryConsumer.getMode} " +
+                s"memory of size $required ",
               java.util.Collections.emptySet())
           }
-
-          context.addTaskCompletionListener { _ =>
-            MemoryManagerCallback.memoryManager.
-                releaseStorageMemoryForObject(
-                  objectName = BufferAllocator.STORE_DATA_FRAME_OUTPUT,
-                  numBytes = 4L * memSize,
-                  memoryMode = MemoryMode.ON_HEAP)
-          }
         }
-
 
         val bytes = ClientSharedUtils.toBytes(finalBuffer)
         new PartitionResult(bytes, count)
       } else {
         new PartitionResult(Array.empty, 0)
       }
+    } catch {
+      case oom: OutOfMemoryError if (oom.getMessage.contains("Direct buffer")) =>
+        throw new LowMemoryException(s"Could not allocate Direct buffer for" +
+            s" result data. Please check -XX:MaxDirectMemorySize while starting the server",
+          java.util.Collections.emptySet())
     } finally {
-      // Not handling DirectByteBuffer case which gives a OOM exception.
-      // Assumption is most of the big workload will use off-heap
       bufferOutput.clear()
       // one additional release for the explicit getBufferRetain
-      if (outputRetained) {
+      if (output ne null) {
+        if (outputRetained) {
+          output.release()
+        }
         output.release()
       }
-      output.release()
     }
   }
 

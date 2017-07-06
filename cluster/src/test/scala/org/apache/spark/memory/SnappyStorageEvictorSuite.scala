@@ -125,6 +125,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
       }
     }
     snappyMemoryManager.dropAllObjects(memoryMode)
+    SparkEnv.get.memoryManager.releaseExecutionMemory(500L, taskAttemptId, memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count == rows)
     snSession.dropTable("t1")
