@@ -74,17 +74,6 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   def queryExecutionString: String = queryExecution.toString()
 
-  def queryPlanInfo: SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
-    queryExecution.executedPlan transformAllExpressions {
-      case ParamLiteral(_v, _dt, _p) =>
-        val x = allLiterals.find(_.position == _p)
-        val v = x match {
-          case Some(LiteralValue(_, _, _)) => x.get.value
-          case None => _v
-        }
-        Literal(v, _dt)
-    })
-
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
 
@@ -241,24 +230,27 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     if (!hasLocalCallSite) {
       sc.setCallSite(callSite)
     }
-    val trimSize = 100
-    val queryShortForm = if (queryString.length > trimSize) {
-      queryString.substring(0, trimSize) + "..."
-    } else queryString
     val session = sparkSession.asInstanceOf[SnappySession]
+    var withFallback: CodegenSparkFallback = null
+    val sparkPlan = queryExecution.executedPlan
+    val executedPlan = sparkPlan match {
+      case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) =>
+        withFallback = CodegenSparkFallback(plan); plan
+      case cg@CodegenSparkFallback(plan) => withFallback = cg; plan
+      case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
+      case plan => plan
+    }
 
-    def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
-      sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
+    def withNewExecutionId[T](body: T): T = executedPlan match {
+      // don't create a new executionId for ExecutePlan since it has already done so
+      case _: ExecutePlan => body
+      case _ => CachedDataFrame.withNewExecutionId(
+        sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
+        queryExecutionString, CachedDataFrame.queryPlanInfo(sparkPlan, allLiterals))(body)
+    }
 
+    def execute(): Iterator[R] = withNewExecutionId {
       session.addContextObject(SnappySession.ExecutionKey, () => df.queryExecution)
-      var withFallback: CodegenSparkFallback = null
-      val executedPlan = queryExecution.executedPlan match {
-        case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) =>
-          withFallback = CodegenSparkFallback(plan); plan
-        case cg@CodegenSparkFallback(plan) => withFallback = cg; plan
-        case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
-        case plan => plan
-      }
       def executeCollect(): Array[InternalRow] = {
         if (withFallback ne null) withFallback.executeCollect()
         else executedPlan.executeCollect()
@@ -522,6 +514,25 @@ object CachedDataFrame
     val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
     m.setAccessible(true)
     m
+  }
+
+  private[sql] def queryPlanInfo(plan: SparkPlan,
+      allLiterals: Array[LiteralValue]): SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
+    plan.transformAllExpressions {
+      case ParamLiteral(_v, _dt, _p) =>
+        val x = allLiterals.find(_.position == _p)
+        val v = x match {
+          case Some(LiteralValue(_, _, _)) => x.get.value
+          case None => _v
+        }
+        Literal(v, _dt)
+    })
+
+  private[sql] def queryStringShortForm(queryString: String): String = {
+    val trimSize = 100
+    if (queryString.length > trimSize) {
+      queryString.substring(0, trimSize) + "..."
+    } else queryString
   }
 
   /**

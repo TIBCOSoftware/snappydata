@@ -55,9 +55,20 @@ public class SnappyLocatorHATest extends SnappyTest {
       conn = getServerConnection();
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("query executed successfully: " + query);
-      /*rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
-      StructTypeImpl sti = ResultSetHelper.getStructType(rs);
-      List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);*/
+      query = "insert into tab1 values(111, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(222, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(333, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(444, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(555, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(666, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "select * from tab1";
+      conn.createStatement().executeQuery(query);
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
@@ -94,10 +105,20 @@ public class SnappyLocatorHATest extends SnappyTest {
       conn = getServerConnection();
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("query executed successfully: " + query);
-      /*rs = conn.createStatement().executeQuery("select * from tab1 where 1=0");
-      StructTypeImpl sti = ResultSetHelper.getStructType(rs);
-      List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
-      Log.getLogWriter().info("Result for query : " + query + "\n" + queryResult.toString());*/
+      query = "insert into tab1 values(111, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(222, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(333, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(444, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(555, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(666, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "select * from tab1";
+      conn.createStatement().executeQuery(query);
       closeConnection(conn);
     } catch (SQLException e) {
       SQLHelper.printSQLException(e);
@@ -107,5 +128,27 @@ public class SnappyLocatorHATest extends SnappyTest {
     Log.getLogWriter().info("snappy cluster stopped successfully...." + vmDir);
     HydraTask_startSnappyCluster();
     Log.getLogWriter().info("snappy cluster restarted successfully...." + vmDir);
+  }
+
+  public static void HydraTask_ddlOpAfterAllLocatorStop_ClusterRestart() {
+    HydraTask_stopSnappyLocator();
+    Log.getLogWriter().info("snappy locators stopped successfully....");
+    Connection conn = null;
+    ResultSet rs = null;
+    String query = "create table tab1 (id int, name String, address String) USING  column " +
+        "OPTIONS(partition_by 'id')";
+    try {
+      conn = getServerConnection();
+      conn.createStatement().executeUpdate(query);
+      Log.getLogWriter().info("query executed successfully: " + query);
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+    }
+    HydraTask_stopSnappyCluster();
+    Log.getLogWriter().info("snappy cluster stopped successfully....");
+    HydraTask_startSnappyCluster();
+    Log.getLogWriter().info("snappy cluster restarted successfully....");
   }
 }
