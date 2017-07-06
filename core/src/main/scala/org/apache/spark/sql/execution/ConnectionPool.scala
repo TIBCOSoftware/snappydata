@@ -138,7 +138,6 @@ object ConnectionPool {
     val url = poolProps.get("url")
     val poolPropsSecure = if (url.isDefined) {
       val urlSecure = if (id.startsWith(Constant.SHADOW_SCHEMA_NAME)) {
-        // TODO: remove these change
         val bootProperties = Misc.getMemStore.getBootProperties
         if (bootProperties.containsKey("user") && bootProperties.containsKey("password")) {
           url.get + ";user=" + bootProperties.get("user") +
