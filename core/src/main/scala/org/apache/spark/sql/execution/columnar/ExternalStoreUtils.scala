@@ -256,10 +256,9 @@ object ExternalStoreUtils extends Logging {
     val urlSecureSuffixFromUser = session match {
       case Some(s) =>
         def logMessage(s: String) = {
-          Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s)
-          // TODO remove dumpThread
-          Thread.currentThread().getStackTrace.foreach(st =>
-            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
+//          Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s)
+//          Thread.currentThread().getStackTrace.foreach(st =>
+//            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
         }
         val username = s.sqlContext.conf.getConfString("user", EMPTY_URL)
         username match {
