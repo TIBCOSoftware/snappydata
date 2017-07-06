@@ -255,6 +255,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         assert(totalEvictedBytes > 0)
     }
     // scalastyle:on
+    SparkEnv.get.memoryManager.
+        asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count >= rows)
     snSession.dropTable("t1")

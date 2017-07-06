@@ -361,20 +361,12 @@ class SnappyUnifiedMemoryManager private[memory](
           return
         }
 
-        // Stop execution pool to grow beyond storage fraction.
-        if (executionPool.memoryUsed + extraMemoryNeeded > storageRegionSize) {
-          logWarning(s"MemoryManager can't allocate $numBytes bytes as it " +
-              s"would exceed storageRegionSize = $storageRegionSize")
-          return
-        }
-
         // There is not enough free memory in the execution pool, so try to reclaim memory from
         // storage. We can reclaim any free memory from the storage pool. If the storage pool
         // has grown to become larger than `storageRegionSize`, we can evict blocks and reclaim
         // the memory that storage has borrowed from execution.
-        val memoryReclaimableFromStorage = math.max(
-          storagePool.memoryFree,
-          storagePool.poolSize - storageRegionSize)
+        val memoryReclaimableFromStorage = storagePool.poolSize - storageRegionSize
+
         if (memoryReclaimableFromStorage > 0) {
           // Only reclaim as much space as is necessary and available:
           val spaceToReclaim = storagePool.freeSpaceToShrinkPool(
@@ -480,7 +472,7 @@ class SnappyUnifiedMemoryManager private[memory](
       val doEvict = if (shouldEvict &&
           objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
         // don't use more than 10% of pool size for one partition result
-        // 30% of storagePool size is still large. WIth retries it virtually evicts all data.
+        // 30% of storagePool size is still large. With retries it virtually evicts all data.
         // Hence taking 30% of initial storage pool size. Once retry of LowMemoryException is
         // stopped it would be much cleaner.
         numBytes < math.min(0.3 * maxStorageSize,
