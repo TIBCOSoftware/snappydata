@@ -20,5 +20,14 @@
 <allocations>
   <pool name="default">
     <schedulingMode>FAIR</schedulingMode>
+    <weight>1</weight>
+  </pool>
+  <pool name="transactional">
+    <schedulingMode>FAIR</schedulingMode>
+    <weight>1</weight>
+  </pool>
+  <pool name="analytical">
+    <schedulingMode>FIFO</schedulingMode>
+    <weight>1</weight>
   </pool>
 </allocations>

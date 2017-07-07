@@ -25,7 +25,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -35,8 +34,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
-
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -1646,6 +1644,24 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     sessionState.setPreparedQuery(preparePhase, paramSet)
+
+  /**
+   * Callback to execute code when a particular property is set.
+   * @param key
+   * @param value
+   */
+  def confCallback(key: String, value: String): Unit = {
+    key match {
+      case "spark.scheduler.pool" =>
+        // set the scheduler pool if the pool exists else throw an exception. 
+        if (sparkContext.getAllPools.exists(_.name == value)) {
+          sparkContext.setLocalProperty(key, value)
+        } else {
+          throw new IllegalArgumentException(s"Invalid Pool $value")
+        }
+      case _ =>
+    }
+  }
 }
 
 private class FinalizeSession(session: SnappySession)
