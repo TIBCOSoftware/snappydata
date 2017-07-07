@@ -2343,7 +2343,7 @@ public class SnappyTest implements Serializable {
     File log = null;
     ProcessBuilder pb = null;
     try {
-      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "start");
+      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "-bg", "start");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
@@ -2410,7 +2410,7 @@ public class SnappyTest implements Serializable {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.sparkClusterStarted);
       if (num == 1) {
         // modifyJobServerConfig();
-        ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"));
+        ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"), "-bg");
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
         File logFile = new File(dest);
@@ -2447,7 +2447,8 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSnappyLeader() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"), "stop");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
+          "-bg", "stop");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
@@ -2468,7 +2469,8 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSnappyServers() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"),
+          "-bg", "stop");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
       File logFile = new File(dest);
@@ -2489,7 +2491,8 @@ public class SnappyTest implements Serializable {
   public static synchronized void HydraTask_stopSnappyLocator() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "stop");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh")
+          , "-bg", "stop");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
       File logFile = new File(dest);
@@ -2508,7 +2511,8 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       initSnappyArtifacts();
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"),
+          "-bg");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
@@ -2749,17 +2753,19 @@ public class SnappyTest implements Serializable {
     ProcessBuilder pb = null;
     try {
       if (vmName.equalsIgnoreCase("lead")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-lead.sh"), "stop", "-dir=" + vmDir);
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-lead.sh"), "-bg", "stop",
+            "-dir=" + vmDir);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
         logFile = new File(dest);
       } else if (vmName.equalsIgnoreCase("server")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "stop", "-dir=" + vmDir);
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "-bg", "stop",
+            "-dir=" + vmDir);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
         logFile = new File(dest);
       } else if (vmName.equalsIgnoreCase("locator")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locator.sh"), "stop",
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locator.sh"), "-bg", "stop",
             "-dir=" + vmDir);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
@@ -2945,7 +2951,8 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("Starting locator/s using rowstore option...");
         pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "-bg",
+            "start");
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
@@ -2965,7 +2972,8 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("Starting server/s using rowstore option...");
         pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "-bg",
+            "start");
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
@@ -2980,7 +2988,8 @@ public class SnappyTest implements Serializable {
   protected void startSnappyLead() {
     File log = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"), "start");
+      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
+          "-bg", "start");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
