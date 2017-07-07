@@ -128,8 +128,8 @@ Instead of starting SnappyData members using SSH scripts, they can be individual
 
 ```bash 
 $ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
+$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334]
+$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334]
 
 $ bin/snappy locator stop -dir=/node-a/locator1
 $ bin/snappy server stop -dir=/node-b/server1
@@ -149,6 +149,10 @@ $ cat conf/log4j.properties
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 ```
+
+!!! Note:
+	For a set of applicable class names and default values see the file **conf/log4j.properties.template**, which can be used as a starting point. Consult the [log4j 1.2.x documentation](http://logging.apache.org/log4j/) for more details on the configuration file.
+
 <a id="ssh"></a>
 ## Configuring SSH Login without Password
 By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.

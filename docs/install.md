@@ -20,6 +20,7 @@ snappydata          soft    sigpending  524288
 ```
 Here `snappydata` is the user name under which the SnappyData processes are started. 
 
+<a id="install-on-premise"></a>
 ## Install On-Premise
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
@@ -110,9 +111,8 @@ $ bin/snappy locator stop -dir=/node-a/locator1
 $ bin/snappy server stop -dir=/node-b/server1
 $ bin/snappy leader stop -dir=/node-c/lead1top
 ```
-
+<a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 ## Setting up Cluster on Amazon Web Services (AWS)
-
 
 ### Using AWS Management Console
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
@@ -418,6 +418,7 @@ Some of the known limitations of the script are:
 
 * Support for option --user is incomplete
 
+<a id="building-from-source"></a>
 ## Building from Source
 Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 

@@ -61,7 +61,7 @@ class SnappyUnifiedMemoryManager private[memory](
   private val managerId = if (!tempManager) "RuntimeManager" else "BootTimeManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
-           conf.getDouble("spark.memory.storageMaxFraction", 0.9)).toLong
+      conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
 
   /**
    * An estimate of the maximum result size handled by a single partition.
@@ -86,8 +86,9 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
-  private val maxHeapStorageSize =
-    (maxHeapMemory * evictionFraction).toLong
+  private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
+
+  private val maxHeapExecutionSize = (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
@@ -364,9 +365,8 @@ class SnappyUnifiedMemoryManager private[memory](
         // storage. We can reclaim any free memory from the storage pool. If the storage pool
         // has grown to become larger than `storageRegionSize`, we can evict blocks and reclaim
         // the memory that storage has borrowed from execution.
-        val memoryReclaimableFromStorage = math.max(
-          storagePool.memoryFree,
-          storagePool.poolSize - storageRegionSize)
+        val memoryReclaimableFromStorage = storagePool.poolSize - storageRegionSize
+
         if (memoryReclaimableFromStorage > 0) {
           // Only reclaim as much space as is necessary and available:
           val spaceToReclaim = storagePool.freeSpaceToShrinkPool(
@@ -471,8 +471,11 @@ class SnappyUnifiedMemoryManager private[memory](
       // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
       val doEvict = if (shouldEvict &&
           objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
-        // don't use more than 30% of pool size for one partition result
-        numBytes < math.min(0.3 * storagePool.poolSize,
+        // don't use more than 10% of pool size for one partition result
+        // 30% of storagePool size is still large. With retries it virtually evicts all data.
+        // Hence taking 30% of initial storage pool size. Once retry of LowMemoryException is
+        // stopped it would be much cleaner.
+        numBytes < math.min(0.3 * maxStorageSize,
           math.max(maxPartResultSize, storagePool.memoryFree))
       } else shouldEvict
 
@@ -497,8 +500,10 @@ class SnappyUnifiedMemoryManager private[memory](
           } else {
             memoryBorrowedFromExecution
           }
-        executionPool.decrementPoolSize(actualBorrowedMemory)
-        storagePool.incrementPoolSize(actualBorrowedMemory)
+        if (actualBorrowedMemory > 0) {
+          executionPool.decrementPoolSize(actualBorrowedMemory)
+          storagePool.incrementPoolSize(actualBorrowedMemory)
+        }
       }
       // First let spark try to free some memory
       val enoughMemory = if (tempManager) {
