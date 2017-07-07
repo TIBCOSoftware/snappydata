@@ -53,7 +53,7 @@ class QueryRoutingDUnitTest(val s: String)
     super.tearDown2()
   }
 
-  def testQueryRouting(): Unit = {
+  def _testQueryRouting(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
