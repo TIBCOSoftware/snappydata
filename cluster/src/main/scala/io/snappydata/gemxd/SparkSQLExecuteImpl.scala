@@ -70,7 +70,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   if (ctx.getUserName != null && !ctx.getUserName.isEmpty) {
     session.conf.set(Attribute.USERNAME_ATTR, ctx.getUserName)
-    session.conf.set(Attribute.PASSWORD_ATTR, ctx.getPassword)
+    session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
   session.setSchema(schema)
