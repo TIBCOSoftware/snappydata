@@ -68,8 +68,10 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val session = SnappySessionPerConnection
       .getSnappySessionForConnection(ctx.getConnId)
 
-  session.conf.set(Attribute.USERNAME_ATTR, ctx.getConnProps.getProperty(Attribute.USERNAME_ATTR))
-  session.conf.set(Attribute.PASSWORD_ATTR, ctx.getConnProps.getProperty(Attribute.PASSWORD_ATTR))
+  if (ctx.getUserName != null && !ctx.getUserName.isEmpty) {
+    session.conf.set(Attribute.USERNAME_ATTR, ctx.getUserName)
+    session.conf.set(Attribute.PASSWORD_ATTR, ctx.getPassword)
+  }
 
   session.setSchema(schema)
 
