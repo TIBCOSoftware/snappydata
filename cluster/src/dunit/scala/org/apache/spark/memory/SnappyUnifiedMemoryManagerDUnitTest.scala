@@ -179,8 +179,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     * This test checks column table memory usage when GII is done in a node.
     * It checks memory usage with reference to the node which was alive at the time
     * of GII.
+    * Disabled due to SNAP-1781.
     */
-  def testMemoryUsedInColumnTableWithGII(): Unit = {
+  def DISABLED_testMemoryUsedInColumnTableWithGII(): Unit = {
 
     var props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
