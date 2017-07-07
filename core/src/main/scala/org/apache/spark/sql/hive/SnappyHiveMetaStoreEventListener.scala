@@ -38,7 +38,6 @@ class SnappyHiveMetaStoreEventListener(config: Configuration)
    * In a split cluster deployment, this cleans up any cached objects in
    * embedded mode cluster when a table is dropped from an external cluster
    * and vice-a-versa
-   * @param tableEvent
    */
   @throws(classOf[MetaException])
   override def onDropTable(tableEvent: DropTableEvent): Unit = {
@@ -52,7 +51,7 @@ class SnappyHiveMetaStoreEventListener(config: Configuration)
 
   private def handleDropTableEvent(tableEvent: DropTableEvent): Unit = {
     SnappyContext.
-        getClusterMode(SparkSession.getActiveSession.get.sparkContext) match {
+        getClusterMode(SnappyContext.globalSparkContext) match {
       case SnappyEmbeddedMode(_, _) =>
         // table is dropped on embedded lead so send message to external
         // cluster driver
