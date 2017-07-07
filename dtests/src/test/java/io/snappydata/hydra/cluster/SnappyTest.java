@@ -2291,7 +2291,6 @@ public class SnappyTest implements Serializable {
       String leadHost = productConfDirPath + sep + "leadHost";
       String leadPort = productConfDirPath + sep + "leadPort";
       String masterHost = productConfDirPath + sep + "masterHost";
-      String masterPort = productConfDirPath + sep + "masterPort";
       String primaryLocatorHost = productConfDirPath + sep + "primaryLocatorHost";
       String primaryLocatorPort = productConfDirPath + sep + "primaryLocatorPort";
       Files.delete(Paths.get(locatorList));
@@ -2299,7 +2298,6 @@ public class SnappyTest implements Serializable {
       Files.delete(Paths.get(leadHost));
       Files.delete(Paths.get(leadPort));
       Files.delete(Paths.get(masterHost));
-      Files.delete(Paths.get(masterPort));
       Files.delete(Paths.get(primaryLocatorHost));
       Files.delete(Paths.get(primaryLocatorPort));
       Log.getLogWriter().info("Long Running Test artifacts deleted.");
