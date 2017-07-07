@@ -83,6 +83,8 @@ public class SnappyTest implements Serializable {
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
   /*public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);*/  //default to false
   public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
+  public static boolean forceStart = TestConfig.tab().booleanAt(SnappyPrms.forceStart,
+      false);  //default to false
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
@@ -2327,17 +2329,25 @@ public class SnappyTest implements Serializable {
    * Start snappy cluster using snappy-start-all.sh script.
    */
   public static synchronized void HydraTask_startSnappyCluster() {
+    if (forceStart) {
+      startSnappyCluster();
+    } else {
+      int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
+      if (num == 1) {
+        startSnappyCluster();
+      }
+    }
+  }
+
+  protected static void startSnappyCluster() {
     File log = null;
     ProcessBuilder pb = null;
     try {
-      int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
-      if (num == 1) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "start");
-        log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
-        File logFile = new File(dest);
-        snappyTest.executeProcess(pb, logFile);
-      }
+      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"), "start");
+      log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
+      File logFile = new File(dest);
+      snappyTest.executeProcess(pb, logFile);
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
       throw new TestException(s, e);
