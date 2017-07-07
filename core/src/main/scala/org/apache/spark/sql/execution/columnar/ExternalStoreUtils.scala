@@ -19,12 +19,11 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
-import com.gemstone.gemfire.i18n.StringIdImpl
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
-import com.gemstone.gemfire.internal.i18n.LocalizedStrings
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
@@ -32,6 +31,7 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.collection.Utils
@@ -251,34 +251,6 @@ object ExternalStoreUtils extends Logging {
     executorConnProps.remove("poolProperties")
     connProps.setProperty("driver", driver)
     executorConnProps.setProperty("driver", driver)
-
-    val EMPTY_URL = ""
-    val urlSecureSuffixFromUser = session match {
-      case Some(s) =>
-        def logMessage(s: String) = {
-//          Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s)
-//          Thread.currentThread().getStackTrace.foreach(st =>
-//            Misc.getI18NLogWriter.info(StringIdImpl.LITERAL, s"  $st"))
-        }
-        val username = s.sqlContext.conf.getConfString("user", EMPTY_URL)
-        username match {
-          case EMPTY_URL =>
-            logMessage(s"ABS ESUtils no user, password in sqlConf")
-            EMPTY_URL
-          case _ =>
-            val pass = s.sqlContext.conf.getConfString("password", EMPTY_URL)
-            pass match {
-              case EMPTY_URL =>
-                logMessage(s"ABS ESUtils no password for user $username in sqlConf")
-                EMPTY_URL
-              case _ =>
-                logMessage(s"ABS ESUtils user $username, password $pass in sqlConf")
-                s";user=$username;password=$pass;"
-            }
-        }
-      case _ => EMPTY_URL
-    }
-
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
@@ -305,7 +277,15 @@ object ExternalStoreUtils extends Logging {
       case _ => false
     }
     val allPoolProps = getAllPoolProperties(url, driver, poolProps, hikariCP, isEmbedded)
-    ConnectionProperties(url, urlSecureSuffixFromUser, driver, dialect, allPoolProps,
+    val EMPTY_URL = ""
+    val urlSecureSuffix = if (session.isDefined) {
+      val user = session.get.conf.getOption(Attribute.USERNAME_ATTR)
+      val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR)
+      if (user.isDefined && password.isDefined) {
+        s";user=${user.get};password=${password.get};"
+      } else EMPTY_URL
+    } else EMPTY_URL
+    ConnectionProperties(url, urlSecureSuffix, driver, dialect, allPoolProps,
       connProps, executorConnProps, hikariCP)
   }
 
