@@ -109,11 +109,11 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
       builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
     child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
 
-  override def children: Seq[SparkPlan] = child.children
+  // override def children: Seq[SparkPlan] = child.children
 
-  override private[sql] def metrics = child.metrics
+  // override private[sql] def metrics = child.metrics
 
-  override private[sql] def metadata = child.metadata
+  // override private[sql] def metadata = child.metadata
 
   override def subqueries: Seq[SparkPlan] = child.subqueries
 

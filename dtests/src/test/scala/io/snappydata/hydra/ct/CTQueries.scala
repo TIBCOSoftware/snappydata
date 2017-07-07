@@ -189,6 +189,7 @@ object CTQueries {
       .option("header", "true")
       .option("inferSchema", "false")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/ORDERS_DETAILS.dat")
 
   def exec_details_df(sqlContext: SQLContext): DataFrame =
@@ -196,6 +197,7 @@ object CTQueries {
       .option("header", "true")
       .option("inferSchema","false")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/EXEC_DETAILS.dat")
 
   val create_diskStore_ddl = "CREATE DISKSTORE OverflowDiskStore"

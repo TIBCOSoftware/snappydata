@@ -116,7 +116,7 @@ with Logging with Retries {
     }
 
     Process(command, workDir, "SNAPPY_HOME" -> snappyHome,
-      "PYTHONPATH" -> s"${snappyHome}/python/lib/py4j-0.10.3-src.zip:${snappyHome}/python") !
+      "PYTHONPATH" -> s"${snappyHome}/python/lib/py4j-0.10.4-src.zip:${snappyHome}/python") !
       ProcessLogger(stdoutWriter.println, stderrWriter.println)
     (stdoutStream.toString, stderrStream.toString)
   }
