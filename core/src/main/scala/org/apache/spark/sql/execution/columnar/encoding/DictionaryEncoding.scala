@@ -113,7 +113,14 @@ abstract class DictionaryDecoderBase
   override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
 
-  override def readUTF8String(columnBytes: AnyRef,
+  override def absoluteUTF8String(columnBytes: AnyRef, cursor: Long,
+      position: Int): Long = {
+    // TODO: PERF: optimize for local index access case by filling
+    // in the dictionary array lazily on access
+    cursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 1)
+  }
+
+      override def readUTF8String(columnBytes: AnyRef,
       cursor: Long): UTF8String =
     stringDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 
@@ -130,11 +137,17 @@ abstract class DictionaryDecoderBase
   override def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
 
+  override def absoluteInt(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    absoluteUTF8String(columnBytes, cursor, position)
+
   override def readInt(columnBytes: AnyRef, cursor: Long): Int =
     intDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 
   override def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
+
+  override def absoluteLong(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    absoluteUTF8String(columnBytes, cursor, position)
 
   override def readLong(columnBytes: AnyRef, cursor: Long): Long =
     longDictionary(ColumnEncoding.readShort(columnBytes, cursor))
@@ -153,6 +166,13 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
   override final def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
+  override def absoluteUTF8String(columnBytes: AnyRef, cursor: Long,
+      position: Int): Long = {
+    // TODO: PERF: optimize for local index access case by filling
+    // in the dictionary array lazily on access
+    cursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 2)
+  }
+
   override final def readUTF8String(columnBytes: AnyRef,
       cursor: Long): UTF8String =
     stringDictionary(ColumnEncoding.readInt(columnBytes, cursor))
@@ -167,11 +187,17 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
   override final def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
+  override def absoluteInt(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    absoluteUTF8String(columnBytes, cursor, position)
+
   override final def readInt(columnBytes: AnyRef, cursor: Long): Int =
     intDictionary(ColumnEncoding.readInt(columnBytes, cursor))
 
   override final def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
+
+  override def absoluteLong(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    absoluteUTF8String(columnBytes, cursor, position)
 
   override final def readLong(columnBytes: AnyRef, cursor: Long): Long =
     longDictionary(ColumnEncoding.readInt(columnBytes, cursor))
@@ -360,11 +386,12 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     }
     // create the final data array of exact size that is known at this point
     val numNullWords = getNumNullWords
+    val numNullBytes = numNullWords << 3
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
     val storageAllocator = this.storageAllocator
     val columnData = storageAllocator.allocateForStorage(ColumnEncoding
         // typeId + number of nulls
-        .checkBufferSize(8L + (numNullWords << 3L) + dataSize))
+        .checkBufferSize(8L + numNullBytes + dataSize))
     val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
     var cursor = baseOffset
@@ -372,7 +399,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     ColumnEncoding.writeInt(columnBytes, cursor, typeId)
     cursor += 4
     // number of nulls
-    ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
+    ColumnEncoding.writeInt(columnBytes, cursor, numNullBytes)
     cursor += 4
     // write the null bytes
     cursor = writeNulls(columnBytes, cursor, numNullWords)

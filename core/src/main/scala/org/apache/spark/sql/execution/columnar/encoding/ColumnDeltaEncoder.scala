@@ -21,7 +21,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
 import org.apache.spark.sql.types.{DataType, Decimal}
 import org.apache.spark.unsafe.array.LongArray
 import org.apache.spark.unsafe.memory.MemoryBlock
@@ -29,7 +29,7 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.collection.unsafe.sort.RadixSort
 
 /**
- * Writes data to be stored in [[ColumnDelta]]s.
+ * Writes data to be stored in [[ColumnFormatValue]] deltas.
  */
 final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
 
@@ -49,7 +49,7 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
      Java HotSpot(TM) 64-Bit Server VM 1.8.0_131-b11 on Linux 4.4.0-21-generic
      Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz
 
-     sort comparison:    Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
+     sort comparison     Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
      -----------------------------------------------------------------------------
      AVL                       0 /    0         24.9          40.2       1.0X
      RB                        0 /    0         17.4          57.6       0.7X
@@ -58,7 +58,7 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
 
      numEntries = 10000, iterations = 1000
 
-     sort compariso      Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
+     sort comparison     Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
      ----------------------------------------------------------------------------
      AVL                       2 /    2          5.3         189.4       1.0X
      RB                        2 /    2          5.8         173.3       1.1X
@@ -70,7 +70,7 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
   private[this] var positionIndex: Int = _
   private[this] var realEncoder: ColumnEncoder = _
   private[this] var maxSize: Int = _
-  private[this] var previousDelta: ColumnDelta = _
+  private[this] var previousDelta: ColumnFormatValue = _
 
   override def typeId: Int = realEncoder.typeId
 
@@ -120,14 +120,14 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
     }
     this.dataType = dataType
     this.allocator = allocator
-    // double the space required by Spark's radix sort
+    // double the actual space is required by Spark's radix sort
     positionsArray = new Array[Long](maxSize * 2)
     positions = new LongArray(MemoryBlock.fromLongArray(positionsArray))
     realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
     realEncoder.initialize(dataType, nullable, maxSize, withHeader, allocator)
   }
 
-  def setExistingDelta(delta: ColumnDelta): Unit = {
+  def setExistingDelta(delta: ColumnFormatValue): Unit = {
     if (delta ne null) {
       setSource(delta.getBufferRetain, releaseOld = true)
     }

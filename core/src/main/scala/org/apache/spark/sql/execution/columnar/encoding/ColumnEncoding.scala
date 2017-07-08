@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
@@ -33,9 +32,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
-import org.apache.spark.util.collection.BitSet
 
 /**
  * Base class for encoding and decoding in columnar form. Memory layout of
@@ -94,8 +91,16 @@ abstract class ColumnDecoder extends ColumnEncoding {
    */
   def notNull(columnBytes: AnyRef, ordinal: Int): Int
 
+  /** Absolute ordinal null check for random access. */
+  def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
+    throw new UnsupportedOperationException(s"isNullAt for $toString")
+
   def nextBoolean(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextBoolean for $toString")
+
+  /** Random access to the encoded data. */
+  def absoluteBoolean(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteBoolean for $toString")
 
   def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
     throw new UnsupportedOperationException(s"readBoolean for $toString")
@@ -103,11 +108,17 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def nextByte(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextByte for $toString")
 
+  def absoluteByte(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteByte for $toString")
+
   def readByte(columnBytes: AnyRef, cursor: Long): Byte =
     throw new UnsupportedOperationException(s"readByte for $toString")
 
   def nextShort(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextShort for $toString")
+
+  def absoluteShort(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteShort for $toString")
 
   def readShort(columnBytes: AnyRef, cursor: Long): Short =
     throw new UnsupportedOperationException(s"readShort for $toString")
@@ -115,11 +126,17 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextInt for $toString")
 
+  def absoluteInt(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteInt for $toString")
+
   def readInt(columnBytes: AnyRef, cursor: Long): Int =
     throw new UnsupportedOperationException(s"readInt for $toString")
 
   def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextLong for $toString")
+
+  def absoluteLong(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteLong for $toString")
 
   def readLong(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"readLong for $toString")
@@ -127,17 +144,26 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def nextFloat(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextFloat for $toString")
 
+  def absoluteFloat(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteFloat for $toString")
+
   def readFloat(columnBytes: AnyRef, cursor: Long): Float =
     throw new UnsupportedOperationException(s"readFloat for $toString")
 
   def nextDouble(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextDouble for $toString")
 
+  def absoluteDouble(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteDouble for $toString")
+
   def readDouble(columnBytes: AnyRef, cursor: Long): Double =
     throw new UnsupportedOperationException(s"readDouble for $toString")
 
   def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextLongDecimal for $toString")
+
+  def absoluteLongDecimal(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteLongDecimal for $toString")
 
   def readLongDecimal(columnBytes: AnyRef, precision: Int,
       scale: Int, cursor: Long): Decimal =
@@ -146,12 +172,18 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def nextDecimal(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextDecimal for $toString")
 
+  def absoluteDecimal(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteDecimal for $toString")
+
   def readDecimal(columnBytes: AnyRef, precision: Int,
       scale: Int, cursor: Long): Decimal =
     throw new UnsupportedOperationException(s"readDecimal for $toString")
 
   def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextUTF8String for $toString")
+
+  def absoluteUTF8String(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteUTF8String for $toString")
 
   def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     throw new UnsupportedOperationException(s"readUTF8String for $toString")
@@ -169,11 +201,17 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def nextInterval(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextInterval for $toString")
 
+  def absoluteInterval(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteInterval for $toString")
+
   def readInterval(columnBytes: AnyRef, cursor: Long): CalendarInterval =
     throw new UnsupportedOperationException(s"readInterval for $toString")
 
   def nextBinary(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextBinary for $toString")
+
+  def absoluteBinary(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteBinary for $toString")
 
   def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] =
     throw new UnsupportedOperationException(s"readBinary for $toString")
@@ -181,17 +219,26 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def nextArray(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextArray for $toString")
 
+  def absoluteArray(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteArray for $toString")
+
   def readArray(columnBytes: AnyRef, cursor: Long): ArrayData =
     throw new UnsupportedOperationException(s"readArray for $toString")
 
   def nextMap(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextMap for $toString")
 
+  def absoluteMap(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteMap for $toString")
+
   def readMap(columnBytes: AnyRef, cursor: Long): MapData =
     throw new UnsupportedOperationException(s"readMap for $toString")
 
   def nextStruct(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextStruct for $toString")
+
+  def absoluteStruct(columnBytes: AnyRef, cursor: Long, position: Int): Long =
+    throw new UnsupportedOperationException(s"absoluteStruct for $toString")
 
   def readStruct(columnBytes: AnyRef, numFields: Int,
       cursor: Long): InternalRow =
@@ -203,6 +250,13 @@ abstract class ColumnDecoder extends ColumnEncoding {
    * The <code>notNull</code> method should return -1 for such implementations.
    */
   def wasNull(): Boolean = false
+
+  /**
+   * Get the number of null values till given 0-based position (exclusive)
+   * for random access.
+   */
+  protected def numNullsUntilPosition(columnBytes: AnyRef, position: Int): Int =
+    throw new UnsupportedOperationException(s"numNullsUntilPosition for $toString")
 }
 
 trait ColumnEncoder extends ColumnEncoding {
@@ -305,14 +359,14 @@ trait ColumnEncoder extends ColumnEncoding {
     }
 
     val numNullWords = initializeNulls(initSize)
-    val numNullBytes = numNullWords.toLong << 3L
+    val numNullBytes = numNullWords << 3
 
     // initialize the lower and upper limits
     if (withHeader) initializeLimits()
     else if (numNullWords != 0) assert(assertion = false,
       s"Unexpected nulls=$numNullWords for withHeader=false")
 
-    var baseSize: Long = numNullBytes
+    var baseSize = numNullBytes.toLong
     if (withHeader) {
       baseSize += 8L /* typeId + nullsSize */
     }
@@ -340,12 +394,12 @@ trait ColumnEncoder extends ColumnEncoding {
     }
     reuseUsedSize = 0
     if (withHeader) {
-      var cursor = ensureCapacity(columnBeginPosition, 8 + numNullBytes.toInt)
+      var cursor = ensureCapacity(columnBeginPosition, 8 + numNullBytes)
       // typeId followed by nulls bitset size and space for values
       ColumnEncoding.writeInt(columnBytes, cursor, typeId)
       cursor += 4
       // write the number of null words
-      ColumnEncoding.writeInt(columnBytes, cursor, numNullWords)
+      ColumnEncoding.writeInt(columnBytes, cursor, numNullBytes)
       cursor + 4L + numNullBytes
     } else columnBeginPosition
   }
@@ -727,12 +781,6 @@ object ColumnEncoding {
 
   private[columnar] val BUFFER_OWNER = "ENCODER"
 
-  private[columnar] val bitSetWords: Field = {
-    val f = classOf[BitSet].getDeclaredField("words")
-    f.setAccessible(true)
-    f
-  }
-
   private[columnar] val BITS_PER_LONG = 64
 
   val littleEndian: Boolean = ByteOrder.nativeOrder == ByteOrder.LITTLE_ENDIAN
@@ -996,33 +1044,38 @@ trait NotNullDecoder extends ColumnDecoder {
   }
 
   override final def notNull(columnBytes: AnyRef, ordinal: Int): Int = 1
+
+  override def isNullAt(columnBytes: AnyRef, position: Int): Boolean = false
+
+  override protected def numNullsUntilPosition(columnBytes: AnyRef,
+      position: Int): Int = 0
 }
 
 trait NullableDecoder extends ColumnDecoder {
 
   protected final var nullOffset: Long = _
-  protected final var numNullWords: Int = _
+  protected final var numNullBytes: Int = _
   // intialize to -1 so that nextNullOrdinal + 1 starts at 0
   protected final var nextNullOrdinal: Int = -1
 
   override protected final def hasNulls: Boolean = true
 
   private final def updateNextNullOrdinal(columnBytes: AnyRef) {
-    nextNullOrdinal = BitSetMethods.nextSetBit(columnBytes, nullOffset,
-      nextNullOrdinal + 1, numNullWords)
+    nextNullOrdinal = BitSet.nextSetBit(columnBytes, nullOffset,
+      nextNullOrdinal + 1, numNullBytes)
   }
 
   protected def initializeNulls(columnBytes: AnyRef,
       cursor: Long, field: StructField): Long = {
     var position = cursor + 4
     // skip typeId
-    numNullWords = ColumnEncoding.readInt(columnBytes, position)
-    assert(numNullWords > 0,
-      s"Expected valid null values but got length = $numNullWords")
+    numNullBytes = ColumnEncoding.readInt(columnBytes, position)
+    assert(numNullBytes > 0,
+      s"Expected valid null values but got length = $numNullBytes")
     position += 4
     nullOffset = position
     // skip null bit set
-    position += (numNullWords << 3)
+    position += numNullBytes
     updateNextNullOrdinal(columnBytes)
     position
   }
@@ -1033,6 +1086,40 @@ trait NullableDecoder extends ColumnDecoder {
       updateNextNullOrdinal(columnBytes)
       0
     }
+  }
+
+  override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
+    BitSet.isSet(columnBytes, nullOffset, position)
+
+  /**
+   * Get the number of null values till given 0-based position (exclusive)
+   * for random access.
+   */
+  override final protected def numNullsUntilPosition(columnBytes: AnyRef,
+      position: Int): Int = {
+    val posNumBytes = position >>> 3
+    val numBytesToCheck = math.min(numNullBytes, posNumBytes)
+    var i = 0
+    var numNulls = 0
+    while (i < numBytesToCheck) {
+      // ignoring endian-ness when getting the full count
+      val word = Platform.getLong(columnBytes, nullOffset + i)
+      if (word != 0L) numNulls += java.lang.Long.bitCount(word)
+      i += 8
+    }
+    // last word may remain where position may be in the middle of the word
+    if (numBytesToCheck == posNumBytes) {
+      // mod 64
+      val pos = position & 0x3f
+      if (pos != 0) {
+        val word = ColumnEncoding.readLong(columnBytes, nullOffset + i)
+        if (word != 0) {
+          // mask the bits after or at position
+          numNulls += java.lang.Long.bitCount(word & ((1L << pos.toLong) - 1L))
+        }
+      }
+    }
+    numNulls
   }
 }
 
@@ -1127,7 +1214,7 @@ trait NullableEncoder extends NotNullEncoder {
 
   override def writeIsNull(ordinal: Int): Unit = {
     if (ordinal < maxNulls) {
-      BitSetMethods.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
+      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
     } else {
       // expand
       val oldNulls = nullWords
@@ -1137,7 +1224,7 @@ trait NullableEncoder extends NotNullEncoder {
       nullWords = new Array[Long](newLen)
       maxNulls = newLen.toLong << 6L
       if (oldLen > 0) System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
-      BitSetMethods.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
+      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, ordinal)
     }
   }
 
@@ -1201,7 +1288,7 @@ trait NullableEncoder extends NotNullEncoder {
       var position = storageAllocator.baseOffset(newColumnData)
       ColumnEncoding.writeInt(newColumnBytes, position, typeId)
       position += 4
-      ColumnEncoding.writeInt(newColumnBytes, position, numWords)
+      ColumnEncoding.writeInt(newColumnBytes, position, numNullBytes)
       position += 4
       // write the null words
       writeNulls(newColumnBytes, position, numWords)

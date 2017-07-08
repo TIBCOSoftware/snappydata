@@ -25,11 +25,10 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.util.TaskCompletionListener
 
 /**
@@ -1049,7 +1048,7 @@ object ColumnWriter {
     // scalastyle:on
 
     val getter = ctx.getValue(input, dt, index)
-    val bitSetMethodsClass = classOf[BitSetMethods].getName
+    val bitSetClass = BitSet.getClass.getName
     val fieldOffset = ctx.freshName("fieldOffset")
     val value = ctx.freshName("value")
     var canBeNull = nullable
@@ -1074,7 +1073,7 @@ object ColumnWriter {
       s"""
          |final ${ctx.javaType(dt)} $value;
          |if ($checkNull) {
-         |  $bitSetMethodsClass.set($encoder.buffer(),
+         |  $bitSetClass.MODULE$$.set($encoder.buffer(),
          |      $encoder.baseOffset() + $baseOffset, $index + ${skipBytes << 3});
          |} else {$assignValue$serializeValue}
         """.stripMargin

@@ -242,6 +242,7 @@ final class ColumnFormatValue
   @transient private var columnBuffer = DiskEntry.Helper.NULL_BUFFER
   @transient private var diskId: DiskId = _
   @transient private var diskRegion: DiskRegionView = _
+  @transient private var deltaHierarchy: Int = _
 
   def this(buffer: ByteBuffer) = {
     this()
@@ -480,7 +481,8 @@ final class ColumnFormatValue
           REFERENCE_SIZE * 4 /* hb, att, cleaner, fd */ +
           5 * 4 /* 5 ints */ + 3 /* 3 bools */ + 8
       /* address */
-      val size = Sizeable.PER_OBJECT_OVERHEAD + REFERENCE_SIZE /* BB */
+      val size = Sizeable.PER_OBJECT_OVERHEAD +
+          REFERENCE_SIZE /* BB */ + 4 /* deltaHierarchy */
       alignedSize(size) + alignedSize(bbSize) +
           alignedSize(cleanerSize) + alignedSize(freeMemorySize)
     } else {
@@ -489,7 +491,8 @@ final class ColumnFormatValue
       val bbSize = Sizeable.PER_OBJECT_OVERHEAD + REFERENCE_SIZE /* hb */ +
           5 * 4 /* 5 ints */ + 3 /* 3 bools */ + 8
       /* unused address */
-      val size = Sizeable.PER_OBJECT_OVERHEAD + REFERENCE_SIZE /* BB */
+      val size = Sizeable.PER_OBJECT_OVERHEAD +
+          REFERENCE_SIZE /* BB */ + 4 /* deltaHierarchy */
       alignedSize(size) + alignedSize(bbSize) + alignedSize(hbSize)
     }
   }
@@ -505,7 +508,13 @@ final class ColumnFormatValue
 
   override def toString: String = {
     val buffer = columnBuffer.duplicate()
-    s"ColumnValue[size=${buffer.remaining()} $buffer diskId=$diskId diskRegion=$diskRegion]"
+    if (deltaHierarchy == 0) {
+      s"ColumnValue[size=${buffer.remaining()} $buffer " +
+          s"diskId=$diskId diskRegion=$diskRegion]"
+    } else {
+      s"ColumnDelta[size=${buffer.remaining()} $buffer " +
+          s"hierarchy=$deltaHierarchy diskId=$diskId diskRegion=$diskRegion]"
+    }
   }
 }
 

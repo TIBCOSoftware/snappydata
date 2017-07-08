@@ -17,16 +17,6 @@
 
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.io.{DataInput, DataOutput}
-import java.nio.ByteBuffer
-
-import com.gemstone.gemfire.internal.cache.lru.Sizeable
-import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
-import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
-import com.gemstone.gemfire.internal.cache.{DiskEntry, DiskId}
-import com.gemstone.gemfire.internal.shared.{OutputStreamChannel, Version}
-import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
-
 /**
  * Encodes a delta value for a [[ColumnFormatValue]] obtained after an
  * update operation. This keeps values in partially encoded form (e.g.
@@ -54,42 +44,8 @@ import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
  * not be able to encode in that format, b) requires changes to all encoders
  * and decoders to optionally support positions in the middle. This might be
  * considered in future depending on how much performance improvement can be
- * attained (checking with some pilot testing) for encoders that can support.
+ * attained (after checking with some testing) for encoders that can support.
  */
-final class ColumnDelta
-    extends SerializedDiskBuffer with GfxdSerializable with Sizeable {
-
-  @volatile
-  @transient private var deltaBuffer = DiskEntry.Helper.NULL_BUFFER
-  @transient private var hierarchy: Byte = _
-
-  override protected def releaseBuffer(): Unit = ???
-
-  override def setDiskId(id: DiskId, dr: DiskRegionView): Unit = ???
-
-  override def write(channel: OutputStreamChannel): Unit = ???
-
-  override def getOffHeapSizeInBytes: Int = ???
-
-  override def getSizeInBytes: Int = ???
-
-  override def getDSFID: Int = ???
-
-  override def toData(out: DataOutput): Unit = ???
-
-  override def fromData(in: DataInput): Unit = ???
-
-  override def getSerializationVersions: Array[Version] = ???
-
-  override def getGfxdID: Byte = ???
-
-  override def getBufferRetain: ByteBuffer = ???
-
-  override def needsRelease(): Boolean = ???
-
-  override def size(): Int = ???
-}
-
 object ColumnDelta {
 
   /**
