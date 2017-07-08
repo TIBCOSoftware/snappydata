@@ -9,5 +9,5 @@
 [submodule "spark"]
         path = spark
         url = https://github.com/SnappyDataInc/spark.git
-        branch = spark_2.1_merge #snappy/branch-2.1 
+        branch = snappy/branch-2.1 
 
