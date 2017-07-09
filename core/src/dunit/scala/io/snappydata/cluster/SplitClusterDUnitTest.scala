@@ -128,6 +128,34 @@ class SplitClusterDUnitTest(s: String)
   }
 
   override protected def testObject = SplitClusterDUnitTest
+
+  // test to make sure that stock spark-shell works with SnappyData core jar
+  def testSparkShell(): Unit = {
+    // perform some operation thru spark-shell
+    val jars = Files.newDirectoryStream(Paths.get(s"$snappyProductDir/../distributions/"),
+      "snappydata-core*.jar")
+    val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
+    // SparkSqlTestCode.txt file contains the commands executed on spark-shell
+    val scriptFile: String = getClass.getResource("/SparkSqlTestCode.txt").getPath
+    val sparkShellCommand = productDir + "/bin/spark-shell  --master local[3]" +
+        s" --conf spark.snappydata.connection=localhost:" + locatorClientPort +
+        s" --jars $snappyDataCoreJar" +
+        s" -i $scriptFile"
+    logInfo(s"about to invoke spark-shell with command: $sparkShellCommand")
+    sparkShellCommand.!!
+
+    val conn = testObject.getConnection(locatorClientPort)
+    val stmt = conn.createStatement()
+
+    // accessing tables created thru spark-shell
+    val rs1 = stmt.executeQuery("select count(*) from coltable")
+    rs1.next()
+    assert(rs1.getInt(1) == 5)
+
+    val rs2 = stmt.executeQuery("select count(*) from rowtable")
+    rs2.next()
+    assert(rs2.getInt(1) == 5)
+  }
 }
 
 object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {

@@ -305,6 +305,7 @@ subprojects {
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
+    dependsOn ':distProduct'
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
