@@ -713,7 +713,6 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       insert.table.output.filterNot(a => staticPartCols.contains(a.name))
     }
 
-    val child = insert.child
     if (expectedColumns.length != insert.child.schema.length) {
       throw new AnalysisException(
         s"Cannot insert into table $tblName because the number of columns are different: " +
@@ -814,16 +813,9 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         }
     }
 
-    if (newChildOutput == insert.child.output) {
-      insert match {
-        case p: PutIntoTable => p.copy(table = insert.table)
-        case i: InsertIntoTable => insert
-      }
-    } else insert match {
-      case p: PutIntoTable => p.copy(table = insert.table,
-        child = Project(newChildOutput, insert.child))
-      case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
-        insert.child))
+    if (newChildOutput == insert.child.output) insert
+    else {
+      insert.copy(child = Project(newChildOutput, insert.child))
     }
   }
 }
