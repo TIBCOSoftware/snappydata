@@ -77,8 +77,11 @@ case class JDBCMutableRelation(
   // create table in external store once upfront
   var tableSchema: String = _
 
+  import scala.collection.JavaConverters._
+
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
-    connProperties.url + connProperties.urlSecureSuffix, table, connProperties.connProps)
+    new JDBCOptions(connProperties.url +
+      connProperties.url, table, connProperties.connProps.asScala.toMap))
 
   var tableExists: Boolean = _
 
@@ -88,6 +91,7 @@ case class JDBCMutableRelation(
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
+<<<<<<< HEAD
   protected final val connFactory: () => Connection = {
     JdbcUtils.createConnectionFactory(connProperties.url + connProperties.urlSecureSuffix,
       connProperties.connProps)
@@ -103,6 +107,11 @@ case class JDBCMutableRelation(
           SnappyStoreHiveCatalog.HIVE_METASTORE + ";", connProperties.connProps)
     } else JdbcUtils.createConnectionFactory(connProperties.url, connProperties.connProps)
   }
+=======
+  protected final val connFactory: () => Connection =
+    JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
+      connProperties.connProps.asScala.toMap))
+>>>>>>> SNAP-1656
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -173,15 +182,21 @@ case class JDBCMutableRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val jdbcOptions = new JDBCOptions(connProperties.url,
+      table, connProperties.executorConnProps.asScala.toMap)
+
     val rdd = JDBCRDD.scanTable(
       sqlContext.sparkContext,
       schema,
+<<<<<<< HEAD
       connProperties.url + connProperties.urlSecureSuffix,
       connProperties.executorConnProps,
       table,
+=======
+>>>>>>> SNAP-1656
       requiredColumns,
       filters.filterNot(ExternalStoreUtils.unhandledFilter),
-      parts).asInstanceOf[RDD[Any]]
+      parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
 

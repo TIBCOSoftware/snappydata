@@ -412,7 +412,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
   test("1655: test Boolean in Row Table") {
 
-    snc.sql("create table order_line_row_bool (ol_w_id  Boolean, ol_d_id Integer) using row " +
+    snc.sql("create table order_line_row_bool (ol_w_id  Boolean, ol_d_id Long) using row " +
         "options( partition_by 'ol_w_id, ol_d_id', buckets '5')")
 
     serverHostPort = TestUtil.startNetServer()

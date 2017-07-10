@@ -19,13 +19,6 @@
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -36,7 +29,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -55,7 +47,7 @@ import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappyStoreHiveCatalog}
@@ -68,6 +60,13 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.reflect.runtime.{universe => u}
+import scala.util.control.NonFatal
 
 
 class SnappySession(@transient private val sc: SparkContext,
@@ -98,7 +97,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * and a catalog that interacts with external systems.
    */
   @transient
-  private[spark] lazy override val sharedState: SnappySharedState = {
+  private[spark] lazy val snappySharedState: SnappySharedState = {
     existingSharedState.getOrElse(new SnappySharedState(sc, id))
   }
 
@@ -163,7 +162,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * @since 2.0.0
    */
   override def newSession(): SnappySession = {
-    new SnappySession(sparkContext, Some(sharedState))
+    new SnappySession(sparkContext, Some(snappySharedState))
   }
 
   override def sql(sqlText: String): CachedDataFrame =
@@ -1025,7 +1024,8 @@ class SnappySession(@transient private val sc: SparkContext,
         r
     }
 
-    val plan = LogicalRelation(relation, metastoreTableIdentifier = Some(tableIdent))
+    val plan = LogicalRelation(relation)
+
     if (!SnappyContext.internalTableSources.exists(_.equals(source))) {
       sessionCatalog.registerDataSourceTable(tableIdent, userSpecifiedSchema,
         Array.empty[String], source, params, relation)
@@ -1184,7 +1184,7 @@ class SnappySession(@transient private val sc: SparkContext,
       }
       snappyContextFunctions.postRelationCreation(relation, this)
     }
-    LogicalRelation(relation, metastoreTableIdentifier = Some(tableIdent))
+    LogicalRelation(relation, catalogTable = Some(tableIdent.getTable(this.sessionCatalog)))
 
   }
 
@@ -1429,8 +1429,10 @@ class SnappySession(@transient private val sc: SparkContext,
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(this), new mutable.HashMap[String, String])
-    val conn = JdbcUtils.createConnectionFactory(connProperties.url +
-        connProperties.urlSecureSuffix, connProperties.connProps)()
+    val jdbcOptions = new JDBCOptions(connProperties.url +
+      connProperties.urlSecureSuffix, "",
+      connProperties.connProps.asScala.toMap)
+    val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     try {
       val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -1914,8 +1916,8 @@ object SnappySession extends Logging {
           AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
         case a: Alias =>
           Alias(a.child, a.name)(exprId = ExprId(0))
-        case l@ListQuery(query, _) =>
-          l.copy(query = query.transformAllExpressions(normalizeExprIds),
+        case l@ListQuery(plan, _) =>
+          l.copy(plan = plan.transformAllExpressions(normalizeExprIds),
             exprId = ExprId(0))
         case ae: AggregateExpression =>
           ae.copy(resultId = ExprId(0))

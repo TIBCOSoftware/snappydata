@@ -19,15 +19,13 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, SortDirection, SpecificMutableRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, SortDirection, SpecificInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -137,7 +135,7 @@ abstract class BaseColumnFormatRelation(
     }.filter(_.nonEmpty).map(_.get).unzip
 
     val pcFields = StructType(fields).toAttributes
-    val mutableRow = new SpecificMutableRow(pcFields.map(_.dataType))
+    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
     val bucketIdGeneration = UnsafeProjection.create(
       HashPartitioning(pcFields, numBuckets)
           .partitionIdExpression :: Nil, pcFields)
