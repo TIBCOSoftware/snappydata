@@ -1987,6 +1987,7 @@ public class SnappyTest implements Serializable {
         command = snappyJobScript + " --class " + userJob +
             " --master spark://" + masterHost + ":" + masterPort + " " +
             SnappyPrms.getExecutorMemory() + " " +
+            " --jars " + getStoreTestsJar() +
             SnappyPrms.getSparkSubmitExtraPrms() + " " +
             " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +

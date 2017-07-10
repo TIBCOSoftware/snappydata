@@ -46,6 +46,7 @@ object ValidateCTQueriesApp {
     CTQueries.snc = snc
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
+    val numRowsValidation: Boolean = args(3).toBoolean
     pw.println(s"Validation for queries with ${tableType} tables started")
     if (fullResultSetValidation) {
       pw.println(s"Test will perform fullResultSetValidation")
@@ -55,7 +56,7 @@ object ValidateCTQueriesApp {
     }
     val startTime = System.currentTimeMillis
     val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-      sqlContext)
+      sqlContext,numRowsValidation)
     val endTime = System.currentTimeMillis
     val totalTime = (endTime - startTime) / 1000
     pw.println(s"Total time for execution is :: ${totalTime} seconds.")

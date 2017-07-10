@@ -40,6 +40,7 @@ object ValidateNWQueriesApp {
     val fullResultSetValidation: Boolean = args(2).toBoolean
     val numRowsValidation: Boolean = args(4).toBoolean
     val isSmokeRun: Boolean = args(3).toBoolean
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val threadID = Thread.currentThread().getId
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
         ".out"
@@ -66,7 +67,15 @@ object ValidateNWQueriesApp {
         NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
       }
       else {
-        NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+        val failedQueries = NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+        if (!failedQueries.isEmpty) {
+          println(s"Validation failed for ${tableType} for queries ${failedQueries}.. See " +
+              s"${getCurrentDirectory}/${outputFile}")
+          pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
+          pw.close()
+          throw new Exception(s"Validation task failed for ${tableType}. See " +
+              s"${getCurrentDirectory}/${outputFile}")
+        }
       }
       pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed  " +
           s"successfully at : " + System.currentTimeMillis)
