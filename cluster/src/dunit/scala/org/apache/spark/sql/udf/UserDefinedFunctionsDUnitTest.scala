@@ -68,7 +68,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     }
   }
 
-  def testExecutorHA(): Unit = {
+  def IGNORE_SNAP_1681_testExecutorHA(): Unit = {
     var snSession = new SnappySession(sc)
     createTables
 

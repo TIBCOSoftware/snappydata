@@ -19,8 +19,6 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.lang
 import java.util.{Collections, UUID}
 
-import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -33,7 +31,6 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
-
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.FunctionIdentifier
@@ -42,10 +39,11 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, SparkContext, SparkException}
+
+import scala.collection.JavaConverters._
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -261,10 +259,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val resources: Seq[FunctionResource] = Seq(FunctionResource(JarResource, jarURI))
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating udf $functionName")
-        val snappySharedState = session.sharedState.asInstanceOf[SnappySharedState]
         val functionDefinition = CatalogFunction(new FunctionIdentifier(
           functionName, Option(db)), className, resources)
-        snappySharedState.externalCatalog.createFunction(db, functionDefinition)
+        session.snappySharedState.externalCatalog.createFunction(db, functionDefinition)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_UDF =>
         val session = SnappyContext(null: SparkContext).snappySession
@@ -272,8 +269,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val functionName = context.getFunctionName
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp dropping udf $functionName")
-        val snappySharedState = session.sharedState.asInstanceOf[SnappySharedState]
-        snappySharedState.externalCatalog.dropFunction(db, functionName)
+        session.snappySharedState.externalCatalog.dropFunction(db, functionName)
 
       case _ =>
         throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")

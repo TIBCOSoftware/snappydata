@@ -233,6 +233,7 @@ class StringAsVarcharDUnitTest(val s: String)
     val df = snc.read
         .format("com.databricks.spark.csv")
         .option("header", "false")
+        .option("maxCharsPerColumn", "4096")
         .schema(schema)
         .load(getClass.getResource("/allstringtypes.csv").getPath)
         .cache
