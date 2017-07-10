@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import java.lang.reflect.Field
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
@@ -35,7 +34,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
-import org.apache.spark.util.collection.BitSet
 
 /**
  * Base class for encoding and decoding in columnar form. Memory layout of
@@ -717,12 +715,6 @@ trait ColumnEncoder extends ColumnEncoding {
 object ColumnEncoding {
 
   private[columnar] val BUFFER_OWNER = "ENCODER"
-
-  private[columnar] val bitSetWords: Field = {
-    val f = classOf[BitSet].getDeclaredField("words")
-    f.setAccessible(true)
-    f
-  }
 
   private[columnar] val BITS_PER_LONG = 64
 
