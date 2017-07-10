@@ -190,6 +190,7 @@ class TokenizationTest
       createSimpleTableAndPoupulateData(numRows, s"$table2")
       // creating table should not put anything in cache
       assert( cacheMap.size() == 0)
+      snc.sql("set spark.sql.crossJoin.enabled=true")
       // fire a join query
       query = s"select * from $table t1, $table2 t2 where t1.a = 0"
       res1 = snc.sql(query).collect()
@@ -225,6 +226,8 @@ class TokenizationTest
       res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
       assert(!res1.sameElements(res2))
+
+      snc.sql("set spark.sql.crossJoin.enabled=false")
 
       snc.sql(s"drop table $table")
       snc.sql(s"drop table $table2")
