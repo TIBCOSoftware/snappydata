@@ -20,24 +20,23 @@ package io.snappydata.hydra.snapshotIsolation
 import java.io.{File, PrintWriter}
 import java.util
 
-import io.snappydata.hydra.TestUtil
-
 import org.apache.spark.sql.{Row, DataFrame, SnappyContext}
 
 class SnapshotIsolationTestUtils {
 
-  def executeQueries(snc:SnappyContext,pw:PrintWriter):Any = {
-    assertQuery(SnapshotIsolationQueries.Q1,"Q1",snc,pw)
+  def executeQueries(snc: SnappyContext, pw: PrintWriter): Any = {
+    assertQuery(SnapshotIsolationQueries.Q1, "Q1", snc, pw)
   }
 
-  def assertQuery(sqlString: String,queryNum: String,snc: SnappyContext,pw: PrintWriter): Any ={
-    val time =  System.currentTimeMillis()
+  def assertQuery(sqlString: String, queryNum: String, snc: SnappyContext, pw: PrintWriter): Any = {
+    val time = System.currentTimeMillis()
     var snappyDF = snc.sql(sqlString)
     try {
-      verifyDuplicateRows(snappyDF,pw)
-      //TestUtil.compareFiles(snappyFile, newDFFile, pw, false)
+      verifyDuplicateRows(snappyDF, pw)
+      // TestUtil.compareFiles(snappyFile, newDFFile, pw, false)
     } catch {
       case ex: Exception => {
+        // scalastyle:off println
         pw.println(s"Verification failed for ${queryNum} with following exception:\n")
         ex.printStackTrace(pw)
       }
@@ -50,6 +49,7 @@ class SnapshotIsolationTestUtils {
     val dupList: util.List[Row] = new util.ArrayList[Row]()
     val rowList = df.collectAsList()
     val numRows = rowList.size().asInstanceOf[Int]
+    // scalastyle:off println
     pw.println(s"Num rows in resultSet are ${numRows} and rows are:")
     for ( i <- 0 to numRows) {
       val row = rowList.get(i)
@@ -69,6 +69,6 @@ class SnapshotIsolationTestUtils {
     }
   }
 
-  def verifyResults(snappyFile: File,pw: PrintWriter): Unit ={
+  def verifyResults(snappyFile: File, pw: PrintWriter): Unit = {
   }
 }

@@ -18,6 +18,7 @@ package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import util.TestException
 import com.typesafe.config.Config
 import io.snappydata.hydra.northwind
 import org.apache.spark.SparkContext
@@ -66,7 +67,13 @@ class ValidateNWQueriesJob extends SnappySQLJob {
           NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
         }
         else {
-          NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+          val failedQueries = NWTestUtil.validateQueriesFullResultSet(snc, tableType, pw, sqlContext)
+          if(!failedQueries.isEmpty) {
+            println(s"Validation failed for ${tableType} for queries ${failedQueries}. See ${getCurrentDirectory}/${outputFile}")
+            pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
+            pw.close()
+            throw new TestException(s"Validation task failed for ${tableType}. See ${getCurrentDirectory}/${outputFile}")
+          }
         }
         pw.println(s"validateQueriesFullResultSet ${tableType} tables Queries Test completed  " +
             s"successfully at : " + System.currentTimeMillis)

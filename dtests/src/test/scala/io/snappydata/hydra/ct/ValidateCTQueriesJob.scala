@@ -42,16 +42,20 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       snc.setConf("dataFilesLocation", dataFilesLocation)
       CTQueries.snc = snc
       pw.println(s"Validation for $tableType tables started in snappy Job")
+      val numRowsValidation: Boolean = jobConfig.getBoolean("numRowsValidation")
       val fullResultSetValidation: Boolean = jobConfig.getBoolean("fullResultSetValidation")
       val sc = SparkContext.getOrCreate()
       val sqlContext = SQLContext.getOrCreate(sc)
+      if(numRowsValidation){
+
+      }
       if (fullResultSetValidation)
         pw.println(s"Test will perform fullResultSetValidation")
       else
         pw.println(s"Test will not perform fullResultSetValidation")
       val startTime = System.currentTimeMillis
       val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-        sqlContext)
+        sqlContext,numRowsValidation)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")
