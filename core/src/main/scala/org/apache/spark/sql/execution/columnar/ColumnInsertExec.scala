@@ -417,9 +417,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val statsRowTerm = ctx.freshName("statsRow")
     val statsSchema = StructType.fromAttributes(statsAttrs)
     val statsSchemaVar = ctx.addReferenceObj("statsSchema", statsSchema)
-    ctx.addMutableState("SpecificMutableRow", statsRowTerm,
-      s"$statsRowTerm = new SpecificMutableRow($statsSchemaVar);")
-
+    ctx.addMutableState("SpecificInternalRow", statsRowTerm,
+      s"$statsRowTerm = new SpecificInternalRow($statsSchemaVar);")
 
     val blocks = new ArrayBuffer[String]()
     val blockBuilder = new StringBuilder()
@@ -496,8 +495,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     cursorsArrayTerm = ctx.freshName("cursors")
 
     val mutableRow = ctx.freshName("mutableRow")
-    ctx.addMutableState("SpecificMutableRow", mutableRow,
-      s"$mutableRow = new SpecificMutableRow($schemaTerm);")
+
+    ctx.addMutableState("SpecificInternalRow", mutableRow,
+      s"$mutableRow = new SpecificInternalRow($schemaTerm);")
 
     val rowWriteExprs = schema.indices.map { i =>
       val field = schema(i)

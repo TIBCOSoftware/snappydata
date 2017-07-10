@@ -42,7 +42,9 @@ dependencies {
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
   compile group: 'org.codehaus.janino', name: 'janino', version: '3.0.6'
-  compile "org.apache.thrift:libthrift:${thriftVersion}"
+  compile("org.apache.thrift:libthrift:${thriftVersion}") {
+    exclude(group: 'org.slf4j', module: 'slf4j-api')
+  }
 
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.

@@ -32,8 +32,7 @@ import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.MutableRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
+import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
@@ -218,8 +217,7 @@ object CodeGeneration extends Logging {
       classOf[Decimal].getName,
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
-      classOf[MapData].getName,
-      classOf[MutableRow].getName)
+      classOf[MapData].getName)
 
   def getRowSetterFragment(schema: Array[StructField],
       dialect: JdbcDialect, row: String, stmt: String,
@@ -389,8 +387,7 @@ object CodeGeneration extends Logging {
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
       classOf[MapData].getName,
-      classOf[InternalDataSerializer].getName,
-      classOf[MutableRow].getName))
+      classOf[InternalDataSerializer].getName))
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"

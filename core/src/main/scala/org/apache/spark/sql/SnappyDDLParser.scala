@@ -38,7 +38,8 @@ import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, DataSource, RefreshTable}
+import org.apache.spark.sql.catalyst.catalog.BucketSpec
+import org.apache.spark.sql.execution.datasources.{DataSource, RefreshTable}
 import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
@@ -438,7 +439,9 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def uncache: Rule1[LogicalPlan] = rule {
-    UNCACHE ~ TABLE ~ tableIdentifier ~> UncacheTableCommand |
+    UNCACHE ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~>
+        ((ifExists: Any, tableIdent: TableIdentifier) => UncacheTableCommand(tableIdent,
+          ifExists.asInstanceOf[Option[Boolean]].isDefined)) |
     CLEAR ~ CACHE ~> (() => ClearCacheCommand)
   }
 
@@ -585,6 +588,39 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T
 
   protected def newInstance(): SnappyDDLParser
+}
+
+/**
+  * Used to represent the operation of create table using a data source.
+  *
+  * @param allowExisting If it is true, we will do nothing when the table already exists.
+  *                      If it is false, an exception will be thrown
+  */
+case class CreateTableUsing(
+    tableIdent: TableIdentifier,
+    userSpecifiedSchema: Option[StructType],
+    provider: String,
+    temporary: Boolean,
+    options: Map[String, String],
+    partitionColumns: Array[String],
+    bucketSpec: Option[BucketSpec],
+    allowExisting: Boolean,
+    managedIfNoPath: Boolean) extends Command
+
+/**
+  * A node used to support CTAS statements and saveAsTable for the data source API.
+  */
+case class CreateTableUsingAsSelect(
+    tableIdent: TableIdentifier,
+    provider: String,
+    partitionColumns: Array[String],
+    bucketSpec: Option[BucketSpec],
+    mode: SaveMode,
+    options: Map[String, String],
+    query: LogicalPlan) extends Command {
+
+  override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
+  override lazy val resolved: Boolean = query.resolved
 }
 
 private[sql] case class CreateMetastoreTableUsing(

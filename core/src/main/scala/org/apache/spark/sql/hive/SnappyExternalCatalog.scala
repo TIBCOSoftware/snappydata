@@ -19,6 +19,7 @@ package org.apache.spark.sql.hive
 
 import java.util
 
+import scala.collection.mutable
 import scala.util.control.NonFatal
 
 import org.apache.hadoop.conf.Configuration
@@ -29,7 +30,11 @@ import org.apache.thrift.TException
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.catalog.ExternalCatalogUtils._
 import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression, InterpretedPredicate}
+import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
+import org.apache.spark.sql.execution.datasources.PartitioningUtils
 import org.apache.spark.sql.hive.client.HiveClient
 
 private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
@@ -41,7 +46,6 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   private val clientExceptions = Set(
     classOf[HiveException].getCanonicalName,
     classOf[TException].getCanonicalName)
-
 
   /**
    * Whether this is an exception thrown by the hive client that should be wrapped.
@@ -107,7 +111,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     }
   }
 
-  private def requireTableExists(db: String, table: String): Unit = {
+  override def requireTableExists(db: String, table: String): Unit = {
     withClient {
       getTable(db, table)
     }
@@ -171,11 +175,10 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   // --------------------------------------------------------------------------
 
   override def createTable(
-      db: String,
       tableDefinition: CatalogTable,
       ignoreIfExists: Boolean): Unit = withClient {
-    requireDbExists(db)
-    requireDbMatches(db, tableDefinition)
+    requireDbExists(tableDefinition.database)
+    requireDbMatches(tableDefinition.database, tableDefinition)
 
     if (
     // If this is an external data source table...
@@ -217,9 +220,10 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   override def dropTable(
       db: String,
       table: String,
-      ignoreIfNotExists: Boolean): Unit = withClient {
+      ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit = withClient {
     requireDbExists(db)
-    withHiveExceptionHandling(client.dropTable(db, table, ignoreIfNotExists))
+    withHiveExceptionHandling(client.dropTable(db, table, ignoreIfNotExists, purge))
     SnappySession.clearAllCache()
   }
 
@@ -237,9 +241,9 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
    * Note: As of now, this only supports altering table properties, serde properties,
    * and num buckets!
    */
-  override def alterTable(db: String, tableDefinition: CatalogTable): Unit = withClient {
-    requireDbMatches(db, tableDefinition)
-    requireTableExists(db, tableDefinition.identifier.table)
+  override def alterTable(tableDefinition: CatalogTable): Unit = withClient {
+    requireDbMatches(tableDefinition.database, tableDefinition)
+    requireTableExists(tableDefinition.database, tableDefinition.identifier.table)
     withHiveExceptionHandling(client.alterTable(tableDefinition))
     SnappySession.clearAllCache()
   }
@@ -287,8 +291,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       partition: TablePartitionSpec,
       isOverwrite: Boolean,
       holdDDLTime: Boolean,
-      inheritTableSpecs: Boolean,
-      isSkewedStoreAsSubdir: Boolean): Unit = withClient {
+      inheritTableSpecs: Boolean): Unit = withClient {
     requireTableExists(db, table)
 
     val orderedPartitionSpec = new util.LinkedHashMap[String, String]()
@@ -298,17 +301,211 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
 
     withHiveExceptionHandling(client.loadPartition(
       loadPath,
-      s"$db.$table",
+      s"$db",
+      s".$table",
       orderedPartitionSpec,
       isOverwrite,
       holdDDLTime,
-      inheritTableSpecs,
-      isSkewedStoreAsSubdir))
+      inheritTableSpecs))
   }
 
   // --------------------------------------------------------------------------
   // Partitions
   // --------------------------------------------------------------------------
+
+  val SPARK_SQL_PREFIX = "spark.sql."
+
+  val DATASOURCE_PREFIX = SPARK_SQL_PREFIX + "sources."
+  val DATASOURCE_PROVIDER = DATASOURCE_PREFIX + "provider"
+  val DATASOURCE_SCHEMA = DATASOURCE_PREFIX + "schema"
+  val DATASOURCE_SCHEMA_PREFIX = DATASOURCE_SCHEMA + "."
+  val DATASOURCE_SCHEMA_NUMPARTS = DATASOURCE_SCHEMA_PREFIX + "numParts"
+  val DATASOURCE_SCHEMA_NUMPARTCOLS = DATASOURCE_SCHEMA_PREFIX + "numPartCols"
+  val DATASOURCE_SCHEMA_NUMSORTCOLS = DATASOURCE_SCHEMA_PREFIX + "numSortCols"
+  val DATASOURCE_SCHEMA_NUMBUCKETS = DATASOURCE_SCHEMA_PREFIX + "numBuckets"
+  val DATASOURCE_SCHEMA_NUMBUCKETCOLS = DATASOURCE_SCHEMA_PREFIX + "numBucketCols"
+  val DATASOURCE_SCHEMA_PART_PREFIX = DATASOURCE_SCHEMA_PREFIX + "part."
+  val DATASOURCE_SCHEMA_PARTCOL_PREFIX = DATASOURCE_SCHEMA_PREFIX + "partCol."
+  val DATASOURCE_SCHEMA_BUCKETCOL_PREFIX = DATASOURCE_SCHEMA_PREFIX + "bucketCol."
+  val DATASOURCE_SCHEMA_SORTCOL_PREFIX = DATASOURCE_SCHEMA_PREFIX + "sortCol."
+
+  val STATISTICS_PREFIX = SPARK_SQL_PREFIX + "statistics."
+  val STATISTICS_TOTAL_SIZE = STATISTICS_PREFIX + "totalSize"
+  val STATISTICS_NUM_ROWS = STATISTICS_PREFIX + "numRows"
+  val STATISTICS_COL_STATS_PREFIX = STATISTICS_PREFIX + "colStats."
+
+  val TABLE_PARTITION_PROVIDER = SPARK_SQL_PREFIX + "partitionProvider"
+  val TABLE_PARTITION_PROVIDER_CATALOG = "catalog"
+  val TABLE_PARTITION_PROVIDER_FILESYSTEM = "filesystem"
+
+  /**
+    * Returns the fully qualified name used in table properties for a particular column stat.
+    * For example, for column "mycol", and "min" stat, this should return
+    * "spark.sql.statistics.colStats.mycol.min".
+    */
+  private def columnStatKeyPropName(columnName: String, statKey: String): String = {
+    STATISTICS_COL_STATS_PREFIX + columnName + "." + statKey
+  }
+
+  // Hive metastore is not case preserving and the partition columns are always lower cased. We need
+  // to lower case the column names in partition specification before calling partition related Hive
+  // APIs, to match this behaviour.
+  private def lowerCasePartitionSpec(spec: TablePartitionSpec): TablePartitionSpec = {
+    spec.map { case (k, v) => k.toLowerCase -> v }
+  }
+
+  // Build a map from lower-cased partition column names to exact column names for a given table
+  private def buildLowerCasePartColNameMap(table: CatalogTable): Map[String, String] = {
+    val actualPartColNames = table.partitionColumnNames
+    actualPartColNames.map(colName => (colName.toLowerCase, colName)).toMap
+  }
+
+  // Hive metastore is not case preserving and the column names of the partition specification we
+  // get from the metastore are always lower cased. We should restore them w.r.t. the actual table
+  // partition columns.
+  private def restorePartitionSpec(
+      spec: TablePartitionSpec,
+      partColMap: Map[String, String]): TablePartitionSpec = {
+    spec.map { case (k, v) => partColMap(k.toLowerCase) -> v }
+  }
+
+  private def restorePartitionSpec(
+      spec: TablePartitionSpec,
+      partCols: Seq[String]): TablePartitionSpec = {
+    spec.map { case (k, v) => partCols.find(_.equalsIgnoreCase(k)).get -> v }
+  }
+
+  /**
+    * Restores table metadata from the table properties if it's a datasouce table. This method is
+    * kind of a opposite version of [[createTable]].
+    *
+    * It reads table schema, provider, partition column names and bucket specification from table
+    * properties, and filter out these special entries from table properties.
+    */
+  private def restoreTableMetadata(inputTable: CatalogTable): CatalogTable = {
+    var table = inputTable
+    // construct Spark's statistics from information in Hive metastore
+    val statsProps = table.properties.filterKeys(_.startsWith(STATISTICS_PREFIX))
+
+    if (statsProps.nonEmpty) {
+      val colStats = new mutable.HashMap[String, ColumnStat]
+
+      // For each column, recover its column stats. Note that this is currently a O(n^2) operation,
+      // but given the number of columns it usually not enormous, this is probably OK as a start.
+      // If we want to map this a linear operation, we'd need a stronger contract between the
+      // naming convention used for serialization.
+      table.schema.foreach { field =>
+        if (statsProps.contains(columnStatKeyPropName(field.name, ColumnStat.KEY_VERSION))) {
+          // If "version" field is defined, then the column stat is defined.
+          val keyPrefix = columnStatKeyPropName(field.name, "")
+          val colStatMap = statsProps.filterKeys(_.startsWith(keyPrefix)).map { case (k, v) =>
+            (k.drop(keyPrefix.length), v)
+          }
+
+          ColumnStat.fromMap(table.identifier.table, field, colStatMap).foreach {
+            colStat => colStats += field.name -> colStat
+          }
+        }
+      }
+
+      table = table.copy(
+        stats = Some(Statistics(
+          sizeInBytes = BigInt(table.properties(STATISTICS_TOTAL_SIZE)),
+          rowCount = table.properties.get(STATISTICS_NUM_ROWS).map(BigInt(_)),
+          colStats = colStats.toMap)))
+    }
+
+    // Get the original table properties as defined by the user.
+    table.copy(
+      properties = table.properties.filterNot { case (key, _) => key.startsWith(SPARK_SQL_PREFIX) })
+  }
+
+  override def loadDynamicPartitions(
+      db: String,
+      table: String,
+      loadPath: String,
+      partition: TablePartitionSpec,
+      replace: Boolean,
+      numDP: Int,
+      holdDDLTime: Boolean): Unit = {
+    requireTableExists(db, table)
+
+    val orderedPartitionSpec = new util.LinkedHashMap[String, String]()
+    getTable(db, table).partitionColumnNames.foreach { colName =>
+      orderedPartitionSpec.put(colName.toLowerCase, partition(colName))
+    }
+
+    client.loadDynamicPartitions(
+      loadPath,
+      db,
+      table,
+      orderedPartitionSpec,
+      replace,
+      numDP,
+      holdDDLTime)
+  }
+
+  override def getPartitionOption(
+      db: String,
+      table: String,
+      spec: TablePartitionSpec): Option[CatalogTablePartition] = {
+    client.getPartitionOption(db, table, lowerCasePartitionSpec(spec)).map { part =>
+      part.copy(spec = restorePartitionSpec(part.spec, getTable(db, table).partitionColumnNames))
+    }
+  }
+
+  override def listPartitionNames(
+      db: String,
+      table: String,
+      partialSpec: Option[TablePartitionSpec]): Seq[String] = {
+    val catalogTable = getTable(db, table)
+    val partColNameMap = buildLowerCasePartColNameMap(catalogTable).mapValues(escapePathName)
+    val clientPartitionNames =
+      client.getPartitionNames(catalogTable, partialSpec.map(lowerCasePartitionSpec))
+    clientPartitionNames.map { partName =>
+      val partSpec = PartitioningUtils.parsePathFragmentAsSeq(partName)
+      partSpec.map { case (partName, partValue) =>
+        partColNameMap(partName.toLowerCase) + "=" + escapePathName(partValue)
+      }.mkString("/")
+    }
+  }
+
+  override def listPartitionsByFilter(
+      db: String,
+      table: String,
+      predicates: Seq[Expression]): Seq[CatalogTablePartition] = withClient {
+    val rawTable = client.getTable(db, table)
+    val catalogTable = restoreTableMetadata(rawTable)
+    val partitionColumnNames = catalogTable.partitionColumnNames.toSet
+    val nonPartitionPruningPredicates = predicates.filterNot {
+      _.references.map(_.name).toSet.subsetOf(partitionColumnNames)
+    }
+
+    if (nonPartitionPruningPredicates.nonEmpty) {
+      sys.error("Expected only partition pruning predicates: " +
+          predicates.reduceLeft(And))
+    }
+
+    val partitionSchema = catalogTable.partitionSchema
+    val partColNameMap = buildLowerCasePartColNameMap(getTable(db, table))
+
+    if (predicates.nonEmpty) {
+      val clientPrunedPartitions = client.getPartitionsByFilter(rawTable, predicates).map { part =>
+        part.copy(spec = restorePartitionSpec(part.spec, partColNameMap))
+      }
+      val boundPredicate =
+        InterpretedPredicate.create(predicates.reduce(And).transform {
+          case att: AttributeReference =>
+            val index = partitionSchema.indexWhere(_.name == att.name)
+            BoundReference(index, partitionSchema(index).dataType, nullable = true)
+        })
+      clientPrunedPartitions.filter { p => boundPredicate(p.toRow(partitionSchema)) }
+    } else {
+      client.getPartitions(catalogTable).map { part =>
+        part.copy(spec = restorePartitionSpec(part.spec, partColNameMap))
+      }
+    }
+  }
 
   override def createPartitions(
       db: String,
@@ -324,9 +521,12 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       db: String,
       table: String,
       parts: Seq[TablePartitionSpec],
-      ignoreIfNotExists: Boolean): Unit = withClient {
+      ignoreIfNotExists: Boolean,
+      purge: Boolean,
+      retainData: Boolean): Unit = withClient {
     requireTableExists(db, table)
-    withHiveExceptionHandling(client.dropPartitions(db, table, parts, ignoreIfNotExists))
+    withHiveExceptionHandling(client.dropPartitions(
+      db, table, parts, ignoreIfNotExists, purge = false, retainData = false))
     SnappySession.clearAllCache()
   }
 
@@ -406,4 +606,5 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   def closeCurrent(): Unit = {
     Hive.closeCurrent()
   }
+
 }

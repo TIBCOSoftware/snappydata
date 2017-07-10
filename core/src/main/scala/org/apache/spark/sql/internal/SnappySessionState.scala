@@ -40,7 +40,7 @@ import org.apache.spark.sql.catalyst.{CatalystConf, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{PartitioningUtils, DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
@@ -60,10 +60,10 @@ class SnappySessionState(snappySession: SnappySession)
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
-  protected lazy val sharedState: SnappySharedState =
-    snappySession.sharedState.asInstanceOf[SnappySharedState]
+  protected lazy val snappySharedState: SnappySharedState =
+    snappySession.snappySharedState.asInstanceOf[SnappySharedState]
 
-  private[internal] lazy val metadataHive = sharedState.metadataHive.newSession()
+  private[internal] lazy val metadataHive = snappySharedState.metadataHive.newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -265,18 +265,20 @@ class SnappySessionState(snappySession: SnappySession)
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
-          sharedState.externalCatalog,
+          snappySharedState.externalCatalog,
           snappySession,
           metadataHive,
+          snappySession.sharedState.globalTempViewManager,
           functionResourceLoader,
           functionRegistry,
           conf,
           newHadoopConf())
       case _ =>
         new SnappyStoreHiveCatalog(
-          sharedState.externalCatalog,
+          snappySharedState.externalCatalog,
           snappySession,
           metadataHive,
+          snappySession.sharedState.globalTempViewManager,
           functionResourceLoader,
           functionRegistry,
           conf,
@@ -650,8 +652,8 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
           val relation = LogicalRelation(br,
-            l.expectedOutputAttributes, l.metastoreTableIdentifier)
-          castAndRenameChildOutput(i.copy(table = relation),
+            l.expectedOutputAttributes, l.catalogTable)
+          castAndRenameChildOutputForPut(i.copy(table = relation),
             relation.output, br, null, child)
         case None =>
           throw new AnalysisException(s"$l requires that the query in the " +
@@ -674,7 +676,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
                 "SELECT clause of the PUT INTO statement " +
                 "generates the same number of columns as its schema.")
           }
-          castAndRenameChildOutput(p, expectedOutput, ir, l, child)
+          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
 
         case _ => p
       }
@@ -707,7 +709,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
               }
             case _ =>
           }
-          castAndRenameChildOutput(d, expectedOutput, dr, l, child)
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
         case _ => d
       }
@@ -720,10 +722,10 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         preProcess(i, relation = null, metadata.identifier.quotedString,
           metadata.partitionColumnNames)
       case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
-        val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
         preProcess(i, h, tblName, h.partitionSchema.map(_.name))
       case LogicalRelation(ir: InsertableRelation, _, identifier) =>
-        val tblName = identifier.map(_.quotedString).getOrElse("unknown")
+        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
         preProcess(i, ir, tblName, Nil)
       case _ => i
     }
@@ -735,15 +737,22 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       tblName: String,
       partColNames: Seq[String]): InsertIntoTable = {
 
-    val expectedColumns = insert.expectedColumns
-    val child = insert.child
-    if (expectedColumns.isDefined && expectedColumns.get.length != child.schema.length) {
-      throw new AnalysisException(
-        s"Cannot insert into table $tblName because the number of columns are different: " +
-            s"need ${expectedColumns.get.length} columns, " +
-            s"but query has ${child.schema.length} columns.")
+    // val expectedColumns = insert
+
+    val normalizedPartSpec = PartitioningUtils.normalizePartitionSpec(
+      insert.partition, partColNames, tblName, conf.resolver)
+
+    val expectedColumns = {
+      val staticPartCols = normalizedPartSpec.filter(_._2.isDefined).keySet
+      insert.table.output.filterNot(a => staticPartCols.contains(a.name))
     }
 
+    if (expectedColumns.length != insert.child.schema.length) {
+      throw new AnalysisException(
+        s"Cannot insert into table $tblName because the number of columns are different: " +
+            s"need ${expectedColumns.length} columns, " +
+            s"but query has ${insert.child.schema.length} columns.")
+    }
     if (insert.partition.nonEmpty) {
       // the query's partitioning must match the table's partitioning
       // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
@@ -761,14 +770,18 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
              |Table partitions: ${partColNames.mkString(",")}
            """.stripMargin)
       }
-      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-        child)).getOrElse(insert)
+      castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
+
+//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+//        child)).getOrElse(insert)
     } else {
       // All partition columns are dynamic because because the InsertIntoTable
       // command does not explicitly specify partitioning columns.
-      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-        child)).getOrElse(insert).copy(partition = partColNames
-          .map(_ -> None).toMap)
+      castAndRenameChildOutput(insert, expectedColumns)
+          .copy(partition = partColNames.map(_ -> None).toMap)
+//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+//        child)).getOrElse(insert).copy(partition = partColNames
+//          .map(_ -> None).toMap)
     }
   }
 
@@ -777,7 +790,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
    * types and names.
    */
   // TODO: do we really need to rename?
-  def castAndRenameChildOutput[T <: LogicalPlan](
+  def castAndRenameChildOutputForPut[T <: LogicalPlan](
       plan: T,
       expectedOutput: Seq[Attribute],
       relation: BaseRelation,
@@ -813,6 +826,30 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
         child)).asInstanceOf[T]
+    }
+  }
+
+  private def castAndRenameChildOutput(
+      insert: InsertIntoTable,
+      expectedOutput: Seq[Attribute]): InsertIntoTable = {
+    val newChildOutput = expectedOutput.zip(insert.child.output).map {
+      case (expected, actual) =>
+        if (expected.dataType.sameType(actual.dataType) &&
+            expected.name == actual.name &&
+            expected.metadata == actual.metadata) {
+          actual
+        } else {
+          // Renaming is needed for handling the following cases like
+          // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
+          // 2) Target tables have column metadata
+          Alias(Cast(actual, expected.dataType), expected.name)(
+            explicitMetadata = Option(expected.metadata))
+        }
+    }
+
+    if (newChildOutput == insert.child.output) insert
+    else {
+      insert.copy(child = Project(newChildOutput, insert.child))
     }
   }
 }

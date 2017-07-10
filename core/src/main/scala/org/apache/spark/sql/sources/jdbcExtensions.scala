@@ -21,12 +21,12 @@ import java.util.Properties
 
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
-
 import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
-import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, SnappySession, SparkSession}
@@ -348,7 +348,7 @@ object JdbcExtendedUtils extends Logging {
         table = UnresolvedRelation(tableIdent),
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,
-        overwrite = false,
+        overwrite = OverwriteOptions(false),
         ifNotExists = false)
     }
     session.sessionState.executePlan(plan).executedPlan.executeCollect()
