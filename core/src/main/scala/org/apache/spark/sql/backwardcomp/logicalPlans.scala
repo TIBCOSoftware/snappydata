@@ -20,13 +20,13 @@ import java.util.Date
 
 import scala.collection.mutable.ArrayBuffer
 
-import org.apache.spark.sql.catalyst.catalog.{CatalogColumn, CatalogTable, CatalogTablePartition, CatalogTableType, SessionCatalog}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogUtils, CatalogTable, CatalogTablePartition, CatalogTableType, SessionCatalog}
 import org.apache.spark.sql.{AnalysisException, Row, SparkSession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
-import org.apache.spark.sql.execution.command.{CreateDataSourceTableUtils, DDLUtils}
+import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.types.{MetadataBuilder, StringType, StructType}
 
 /**
@@ -67,7 +67,7 @@ case class DescribeTable(
       new MetadataBuilder().putString("comment", "comment of the column").build())()
   )
 
-  def run(sparkSession: SparkSession): Seq[Row] = {
+  override def run(sparkSession: SparkSession): Seq[Row] = {
     val result = new ArrayBuffer[Row]
     val catalog = sparkSession.sessionState.catalog
 
@@ -79,12 +79,10 @@ case class DescribeTable(
       describeSchema(catalog.lookupRelation(table).schema, result)
     } else {
       val metadata = catalog.getTableMetadata(table)
-
-      if (DDLUtils.isDatasourceTable(metadata)) {
-        DDLUtils.getSchemaFromTableProperties(metadata) match {
-          case Some(userSpecifiedSchema) => describeSchema(userSpecifiedSchema, result)
-          case None => describeSchema(catalog.lookupRelation(table).schema, result)
-        }
+      if (metadata.schema.isEmpty) {
+        // In older version(prior to 2.1) of Spark, the table schema can be empty and should be
+        // inferred at runtime. We should still support it.
+        describeSchema(catalog.lookupRelation(metadata.identifier).schema, result)
       } else {
         describeSchema(metadata.schema, result)
       }
@@ -98,7 +96,7 @@ case class DescribeTable(
           describeFormattedTableInfo(metadata, result)
         }
       } else {
-        describeDetailedPartitionInfo(catalog, metadata, result)
+        describeDetailedPartitionInfo(sparkSession, catalog, metadata, result)
       }
     }
 
@@ -106,20 +104,10 @@ case class DescribeTable(
   }
 
   private def describePartitionInfo(table: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
-    if (DDLUtils.isDatasourceTable(table)) {
-      val userSpecifiedSchema = DDLUtils.getSchemaFromTableProperties(table)
-      val partColNames = DDLUtils.getPartitionColumnsFromTableProperties(table)
-      for (schema <- userSpecifiedSchema if partColNames.nonEmpty) {
-        append(buffer, "# Partition Information", "", "")
-        append(buffer, s"# ${output.head.name}", output(1).name, output(2).name)
-        describeSchema(StructType(partColNames.map(schema(_))), buffer)
-      }
-    } else {
-      if (table.partitionColumns.nonEmpty) {
-        append(buffer, "# Partition Information", "", "")
-        append(buffer, s"# ${output.head.name}", output(1).name, output(2).name)
-        describeSchema(table.partitionColumns, buffer)
-      }
+    if (table.partitionColumnNames.nonEmpty) {
+      append(buffer, "# Partition Information", "", "")
+      append(buffer, s"# ${output.head.name}", output(1).name, output(2).name)
+      describeSchema(table.partitionSchema, buffer)
     }
   }
 
@@ -137,17 +125,20 @@ case class DescribeTable(
     append(buffer, "Last Access Time:", new Date(table.lastAccessTime).toString, "")
     append(buffer, "Location:", table.storage.locationUri.getOrElse(""), "")
     append(buffer, "Table Type:", table.tableType.name, "")
+    table.stats.foreach(s => append(buffer, "Statistics:", s.simpleString, ""))
 
     append(buffer, "Table Parameters:", "", "")
-    table.properties.filterNot {
-      // Hides schema properties that hold user-defined schema, partition columns, and bucketing
-      // information since they are already extracted and shown in other parts.
-      case (key, _) => key.startsWith(CreateDataSourceTableUtils.DATASOURCE_SCHEMA)
-    }.foreach { case (key, value) =>
+    table.properties.foreach { case (key, value) =>
       append(buffer, s"  $key", value, "")
     }
 
     describeStorageInfo(table, buffer)
+
+    if (table.tableType == CatalogTableType.VIEW) describeViewInfo(table, buffer)
+
+    if (DDLUtils.isDatasourceTable(table) && table.tracksPartitionsInCatalog) {
+      append(buffer, "Partition Provider:", "Catalog", "")
+    }
   }
 
   private def describeStorageInfo(metadata: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
@@ -160,33 +151,32 @@ case class DescribeTable(
     describeBucketingInfo(metadata, buffer)
 
     append(buffer, "Storage Desc Parameters:", "", "")
-    metadata.storage.serdeProperties.foreach { case (key, value) =>
+    val maskedProperties = CatalogUtils.maskCredentials(metadata.storage.properties)
+    maskedProperties.foreach { case (key, value) =>
       append(buffer, s"  $key", value, "")
     }
   }
 
-  private def describeBucketingInfo(metadata: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
-    def appendBucketInfo(numBuckets: Int, bucketColumns: Seq[String], sortColumns: Seq[String]) = {
-      append(buffer, "Num Buckets:", numBuckets.toString, "")
-      append(buffer, "Bucket Columns:", bucketColumns.mkString("[", ", ", "]"), "")
-      append(buffer, "Sort Columns:", sortColumns.mkString("[", ", ", "]"), "")
-    }
+  private def describeViewInfo(metadata: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
+    append(buffer, "", "", "")
+    append(buffer, "# View Information", "", "")
+    append(buffer, "View Original Text:", metadata.viewOriginalText.getOrElse(""), "")
+    append(buffer, "View Expanded Text:", metadata.viewText.getOrElse(""), "")
+  }
 
-    DDLUtils.getBucketSpecFromTableProperties(metadata) match {
-      case Some(bucketSpec) =>
-        appendBucketInfo(
-          bucketSpec.numBuckets,
-          bucketSpec.bucketColumnNames,
-          bucketSpec.sortColumnNames)
-      case None =>
-        appendBucketInfo(
-          metadata.numBuckets,
-          metadata.bucketColumnNames,
-          metadata.sortColumnNames)
+  private def describeBucketingInfo(metadata: CatalogTable, buffer: ArrayBuffer[Row]): Unit = {
+    metadata.bucketSpec match {
+      case Some(BucketSpec(numBuckets, bucketColumnNames, sortColumnNames)) =>
+        append(buffer, "Num Buckets:", numBuckets.toString, "")
+        append(buffer, "Bucket Columns:", bucketColumnNames.mkString("[", ", ", "]"), "")
+        append(buffer, "Sort Columns:", sortColumnNames.mkString("[", ", ", "]"), "")
+
+      case _ =>
     }
   }
 
   private def describeDetailedPartitionInfo(
+      spark: SparkSession,
       catalog: SessionCatalog,
       metadata: CatalogTable,
       result: ArrayBuffer[Row]): Unit = {
@@ -194,10 +184,7 @@ case class DescribeTable(
       throw new AnalysisException(
         s"DESC PARTITION is not allowed on a view: ${table.identifier}")
     }
-    if (DDLUtils.isDatasourceTable(metadata)) {
-      throw new AnalysisException(
-        s"DESC PARTITION is not allowed on a datasource table: ${table.identifier}")
-    }
+    DDLUtils.verifyPartitionProviderIsHive(spark, metadata, "DESC PARTITION")
     val partition = catalog.getPartition(table, partitionSpec)
     if (isExtended) {
       describeExtendedDetailedPartitionInfo(table, metadata, partition, result)
@@ -229,24 +216,15 @@ case class DescribeTable(
     append(buffer, "Location:", partition.storage.locationUri.getOrElse(""), "")
     // **Removed the partition parameters info from the output to ensure a compatibility
     // between Spark 2.0.0 and Snappy Spark 2.0.2**
-
-    //    append(buffer, "Partition Parameters:", "", "")
-    //    partition.parameters.foreach { case (key, value) =>
-    //      append(buffer, s"  $key", value, "")
-    //    }
-  }
-
-  private def describeSchema(schema: Seq[CatalogColumn], buffer: ArrayBuffer[Row]): Unit = {
-    schema.foreach { column =>
-      append(buffer, column.name, column.dataType.toLowerCase, column.comment.orNull)
-    }
+//    append(buffer, "Partition Parameters:", "", "")
+//    partition.parameters.foreach { case (key, value) =>
+//      append(buffer, s"  $key", value, "")
+//    }
   }
 
   private def describeSchema(schema: StructType, buffer: ArrayBuffer[Row]): Unit = {
     schema.foreach { column =>
-      val comment =
-        if (column.metadata.contains("comment")) column.metadata.getString("comment") else null
-      append(buffer, column.name, column.dataType.simpleString, comment)
+      append(buffer, column.name, column.dataType.simpleString, column.getComment().orNull)
     }
   }
 

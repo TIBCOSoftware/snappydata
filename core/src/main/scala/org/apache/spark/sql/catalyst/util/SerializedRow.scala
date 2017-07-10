@@ -84,6 +84,14 @@ final class SerializedRow extends InternalRow with SerializedRowData {
     copy.pointTo(dataCopy, Platform.BYTE_ARRAY_OFFSET, sizeInBytes)
     copy
   }
+
+  override def setNullAt(i: Int): Unit = {
+    throw new UnsupportedOperationException("not implemented")
+  }
+
+  override def update(i: Int, value: Any): Unit = {
+    throw new UnsupportedOperationException("not implemented")
+  }
 }
 
 /**
