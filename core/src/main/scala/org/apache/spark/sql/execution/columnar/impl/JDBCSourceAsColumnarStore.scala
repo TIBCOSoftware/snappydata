@@ -21,12 +21,7 @@ import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
-import scala.annotation.meta.param
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 import scala.util.control.NonFatal
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
@@ -35,7 +30,6 @@ import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.catalyst.InternalRow
@@ -50,6 +44,11 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{Partition, TaskContext}
+
+import scala.annotation.meta.param
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 /**
  * Column Store implementation for GemFireXD.
@@ -75,12 +74,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
   private def createStatsBuffer(statsData: Array[Byte],
       allocator: BufferAllocator): ByteBuffer = {
+    // need to create a copy since underlying Array[Byte] can be re-used
     val statsLen = statsData.length
-    val statsBuffer = allocator.allocateForStorage(statsLen +
-        ColumnFormatEntry.VALUE_HEADER_SIZE)
-    statsBuffer.position(ColumnFormatEntry.VALUE_HEADER_SIZE)
+    val statsBuffer = allocator.allocateForStorage(statsLen)
     statsBuffer.put(statsData, 0, statsLen)
-    // move to start for ColumnFormatValue to write the serialization header
     statsBuffer.rewind()
     statsBuffer
   }

@@ -16,10 +16,10 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.util.Vector;
+
 import hydra.BasePrms;
 import hydra.HydraVector;
-
-import java.util.Vector;
 
 public class SnappyPrms extends BasePrms {
 
@@ -420,6 +420,27 @@ public class SnappyPrms extends BasePrms {
   public static Long shufflePartitions;
 
   /**
+   * (String) path for kafka directory
+   */
+  public static Long kafkaDir;
+
+  /**
+   * (String) snappy-poc jar path
+   */
+  public static Long snappyPocJarPath;
+
+  /**
+   * (String) log file name where the output of task(snappy-shell output/snappyJob/sparkApp) to
+   * be written
+   */
+  public static Long logFileName;
+
+  /**
+   * kafka topic name
+   */
+  public static Long kafkaTopic;
+
+  /**
    * (String) Memory to be used for spark executor while executing spark-submit. Defaults to
    * 1GB if not provided.
    */
@@ -748,6 +769,11 @@ public class SnappyPrms extends BasePrms {
     }
     executorMem = " --executor-memory " + heapSize;
     return executorMem;
+  }
+
+  public static Vector getKafkaTopic() {
+    Long key = kafkaTopic;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
   static {

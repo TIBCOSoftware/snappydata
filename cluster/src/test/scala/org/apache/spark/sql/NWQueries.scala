@@ -433,9 +433,11 @@ object NWQueries extends SnappyFunSuite {
     "Q56" -> Q56
   )
 
-  def regions(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def regions(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/regions.csv").getPath))
 
@@ -443,9 +445,11 @@ object NWQueries extends SnappyFunSuite {
       "RegionID int, " +
       "RegionDescription string)"
 
-  def categories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def categories(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/categories.csv").getPath))
 
@@ -455,9 +459,11 @@ object NWQueries extends SnappyFunSuite {
       "Description string, " +
       "Picture blob)"
 
-  def shippers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def shippers(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/shippers.csv").getPath))
 
@@ -466,9 +472,11 @@ object NWQueries extends SnappyFunSuite {
       "CompanyName string not null, " +
       "Phone string)"
 
-  def employees(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def employees(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/employees.csv").getPath))
 
@@ -492,9 +500,11 @@ object NWQueries extends SnappyFunSuite {
       "ReportsTo int, " +
       "PhotoPath string)"
 
-  def customers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def customers(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/customers.csv").getPath))
 
@@ -511,9 +521,11 @@ object NWQueries extends SnappyFunSuite {
       "Phone string, " +
       "Fax string)"
 
-  def orders(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def orders(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/orders.csv").getPath))
 
@@ -533,10 +545,12 @@ object NWQueries extends SnappyFunSuite {
       "ShipPostalCode string, " +
       "ShipCountry string)"
 
-  def order_details(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def order_details(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("nullValue", "NULL")
+    .option("maxCharsPerColumn", "4096")
     .csv((getClass.getResource("/northwind/order-details.csv").getPath))
 
   val order_details_table = "create table order_details (" +
@@ -546,9 +560,11 @@ object NWQueries extends SnappyFunSuite {
       "Quantity smallint, " +
       "Discount double)"
 
-  def products(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def products(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/products.csv").getPath))
 
@@ -565,9 +581,11 @@ object NWQueries extends SnappyFunSuite {
       "ReorderLevel smallint, " +
       "Discontinued smallint) "
 
-  def suppliers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def suppliers(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/suppliers.csv").getPath))
 
@@ -585,9 +603,11 @@ object NWQueries extends SnappyFunSuite {
       "Fax string, " +
       "HomePage string) "
 
-  def territories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def territories(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/territories.csv").getPath))
 
@@ -596,9 +616,11 @@ object NWQueries extends SnappyFunSuite {
       "TerritoryDescription string, " +
       "RegionID string)"
 
-  def employee_territories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark.csv")
+  def employee_territories(sqlContext: SQLContext): DataFrame =
+    sqlContext.read.format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
+    .option("maxCharsPerColumn", "4096")
     .option("nullValue", "NULL")
     .csv((getClass.getResource("/northwind/employee-territories.csv").getPath))
 

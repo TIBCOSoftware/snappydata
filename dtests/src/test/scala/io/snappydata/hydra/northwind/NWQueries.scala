@@ -498,6 +498,7 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/regions.csv")
 
   val regions_table = "create table regions (" +
@@ -509,19 +510,21 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/categories.csv")
 
   val categories_table = "create table categories (" +
-      "CategoryID int, " +
-      "CategoryName string, " +
-      "Description string, " +
-      "Picture blob)"
+    "CategoryID int, " +
+    "CategoryName string, " +
+    "Description string, " +
+    "Picture blob)"
 
   def shippers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark" +
       ".csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/shippers.csv")
 
   val shippers_table = "create table shippers (" +
@@ -534,36 +537,38 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/employees.csv")
 
   val employees_table = "create table employees(" +
-      //    "EmployeeID int not null , " +
-      //    "LastName string not null, " +
-      //    "FirstName string not null, " +
-      "EmployeeID int, " +
-      "LastName string,  " +
-      "FirstName string, " +
-      "Title string, " +
-      "TitleOfCourtesy string, " +
-      "BirthDate timestamp, " +
-      "HireDate timestamp, " +
-      "Address string, " +
-      "City string, " +
-      "Region string, " +
-      "PostalCode string, " +
-      "Country string, " +
-      "HomePhone string, " +
-      "Extension string, " +
-      "Photo blob, " +
-      "Notes string, " +
-      "ReportsTo int, " +
-      "PhotoPath string)"
+    //    "EmployeeID int not null , " +
+    //    "LastName string not null, " +
+    //    "FirstName string not null, " +
+    "EmployeeID int, " +
+    "LastName string,  " +
+    "FirstName string, " +
+    "Title string, " +
+    "TitleOfCourtesy string, " +
+    "BirthDate timestamp, " +
+    "HireDate timestamp, " +
+    "Address string, " +
+    "City string, " +
+    "Region string, " +
+    "PostalCode string, " +
+    "Country string, " +
+    "HomePhone string, " +
+    "Extension string, " +
+    "Photo blob, " +
+    "Notes string, " +
+    "ReportsTo int, " +
+    "PhotoPath string)"
 
   def customers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks" +
       ".spark.csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/customers.csv")
 
   val customers_table = "create table customers(" +
@@ -585,109 +590,116 @@ object NWQueries {
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/orders.csv")
 
   val orders_table = "create table orders (" +
-      // "OrderID int not null, " +
-      "OrderID int, " +
-      "CustomerID string, " +
-      "EmployeeID int, " +
-      "OrderDate timestamp, " +
-      "RequiredDate timestamp, " +
-      "ShippedDate timestamp, " +
-      "ShipVia int, " +
-      "Freight double, " +
-      "ShipName string, " +
-      "ShipAddress string, " +
-      "ShipCity string, " +
-      "ShipRegion string, " +
-      "ShipPostalCode string, " +
-      "ShipCountry string)"
+    // "OrderID int not null, " +
+    "OrderID int, " +
+    "CustomerID string, " +
+    "EmployeeID int, " +
+    "OrderDate timestamp, " +
+    "RequiredDate timestamp, " +
+    "ShippedDate timestamp, " +
+    "ShipVia int, " +
+    "Freight double, " +
+    "ShipName string, " +
+    "ShipAddress string, " +
+    "ShipCity string, " +
+    "ShipRegion string, " +
+    "ShipPostalCode string, " +
+    "ShipCountry string)"
 
   def order_details(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks" +
       ".spark.csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/order-details.csv")
 
+
   val order_details_table = "create table order_details (" +
-      //    "OrderID int not null, " +
-      //    "ProductID int not null, " +
-      //    "UnitPrice double not null, " +
-      //    "Quantity smallint not null, " +
-      //    "Discount double not null)"
-      "OrderID int, " +
-      "ProductID int, " +
-      "UnitPrice double, " +
-      "Quantity smallint, " +
-      "Discount double)"
+    //    "OrderID int not null, " +
+    //    "ProductID int not null, " +
+    //    "UnitPrice double not null, " +
+    //    "Quantity smallint not null, " +
+    //    "Discount double not null)"
+    "OrderID int, " +
+    "ProductID int, " +
+    "UnitPrice double, " +
+    "Quantity smallint, " +
+    "Discount double)"
 
   def products(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks.spark" +
       ".csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/products.csv")
 
   val products_table = "create table products(" +
-      // "ProductID int not null, " +
-      "ProductID int, " +
-      "ProductName string, " +
-      //    "SupplierID int not null, " +
-      //    "CategoryID int not null," +
-      "SupplierID int, " +
-      "CategoryID int," +
-      "QuantityPerUnit string, " +
-      "UnitPrice double, " +
-      "UnitsInStock smallint, " +
-      "UnitsOnOrder smallint," +
-      "ReorderLevel smallint, " +
-      "Discontinued smallint) "
+    // "ProductID int not null, " +
+    "ProductID int, " +
+    "ProductName string, " +
+    //    "SupplierID int not null, " +
+    //    "CategoryID int not null," +
+    "SupplierID int, " +
+    "CategoryID int," +
+    "QuantityPerUnit string, " +
+    "UnitPrice double, " +
+    "UnitsInStock smallint, " +
+    "UnitsOnOrder smallint," +
+    "ReorderLevel smallint, " +
+    "Discontinued smallint) "
 
   def suppliers(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks" +
       ".spark.csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/suppliers.csv")
 
   val suppliers_table = "create table suppliers(" +
-      //    "SupplierID int not null, " +
-      //    "CompanyName string not null, " +
-      "SupplierID int, " +
-      "CompanyName string, " +
-      "ContactName string, " +
-      "ContactTitle string, " +
-      "Address string, " +
-      "City string, " +
-      "Region string, " +
-      "PostalCode string, " +
-      "Country string, " +
-      "Phone string, " +
-      "Fax string, " +
-      "HomePage string) "
+    //    "SupplierID int not null, " +
+    //    "CompanyName string not null, " +
+    "SupplierID int, " +
+    "CompanyName string, " +
+    "ContactName string, " +
+    "ContactTitle string, " +
+    "Address string, " +
+    "City string, " +
+    "Region string, " +
+    "PostalCode string, " +
+    "Country string, " +
+    "Phone string, " +
+    "Fax string, " +
+    "HomePage string) "
 
   def territories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com.databricks" +
       ".spark.csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/territories.csv")
 
   val territories_table = "create table territories(" +
-      //    "TerritoryID string not null, " +
-      //    "TerritoryDescription string not null, " +
-      //    "RegionID string not null)"
-      "TerritoryID string, " +
-      "TerritoryDescription string, " +
-      "RegionID string)"
+    //    "TerritoryID string not null, " +
+    //    "TerritoryDescription string not null, " +
+    //    "RegionID string not null)"
+    "TerritoryID string, " +
+    "TerritoryDescription string, " +
+    "RegionID string)"
 
   def employee_territories(sqlContext: SQLContext): DataFrame = sqlContext.read.format("com" +
       ".databricks.spark.csv")
       .option("header", "true")
       .option("inferSchema", "true")
       .option("nullValue", "NULL")
+      .option("maxCharsPerColumn", "4096")
       .load(s"${snc.getConf("dataFilesLocation")}/employee-territories.csv")
 
   val employee_territories_table = "create table employee_territories(" +

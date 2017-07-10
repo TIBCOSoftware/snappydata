@@ -119,7 +119,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
         // first compare the hash codes
         val mapKeyHash = mapKey.toInt
         // equalsSize will include check for 4 bytes of numBytes itself
-        if (hash == mapKeyHash && valueData.equalsSize((mapKey >>> 32).toInt - 4,
+        if (hash == mapKeyHash && valueData.equalsSize((mapKey >>> 32L).toInt - 4,
           key.getBaseObject, key.getBaseOffset, key.numBytes())) {
           return Platform.getInt(mapKeyObject, mapKeyOffset + 8)
         } else {
@@ -144,7 +144,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   def duplicate(): ByteBufferHashMap = {
     new ByteBufferHashMap(_capacity - 1, loadFactor, keySize, valueSize,
-      allocator, keyData.duplicate(), valueData.duplicate(), valueDataPosition)
+      allocator, keyData.duplicate(), valueData.duplicate(), valueData.baseOffset)
   }
 
   def reset(): Unit = {
@@ -158,6 +158,8 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   def release(): Unit = {
     keyData.release(allocator)
     valueData.release(allocator)
+    keyData = null
+    valueData = null
   }
 
   private def newInsert(s: UTF8String): Int = {
@@ -166,7 +168,7 @@ final class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     var position = valueDataPosition
     val dataSize = position - valueData.baseOffset
     if (position + numBytes + 4 > valueData.endPosition) {
-      valueData = valueData.resize(position, numBytes + 4, allocator)
+      valueData = valueData.resize(numBytes + 4, allocator)
       position = valueData.baseOffset + dataSize
     }
     valueDataPosition = ColumnEncoding.writeUTF8String(valueData.baseObject,
@@ -235,7 +237,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
     val baseObject: AnyRef, val baseOffset: Long, val endPosition: Long) {
 
   def this(buffer: ByteBuffer, baseObject: AnyRef, baseOffset: Long) = {
-    this(buffer, baseObject, baseOffset, baseOffset + buffer.capacity())
+    this(buffer, baseObject, baseOffset, baseOffset + buffer.limit())
   }
 
   def this(buffer: ByteBuffer, allocator: BufferAllocator) = {
@@ -262,8 +264,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
         .arrayEquals(baseObject, offset + 4, oBase, oBaseOffset, size)
   }
 
-  def resize(cursor: Long, required: Int,
-      allocator: BufferAllocator): ByteBufferData = {
+  def resize(required: Int, allocator: BufferAllocator): ByteBufferData = {
     val buffer = allocator.expand(this.buffer, required, "HASHMAP")
     val baseOffset = allocator.baseOffset(buffer)
     new ByteBufferData(buffer, allocator.baseObject(buffer), baseOffset,
@@ -281,7 +282,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
         // will be more efficient
         buffer.capacity(), 0)
     }
-    buffer.clear()
+    buffer.rewind()
   }
 
   def release(allocator: BufferAllocator): Unit = {

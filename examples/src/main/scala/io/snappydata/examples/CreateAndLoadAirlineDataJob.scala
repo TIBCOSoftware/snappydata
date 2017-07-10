@@ -19,12 +19,11 @@ package io.snappydata.examples
 
 import java.io.{File, PrintWriter}
 
-import scala.util.{Failure, Success, Try}
-
 import com.typesafe.config.Config
-
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{SnappySession, SaveMode, SnappyContext, SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql._
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Creates and loads Airline data from parquet files in row and column
@@ -63,8 +62,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       pw.println(s"****** CreateAndLoadAirlineDataJob ******")
 
       // Create a DF from the parquet data file and make it a table
-      val airlineDF = snc.catalog.createExternalTable(stagingAirline, "parquet",
-        Map("path" -> airlinefilePath))
+      val airlineDF = snc.read.parquet(airlinefilePath)
       val updatedSchema = replaceReservedWords(airlineDF.schema)
 
       // Create a table in snappy store

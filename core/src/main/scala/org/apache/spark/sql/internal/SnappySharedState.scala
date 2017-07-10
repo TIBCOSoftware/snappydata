@@ -17,23 +17,23 @@
 package org.apache.spark.sql.internal
 
 import io.snappydata.impl.SnappyHiveCatalog
-
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{ThinClientConnectorMode, SnappyContext}
-import org.apache.spark.sql.hive.{SnappyConnectorExternalCatalog, HiveClientUtil, SnappyExternalCatalog}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.CacheManager
-import org.apache.spark.sql.hive.{HiveClientUtil, SnappyExternalCatalog}
-import org.apache.spark.sql.{Dataset, SnappySession, SparkSession}
+import org.apache.spark.sql.hive.{HiveClientUtil, SnappyConnectorExternalCatalog, SnappyExternalCatalog}
+import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
 
-private[sql] class SnappySharedState(override val sparkContext: SparkContext,
-    sessionId: Int) extends SharedState(sparkContext) {
-
+/**
+ * Right now we are not overriding anything from Spark's built in SharedState. We need to
+ * re-visit if we need this at all.
+ *
+ */
+private[sql] class SnappySharedState(val sparkContext: SparkContext, sessionId: Int) {
   /**
    * Class for caching query results reused in future executions.
    */
-  override val cacheManager = new SnappyCacheManager(sessionId)
+  /* override */ val cacheManager = new SnappyCacheManager(sessionId)
 
   /**
    * A Hive client used to interact with the metastore.
@@ -50,7 +50,7 @@ private[sql] class SnappySharedState(override val sparkContext: SparkContext,
     }
   }
 
-  override lazy val externalCatalog = SnappyContext.getClusterMode(sparkContext) match {
+  val externalCatalog = SnappyContext.getClusterMode(sparkContext) match {
     case ThinClientConnectorMode(_, _) =>
       new SnappyConnectorExternalCatalog(metadataHive, sparkContext.hadoopConfiguration)
     case _ =>
