@@ -254,9 +254,9 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
     val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
     val comment = ctx.registerComment(expr.toString)
     ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
-      s"$comment\n${eval.code}\n$newVar = ${eval.value};")
-    ctx.addMutableState("boolean", newVarIsNull, s"$newVarIsNull = ${eval.isNull};")
-
+      s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
+        s"$newVarIsNull = ${eval.isNull};")
+    ctx.addMutableState("boolean", newVarIsNull, "")
     ev.copy(code = "", value = newVar, isNull = newVarIsNull)
   }
 
