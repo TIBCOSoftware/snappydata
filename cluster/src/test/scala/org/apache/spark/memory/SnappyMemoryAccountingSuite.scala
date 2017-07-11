@@ -30,7 +30,7 @@ import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 
-import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{SpecificInternalRow, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
 import org.apache.spark.unsafe.types.UTF8String
@@ -612,7 +612,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
     val converter = UnsafeProjection.create(fieldTypes)
 
-    val row = new SpecificMutableRow(fieldTypes)
+    val row = new SpecificInternalRow(fieldTypes)
     row.setLong(0, 0)
     row.update(1, UTF8String.fromString("Hello"))
     row.update(2, "World".getBytes(StandardCharsets.UTF_8))

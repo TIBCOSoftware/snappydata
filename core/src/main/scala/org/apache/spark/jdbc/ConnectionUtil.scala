@@ -16,12 +16,13 @@
  */
 package org.apache.spark.jdbc
 
-import java.sql.Connection
-import java.util.Properties
+import scala.collection.JavaConverters._
 
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.{SparkContext, SparkEnv}
+import java.sql.Connection
+
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
+import org.apache.spark.{SparkContext, SparkEnv}
 
 
 object ConnectionUtil {
@@ -61,8 +62,8 @@ object ConnectionUtil {
       case SparkContext.DRIVER_IDENTIFIER => connectionProps.connProps
       case _ => connectionProps.executorConnProps
     }
-
-    JdbcUtils.createConnectionFactory(connectionProps.url, connProps)()
+    val jdbcOptions = new JDBCOptions(connectionProps.url, "", connProps.asScala.toMap)
+    JdbcUtils.createConnectionFactory(jdbcOptions)()
   }
 
 }
