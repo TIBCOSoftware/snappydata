@@ -24,10 +24,28 @@ pages:
     - 'SnappyData Properties': 'configuring_cluster/property_description.md'
 - Programming Guide: programming_guide.md
 - Affinity Modes: deployment.md
-- 'Best practices': 'best_practices.md'
-- 'Best practices':
-    - 'Setting up your Cluster ': 'best_practices/capacity_planning.md'
-    - 'Designing your Database and Schema': 'best_practices/design_schema.md'
+- 'Best Practices': 'best_practices.md'
+- 'Best Practices':
+    - 'Setting up your Cluster': 'best_practices/capacity_planning.md'
+    - 'Setting up your Cluster':    
+        - 'Concurrency and Management of Cores' : 'best_practices/setting_up_cluster/core_management.md'
+        - 'Memory Management: Heap and Off-Heap' : 'best_practices/setting_up_cluster/heap_off_heap.md'
+        - 'HA Considerations' : 'best_practices/setting_up_cluster/ha_consideration.md'
+        - 'Important Settings' : 'best_practices/setting_up_cluster/important_setting.md'
+        - 'Operating System Settings' : 'best_practices/setting_up_cluster/operating_system_setting.md'
+        - 'Table Memory Requirements' : 'best_practices/setting_up_cluster/table_memory_req.md'
+        - 'JVM Settings for SnappyData Smart Connector mode and Local mode' : 'best_practices/setting_up_cluster/jvm_setting.md'
+    - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/design_schema.md'
+    - 'Optimizing Query Latency: Partitioning and Replication Strategies':
+        - 'Using Column vs Row Table' : 'best_practices/design_schema/column_vs_row_table.md'
+        - 'Using Partitioned vs Replicated Row Table' : 'best_practices/design_schema/partitioned_vs_replicated_row.md'
+        - 'Applying Partitioning Scheme' : 'best_practices/design_schema/partitioning_scheme.md'
+        - 'Using Redundancy' : 'best_practices/design_schema/using_redundancy.md'
+        - 'Overflow Configuration' : 'best_practices/design_schema/overflow_configuration.md'
+        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_schema/partition_aware_database_design.md'
+        - 'Identify Entity Groups and Partitioning Keys': 'best_practices/design_schema/entity_groups.md'
+        - 'Adapting a Database Schema': 'best_practices/design_schema/adapting_existing_schema.md'
+        - 'Dealing with Many-to-Many Relationships': 'best_practices/design_schema/many_to_many.md'
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
 - 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'

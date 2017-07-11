@@ -551,6 +551,8 @@ To import into IntelliJ IDEA:
 
 * If you get unexpected **"Database not found"** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, then first thing to try is to run the **generateSources** target again.
 
+* If you get a **NullPointerException** error when reading the spark-version-info.properties file, right-click and execute the **copyResourcesAll** target located in **snappydata_2.11> Tasks> other** folder.
+
 * Increase the compiler heap sizes or else the build can take quite long especially with integrated **spark** and **store**. In **File> Settings> Build, Execution, Deployment> Compiler increase**, **Build process heap size** to say 1536 or 2048. Similarly, increase JVM maximum heap size in **Languages & Frameworks> Scala Compiler Server** to 1536 or 2048.
 
 * Test the full build.
