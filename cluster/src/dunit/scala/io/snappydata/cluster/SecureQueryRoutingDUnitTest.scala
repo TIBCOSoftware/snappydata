@@ -19,7 +19,7 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager, ResultSet}
 
-import com.pivotal.gemfirexd.TestUtil
+import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import com.pivotal.gemfirexd.security.LdapTestServer
 import io.snappydata.test.dunit.AvailablePortHelper
 
@@ -30,21 +30,40 @@ class SecureQueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
   override def setUp(): Unit = {
-    setSecurityProps()
+    val ldapServer = LdapTestServer.getInstance(getClass.getResource("/auth.ldif").getPath)
+    if (!ldapServer.isServerStarted) {
+      ldapServer.startServer()
+    }
+    setSecurityProps(ldapServer)
     super.setUp()
   }
-  
-  def setSecurityProps(): Unit = {
+
+  override def tearDown2(): Unit = {
+    super.tearDown2()
+    val ldapServer = LdapTestServer.getInstance()
+    if (ldapServer.isServerStarted) {
+      ldapServer.stopService()
+    }
+  }
+
+  val ldapAdminUser = "gemfire3"
+  val snappyAdminUser = "gemfire2"
+  val jdbcUser = "gemfire1"
+
+  def setSecurityProps(ldapServer: LdapTestServer): Unit = {
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SEARCH_DN, AUTH_LDAP_SEARCH_PW}
     var props = scala.collection.mutable.Map[String, String]()
-    props += ("gemfirexd.auth-ldap-server" -> "ldap://localhost:389/")
-    props += ("gemfirexd.auth-ldap-search-base" -> "cn=sales-group,ou=sales,dc=example,dc=com")
-    props += ("gemfirexd.auth-ldap-search-dn" -> "cn=admin,dc=example,dc=com")
-    props += ("gemfirexd.auth-ldap-search-pw" -> "admin@123")
+    props += (Attribute.AUTH_PROVIDER ->
+        com.pivotal.gemfirexd.Constants.AUTHENTICATION_PROVIDER_LDAP)
+    props += (AUTH_LDAP_SERVER -> s"ldap://localhost:${ldapServer.getServerPort}/")
+    props += (AUTH_LDAP_SEARCH_BASE -> "ou=ldapTesting,dc=pune,dc=gemstone,dc=com")
+    props += (AUTH_LDAP_SEARCH_DN ->
+        s"uid=$ldapAdminUser,ou=ldapTesting,dc=pune,dc=gemstone,dc=com")
+    props += (AUTH_LDAP_SEARCH_PW -> ldapAdminUser)
     for ((k, v) <- props) System.setProperty(k, v)
 
-    props += ("auth-provider" -> "LDAP")
-    props += ("user" -> "usertwo")
-    props += ("password" -> "usertwo")
+    props += (Attribute.USERNAME_ATTR -> snappyAdminUser)
+    props += (Attribute.PASSWORD_ATTR -> snappyAdminUser)
     for ((k, v) <- props) locatorNetProps.setProperty(k, v)
     for ((k, v) <- props) bootProps.setProperty(k, v)
   }
@@ -175,11 +194,7 @@ class SecureQueryRoutingDUnitTest(val s: String)
       conn.close()
     }
   }
-
-  def testDummy(): Unit = {
-    // Do Nothing
-  }
-
+  
   def testColumnTableRouting(): Unit = {
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
@@ -187,16 +202,13 @@ class SecureQueryRoutingDUnitTest(val s: String)
     println(s"network server started at $serverHostPort")
     // scalastyle:on println
 
-    val oneUser = "userone"
-    val oneUserCredentials = "userone"
     val tableName = "order_line_col"
-
-    createTable1(serverHostPort, tableName, oneUser, oneUserCredentials)
-    insertRows1(20000, serverHostPort, tableName, oneUser, oneUserCredentials)
+    createTable1(serverHostPort, tableName, jdbcUser, jdbcUser)
+    insertRows1(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, oneUser, oneUserCredentials)
-    dropTable(serverHostPort, tableName, oneUser, oneUserCredentials)
+    query1(serverHostPort, tableName, jdbcUser, jdbcUser)
+    dropTable(serverHostPort, tableName, jdbcUser, jdbcUser)
   }
 
   def testRowTableRouting(): Unit = {
@@ -206,15 +218,12 @@ class SecureQueryRoutingDUnitTest(val s: String)
     println(s"network server started at $serverHostPort")
     // scalastyle:on println
 
-    val oneUser = "userone"
-    val oneUserCredentials = "userone"
     val tableName = "order_line_row"
-
-    createTable2(serverHostPort, tableName, oneUser, oneUserCredentials)
-    insertRows1(20000, serverHostPort, tableName, oneUser, oneUserCredentials)
+    createTable2(serverHostPort, tableName, jdbcUser, jdbcUser)
+    insertRows1(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, oneUser, oneUserCredentials)
-    dropTable(serverHostPort, tableName, oneUser, oneUserCredentials)
+    query1(serverHostPort, tableName, jdbcUser, jdbcUser)
+    dropTable(serverHostPort, tableName, jdbcUser, jdbcUser)
   }
 }
