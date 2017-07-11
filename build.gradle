@@ -98,8 +98,8 @@ allprojects {
     productName = 'SnappyData'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.1.0'
-    snappySparkVersion = '2.1.0-2'
+    sparkVersion = '2.1.1'
+    snappySparkVersion = '2.1.1.1'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -305,6 +305,7 @@ subprojects {
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
+    dependsOn ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -791,9 +792,7 @@ distZip {
   }
 }
 
-// use the task below to prepare final release bits
-task distProduct {
-  dependsOn product, distTar, distZip
+task copyShadowJars {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
@@ -817,6 +816,12 @@ task distProduct {
       }
     }
   }
+}
+
+// use the task below to prepare final release bits
+task distProduct {
+  dependsOn product, distTar, distZip
+  dependsOn copyShadowJars
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -876,6 +881,10 @@ task checkAll {
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
+  }
+  if (!project.hasProperty('smoke.skip')) {
+    dependsOn ":buildDtests"
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
   mustRunAfter buildAll
 }
@@ -1025,12 +1034,7 @@ task publishDocs(type:Exec) {
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports
-  dependsOn ':snappy-spark:scalaStyle', docs
-  if (!project.hasProperty('smoke.skip')) {
-    dependsOn ":buildDtests"
-    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
-  }
+  dependsOn cleanAll, buildAll, checkAll, allReports, docs
 }
 
 if (project.hasProperty('trackBuildTime') ) {

@@ -246,10 +246,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected final def columnCharType: Rule1[DataType] = rule {
     VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, baseType = "VARCHAR")) |
+      CharStringType(d.toInt, baseType = "VARCHAR")) |
     CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, baseType = "CHAR")) |
-    STRING ~> (() => CharType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING"))
+      CharStringType(d.toInt, baseType = "CHAR")) |
+    STRING ~> (() => CharStringType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING"))
   }
 
   final def columnDataType: Rule1[DataType] = rule {
