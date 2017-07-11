@@ -261,7 +261,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating udf $functionName")
         val functionDefinition = CatalogFunction(new FunctionIdentifier(
           functionName, Option(db)), className, resources)
-        session.snappySharedState.externalCatalog.createFunction(db, functionDefinition)
+        session.sharedState.externalCatalog.createFunction(db, functionDefinition)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_UDF =>
         val session = SnappyContext(null: SparkContext).snappySession
@@ -269,7 +269,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val functionName = context.getFunctionName
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp dropping udf $functionName")
-        session.snappySharedState.externalCatalog.dropFunction(db, functionName)
+        session.sharedState.externalCatalog.dropFunction(db, functionName)
 
       case _ =>
         throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")

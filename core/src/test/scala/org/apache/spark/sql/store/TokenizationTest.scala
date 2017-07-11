@@ -68,7 +68,7 @@ class TokenizationTest
     val numRows = 100
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
-    try {
+    {
       val q = s"select * from $table where a like '10%'"
       var result = snc.sql(q).collect()
 
@@ -84,7 +84,7 @@ class TokenizationTest
     val numRows = 2
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
-    try {
+    {
       val q = (0 until numRows) map { x =>
         s"select * from $table where a = $x"
       }
