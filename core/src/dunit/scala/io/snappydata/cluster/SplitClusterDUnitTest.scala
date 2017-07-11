@@ -22,23 +22,23 @@ import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
 import java.util.Properties
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
-import scala.language.{implicitConversions, postfixOps}
-import scala.sys.process._
-import scala.util.Random
-
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
-import org.junit.Assert
-
-import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.types.Decimal
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{SparkConf, SparkContext}
+import org.junit.Assert
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+import scala.language.{implicitConversions, postfixOps}
+import scala.sys.process._
+import scala.util.Random
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -141,8 +141,14 @@ class SplitClusterDUnitTest(s: String)
         " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
         s" --jars $snappyDataCoreJar" +
         s" -i $scriptFile"
-    logInfo(s"about to invoke spark-shell with command: $sparkShellCommand")
-    sparkShellCommand.!!
+
+    val cwd = new java.io.File("spark-shell-out")
+    FileUtils.deleteQuietly(cwd)
+    cwd.mkdirs()
+    logInfo(s"about to invoke spark-shell with command: $sparkShellCommand in $cwd")
+
+    Process(sparkShellCommand, cwd).!!
+    FileUtils.deleteQuietly(cwd)
 
     val conn = testObject.getConnection(locatorClientPort)
     val stmt = conn.createStatement()
