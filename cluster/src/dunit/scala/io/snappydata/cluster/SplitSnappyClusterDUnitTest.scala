@@ -20,6 +20,8 @@ import java.net.InetAddress
 import java.sql.SQLException
 import java.util.Properties
 
+import scala.language.postfixOps
+
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
@@ -28,13 +30,12 @@ import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{Property, SnappyTableStatsProviderService}
+import org.junit.Assert
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
-import org.junit.Assert
-
-import scala.language.postfixOps
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -763,14 +764,13 @@ object SplitSnappyClusterDUnitTest
 
     executeTestWithOptions(locatorPort, locatorClientPort)
     executeTestWithOptions(locatorPort, locatorClientPort,
-      Map.empty,Map.empty+("BUCKETS" ->"17"),"","BUCKETS " +
+      Map.empty, Map.empty + ("BUCKETS" -> "17"), "", "BUCKETS " +
           "'13',PARTITION_BY 'COL1', REDUNDANCY '1'")
-
   }
 
-  def executeTestWithOptions(locatorPort:Int, locatorClientPort: Int,
-      rowTableOptios: Map[String, String] = Map.empty[String,String],
-      colTableOptions: Map[String,String]= Map.empty[String,String],
+  def executeTestWithOptions(locatorPort: Int, locatorClientPort: Int,
+      rowTableOptios: Map[String, String] = Map.empty[String, String],
+      colTableOptions: Map[String, String] = Map.empty[String, String],
       tempRowTableOptions: String = "",
       tempColTableOptions: String = ""): Unit = {
 
@@ -791,7 +791,8 @@ object SplitSnappyClusterDUnitTest
     dataDF.write.format("row").mode(SaveMode.Append).options(rowTableOptios).saveAsTable(rowTable)
 
     snc.createTable(colTable, "column", dataDF.schema, colTableOptions)
-    dataDF.write.format("column").mode(SaveMode.Append).options(colTableOptions).saveAsTable(colTable)
+    dataDF.write.format("column").mode(SaveMode.Append).options(colTableOptions)
+        .saveAsTable(colTable)
 
     val tempRowTableName = "testRowTable1"
     val tempColTableName = "testcolTable1"
@@ -813,16 +814,16 @@ object SplitSnappyClusterDUnitTest
         s"${testResults2.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
-        s"col1 ,col2 FROM " + rowTable + ")")
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
+        s"AS (SELECT col1 ,col2 FROM " + rowTable + ")")
 
     val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
     assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is " +
         s"${testResults3.length}")
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
-        "col1 ,col2 FROM " + colTable + ")")
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
+        s"AS (SELECT col1 ,col2 FROM " + colTable + ")")
 
     val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
     assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is" +
@@ -830,8 +831,9 @@ object SplitSnappyClusterDUnitTest
 
     snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
 
-    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) AS (SELECT " +
-        "t1.col1 ,t1.col2 FROM " + colTable + " t1," + rowTable + " t2 where t1.col1=t2.col2)")
+    snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
+        s"AS (SELECT t1.col1 ,t1.col2 FROM " + colTable + " t1," + rowTable +
+        " t2 where t1.col1=t2.col2)")
     // Expected count will be 113998 as first row will not match
     val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect
 

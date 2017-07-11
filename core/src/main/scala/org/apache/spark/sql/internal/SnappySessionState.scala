@@ -29,7 +29,6 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
@@ -40,9 +39,9 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{PartitioningUtils, DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -60,10 +59,9 @@ class SnappySessionState(snappySession: SnappySession)
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
-  protected lazy val snappySharedState: SnappySharedState =
-    snappySession.snappySharedState.asInstanceOf[SnappySharedState]
+  protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
 
-  private[internal] lazy val metadataHive = snappySharedState.metadataHive.newSession()
+  private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -231,7 +229,7 @@ class SnappySessionState(snappySession: SnappySession)
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
-          snappySharedState.externalCatalog,
+          snappySharedState.snappyCatalog(),
           snappySession,
           metadataHive,
           snappySession.sharedState.globalTempViewManager,
@@ -241,7 +239,7 @@ class SnappySessionState(snappySession: SnappySession)
           newHadoopConf())
       case _ =>
         new SnappyStoreHiveCatalog(
-          snappySharedState.externalCatalog,
+          snappySharedState.snappyCatalog(),
           snappySession,
           metadataHive,
           snappySession.sharedState.globalTempViewManager,
@@ -323,7 +321,7 @@ class SnappySessionState(snappySession: SnappySession)
 }
 
 class SnappyConf(@transient val session: SnappySession)
-    extends SQLConf with Serializable with CatalystConf {
+    extends SQLConf with Serializable {
 
   /** If shuffle partitions is set by [[setExecutionShufflePartitions]]. */
   @volatile private[this] var executionShufflePartitions: Int = _
@@ -713,7 +711,6 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       insert.table.output.filterNot(a => staticPartCols.contains(a.name))
     }
 
-    val child = insert.child
     if (expectedColumns.length != insert.child.schema.length) {
       throw new AnalysisException(
         s"Cannot insert into table $tblName because the number of columns are different: " +
@@ -814,16 +811,9 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         }
     }
 
-    if (newChildOutput == insert.child.output) {
-      insert match {
-        case p: PutIntoTable => p.copy(table = insert.table)
-        case i: InsertIntoTable => insert
-      }
-    } else insert match {
-      case p: PutIntoTable => p.copy(table = insert.table,
-        child = Project(newChildOutput, insert.child))
-      case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
-        insert.child))
+    if (newChildOutput == insert.child.output) insert
+    else {
+      insert.copy(child = Project(newChildOutput, insert.child))
     }
   }
 }

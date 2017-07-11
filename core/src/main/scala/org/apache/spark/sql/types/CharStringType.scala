@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,16 +26,25 @@ import org.apache.spark.unsafe.types.UTF8String
   * An internal type to represent VARCHAR() and CHAR() types in
   * column definitions of "CREATE TABLE".
   */
-private[sql] final case class CharType(override val defaultSize: Int,
+case class CharStringType(override val defaultSize: Int,
     baseType: String) extends AtomicType {
 
-  private[sql] type InternalType = UTF8String
+  override private[sql] type InternalType = UTF8String
 
-  @transient private[sql] lazy val tag = ScalaReflectionLock.synchronized {
+  @transient override private[sql] lazy val tag = ScalaReflectionLock.synchronized {
     typeTag[InternalType]
   }
 
-  private[sql] val ordering = implicitly[Ordering[InternalType]]
+  override private[sql] val ordering = implicitly[Ordering[InternalType]]
 
-  private[spark] override def asNullable: CharType = this
+  override def typeName: String = baseType match {
+    case "STRING" => "string"
+    case "VARCHAR" => s"varchar($defaultSize)"
+    case "CHAR" => s"char($defaultSize)"
+    case _ => "string"
+  }
+
+  override def sql: String = typeName
+
+  override private[spark] def asNullable: CharStringType = this
 }
