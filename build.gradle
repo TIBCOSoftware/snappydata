@@ -305,6 +305,7 @@ subprojects {
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
+    dependsOn ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -791,9 +792,7 @@ distZip {
   }
 }
 
-// use the task below to prepare final release bits
-task distProduct {
-  dependsOn product, distTar, distZip
+task copyShadowJars {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
@@ -817,6 +816,12 @@ task distProduct {
       }
     }
   }
+}
+
+// use the task below to prepare final release bits
+task distProduct {
+  dependsOn product, distTar, distZip
+  dependsOn copyShadowJars
 }
 
 def copyTestsCommonResources(def bdir) {
