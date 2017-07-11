@@ -73,14 +73,18 @@ object SnappyTableStatsProviderService {
   }
 
   def stop(): Unit = {
-    statsProviderService.stop()
+    val service = statsProviderService
+    if (service ne null) {
+      service.stop()
+    }
   }
 
   def getService: TableStatsProviderService = {
-    if (statsProviderService == null) {
+    val service = statsProviderService
+    if (service eq null) {
       throw new IllegalStateException("SnappyTableStatsProviderService not started")
     }
-    statsProviderService
+    service
   }
 
   var suspendCacheInvalidation = false

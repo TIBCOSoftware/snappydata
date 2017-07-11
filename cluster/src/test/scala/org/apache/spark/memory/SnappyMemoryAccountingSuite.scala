@@ -460,7 +460,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     ClusterManagerTestBase.waitForCriterion(
       (SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
       s"The memory after delete is not same even after waiting for oldEntryRemoval",
-      2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
+      4 * Misc.getGemFireCache.getOldEntryRemovalPeriod, 500, true)
     snSession.dropTable("t1")
   }
 
@@ -495,7 +495,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     ClusterManagerTestBase.waitForCriterion(
       (SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
       s"The memory after delete is not same even after waiting for oldEntryRemoval",
-      2 * Misc.getGemFireCache.getOldEntryRemovalPerid, 500, true)
+      4 * Misc.getGemFireCache.getOldEntryRemovalPeriod, 500, true)
     // assert(afterDelete == afterCreateTable)
     snSession.dropTable("t1")
   }
