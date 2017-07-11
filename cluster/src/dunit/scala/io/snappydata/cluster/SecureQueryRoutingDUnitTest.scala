@@ -19,6 +19,8 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager, ResultSet}
 
+import com.pivotal.gemfirexd.TestUtil
+import com.pivotal.gemfirexd.security.LdapTestServer
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
@@ -31,7 +33,7 @@ class SecureQueryRoutingDUnitTest(val s: String)
     setSecurityProps()
     super.setUp()
   }
-
+  
   def setSecurityProps(): Unit = {
     var props = scala.collection.mutable.Map[String, String]()
     props += ("gemfirexd.auth-ldap-server" -> "ldap://localhost:389/")
@@ -142,11 +144,43 @@ class SecureQueryRoutingDUnitTest(val s: String)
     }
   }
 
+  def dropTable(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"dropTable1: Connected to $serverHostPort")
+    // scalastyle:on println
+
+    val stmt1 = conn.createStatement()
+    try {
+      stmt1.execute(s"drop table $tableName")
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
+  }
+
+  def createTable2(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"createTable2: Connected to $serverHostPort")
+    // scalastyle:on println
+
+    val stmt1 = conn.createStatement()
+    try {
+      stmt1.execute(s"create table $tableName (ol_int_id  integer," +
+          s" ol_int2_id  integer, ol_str_id STRING) using row " +
+          "options( partition_by 'ol_int_id, ol_int2_id', buckets '5')")
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
+  }
+
   def testDummy(): Unit = {
     // Do Nothing
   }
 
-  def _testColumnTableRouting(): Unit = {
+  def testColumnTableRouting(): Unit = {
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
@@ -162,5 +196,25 @@ class SecureQueryRoutingDUnitTest(val s: String)
 
     // (1 to 5).foreach(d => query())
     query1(serverHostPort, tableName, oneUser, oneUserCredentials)
+    dropTable(serverHostPort, tableName, oneUser, oneUserCredentials)
+  }
+
+  def testRowTableRouting(): Unit = {
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"network server started at $serverHostPort")
+    // scalastyle:on println
+
+    val oneUser = "userone"
+    val oneUserCredentials = "userone"
+    val tableName = "order_line_row"
+
+    createTable2(serverHostPort, tableName, oneUser, oneUserCredentials)
+    insertRows1(20000, serverHostPort, tableName, oneUser, oneUserCredentials)
+
+    // (1 to 5).foreach(d => query())
+    query1(serverHostPort, tableName, oneUser, oneUserCredentials)
+    dropTable(serverHostPort, tableName, oneUser, oneUserCredentials)
   }
 }
