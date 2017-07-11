@@ -51,6 +51,21 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
       "/static/snappydata/warning-status-icon-70x68.png"
     }
 
+    val memberType = {
+      if(memberDetails.getOrElse("lead", false).toString.toBoolean){
+        if(memberDetails.getOrElse("activeLead", false).toString.toBoolean)
+          <strong data-toggle="tooltip" title="" data-original-title="Active Lead">LEAD</strong>
+        else
+          "LEAD"
+      } else if(memberDetails.getOrElse("locator",false).toString.toBoolean){
+        "LOCATOR"
+      } else if(memberDetails.getOrElse("dataServer",false).toString.toBoolean){
+        "DATA SERVER"
+      } else {
+        "CONNECTOR"
+      }
+    }
+
     val cpuUsage = memberDetails.getOrElse("cpuActive",0).asInstanceOf[Integer].toDouble;
 
     val heapStoragePoolUsed = memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
@@ -80,19 +95,97 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
       jvmHeapUsage = jvmHeapUsed * 100 / jvmHeapSize
     }
 
+    val heapHtmlContent = if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Storage :</span>
+          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Execution : </span>
+          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Total :</span>
+          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
+        </div>
+      </div>
+    } else {
+      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Storage :</span>
+          <span>{ Utils.bytesToString(heapStoragePoolUsed).toString + " / " +
+              Utils.bytesToString(heapStoragePoolSize).toString }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Execution : </span>
+          <span>{ Utils.bytesToString(heapExecutionPoolUsed).toString + " / " +
+              Utils.bytesToString(heapExecutionPoolSize).toString }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Total :</span>
+          <span>{ Utils.bytesToString(heapMemoryUsed).toString + " / " +
+              Utils.bytesToString(heapMemorySize).toString }</span>
+        </div>
+      </div>
+    }
+
+    val offHeapHtmlContent = if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
+      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Storage :</span>
+          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Execution : </span>
+          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Total :</span>
+          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
+        </div>
+      </div>
+    } else {
+      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Storage :</span>
+          <span>{ Utils.bytesToString(offHeapStoragePoolUsed).toString + " / " +
+              Utils.bytesToString(offHeapStoragePoolSize).toString }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Execution : </span>
+          <span>{ Utils.bytesToString(offHeapExecutionPoolUsed).toString + " / " +
+              Utils.bytesToString(offHeapExecutionPoolSize).toString }</span>
+        </div>
+        <div style="text-align: left; padding: 5px;">
+          <span style="font-weight:bold;">Total :</span>
+          <span>{ Utils.bytesToString(offHeapMemoryUsed).toString + " / " +
+              Utils.bytesToString(offHeapMemorySize).toString }</span>
+        </div>
+      </div>
+    }
+
     <div class="row-fluid">
-      <div class="keyStates" style="width: 300px;">
+      <div class="keyStates" style="width: 300px; margin: 0px 10px;">
         <div class="keyStatesText" style="text-align: left;">
           Member : <span>{memberDetails.getOrElse("id","NA")}</span>
         </div>
         <div class="keyStatesText" style="text-align: left;">
-          Status : <span>{status}</span>
+          Type : <span>{memberType}</span>
         </div>
         <div class="keyStatesText" style="text-align: left;">
-          processId : <span>{memberDetails.getOrElse("processId","").toString}</span>
+          Process ID : <span>{memberDetails.getOrElse("processId","").toString}</span>
         </div>
       </div>
-      <div class="keyStates">
+      <div class="keyStates" style="width: 250px; margin: 0px 10px;">
+        {heapHtmlContent}
+        <div class="keyStatesText">Heap Memory</div>
+      </div>
+      <div class="keyStates" style="width: 250px; margin: 0px 10px;">
+        {offHeapHtmlContent}
+        <div class="keyStatesText">Off-Heap Memory</div>
+      </div>
+      <div class="keyStates" style="margin: 0px 10px;">
         <div class="keyStatsValue"
              style="width:50%; margin: auto;" data-toggle="tooltip" title=""
              data-original-title={
@@ -102,7 +195,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
         </div>
         <div class="keyStatesText">{SnappyMemberDetailsPage.memberStats("status")}</div>
       </div>
-      <div class="keyStates">
+      <div class="keyStates" style="margin: 0px 10px;">
         <div class="keyStatsValue" id="cpuUsage" data-value={cpuUsage.toString}
              data-toggle="tooltip" title=""
              data-original-title={
@@ -112,7 +205,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
         </div>
         <div class="keyStatesText">{SnappyMemberDetailsPage.memberStats("cpuUsage")}</div>
       </div>
-      <div class="keyStates">
+      <div class="keyStates" style="margin: 0px 10px;">
         <div class="keyStatsValue" id="memoryUsage" data-value={memoryUsage.toString}
              data-toggle="tooltip" title=""
              data-original-title={
@@ -122,7 +215,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
         </div>
         <div class="keyStatesText">{SnappyMemberDetailsPage.memberStats("memoryUsage")}</div>
       </div>
-      <div class="keyStates">
+      <div class="keyStates" style="margin: 0px 10px;">
         <div class="keyStatsValue" id="jvmHeapUsage" data-value={jvmHeapUsage.toString}
              data-toggle="tooltip" title=""
              data-original-title={
@@ -185,7 +278,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
               data-original-title="Member Logs">
             Member Logs
           </h4>
-          <div>
+          <div style="margin-left:15px;">
             <span style="font-weight: bolder;">Location :</span>
             {memberDetails.getOrElse("userDir", "")}/{memberDetails.getOrElse("logFile", "")}
           </div>
@@ -224,7 +317,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
         s"initLogPage('$logParams', $curLogLength, $startByte, $endByte, $logLength, $byteLength);"
 
     val content =
-      <div style="margin-top:5px;">
+      <div style="margin-top:5px; margin-left:15px;">
         {range}
         <div class="log-content"
              style="height:60vh; overflow:auto; margin-top:5px; border: 1px solid #E2E2E2;">
