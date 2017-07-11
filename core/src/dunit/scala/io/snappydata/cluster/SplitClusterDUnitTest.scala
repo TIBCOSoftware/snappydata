@@ -139,7 +139,6 @@ class SplitClusterDUnitTest(s: String)
     val scriptFile: String = getClass.getResource("/SparkSqlTestCode.txt").getPath
     val sparkShellCommand = productDir + "/bin/spark-shell  --master local[3]" +
         " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
-        " --conf spark.sql.catalogImplementation=in-memory" +
         s" --jars $snappyDataCoreJar" +
         s" -i $scriptFile"
     logInfo(s"about to invoke spark-shell with command: $sparkShellCommand")
