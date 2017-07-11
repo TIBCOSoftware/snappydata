@@ -683,6 +683,12 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <span><strong>Host:</strong> {host}
         <br/><strong>Directory:</strong> {fullDirName}
         <br/><strong>Process ID:</strong> {processId}
+        <br/><a href={
+                parent.appUIBaseAddress +
+                    "/" + parent.prefix +
+                    "/memberDetails/?memId=" +
+                    memberDetails.getOrElse("id","NA")
+                }>View Details</a>
       </span>
     }
 
