@@ -34,4 +34,10 @@ snappy.sql("CREATE TABLE ROWTABLE (COL1 INT, COL2 INT, COL3 STRING)")
 snappy.sql("INSERT INTO ROWTABLE VALUES (1, 1, '1'), (2, 2, '2'), (3, 3, '3'), (4, 4, '4'), (5, 5, '5')")
 val result2 = snappy.sql("SELECT COL1 FROM COLTABLE ORDER BY COL1").collect
 assert(result2.length == 5)
+
+// also check SparkSession
+val sparkTable = spark.range(1000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
+sparkTable.createOrReplaceTempView("sparkTable")
+spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()
+
 System.exit(0)

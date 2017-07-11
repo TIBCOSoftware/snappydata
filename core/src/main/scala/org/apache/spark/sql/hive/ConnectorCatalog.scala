@@ -24,7 +24,7 @@ import org.apache.hadoop.hive.metastore.api.{FieldSchema, Table}
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
-import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
+import org.apache.spark.sql.catalyst.parser.ParseException
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
@@ -184,13 +184,14 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
 
   private def fromHiveColumn(hc: FieldSchema): StructField = {
     val columnType = try {
-      CatalystSqlParser.parseDataType(hc.getType)
+      snappySession.sessionState.sqlParser.parseDataType(hc.getType)
     } catch {
       case e: ParseException =>
         throw new SparkException("Cannot recognize hive type string: " + hc.getType, e)
     }
 
-    val metadata = new MetadataBuilder().putString(HiveUtils.hiveTypeString, hc.getType).build()
+    // the key below should match the key used by HiveClientImpl in MetadataBuilder
+    val metadata = new MetadataBuilder().putString("HIVE_TYPE_STRING", hc.getType).build()
     val field = StructField(
       name = hc.getName,
       dataType = columnType,

@@ -98,8 +98,8 @@ allprojects {
     productName = 'SnappyData'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.1.0'
-    snappySparkVersion = '2.1.0-2'
+    sparkVersion = '2.1.1'
+    snappySparkVersion = '2.1.1.1'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -882,6 +882,10 @@ task checkAll {
   if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
+  if (!project.hasProperty('smoke.skip')) {
+    dependsOn ":buildDtests"
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+  }
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {
@@ -1030,12 +1034,7 @@ task publishDocs(type:Exec) {
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports
-  dependsOn ':snappy-spark:scalaStyle', docs
-  if (!project.hasProperty('smoke.skip')) {
-    dependsOn ":buildDtests"
-    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
-  }
+  dependsOn cleanAll, buildAll, checkAll, allReports, docs
 }
 
 if (project.hasProperty('trackBuildTime') ) {

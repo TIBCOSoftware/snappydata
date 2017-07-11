@@ -59,7 +59,7 @@ class TAQTest extends SnappyFunSuite {
     val quoteSize = 34000000L
     val tradeSize = 5000000L
     val numDays = 1
-    val numIters = 5
+    val numIters = 3
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       quoteSize, numDays, queryNumber = 1, numIters, doInit = true,
       op = CreateOp.Quote, runSparkCaching = false)
@@ -514,7 +514,6 @@ object TAQTest extends Logging with Assertions {
     session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
     spark.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
     spark.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-    spark.conf.set(SQLConf.VECTORIZED_AGG_MAP_MAX_COLUMNS.key, "1024")
 
     // Benchmark cases:
     //   (1) Spark caching with column batch compression
