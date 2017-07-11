@@ -78,7 +78,7 @@ abstract case class JDBCAppendableRelation(
       JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url +
         ";user=" + user +
         ";password=" + password +
-        ";default-schema=",
+        ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE + ";",
         table, connProperties.connProps.asScala.toMap))
     } else connFactory
   }

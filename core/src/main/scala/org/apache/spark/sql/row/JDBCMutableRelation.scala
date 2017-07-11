@@ -80,8 +80,8 @@ case class JDBCMutableRelation(
   import scala.collection.JavaConverters._
 
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
-    new JDBCOptions(connProperties.url +
-      connProperties.url, table, connProperties.connProps.asScala.toMap))
+    new JDBCOptions(connProperties.url + connProperties.urlSecureSuffix,
+      table, connProperties.connProps.asScala.toMap))
 
   var tableExists: Boolean = _
 
@@ -104,7 +104,7 @@ case class JDBCMutableRelation(
       JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url +
           ";user=" + user +
           ";password=" + password +
-          ";default-schema=",
+          ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE + ";",
         table, connProperties.connProps.asScala.toMap))
     } else connFactory
   }
@@ -178,7 +178,7 @@ case class JDBCMutableRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val jdbcOptions = new JDBCOptions(connProperties.url,
+    val jdbcOptions = new JDBCOptions(connProperties.url + connProperties.urlSecureSuffix,
       table, connProperties.executorConnProps.asScala.toMap)
 
     val rdd = JDBCRDD.scanTable(
