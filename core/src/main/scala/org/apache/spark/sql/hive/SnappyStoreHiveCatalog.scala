@@ -38,7 +38,6 @@ import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseE
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
-import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
@@ -137,7 +136,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   override def databaseExists(db: String): Boolean = {
     val dbName = formatTableName(db)
     externalCatalog.databaseExists(dbName) ||
-        client.getDatabaseOption(dbName).isDefined ||
+        getDatabaseOption(client, dbName).isDefined ||
         currentSchema == dbName || currentSchema == db
   }
 
@@ -326,7 +325,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               "STRING").build()
           } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
               .equalsIgnoreCase("CLOB")) {
-            // Remove the CharType properties from metadata
+            // Remove the CharStringType properties from metadata
             val builder = new MetadataBuilder
             builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
                 .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
@@ -614,8 +613,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
 
         val schemaName = tableIdent.schemaName
-        val dbInHive = client.getDatabaseOption(schemaName)
-        dbInHive match {
+        getDatabaseOption(client, schemaName) match {
           case Some(_) => // We are all good
           case None => client.createDatabase(CatalogDatabase(
             schemaName,
@@ -837,7 +835,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val (actualClassName, typeName) = className.splitAt(className.lastIndexOf("__"))
     UDFFunction.makeFunctionBuilder(funcName,
       uRLClassLoader.loadClass(actualClassName),
-      CatalystSqlParser.parseDataType(typeName.stripPrefix("__")))
+      snappySession.sessionState.sqlParser.parseDataType(typeName.stripPrefix("__")))
   }
 
   /**
@@ -1051,6 +1049,12 @@ object SnappyStoreHiveCatalog {
   def getSchemaStringFromHiveTable(table: Table): String =
     JdbcExtendedUtils.readSplitProperty(HIVE_SCHEMA_PROP,
       table.getParameters.asScala).orNull
+
+  def getDatabaseOption(client: HiveClient, db: String): Option[CatalogDatabase] = try {
+    Some(client.getDatabase(db))
+  } catch {
+    case NonFatal(_) => None
+  }
 
   /**
    * Suspend the active SparkSession in case "function" creates new threads
