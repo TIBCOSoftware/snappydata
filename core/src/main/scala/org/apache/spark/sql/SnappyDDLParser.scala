@@ -543,7 +543,7 @@ abstract class SnappyDDLParser(session: SnappySession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharType(size, baseType) =>
+        case CharStringType(size, baseType) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
               .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
           (StringType, false)
