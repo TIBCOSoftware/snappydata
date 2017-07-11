@@ -277,7 +277,7 @@ abstract class BaseColumnFormatRelation(
   override def truncate(): Unit = writeLock {
     try {
       externalStore.tryExecute(externalColumnTableName, conn => {
-        JdbcExtendedUtils.truncateTable(conn, externalColumnTableName, dialect)
+        JdbcExtendedUtils.truncateTable(sysConnFactory(), externalColumnTableName, dialect)
       })
     } finally {
       externalStore.tryExecute(table, conn => {
@@ -299,7 +299,7 @@ abstract class BaseColumnFormatRelation(
     } finally {
       try {
         try {
-          JdbcExtendedUtils.dropTable(conn, externalColumnTableName,
+          JdbcExtendedUtils.dropTable(sysConnFactory(), externalColumnTableName,
             dialect, sqlContext, ifExists)
         } finally {
           JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext,
