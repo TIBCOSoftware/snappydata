@@ -3,7 +3,7 @@
 
 SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (eg, columns stored as byte arrays).
 
-It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The [memory-size and heap-size](../configuring_cluster/property_description.md) properties control the off-heap and on-heap sizes of the SnappyData server process. 
+It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The [memory-size and heap-size](../../configuring_cluster/property_description.md) properties control the off-heap and on-heap sizes of the SnappyData server process. 
 
 ![On-Heap and Off-Heap](../../Images/on-off-heap.png)
 

@@ -549,9 +549,9 @@ To import into IntelliJ IDEA:
 
 * Generate Apache Avro and SnappyData required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The Run option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may some time to complete,  as it downloads jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files.
 
-* If you get unexpected **"Database not found"** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, then first thing to try is to run the **generateSources** target again.
+* If you get unexpected **"Database not found"** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, run the **generateSources** target (Gradle tab) again.
 
-* If you get a **NullPointerException** error when reading the spark-version-info.properties file, right-click and execute the **copyResourcesAll** target located in **snappydata_2.11> Tasks> other** folder.
+* If you get **NullPointerException** error when reading the spark-version-info.properties file, right-click and run the **copyResourcesAll** target from **snappydata_2.11> Tasks> other** (Gradle tab) to copy the required resources.
 
 * Increase the compiler heap sizes or else the build can take quite long especially with integrated **spark** and **store**. In **File> Settings> Build, Execution, Deployment> Compiler increase**, **Build process heap size** to say 1536 or 2048. Similarly, increase JVM maximum heap size in **Languages & Frameworks> Scala Compiler Server** to 1536 or 2048.
 

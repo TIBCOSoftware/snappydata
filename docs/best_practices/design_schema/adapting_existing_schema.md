@@ -5,7 +5,7 @@ If you have an existing database design that you want to deploy to SnappyData, t
 ## Guidelines for Adapting a Database to SnappyData
 This example shows tables from the Microsoft [Northwind Traders sample database](http://msdn.microsoft.com/en-us/library/aa276825(SQL.80).aspx).
 
-In order to adapt this schema for use in SnappyData, follow the basic steps outlined in Design Principles of Scalable, Partition-Aware Databases:
+In order to adapt this schema for use in SnappyData, follow the basic steps outlined in [Design Principles of Scalable, Partition-Aware Databases](partition_aware_database_design.md):
 
 1. Determine the entity groups.
 
@@ -32,7 +32,7 @@ In order to adapt this schema for use in SnappyData, follow the basic steps outl
     |Customer|CustomerID|
     |Product|ProductID|
 
-    This example uses customerID as the partitioning key for the Customer group. The customer row and all associated orders will be collocated into a single partition. To explicitly colocate Orders with its parent customer row, use the `colocate with` clause in the create table statement:
+    This example uses customerID as the partitioning key for the Customer group. The customer row and all associated orders will be colocated into a single partition. To explicitly colocate Orders with its parent customer row, use the `colocate with` clause in the create table statement:
 
 		create table orders (<column definitions, constraints>)
 		partition by (customerID)

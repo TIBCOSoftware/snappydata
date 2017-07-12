@@ -83,7 +83,7 @@ In this release, LONG is supported only for column tables. It is recommended to 
 
 <a id="ddl"></a>
 `COLOCATE_WITH`</br>
-The COLOCATE_WITH clause specifies a partitioned table to collocate with. The referenced table must already exist. 
+The COLOCATE_WITH clause specifies a partitioned table to colocate with. The referenced table must already exist. 
 
 `PARTITION_BY`</br>
 Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.

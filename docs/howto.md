@@ -10,7 +10,7 @@ Refer to the [Getting Started](quickstart.md) to either run SnappyData on premis
 
 You can run the examples in any of the following ways:
 
-* **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples run collocated with Spark+SnappyData Store in the same JVM. 
+* **In the Local Mode**: By using `bin/run-example` script (to run Scala examples) or by using `bin/spark-submit` script (to run Python examples). The examples run colocated with Spark+SnappyData Store in the same JVM. 
 
 * **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to [jobs](#howto-job) section for details on how to run a job.
 
@@ -31,7 +31,7 @@ The following topics are covered in this section:
 
 * [How to Load Data in SnappyData Tables](#howto-load)
 
-* [How to Perform a Collocated Join](#howto-collacatedJoin)
+* [How to Perform a Colocated Join](#howto-collacatedJoin)
 
 * [How to Connect using JDBC Driver](#howto-jdbc)
 
@@ -565,22 +565,22 @@ The source code to load the data from a CSV/Parquet files is in [CreateColumnTab
 
 
 <a id="howto-collacatedJoin"></a>
-## How to Perform a Collocated Join
+## How to Perform a Colocated Join
 
-When two tables are partitioned on columns and collocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Collocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
-When collocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.
+When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
+When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.
 
-**Code Example: ORDERS table is collocated with CUSTOMER table**
+**Code Example: ORDERS table is colocated with CUSTOMER table**
 
-A partitioned table can be collocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
-For example, in the code snippet below, the ORDERS table is collocated with the CUSTOMER table. The complete source for this example can be found in the file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
+A partitioned table can be colocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
+For example, in the code snippet below, the ORDERS table is colocated with the CUSTOMER table. The complete source for this example can be found in the file [CollocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
 
 **Get a SnappySession**:
 
 ```
     val spark: SparkSession = SparkSession
         .builder
-        .appName("CollocatedJoinExample")
+        .appName("ColocatedJoinExample")
         .master("local[*]")
         .getOrCreate
 
@@ -618,7 +618,7 @@ For example, in the code snippet below, the ORDERS table is collocated with the 
         "COLOCATE_WITH 'CUSTOMER' )")
 ```
 
-**Perform a Collocate join:** 
+**Perform a Colocate join:** 
 
 ```
     // Selecting orders for all customers

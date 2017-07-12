@@ -1,11 +1,11 @@
 # Overview
-In this section, the various modes available for collocation of related data and computation is discussed.
+In this section, the various modes available for colocation of related data and computation is discussed.
 
 You can run the SnappyData store in the following modes:
 
 * [Local Mode](#localmode): Used mainly for development, where the client application, the executors, and data store are all running in the same JVM
 
-* [Embedded SnappyData Store Mode](#embeddedmode): The Spark computations and in-memory data store run collocated in the same JVM
+* [Embedded SnappyData Store Mode](#embeddedmode): The Spark computations and in-memory data store run colocated in the same JVM
 
 * [SnappyData Smart Connector Mode](#connectormode): Allows you to work with the SnappyData store cluster from any compatible Spark distribution
  
@@ -69,7 +69,7 @@ If you already have Spark2.0 installed in your local machine you can directly us
 
 <a id="embeddedmode"></a>
 ## Embedded SnappyData Store Mode
-In this mode, the Spark computations and in-memory data store run collocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real-time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources.
+In this mode, the Spark computations and in-memory data store run colocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real-time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources.
 Spark executors are dynamically launched when the first Spark Job arrives.
 
 Some of the advantages of this mode are:
@@ -95,7 +95,7 @@ You can either [start SnappyData members](install.md) using the `snappy-start-al
 
 Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:
 
-* If the join expression matches the partitioning scheme of tables, a partition to partition join instead of a shuffle based join is done. </br> Moreover, if two tables are collocated (while defining the tables) costly data movement can be avoided.
+* If the join expression matches the partitioning scheme of tables, a partition to partition join instead of a shuffle based join is done. </br> Moreover, if two tables are colocated (while defining the tables) costly data movement can be avoided.
 
 * For replicated tables, that are present in all the data nodes, a simple local join (local look up)  is done instead of a broadcast join.
 
@@ -130,7 +130,7 @@ When queries are executed, while the entire query planning and execution is coor
 * Route jobs to same machines as SnappyData data nodes if the executor nodes are co-hosted on the same machines as the data nodes. Job for each partition tries to fetch only from same machine data store where possible.
 
 
-* Collocated joins: If the underlying tables are collocated partition-wise, and executor nodes are co-hosting SnappyData data nodes, then the column batches are fetched from local machines and the join itself is partition-wise and does not require any exchange.
+* Colocated joins: If the underlying tables are colocated partition-wise, and executor nodes are co-hosting SnappyData data nodes, then the column batches are fetched from local machines and the join itself is partition-wise and does not require any exchange.
 
 
 * Optimized column batch inserts like in the Embedded mode with job routing to same machines as data stores if possible.

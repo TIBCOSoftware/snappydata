@@ -7,7 +7,7 @@ This allows table data to be either evicted or destroyed based on the current me
 
 For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.
 
-Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure OVERFLOW and EVICTION_BY clauses.
+Refer to [CREATE TABLE](../../reference/sql_reference/create-table.md) link to understand how to configure OVERFLOW and EVICTION_BY clauses.
 
 !!! Note: 
 	The default action for OVERFLOW is to destroy the evicted rows.

@@ -369,7 +369,7 @@ The complete list of commands available through _snappy_shell_ can be found [her
 
 ## Using the Spark Shell and spark-submit
 
-SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store for efficient data intensive computations. 
+SnappyData, out-of-the-box, colocates Spark executors and the SnappyData store for efficient data intensive computations. 
 You however may need to isolate the computational cluster for other reasons. For instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly.
 
 To support such cases it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store the `spark.snappydata.connection` property should be provided while starting the Spark-shell. 
@@ -713,7 +713,7 @@ COLUMN_MAX_DELTA_ROWS '10000',
 
 DROP TABLE [IF EXISTS] table_name
 ```
-Refer to the [How-Tos](howto) section for more information on partitioning and collocating data.
+Refer to the [How-Tos](howto) section for more information on partitioning and colocating data.
 
 For row format tables column definition can take underlying GemFireXD syntax to create a table. For example, note the PRIMARY KEY clause below.
 
@@ -984,7 +984,7 @@ The following enhancements over Spark Streaming is provided:
 
 3. __Continuous queries and time windows__: Similar to popular stream processing products, applications can register “continuous” queries on streams. By default, Spark streaming emits batches once every second and any registered queries would be executed each time a batch is emitted. To support arbitrary time ranges, the standard SQL is extended to be able to specify the time window for the query. 
 
-4. __OLAP optimizations__: By integrating and collocating stream processing with the hybrid in-memory storage engine, the product leverages the optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with RowStore.
+4. __OLAP optimizations__: By integrating and colocating stream processing with the hybrid in-memory storage engine, the product leverages the optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with RowStore.
 
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
 
