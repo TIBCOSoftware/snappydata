@@ -1012,7 +1012,7 @@ object SnappyContext extends Logging {
           if (embedded) ExternalEmbeddedMode(sc, url)
 //          else SplitClusterMode(sc, url)
           else throw new SparkException(
-            s"Invalid configuration. " +
+            s"Invalid configuration parameter mcast-port. " +
                 s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
