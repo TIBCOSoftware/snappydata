@@ -20,11 +20,12 @@ import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, OverwriteOptions}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -33,7 +34,6 @@ import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
-
 import scala.collection.JavaConverters._
 
 
@@ -142,7 +142,7 @@ abstract case class JDBCAppendableRelation(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
-        overwrite,
+        OverwriteOptions(overwrite),
         ifNotExists = false)).toRdd
   }
 
