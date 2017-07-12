@@ -79,7 +79,7 @@ object ExternalStoreUtils extends Logging {
   }
 
   private def defaultMaxExternalPoolSize: String =
-    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 4))
+    String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
   private def defaultMaxEmbeddedPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
@@ -97,12 +97,14 @@ object ExternalStoreUtils extends Logging {
     if (hikariCP) {
       props = props + ("jdbcUrl" -> url)
       props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
-      props = addProperty(props, "minimumIdle", "4")
+      props = addProperty(props, "minimumIdle", "10")
+      props = addProperty(props, "idleTimeout", "120000")
     } else {
       props = props + ("url" -> url)
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
       props = addProperty(props, "maxIdle", defaultMaxPoolSize)
       props = addProperty(props, "initialSize", "4")
+      props = addProperty(props, "minEvictableIdleTimeMillis", "120000")
     }
     props
   }
