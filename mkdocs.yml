@@ -1,8 +1,10 @@
-site_name: SnappyData GA RELEASE
+site_name: SnappyData Documentation
 site_url: http://www.snappydata.io
-site_description: Project documentation for SnappyData.
+site_description: Project documentation for SnappyData
 site_author: SnappyData Team
 site_favicon: favicon.ico
+
+repo_url: https://github.com/SnappyDataInc/snappydata
 
 repo_url: https://github.com/SnappyDataInc/snappydata
 
@@ -516,18 +518,20 @@ pages:
 #- 'Contact and Support': 
 #    - 'Contact and Support': ''
 - 'License': 'LICENSE.md'
+
 theme: readthedocs
 theme_dir: 'docs/custom_theme'
 
 extra_javascript:
   - 'js/menu.js'
-  
+
 extra_css:
     - 'css/toc.css'
     - 'css/menu.css'
     - 'css/images.css'
     - 'css/style.css'
     - 'extra.css'
+
 markdown_extensions:
     - admonition:
 

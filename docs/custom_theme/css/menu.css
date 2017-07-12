@@ -82,16 +82,16 @@ a.expander.top-level,
 
 /*heading level-1 in left nav*/
 .wy-menu-vertical li{
-  font-size: 13px;
+  font-size: 12px;
   color: #000000;	
 /*  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
-  text-transform: uppercase;	
-  font-weight: bold;
+  text-transform: capitalize;	
+/*  font-weight: bold;*/
 }
 
 .wy-menu-vertical li ul li a{
   /*color of the Level 2 menu item*/
-  font-size: 13px;
+  font-size: 12px;
   color: #000000;	
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   text-transform: capitalize;
@@ -140,3 +140,4 @@ border-top: .1px solid grey;
 .wy-nav-side .wy-menu-vertical .toctree-l1 a.current, .wy-nav-side .wy-menu-vertical .toctree-l1.current a{
 	border-bottom: none;
 }	
+
