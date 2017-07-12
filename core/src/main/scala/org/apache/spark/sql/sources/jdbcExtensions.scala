@@ -166,7 +166,7 @@ object JdbcExtendedUtils extends Logging {
   }
 
   def tableExistsInMetaData(table: String, conn: Connection,
-      dialect: JdbcDialect): Boolean = {
+      dialect: JdbcDialect, throwExceptionOnFailure: Boolean = false): Boolean = {
     // using the JDBC meta-data API
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
@@ -180,7 +180,7 @@ object JdbcExtendedUtils extends Logging {
       val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()
     } catch {
-      case _: java.sql.SQLException => false
+      case _: java.sql.SQLException if !throwExceptionOnFailure => false
     }
   }
 
@@ -197,34 +197,29 @@ object JdbcExtendedUtils extends Logging {
    */
   def tableExists(table: String, conn: Connection, dialect: JdbcDialect,
       context: SQLContext): Boolean = {
-    dialect match {
-      case d: JdbcExtendedDialect => d.tableExists(table, conn, context)
-
-      case _ =>
-        try {
-          tableExistsInMetaData(table, conn, dialect)
-        } catch {
-          case NonFatal(_) =>
-            val stmt = conn.createStatement()
-            // try LIMIT clause, then FETCH FIRST and lastly COUNT
-            val testQueries = Array(s"SELECT 1 FROM $table LIMIT 1",
-              s"SELECT 1 FROM $table FETCH FIRST ROW ONLY",
-              s"SELECT COUNT(1) FROM $table")
-            for (q <- testQueries) {
-              try {
-                val rs = stmt.executeQuery(q)
-                rs.next()
-                rs.close()
-                stmt.close()
-                // return is not very efficient but then this code
-                // is not performance sensitive
-                return true
-              } catch {
-                case NonFatal(_) => // continue
-              }
-            }
-            false
+    try {
+      tableExistsInMetaData(table, conn, dialect, true)
+    } catch {
+      case NonFatal(_) =>
+        val stmt = conn.createStatement()
+        // try LIMIT clause, then FETCH FIRST and lastly COUNT
+        val testQueries = Array(s"SELECT 1 FROM $table LIMIT 1",
+          s"SELECT 1 FROM $table FETCH FIRST ROW ONLY",
+          s"SELECT COUNT(1) FROM $table")
+        for (q <- testQueries) {
+          try {
+            val rs = stmt.executeQuery(q)
+            rs.next()
+            rs.close()
+            stmt.close()
+            // return is not very efficient but then this code
+            // is not performance sensitive
+            return true
+          } catch {
+            case NonFatal(_) => // continue
+          }
         }
+        false
     }
   }
 
