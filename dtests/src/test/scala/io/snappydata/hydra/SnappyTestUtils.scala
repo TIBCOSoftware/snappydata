@@ -202,18 +202,23 @@ object SnappyTestUtils {
         pw.println(s"Actual Result   : $actualLine")
       }
     }
+    // scalastyle:off println
     if (actualLineSet.hasNext || expectedLineSet.hasNext) {
       hasValidationFailed = true
       if (actualLineSet.hasNext) {
         pw.println(s"Following ${actualLineSet.size} rows are unexpected in Snappy:")
+        while (actualLineSet.hasNext) {
+          val txt: String = actualLineSet.next()
+          pw.println(s"$txt")
+        }
       }
-      while (actualLineSet.hasNext)
-        pw.println(actualLineSet.next())
       if (expectedLineSet.hasNext) {
         pw.println(s"Following ${expectedLineSet.size} rows are missing in Snappy:")
+        while (expectedLineSet.hasNext) {
+          val txt: String = actualLineSet.next()
+          pw.println(s"$txt")
+        }
       }
-      while (expectedLineSet.hasNext)
-        pw.println(expectedLineSet.next())
     }
     hasValidationFailed
   }
