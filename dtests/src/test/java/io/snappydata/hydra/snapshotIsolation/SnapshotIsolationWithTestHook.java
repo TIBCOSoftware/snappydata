@@ -56,7 +56,6 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
       Log.getLogWriter().info("Obtained connection");
       createTables(conn,false);
       saveTableMetaDataToBB(conn);
-      Misc.getGemFireCache().setRowScanTestHook(testHook);
     } catch (SQLException se) {
       throw new TestException("Got Exception while getting connection.", se);
     }
@@ -80,6 +79,7 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
       Log.getLogWriter().info("Number of rows before insert " + numRowsInserted);
       int insertCount = doInsert(conn);
       GemFireCacheImpl.getInstance().notifyRowScanTestHook();
+      Misc.getGemFireCache().setRowScanTestHook(null);
       SnapshotIsolationBB.getBB().getSharedCounters().add(SnapshotIsolationBB.numRowsInserted,
           insertCount);
       Log.getLogWriter().info("Number of rows after insert " + (numRowsInserted + insertCount));
@@ -148,6 +148,7 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     try {
       String url = "jdbc:snappydata:";
       Connection conn = DriverManager.getConnection(url);
+      Misc.getGemFireCache().setRowScanTestHook(testHook);
       waitForBarrier(2);
       Thread.sleep(500);
       int rowCnt = 0, numRowsInserted = 0;

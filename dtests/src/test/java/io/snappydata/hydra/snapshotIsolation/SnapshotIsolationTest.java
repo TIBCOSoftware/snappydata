@@ -232,7 +232,7 @@ public class SnapshotIsolationTest extends SnappyTest {
       String query[] = new String[iterations];
       for (int i = 0; i < iterations; i++) {
         query[i] = SnapshotIsolationPrms.getSelectStmts();
-        Log.getLogWriter().info("Blocking operations in snappy.");
+        Log.getLogWriter().info("Blocking operations in snappy and pausing operations in derby.");
         getCounterLock();
         SnapshotIsolationBB.getBB().getSharedCounters().increment(SnapshotIsolationBB.BlockOps);
         SnapshotIsolationBB.getBB().getSharedCounters().increment(SnapshotIsolationBB.PauseDerby);
@@ -272,7 +272,6 @@ public class SnapshotIsolationTest extends SnappyTest {
         }else
           derbyRS = dConn.createStatement().executeQuery(query[i]);
         Log.getLogWriter().info("Executed query on derby.");
-        Log.getLogWriter().info("Pausing operations in derby.");
         SnapshotIsolationBB.getBB().getSharedCounters().decrement(SnapshotIsolationBB.BlockOps);
         StructTypeImpl sti = ResultSetHelper.getStructType(derbyRS);
         derbyList[i] = ResultSetHelper.asList(derbyRS, sti, true);

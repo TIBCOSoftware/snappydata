@@ -31,7 +31,7 @@ class ValidateSnapshotSelectWithInsertJob extends SnappySQLJob{
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val outputFile = "ValidateCTQueries_" + jobConfig.getString("logFileName")
+    val outputFile = "ValidateSnapshotQuery_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     Try {
       val tableType = jobConfig.getString("tableType")
