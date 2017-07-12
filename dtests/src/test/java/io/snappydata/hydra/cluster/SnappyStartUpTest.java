@@ -17,7 +17,9 @@
 package io.snappydata.hydra.cluster;
 
 import hydra.*;
+import sql.SQLHelper;
 import util.TestException;
+import util.TestHelper;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,6 +28,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 public class SnappyStartUpTest extends SnappyTest {
@@ -93,7 +98,7 @@ public class SnappyStartUpTest extends SnappyTest {
     }
   }
 
-  private static synchronized Set<String> getServerPidList() {
+  protected static synchronized Set<String> getServerPidList() {
     Set<String> pidList = new HashSet<>();
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
@@ -142,4 +147,151 @@ public class SnappyStartUpTest extends SnappyTest {
     doneRandomizing = true;
   }
 
+  public static void HydraTask_ServerHAWithRebalance_clusterRestart() {
+    if (cycleVms) {
+      int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
+      int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
+      Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
+      snappyTest.cycleVM(numToKill, stopStartVms, "storeVmCycled", lastCycledTimeForStoreFromBB,
+          lastCycledTime, "server", true, true);
+    }
+  }
+
+  protected static void serverHAWithRebalance_clusterRestart(String vmDir, String clientName, String vmName) {
+    snappyTest.killVM(vmDir, clientName, vmName);
+    Log.getLogWriter().info("snappy server stopped successfully...." + vmDir);
+    executeOps();
+    HydraTask_AddServerNode_Rebalance();
+    //SnappyLocatorHATest.executeOps();
+    snappyTest.startVM(vmDir, clientName, vmName);
+    Log.getLogWriter().info("snappy server restarted successfully...." + vmDir);
+    HydraTask_reWriteServerConfigData();
+    backUpServerConfigData();
+    HydraTask_stopSnappyCluster();
+    Log.getLogWriter().info("snappy cluster stopped successfully...." + vmDir);
+    HydraTask_startSnappyCluster();
+    Log.getLogWriter().info("snappy cluster restarted successfully...." + vmDir);
+  }
+
+  protected static void executeOps() {
+    Connection conn = null;
+    ResultSet rs = null;
+    String query = "create table tab1 (id int, name String, address String) USING  column " +
+        "OPTIONS(partition_by 'id')";
+    try {
+      conn = getLocatorConnection();
+      conn.createStatement().executeUpdate(query);
+      Log.getLogWriter().info("query executed successfully: " + query);
+      query = "insert into tab1 values(111, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(222, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(333, 'aaa', 'hello')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(444, 'bbb', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(555, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "insert into tab1 values(666, 'ccc', 'halo')";
+      conn.createStatement().executeUpdate(query);
+      query = "select count(*) from tab1";
+      rs = conn.createStatement().executeQuery(query);
+      long numRows = 0;
+      while (rs.next()) {
+        numRows = rs.getLong(1);
+        Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+            "result is ::" + numRows);
+      }
+      if (numRows != 6)
+        throw new TestException("Result count mismatch observed in test for table " +
+            "tab1 created after stopping all locators. \n Expected Row Count : 6 " + "\n Actual Row" +
+            " Count : " + numRows);
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+    }
+  }
+
+  public static void HydraTask_AddServerNode_Rebalance() {
+    HydraTask_generateSnappyServerConfig();
+    Set<String> logDirList = new HashSet<>();
+    Set<String> newNodeLogDirs = getNewNodeLogDir();
+    for (String nodeLogDir : newNodeLogDirs) {
+      Log.getLogWriter().info("SS - nodeLogDir is : " + nodeLogDir);
+      String newNodeLogDir = null;
+      newNodeLogDir = nodeLogDir.substring(nodeLogDir.lastIndexOf("-dir=") + 5);
+      Log.getLogWriter().info("SS - new node log dir is : " + newNodeLogDir);
+      newNodeLogDir = newNodeLogDir.substring(0, newNodeLogDir.indexOf(" "));
+      Log.getLogWriter().info("SS - new node log dir is : " + newNodeLogDir);
+      logDirList.add(newNodeLogDir);
+      startSnappyServerWithRebalance(newNodeLogDir, getLocatorsList("locators"));
+    }
+  }
+
+  private static synchronized Set<String> getNewNodeLogDir() {
+    Set<String> logDirList = new HashSet<>();
+    Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+    for (String key : keys) {
+      if (key.startsWith("newNodelogDir")) {
+        String nodeLogDir = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
+        Log.getLogWriter().info("SS - newNodelogDir entry in blackboard: " + nodeLogDir);
+        logDirList.add(nodeLogDir);
+      }
+    }
+    Log.getLogWriter().info("Returning new server log directory list: " + logDirList);
+    return logDirList;
+  }
+
+  /**
+   * Generates the configuration data required to start the new snappy Server.
+   */
+  public static synchronized void HydraTask_generateSnappyServerConfig() {
+    SnappyTest server = new SnappyTest(SnappyNode.SERVER);
+    server.generateNodeConfig("serverLogDir", true);
+
+  }
+
+  protected static void startSnappyServerWithRebalance(String dirPath, String locators) {
+    File log = null;
+    ProcessBuilder pb = null;
+    try {
+      if (useRowStore) {
+        Log.getLogWriter().info("Starting server using rebalance and rowstore option...");
+        pb = new ProcessBuilder(SnappyShellPath, "server", "start", "-" +
+            "", "-dir=" + dirPath,
+            "-locators=" + locators, "rowstore");
+      } else {
+        Log.getLogWriter().info("Starting server using rebalance option...");
+        pb = new ProcessBuilder(SnappyShellPath, "server", "start", "-rebalance", "-dir=" + dirPath,
+            "-locators=" + locators);
+      }
+      log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "snappyServerRebalance.log";
+      File logFile = new File(dest);
+      snappyTest.executeProcess(pb, logFile);
+    } catch (IOException e) {
+      String s = "problem occurred while retriving logFile path " + log;
+      throw new TestException(s, e);
+    }
+  }
+
+  /**
+   * Re-write the configuration data required to start the snappy server/s in servers file under
+   * conf directory at snappy build location.
+   */
+  public static void HydraTask_reWriteServerConfigData() {
+    String filePath = productConfDirPath + "servers";
+    File file = new File(filePath);
+    try {
+      if (file.exists()) {
+        file.delete();
+        file.createNewFile();
+      }
+    } catch (IOException e) {
+      String s = "Unable to create file: " + file.getAbsolutePath();
+      throw new TestException(s);
+    }
+    snappyTest.writeConfigData("servers", "serverLogDir");
+  }
 }

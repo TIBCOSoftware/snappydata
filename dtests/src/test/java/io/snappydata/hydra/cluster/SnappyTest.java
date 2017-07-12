@@ -273,7 +273,7 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_generateSnappyLocatorConfig() {
     SnappyTest locator = new SnappyTest(SnappyNode.LOCATOR);
-    locator.generateNodeConfig("locatorLogDir");
+    locator.generateNodeConfig("locatorLogDir", false);
   }
 
   /**
@@ -281,7 +281,7 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_generateSnappyServerConfig() {
     SnappyTest server = new SnappyTest(SnappyNode.SERVER);
-    server.generateNodeConfig("serverLogDir");
+    server.generateNodeConfig("serverLogDir", false);
   }
 
   /**
@@ -289,7 +289,7 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_generateSnappyLeadConfig() {
     SnappyTest lead = new SnappyTest(SnappyNode.LEAD);
-    lead.generateNodeConfig("leadLogDir");
+    lead.generateNodeConfig("leadLogDir", false);
   }
 
   /**
@@ -297,10 +297,10 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_generateSparkWorkerConfig() {
     SnappyTest worker = new SnappyTest(SnappyNode.WORKER);
-    worker.generateNodeConfig("workerLogDir");
+    worker.generateNodeConfig("workerLogDir", false);
   }
 
-  protected void generateNodeConfig(String logDir) {
+  protected void generateNodeConfig(String logDir, boolean returnNodeLogDir) {
     if (logDirExists) return;
     String addr = HostHelper.getHostAddress();
     int port = PortHelper.getRandomPort();
@@ -426,6 +426,9 @@ public class SnappyTest implements Serializable {
     SnappyBB.getBB().getSharedMap().put("logDir_" + RemoteTestModule.getMyClientName() + "_" +
         RemoteTestModule.getMyVmid(), dirPath);
     Log.getLogWriter().info("nodeLogDir is : " + nodeLogDir);
+    if (returnNodeLogDir)
+      SnappyBB.getBB().getSharedMap().put("newNodelogDir" + "_" + RemoteTestModule.getMyVmid() +
+          "_" + snappyTest.getMyTid(), nodeLogDir);
     logDirExists = true;
   }
 
@@ -1956,7 +1959,7 @@ public class SnappyTest implements Serializable {
       boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
       if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
         jobSubmissionCount++;
-        Thread.sleep(6000);
+        Thread.sleep(60000);
         Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
             " the job to new primary lead node.....");
         retrievePrimaryLeadHost();
@@ -2515,8 +2518,18 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
+      Thread.sleep(60000);
+      boolean stopAllFailed = snappyTest.waitForStopAll();
+      if (stopAllFailed) {
+        Log.getLogWriter().info("SS - inside  stopAllFailed loop....");
+        snappyTest.threadDumpForAllServers();
+        Log.getLogWriter().info("SS - done stopAllFailed loop....");
+      }
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
+      throw new TestException(s, e);
+    } catch (InterruptedException e) {
+      String s = "Exception occurred while waiting for snappy-stop-all script execution..";
       throw new TestException(s, e);
     }
   }
@@ -2738,6 +2751,8 @@ public class SnappyTest implements Serializable {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {
       SnappyLocatorHATest.ddlOpAfterLocatorStop_ClusterRestart(vmDir, clientName, vmName);
+    } else if (isDmlOp && vmName.equalsIgnoreCase("server") && restart) {
+      SnappyStartUpTest.serverHAWithRebalance_clusterRestart(vmDir, clientName, vmName);
     } else {
       if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL")) {
         killVM(vmDir, clientName, vmName);
@@ -2751,30 +2766,182 @@ public class SnappyTest implements Serializable {
     ProcessBuilder pb = null;
     try {
       if (vmName.equalsIgnoreCase("lead")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-lead.sh"), "-bg", "stop",
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-lead.sh"), "stop",
             "-dir=" + vmDir);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
         logFile = new File(dest);
       } else if (vmName.equalsIgnoreCase("server")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "-bg", "stop",
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "stop",
             "-dir=" + vmDir);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
         logFile = new File(dest);
       } else if (vmName.equalsIgnoreCase("locator")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locator.sh"), "-bg", "stop",
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locator.sh"), "stop",
             "-dir=" + vmDir);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
         logFile = new File(dest);
       }
       snappyTest.executeProcess(pb, logFile);
+      Thread.sleep(60000);
+      boolean serverStopFailed = snappyTest.waitForMemberStop(vmDir, clientName, vmName);
+      if (serverStopFailed) {
+        Log.getLogWriter().info("SS - inside server stop failed loop....");
+        snappyTest.threadDumpForAllServers();
+        Log.getLogWriter().info("SS - done with server stop failed loop....");
+      }
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
+    } catch (InterruptedException e) {
+      String s = "Exception occurred while waiting for the kill " + clientName + "process " +
+          "execution..";
+      throw new TestException(s, e);
     }
     Log.getLogWriter().info(clientName + " stopped successfully...");
+  }
+
+  protected static void threadDumpForAllServers() {
+    Set<String> pidList;
+    Process pr = null;
+    ProcessBuilder pb;
+    File logFile, log = null, serverHeapDumpOutput;
+    try {
+      HostDescription hd = TestConfig.getInstance().getMasterDescription()
+          .getVmDescription().getHostDescription();
+      pidList = SnappyStartUpTest.getServerPidList();
+      log = new File(".");
+      String server = log.getCanonicalPath() + File.separator + "threadDumpAllServers.sh";
+      logFile = new File(server);
+      String serverKillLog = log.getCanonicalPath() + File.separator +
+          "serversThreadDumpStopFailure.log";
+      serverHeapDumpOutput = new File(serverKillLog);
+      FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
+      BufferedWriter bw = new BufferedWriter(fw);
+      List asList = new ArrayList(pidList);
+      Collections.shuffle(asList);
+      for (String pidString : pidList) {
+        Log.getLogWriter().info("SS - pidString : " + pidString);
+        int pid = Integer.parseInt(pidString);
+        String pidHost = snappyTest.getPidHost(Integer.toString(pid));
+        Log.getLogWriter().info("SS - pidHost : " + pidHost);
+        if (pidHost.equalsIgnoreCase("localhost")) {
+          bw.write("kill -3 " + pid);
+        } else {
+          bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+              pidHost + " kill -3 " + pid);
+        }
+        bw.newLine();
+      }
+      bw.close();
+      fw.close();
+      logFile.setExecutable(true);
+      pb = new ProcessBuilder(server);
+      pb.redirectErrorStream(true);
+      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(serverHeapDumpOutput));
+      pr = pb.start();
+      pr.waitFor();
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while retriving logFile path " + log + "\nError Message:" + e.getMessage());
+    } catch (InterruptedException e) {
+      String s = "Exception occurred while waiting for the process execution : " + pr;
+      throw new TestException(s, e);
+    }
+  }
+
+  protected boolean waitForMemberStop(String vmDir, String clientName, String vmName) {
+    File commandOutput;
+    try {
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + clientName + "Status_" +
+          RemoteTestModule.getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
+      commandOutput = new File(dest);
+      String expression;
+      String scriptName = null;
+      if (vmName.equalsIgnoreCase("server")) {
+        scriptName = "snappy-server.sh";
+      } else if (vmName.equalsIgnoreCase("lead")) {
+        scriptName = "snappy-lead.sh";
+      } else if (vmName.equalsIgnoreCase("locator")) {
+        scriptName = "snappy-locator.sh";
+      }
+      expression = snappyTest.getScriptLocation(scriptName) + " status " +
+          " -dir=" + vmDir + " > " + commandOutput + " 2>&1 ; grep -e 'status: stopped' -e " +
+          "'status: waiting' -e 'status: stopping' -e 'java.lang.IllegalStateException' " +
+          commandOutput + " | wc -l)\"";
+      String command = "while [ \"$(" + expression + " -le  0  ] ; do rm " +
+          commandOutput + " ;  touch " + commandOutput + "   ;  sleep " +
+          SnappyPrms.getSleepTimeSecsForMemberStatus() + " ; done";
+      Log.getLogWriter().info("SS - command string is : " + command);
+      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
+      Log.getLogWriter().info("Server Status script for " + clientName + " starts at: " + System
+          .currentTimeMillis());
+      executeProcess(pb, commandOutput);
+      Log.getLogWriter().info("Server Status script for " + clientName + " finishes at:  " + System
+          .currentTimeMillis());
+    } catch (IOException e) {
+      String s = "Problem while reading the file : " + logFile;
+      throw new TestException(s, e);
+    }
+    return executeStatusTask(commandOutput);
+  }
+
+  protected boolean executeStatusTask(File commandOutput) {
+    boolean found = false;
+    try {
+      FileInputStream fis = new FileInputStream(commandOutput);
+      BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+      String line;
+      String searchString1 = "java.lang.IllegalStateException";
+      String searchString2 = "status: stopping";
+      String searchString3 = "status: waiting";
+      while ((line = br.readLine()) != null && !found) {
+        if (line.toLowerCase().contains(searchString1.toLowerCase()) || line.toLowerCase().contains
+            (searchString2.toLowerCase()) || line.toLowerCase().contains(searchString3.toLowerCase
+            ())) {
+          found = true;
+          Log.getLogWriter().info("member did not stop successfully...");
+        }
+      }
+      br.close();
+    } catch (FileNotFoundException e) {
+      String s = "Unable to find file: " + logFile;
+      throw new TestException(s);
+    } catch (IOException e) {
+      String s = "Problem while reading the file : " + logFile;
+      throw new TestException(s, e);
+    }
+    return found;
+  }
+
+  protected boolean waitForStopAll() {
+    File commandOutput;
+    try {
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "stopAllStatus_" +
+          RemoteTestModule.getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
+      commandOutput = new File(dest);
+      String expression = snappyTest.getScriptLocation("snappy-status-all.sh")
+          + " > " + commandOutput + " 2>&1 ; grep -e 'status: stopped' -e " +
+          "'status: waiting' -e 'status: stopping' -e 'java.lang.IllegalStateException' " +
+          commandOutput + " | wc -l)\"";
+      String command = "while [ \"$(" + expression + " -le  0  ] ; do rm " +
+          commandOutput + " ;  touch " + commandOutput + "   ;  sleep " +
+          SnappyPrms.getSleepTimeSecsForMemberStatus() + " ; done";
+      Log.getLogWriter().info("SS - command string is : " + command);
+      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
+      Log.getLogWriter().info("snappy-status-all script starts at: " +
+          System.currentTimeMillis());
+      executeProcess(pb, commandOutput);
+      Log.getLogWriter().info("snappy-status-all script finishes at:  " + System
+          .currentTimeMillis());
+    } catch (IOException e) {
+      String s = "Problem while reading the file : " + logFile;
+      throw new TestException(s, e);
+    }
+    return executeStatusTask(commandOutput);
   }
 
   protected void startVM(String vmDir, String clientName, String vmName) {

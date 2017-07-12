@@ -288,6 +288,11 @@ public class SnappyPrms extends BasePrms {
   public static Long sleepTimeSecsForJobStatus;
 
   /**
+   * (int) how long (seconds) it should wait before retrieving server status
+   */
+  public static Long sleepTimeSecsForMemberStatus;
+
+  /**
    * (int) Number of times the test should retry submitting failed job in case of lead node failover.
    */
   public static Long numTimesToRetry;
@@ -460,6 +465,11 @@ public class SnappyPrms extends BasePrms {
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
     return tasktab().intAt(key, tab().intAt(key, 120));
+  }
+
+  public static int getSleepTimeSecsForMemberStatus() {
+    Long key = sleepTimeSecsForMemberStatus;
+    return tasktab().intAt(key, tab().intAt(key, 30));
   }
 
   public static String getExecutorCores() {
