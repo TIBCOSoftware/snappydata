@@ -170,8 +170,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       logInfo("Using Hive metastore database, dbURL = " +
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS,
-      "org.apache.spark.sql.hive.SnappyHiveMetaStoreEventListener")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -282,10 +280,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
           (true, ExternalStoreUtils.defaultStoreURL(Some(sc)) +
               ";disable-streaming=true;default-persistent=true",
               Constant.JDBC_EMBEDDED_DRIVER)
-        case SplitClusterMode(_, props) =>
-          (true, Constant.DEFAULT_EMBEDDED_URL +
-              ";host-data=false;disable-streaming=true;default-persistent=true;" +
-              props, Constant.JDBC_EMBEDDED_DRIVER)
         case ThinClientConnectorMode(_, url) =>
           (true, url + ";route-query=false;", Constant.JDBC_CLIENT_DRIVER)
         case ExternalClusterMode(_, _) =>

@@ -81,7 +81,11 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     tablesToDrop += tableName
   }
 
-  def testPartitionedSingleColumnTable(): Unit = {
+  def testDummy(): Unit = {
+  }
+
+  // SNAP-1800 Disabled all tests in this dunit
+  def _testPartitionedSingleColumnTable(): Unit = {
     val tableName = "tabOne"
 
     val snContext = SnappyContext(sc)
@@ -124,7 +128,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def testCreateDropColumnTable(): Unit = {
+  def _testCreateDropColumnTable(): Unit = {
     val tableName = "tabOne"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)

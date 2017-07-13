@@ -1005,12 +1005,15 @@ object SnappyContext extends Logging {
 //          else SplitClusterMode(sc, url)
           else throw new SparkException(
           s"Invalid configuration parameter ${Property.Locators}. " +
-              s"Use paramater ${Property.SnappyConnection} for smart connector mode")
+              s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SplitClusterMode(sc, url)
+//          else SplitClusterMode(sc, url)
+          else throw new SparkException(
+            s"Invalid configuration parameter mcast-port. " +
+                s"Use parameter ${Property.SnappyConnection} for smart connector mode")
       }).orElse(Property.SnappyConnection.getOption(conf).collectFirst {
         case hostPort if !hostPort.isEmpty =>
           val p = hostPort.split(":")
@@ -1061,9 +1064,6 @@ object SnappyContext extends Logging {
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
         SnappyTableStatsProviderService.start(sc)
         ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
-      case SplitClusterMode(_, _) =>
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyTableStatsProviderService.start(sc)
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
       case ExternalEmbeddedMode(_, url) =>
@@ -1095,7 +1095,7 @@ object SnappyContext extends Logging {
 
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
-      if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
+      if (ExternalStoreUtils.isLocalMode(sc)) {
         ServiceUtils.invokeStopFabricServer(sc)
       }
       MemoryManagerCallback.resetMemoryManager()
@@ -1210,19 +1210,6 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
 }
 
 /**
- * This is for the two cluster mode: one is the normal snappy cluster, and
- * this one is a separate local/Spark/Yarn/Mesos cluster fetching data from
- * the snappy cluster on demand that just remains like an external datastore.
- */
-case class SplitClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode {
-  override val description: String = "Split cluster mode"
-}
-
-/**
- * Similar to SplitClusterMode but this will use thin client driver for making
- * connections to Snappy cluster.
- *
  * This is for the two cluster mode: one is
  * the normal snappy cluster, and this one is a separate local/Spark/Yarn/Mesos
  * cluster fetching data from the snappy cluster on demand that just
