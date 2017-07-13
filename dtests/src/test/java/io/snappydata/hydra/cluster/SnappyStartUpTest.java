@@ -35,13 +35,13 @@ import java.util.*;
 
 public class SnappyStartUpTest extends SnappyTest {
 
-  private static Set<Integer> pids = new LinkedHashSet<Integer>();
-  private static Set<String> pidList = new LinkedHashSet<String>();
+  private static Set<Integer> pids = new LinkedHashSet<>();
+  private static Set<String> pidList = new LinkedHashSet<>();
 
   public static void HydraTask_clusterRestartWithRandomOrderForServerStartUp() {
     Process pr = null;
     ProcessBuilder pb;
-    File logFile = null, log = null, serverKillOuput;
+    File logFile, log = null, serverKillOutput;
     try {
       HostDescription hd = TestConfig.getInstance().getMasterDescription()
           .getVmDescription().getHostDescription();
@@ -50,7 +50,7 @@ public class SnappyStartUpTest extends SnappyTest {
       String server = log.getCanonicalPath() + File.separator + "server.sh";
       logFile = new File(server);
       String serverKillLog = log.getCanonicalPath() + File.separator + "serverKill.log";
-      serverKillOuput = new File(serverKillLog);
+      serverKillOutput = new File(serverKillLog);
       FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
       BufferedWriter bw = new BufferedWriter(fw);
       List asList = new ArrayList(pidList);
@@ -87,7 +87,7 @@ public class SnappyStartUpTest extends SnappyTest {
       logFile.setExecutable(true);
       pb = new ProcessBuilder(server);
       pb.redirectErrorStream(true);
-      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(serverKillOuput));
+      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(serverKillOutput));
       pr = pb.start();
       pr.waitFor();
     } catch (IOException e) {
@@ -103,7 +103,6 @@ public class SnappyStartUpTest extends SnappyTest {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
       if (key.startsWith("pid") && key.contains("_ServerLauncher")) {
-        Log.getLogWriter().info("SS - pid entry in blackboard: " + key);
         String pid = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
         pidList.add(pid);
       }
@@ -153,7 +152,7 @@ public class SnappyStartUpTest extends SnappyTest {
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
       Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
       snappyTest.cycleVM(numToKill, stopStartVms, "storeVmCycled", lastCycledTimeForStoreFromBB,
-          lastCycledTime, "server", true, true);
+          lastCycledTime, "server", true, true, true);
     }
   }
 
@@ -213,17 +212,52 @@ public class SnappyStartUpTest extends SnappyTest {
     }
   }
 
+  protected static void dropAndReCreateTable() {
+    Connection conn;
+    ResultSet rs;
+    String query = "DROP TABLE IF EXISTS order_details";
+    try {
+      conn = getLocatorConnection();
+      conn.createStatement().executeUpdate(query);
+      Log.getLogWriter().info("order_details table dropped successfully");
+      query = "DROP TABLE IF EXISTS staging_order_details";
+      conn.createStatement().executeUpdate(query);
+      Log.getLogWriter().info("staging_order_details table dropped successfully");
+      query = "CREATE EXTERNAL TABLE staging_order_details" +
+          "    USING com.databricks.spark.csv OPTIONS(path '" + SnappyPrms.getDataLocationList()
+          .get(0) + "/order-details.csv', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096')";
+      conn.createStatement().executeUpdate(query);
+      Log.getLogWriter().info("staging_order_details table recreated successfully");
+      query = "CREATE TABLE order_details USING column OPTIONS(partition_by 'OrderId', buckets" +
+          " '13', COLOCATE_WITH 'orders', PERSISTENT 'sync', redundancy '1') AS (SELECT OrderID, " +
+          "ProductID, UnitPrice, Quantity, Discount FROM staging_order_details)";
+      conn.createStatement().executeUpdate(query);
+      Log.getLogWriter().info("staging_order_details table recreated successfully");
+      query = "select count(*) from order_details";
+      rs = conn.createStatement().executeQuery(query);
+      long numRows;
+      while (rs.next()) {
+        numRows = rs.getLong(1);
+        Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+            "result is ::" + numRows);
+      }
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+    }
+  }
+
   public static void HydraTask_AddServerNode_Rebalance() {
     HydraTask_generateSnappyServerConfig();
     Set<String> logDirList = new HashSet<>();
     Set<String> newNodeLogDirs = getNewNodeLogDir();
     for (String nodeLogDir : newNodeLogDirs) {
-      Log.getLogWriter().info("SS - nodeLogDir is : " + nodeLogDir);
+      Log.getLogWriter().info("nodeLogDir is : " + nodeLogDir);
       String newNodeLogDir = null;
       newNodeLogDir = nodeLogDir.substring(nodeLogDir.lastIndexOf("-dir=") + 5);
-      Log.getLogWriter().info("SS - new node log dir is : " + newNodeLogDir);
       newNodeLogDir = newNodeLogDir.substring(0, newNodeLogDir.indexOf(" "));
-      Log.getLogWriter().info("SS - new node log dir is : " + newNodeLogDir);
+      Log.getLogWriter().info("New node log dir is : " + newNodeLogDir);
       logDirList.add(newNodeLogDir);
       startSnappyServerWithRebalance(newNodeLogDir, getLocatorsList("locators"));
     }
@@ -235,7 +269,6 @@ public class SnappyStartUpTest extends SnappyTest {
     for (String key : keys) {
       if (key.startsWith("newNodelogDir")) {
         String nodeLogDir = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
-        Log.getLogWriter().info("SS - newNodelogDir entry in blackboard: " + nodeLogDir);
         logDirList.add(nodeLogDir);
       }
     }
@@ -293,5 +326,29 @@ public class SnappyStartUpTest extends SnappyTest {
       throw new TestException(s);
     }
     snappyTest.writeConfigData("servers", "serverLogDir");
+  }
+
+  public static void HydraTask_OpsDuringServerHA_clusterRestart() {
+    if (cycleVms) {
+      int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
+      int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
+      Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
+      snappyTest.cycleVM(numToKill, stopStartVms, "storeVmCycled", lastCycledTimeForStoreFromBB,
+          lastCycledTime, "server", true, true, false);
+    }
+  }
+
+  protected static void opsDuringServerHA_clusterRestart(String vmDir, String clientName, String vmName) {
+    snappyTest.killVM(vmDir, clientName, vmName);
+    Log.getLogWriter().info("Snappy server stopped successfully...." + vmDir);
+    executeOps();
+    dropAndReCreateTable();
+    snappyTest.startVM(vmDir, clientName, vmName);
+    Log.getLogWriter().info("Snappy server restarted successfully...." + vmDir);
+    restoreServerConfigData();
+    HydraTask_stopSnappyCluster();
+    Log.getLogWriter().info("Snappy cluster stopped successfully...." + vmDir);
+    HydraTask_startSnappyCluster();
+    Log.getLogWriter().info("Snappy cluster restarted successfully...." + vmDir);
   }
 }

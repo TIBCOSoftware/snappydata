@@ -40,7 +40,7 @@ public class SnappyLocatorHATest extends SnappyTest {
       Long lastCycledTimeForLocatorFromBB = (Long) SnappyBB.getBB().getSharedMap().get
           (LASTCYCLEDTIMEFORLOCATOR);
       snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForLocatorFromBB,
-          lastCycledTime, "locator", true, false);
+          lastCycledTime, "locator", true, false, false);
     }
   }
 
@@ -103,7 +103,7 @@ public class SnappyLocatorHATest extends SnappyTest {
       Long lastCycledTimeForLocatorFromBB = (Long) SnappyBB.getBB().getSharedMap().get
           (LASTCYCLEDTIMEFORLOCATOR);
       snappyTest.cycleVM(numToKill, stopStartVms, "locatorVmCycled", lastCycledTimeForLocatorFromBB,
-          lastCycledTime, "locator", true, true);
+          lastCycledTime, "locator", true, true, false);
     }
   }
 
