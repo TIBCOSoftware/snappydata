@@ -315,16 +315,16 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
-    FileTree includeTestFiles = dunitTests
     def single = rootProject.hasProperty('dunit.single') ?
         rootProject.property('dunit.single') : null
-    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+    if (single == null || single.length() == 0) {
+      def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
+      FileTree includeTestFiles = dunitTests
+      int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-    int dunitTo = rootProject.hasProperty('dunit.to') ?
+      int dunitTo = rootProject.hasProperty('dunit.to') ?
           getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
 
-    if (single == null || single.length() == 0) {
       int begin = dunitFrom != -1 ? dunitFrom : 0
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
       def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
