@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 import _root_.com.gemstone.gemfire.distributed.DistributedMember
 import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import io.snappydata.{Constant, Property, ServerManager}
 
 import org.apache.spark.SparkContext
@@ -53,7 +54,13 @@ object ServiceUtils {
       case (k, v) if k.startsWith(Constant.SPARK_STORE_PREFIX) =>
         storeProps.setProperty(k.trim.replaceFirst(
           Constant.SPARK_STORE_PREFIX, ""), v)
+      case (k, v) if k.startsWith(Constant.SPARK_PREFIX) ||
+          k.startsWith(Constant.PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
+    }
+    if (!storeProps.containsKey(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
+      // set default startup-recovery-delay to be 2mins (SNAP-1541)
+      storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
     }
     storeProps
   }

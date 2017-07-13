@@ -21,12 +21,12 @@ import java.util.Properties
 
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
-
 import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
-import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, DataSource}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, SnappySession, SparkSession}
@@ -124,7 +124,7 @@ object JdbcExtendedUtils extends Logging {
             case _ => throw new IllegalArgumentException(
               s"Don't know how to save $field to JDBC")
           })
-      sb.append(s", ${field.name} $typeString")
+      sb.append(s""", "${field.name}" $typeString""")
       if (!field.nullable) sb.append(" NOT NULL")
     }
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
@@ -286,16 +286,20 @@ object JdbcExtendedUtils extends Logging {
    * Returns the SQL for prepare to insert or put rows into a table.
    */
   def getInsertOrPutString(table: String, rddSchema: StructType,
-      upsert: Boolean): String = {
+      putInto: Boolean, escapeQuotes: Boolean = false): String = {
     val sql = new StringBuilder()
-    if (upsert) {
+    if (putInto) {
       sql.append(s"PUT INTO $table (")
     } else {
       sql.append(s"INSERT INTO $table (")
     }
     var fieldsLeft = rddSchema.fields.length
     rddSchema.fields.foreach { field =>
-      sql.append(field.name)
+      if (escapeQuotes) {
+        sql.append("""\"""").append(field.name).append("""\"""")
+      } else {
+        sql.append('"').append(field.name).append('"')
+      }
       if (fieldsLeft > 1) sql.append(',') else sql.append(')')
       fieldsLeft -= 1
     }
@@ -308,6 +312,30 @@ object JdbcExtendedUtils extends Logging {
     }
     sql.toString()
   }
+
+  /**
+   * Returns the SQL for prepare to insert or put rows into a table.
+   */
+  def getDeleteString(table: String, rddSchema: StructType,
+      escapeQuotes: Boolean = false): String = {
+    val sql = new StringBuilder()
+    sql.append(s"DELETE FROM $table WHERE ")
+    var fieldsLeft = rddSchema.fields.length
+    rddSchema.fields.foreach { field =>
+      if(escapeQuotes) {
+        sql.append("""\"""").append(field.name).append("""\"""")
+      } else {
+        sql.append('"').append(field.name).append('"')
+      }
+      sql.append('=').append('?')
+      if (fieldsLeft > 1) sql.append(" AND ")
+      fieldsLeft -= 1
+    }
+
+    sql.toString()
+  }
+
+
 
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
       schema: StructType, resolvedName: String, upsert: Boolean): Int = {
@@ -326,7 +354,7 @@ object JdbcExtendedUtils extends Logging {
         table = UnresolvedRelation(tableIdent),
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,
-        overwrite = false,
+        overwrite = OverwriteOptions(false),
         ifNotExists = false)
     }
     session.sessionState.executePlan(plan).executedPlan.executeCollect()

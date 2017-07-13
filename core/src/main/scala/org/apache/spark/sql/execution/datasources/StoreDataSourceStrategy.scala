@@ -16,20 +16,20 @@
  */
 package org.apache.spark.sql.execution.datasources
 
-import scala.collection.mutable
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToScala
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, Literal, NamedExpression, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, DynamicReplacableConstant, EmptyRow, Expression, Literal, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, expressions}
-import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
-import org.apache.spark.sql.execution.{DataSourceScanExec, PartitionedDataSourceScan}
+import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{AnalysisException, Strategy, execution, sources}
 import org.apache.spark.unsafe.types.UTF8String
+
+import scala.collection.mutable
 
 /**
   * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
@@ -115,10 +115,11 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     val filterCondition = unhandledPredicates.reduceLeftOption(expressions.And)
 
     // Get the partition column attribute INFO from relation schema
-    val sqlContext = relation.relation.sqlContext
 
+    // use case-insensitive resolution since partitioning columns during
+    // creation could be using the same as opposed to during scan
     val joinedCols = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
     // check for joinedCols in projections
@@ -132,7 +133,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     } else {
       val pairs = mutable.ArrayBuffer.empty[(String, String)]
       if (pushedFilters.nonEmpty) {
-        pairs += (DataSourceScanExec.PUSHED_FILTERS ->
+        pairs += ("PushedFilters" ->
             pushedFilters.mkString("[", ", ", "]"))
       }
       pairs.toMap
@@ -168,10 +169,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             (requestedColumns, pushedFilters)
           )
         case baseRelation =>
-          execution.DataSourceScanExec.create(
+          RowDataSourceScanExec(
             mappedProjects,
-            rdd.asInstanceOf[RDD[InternalRow]],
-            baseRelation, metadata, relation.metastoreTableIdentifier)
+            scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+              ._1.asInstanceOf[RDD[InternalRow]],
+            relation.relation, UnknownPartitioning(0), metadata,
+            relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
@@ -196,10 +199,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             (requestedColumns, pushedFilters)
           )
         case baseRelation =>
-          execution.DataSourceScanExec.create(
-            requestedColumns,
-            rdd.asInstanceOf[RDD[InternalRow]],
-            baseRelation, metadata, relation.metastoreTableIdentifier)
+          RowDataSourceScanExec(
+            mappedProjects,
+            scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+              ._1.asInstanceOf[RDD[InternalRow]],
+            relation.relation, UnknownPartitioning(0), metadata,
+            relation.catalogTable.map(_.identifier))
       }
       execution.ProjectExec(projects,
         filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
@@ -213,14 +218,14 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
    */
   protected[sql] def translateFilter(predicate: Expression): Option[Filter] = {
     predicate match {
-      case expressions.EqualTo(a: Attribute, l@Literal(v, t)) =>
+      case expressions.EqualTo(a: Attribute, l: DynamicReplacableConstant) =>
         Some(sources.EqualTo(a.name, l))
-      case expressions.EqualTo(l@Literal(v, t), a: Attribute) =>
+      case expressions.EqualTo(l: DynamicReplacableConstant, a: Attribute) =>
         Some(sources.EqualTo(a.name, l))
 
-      case expressions.EqualNullSafe(a: Attribute, l@Literal(v, t)) =>
+      case expressions.EqualNullSafe(a: Attribute, l: DynamicReplacableConstant) =>
         Some(sources.EqualNullSafe(a.name, l))
-      case expressions.EqualNullSafe(l@Literal(v, t), a: Attribute) =>
+      case expressions.EqualNullSafe(l: DynamicReplacableConstant, a: Attribute) =>
         Some(sources.EqualNullSafe(a.name, l))
 
       case expressions.GreaterThan(a: Attribute, Literal(v, t)) =>
@@ -319,8 +324,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     // of the underlying dataset.
     val unhandledFilters = relation.unhandledFilters(translatedMap.values.toArray).toSet
 
-    val (unhandled, handled) = translated.partition {
-      case (predicate, filter) =>
+    val (unhandled, _) = translated.partition {
+      case (_, filter) =>
         unhandledFilters.contains(filter)
     }
 
@@ -329,7 +334,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     val (unhandledPredicates, _) = unhandled.unzip
 
     // Translated data source filters that can be handled by `relation`
-    val (_, handledFilters) = handled.unzip
+    // val (_, handledFilters) = handled.unzip
 
     // translated contains all filters that have been converted to the public Filter interface.
     // We should always push them to the data source no matter whether the data source can apply

@@ -45,8 +45,14 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
     super.afterAll()
   }
 
-  ignore("DISABLED_SNAP-1597 Nodes Pruning") {
-    SingleNodeTest.testNodesPruning(snc)
+  test("Nodes Pruning") {
+    val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
+    try {
+      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, 1000)
+      SingleNodeTest.testNodesPruning(snc)
+    } finally {
+      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)
+    }
   }
 
   test("case when generation") {
@@ -91,7 +97,7 @@ object SingleNodeTest {
       val partitions = scanRDD.map(_.partitions).getOrElse(
         throw new AssertionError("Expecting ColumnTable Scan"))
       assert(partitions.length == 1, {
-        val sb = new StringBuilder()
+        val sb = new StringBuilder("Pruning not in effect ? partitions found ")
         partitions.foreach(p => sb.append(p.index).append(","))
         sb.toString
       })
@@ -105,65 +111,78 @@ object SingleNodeTest {
       // each BucketExecutor must have only one bucket.
       // there are 2 BucketExecutor entries due to ZipPartion of RowBuffer.
       assert(bstr.forall(_.toInt == bucketId), s"Expected $bucketId, found $bstr")
+
+      val metrics = df.queryExecution.executedPlan.collectLeaves().head
+          .metrics
+          .filterKeys(k =>
+            k.equals("columnBatchesSeen") ||
+                k.equals("columnBatchesSkipped")
+          ).toList
+
+      assert(metrics.head._2.value - metrics(1)._2.value == 1,
+        s"Stats Predicate filter not applied during scan ? \n" +
+            s" difference between" +
+            s" ${metrics.map(a => s"${a._2.value} (${a._1})").mkString(" and ")}" +
+            s" is expected to be exactly 1.")
     }
 
     var df = snc.sql("select * from orders where o_orderkey = 1 ")
-    validateSinglePartition(df, 3)
-    assert(df.collect()(0).getInt(0) == 1)
+    assert(df.collect()(0).getLong(0) == 1)
+    validateSinglePartition(df, 4)
 
     df = snc.sql("select * from orders where o_orderkey = 32 ")
+    assert(df.collect()(0).getLong(0) == 32)
     validateSinglePartition(df, 0)
-    assert(df.collect()(0).getInt(0) == 32)
 
     df = snc.sql("select * from orders where o_orderkey = 801 ")
+    assert(df.collect()(0).getLong(0) == 801)
     validateSinglePartition(df, 4)
-    assert(df.collect()(0).getInt(0) == 801)
 
+    // repeating the query deliberately
     df = snc.sql("select * from orders where o_orderkey = 801 ")
+    assert(df.collect()(0).getLong(0) == 801)
     validateSinglePartition(df, 4)
-    assert(df.collect()(0).getInt(0) == 801)
 
     df = snc.sql("select * from orders where o_orderkey = 1408 ")
-    validateSinglePartition(df, 3)
-    assert(df.collect()(0).getInt(0) == 1408)
+    assert(df.collect()(0).getLong(0) == 1408)
+    validateSinglePartition(df, 0)
 
     df = snc.sql("select * from orders where o_orderkey = 1409 ")
-    validateSinglePartition(df, 3)
-    assert(df.collect()(0).getInt(0) == 1409)
+    assert(df.collect()(0).getLong(0) == 1409)
+    validateSinglePartition(df, 2)
 
     df = snc.sql("select * from orders where o_orderkey = 1410 ")
-    validateSinglePartition(df, 2)
-    assert(df.collect()(0).getInt(0) == 1410)
+    assert(df.collect()(0).getLong(0) == 1410)
+    validateSinglePartition(df, 0)
 
     df = snc.sql("select * from orders where o_orderkey = 1796 ")
-    validateSinglePartition(df, 0)
-    assert(df.collect()(0).getInt(0) == 1796)
+    assert(df.collect()(0).getLong(0) == 1796)
+    validateSinglePartition(df, 4)
 
     df = snc.sql("select * from orders where o_orderkey = 801 ")
+    assert(df.collect()(0).getLong(0) == 801)
     validateSinglePartition(df, 4)
-    assert(df.collect()(0).getInt(0) == 801)
 
     df = snc.sql("select * from orders where o_orderkey = '1' ")
-    //    validateSinglePartition(df, 3) // complex operator doesn't support pruning.
-    assert(df.collect()(0).getInt(0) == 1)
+    assert(df.collect()(0).getLong(0) == 1)
+    // validateSinglePartition(df, 4) investigate why cast(order_key as double) gets introduced.
 
     df = snc.sql("select * from orders where o_orderkey = '32' ")
-    //    validateSinglePartition(df, 0) // complex operator doesn't support pruning.
-    assert(df.collect()(0).getInt(0) == 32)
+    assert(df.collect()(0).getLong(0) == 32)
 
     df = snc.sql("select * from orders where o_orderkey = {fn substring('d1xxd2', 2, 1)} ")
-    assert(df.collect()(0).getInt(0) == 1)
+    assert(df.collect()(0).getLong(0) == 1)
 
     df = snc.sql("select * from orders where o_orderkey = substring('acbc801xx', 5, 3) ")
-    assert(df.collect()(0).getInt(0) == 801)
+    assert(df.collect()(0).getLong(0) == 801)
 
     df = snc.sql("select * from orders where o_orderkey = {fn trim(" +
         "substring(' acbc801xx', length(' 12345'), length('801'))) }")
-    assert(df.collect()(0).getInt(0) == 801)
+    assert(df.collect()(0).getLong(0) == 801)
 
     df = snc.sql("select * from orders where o_orderkey = trim(" +
         "substring(' acbc1410xx', length(' 12345'), length('1410'))) ")
-    assert(df.collect()(0).getInt(0) == 1410)
+    assert(df.collect()(0).getLong(0) == 1410)
 
     df = snc.sql("select O_ORDERDATE, {fn TIMESTAMPADD(SQL_TSI_DAY," +
         " {fn FLOOR((-1 * {fn DAYOFYEAR(O_ORDERDATE)} - 1))}, O_ORDERDATE)}" +

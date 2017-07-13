@@ -125,7 +125,7 @@ case class SnappyHashAggregateExec(
   }
 
   override def outputPartitioning: Partitioning = {
-    val partitioning = super.outputPartitioning
+    val partitioning = child.outputPartitioning
     val callbacks = ToolsCallbackInit.toolsCallback
     // check for aliases in result expressions
     if (callbacks ne null) {
@@ -227,7 +227,7 @@ case class SnappyHashAggregateExec(
 
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    startProducing
+    startProducing()
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {

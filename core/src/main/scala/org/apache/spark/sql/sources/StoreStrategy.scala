@@ -22,7 +22,7 @@ import org.apache.spark.sql.backwardcomp.{ExecuteCommand, ExecutedCommand}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
 import org.apache.spark.sql.types.{DataType, LongType}
 
@@ -32,22 +32,26 @@ import org.apache.spark.sql.types.{DataType, LongType}
 object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
-    case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-    false, opts, _, _, allowExisting, _) =>
-      ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
-        userSpecifiedSchema, None, SnappyContext.getProvider(provider,
-          onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
-    case a@CreateTableUsingAsSelect(tableIdent, provider, partitionCols,
-    _, mode, opts, _) =>
-      val query = a.productElement(6).asInstanceOf[LogicalPlan]
+    case CreateTable(tableDesc, mode, None) =>
+      val userSpecifiedSchema = SparkSession.getActiveSession.get
+        .asInstanceOf[SnappySession].normalizeSchema(tableDesc.schema)
+      val options = Map.empty[String, String] ++ tableDesc.storage.properties
+      val cmd =
+        CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
+          None, SnappyContext.getProvider(tableDesc.provider.get, false), false,
+          options, false)
+      ExecutedCommand(cmd) :: Nil
 
-      // CreateTableUsingSelect is only invoked by DataFrameWriter etc
-      // so that should support both +builtin and external tables
-      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent, None,
-        None, None, SnappyContext.getProvider(provider, onlyBuiltIn = false),
-        temporary = false, partitionCols, mode, opts, query,
-        isBuiltIn = false)) :: Nil
-
+    case CreateTable(tableDesc, mode, Some(query)) =>
+      val userSpecifiedSchema = SparkSession.getActiveSession.get
+        .asInstanceOf[SnappySession].normalizeSchema(query.schema)
+      val options = Map.empty[String, String] ++ tableDesc.storage.properties
+      val cmd =
+        CreateMetastoreTableUsingSelect(tableDesc.identifier, None, Some(userSpecifiedSchema), None,
+          SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
+          temporary = false, tableDesc.partitionColumnNames.toArray, mode,
+          options, query, isBuiltIn = false)
+      ExecutedCommand(cmd) :: Nil
     case create: CreateMetastoreTableUsing =>
       ExecutedCommand(create) :: Nil
     case createSelect: CreateMetastoreTableUsingSelect =>
@@ -62,7 +66,7 @@ object StoreStrategy extends Strategy {
 
     case logical.InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
     _, _), part, query, overwrite, false) if part.isEmpty =>
-      val preAction = if (overwrite) () => p.truncate() else () => ()
+      val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
     case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
@@ -79,6 +83,9 @@ object StoreStrategy extends Strategy {
     case Delete(l@LogicalRelation(m: MutableRelation, _, _), child,
     keyColumns) =>
       ExecutePlan(m.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
+
+    case DeleteFromTable(l@LogicalRelation(p: DeletableRelation, _, _), query) =>
+      ExecutePlan(p.getDeletePlan(l, planLater(query))) :: Nil
 
     case r: ExecuteCommand => ExecutedCommand(r) :: Nil
 
@@ -140,4 +147,21 @@ case class Delete(table: LogicalPlan, child: LogicalPlan,
     "count", LongType)() :: Nil
 
   override lazy val resolved: Boolean = childrenResolved
+}
+
+private[sql] case class DeleteFromTable(
+    table: LogicalPlan,
+    child: LogicalPlan)
+    extends LogicalPlan {
+
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
+
+  override def output: Seq[Attribute] = Seq.empty
+
+  override lazy val resolved: Boolean = childrenResolved &&
+      child.output.zip(table.output).forall {
+        case (childAttr, tableAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
+            tableAttr.dataType)
+      }
 }

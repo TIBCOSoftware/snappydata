@@ -25,6 +25,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -60,7 +61,16 @@ class SnappyUnifiedMemoryManager private[memory](
   private val managerId = if (!tempManager) "RuntimeManager" else "BootTimeManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
-           conf.getDouble("spark.memory.storageMaxFraction", 0.9)).toLong
+      conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
+
+  /**
+   * An estimate of the maximum result size handled by a single partition.
+   * There can be major skew so this does not use number of partitions as
+   * divisor, but even the divisor used may not compensate for the skew in some
+   * cases but it should be acceptable for those rare cases.
+   */
+  private val maxPartResultSize = Utils.getMaxResultSize(conf) /
+      math.min(8, Runtime.getRuntime.availableProcessors())
 
   /**
    * If total heap size is small enough then try and use explicit GC to
@@ -76,8 +86,9 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
-  private val maxHeapStorageSize =
-    (maxHeapMemory * evictionFraction).toLong
+  private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
+
+  private val maxHeapExecutionSize = (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
@@ -96,8 +107,9 @@ class SnappyUnifiedMemoryManager private[memory](
         if (!tempManager) {
           logInfo(s"Allocating boot time memory to $managerId ")
 
-          val bootTimeMap = MemoryManagerCallback.tempMemoryManager
-              .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap
+          val bootTimeManager = MemoryManagerCallback.tempMemoryManager
+              .asInstanceOf[SnappyUnifiedMemoryManager]
+          val bootTimeMap = bootTimeManager._memoryForObjectMap
           if (bootTimeMap ne null) {
             // Not null only for cluster mode. In local mode
             // as Spark is booted first temp memory manager is not used
@@ -106,12 +118,12 @@ class SnappyUnifiedMemoryManager private[memory](
               acquireStorageMemoryForObject(objectName,
                 MemoryManagerCallback.storageBlockId, entry.getLongValue, mode, null,
                 shouldEvict = true)
+              // TODO: SW: if above fails then this should throw exception
+              // and _memoryForObjectMap made null again?
             }
             logInfo(s"Total Memory used while booting = " +
-                MemoryManagerCallback.tempMemoryManager
-                    .asInstanceOf[SnappyUnifiedMemoryManager].storageMemoryUsed)
-            MemoryManagerCallback.tempMemoryManager
-                .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap.clear()
+                bootTimeManager.storageMemoryUsed)
+            bootTimeMap.clear()
           }
         }
 
@@ -293,7 +305,8 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private def getMinOffHeapEviction(required: Long): Long = {
     // off-heap calculations are precise so evict exactly as much as required
-    (required * threadsWaitingForStorage.get()) - offHeapStorageMemoryPool.memoryFree
+    (required * math.max(1, math.min(4, threadsWaitingForStorage.get()))) -
+        offHeapStorageMemoryPool.memoryFree
   }
 
   /**
@@ -352,9 +365,8 @@ class SnappyUnifiedMemoryManager private[memory](
         // storage. We can reclaim any free memory from the storage pool. If the storage pool
         // has grown to become larger than `storageRegionSize`, we can evict blocks and reclaim
         // the memory that storage has borrowed from execution.
-        val memoryReclaimableFromStorage = math.max(
-          storagePool.memoryFree,
-          storagePool.poolSize - storageRegionSize)
+        val memoryReclaimableFromStorage = storagePool.poolSize - storageRegionSize
+
         if (memoryReclaimableFromStorage > 0) {
           // Only reclaim as much space as is necessary and available:
           val spaceToReclaim = storagePool.freeSpaceToShrinkPool(
@@ -456,9 +468,15 @@ class SnappyUnifiedMemoryManager private[memory](
 
       // Evict only limited amount for owners marked as non-evicting.
       // TODO: this can be removed once these calls are moved to execution
+      // TODO use something like "(spark.driver.maxResultSize / numPartitions) * 2"
       val doEvict = if (shouldEvict &&
-          ManagedDirectBufferAllocator.nonEvictingOwners.contains(objectName)) {
-        numBytes < storagePool.memoryFree * 2
+          objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
+        // don't use more than 10% of pool size for one partition result
+        // 30% of storagePool size is still large. With retries it virtually evicts all data.
+        // Hence taking 30% of initial storage pool size. Once retry of LowMemoryException is
+        // stopped it would be much cleaner.
+        numBytes < math.min(0.3 * maxStorageSize,
+          math.max(maxPartResultSize, storagePool.memoryFree))
       } else shouldEvict
 
       if (numBytes > maxMemory) {
@@ -482,8 +500,10 @@ class SnappyUnifiedMemoryManager private[memory](
           } else {
             memoryBorrowedFromExecution
           }
-        executionPool.decrementPoolSize(actualBorrowedMemory)
-        storagePool.incrementPoolSize(actualBorrowedMemory)
+        if (actualBorrowedMemory > 0) {
+          executionPool.decrementPoolSize(actualBorrowedMemory)
+          storagePool.incrementPoolSize(actualBorrowedMemory)
+        }
       }
       // First let spark try to free some memory
       val enoughMemory = if (tempManager) {
@@ -495,7 +515,7 @@ class SnappyUnifiedMemoryManager private[memory](
       if (!enoughMemory) {
 
         // return immediately for OFF_HEAP with shouldEvict=false
-        if (offHeapNoEvict || tempManager) return false
+        if (offHeapNoEvict) return false
 
         if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
@@ -605,6 +625,13 @@ class SnappyUnifiedMemoryManager private[memory](
       super.releaseStorageMemory(allValues.nextLong(), memoryMode)
     }
     memoryForObject.clear()
+  }
+
+  // Recovery is a special case. If any of the storage pool has reached 90% of
+  // max storage pool size stop recovery.
+  override def shouldStopRecovery(): Boolean = synchronized {
+    (offHeapStorageMemoryPool.memoryUsed > (maxOffHeapStorageSize * 0.90) ) ||
+        (onHeapStorageMemoryPool.memoryUsed > (maxHeapStorageSize * 0.90))
   }
 }
 

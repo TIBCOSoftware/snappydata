@@ -5,7 +5,7 @@ You can contact the SnappyData support team using:
 - [suppport@snappydata.io](mailto:suppport@snappydata.io) 
 
 # Community
-We monitor the following channels for comments/questions:
+The following channels are monitored for comments/questions:
 
 * [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata)![Stackoverflow](http://i.imgur.com/LPIdp12.png)
 

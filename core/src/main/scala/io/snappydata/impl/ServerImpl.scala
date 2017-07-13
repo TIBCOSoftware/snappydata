@@ -19,8 +19,10 @@ package io.snappydata.impl
 import java.sql.SQLException
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl
 import io.snappydata.{ProtocolOverrides, Server}
+import org.apache.spark.sql.row.GemFireXDDialect
 
 /**
   * This class ties up few things that is Snappy specific.
@@ -29,7 +31,19 @@ import io.snappydata.{ProtocolOverrides, Server}
 class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
   @throws(classOf[SQLException])
-  override def start(bootProperties: Properties): Unit = start(bootProperties, false)
+  override def start(bootProperties: Properties): Unit = {
+    GemFireXDDialect.init()
+    start(bootProperties, ignoreIfStarted = false)
+  }
+
+  @throws[SQLException]
+  override def start(bootProps: Properties, ignoreIfStarted: Boolean): Unit = {
+    if (!bootProps.containsKey(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
+      // set default startup-recovery-delay to be 2mins (SNAP-1541)
+      bootProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+    }
+    super.start(bootProps, ignoreIfStarted)
+  }
 
   override def isServer: Boolean = true
 }

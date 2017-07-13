@@ -31,7 +31,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
+import org.apache.spark.sql.execution.row.RowDMLExec
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -81,8 +81,10 @@ case class JDBCMutableRelation(
   // create table in external store once upfront
   var tableSchema: String = _
 
+  import scala.collection.JavaConverters._
+
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
-    connProperties.url, table, connProperties.connProps)
+    new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
   private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
     tableSchema)
@@ -95,8 +97,9 @@ case class JDBCMutableRelation(
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
-  protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(connProperties.url, connProperties.connProps)
+  protected final val connFactory: () => Connection =
+    JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
+      connProperties.connProps.asScala.toMap))
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -107,11 +110,11 @@ case class JDBCMutableRelation(
         dialect, sqlContext)
       tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(table,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // Do Nothing
-        }
+//        dialect match {
+//          case d: JdbcExtendedDialect => d.initializeTable(table,
+//            sqlContext.conf.caseSensitiveAnalysis, conn)
+//          case _ => // Do Nothing
+//        }
         return tableSchema
       }
 
@@ -167,24 +170,24 @@ case class JDBCMutableRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+    val jdbcOptions = new JDBCOptions(connProperties.url,
+      table, connProperties.executorConnProps.asScala.toMap)
+
     val rdd = JDBCRDD.scanTable(
       sqlContext.sparkContext,
       schema,
-      connProperties.url,
-      connProperties.executorConnProps,
-      table,
       requiredColumns,
       filters.filterNot(ExternalStoreUtils.unhandledFilter),
-      parts).asInstanceOf[RDD[Any]]
+      parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
 
   final lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
-    table, schema, upsert = false)
+    table, schema, putInto = false)
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowInsertExec(child, upsert = false, Seq.empty, Seq.empty, -1,
+    RowDMLExec(child, upsert = false, Seq.empty, Seq.empty, -1,
       schema, Some(this), onExecutor = false, resolvedName, connProperties)
   }
 
@@ -231,6 +234,12 @@ case class JDBCMutableRelation(
     } finally {
       conn.close()
     }
+  }
+
+  override def getDeletePlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    RowDMLExec(child, putInto = false, delete = true, Seq.empty, Seq.empty, -1,
+      schema, Some(this), onExecutor = false, table, connProperties)
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {

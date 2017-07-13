@@ -254,8 +254,8 @@ class SparkSQLExecuteImpl(val sql: String,
       case StringType =>
         TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP,
           f.metadata) match {
-          case Some(base) =>
-            val size = TypeUtilities.getMetadata[Long](
+          case Some(base) if base != "CLOB" =>
+            lazy val size = TypeUtilities.getMetadata[Long](
               Constant.CHAR_TYPE_SIZE_PROP, f.metadata)
             lazy val varcharSize = size.getOrElse(
               Constant.MAX_VARCHAR_SIZE.toLong).toInt

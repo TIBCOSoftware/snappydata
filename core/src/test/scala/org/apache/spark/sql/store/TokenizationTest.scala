@@ -18,6 +18,7 @@ package org.apache.spark.sql.store
 
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.app.Data1
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -67,7 +68,7 @@ class TokenizationTest
     val numRows = 100
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
-    try {
+    {
       val q = s"select * from $table where a like '10%'"
       var result = snc.sql(q).collect()
 
@@ -83,7 +84,7 @@ class TokenizationTest
     val numRows = 2
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
-    try {
+    {
       val q = (0 until numRows) map { x =>
         s"select * from $table where a = $x"
       }
@@ -189,6 +190,7 @@ class TokenizationTest
       createSimpleTableAndPoupulateData(numRows, s"$table2")
       // creating table should not put anything in cache
       assert( cacheMap.size() == 0)
+      snc.sql("set spark.sql.crossJoin.enabled=true")
       // fire a join query
       query = s"select * from $table t1, $table2 t2 where t1.a = 0"
       res1 = snc.sql(query).collect()
@@ -224,6 +226,8 @@ class TokenizationTest
       res2 = snc.sql(query).collect()
       assert( cacheMap.size() == 1)
       assert(!res1.sameElements(res2))
+
+      snc.sql("set spark.sql.crossJoin.enabled=false")
 
       snc.sql(s"drop table $table")
       snc.sql(s"drop table $table2")
@@ -488,6 +492,28 @@ class TokenizationTest
     }
   }
 
+  test("Test BUG SNAP-1642") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val maxquery = s"select * from $table where a = (select max(a) from $table)"
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+
+    val rs1 = snc.sql(maxquery)
+    val rows1 = rs1.collect()
+
+    val data = ((11 to 12), (11 to 12), (11 to 12)).zipped.toArray
+    val rdd = sc.parallelize(data, data.length)
+        .map(s => Data(s._1, s._2, s._3))
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.mode(SaveMode.Append).saveAsTable(table)
+
+    val rs2 = snc.sql(maxquery)
+    val rows2 = rs2.collect()
+
+    var uncachedResult = snc.sqlUncached(maxquery).collect()
+    assert(rows2.sameElements(uncachedResult))
+  }
+
   test("Test broadcast hash joins and scalar sub-queries - 2") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     // val th = 10L * 1024 * 1024 * 1024
@@ -555,6 +581,23 @@ class TokenizationTest
     // assert( SnappySession.getPlanCache.asMap().size() == 1)
 
     SnappyTableStatsProviderService.suspendCacheInvalidation = false
+  }
+
+  test("Test CachedDataFrame.head ") {
+    val tableName = "test.table1"
+    snc.sql(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) USING column ")
+    assert(snc.sql("SELECT * FROM " + tableName).collect().length == 0)
+    snc.sql(s" insert into $tableName values ( 1, 2, 3)")
+    snc.sql(s" insert into $tableName values ( 2, 2, 3)")
+    snc.sql(s" insert into $tableName values ( 3, 2, 3)")
+    val df = snc.sql(s"SELECT col1 FROM $tableName")
+    val row = df.head()
+    assert(row.getInt(0) == 1)
+    val rowArray = df.head(2)
+    assert(rowArray(0).getInt(0) == 1)
+    assert(rowArray(1).getInt(0) == 2)
+    assert(rowArray.length == 2)
+    snc.sql(s"DROP TABLE $tableName")
   }
 
   private def normalizeRow(rows: Array[Row]): Array[String] = {

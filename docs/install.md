@@ -2,12 +2,14 @@
 The following installation options are available:
 
 * [Install On Premise](#install-on-premise)
+
 * [Setting up Cluster on Amazon Web Services (AWS)](#setting-up-cluster-on-amazon-web-services-aws)
+
 * [Building from Source](#building-from-source)
 
-<note>Note:  Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
-</note>
-<note>
+!!! Note:  
+	Configuring the limit for Open Files and Threads/Processes </br> On a Linux system you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. </br>A typical configuration used for SnappyData servers and leads can look like:
+
 ```
 snappydata          hard    nofile      81920
 snappydata          soft    nofile      8192
@@ -15,13 +17,10 @@ snappydata          hard    nproc       unlimited
 snappydata          soft    nproc       524288
 snappydata          hard    sigpending  unlimited
 snappydata          soft    sigpending  524288
-
 ```
-</note>
-<note>
 Here `snappydata` is the user name under which the SnappyData processes are started. 
-</note>
 
+<a id="install-on-premise"></a>
 ## Install On-Premise
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
@@ -33,24 +32,25 @@ Download the latest version of SnappyData from the [SnappyData Release](https://
 
 The packages are available in compressed files (.zip and .tar format). On this page, you can also view details of features and enhancements introduced in specific releases.
 
-* ** SnappyData 0.8 download link **
-[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-bin.zip)
+* **SnappyData 0.9 download link**
+[(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-bin.zip)
 
-* **SnappyData 0.8 (hadoop provided) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.8/snappydata-0.8-without-hadoop-bin.zip)
+* **SnappyData 0.9 (user-provided Hadoop) download link** [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.9/snappydata-0.9-without-hadoop-bin.zip)
+
 <a id="singlehost"></a>
 ### Single Host Installation
 This is the simplest form of deployment and can be used for testing and POCs.
 
 Open the command prompt and run the following command to extract the downloaded archive file and to go the location of the SnappyData home directory.
 ```bash
-$ tar -xzf snappydata-0.8-bin.tar.gz
-$ cd snappydata-0.8-bin/
+$ tar -xzf snappydata-0.9-bin.tar.gz
+$ cd snappydata-0.9-bin/
 ```
 Start a basic cluster with one data node, one lead, and one locator
 ```
 ./sbin/snappy-start-all.sh
 ```
-For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](configuration.md)
+For custom configuration and to start more nodes,  see the section [How to Configure the SnappyData cluster](configuring_cluster/configuring_cluster.md).
 
 ### Multi-Host Installation
 For real life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
@@ -62,7 +62,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
 
-* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuration#configuring-ssh-login-without-password).
+* Ensure that SSH is supported and you have configured all machines to be accessed by [passwordless SSH](configuring_cluster/configuring_cluster.md#configuring-ssh-login-without-password).
 
 #### Steps to Set up the Cluster
 
@@ -70,10 +70,10 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 2. Extract the downloaded archive file and go to SnappyData home directory.
 
-		$ tar -xzf snappydata-0.8-bin.tar.gz
-		$ cd snappydata-0.8-bin/
+		$ tar -xzf snappydata-0.9-bin.tar.gz
+		$ cd snappydata-0.9-bin/
 
-3. Configure the cluster as described in [How to Configure SnappyData cluster](configuration.md).
+3. Configure the cluster as described in [How to Configure SnappyData cluster](configuring_cluster/configuring_cluster.md).
 
 4. After configuring each of the components, run the `snappy-start-all.sh` script:
 
@@ -97,20 +97,22 @@ If SSH is not supported then follow the instructions in the Machines without a S
 
 2. Individually configure and start each member
 
-<Note> Note: We are providing all configuration parameter as command line arguments rather than reading from a conf file.</Note>
+!!! Note: 
+	All configuration parameter are provided as command line arguments rather than reading from a conf file.
 
-The example below starts a locator and server.
+The example below starts a cluster by individually launching locator, server and lead processes.
 
 ```bash
 $ bin/snappy locator start  -dir=/node-a/locator1
 $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
+$ bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 
-$ bin/snappy locator stop
-$ bin/snappy server stop
+$ bin/snappy locator stop -dir=/node-a/locator1
+$ bin/snappy server stop -dir=/node-b/server1
+$ bin/snappy leader stop -dir=/node-c/lead1top
 ```
-
+<a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 ## Setting up Cluster on Amazon Web Services (AWS)
-
 
 ### Using AWS Management Console
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
@@ -134,9 +136,11 @@ To launch the instance and start SnappyData cluster:
 6. The search result is displayed. From the search results, click **Select** to choose the AMI with the latest release version.
 
 7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
-	<note> Note:  </note>
-	* <note> You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</note>
-	* <note> When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).</note>
+
+	!!! Note:  
+		* You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.
+
+		*  When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).
 
 8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
 
@@ -156,11 +160,11 @@ To launch the instance and start SnappyData cluster:
 Refer to the following documentation, for more information on [accessing an EC2 instance](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html).
 
 
-	<note> Note: </note>
+	!!! Note: 
 	
-	* <note>The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. </note>
+		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
 
-	* <note> The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. </note>
+		* The SnappyData binaries are automatically downloaded and extracted to the location **/snappydata/downloads/** and Java 8 is installed. 
 
 13. Follow the [steps described here](#install-on-premise) to continue. </br>
 
@@ -174,8 +178,8 @@ The `snappy-ec2` script has been derived from the `spark-ec2` script available i
 
 The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a [**.tar.gz**](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
 
-<Note> Note: The EC2 script is under development. Feel free to try it out and provide your feedback.</Note>
-
+!!! Note: 
+	The EC2 script is under development. Feel free to try it out and provide your feedback.
 
 #### Prerequisites
 
@@ -226,7 +230,7 @@ To start Apache Zeppelin on a separate instance, use `--with-zeppelin=non-embedd
 
 ##### Specifying Properties
 
-If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuration/#configuration-files) for example on how to write these conf files.
+If you want to configure each of the locator, lead or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under aws/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](configuring_cluster/configuring_cluster.md#configuration-files) for example on how to write these conf files.
 
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.
 
@@ -265,8 +269,9 @@ When you start a cluster, it uses the existing EC2 instances associated with the
 ````
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
 ````
-<Note>Note: The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case if they are present in the location mentioned above. So you need to ensure that every time you use start command, the number of entries in conf files are equal to the number of instances in their respective security group.
-</Note>
+!!!Note: 
+	The start command (or launch command with --resume option) ignores --locators, --leads or --stores options and launches SnappyData cluster on existing instances. But the conf files are read in any case if they are present in the location mentioned above. So you need to ensure that every time you use start command, the number of entries in conf files are equal to the number of instances in their respective security group.
+
 ##### Adding Servers to  a Cluster
 
 This is not yet fully supported via the script. You may have to manually launch an instance with `(cluster-name)-stores` group and then use launch command with --resume option.
@@ -413,6 +418,7 @@ Some of the known limitations of the script are:
 
 * Support for option --user is incomplete
 
+<a id="building-from-source"></a>
 ## Building from Source
 Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
@@ -420,7 +426,7 @@ Quickstart to build all components of SnappyData:
 
 **Latest release branch**
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.8 --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.9 --recursive
 > cd snappydata
 > ./gradlew product
 ```
@@ -438,7 +444,7 @@ If you want to build only the top-level SnappyData project but pull in jars for 
 
 **Latest release branch**
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.8
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.9
 > cd snappydata
 > ./gradlew product
 ```
@@ -505,7 +511,7 @@ Useful build and test targets:
                            and also full SnappyData store testsuite
 ```
 
-The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is _store_ project, where the default build directory is _build-artifacts/&lt;os&gt;_ where _&lt;os&gt;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
+The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is _store_ project, where the default build directory is _build-artifacts/;os;_ where _;os;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
 
 The usual Gradle test run targets (_test_, _check_) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (_scalaTest_) while the _check_ target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with _singleSuite_ option while running a single test within some suite works with the _--tests_ option:
 
@@ -528,11 +534,14 @@ To import into IntelliJ IDEA:
 * Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase -Xmx option to be something like *-Xmx=2g* for comfortable use.
 
 * Select **Import Project**, and then point to the SnappyData directory. Use external Gradle import. **Un-select** the "Create separate module per source set" option while other options can be defaults. Click **Next** in the following screens.<br/>
-<note> Note:</note>
+    
+	!!! Note:
+		
+        * Ignore the **"Gradle location is unknown warning"**.
 
-	- <note>Ignore the **"Gradle location is unknown warning"**.</note>
-	- <note>Ensure that the JDK 8 installation has been selected.</note>
-	- <note>Ignore and dismiss the **"Unindexed remote maven repositories found"** warning message if seen.</note>
+        * Ensure that the JDK 8 installation has been selected.
+
+        * Ignore and dismiss the **"Unindexed remote maven repositories found"** warning message if seen.
 
 * When import is completed, go to **File> Settings> Editor> Code Style> Scala**. Set the scheme as **Project**. Check that the same has been set in Java Code Style too. Click OK to apply and close it. Next, copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IDEA. Check that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display Indent as 2 and continuation indent as 4 (same as Scala).
 

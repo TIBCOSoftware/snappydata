@@ -72,7 +72,7 @@ final class SparkShellRDDHelper {
   }
 
   def executeQuery(conn: Connection, tableName: String,
-      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet) = {
+      split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
 
@@ -110,7 +110,7 @@ final class SparkShellRDDHelper {
     }
 
     val rs = statement.executeQuery(query)
-    (statement, rs)
+    (statement, rs, txId)
   }
 
   def getConnection(connectionProperties: ConnectionProperties,

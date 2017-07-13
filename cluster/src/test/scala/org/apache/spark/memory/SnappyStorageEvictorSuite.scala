@@ -77,9 +77,11 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
     val row = Row(1, 1, 1)
     snSession.insert("t1", row)
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
+    val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert( afterInsertSize > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
+    val afterDeleteSize = SparkEnv.get.memoryManager.storageMemoryUsed
+    assert(afterDeleteSize < afterInsertSize)
     snSession.dropTable("t1")
   }
 
@@ -123,6 +125,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
       }
     }
     snappyMemoryManager.dropAllObjects(memoryMode)
+    SparkEnv.get.memoryManager.releaseExecutionMemory(500L, taskAttemptId, memoryMode)
     val count = snSession.sql("select * from t1").count()
     assert(count == rows)
     snSession.dropTable("t1")

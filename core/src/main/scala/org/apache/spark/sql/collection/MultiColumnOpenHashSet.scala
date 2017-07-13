@@ -22,16 +22,13 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.{IterableLike, mutable}
 import scala.util.hashing.MurmurHash3
 
-import org.apache.spark.Partition
-import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
-import org.apache.spark.sql.catalyst.expressions.codegen.{GeneratedClass, CodeGenerator, CodeAndComment}
-import org.apache.spark.sql.{SnappyContext, Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, GeneratedClass}
 import org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler
-import org.apache.spark.sql.execution.{BufferedRowIterator, WholeStageCodegenExec, SparkPlan}
+import org.apache.spark.sql.execution.BufferedRowIterator
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.collection.BitSet
 
 /**
@@ -1205,7 +1202,9 @@ object QCSSQLColumnHandler {
 object RowToInternalRow extends BaseGenericInternalRow {
   val rowHolder = new ThreadLocal[(Row, Array[Any => Any])]()
 
-  override def numFields = rowHolder.get()._2.length
+  override def numFields: Int = {
+    rowHolder.get()._2.length
+  }
 
   override protected def genericGet(ordinal: Int): Any = {
     val (row, converters) = rowHolder.get()
@@ -1214,6 +1213,9 @@ object RowToInternalRow extends BaseGenericInternalRow {
 
   override def copy(): InternalRow = throw new UnsupportedOperationException("Not implemented")
 
+  override def setNullAt(i: Int): Unit = {}
+
+  override def update(i: Int, value: Any): Unit = {}
 }
 
 

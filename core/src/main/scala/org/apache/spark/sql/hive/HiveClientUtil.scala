@@ -17,22 +17,22 @@
 package org.apache.spark.sql.hive
 
 import java.io.File
-import java.net.{URLClassLoader, URL}
+import java.net.{URL, URLClassLoader}
 
 import scala.collection.JavaConverters._
 
-import io.snappydata.util.ServiceUtils
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.hadoop.util.VersionInfo
 
-import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.hive.client.{IsolatedClientLoader, HiveClient}
+import org.apache.spark.sql.hive.client.{HiveClient, IsolatedClientLoader}
 import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * A utility class to get hive connection to underlying metastore.
@@ -43,7 +43,7 @@ import org.apache.spark.sql.internal.SQLConf
 class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
   /** The version of hive used internally by Spark SQL. */
-  val hiveExecutionVersion = HiveUtils.hiveExecutionVersion
+  private val hiveExecutionVersion = HiveUtils.hiveExecutionVersion
 
   val HIVE_METASTORE_VERSION = HiveUtils.HIVE_METASTORE_VERSION
   val HIVE_METASTORE_JARS = HiveUtils.HIVE_METASTORE_JARS
@@ -52,18 +52,12 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
   val HIVE_METASTORE_BARRIER_PREFIXES =
     HiveUtils.HIVE_METASTORE_BARRIER_PREFIXES
 
-  val HIVE_PROVIDER = "spark.sql.sources.provider"
-  val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
-  val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
-  val HIVE_METASTORE = "SNAPPY_HIVE_METASTORE"
-
-  val sparkConf = sparkContext.conf
+  private val sparkConf = sparkContext.conf
 
   val sqlConf = new SQLConf
   sqlConf.setConf(SQLContext.getSQLProperties(sparkConf))
 
-  val hadoopConf = sparkContext.hadoopConfiguration
-
+  private val hadoopConf = sparkContext.hadoopConfiguration
 
   /**
    * The version of the hive client that will be used to communicate
@@ -159,7 +153,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
         dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        HIVE_METASTORE)
+        Misc.SNAPPY_HIVE_METASTORE)
     } else if (dbURL != null) {
       logInfo(s"Using specified metastore database, dbURL = $dbURL")
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
@@ -176,8 +170,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       logInfo("Using Hive metastore database, dbURL = " +
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS,
-      "org.apache.spark.sql.hive.SnappyHiveMetaStoreEventListener")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -288,10 +280,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
           (true, ExternalStoreUtils.defaultStoreURL(Some(sc)) +
               ";disable-streaming=true;default-persistent=true",
               Constant.JDBC_EMBEDDED_DRIVER)
-        case SplitClusterMode(_, props) =>
-          (true, Constant.DEFAULT_EMBEDDED_URL +
-              ";host-data=false;disable-streaming=true;default-persistent=true;" +
-              props, Constant.JDBC_EMBEDDED_DRIVER)
         case ThinClientConnectorMode(_, url) =>
           (true, url + ";route-query=false;", Constant.JDBC_CLIENT_DRIVER)
         case ExternalClusterMode(_, _) =>

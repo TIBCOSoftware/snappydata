@@ -19,6 +19,14 @@ package org.apache.spark.sql
 import java.nio.ByteBuffer
 import java.sql.SQLException
 
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.reflect.ClassTag
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
@@ -27,9 +35,10 @@ import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
+import org.apache.spark.memory.MemoryConsumer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
@@ -46,18 +55,12 @@ import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
 
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.reflect.ClassTag
-
 class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
-    val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty)
+    val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty,
+    val queryHints: Map[String, String] = Map.empty)
     extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
@@ -72,19 +75,6 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   def queryExecutionString: String = queryExecution.toString()
 
-  def queryPlanInfo: SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
-    queryExecution.executedPlan transformAllExpressions {
-      case ParamLiteral(_v, _dt, _p) =>
-        val x = allLiterals.find(_.position == _p)
-        val v = x match {
-          case Some(LiteralValue(_, _, _)) => x.get.value
-          case None => _v
-        }
-        Literal(v, _dt)
-    } transform {
-      case CachedPlanHelperExec(childPlan) => childPlan
-    })
-
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
 
@@ -96,12 +86,10 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           var i = 0
           while (i < numShuffleDeps) {
             val shuffleDependency = shuffleDependencies(i)
-            // Cleaning the  shuffle artifacts synchronously which might not
-            // desired for performance. Ticket SNAP-
-            cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
-            // lastShuffleCleanups(i) = Future {
-            //  cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
-            // }
+            // Cleaning the  shuffle artifacts asynchronously
+            lastShuffleCleanups(i) = Future {
+              cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
+            }
             i += 1
           }
         case None =>
@@ -171,6 +159,9 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       case e: Exception =>
         sparkSession.listenerManager.onFailure(name, queryExecution, e)
         throw e
+    } finally {
+      // clear the shuffle dependencies asynchronously after the execution.
+      clearCachedShuffleDeps(sparkSession.sparkContext)
     }
   }
 
@@ -179,7 +170,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     while (cause != null) {
       cause match {
         case sqle: SQLException
-          if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+          if SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH.equals(sqle.getSQLState) =>
           return (true, sqle)
         case _ =>
           cause = cause.getCause
@@ -190,6 +181,14 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
 
   override def collect(): Array[Row] = {
     collectInternal().map(boundEnc.fromRow).toArray
+  }
+
+  override def count(): Long = withCallback("count") { df =>
+    df.groupBy().count().collect().head.getLong(0)
+  }
+
+  override def head(n: Int): Array[Row] = withCallback("head") { df =>
+    df.limit(n).collect()
   }
 
   def collectInternal(): Iterator[InternalRow] = {
@@ -212,7 +211,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       while (index < numShuffles) {
         val cleanup = lastShuffleCleanups(index)
         if (cleanup ne null) {
-          cleanup.onComplete(identity)
+          Await.ready(cleanup, Duration.Inf)
           lastShuffleCleanups(index) = null
         }
         index += 1
@@ -232,16 +231,30 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     if (!hasLocalCallSite) {
       sc.setCallSite(callSite)
     }
-    val trimSize = 100
-    val queryShortForm = if (queryString.length > trimSize) {
-      queryString.substring(0, trimSize) + "..."
-    } else queryString
+    val session = sparkSession.asInstanceOf[SnappySession]
+    var withFallback: CodegenSparkFallback = null
+    val sparkPlan = queryExecution.executedPlan
+    val executedPlan = sparkPlan match {
+      case CodegenSparkFallback(WholeStageCodegenExec(CachedPlanHelperExec(plan))) =>
+        withFallback = CodegenSparkFallback(plan); plan
+      case cg@CodegenSparkFallback(plan) => withFallback = cg; plan
+      case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
+      case plan => plan
+    }
 
-    def execute(): Iterator[R] = CachedDataFrame.withNewExecutionId(
-      sparkSession, queryShortForm, queryString, queryExecutionString, queryPlanInfo) {
-      val executedPlan = queryExecution.executedPlan match {
-        case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
-        case plan => plan
+    def withNewExecutionId[T](body: T): T = executedPlan match {
+      // don't create a new executionId for ExecutePlan since it has already done so
+      case _: ExecutePlan => body
+      case _ => CachedDataFrame.withNewExecutionId(
+        sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
+        queryExecutionString, CachedDataFrame.queryPlanInfo(sparkPlan, allLiterals))(body)
+    }
+
+    def execute(): Iterator[R] = withNewExecutionId {
+      session.addContextObject(SnappySession.ExecutionKey, () => df.queryExecution)
+      def executeCollect(): Array[InternalRow] = {
+        if (withFallback ne null) withFallback.executeCollect()
+        else executedPlan.executeCollect()
       }
       val results = executedPlan match {
         case plan: CollectLimitExec =>
@@ -257,40 +270,46 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
           if (skipLocalCollectProcessing) {
             // special case where caller will do processing of the blocks
             // (returns a AggregatePartialDataIterator)
+            // TODO: handle fallback for this case
             new AggregatePartialDataIterator(plan.generatedSource,
               plan.generatedReferences, plan.child.schema.length,
               plan.executeCollectData()).asInstanceOf[Iterator[R]]
           } else if (skipUnpartitionedDataProcessing) {
             // no processing required
-            plan.executeCollect().iterator.asInstanceOf[Iterator[R]]
+            executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
             val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              plan.executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(converter))._1))
           }
 
         case plan@(_: ExecutedCommandExec | _: LocalTableScanExec
                    | _: ExecutedCommand | _: ExecutePlan) =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
-            plan.executeCollect().iterator.asInstanceOf[Iterator[R]]
+            executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             // convert to UnsafeRow
             val converter = UnsafeProjection.create(plan.schema)
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              plan.executeCollect().iterator.map(converter))._1))
+              executeCollect().iterator.map(converter))._1))
           }
 
         case _ =>
-          val rdd = if (cachedRDD ne null) cachedRDD
-          else df.queryExecution.executedPlan.execute()
-          val numPartitions = rdd.getNumPartitions
-          val results = new Array[R](numPartitions)
-          sc.runJob(rdd, processPartition, 0 until numPartitions,
-            (index: Int, r: (U, Int)) =>
-              results(index) = resultHandler(index, r._1))
-          results.iterator
+          if (skipUnpartitionedDataProcessing) {
+            // no processing required
+            executeCollect().iterator.asInstanceOf[Iterator[R]]
+          } else {
+            val rdd = if (cachedRDD ne null) cachedRDD
+            else df.queryExecution.executedPlan.execute()
+            val numPartitions = rdd.getNumPartitions
+            val results = new Array[R](numPartitions)
+            sc.runJob(rdd, processPartition, 0 until numPartitions,
+              (index: Int, r: (U, Int)) =>
+                results(index) = resultHandler(index, r._1))
+            results.iterator
+          }
       }
       // submit cleanup job for shuffle output
       // clearCachedShuffleDeps(sc)
@@ -301,6 +320,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     try {
       withCallback("collect")(_ => execute())
     } finally {
+      session.removeContextObject(SnappySession.ExecutionKey)
       if (!hasLocalCallSite) {
         sc.clearCallSite()
       }
@@ -365,8 +385,6 @@ object CachedDataFrame
 
   override def read(kryo: Kryo, input: Input): Unit = {}
 
-  val owner = "CACHED_DF_FINAL_RESULT_BYTES"
-
   private def flushBufferOutput(bufferOutput: Output, position: Int,
       output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
     if (position > 0) {
@@ -384,18 +402,22 @@ object CachedDataFrame
   override def apply(context: TaskContext,
       iter: Iterator[InternalRow]): PartitionResult = {
     var count = 0
-    val buffer = new Array[Byte](4 << 10) // 4K
+    val buffer = new Array[Byte](4 << 10)
+
     // final output is written to this buffer
-    val output = new ByteBufferDataOutput(4 << 10,
-      DirectBufferAllocator.instance(),
-      null,
-      ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
+    var output: ByteBufferDataOutput = null
     // holds intermediate bytes which are compressed and flushed to output
-    val maxOutputBufferSize = 64 << 10 // 64K
+    val maxOutputBufferSize = 64 << 10
+
     // can't enforce maxOutputBufferSize due to a row larger than that limit
     val bufferOutput = new Output(4 << 10, -1)
     var outputRetained = false
     try {
+      output = new ByteBufferDataOutput(4 << 10,
+        DirectBufferAllocator.instance(),
+        null,
+        ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
+
       val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
       while (iter.hasNext) {
         val row = iter.next().asInstanceOf[UnsafeRow]
@@ -417,49 +439,47 @@ object CachedDataFrame
         finalBuffer.flip
         val memSize = finalBuffer.limit().toLong
         // Ask UMM before getting the array to heap.
-        // Taking unroll memory as this memory is cleaned up on task completion.
+        // Taking execution memory as this memory is cleaned up on task completion.
         // On connector mode also this should account to the overall memory usage.
         // We will ensure that sufficient memory is available by reserving
         // four times as Kryo serialization will expand its buffer accordingly
         // and transport layer can create another copy.
-
-        if (context != null) { // TODO why driver is calling this code with context null ?
-          if (!MemoryManagerCallback.memoryManager.
-              acquireStorageMemoryForObject(
-                objectName = owner,
-                blockId = MemoryManagerCallback.cachedDFBlockId,
-                numBytes = 4L * memSize,
-                memoryMode = MemoryMode.ON_HEAP,
-                buffer = null,
-                shouldEvict = false)) {
-            throw new LowMemoryException(s"Could not obtain memory of size $memSize ",
+        if (context != null) {
+          // TODO why driver is calling this code with context null ?
+          val memoryConsumer = new MemoryConsumer(context.taskMemoryManager()) {
+            override def spill(size: Long, trigger: MemoryConsumer): Long = {
+              0L
+            }
+          }
+          // TODO Remove the 4 times check once SNAP-1759 is fixed
+          val required = 4L * memSize
+          val granted = memoryConsumer.acquireMemory(4L * memSize)
+          if (granted < required) {
+            throw new LowMemoryException(s"Could not obtain ${memoryConsumer.getMode} " +
+                s"memory of size $required ",
               java.util.Collections.emptySet())
           }
-
-          context.addTaskCompletionListener { _ =>
-            MemoryManagerCallback.memoryManager.
-                releaseStorageMemoryForObject(
-                  objectName = owner,
-                  numBytes = 4L * memSize,
-                  memoryMode = MemoryMode.ON_HEAP)
-          }
         }
-
 
         val bytes = ClientSharedUtils.toBytes(finalBuffer)
         new PartitionResult(bytes, count)
       } else {
         new PartitionResult(Array.empty, 0)
       }
+    } catch {
+      case oom: OutOfMemoryError if (oom.getMessage.contains("Direct buffer")) =>
+        throw new LowMemoryException(s"Could not allocate Direct buffer for" +
+            s" result data. Please check -XX:MaxDirectMemorySize while starting the server",
+          java.util.Collections.emptySet())
     } finally {
-      // Not handling DirectByteBuffer case which gives a OOM exception.
-      // Assumption is most of the big workload will use off-heap
       bufferOutput.clear()
       // one additional release for the explicit getBufferRetain
-      if (outputRetained) {
+      if (output ne null) {
+        if (outputRetained) {
+          output.release()
+        }
         output.release()
       }
-      output.release()
     }
   }
 
@@ -497,6 +517,25 @@ object CachedDataFrame
     val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
     m.setAccessible(true)
     m
+  }
+
+  private[sql] def queryPlanInfo(plan: SparkPlan,
+      allLiterals: Array[LiteralValue]): SparkPlanInfo = PartitionedPhysicalScan.getSparkPlanInfo(
+    plan.transformAllExpressions {
+      case ParamLiteral(_v, _dt, _p) =>
+        val x = allLiterals.find(_.position == _p)
+        val v = x match {
+          case Some(LiteralValue(_, _, _)) => x.get.value
+          case None => _v
+        }
+        Literal(v, _dt)
+    })
+
+  private[sql] def queryStringShortForm(queryString: String): String = {
+    val trimSize = 100
+    if (queryString.length > trimSize) {
+      queryString.substring(0, trimSize) + "..."
+    } else queryString
   }
 
   /**

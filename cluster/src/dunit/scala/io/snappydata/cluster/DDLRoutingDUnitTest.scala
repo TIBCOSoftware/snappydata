@@ -32,7 +32,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def testColumnTableRouting(): Unit = {
+  def _testColumnTableRouting(): Unit = {
     val tableName: String = "TEST.ColumnTableQR"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
@@ -143,14 +143,16 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
     dropTableXD(conn, tableName)
 
-    // check offheap
+    // offheap has been removed
     options = "OPTIONS(OFFHEAP 'true')"
     try {
       s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) " +
           s"USING column $options")
     } catch {
       case sqle: SQLException => if (sqle.getSQLState != "38000" ||
-          !sqle.getMessage.contains("No off-heap memory")) throw sqle
+          !sqle.getMessage.contains("Unknown option")) {
+        throw sqle
+      }
     }
 
     s.execute("DROP DISKSTORE d1")

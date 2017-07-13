@@ -17,34 +17,27 @@
 
 package io.snappydata.cluster
 
-import java.io.File
-import java.sql.{DriverManager, Connection, DatabaseMetaData, SQLException, Statement}
-import java.util
-import com.gemstone.gemfire.cache.Region
+import java.sql.DriverManager
+
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
-import com.gemstone.gemfire.internal.cache.{BucketRegion, PartitionedRegion, GemFireCacheImpl, TXState}
-import com.gemstone.gemfire.internal.cache.versions.{VersionSource, RegionVersionHolder}
-import com.pivotal.gemfirexd.{TestUtil, FabricService}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.Constant._
-import io.snappydata.{ServiceManager, Locator}
-import io.snappydata.test.dunit.{DistributedTestBase, VM, AvailablePortHelper, SerializableRunnable}
-import junit.framework.TestCase
-import org.apache.commons.io.FileUtils
-import org.junit.Assert
+import com.pivotal.gemfirexd.{FabricService, TestUtil}
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable, VM}
+import io.snappydata.{Locator, ServiceManager}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) with Logging {
 
   // set default batch size for this test
   bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "4")
-  var errorInThread:Throwable = null
+  var errorInThread: Throwable = null
 
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 
@@ -65,7 +58,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     GemFireXDUtils.IS_TEST_MODE = true
 
     getLogWriter.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
-      testName + "\n\n")
+        testName + "\n\n")
 
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
@@ -94,7 +87,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
           ClusterManagerTestBase.startSnappyServer(locPort, nodeProps)
         }
         assert(ServiceManager.currentFabricServiceInstance.status ==
-          FabricService.State.RUNNING)
+            FabricService.State.RUNNING)
 
         val logger = LoggerFactory.getLogger(getClass)
         logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
@@ -102,8 +95,8 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     }
 
     vm0.invoke(startNode)
-    //vm1.invoke(startNode)
-    //vm2.invoke(startNode)
+    // vm1.invoke(startNode)
+    // vm2.invoke(startNode)
 
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
@@ -111,11 +104,11 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       ClusterManagerTestBase.startSnappyLead(locPort, bootProps)
     }
     assert(ServiceManager.currentFabricServiceInstance.status ==
-      FabricService.State.RUNNING)
+        FabricService.State.RUNNING)
   }
 
   override def tearDownAfter(): Unit = {
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
   }
 
   def setDMLMaxChunkSize(size: Long): Unit = {
@@ -129,43 +122,45 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val snc = SnappyContext(sc)
     val tableName: String = "TESTTABLE"
-    //snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
+    // snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
 
     snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using column " +
-      s"OPTIONS (PARTITION_BY 'col1', buckets '1',MAXPARTSIZE '200',COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
-      s"'5000')")
+        s"OPTIONS (PARTITION_BY 'col1', buckets '1',MAXPARTSIZE '200'," +
+        s"COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
+        s"'5000')")
 
-    //Invoking validate result in each VM as a separate thread inorder to resume the code for
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "setTestHook")
+    // Invoking validate result in each VM as a separate thread inorder to resume the code for
     // insertion of records
     invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "validateResults", netPort1)
 
-/*
-    val rdd1 = sc.parallelize(
-      (1 to 10).map(i => Data(i, i.toString, Decimal(i.toString + '.' + i))))
-
-    val dataDF1 = snc.createDataFrame(rdd1)
-    //Write 5 records as batch size is set to 2 it will trigger the cachebatch creation
-    dataDF1.write.insertInto(tableName)*/
-    for(i <- 1 to 10) {
-      snc.sql(s"insert into $tableName values($i,'${i+1}',${i+2})")
+    for (i <- 1 to 10) {
+      snc.sql(s"insert into $tableName values($i,'${i + 1}',${i + 2})")
+      println(s"Inserting $i")
     }
 
     val cnt = snc.sql(s"select * from $tableName").count()
-
-    assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
+    assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
     if (errorInThread != null) {
 
       throw errorInThread
     }
+
+    vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
+    // scalastyle:off
     println("Successful")
+    // scalastyle:on
 
   }
 
-  def invokeMethodInVm(vM: VM, classType: Class[ValidateMVCCDUnitTest], methodName: String, netPort1: Int): Unit = {
+  def invokeMethodInVm(vM: VM,
+      classType: Class[ValidateMVCCDUnitTest],
+      methodName: String, netPort1: Int): Unit = {
 
-    new Thread {
+    val t = new Thread {
 
       override def run: Unit = {
         try {
@@ -175,10 +170,10 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
             errorInThread = e
         }
       }
-    }.start()
+    }
 
+    t.start()
   }
-
 
 
   def testMVCCForColumnTableWithRollback(): Unit = {
@@ -188,287 +183,464 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val snc = SnappyContext(sc)
     val tableName: String = "TESTTABLE"
-    //snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
+    // snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
 
     snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using column " +
-      s"OPTIONS (PARTITION_BY 'col1', buckets '1',MAXPARTSIZE '200',COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
-      s"'5000')")
+        s"OPTIONS (PARTITION_BY 'col1'," +
+        s" buckets '1',MAXPARTSIZE '200',COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
+        s"'5000')")
 
-    //Invoking validate result in each VM as a separate thread inorder to resume the code for
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "setTestHook")
+    // Invoking validate result in each VM as a separate thread inorder to resume the code for
     // insertion of records
-    invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "validateResultsWithRollback", netPort1)
+    invokeMethodInVm(vm0,classOf[ValidateMVCCDUnitTest], "validateResultsWithRollback", netPort1)
 
-    /*
-        val rdd1 = sc.parallelize(
-          (1 to 10).map(i => Data(i, i.toString, Decimal(i.toString + '.' + i))))
+    var cnt = snc.sql(s"select * from $tableName").count()
 
-        val dataDF1 = snc.createDataFrame(rdd1)
-        //Write 5 records as batch size is set to 2 it will trigger the cachebatch creation
-        dataDF1.write.insertInto(tableName)*/
-    for(i <- 1 to 10) {
-      snc.sql(s"insert into $tableName values($i,'${i+1}',${i+2})")
+    assert(cnt == 0, s"Expected row count is 0 while actual row count is $cnt")
+
+    try {
+      for (i <- 1 to 10) {
+        snc.sql(s"insert into $tableName values($i, '${i + 1}', ${i + 2})")
+        println(s"From: testMVCCForColumnTableWithRollback Inserting $i")
+      }
+    } catch {
+      case rex: Throwable => // As expected
     }
 
-    val cnt = snc.sql(s"select * from $tableName").count()
 
-    assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
+    cnt = snc.sql(s"select * from $tableName").count()
+
+    assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
     if (errorInThread != null) {
-
       throw errorInThread
     }
+    vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
+    // scalastyle:off
     println("Successful")
+    // scalastyle:on
+
+  }
+
+
+  def testMixOperationsOnRowTables(): Unit = {
+    errorInThread = null
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val snc = SnappyContext(sc)
+    val tableName: String = "TESTTABLE"
+    // snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
+
+    snc.sql(s"drop table if exists $tableName")
+    snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using row " +
+        s"OPTIONS (REDUNDANCY '1',PARTITION_BY 'col1')")
+
+
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "performMixOperationsOnRowTable",
+      netPort1)
+
+    // scalastyle:off
+    println("Successful")
+    // scalastyle:on
+
+  }
+
+
+  def testBatchInsertUsingPreparedStatement(): Unit = {
+    errorInThread = null
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val snc = SnappyContext(sc)
+    val tableName: String = "TESTTABLE"
+    // snc.sql("set spark.sql.inMemoryColumnarStorage.batchSize = 5")
+
+    snc.sql(s"drop table if exists $tableName")
+    snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using row " +
+        s"OPTIONS (REDUNDANCY '1',PARTITION_BY 'col1')")
+
+
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "performBatchInsert",
+      netPort1)
+
+    // scalastyle:off
+    println("Successful")
+    // scalastyle:on
 
   }
 
 }
-  object ValidateMVCCDUnitTest {
 
-    class MyTestHook extends RvvSnapshotTestHook {
-      val lockForTest: AnyRef = new AnyRef
-      val operationLock: AnyRef = new AnyRef
+object ValidateMVCCDUnitTest {
 
-      override def notifyOperationLock(): Unit = {
-        operationLock.synchronized {
-          operationLock.notify()
-        }
-      }
+  class MyTestHook extends RvvSnapshotTestHook {
+    val lockForTest: AnyRef = new AnyRef
+    val operationLock: AnyRef = new AnyRef
 
-      override def notifyTestLock(): Unit = {
-        lockForTest.synchronized {
-          lockForTest.notify()
-        }
-      }
-
-      override def waitOnTestLock(): Unit = {
-        lockForTest.synchronized {
-          lockForTest.wait(60000)
-        }
-      }
-
-      override def waitOnOperationLock(): Unit = {
-        operationLock.synchronized {
-          operationLock.wait(60000)
-        }
+    override def notifyOperationLock(): Unit = {
+      operationLock.synchronized {
+        operationLock.notify()
       }
     }
 
-    def validateResults(netPort: Int): Unit = {
-
-      val cache = GemFireCacheImpl.getInstance()
-      if (null != cache) {
-        cache.setRvvSnapshotTestHook(new MyTestHook)
-        cache.waitOnRvvTestHook()
-
-      } else {
-        return;
-      }
-
-      println("Got notification from test hook")
-      if (null == cache) {
-        return;
-      }
-      val driver = "io.snappydata.jdbc.ClientDriver"
-      Utils.classForName(driver).newInstance
-      var url: String = null
-
-      url = "jdbc:snappydata://localhost:" + netPort + "/"
-
-      val  tableName: String = "APP.TESTTABLE"
-      val conn = DriverManager.getConnection(url)
-
-
-      val s = conn.createStatement()
-      s.execute(s"select * from $tableName")
-      var cnt = 0
-      val rs = s.getResultSet
-      while (rs.next) {
-        cnt = cnt + 1
-        println("Resultset:  "+rs.getInt(1))
-      }
-
-      println("Row count before creating the cachebatch: " + cnt)
-      assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
-
-
-
-      var cnt1 = 0;
-      s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs1 = s.getResultSet
-      while (rs1.next) {
-        cnt1 = cnt1 + 1
-        println("Resultset from row buffer:  "+rs1.getInt(1))
-      }
-      println("Row count before creating the cachebatch in row buffer: " + cnt1)
-      assert(cnt1 == 10,s"Expected row count is 10 while actual row count is $cnt1")
-
-      var cnt2 = 0;
-      s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs2 = s.getResultSet
-      while (rs2.next) {
-        cnt2 = cnt2 + 1
-      }
-      println("Row count before creating the cachebatch in column store: " + cnt2)
-      assert(cnt2 == 0,s"Expected row count is 0 while actual row count is $cnt2")
-
-      cache.notifyRvvSnapshotTestHook()
-      cache.waitOnRvvTestHook()
-
-
-
-      var cnt3 = 0;
-      s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs3 = s.getResultSet
-      while (rs3.next) {
-        cnt3 = cnt3 + 1
-      }
-
-      println("Row count in row buffer after destroy all entries from row buffer but no commit  : " + cnt3)
-      assert(cnt3 == 10,s"Expected row count is 10 while actual row count is $cnt3")
-
-      cache.notifyRvvSnapshotTestHook()
-
-
-      cache.waitOnRvvTestHook()
-      cache.setRvvSnapshotTestHook(null)
-
-
-      var cnt4 = 0;
-      s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs4 = s.getResultSet
-      while (rs4.next) {
-        cnt4 = cnt4 + 1
-      }
-      println("Row count in column store after destroy all entries from row buffer " +
-        "and reinitialize snapshot   : " + cnt4)
-      //The number of entries in column store is 4 as after columnwise storage 3 rows will be created one for each
-      // column and 4th row is for stats
-      assert(cnt4 == 4,s"Expected Count is 4 but actual count is $cnt4")
-
-
-
-      var cnt5 = 0;
-      s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs5 = s.getResultSet
-      while (rs5.next) {
-        cnt5 = cnt5 + 1
-      }
-
-      println("Row count in row buffer after destroy all entries from row buffer " +
-        "and reinitialize snapshot   : " + cnt5)
-      assert(cnt5 == 0,s"Expected row count is 0 while actual row count is $cnt5")
-
-      var cnt6 = 0;
-      s.execute(s"select * from $tableName")
-      val rs6 = s.getResultSet
-      while (rs6.next) {
-        cnt6 = cnt6 + 1
-      }
-      println("Row count in column table : " + cnt6)
-      assert(cnt6 == 10,s"Expected row count is 10 while actual row count is $cnt6")
-
-    }
-
-
-
-    def validateResultsWithRollback(netPort: Int): Unit = {
-
-      val cache = GemFireCacheImpl.getInstance()
-      if (null != cache) {
-        cache.setRvvSnapshotTestHook(new MyTestHook)
-        cache.getCacheTransactionManager.testRollBack = true;
-        cache.waitOnRvvTestHook()
-
-      } else {
-        return;
-      }
-
-      if (null == cache) {
-        return;
-      }
-      val driver = "io.snappydata.jdbc.ClientDriver"
-      Utils.classForName(driver).newInstance
-      var url: String = null
-
-      url = "jdbc:snappydata://localhost:" + netPort + "/"
-
-      val  tableName: String = "APP.TESTTABLE"
-      val conn = DriverManager.getConnection(url)
-
-
-      val s = conn.createStatement()
-      s.execute(s"select * from $tableName")
-      var cnt = 0
-      val rs = s.getResultSet
-      while (rs.next) {
-        cnt = cnt + 1
-        println("Resultset:  "+rs.getInt(1))
-      }
-
-      println("Row count before creating the cachebatch: " + cnt)
-      assert(cnt == 10,s"Expected row count is 10 while actual row count is $cnt")
-
-
-
-      var cnt1 = 0;
-      s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs1 = s.getResultSet
-      while (rs1.next) {
-        cnt1 = cnt1 + 1
-        println("Resultset from row buffer:  "+rs1.getInt(1))
-      }
-      println("Row count before creating the cachebatch in row buffer: " + cnt1)
-      assert(cnt1 == 10,s"Expected row count is 10 while actual row count is $cnt1")
-
-      var cnt2 = 0;
-      s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs2 = s.getResultSet
-      while (rs2.next) {
-        cnt2 = cnt2 + 1
-      }
-      println("Row count before creating the cachebatch in column store: " + cnt2)
-      assert(cnt2 == 0,s"Expected row count is 0 while actual row count is $cnt2")
-
-      cache.notifyRvvSnapshotTestHook()
-
-
-      var cnt3 = 0;
-      s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs3 = s.getResultSet
-      while (rs3.next) {
-        cnt3 = cnt3 + 1
-      }
-
-      println("Row count in row buffer after destroy all entries from row buffer but no commit  : " + cnt3)
-      assert(cnt3 == 10,s"Expected row count is 10 while actual row count is $cnt3")
-
-
-      var cnt4 = 0;
-      s.execute(s"select * from SNAPPYSYS_INTERNAL.APP__TESTTABLE_COLUMN_STORE_ -- " +
-        s"GEMFIREXD-PROPERTIES executionEngine=Store\n")
-      val rs4 = s.getResultSet
-      while (rs4.next) {
-        cnt4 = cnt4 + 1
-      }
-      println("Row count in column store after destroy all entries from row buffer " +
-        "and reinitialize snapshot   : " + cnt4)
-      //The number of entries in column store is 4 as after columnwise storage 3 rows will be created one for each
-      // column and 4th row is for stats
-      assert(cnt4 == 0,s"Expected row count is 0 while actual row count is $cnt4")
-
-
-    }
-
-    def clearTestHook(netPort: Int): Unit = {
-
-      val cache = GemFireCacheImpl.getInstance()
-      if (null != cache) {
-        cache.setRvvSnapshotTestHook(null)
-        cache.getCacheTransactionManager.testRollBack = false;
+    override def notifyTestLock(): Unit = {
+      lockForTest.synchronized {
+        lockForTest.notify()
       }
     }
+
+    override def waitOnTestLock(): Unit = {
+      lockForTest.synchronized {
+        lockForTest.wait(300000)
+      }
+    }
+
+    override def waitOnOperationLock(): Unit = {
+      operationLock.synchronized {
+        operationLock.wait(300000)
+      }
+    }
+  }
+
+  def setTestHook(): Unit = {
+    val cache = GemFireCacheImpl.getInstance()
+    cache.setRvvSnapshotTestHook(new MyTestHook)
+    println("Setting testhook")
 
   }
+
+
+  def printRegionSize(): Unit = {
+    val cache = GemFireCacheImpl.getInstance()
+    println("APP.TESTTABLE Region size : "+cache.getRegion("/APP/TESTTABLE").size())
+    println("SNAPPYSYS_INTERNAL.APP____TESTTABLE_COLUMN_STORE_  Region size : "+cache.getRegion
+    ("/SNAPPYSYS_INTERNAL/APP____TESTTABLE_COLUMN_STORE_").size())
+  }
+
+
+  def validateResults(netPort: Int): Unit = {
+    val ctmp = Misc.getGemFireCacheNoThrow
+    if (ctmp != null) {
+      println("Validate results invoked in: " + ctmp.getDistributedSystem.getMemberId)
+    }
+    val cache = GemFireCacheImpl.getInstance()
+
+    // started waiting on rvv test hook
+    cache.waitOnRvvTestHook()
+    // scalastyle:off
+    println("Got notification from test hook")
+    // scalastyle:on
+    val driver = "io.snappydata.jdbc.ClientDriver"
+    Utils.classForName(driver).newInstance
+    var url: String = null
+
+    url = "jdbc:snappydata://localhost:" + netPort + "/"
+
+    val tableName: String = "APP.TESTTABLE"
+    val conn = DriverManager.getConnection(url)
+
+    val s = conn.createStatement()
+    s.execute(s"select * from $tableName")
+    var cnt = 0
+    val rs = s.getResultSet
+    while (rs.next) {
+      cnt = cnt + 1
+      // scalastyle:off
+      println("Resultset:  " + rs.getInt(1))
+      // scalastyle:on
+    }
+
+    // scalastyle:off
+    println("Row count before creating the cachebatch: " + cnt)
+    // scalastyle:on
+    assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
+
+
+    var cnt1 = 0;
+    s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs1 = s.getResultSet
+    while (rs1.next) {
+      cnt1 = cnt1 + 1
+      // scalastyle:off
+      println("Resultset from row buffer:  " + rs1.getInt(1))
+      // scalastyle:on
+    }
+    // scalastyle:off
+    println("Row count before creating the cachebatch in row buffer: " + cnt1)
+    // scalastyle:on
+    assert(cnt1 == 10, s"Expected row count is 10 while actual row count is $cnt1")
+
+    var cnt2 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs2 = s.getResultSet
+    while (rs2.next) {
+      cnt2 = cnt2 + 1
+    }
+    // scalastyle:off
+    println("Row count before creating the cachebatch in column store: " + cnt2)
+    // scalastyle:on
+    assert(cnt2 == 0, s"Expected row count is 0 while actual row count is $cnt2")
+
+    cache.notifyRvvSnapshotTestHook()
+    cache.waitOnRvvTestHook()
+
+
+    var cnt3 = 0;
+    s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs3 = s.getResultSet
+    while (rs3.next) {
+      cnt3 = cnt3 + 1
+    }
+
+    // scalastyle:off
+    println("Row count in row buffer after destroy all entries from row buffer but no commit  : " + cnt3)
+    // scalastyle:on
+    assert(cnt3 == 10, s"Expected row count is 10 while actual row count is $cnt3")
+
+    cache.notifyRvvSnapshotTestHook()
+
+
+    cache.waitOnRvvTestHook()
+    cache.setRvvSnapshotTestHook(null)
+
+
+    var cnt4 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs4 = s.getResultSet
+    while (rs4.next) {
+      cnt4 = cnt4 + 1
+    }
+    // scalastyle:off
+    println("Row count in column store after destroy all entries from row buffer " +
+        "and reinitialize snapshot   : " + cnt4)
+    // scalastyle:on
+    // The number of entries in column store is 4
+    // as after columnwise storage 3 rows will be created one for each
+    // column and 4th row is for stats
+    assert(cnt4 == 4, s"Expected Count is 4 but actual count is $cnt4")
+
+
+    var cnt5 = 0;
+    s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs5 = s.getResultSet
+    while (rs5.next) {
+      cnt5 = cnt5 + 1
+    }
+
+    // scalastyle:off
+    println("Row count in row buffer after destroy all entries from row buffer " +
+        "and reinitialize snapshot   : " + cnt5)
+    // scalastyle:on
+    assert(cnt5 == 0, s"Expected row count is 0 while actual row count is $cnt5")
+
+    var cnt6 = 0;
+    s.execute(s"select * from $tableName")
+    val rs6 = s.getResultSet
+    while (rs6.next) {
+      cnt6 = cnt6 + 1
+    }
+    // scalastyle:off
+    println("Row count in column table : " + cnt6)
+    // scalastyle:on
+    assert(cnt6 == 10, s"Expected row count is 10 while actual row count is $cnt6")
+
+  }
+
+
+  def validateResultsWithRollback(netPort: Int): Unit = {
+
+    val cache = GemFireCacheImpl.getInstance()
+    cache.getCacheTransactionManager.testRollBack = true;
+    cache.waitOnRvvTestHook()
+
+    val driver = "io.snappydata.jdbc.ClientDriver"
+    Utils.classForName(driver).newInstance
+    var url: String = null
+
+    url = "jdbc:snappydata://localhost:" + netPort + "/"
+
+    val tableName: String = "APP.TESTTABLE"
+    val conn = DriverManager.getConnection(url)
+
+
+    val s = conn.createStatement()
+    s.execute(s"select * from $tableName")
+    var cnt = 0
+    val rs = s.getResultSet
+    while (rs.next) {
+      cnt = cnt + 1
+      // scalastyle:off
+      println("Resultset:  " + rs.getInt(1))
+      // scalastyle:on
+    }
+
+    // scalastyle:off
+    println("Row count before creating the cachebatch: " + cnt)
+    // scalastyle:on
+    assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
+
+
+    var cnt1 = 0;
+    s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs1 = s.getResultSet
+    while (rs1.next) {
+      cnt1 = cnt1 + 1
+      // scalastyle:off
+      println("Resultset from row buffer:  " + rs1.getInt(1))
+      // scalastyle:on
+    }
+    // scalastyle:off
+    println("Row count before creating the cachebatch in row buffer: " + cnt1)
+    assert(cnt1 == 10, s"Expected row count is 10 while actual row count is $cnt1")
+
+    var cnt2 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs2 = s.getResultSet
+    while (rs2.next) {
+      cnt2 = cnt2 + 1
+    }
+    // scalastyle:off
+    println("Row count before creating the cachebatch in column store: " + cnt2)
+    // scalastyle:on
+    assert(cnt2 == 0, s"Expected row count is 0 while actual row count is $cnt2")
+
+    cache.notifyRvvSnapshotTestHook()
+
+
+    var cnt3 = 0;
+    s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs3 = s.getResultSet
+    while (rs3.next) {
+      cnt3 = cnt3 + 1
+    }
+    // scalastyle:off
+    println("Row count in row buffer after destroy all entries from row buffer but no commit  : " + cnt3)
+    // scalastyle:on
+    assert(cnt3 == 10, s"Expected row count is 10 while actual row count is $cnt3")
+
+
+    var cnt4 = 0
+    s.execute(s"select * from " +
+        ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE") +
+        s" -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
+    val rs4 = s.getResultSet
+    while (rs4.next) {
+      cnt4 = cnt4 + 1
+    }
+    // scalastyle:off
+    println("Row count in column store after destroy all entries from row buffer " +
+        "and reinitialize snapshot   : " + cnt4)
+    // scalastyle:on
+    // The number of entries in column store is 4 as after
+    // columnwise storage 3 rows will be created one for each
+    // column and 4th row is for stats
+    assert(cnt4 == 0, s"Expected row count is 0 while actual row count is $cnt4")
+
+
+  }
+
+
+  def performBatchInsert(netPort: Int): Unit = {
+
+    val driver = "io.snappydata.jdbc.ClientDriver"
+    Utils.classForName(driver).newInstance
+    var url: String = null
+
+    url = "jdbc:snappydata://localhost:" + netPort + "/"
+
+    val tableName: String = "APP.TESTTABLE"
+    val conn = DriverManager.getConnection(url)
+    val prepareStatement = conn.prepareStatement(s"insert into $tableName values(?,?,?)")
+
+    val s = conn.createStatement()
+    for (i <- 1 to 100) {
+      prepareStatement.setInt(1, i)
+      prepareStatement.setInt(2, i + 1)
+      prepareStatement.setInt(3, i + 2)
+      prepareStatement.addBatch()
+    }
+    prepareStatement.executeBatch()
+
+    s.execute(s"select * from $tableName")
+    var cnt = 0
+    val rs = s.getResultSet
+    while (rs.next) {
+      cnt = cnt + 1
+    }
+    assert(cnt == 100, s"Expected row count is 100 while actual row count is $cnt")
+
+    s.execute(s"drop table if exists $tableName")
+
+  }
+
+  def performMixOperationsOnRowTable(netPort: Int): Unit = {
+
+
+    val driver = "io.snappydata.jdbc.ClientDriver"
+    Utils.classForName(driver).newInstance
+    var url: String = null
+
+    url = "jdbc:snappydata://localhost:" + netPort + "/"
+
+    val tableName: String = "APP.TESTTABLE"
+    val conn = DriverManager.getConnection(url)
+    val s = conn.createStatement()
+
+    for (i <- 1 to 5) {
+      s.executeUpdate(s"insert into $tableName values($i,'${i + 1}',${i + 2})")
+    }
+
+    s.execute(s"select * from $tableName")
+    var cnt = 0
+    val rs = s.getResultSet
+    while (rs.next) {
+      cnt = cnt + 1
+    }
+
+    assert(cnt == 5, s"Expected row count is 5 while actual row count is $cnt")
+
+
+    s.executeUpdate(s"update $tableName set col3=1 where col1>2")
+
+    s.execute(s"select * from $tableName where col3=1")
+    cnt = 0
+    val rs1 = s.getResultSet
+    while (rs1.next) {
+      cnt = cnt + 1
+    }
+    assert(cnt == 3, s"Expected row count is 3 while actual row count is $cnt")
+
+
+    s.executeUpdate(s"delete from $tableName where col3=1")
+
+    s.execute(s"select * from $tableName")
+    cnt = 0
+    val rs2 = s.getResultSet
+    while (rs2.next) {
+      cnt = cnt + 1
+    }
+    assert(cnt == 2, s"Expected row count is 1 while actual row count is $cnt")
+
+    s.execute(s"drop table if exists $tableName")
+
+  }
+
+  def clearTestHook(netPort: Int): Unit = {
+
+    val cache = GemFireCacheImpl.getInstance()
+    if (null != cache) {
+      cache.setRvvSnapshotTestHook(null)
+      cache.getCacheTransactionManager.testRollBack = false;
+    }
+  }
+
+}

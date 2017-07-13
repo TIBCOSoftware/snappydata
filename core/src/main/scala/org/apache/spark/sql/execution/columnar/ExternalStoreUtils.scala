@@ -19,9 +19,6 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
@@ -30,7 +27,6 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
-
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.collection.Utils
@@ -44,6 +40,9 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, SparkContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /**
  * Utility methods used by external storage layers.
@@ -80,7 +79,7 @@ object ExternalStoreUtils extends Logging {
   }
 
   private def defaultMaxExternalPoolSize: String =
-    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 4))
+    String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
   private def defaultMaxEmbeddedPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
@@ -98,12 +97,14 @@ object ExternalStoreUtils extends Logging {
     if (hikariCP) {
       props = props + ("jdbcUrl" -> url)
       props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
-      props = addProperty(props, "minimumIdle", "4")
+      props = addProperty(props, "minimumIdle", "10")
+      props = addProperty(props, "idleTimeout", "120000")
     } else {
       props = props + ("url" -> url)
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
       props = addProperty(props, "maxIdle", defaultMaxPoolSize)
       props = addProperty(props, "initialSize", "4")
+      props = addProperty(props, "minEvictableIdleTimeMillis", "120000")
     }
     props
   }
@@ -179,8 +180,6 @@ object ExternalStoreUtils extends Logging {
                 "skip-constraint-checks=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false;skip-constraint-checks=true"
-          case SplitClusterMode(_, _) =>
-            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
           case LocalMode(_, url) =>
@@ -192,9 +191,9 @@ object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isSplitOrLocalMode(sparkContext: SparkContext): Boolean = {
+  def isLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
-      case SplitClusterMode(_, _) | LocalMode(_, _) => true
+      case LocalMode(_, _) => true
       case _ => false
     }
   }
@@ -388,21 +387,6 @@ object ExternalStoreUtils extends Logging {
     })
   }
 
-  def columnIndicesAndDataTypes(requestedSchema: StructType,
-      schema: StructType): Seq[(Int, StructField)] = {
-    if (requestedSchema.isEmpty) {
-      val (narrowestOrdinal, narrowestField) =
-        schema.fields.zipWithIndex.map(f => f._2 -> f._1).minBy { f =>
-          ColumnType(f._2.dataType).defaultSize
-        }
-      Seq(narrowestOrdinal -> narrowestField)
-    } else {
-      requestedSchema.map { a =>
-        schema.fieldIndex(Utils.fieldName(a)) -> a
-      }
-    }
-  }
-
   def setStatementParameters(stmt: PreparedStatement,
       row: mutable.ArrayBuffer[Any]): Unit = {
     var col = 1
@@ -517,6 +501,7 @@ object ExternalStoreUtils extends Logging {
       final class GeneratedIterator extends ${classOf[BufferedRowIterator].getName} {
 
         private Object[] references;
+        private scala.collection.Iterator[] inputs;
         ${ctx.declareMutableStates()}
 
         public GeneratedIterator(Object[] references) {
@@ -525,6 +510,7 @@ object ExternalStoreUtils extends Logging {
 
         public void init(int index, scala.collection.Iterator inputs[]) {
           partitionIndex = index;
+          this.inputs = inputs;
           ${ctx.initMutableStates()}
         }
 

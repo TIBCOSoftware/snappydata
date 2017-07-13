@@ -105,12 +105,11 @@ class LeadImpl extends ServerImpl with Lead
 
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
-          setAppName("leaderLauncher").
+          setAppName("SnappyData").
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
             ExecutorInitiator.SNAPPY_MEMORY_MANAGER)
-          .setIfMissing("spark.memory.storageMaxFraction", "0.95")
 
       Utils.setDefaultSerializerAndCodec(conf)
 
@@ -126,10 +125,7 @@ class LeadImpl extends ServerImpl with Lead
           } else {
             Constant.STORE_PROPERTY_PREFIX + k
           }
-        }
-        else {
-          k
-        }
+        } else k
         conf.set(key, v)
       })
       // set spark ui port to 5050 that is snappy's default
@@ -168,7 +164,7 @@ class LeadImpl extends ServerImpl with Lead
       checkAndStartZeppelinInterpreter(bootProperties)
 
     } catch {
-      case ie: InterruptedException =>
+      case _: InterruptedException =>
         logInfo(s"Thread interrupted, aborting.")
       case e: Throwable =>
         logWarning("Exception while starting lead node", e)
@@ -298,8 +294,8 @@ class LeadImpl extends ServerImpl with Lead
           changeOrAppend(attr, value, overwrite, ignoreIfPresent,
             sparkPrefix = Constant.SPARK_PREFIX)
         } else conf.set(attr, value)
-        case v if ignoreIfPresent => // skip setting property
-        case v if overwrite => conf.set(attr, value)
+        case _ if ignoreIfPresent => // skip setting property
+        case _ if overwrite => conf.set(attr, value)
         case Some(x) => conf.set(attr, x ++ s""",$value""")
       }
     }

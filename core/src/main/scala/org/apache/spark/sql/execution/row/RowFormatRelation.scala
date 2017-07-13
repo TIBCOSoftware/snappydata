@@ -23,12 +23,11 @@ import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
-import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -75,7 +74,7 @@ class RowFormatRelation(
     ExternalStoreUtils.getConnectionType(dialect)
 
   private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
-    table, schema, upsert = true)
+    table, schema, putInto = true)
 
   @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
@@ -160,7 +159,7 @@ class RowFormatRelation(
           handledFilters,
           _partEval = () => relInfo.partitions,
           relInfo.embdClusterRelDestroyVersion,
-          _commitTx=true
+          _commitTx = true
         )
     }
     (rdd, Nil)
@@ -194,23 +193,40 @@ class RowFormatRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
+    // use case-insensitive resolution since partitioning columns during
+    // creation could be using the same as opposed to during insert
     val partitionExpressions = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowInsertExec(child, upsert = false, partitionColumns,
+    RowDMLExec(child, putInto = false, delete = false, partitionColumns,
       partitionExpressions, numBuckets, schema, Some(this), onExecutor = false,
       resolvedName, connProperties)
   }
 
   override def getPutPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
+    // use case-insensitive resolution since partitioning columns during
+    // creation could be using the same as opposed to during put
     val partitionExpressions = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.sessionState.analyzer.resolver)
+      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    RowInsertExec(child, upsert = true, partitionColumns,
+    RowDMLExec(child, putInto = true, delete = false, partitionColumns,
       partitionExpressions, numBuckets, schema, Some(this),
+      onExecutor = false, resolvedName, connProperties)
+  }
+
+  override def getDeletePlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    // use case-insensitive resolution since partitioning columns during
+    // creation could be using the same as opposed to during delete
+    val partitionExpressions = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
+          .getOrElse(throw new AnalysisException(
+            s"""Cannot resolve column "$colName" among (${relation.output})""")))
+    RowDMLExec(child, putInto = false, delete = true, partitionColumns,
+      partitionExpressions, numBuckets, child.schema, Some(this),
       onExecutor = false, resolvedName, connProperties)
   }
 

@@ -19,18 +19,22 @@ package org.apache.spark.memory
 
 import java.nio.charset.StandardCharsets
 import java.sql.SQLException
-
-import com.gemstone.gemfire.cache.LowMemoryException
+import java.util.Properties
 
 import scala.actors.Futures._
+
+import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-import org.apache.spark.SparkEnv
-import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeProjection, UnsafeRow}
+
+import org.apache.spark.sql.catalyst.expressions.{SpecificInternalRow, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.{SparkEnv, TaskContextImpl}
 
 
 class SnappyMemoryAccountingSuite extends MemoryFunSuite {
@@ -251,8 +255,10 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
         assert(totalEvictedBytes > 0)
     }
     // scalastyle:on
+    SparkEnv.get.memoryManager.
+        asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()
-    assert(count == rows)
+    assert(count >= rows)
     snSession.dropTable("t1")
   }
 
@@ -450,8 +456,11 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.insert("t1", row)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
-    val afterDelete = SparkEnv.get.memoryManager.storageMemoryUsed
-    assert(afterDelete == afterCreateTable)
+    // we need to wait for atleast OLD_ENTRIES_CLEANER_TIME_INTERVAL
+    ClusterManagerTestBase.waitForCriterion(
+      (SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
+      s"The memory after delete is not same even after waiting for oldEntryRemoval",
+      4 * Misc.getGemFireCache.getOldEntryRemovalPeriod, 500, true)
     snSession.dropTable("t1")
   }
 
@@ -482,8 +491,12 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.insert("t1", row)
     assert(SparkEnv.get.memoryManager.storageMemoryUsed > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
-    val afterDelete = SparkEnv.get.memoryManager.storageMemoryUsed
-    assert(afterDelete == afterCreateTable)
+    // we need to wait for atleast OLD_ENTRIES_CLEANER_TIME_INTERVAL
+    ClusterManagerTestBase.waitForCriterion(
+      (SparkEnv.get.memoryManager.storageMemoryUsed == afterCreateTable),
+      s"The memory after delete is not same even after waiting for oldEntryRemoval",
+      4 * Misc.getGemFireCache.getOldEntryRemovalPeriod, 500, true)
+    // assert(afterDelete == afterCreateTable)
     snSession.dropTable("t1")
   }
 
@@ -586,18 +599,20 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     awaitAll(20000000L, tasks: _*)
 
     // Rough estimation of 120 bytes per row
-    assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 *5 )
+    assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 * 5 )
     val count = snSession.sql("select * from t1").count()
     assert(count == 500)
     snSession.dropTable("t1")
   }
 
   test("CachedDataFrame accounting") {
-    val sparkSession = createSparkSession(1, 0, 1000)
+    val sparkSession = createSparkSession(1, 1, 1000)
+    // create SnappySession to boot GemFireCache which is required for SnappyUMM
+    new SnappySession(sparkSession.sparkContext)
     val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
     val converter = UnsafeProjection.create(fieldTypes)
 
-    val row = new SpecificMutableRow(fieldTypes)
+    val row = new SpecificInternalRow(fieldTypes)
     row.setLong(0, 0)
     row.update(1, UTF8String.fromString("Hello"))
     row.update(2, "World".getBytes(StandardCharsets.UTF_8))
@@ -605,13 +620,17 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val unsafeRow: UnsafeRow = converter.apply(row)
 
     SparkEnv.get.memoryManager
-      .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 800, memoryMode)
+          .acquireStorageMemory(MemoryManagerCallback.storageBlockId, 300, memoryMode)
 
+    val taskMemoryManager =
+      new TaskMemoryManager(sparkSession.sparkContext.env.memoryManager, 0L)
+    val taskContext =
+      new TaskContextImpl(0, 0, taskAttemptId = 1, 0, taskMemoryManager, new Properties, null)
     try {
-      CachedDataFrame(null, Seq(unsafeRow).iterator)
+      CachedDataFrame(taskContext, Seq(unsafeRow).iterator)
       assert(false , "Should not have obtained memory")
     } catch {
-      case lme : LowMemoryException => //Success
+      case lme : LowMemoryException => // Success
     }
   }
 

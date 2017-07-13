@@ -17,20 +17,16 @@
 package org.apache.spark.memory
 
 
-import java.lang.management.ManagementFactory
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
-import com.pivotal.gemfirexd.DistributedSQLTestBase
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionConfBuilder, ConnectionUtil}
-import org.apache.spark.sql.{SaveMode, SnappyContext}
-import SnappyUnifiedMemoryManagerDUnitTest._
-import com.pivotal.gemfirexd.internal.engine.GfxdConstants
-import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
-import io.snappydata.Constant
+import org.apache.spark.memory.SnappyUnifiedMemoryManagerDUnitTest._
+import org.apache.spark.sql.SnappyContext
 
 case class DummyData(col1: Int, col2: Int, col3: Int)
 
@@ -43,7 +39,7 @@ class WaitAssert(val error: Int, clazz: Class[_]) {
   def assertStorageUsed(vm1: VM, vm2: VM, ignoreByteCount: Int = 0): Boolean = {
     value1 = vm1.invoke(clazz, "getStorageMemory").asInstanceOf[Long]
     value2 = vm2.invoke(clazz, "getStorageMemory").asInstanceOf[Long]
-    println(s"vm1_memoryUsed $value1 vm2_memoryUsed $value2")
+    // println(s"vm1_memoryUsed $value1 vm2_memoryUsed $value2")
     excString = s"failed $value1 & $value2 are not within permissable limit \n"
 
     if (value1 == value2) return true
@@ -54,6 +50,16 @@ class WaitAssert(val error: Int, clazz: Class[_]) {
     }
     if (Math.abs(value1 - value2) < ((value2 * error) / 100)) return true else false
 
+  }
+
+  def assertTableMemory(vm1: VM, vm2: VM, tableName : String): Boolean = {
+    value1 = vm1.invoke(clazz, "getMemoryForTable", tableName).asInstanceOf[Long]
+    value2 = vm2.invoke(clazz, "getMemoryForTable", tableName).asInstanceOf[Long]
+    // println(s"vm1_memoryUsed $value1 vm2_memoryUsed $value2")
+    excString = s"failed $value1 & $value2 are not within permissable limit \n"
+
+    if (value1 == value2) return true
+    if (Math.abs(value1 - value2) < ((value2 * error) / 100)) return true else false
   }
 
   def exceptionString(): String = excString
@@ -69,6 +75,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
+    snc.setConf(io.snappydata.Property.ColumnBatchSize.name, "500")
     snc
   }
 
@@ -78,29 +85,16 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm2.invoke(getClass, "resetStorageMemory")
   }
 
-  override def beforeClass(): Unit = {
-    // stop any running lead first to update the "maxErrorAllowed" property
-    ClusterManagerTestBase.stopSpark()
-    bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "500")
-    bootProps.setProperty("spark.memory.manager",
-      "org.apache.spark.memory.SnappyUnifiedMemoryManager")
-    bootProps.setProperty("critical-heap-percentage", "90")
-    super.beforeClass()
-  }
-
-  override def afterClass(): Unit = {
-    super.afterClass()
-    // force restart with default properties in subsequent tests
-    ClusterManagerTestBase.stopSpark()
-  }
-
   override def setUp(): Unit = {
     super.setUp()
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
   }
 
   override def tearDown2(): Unit = {
-    resetMemoryManagers
+    val snc = SnappyContext(sc).newSession()
+    snc.dropTable(col_table, ifExists = true)
+    snc.dropTable(rr_table, ifExists = true)
+    resetMemoryManagers()
     super.tearDown2()
   }
 
@@ -185,8 +179,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     * This test checks column table memory usage when GII is done in a node.
     * It checks memory usage with reference to the node which was alive at the time
     * of GII.
+    * Disabled due to SNAP-1781.
     */
-  def testMemoryUsedInColumnTableWithGII(): Unit = {
+  def DISABLED_testMemoryUsedInColumnTableWithGII(): Unit = {
 
     var props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
@@ -212,10 +207,10 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(col_table)
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(10, getClass)
+    val waitAssert = new WaitAssert(20, getClass)
     // Setting ignore bytecount as VM doing GII does have a valid value, hence key is kept as null
     // This decreases the size of entry overhead. @TODO find out why only column table needs this ?
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, col_table),
       waitAssert.exceptionString(),
       20000, 5000, true)
   }
@@ -248,8 +243,8 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(rr_table)
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(2, getClass)
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    val waitAssert = new WaitAssert(10, getClass)
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
       waitAssert.exceptionString(),
       20000, 5000, true)
   }
@@ -285,8 +280,8 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(rr_table)
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(2, getClass)
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    val waitAssert = new WaitAssert(10, getClass)
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
       waitAssert.exceptionString(),
       20000, 5000, true)
   }
@@ -330,9 +325,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(5, getClass)
+    val waitAssert = new WaitAssert(10, getClass)
     // The delete operation takes time to propagate
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
       waitAssert.exceptionString(),
       60000, 5000, true)
   }
@@ -403,7 +398,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(restartServer(props))
 
     val waitAssert = new WaitAssert(2, getClass)
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
       waitAssert.exceptionString(),
       30000, 5000, true)
   }
@@ -479,6 +474,28 @@ object SnappyUnifiedMemoryManagerDUnitTest {
       -1L
     }
 
+  }
+
+  def getMemoryForTable(tableName: String): Long = {
+    if (SparkEnv.get != null) {
+      if (SparkEnv.get.memoryManager.isInstanceOf[SnappyUnifiedMemoryManager]) {
+        val mMap = SparkEnv.get.memoryManager
+            .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap
+        val keys = mMap.keySet().iterator()
+        var sum = 0L
+        while (keys.hasNext) {
+          val key = keys.next()
+          if (key._1.toLowerCase().contains(tableName.toLowerCase())) {
+            sum = sum + mMap.getLong(key)
+          }
+        }
+        sum
+      } else {
+        -1L
+      }
+    } else {
+      -1L
+    }
   }
 
   def failTheExecutors: Unit = {

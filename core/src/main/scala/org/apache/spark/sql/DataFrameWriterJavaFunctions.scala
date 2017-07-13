@@ -31,4 +31,8 @@ class DataFrameWriterJavaFunctions(val dfWriter: DataFrameWriter[_]) {
   def putInto(tableName: String): Unit = {
     new DataFrameWriterExtensions(dfWriter).putInto(tableName)
   }
+
+  def deleteFrom(tableName: String): Unit = {
+    new DataFrameWriterExtensions(dfWriter).deleteFrom(tableName)
+  }
 }

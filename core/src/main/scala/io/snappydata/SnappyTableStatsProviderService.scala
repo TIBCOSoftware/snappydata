@@ -19,9 +19,10 @@
 
 package io.snappydata
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.control.NonFatal
+import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
@@ -72,14 +73,18 @@ object SnappyTableStatsProviderService {
   }
 
   def stop(): Unit = {
-    statsProviderService.stop()
+    val service = statsProviderService
+    if (service ne null) {
+      service.stop()
+    }
   }
 
   def getService: TableStatsProviderService = {
-    if (statsProviderService == null) {
+    val service = statsProviderService
+    if (service eq null) {
       throw new IllegalStateException("SnappyTableStatsProviderService not started")
     }
-    statsProviderService
+    service
   }
 
   var suspendCacheInvalidation = false
@@ -174,7 +179,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
     catch {
-      case e: Exception => log.warn(e.getMessage, e)
+      case NonFatal(e) => log.warn(e.getMessage, e)
     }
     (result.flatMap(_.getRegionStats.asScala), result.flatMap(_.getIndexStats.asScala))
   }

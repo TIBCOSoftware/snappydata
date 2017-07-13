@@ -28,8 +28,19 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types._
 
+// A marker interface to extend usage of Literal case matching.
+// A literal that can change across multiple query execution.
+trait DynamicReplacableConstant {
+  def eval(input: InternalRow = null): Any
+
+  def convertedLiteral: Any
+}
+
+// whereever ParamLiteral case matching is required, it must match
+// for DynamicReplacableConstant and use .eval(..) for code generation.
+// see SNAP-1597 for more details.
 class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
-    extends Literal(_value, _dataType) {
+    extends Literal(_value, _dataType) with DynamicReplacableConstant {
 
   // override def toString: String = s"ParamLiteral ${super.toString}"
 
@@ -229,20 +240,26 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
  *
  * @param expr minimal expression tree that can be evaluated only once and turn into a constant.
  */
-case class DynamicFoldableExpression(expr: Expression) extends Expression {
+case class DynamicFoldableExpression(expr: Expression) extends Expression
+    with DynamicReplacableConstant {
   override def nullable: Boolean = expr.nullable
 
   override def eval(input: InternalRow): Any = expr.eval(input)
+
+  def convertedLiteral: Any = createToScalaConverter(dataType)(eval(null))
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val eval = expr.genCode(ctx)
     val newVar = ctx.freshName("paramLiteralExpr")
     val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
     val comment = ctx.registerComment(expr.toString)
+    // initialization for both variable and isNull is being done together
+    // due to dependence of latter on the variable and the two get
+    // separated due to Spark's splitExpressions -- SNAP-1794
     ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
-      s"$comment\n${eval.code}\n$newVar = ${eval.value};")
-    ctx.addMutableState("boolean", newVarIsNull, s"$newVarIsNull = ${eval.isNull};")
-
+      s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
+        s"$newVarIsNull = ${eval.isNull};")
+    ctx.addMutableState("boolean", newVarIsNull, "")
     ev.copy(code = "", value = newVar, isNull = newVarIsNull)
   }
 

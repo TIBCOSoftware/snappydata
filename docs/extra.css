@@ -2,22 +2,18 @@ html {
     font-size: 10pt;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
-/*
-Formatting for body text
-*/
+/* Formatting for body text */
 p{
 font-size: 14px;
-font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
 }
 
-/*
-Formatting for headings
-*/
+/* Formatting for headings */
 
 h1{
     color: #000000;
     font-size: 20pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; */
     background-color: #e8e9ea;
 }
 
@@ -25,62 +21,33 @@ h1{
 h2{
     color: #335183;
     font-size: 18pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
 }
 
 
 h3{
     color: #404040;
     font-size: 16pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
     border-bottom: thin double #e0e0e0;
 }
 
 h4 {
     color: #404040;
     font-size: 14pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; */
     font-style: italic;
 }
 
-
-/*
-Defines the indetation for the navigation pane
+/* Formatting for code snippets
 */
-
-.wy-menu-vertical li.current > a::before {
-    content: url("Images/arrow-20x20-expanded.png");
-    float: left;
-}
-
-.wy-menu-vertical li > a[class="toctree-l4"]{
-  margin-left: 10px;
-}
-
-.wy-menu-vertical li > a[class="toctree-l4"]::before {
-  content: url("Images/dash-20x20-collapsed.png");
-  float: left;
-}
-
-
-
-/*
-Formatting for code snippets 
-*/
-
 pre code {
-  white-space: pre;
-  word-wrap: normal;
-  display: block;
-  padding: 12px;
-  background-color: #f5f6f6;
-  font-family: Monaco,Menlo,Consolas,"Courier New",monospace;
   font-size:12px;
+  overflow-x: auto
+  font-family: monospace,serif;
 }
 
-/*
-Formatting for inline code  
-*/
+/* Formatting for inline code */
 
 code {
     white-space: pre-wrap;
@@ -88,40 +55,133 @@ code {
     padding: 2px 5px;
 }
 
-
+/*
 pre .cs, pre .c {
     font-weight: inherit;
     font-style: inherit;
 }
-
-/*
-Formatting for information in the Note
 */
 
-note {
+/* Formatting for Note 
+note-sub {
+    background-color: #e8f7ff; 
     color: green;
-    font-size: 14px;
+    margin: 10px 0px;
+    border: #e8f7ff 1px solid;
+    border-radius: 5px; 
+    word-wrap: normal;
+    display: block;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:14px;
     font-style: italic;
+    list-style-type: square;
+}
+
+{
+  background-color: #e8f7ff; 
+  color: green;
+  background-image: url(Images/info.png);
+  margin: 10px 0px;
+  padding:5px 5px 10px 50px;
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  border: #e8f7ff 1px solid;
+  border-radius: 5px; 
+  word-wrap: normal;
+  display: block;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size:14px;
+  font-style: italic;
+}
+*/
+
+/* Formatting for Glossary Term */
+
+glossary {
+    color: black;
+    font-size: 25px;
+    font-style: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
-/* Image Alignment - Center
-*/
-img {
-    display: inline-block;
-    background-color: transparent;
-    border: 1px solid #ededed;
-    margin: 10px 0px 25px 25px;
-    float: center;    
+glossaryterm {
+    color: Blue;
+    font-size: 16px;
+    font-style: bold;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
-	
-/*
-Formatting for text for review/comments purpose only
-*/
+
+glossarytext {
+    color: black;
+    font-size: 14px;
+    font-style: normal;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+/*  Image Alignment - Center */
+img {
+    display: block;
+    background-color: transparent;
+    border: none;
+    margin: 0px auto;
+}
+
+/* Formatting for text for review/comments purpose only */
 
 mark {
     color: red;
-    font-size: 10px;
+    font-size: 14px;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     background-color: #f6f3d7;
+}
+
+/* Formatting for TroubleShooting */
+
+question {
+    color: black;
+    font-size: 18px;
+    font-style: bold;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    background: #cc2222
+    white-space: pre;
+    word-wrap: normal;
+    display: block;
+    background-color: #f5f6f6;
+}
+
+solution {
+    color: black;
+    font-size: 14px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    word-wrap: normal;
+    display: block;
+}
+
+/* Formatting for Tables */
+      
+table
+{
+    background: #f5f5f5;
+    border-collapse: separate;
+    line-height: 24px;
+    margin: 15px auto;
+    text-align: center;
+    width: auto;
+    color: black;
+    font-size: 14px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+th {
+    background: linear-gradient(#777, #444);
+    border-left: 1px solid #555;
+    border-right: 1px solid #777;
+    border-top: 1px solid #555;
+    border-bottom: 1px solid #333;
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;  
 }

@@ -38,7 +38,7 @@ SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store 
 But it may be desirable to isolate the computational cluster for other reasons, for instance, a  computationally 
 intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly. 
 To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer 
-in a parallel fashion. To connect to the SnappyData store spark.snappydata.store.locators property needs to be 
+in a parallel fashion. To connect to the SnappyData store spark.snappydata.connection property needs to be 
 provided while starting the spark-shell. To run all SnappyData functionalities you need to create 
 a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
 
@@ -46,7 +46,7 @@ a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.
 // from the SnappyData base directory  
 # Start the spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
 # Change the UI port because the default port 4040 is being used by Snappy’s lead. 
-$ bin/spark-shell  --master local[*] --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
+$ bin/spark-shell  --master local[*] --conf spark.snappydata.connection=locatorhost:port --conf spark.ui.port=4041
 scala>
 #Try few commands on the spark-shell. Following command shows the tables created using the snappy-sql
 scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
@@ -54,13 +54,13 @@ scala> val airlineDF = snappy.table("airline").show
 scala> val resultset = snappy.sql("select * from airline")
 ```
 
-Any spark application can also use the SnappyData as store and spark as computational engine by providing an extra spark.snappydata.store.locators property in the conf.
+Any spark application can also use the SnappyData as store and spark as computational engine by providing an extra spark.snappydata.connection property in the conf.
 
 ```bash
 # Start the Spark standalone cluster from SnappyData base directory 
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
 
 # The results can be seen on the command line.
 ```

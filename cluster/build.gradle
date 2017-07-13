@@ -47,6 +47,9 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+    if (rootProject.hasProperty('mesos')) {
+      compile project(':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion)
+    }
 
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
         configuration: 'testOutput')
@@ -62,6 +65,9 @@ dependencies {
     compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
+    if (rootProject.hasProperty('mesos')) {
+      compile 'io.snappydata:snappy-spark-mesos_' + scalaBinaryVersion + ':' + snappySparkVersion
+    }
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
                 version: snappySparkVersion, classifier: 'tests'
