@@ -2449,7 +2449,7 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
-          "-bg", "stop");
+          "stop");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
@@ -2493,7 +2493,7 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh")
-          , "-bg", "stop");
+          , "stop");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
       File logFile = new File(dest);
@@ -3109,8 +3109,7 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("Starting locator/s using rowstore option...");
         pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "-bg",
-            "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
@@ -3147,7 +3146,7 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
-          "-bg", "start");
+          "start");
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
