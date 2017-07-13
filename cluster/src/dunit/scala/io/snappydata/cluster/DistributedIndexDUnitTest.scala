@@ -81,11 +81,10 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     tablesToDrop += tableName
   }
 
-  
-  def _testDummy(): Unit = {
-    // SNAP-1800 Disabled this Test
+  def testDummy(): Unit = {
   }
-  
+
+  // SNAP-1800 Disabled all tests in this dunit
   def _testPartitionedSingleColumnTable(): Unit = {
     val tableName = "tabOne"
 
