@@ -19,8 +19,8 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager, ResultSet}
 
-import com.pivotal.gemfirexd.{Attribute, TestUtil}
-import com.pivotal.gemfirexd.security.LdapTestServer
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
@@ -29,12 +29,11 @@ import org.apache.spark.sql.collection.Utils
 class SecureQueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
+  val snappyAdminUser = "gemfire2"
+  val jdbcUser = "gemfire1"
+
   override def setUp(): Unit = {
-    val ldapServer = LdapTestServer.getInstance(getClass.getResource("/auth.ldif").getPath)
-    if (!ldapServer.isServerStarted) {
-      ldapServer.startServer()
-    }
-    setSecurityProps(ldapServer)
+    setSecurityProps()
     super.setUp()
   }
 
@@ -46,26 +45,18 @@ class SecureQueryRoutingDUnitTest(val s: String)
     }
   }
 
-  val ldapAdminUser = "gemfire3"
-  val snappyAdminUser = "gemfire2"
-  val jdbcUser = "gemfire1"
-
-  def setSecurityProps(ldapServer: LdapTestServer): Unit = {
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SEARCH_DN, AUTH_LDAP_SEARCH_PW}
-    var props = scala.collection.mutable.Map[String, String]()
-    props += (Attribute.AUTH_PROVIDER ->
-        com.pivotal.gemfirexd.Constants.AUTHENTICATION_PROVIDER_LDAP)
-    props += (AUTH_LDAP_SERVER -> s"ldap://localhost:${ldapServer.getServerPort}/")
-    props += (AUTH_LDAP_SEARCH_BASE -> "ou=ldapTesting,dc=pune,dc=gemstone,dc=com")
-    props += (AUTH_LDAP_SEARCH_DN ->
-        s"uid=$ldapAdminUser,ou=ldapTesting,dc=pune,dc=gemstone,dc=com")
-    props += (AUTH_LDAP_SEARCH_PW -> ldapAdminUser)
-    for ((k, v) <- props) System.setProperty(k, v)
-
-    props += (Attribute.USERNAME_ATTR -> snappyAdminUser)
-    props += (Attribute.PASSWORD_ATTR -> snappyAdminUser)
-    for ((k, v) <- props) locatorNetProps.setProperty(k, v)
-    for ((k, v) <- props) bootProps.setProperty(k, v)
+  def setSecurityProps(): Unit = {
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
+    val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
+      snappyAdminUser, getClass.getResource("/auth.ldif").getPath)
+    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
+      System.setProperty(k, ldapProperties.getProperty(k))
+    }
+    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE,
+      Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
+      locatorNetProps.setProperty(k, ldapProperties.getProperty(k))
+      bootProps.setProperty(k, ldapProperties.getProperty(k))
+    }
   }
 
   def netConnection(netPort: Int, user: String, pass: String): Connection = {
