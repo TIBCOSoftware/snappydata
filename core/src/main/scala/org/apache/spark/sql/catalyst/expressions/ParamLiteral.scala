@@ -253,10 +253,13 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
     val newVar = ctx.freshName("paramLiteralExpr")
     val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
     val comment = ctx.registerComment(expr.toString)
+    // initialization for both variable and isNull is being done together
+    // due to dependence of latter on the variable and the two get
+    // separated due to Spark's splitExpressions -- SNAP-1794
     ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
-      s"$comment\n${eval.code}\n$newVar = ${eval.value};")
-    ctx.addMutableState("boolean", newVarIsNull, s"$newVarIsNull = ${eval.isNull};")
-
+      s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
+        s"$newVarIsNull = ${eval.isNull};")
+    ctx.addMutableState("boolean", newVarIsNull, "")
     ev.copy(code = "", value = newVar, isNull = newVarIsNull)
   }
 
