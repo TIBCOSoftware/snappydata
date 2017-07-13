@@ -23,7 +23,7 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
 import org.apache.spark.sql.collection.Utils
 
-class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
+class DistributedDDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   private def getANetConnection(netPort: Int): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
@@ -32,7 +32,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def _testColumnTableRouting(): Unit = {
+  def testColumnTableRouting(): Unit = {
     val tableName: String = "TEST.ColumnTableQR"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
@@ -63,7 +63,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     dropTableXD(conn, tableName)
   }
 
-  def testRowTableRouting(): Unit = {
+  def _testRowTableRouting(): Unit = {
     val tableName: String = "RowTableQR"
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
@@ -95,7 +95,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     dropTableXD(conn, tableName)
   }
 
-  def testRowTableByDefaultRouting(): Unit = {
+  def _testRowTableByDefaultRouting(): Unit = {
     val tableName: String = "TEST.DefaultRowTableQR"
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
@@ -120,7 +120,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     Snap319(conn)
   }
 
-  def testHang_SNAP_961(): Unit = {
+  def _testHang_SNAP_961(): Unit = {
     val tableName: String = "TEST.ColumnTableQR"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)

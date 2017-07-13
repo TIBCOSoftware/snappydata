@@ -40,8 +40,8 @@ import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext,
 import org.apache.spark.util.Benchmark
 
 /**
- * Tests for query routing from JDBC client driver.
- */
+  * Tests for query routing from JDBC client driver.
+  */
 class QueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
@@ -53,7 +53,7 @@ class QueryRoutingDUnitTest(val s: String)
     super.tearDown2()
   }
 
-  def _testQueryRouting(): Unit = {
+  def testQueryRouting(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -139,10 +139,10 @@ class QueryRoutingDUnitTest(val s: String)
       cnt += 1
       cnt match {
         case 1 => assert(9 == rs.getInt(1), s"Expected 9 but found ${rs.getInt(1)}")
-        case 2 => assert(7 == rs.getInt(1),s"Expected 7 but found ${rs.getInt(1)}")
-        case 3 => assert(5 == rs.getInt(1),s"Expected 5 but found ${rs.getInt(1)}")
-        case 4 => assert(4 == rs.getInt(1),s"Expected 4 but found ${rs.getInt(1)}")
-        case 5 => assert(1 == rs.getInt(1),s"Expected 1 but found ${rs.getInt(1)}")
+        case 2 => assert(7 == rs.getInt(1), s"Expected 7 but found ${rs.getInt(1)}")
+        case 3 => assert(5 == rs.getInt(1), s"Expected 5 but found ${rs.getInt(1)}")
+        case 4 => assert(4 == rs.getInt(1), s"Expected 4 but found ${rs.getInt(1)}")
+        case 5 => assert(1 == rs.getInt(1), s"Expected 1 but found ${rs.getInt(1)}")
       }
     }
     assert(cnt == 5)
@@ -338,7 +338,7 @@ class QueryRoutingDUnitTest(val s: String)
     ps2.close()
   }
 
-  def _testSNAP193_607_8_9(): Unit = {
+  def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -842,7 +842,7 @@ class QueryRoutingDUnitTest(val s: String)
           s" and ol_str_id LIKE '%0' " +
           s""
       val rs2 = stmt2.executeQuery(qry2)
-      verifyQuery("query", rs1 , rs2)
+      verifyQuery("query", rs1, rs2)
       rs1.close()
       rs2.close()
 

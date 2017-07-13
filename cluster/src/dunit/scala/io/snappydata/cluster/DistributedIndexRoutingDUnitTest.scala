@@ -38,7 +38,7 @@ import org.apache.spark.sql.collection.Utils
 /**
  * Tests various distributed index related tests.
  */
-class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class DistributedIndexRoutingDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   val tablesToDrop = new ListBuffer[String]
   val indexesToDrop = new ListBuffer[String]
