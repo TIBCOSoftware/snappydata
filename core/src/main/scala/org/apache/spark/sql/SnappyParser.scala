@@ -676,7 +676,11 @@ class SnappyParser(session: SnappySession)
           (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Option[String], d: Any, e: Any, w: Any) =>
             val udfName = n2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
-            val exprs = e.asInstanceOf[Seq[Expression]]
+            val allExprs = e.asInstanceOf[Seq[Expression]]
+            val exprs = allExprs.collect {
+              case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
+              case ex: Expression => ex
+            }
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(udfName, exprs, isDistinct = false)
             } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
@@ -705,7 +709,11 @@ class SnappyParser(session: SnappySession)
       (fn: FunctionIdentifier, e: Any) =>
         fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
-            val exprs = e.asInstanceOf[Seq[Expression]].toList
+            val allExprs = e.asInstanceOf[Seq[Expression]].toList
+            val exprs = allExprs.collect {
+              case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
+              case ex: Expression => ex
+            }
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
                 exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))

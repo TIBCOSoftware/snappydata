@@ -118,6 +118,19 @@ class TokenizationTest
     cacheMap.keySet().toArray().filter(_.asInstanceOf[CachedKey].valid).length
   }
 
+  test("Test no tokenize for functions") {
+    snc.sql(s"Drop Table if exists double_tab")
+    snc.sql(s"Create Table double_tab (a INT, d Double) " +
+        "using column options()")
+    snc.sql(s"insert into double_tab values(1, 1.111111), (2, 2.222222), (3, 3.33333)")
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    assert( cacheMap.size() == 0)
+    var res = snc.sql(s"select * from double_tab where round(d, 2) < round(3.3333, 2)").collect()
+    assert(res.size == 2)
+    res = snc.sql(s"select * from double_tab where round(d, 3) < round(3.3333, 3)").collect()
+    assert(res.size == 2)
+  }
+
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 10
