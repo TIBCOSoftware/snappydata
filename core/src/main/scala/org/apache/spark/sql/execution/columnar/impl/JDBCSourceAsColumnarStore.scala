@@ -18,10 +18,11 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.UUID
+import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.util.control.NonFatal
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
@@ -30,6 +31,7 @@ import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.catalyst.InternalRow
@@ -44,11 +46,14 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{Partition, TaskContext}
-
 import scala.annotation.meta.param
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+
+import com.pivotal.gemfirexd.Attribute
+
+import org.apache.spark.sql.jdbc.JdbcDialect
 
 /**
  * Column Store implementation for GemFireXD.
@@ -251,8 +256,37 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
     val connProps = if (onExecutor) connProperties.executorConnProps
     else connProperties.connProps
-    ConnectionPool.getPoolConnection(id, connProperties.dialect,
+    getPoolConnection(id, connProperties.dialect,
       connProperties.poolProps, connProps, connProperties.hikariCP)
+  }
+
+  def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
+      connProps: Properties, hikariCP: Boolean): Connection = {
+    // Handle security at remote VM in cases like insert
+    val bootProperties = Misc.getMemStore.getBootProperties
+    if (bootProperties.containsKey("user") && bootProperties.containsKey("password")) {
+      val user: String = bootProperties.get("user").toString
+      val password: String = bootProperties.get("password").toString
+
+      def secureProps(props: Properties): Properties = {
+        if (props.getProperty(Attribute.USERNAME_ATTR) != null &&
+            props.getProperty(Attribute.PASSWORD_ATTR) != null) {
+          props.setProperty(Attribute.USERNAME_ATTR, user)
+          props.setProperty(Attribute.PASSWORD_ATTR, password)
+        }
+        props
+      }
+
+      // Hikari only take 'username'. So does Tomcat
+      def securePoolProps(props: Map[String, String]): Map[String, String] = {
+        if (props.get("username").isEmpty && props.get("username").isEmpty) {
+          props + ("username" -> user) + ("password" -> password)
+        } else props
+      }
+
+      ConnectionPool.getPoolConnection(id, dialect, securePoolProps(poolProps),
+        secureProps(connProps), hikariCP)
+    } else ConnectionPool.getPoolConnection(id, dialect, poolProps, connProps, hikariCP)
   }
 
   override def getConnectedExternalStore(table: String,

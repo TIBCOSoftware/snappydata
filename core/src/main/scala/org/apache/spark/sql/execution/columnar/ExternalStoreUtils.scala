@@ -298,9 +298,7 @@ object ExternalStoreUtils extends Logging {
       def securePoolProps(props: Map[String, String]): Map[String, String] = props +
           ("username" -> user) + ("password" -> password)
 
-      def secureUrl(url: String): String = url + ";user=" + user + ";password=" + password + ";"
-
-      ConnectionProperties(secureUrl(url), driver, dialect, securePoolProps(poolProps),
+      ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
         secureProps(connProps), secureProps(executorConnProps), hikariCP)
     } else ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
       hikariCP)
