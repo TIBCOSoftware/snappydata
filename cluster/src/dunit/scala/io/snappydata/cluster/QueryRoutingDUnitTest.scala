@@ -564,13 +564,13 @@ class QueryRoutingDUnitTest(val s: String)
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, SHADOW_SCHEMA_NAME, null,
+    val rSet2 = dbmd.getTables(null, "APP", null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE",
         "EXTERNAL TABLE", "STREAM TABLE"))
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"APP____${t + SHADOW_TABLE_SUFFIX}".
+      if (s"$SHADOW_SCHEMA_NAME_WITH_SEPARATOR$t$SHADOW_TABLE_SUFFIX}".
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
