@@ -40,6 +40,7 @@ buildscript {
     classpath 'io.snappydata:gradle-scalatest:0.13.1'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
     classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
+    classpath "com.netflix.nebula:gradle-ospackage-plugin:4.4.0"
   }
 }
 
@@ -63,6 +64,8 @@ allprojects {
   apply plugin: 'idea'
   apply plugin: 'eclipse'
   apply plugin: "build-time-tracker"
+  apply plugin: "nebula.ospackage"
+  apply plugin: 'nebula.ospackage-base'
 
   group = 'io.snappydata'
   version = '0.9'
@@ -772,6 +775,37 @@ distributions {
     }
   }
 }
+
+ospackage {
+  packageName = distributions.main.baseName
+  version = version
+
+//  release = new Date().format('yyyyMMdd-HHmmss')
+//  arch = NOARCH
+
+  os = LINUX
+
+  maintainer = 'SnappyData, Inc.'
+  packageDescription = productName + ', the Spark Database. Stream - Transact - Analyze - Predict all in one cluster'
+  summary = productName + ' Installer'
+
+  user = 'root'
+  permissionGroup = 'root'
+
+  from(snappyProductDir) {
+//    fileMode = 0664
+    into '/opt/' + distributions.main.baseName
+  }
+}
+
+buildRpm {
+  requires('glibc')
+}
+
+buildDeb {
+  requires('libc6')
+}
+
 distTar {
   dependsOn product
   // also package VSD
@@ -790,6 +824,16 @@ distZip {
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
+}
+
+task distRpm {
+  dependsOn product
+  dependsOn buildRpm
+}
+
+task distDeb {
+  dependsOn product
+  dependsOn buildDeb
 }
 
 task copyShadowJars {
@@ -818,9 +862,16 @@ task copyShadowJars {
   }
 }
 
+task distInstallers {
+  dependsOn product
+  dependsOn buildRpm
+  dependsOn buildDeb
+}
+
 // use the task below to prepare final release bits
 task distProduct {
   dependsOn product, distTar, distZip
+  dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
@@ -862,6 +913,7 @@ task buildAll {
   dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
   dependsOn distTar, distZip
+  dependsOn distInstallers
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -981,6 +1033,9 @@ packageVSD.mustRunAfter product
 
 distTar.mustRunAfter clean, cleanAll
 distZip.mustRunAfter clean, cleanAll
+distRpm.mustRunAfter clean, cleanAll, product
+distDeb.mustRunAfter clean, cleanAll, product
+distInstallers.mustRunAfter clean, cleanAll, product, distRpm, distDeb
 distProduct.mustRunAfter clean, cleanAll
 
 
