@@ -423,7 +423,8 @@ abstract class BaseColumnFormatRelation(
    */
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()

@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
-import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import io.snappydata.SnappyTableStatsProviderService
@@ -30,7 +29,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}

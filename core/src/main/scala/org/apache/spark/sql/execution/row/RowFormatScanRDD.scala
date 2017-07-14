@@ -285,8 +285,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (parts != null && parts.length > 0) {
       return parts
     }
-    val conn = ConnectionPool.getPoolConnection(tableName, connProperties.dialect,
-      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
+    val conn = ConnectionPool.getPoolConnection(tableName,
+      connProperties.dialect, connProperties.poolProps,
+      connProperties.connProps, connProperties.hikariCP)
     try {
       val tableSchema = conn.getSchema
       val resolvedName = ExternalStoreUtils.lookupName(tableName, tableSchema)

@@ -23,11 +23,9 @@ import javax.sql.DataSource
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-import com.pivotal.gemfirexd.internal.engine.Misc
 import com.zaxxer.hikari.util.PropertyElf
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-import io.snappydata.Constant
-import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
+import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
 
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
@@ -132,8 +130,9 @@ object ConnectionPool {
    *
    * @see getPoolDataSource
    */
-  def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
-      connProps: Properties, hikariCP: Boolean): Connection = {
+  def getPoolConnection(id: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties,
+      hikariCP: Boolean): Connection = {
     val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
     val conn = ds.getConnection
     dialect match {

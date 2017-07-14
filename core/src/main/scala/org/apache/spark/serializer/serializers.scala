@@ -244,7 +244,6 @@ object ConnectionPropertiesSerializer
 
   def read(kryo: Kryo, input: Input): ConnectionProperties = {
     val url = input.readString()
-    val urlSecureSuffix = input.readString()
     val driver = input.readString()
     val dialect = input.readByte() match {
       case 0 => GemFireXDDialect
@@ -264,6 +263,7 @@ object ConnectionPropertiesSerializer
     }
     val connProps = TypeUtilities.readProperties(input)
     val hikariCP = input.readBoolean()
-    ConnectionProperties(url, driver, dialect, poolProps, connProps, connProps, hikariCP)
+    ConnectionProperties(url, driver, dialect, poolProps, connProps,
+      connProps, hikariCP)
   }
 }

@@ -30,7 +30,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.row.RowDMLExec
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
@@ -90,8 +90,8 @@ case class JDBCMutableRelation(
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
-  protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(new JDBCOptions(connProperties.url, table,
+  protected final val connFactory: () => Connection =
+    JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
         connProperties.connProps.asScala.toMap))
 
   def createTable(mode: SaveMode): String = {
@@ -163,8 +163,8 @@ case class JDBCMutableRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val jdbcOptions = new JDBCOptions(connProperties.url, table,
-      connProperties.executorConnProps.asScala.toMap)
+    val jdbcOptions = new JDBCOptions(connProperties.url,
+      table, connProperties.executorConnProps.asScala.toMap)
 
     val rdd = JDBCRDD.scanTable(
       sqlContext.sparkContext,
@@ -210,8 +210,8 @@ case class JDBCMutableRelation(
       JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
         table, upsert = false)
     } else {
-      val connection = ConnectionPool.getPoolConnection(table, dialect, connProperties.poolProps,
-        connProps, connProperties.hikariCP)
+      val connection = ConnectionPool.getPoolConnection(table, dialect,
+        connProperties.poolProps, connProps, connProperties.hikariCP)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,
@@ -226,8 +226,8 @@ case class JDBCMutableRelation(
   }
 
   override def executeUpdate(sql: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, dialect, connProperties.poolProps,
-      connProperties.connProps, connProperties.hikariCP)
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
+      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()
@@ -256,8 +256,8 @@ case class JDBCMutableRelation(
               s""""$c" among (${schema.fieldNames.mkString(", ")})"""))
       index += 1
     }
-    val connection = ConnectionPool.getPoolConnection(table, dialect, connProperties.poolProps,
-      connProperties.connProps, connProperties.hikariCP)
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
+      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
       val whereStr = if (filterExpr == null || filterExpr.isEmpty) ""
@@ -275,8 +275,8 @@ case class JDBCMutableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, dialect, connProperties.poolProps,
-      connProperties.connProps, connProperties.hikariCP)
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
+      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
     try {
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""
