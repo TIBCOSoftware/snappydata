@@ -315,16 +315,16 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
-    FileTree includeTestFiles = dunitTests
     def single = rootProject.hasProperty('dunit.single') ?
         rootProject.property('dunit.single') : null
-    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+    if (single == null || single.length() == 0) {
+      def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
+      FileTree includeTestFiles = dunitTests
+      int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-    int dunitTo = rootProject.hasProperty('dunit.to') ?
+      int dunitTo = rootProject.hasProperty('dunit.to') ?
           getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
 
-    if (single == null || single.length() == 0) {
       int begin = dunitFrom != -1 ? dunitFrom : 0
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
       def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
@@ -870,19 +870,19 @@ task buildDtests {
 }
 task checkAll {
   dependsOn ':snappy-spark:scalaStyle'
-  if (project.hasProperty('store')) {
+  if (rootProject.hasProperty('store')) {
     dependsOn ':snappy-store:check'
   }
   dependsOn ":snappy-core_${scalaBinaryVersion}:check"
-  if (project.hasProperty('spark')) {
+  if (rootProject.hasProperty('spark')) {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
-  if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!rootProject.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (!project.hasProperty('smoke.skip')) {
+  if (!rootProject.hasProperty('smoke.skip')) {
     dependsOn ":buildDtests"
     dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
@@ -1037,7 +1037,7 @@ task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports, docs
 }
 
-if (project.hasProperty('trackBuildTime') ) {
+if (rootProject.hasProperty('trackBuildTime') ) {
   buildtimetracker {
     reporters {
       summary {
