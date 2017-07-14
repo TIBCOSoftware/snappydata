@@ -155,7 +155,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   }
 
   override def initializeTable(tableName: String, caseSensitive: Boolean,
-      conn: Connection, sysConn: () => Connection): Unit = {
+      conn: Connection): Unit = {
     val dotIndex = tableName.indexOf('.')
     val (schema, table) = if (dotIndex > 0) {
       (tableName.substring(0, dotIndex), tableName.substring(dotIndex + 1))
@@ -171,8 +171,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     if ("PARTITION".equalsIgnoreCase(result) ||
         "PERSISTENT_PARTITION".equalsIgnoreCase(result)) {
 
-      JdbcExtendedUtils.executeUpdate(
-        s"call sys.CREATE_ALL_BUCKETS('$tableName')", sysConn())
+      JdbcExtendedUtils.executeUpdate(s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
     }
   }
 

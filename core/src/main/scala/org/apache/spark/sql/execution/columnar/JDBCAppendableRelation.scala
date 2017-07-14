@@ -17,9 +17,11 @@
 package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
+import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -32,7 +34,6 @@ import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
-
 import scala.collection.JavaConverters._
 
 
@@ -66,22 +67,8 @@ abstract case class JDBCAppendableRelation(
     externalStore.connProperties
 
   protected final val connFactory: () => Connection = JdbcUtils
-      .createConnectionFactory(new JDBCOptions(connProperties.url +
-        connProperties.urlSecureSuffix,
+      .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
-
-  protected final val sysConnFactory: () => Connection = {
-    val EMPTY_URL = ""
-    val user = sqlContext.conf.getConfString("snappydata.store.user", EMPTY_URL)
-    val password = sqlContext.conf.getConfString("snappydata.store.password", EMPTY_URL)
-    if (!user.equals(EMPTY_URL) && !password.equals(EMPTY_URL)) {
-      JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url +
-        ";user=" + user +
-        ";password=" + password +
-        ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE + ";",
-        table, connProperties.connProps.asScala.toMap))
-    } else connFactory
-  }
 
   val resolvedName: String = externalStore.tryExecute(table, conn => {
     ExternalStoreUtils.lookupName(table, conn.getSchema)
@@ -243,7 +230,7 @@ abstract case class JDBCAppendableRelation(
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName,
-              sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory)
+              sqlContext.conf.caseSensitiveAnalysis, conn)
             case _ => // do nothing
           }
         }

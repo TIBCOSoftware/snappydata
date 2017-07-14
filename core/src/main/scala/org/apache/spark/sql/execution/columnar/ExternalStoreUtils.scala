@@ -274,17 +274,34 @@ object ExternalStoreUtils extends Logging {
         false
       case _ => false
     }
-    val allPoolProps = getAllPoolProperties(url, driver, poolProps, hikariCP, isEmbedded)
-    val EMPTY_URL = ""
-    val urlSecureSuffix = if (session.isDefined) {
+    setSecurityCredentials(session, connProps)
+    setSecurityCredentials(session, executorConnProps)
+    val allPoolProps = getAllPoolProperties(url, driver,
+      withSecurityCredentials(session, poolProps), hikariCP, isEmbedded)
+    ConnectionProperties(url, driver, dialect, allPoolProps, connProps, executorConnProps, hikariCP)
+  }
+
+  def setSecurityCredentials(session: Option[SparkSession], props: Properties): Unit = {
+    if (session.isDefined) {
       val user = session.get.conf.getOption(Attribute.USERNAME_ATTR)
       val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR)
       if (user.isDefined && password.isDefined) {
-        s";user=${user.get};password=${password.get};"
-      } else EMPTY_URL
-    } else EMPTY_URL
-    ConnectionProperties(url, urlSecureSuffix, driver, dialect, allPoolProps,
-      connProps, executorConnProps, hikariCP)
+        props.setProperty(Attribute.USERNAME_ATTR, user.get)
+        props.setProperty(Attribute.PASSWORD_ATTR, password.get)
+      }
+    }
+  }
+
+  def withSecurityCredentials(session: Option[SparkSession],
+      props: Map[String, String]): Map[String, String] = {
+    if (session.isDefined) {
+      val user = session.get.conf.getOption(Attribute.USERNAME_ATTR)
+      val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR)
+      if (user.isDefined && password.isDefined) {
+        // TODO - Hikari only take 'username'. Tomcat also take 'username'
+        props + ("username" -> user.get) + ("password" -> password.get)
+      } else props
+    } else props
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,
@@ -293,7 +310,7 @@ object ExternalStoreUtils extends Logging {
     val connProps = if (forExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP, connProperties.urlSecureSuffix)
+      connProperties.poolProps, connProps, connProperties.hikariCP)
   }
 
   def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {

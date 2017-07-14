@@ -1429,8 +1429,7 @@ class SnappySession(@transient private val sc: SparkContext,
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(this), new mutable.HashMap[String, String])
-    val jdbcOptions = new JDBCOptions(connProperties.url +
-      connProperties.urlSecureSuffix, "",
+    val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     try {

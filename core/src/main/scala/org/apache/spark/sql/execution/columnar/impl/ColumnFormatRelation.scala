@@ -258,8 +258,7 @@ abstract class BaseColumnFormatRelation(
     } else {
       // insert into the row buffer
       val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP,
-        connProperties.urlSecureSuffix)
+        connProperties.poolProps, connProps, connProperties.hikariCP)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,
@@ -277,7 +276,7 @@ abstract class BaseColumnFormatRelation(
   override def truncate(): Unit = writeLock {
     try {
       externalStore.tryExecute(externalColumnTableName, conn => {
-        JdbcExtendedUtils.truncateTable(sysConnFactory(), externalColumnTableName, dialect)
+        JdbcExtendedUtils.truncateTable(conn, externalColumnTableName, dialect)
       })
     } finally {
       externalStore.tryExecute(table, conn => {
@@ -299,7 +298,7 @@ abstract class BaseColumnFormatRelation(
     } finally {
       try {
         try {
-          JdbcExtendedUtils.dropTable(sysConnFactory(), externalColumnTableName,
+          JdbcExtendedUtils.dropTable(conn, externalColumnTableName,
             dialect, sqlContext, ifExists)
         } finally {
           JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext,
@@ -396,7 +395,7 @@ abstract class BaseColumnFormatRelation(
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
-            sqlContext.conf.caseSensitiveAnalysis, conn, sysConnFactory)
+            sqlContext.conf.caseSensitiveAnalysis, conn)
         }
         createExternalTableForColumnBatches(externalColumnTableName,
           externalStore)
@@ -424,8 +423,7 @@ abstract class BaseColumnFormatRelation(
    */
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP, connProperties.urlSecureSuffix)
+      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()

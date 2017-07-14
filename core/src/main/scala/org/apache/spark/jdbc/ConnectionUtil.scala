@@ -45,8 +45,7 @@ object ConnectionUtil {
     val poolProps = connectionProps.poolProps
     val dDialect = connectionProps.dialect
 
-    ConnectionPool.getPoolConnection(name,
-      dDialect, poolProps, connProps, hikariCP, connectionProps.urlSecureSuffix)
+    ConnectionPool.getPoolConnection(name, dDialect, poolProps, connProps, hikariCP)
   }
 
   /**
@@ -63,8 +62,7 @@ object ConnectionUtil {
       case _ => connectionProps.executorConnProps
     }
     
-    val jdbcOptions = new JDBCOptions(connectionProps.url +
-      connectionProps.urlSecureSuffix, "", connProps.asScala.toMap)
+    val jdbcOptions = new JDBCOptions(connectionProps.url, "", connProps.asScala.toMap)
     JdbcUtils.createConnectionFactory(jdbcOptions)()
   }
 

@@ -76,16 +76,22 @@ class SecureQueryRoutingDUnitTest(val s: String)
     val stmt1 = conn.createStatement()
     val rows = (1 to numRows).toSeq
     try {
-      var i = 1
-      rows.foreach(d => {
-        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
-        i += 1
-        if (i % 1000 == 0) {
-          stmt1.executeBatch()
-          i = 0
-        }
+      // TODO - Fix issue with executeBatch
+//      var i = 1
+//      rows.foreach(d => {
+//        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
+//        i += 1
+//        if (i % 1000 == 0) {
+//          stmt1.executeBatch()
+//          i = 0
+//        }
+//      })
+//      stmt1.executeBatch()
+
+      rows.foreach(i => {
+        stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
       })
-      stmt1.executeBatch()
+
       // scalastyle:off println
       println(s"committed $numRows rows")
       // scalastyle:on println

@@ -254,8 +254,7 @@ class RowFormatRelation(
         table, upsert = true)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP,
-        connProperties.urlSecureSuffix)
+        connProperties.poolProps, connProps, connProperties.hikariCP)
       try {
         val stmt = connection.prepareStatement(putStr)
         val result = CodeGeneration.executeUpdate(table, stmt,

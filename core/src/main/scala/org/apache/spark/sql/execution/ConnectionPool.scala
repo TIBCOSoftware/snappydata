@@ -132,22 +132,9 @@ object ConnectionPool {
    *
    * @see getPoolDataSource
    */
-  def getPoolConnection(id: String, dialect: JdbcDialect,
-      poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean, urlSuffix: String): Connection = {
-    val url = poolProps.get("url")
-    val poolPropsSecure = if (url.isDefined) {
-      val urlSecure = if (id.startsWith(Constant.SHADOW_SCHEMA_NAME)) {
-        val bootProperties = Misc.getMemStore.getBootProperties
-        if (bootProperties.containsKey("user") && bootProperties.containsKey("password")) {
-          url.get + ";user=" + bootProperties.get("user") +
-              ";password=" + bootProperties.get("password") +
-              ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";"
-        } else url.get + urlSuffix
-      } else url.get + urlSuffix
-      poolProps + ("url" -> urlSecure)
-    } else poolProps
-    val ds = getPoolDataSource(id, poolPropsSecure, connProps, hikariCP)
+  def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
+      connProps: Properties, hikariCP: Boolean): Connection = {
+    val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
     val conn = ds.getConnection
     dialect match {
       case GemFireXDDialect | GemFireXDClientDialect =>
