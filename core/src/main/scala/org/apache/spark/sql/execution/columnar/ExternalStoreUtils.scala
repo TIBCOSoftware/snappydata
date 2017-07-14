@@ -274,34 +274,35 @@ object ExternalStoreUtils extends Logging {
         false
       case _ => false
     }
-    setSecurityCredentials(session, connProps)
-    setSecurityCredentials(session, executorConnProps)
-    val allPoolProps = getAllPoolProperties(url, driver,
-      withSecurityCredentials(session, poolProps), hikariCP, isEmbedded)
-    ConnectionProperties(url, driver, dialect, allPoolProps, connProps, executorConnProps, hikariCP)
+    val allPoolProps = getAllPoolProperties(url, driver, poolProps, hikariCP, isEmbedded)
+    getConnectionProperties(session, url, driver, dialect, allPoolProps, connProps,
+      executorConnProps, hikariCP)
   }
 
-  def setSecurityCredentials(session: Option[SparkSession], props: Properties): Unit = {
-    if (session.isDefined) {
-      val user = session.get.conf.getOption(Attribute.USERNAME_ATTR)
-      val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR)
-      if (user.isDefined && password.isDefined) {
-        props.setProperty(Attribute.USERNAME_ATTR, user.get)
-        props.setProperty(Attribute.PASSWORD_ATTR, password.get)
+  def getConnectionProperties(session: Option[SparkSession], url: String, driver: String,
+      dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
+      executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
+    if (session.isDefined && session.get.conf.getOption(Attribute.USERNAME_ATTR).isDefined &&
+        session.get.conf.getOption(Attribute.PASSWORD_ATTR).isDefined) {
+      val user = session.get.conf.getOption(Attribute.USERNAME_ATTR).get
+      val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR).get
+
+      def secureProps(props: Properties): Properties = {
+        props.setProperty(Attribute.USERNAME_ATTR, user)
+        props.setProperty(Attribute.PASSWORD_ATTR, password)
+        props
       }
-    }
-  }
 
-  def withSecurityCredentials(session: Option[SparkSession],
-      props: Map[String, String]): Map[String, String] = {
-    if (session.isDefined) {
-      val user = session.get.conf.getOption(Attribute.USERNAME_ATTR)
-      val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR)
-      if (user.isDefined && password.isDefined) {
-        // TODO - Hikari only take 'username'. Tomcat also take 'username'
-        props + ("username" -> user.get) + ("password" -> password.get)
-      } else props
-    } else props
+      // Hikari only take 'username'. So does Tomcat
+      def securePoolProps(props: Map[String, String]): Map[String, String] = props +
+          ("username" -> user) + ("password" -> password)
+
+      def secureUrl(url: String): String = url + ";user=" + user + ";password=" + password + ";"
+
+      ConnectionProperties(secureUrl(url), driver, dialect, securePoolProps(poolProps),
+        secureProps(connProps), secureProps(executorConnProps), hikariCP)
+    } else ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
+      hikariCP)
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,
