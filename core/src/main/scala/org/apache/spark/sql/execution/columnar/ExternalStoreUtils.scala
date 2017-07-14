@@ -104,7 +104,6 @@ object ExternalStoreUtils extends Logging {
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
       props = addProperty(props, "maxIdle", defaultMaxPoolSize)
       props = addProperty(props, "initialSize", "4")
-      props = addProperty(props, "minEvictableIdleTimeMillis", "120000")
     }
     props
   }

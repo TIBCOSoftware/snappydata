@@ -26,7 +26,7 @@ import io.snappydata.core.LocalSparkConf
 
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
-class BasicStoreTest(s: String) extends TestUtil(s) {
+class BasicStoreSuite(s: String) extends TestUtil(s) {
 
   override protected def tearDown(): Unit = {
     val conn = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
