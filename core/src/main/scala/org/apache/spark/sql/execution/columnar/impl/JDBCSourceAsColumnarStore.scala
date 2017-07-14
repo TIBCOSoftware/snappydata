@@ -260,10 +260,11 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       connProperties.poolProps, connProps, connProperties.hikariCP)
   }
 
+  lazy val bootProperties = Misc.getMemStore.getBootProperties
+
   def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
       connProps: Properties, hikariCP: Boolean): Connection = {
     // Handle security at remote VM in cases like insert
-    val bootProperties = Misc.getMemStore.getBootProperties
     if (bootProperties.containsKey("user") && bootProperties.containsKey("password")) {
       val user: String = bootProperties.get("user").toString
       val password: String = bootProperties.get("password").toString
