@@ -242,7 +242,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       case plan => plan
     }
 
-    def withNewExecutionId[T](body: T): T = executedPlan match {
+    def withNewExecutionId[T](body: => T): T = executedPlan match {
       // don't create a new executionId for ExecutePlan since it has already done so
       case _: ExecutePlan => body
       case _ => CachedDataFrame.withNewExecutionId(

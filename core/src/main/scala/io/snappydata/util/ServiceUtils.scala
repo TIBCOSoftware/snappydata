@@ -22,14 +22,14 @@ import java.util.regex.Pattern
 import scala.collection.JavaConverters._
 
 import _root_.com.gemstone.gemfire.distributed.DistributedMember
+import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig
 import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
-import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
+import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{Constant, Property, ServerManager}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 
 /**
  * Common utility methods for store services.
@@ -58,9 +58,19 @@ object ServiceUtils {
           k.startsWith(Constant.PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
-    if (!storeProps.containsKey(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
-      // set default startup-recovery-delay to be 2mins (SNAP-1541)
+    setCommonBootDefaults(storeProps)
+  }
+
+  private[snappydata] def setCommonBootDefaults(props: Properties): Properties = {
+    val storeProps = if (props ne null) props else new Properties()
+    val storePropNames = storeProps.stringPropertyNames()
+    // set default recovery delay to 2 minutes (SNAP-1541)
+    if (!storePropNames.contains(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
       storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+    }
+    // set default member-timeout higher for GC pauses (SNAP-1777)
+    if (!storePropNames.contains(DistributionConfig.MEMBER_TIMEOUT_NAME)) {
+      storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
     }
     storeProps
   }
