@@ -274,9 +274,10 @@ object ExternalStoreUtils extends Logging {
         false
       case _ => false
     }
-    val allPoolProps = getAllPoolProperties(url, driver, poolProps, hikariCP, isEmbedded)
-    getConnectionProperties(session, url, driver, dialect, allPoolProps, connProps,
-      executorConnProps, hikariCP)
+    val allPoolProps = getAllPoolProperties(url, driver,
+      poolProps, hikariCP, isEmbedded)
+    getConnectionProperties(session, url, driver, dialect, allPoolProps,
+      connProps, executorConnProps, hikariCP)
   }
 
   def getConnectionProperties(session: Option[SparkSession], url: String, driver: String,
