@@ -271,7 +271,6 @@ class QueryRoutingDUnitTest(val s: String)
     assert(rs.next())
     assert(rs.getInt(1) == 0)
 
-
     // drop all tables
     conn1.createStatement().executeUpdate(s" drop table $columnTable")
     conn1.createStatement().executeUpdate(s" drop table $rowTable")
@@ -338,7 +337,7 @@ class QueryRoutingDUnitTest(val s: String)
     ps2.close()
   }
 
-  def _testSNAP193_607_8_9(): Unit = {
+  def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
