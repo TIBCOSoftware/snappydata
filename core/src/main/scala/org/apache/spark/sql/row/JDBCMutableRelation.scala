@@ -92,7 +92,7 @@ case class JDBCMutableRelation(
 
   protected final val connFactory: () => Connection =
     JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
-        connProperties.connProps.asScala.toMap))
+      connProperties.connProps.asScala.toMap))
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -227,7 +227,8 @@ case class JDBCMutableRelation(
 
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()
@@ -257,7 +258,8 @@ case class JDBCMutableRelation(
       index += 1
     }
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
       val whereStr = if (filterExpr == null || filterExpr.isEmpty) ""
@@ -276,7 +278,8 @@ case class JDBCMutableRelation(
 
   override def delete(filterExpr: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
     try {
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""

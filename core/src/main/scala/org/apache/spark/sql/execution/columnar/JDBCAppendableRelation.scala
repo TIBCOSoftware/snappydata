@@ -20,7 +20,6 @@ import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import io.snappydata.SnappyTableStatsProviderService
-
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -33,6 +32,7 @@ import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{StructField, StructType}
+
 import scala.collection.JavaConverters._
 
 

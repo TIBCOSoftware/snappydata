@@ -45,7 +45,8 @@ object ConnectionUtil {
     val poolProps = connectionProps.poolProps
     val dDialect = connectionProps.dialect
 
-    ConnectionPool.getPoolConnection(name, dDialect, poolProps, connProps, hikariCP)
+    ConnectionPool.getPoolConnection(name,
+      dDialect, poolProps, connProps, hikariCP)
   }
 
   /**
