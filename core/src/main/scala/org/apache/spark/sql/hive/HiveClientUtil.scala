@@ -153,8 +153,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       val secureDbURL = if (user.isDefined && password.isDefined) {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME, user.get)
         metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD, password.get)
-        dbURL +";user=" + user.get + ";password=" + password.get + ";default-schema=" +
-            Misc.SNAPPY_HIVE_METASTORE + ";"
+        dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";"
       } else {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
           Misc.SNAPPY_HIVE_METASTORE)

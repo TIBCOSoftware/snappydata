@@ -383,8 +383,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       if (bootProperties.containsKey("user") && bootProperties.containsKey("password")) {
         urlSecure = "jdbc:snappydata:" +
             ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
-            ";user=" + bootProperties.get("user") +
-            ";password=" + bootProperties.get("password") +
             ";disable-streaming=true;default-persistent=true";
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
             bootProperties.get("user").toString());
