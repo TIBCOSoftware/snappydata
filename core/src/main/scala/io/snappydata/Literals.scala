@@ -117,6 +117,8 @@ object Constant {
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
+
+  val FOLDABLE_FUNCTIONS = Set( "ROUND", "BROUND" )
 }
 
 /**

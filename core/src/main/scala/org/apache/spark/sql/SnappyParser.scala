@@ -21,7 +21,7 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
-import io.snappydata.QueryHint
+import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -676,10 +676,13 @@ class SnappyParser(session: SnappySession)
           (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Option[String], d: Any, e: Any, w: Any) =>
             val udfName = n2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
-            val allExprs = e.asInstanceOf[Seq[Expression]]
-            val exprs = allExprs.collect {
-              case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
-              case ex: Expression => ex
+            var allExprs = e.asInstanceOf[Seq[Expression]]
+            var exprs = allExprs
+            if (Constant.FOLDABLE_FUNCTIONS.contains(n1)) {
+              exprs = allExprs.collect {
+                case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
+                case ex: Expression => ex
+              }
             }
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(udfName, exprs, isDistinct = false)
@@ -707,19 +710,21 @@ class SnappyParser(session: SnappySession)
     ) |
     '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
       (fn: FunctionIdentifier, e: Any) =>
+        val allExprs = e.asInstanceOf[Seq[Expression]].toList
+        var exprs = allExprs
+        if (Constant.FOLDABLE_FUNCTIONS.contains(fn.funcName)) {
+          exprs = allExprs.collect {
+            case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
+            case ex: Expression => ex
+          }
+        }
         fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
-            val allExprs = e.asInstanceOf[Seq[Expression]].toList
-            val exprs = allExprs.collect {
-              case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
-              case ex: Expression => ex
-            }
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
                 exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
             DateAdd(exprs(2), exprs(1))
-          case f => UnresolvedFunction(f, e.asInstanceOf[Seq[Expression]],
-            isDistinct = false)
+          case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
     } |
     ( ( test(tokenize) ~ paramliteral ) | literal | paramLiteralQuestionMark) |
