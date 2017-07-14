@@ -1282,18 +1282,20 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   public static void printOpsInBB() {
     ArrayList<Integer> dmlthreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
-    for (int tid : dmlthreads) {
-      List<List<String>> derbyOps = (ArrayList<List<String>>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
-          ("derbyOps_" + tid);
-      if (derbyOps != null) {
-        Log.getLogWriter().info("Pending Ops in BB are :");
-        for (List<String> operation : derbyOps) {
-          String stmt = operation.get(1);
-          if (stmt.contains("insert ")) {
-            String row = operation.get(2);
-            Log.getLogWriter().info(stmt + " with values" + "(" + row + ")");
-          } else
-            Log.getLogWriter().info(stmt);
+    if(dmlthreads!=null) {
+      for (int tid : dmlthreads) {
+        List<List<String>> derbyOps = (ArrayList<List<String>>) SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+            ("derbyOps_" + tid);
+        if (derbyOps != null) {
+          Log.getLogWriter().info("Pending Ops in BB are :");
+          for (List<String> operation : derbyOps) {
+            String stmt = operation.get(1);
+            if (stmt.contains("insert ")) {
+              String row = operation.get(2);
+              Log.getLogWriter().info(stmt + " with values" + "(" + row + ")");
+            } else
+              Log.getLogWriter().info(stmt);
+          }
         }
       }
     }
