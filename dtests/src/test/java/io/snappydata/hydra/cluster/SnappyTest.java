@@ -3136,6 +3136,12 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
+      boolean serverStartFailed = snappyTest.executeStatusTask(logFile);
+      if (serverStartFailed) {
+        snappyTest.threadDumpForAllServers();
+        /*Thread.sleep(60000);
+        startSnappyServer();*/
+      }
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
