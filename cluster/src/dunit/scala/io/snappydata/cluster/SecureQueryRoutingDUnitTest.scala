@@ -76,24 +76,42 @@ class SecureQueryRoutingDUnitTest(val s: String)
     val stmt1 = conn.createStatement()
     val rows = (1 to numRows).toSeq
     try {
-      // TODO - Fix issue with executeBatch
-//      var i = 1
-//      rows.foreach(d => {
-//        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
-//        i += 1
-//        if (i % 1000 == 0) {
-//          stmt1.executeBatch()
-//          i = 0
-//        }
-//      })
-//      stmt1.executeBatch()
+      var i = 1
+      rows.foreach(d => {
+        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
+        i += 1
+        if (i % 1000 == 0) {
+          stmt1.executeBatch()
+          i = 0
+        }
+      })
+      stmt1.executeBatch()
 
+      // scalastyle:off println
+      println(s"insertRows1: committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
+  }
+
+  def insertRows2(numRows: Int, serverHostPort: Int, tableName: String,
+      user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"insertRows2: Connected to $serverHostPort")
+    // scalastyle:on println
+
+    val stmt1 = conn.createStatement()
+    val rows = (1 to numRows).toSeq
+    try {
       rows.foreach(i => {
         stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
       })
 
       // scalastyle:off println
-      println(s"committed $numRows rows")
+      println(s"insertRows2: committed $numRows rows")
       // scalastyle:on println
     } finally {
       stmt1.close()
@@ -118,7 +136,7 @@ class SecureQueryRoutingDUnitTest(val s: String)
     // scalastyle:off println
     println(builder.toString())
     // scalastyle:on println
-    assert(index == 20000)
+    assert(index == 40000)
   }
 
   def query1(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
@@ -202,6 +220,7 @@ class SecureQueryRoutingDUnitTest(val s: String)
     val tableName = "order_line_col"
     createTable1(serverHostPort, tableName, jdbcUser, jdbcUser)
     insertRows1(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
+    insertRows2(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
 
     // (1 to 5).foreach(d => query())
     query1(serverHostPort, tableName, jdbcUser, jdbcUser)
@@ -218,6 +237,7 @@ class SecureQueryRoutingDUnitTest(val s: String)
     val tableName = "order_line_row"
     createTable2(serverHostPort, tableName, jdbcUser, jdbcUser)
     insertRows1(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
+    insertRows2(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
 
     // (1 to 5).foreach(d => query())
     query1(serverHostPort, tableName, jdbcUser, jdbcUser)
