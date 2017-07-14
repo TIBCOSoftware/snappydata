@@ -2823,8 +2823,17 @@ public class SnappyTest implements Serializable {
         int pid = Integer.parseInt(pidString);
         String pidHost = snappyTest.getPidHost(Integer.toString(pid));
         if (pidHost.equalsIgnoreCase("localhost")) {
+          bw.write("kill -23 " + pid);
+          bw.newLine();
+          bw.write("sleep 4;");
+          bw.newLine();
           bw.write("kill -3 " + pid);
         } else {
+          bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+              pidHost + " kill -23 " + pid);
+          bw.newLine();
+          bw.write("sleep 4;");
+          bw.newLine();
           bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
               pidHost + " kill -3 " + pid);
         }
