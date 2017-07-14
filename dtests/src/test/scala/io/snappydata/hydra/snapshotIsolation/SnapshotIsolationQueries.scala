@@ -19,7 +19,8 @@ package io.snappydata.hydra.snapshotIsolation
 
 
 object SnapshotIsolationQueries {
-   val Q1: String =   "SELECT OrderID,count(1) as count FROM ORDER_DETAILS group by OrderID;"
+   val Q1: String =   "SELECT OrderID,count(1) as count FROM ORDERS group by OrderID HAVING count" +
+       "(1) > 1;"
 
   val queries = List(
     "Q1" -> Q1
