@@ -15,3 +15,7 @@ The following topics are covered in this section:
 * [Snappy-SQL Shell Interactive Commands](reference/interactive_commands/store_command_reference.md)
 
 * [Configuration Parameters](reference/configuration_parameters/config_parameters.md)
+
+!!! Tip
+
+	SnappyData supports the built-in functions supported by Spark. For more information, refer to the [Apache Spark Documentation](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.functions$).

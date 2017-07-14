@@ -224,13 +224,13 @@ $ bin/snappy-job.sh submit  \
 The status of this job can be queried in the same manner as shown above. The result of the job returns a file path that has the query results.
 
 ### Running Python Applications
-Python users can submit a Python application using `spark-submit` in the SnappyData Connector mode. For example, run the command given below to submit a Python application:
+Python users can submit a Python application using `spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
 
 ```bash
 bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
-    --conf spark.ui.port=4042  quickstart/python/AirlineDataPythonApp.py
+    --conf spark.ui.port=4042 $SNAPPY_HOME/quickstart/python/AirlineDataPythonApp.py
 ```
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
 

@@ -491,6 +491,7 @@ You can execute selected queries on a column table, join the column table with o
 
 <a id="howto-load"></a>
 ## How to Load Data in SnappyData Tables
+
 You can use Spark's DataFrameReader API in order to load data into SnappyData tables using different formats (Parquet, CSV, JSON etc.).
 
 **Code Example**
@@ -563,6 +564,54 @@ In the code snippet below a schema is inferred from a CSV file. Column names are
 
 The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). Source for the code to load data from a JSON file can be found in [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
+<a id="howto-external"></a>
+## How to Load Data from External Sources
+
+### Loading CSV data from HDFS using API
+
+```
+%snappydata
+val dataDF=snc.read.option("header","true").csv ("hdfs://localhost:9000/example/data/police_incidents/Police_Department_Incidents.csv")
+
+// drop table if exist
+snc.sql("drop table if exists police_incidents")
+
+// Create column table using api with schema specified using dataframe created using CSV file 
+snc.createTable("police_incidents", "column", dataDF.schema,Map.empty[String, String])
+
+// Load data into above created table
+dataDF.write.mode(SaveMode.Overwrite).saveAsTable("police_incidents")
+```
+
+```
+dataDF: org.apache.spark.sql.DataFrame = [IncidntNum: string, Category: string ... 11 more fields]
+res12: org.apache.spark.sql.DataFrame = []
+res13: org.apache.spark.sql.DataFrame = [INCIDNTNUM: string, CATEGORY: string ... 11 more fields]
+```
+
+### Loading CSV data from HDFS with Data transformation and cleanup
+
+```
+%snappydata
+val dataDF=snc.read.option("header","true").csv ("hdfs://localhost:9000/example/data/police_incidents/Police_Department_Incidents.csv")
+
+// drop table if exist and create it with only required fields 
+snc.sql("drop table if exists police_incidents")
+snc.sql("create table police_incidents(INCIDNTNUM integer,DAYOFWEEK varchar(3),latitude float,longitude float) using column options()")
+
+import snc.implicits._
+// Project and transform data from df and load it in table.
+dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y").write.mode(SaveMode.Overwrite).saveAsTable("police_incidents")
+
+//Here X and Y are latitude and longitude columns in raw dataframe
+```
+
+```
+dataDF: org.apache.spark.sql.DataFrame = [IncidntNum: string, Category: string ... 11 more fields]
+res51: org.apache.spark.sql.DataFrame = []
+res52: org.apache.spark.sql.DataFrame = []
+import snc.implicits._
+```
 
 <a id="howto-collacatedJoin"></a>
 ## How to Perform a Colocated Join
@@ -1286,3 +1335,4 @@ Refer to these sections for information:
 * [About the Interpreter](aqp_aws.md#using-the-interpreter) 
 
 * [Example Notebooks](aqp_aws.md#creating-notebooks-try-it-yourself)
+
