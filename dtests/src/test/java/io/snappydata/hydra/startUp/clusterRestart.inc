@@ -2,6 +2,8 @@ CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             runMode = always
             threadGroups = snappyThreads;
 
-CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSparkCluster
+CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
             runMode = always
             threadGroups = snappyThreads;
+
+io.snappydata.hydra.cluster.SnappyPrms-forceStart = true;
