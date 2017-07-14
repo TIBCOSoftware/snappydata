@@ -1,4 +1,4 @@
-# Command Line Utitilites
+# Command Line Utilites
 
 Use the *snappy* command-line utility to launch SnappyData utilities.
 

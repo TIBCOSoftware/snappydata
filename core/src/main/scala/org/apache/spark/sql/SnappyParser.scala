@@ -333,6 +333,14 @@ class SnappyParser(session: SnappySession)
     )
   }
 
+  final def parsedDataType: Rule1[DataType] = rule {
+    ws ~ dataType
+  }
+
+  final def parsedExpression: Rule1[Expression] = rule {
+    ws ~ namedExpression
+  }
+
   protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
@@ -506,12 +514,12 @@ class SnappyParser(session: SnappySession)
           case None =>
             assertNoQueryHint(QueryHint.Index,
               s"${QueryHint.Index} cannot be applied to derived table $alias")
-            SubqueryAlias(alias, child)
+            SubqueryAlias(alias, child, None)
           case Some(win) =>
             assertNoQueryHint(QueryHint.Index,
               s"${QueryHint.Index} cannot be applied to derived table $alias")
             WindowLogicalPlan(win._1, win._2,
-              SubqueryAlias(alias, child))
+              SubqueryAlias(alias, child, None))
         })
   }
 
@@ -522,8 +530,7 @@ class SnappyParser(session: SnappySession)
         USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
             ((t: Any, r: LogicalPlan, ids: Any) =>
               (Some(UsingJoin(t.asInstanceOf[Option[JoinType]]
-                  .getOrElse(Inner), ids.asInstanceOf[Seq[String]]
-                  .map(UnresolvedAttribute.quoted))), r, None)) |
+                  .getOrElse(Inner), ids.asInstanceOf[Seq[String]])), r, None)) |
         MATCH ~> ((t: Option[JoinType], r: LogicalPlan) => (t, r, None))
     ) |
     NATURAL ~ joinType.? ~ JOIN ~ relationFactor ~> ((t: Any,
@@ -797,7 +804,7 @@ class SnappyParser(session: SnappySession)
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
     TABLE.? ~ relation ~ query ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => InsertIntoTable(r, Map.empty[String,
-        Option[String]], s, o, ifNotExists = false))
+        Option[String]], s, OverwriteOptions(o), ifNotExists = false))
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
@@ -808,7 +815,7 @@ class SnappyParser(session: SnappySession)
     WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + commaSep) ~
         (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
-        With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2))).toMap))
+        With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2, None)))))
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {

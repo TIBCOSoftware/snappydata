@@ -1,5 +1,5 @@
 # Overview
-In this section, we discuss the various modes available for collocation of related data and computation.
+In this section, the various modes available for collocation of related data and computation is discussed.
 
 You can run the SnappyData store in the following modes:
 
@@ -28,7 +28,7 @@ In this mode, you can execute all the components (client application, executors,
  
 ![Local Mode](Images/SnappyLocalMode.png)
 
-**Example**: **Using the Local mode for developing SnappyData programs**
+**Example: Using the Local mode for developing SnappyData programs**
 
 You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:
 
@@ -82,23 +82,22 @@ Some of the advantages of this mode are:
 
 ![Embedded Mode](Images/SnappyEmbeddedMode.png)
 
-In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide#snappydata-jobs) section.
+In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](programming_guide.md#snappydata-jobs) section.
 
 **Example: Submit a Spark Job to the SnappyData Cluster**
 ```
 bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 ```
 
-Also, you can use [SnappySQL](howto/#howto-snappyShell) to create and query tables.
+Also, you can use [SnappySQL](howto.md#howto-snappyShell) to create and query tables.
 
 You can either [start SnappyData members](install.md) using the `snappy-start-all.sh` script or you can start them individually.
 
 Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:
 
-* If the join expression matches the partitioning scheme of tables, we do a partition to partition join instead of a shuffle based join.
-  Moreover, if two tables are collocated (while defining the tables) we can avoid costly data movement.
+* If the join expression matches the partitioning scheme of tables, a partition to partition join instead of a shuffle based join is done. </br> Moreover, if two tables are collocated (while defining the tables) costly data movement can be avoided.
 
-* For replicated tables, which we know are present in all the data nodes,  a simple local join( local look up)  is done instead of a broadcast join.
+* For replicated tables, that are present in all the data nodes, a simple local join (local look up)  is done instead of a broadcast join.
 
 * Similarly inserts to tables groups rows according to table partitioning keys, and route to the JVM hosting the partition. This results in higher ingestion rate.
 
@@ -136,7 +135,7 @@ When queries are executed, while the entire query planning and execution is coor
 
 * Optimized column batch inserts like in the Embedded mode with job routing to same machines as data stores if possible.
 
-**Example: Launch a Spark local mode cluster and uses Smart Connector to access SnappyData cluster**
+**Example: Launch a Spark local mode cluster and use Smart Connector to access SnappyData cluster**
 
 **Step 1: Start the SnappyData cluster**:
 You can either start SnappyData members using the `_snappy_start_all_` script or you can start them individually.
@@ -145,6 +144,7 @@ You can either start SnappyData members using the `_snappy_start_all_` script or
 # start members using the ssh scripts
 $ sbin/snappy-start-all.sh
 ```
+OR
 
 ```
 # start members individually
@@ -153,7 +153,7 @@ $ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
 bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 ```
 
-**Step 2: Launch the Apache Spark program **
+**Step 2: Launch the Apache Spark program**
 
 ***_In the Local mode_***
 ```bash
@@ -161,7 +161,7 @@ bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:0.9-s_2.11"
 ```
 !!! Note: 
-	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. Its value is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527).
+	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. The value of this property is a combination of locator host and JDBC client port on which the locator listens for connections (default is 1527).
  
  	* In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`.
 

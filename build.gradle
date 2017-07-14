@@ -98,8 +98,8 @@ allprojects {
     productName = 'SnappyData'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.0.0'
-    snappySparkVersion = '2.0.2.5'
+    sparkVersion = '2.1.1'
+    snappySparkVersion = '2.1.1.1'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.21'
@@ -305,6 +305,7 @@ subprojects {
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
+    dependsOn ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -314,16 +315,16 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
-    FileTree includeTestFiles = dunitTests
     def single = rootProject.hasProperty('dunit.single') ?
         rootProject.property('dunit.single') : null
-    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+    if (single == null || single.length() == 0) {
+      def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
+      FileTree includeTestFiles = dunitTests
+      int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-    int dunitTo = rootProject.hasProperty('dunit.to') ?
+      int dunitTo = rootProject.hasProperty('dunit.to') ?
           getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
 
-    if (single == null || single.length() == 0) {
       int begin = dunitFrom != -1 ? dunitFrom : 0
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
       def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
@@ -791,9 +792,7 @@ distZip {
   }
 }
 
-// use the task below to prepare final release bits
-task distProduct {
-  dependsOn product, distTar, distZip
+task copyShadowJars {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
@@ -819,6 +818,12 @@ task distProduct {
   }
 }
 
+// use the task below to prepare final release bits
+task distProduct {
+  dependsOn product, distTar, distZip
+  dependsOn copyShadowJars
+}
+
 def copyTestsCommonResources(def bdir) {
   String outdir = "${bdir}/resources/test"
   file(outdir).mkdirs()
@@ -836,7 +841,7 @@ def runScript(def execName, def workDir, def param, env = null) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
-    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.3-src.zip:${snappyProductDir}/python"
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
   }
   return "${stdout}"
 }
@@ -865,17 +870,21 @@ task buildDtests {
 }
 task checkAll {
   dependsOn ':snappy-spark:scalaStyle'
-  if (project.hasProperty('store')) {
+  if (rootProject.hasProperty('store')) {
     dependsOn ':snappy-store:check'
   }
   dependsOn ":snappy-core_${scalaBinaryVersion}:check"
-  if (project.hasProperty('spark')) {
+  if (rootProject.hasProperty('spark')) {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
-  if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!rootProject.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
+  }
+  if (!rootProject.hasProperty('smoke.skip')) {
+    dependsOn ":buildDtests"
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
   mustRunAfter buildAll
 }
@@ -1025,15 +1034,10 @@ task publishDocs(type:Exec) {
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports
-  dependsOn ':snappy-spark:scalaStyle', docs
-  if (!project.hasProperty('smoke.skip')) {
-    dependsOn ":buildDtests"
-    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
-  }
+  dependsOn cleanAll, buildAll, checkAll, allReports, docs
 }
 
-if (project.hasProperty('trackBuildTime') ) {
+if (rootProject.hasProperty('trackBuildTime') ) {
   buildtimetracker {
     reporters {
       summary {

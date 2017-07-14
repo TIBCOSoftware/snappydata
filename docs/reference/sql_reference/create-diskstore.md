@@ -56,7 +56,7 @@ Sets the buffer size in bytes to use when persisting data to disk. The default i
 
 Sets the maximum number of row operations that SnappyData asynchronously queues to disk. After this number of asynchronous operations are queued, additional asynchronous operations block until existing writes are flushed to disk. A single DML operation may affect multiple rows, and each row modification, insertion, and deletion are considered a separate operation. The default QUEUESIZE value is 0, which specifies no limit.
 
-***dir-name***
+**dir-name**
 
 The optional `dir-name` entry defines a specific host system directory to use for the disk store. You can include one or more `dir-name` entries using the syntax:
 
@@ -88,24 +88,22 @@ snappy> CREATE DISKSTORE STORE1;
 This example configures disk store parameters and specifies a storage directory:
 
 ``` pre
-snappy> CREATE DISKSTORE STORE1 
-    MAXLOGSIZE 1024 
-    AUTOCOMPACT TRUE
-    ALLOWFORCECOMPACTION  FALSE 
-    COMPACTIONTHRESHOLD  80
-    TIMEINTERVAL  223344
-    WRITEBUFFERSIZE 19292393
-    QUEUESIZE 17374
-    ('dir1' 10240);
+snappy> CREATE DISKSTORE STORE1
+      MAXLOGSIZE 1024 
+      AUTOCOMPACT TRUE
+      ALLOWFORCECOMPACTION  FALSE 
+      COMPACTIONTHRESHOLD  80
+      TIMEINTERVAL  223344
+      WRITEBUFFERSIZE 19292393
+      QUEUESIZE 17374
+      ('dir1' 10240);
 ```
 
 This example specifies multiple storage directories and directory sizes for oplog files:
 
 ``` pre
 snappy> CREATE DISKSTORE STORE1 
-    WRITEBUFFERSIZE 19292393
-    QUEUESIZE 17374
-    ('dir1' 456 , 'dir2', 'dir3' 532 );
+      WRITEBUFFERSIZE 19292393
+      QUEUESIZE 17374
+      ('dir1' 456 , 'dir2', 'dir3' 532 );
 ```
-
-

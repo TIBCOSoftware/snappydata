@@ -1,15 +1,21 @@
 # Getting Started in 5 Minutes or Less
 
 Welcome to the Getting Started section! <br>
-We provide you multiple choices for getting started with SnappyData. 
+Multiple options are provided for getting started with SnappyData. 
 Depending on your preference you can try any of the following options:
 
 * [Option 1: Getting Started with your Spark Distribution](#getting-started-with-your-spark-distribution)
+
 * [Option 2: Getting Started Using Spark Scala APIs](#getting-started-using-spark-scala-apis)
+
 * [Option 3: 20X Faster than Spark 2.0.2 Caching](#start_benchmark)
+
 * [Option 4: Getting Started using SQL](#getting-started-using-sql)
+
 * [Option 5: Getting Started by Installing SnappyData On-Premise](#getting-started-by-installing-snappydata-on-premise)
+
 * [Option 6: Getting Started on AWS](#getting-started-on-aws)
+
 * [Option 7: Getting Started with Docker Image](#getting-started-with-docker-image)
 
 !!! Note: 
@@ -20,7 +26,7 @@ Depending on your preference you can try any of the following options:
 
 If you are a Spark developer and already using Spark 2.0.0, 2.0.1 or 2.0.2 the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using "package" option of Spark Shell.
 
-This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. We encourage you to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.
+This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. You are encouraged to also try out the quick performance benchmark to see the 20X advantage over Spark's native caching performance.
 
 
 **Open a command terminal and go to the location of the Spark installation directory:**
@@ -35,7 +41,7 @@ This opens a Spark Shell and downloads the relevant SnappyData files to your loc
 All SnappyData metadata as well as persistent data is stored in the directory **quickstartdatadir**.
 
 <a id="Start_quickStart"></a>
-In this document, we assume you are either familiar with Spark or SQL (not necessarily both). We showcase basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables.
+In this document, it is assumed that you are either familiar with Spark or SQL (not necessarily both). Basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables is showcased.
 
 Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the [detailed documentation](programming_guide.md#ddl). 
 
@@ -56,6 +62,7 @@ scala> import snappy.implicits._
 ```scala
 scala> val ds = Seq((1,"a"), (2, "b"), (3, "c")).toDS()
 ```
+
 **Define a schema for the table**:
 ```scala
 scala>  import org.apache.spark.sql.types._
@@ -138,8 +145,8 @@ scala>  snappy.dropTable("colTable", ifExists = true)
 <a id="Start Benchmark"></a>
 <a id="start_benchmark"></a>
 ## Option 3: 20X Faster than Spark 2.0.2
-Here we walk you through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
-We load millions of rows into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
+Here you are walked through a simple benchmark to compare SnappyData to Spark 2.0.2 performance.
+Millions of rows are loaded into a cached Spark DataFrame, run some analytic queries measuring its performance and then, repeat the same using SnappyData's column table. 
 
 !!! Note: 
 	It is recommended that you should have at least 4GB of RAM reserved for this test. 
@@ -155,7 +162,7 @@ $ mkdir quickstartdatadir
 $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:0.9-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
-**If you have downloaded SnappyData **:
+**If you have downloaded SnappyData**:
 
 ```bash
 # Create a directory for SnappyData artifacts
@@ -163,7 +170,7 @@ $ mkdir quickstartdatadir
 $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
 
-** If you are using Docker**:
+**If you are using Docker**:
 ```bash
 $ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 ```
@@ -214,7 +221,7 @@ scala>  System.runFinalization()
 scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 ```
 
-** Create similar 100 million record DataFrame**:
+**Create similar 100 million record DataFrame**:
 ```scala
 scala>  testDF = snappy.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
 ```
@@ -240,12 +247,12 @@ scala> :q // Quit the Spark Shell
 ```
 
 !!! Note:
-	We have tested this benchmark code in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.0.2 .
+	This benchmark code is tested in system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. In a AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance too SnappyData is approx 16 to 18 times faster than Spark 2.0.2 .
 
 <a id="getting-started-using-sql"></a> 
 ## Option 4: Getting Started using SQL
 
-We illustrate SQL using Spark SQL-invoked using the Session API. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](howto.md#howto-snappyShell) section.
+SQL using Spark SQL-invoked using the Session API is illustrated. You can also use any SQL client tool (for example, Snappy SQL Shell). For an example, refer to the [How-to](howto.md#howto-snappyShell) section.
 
 **Create a column table with a simple schema [Int, String] and default options.**
 For details on the options refer to the [Row and Column Tables](programming_guide.md#tables-in-snappydata) section.
@@ -298,7 +305,7 @@ scala>  snappy.sql("drop table if exists colTable ")
 scala> :q //Quit the Spark Shell
 ```
 
-Now that we have seen the basic working of SnappyData tables, let us run the [benchmark](#start_benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
+Now that you have seen the basic working of SnappyData tables, let us run the [benchmark](#start_benchmark) code to see the performance of SnappyData and compare it to Spark's native cache performance.
 
 <a id="getting-started-by-installing-snappydata-on-premise"></a>
 ## Option 5: Getting Started by Installing SnappyData On-Premise
@@ -401,14 +408,14 @@ $ docker run hello-world
 !!! Note: 
 	Ensure that the Docker containers have access to at least 4GB of RAM on your machine.
 
-**Get the Docker Image: ** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
+**Get the Docker Image:** In the command prompt, type the following command to get the docker image. This starts the container and takes you to the Spark Shell.
 ```scala
 $  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 ```
 It starts downloading the latest image files to your local machine. Depending on your network connection, it may take some time.
-Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart)
+Once you are inside the Spark Shell with the "$ scala>" prompt, you can follow the steps explained [here](#Start_quickStart).
 
-For more details about SnappyData docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker)
+For more details about SnappyData docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker).
 
 #### More Information
 

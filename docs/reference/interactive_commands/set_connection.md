@@ -1,20 +1,20 @@
-#set connection
+# set connection
 
 Specifies which connection to make current when more than one connection is open.
 
-##Syntax
+## Syntax
 
 ``` pre
 SET CONNECTION Identifier
 ```
 
-##Description
+## Description
 
-Allows you to specify which connection to make current when you have more than one connection open. Use the [Show Connections]() command to display open connections.
+Allows you to specify which connection to make current when you have more than one connection open. Use the [Show Connections](show.md) command to display open connections.
 
 If there is no such connection, an error results and the current connection is unchanged.
 
-##Example
+## Example
 
 ``` pre
 snappy> set connection clientConnection;

@@ -126,6 +126,7 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var orderDF: DataFrame = null
+    var unionOrderDF: DataFrame = null
     // use parquet data if available
     for (i <- 1 to numberOfLoadingStage) {
       if (isParquet) {
@@ -155,10 +156,17 @@ object TPCHColumnPartitionedTable {
         }
         orderDF.write.insertInto("ORDERS")
       } else {
-        orderDF.createOrReplaceTempView("ORDERS")
-        sqlContext.cacheTable("ORDERS")
-        sqlContext.table("ORDERS").count()
+        if (i == 1) {
+          unionOrderDF = orderDF
+        } else {
+          unionOrderDF = unionOrderDF.union(orderDF)
+        }
       }
+    }
+    if (!isSnappy) {
+      unionOrderDF.createOrReplaceTempView("ORDERS")
+      sqlContext.cacheTable("ORDERS")
+      sqlContext.table("ORDERS").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
@@ -197,6 +205,7 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var lineItemDF: DataFrame = null
+    var unionLineItemDF: DataFrame = null
     // use parquet data if available
     for (i <- 1 to numberOfLoadingStage) {
       if (isParquet) {
@@ -226,10 +235,17 @@ object TPCHColumnPartitionedTable {
         }
         lineItemDF.write.insertInto("LINEITEM")
       } else {
-        lineItemDF.createOrReplaceTempView("LINEITEM")
-        sqlContext.cacheTable("LINEITEM")
-        sqlContext.table("LINEITEM").count()
+        if (i == 1) {
+          unionLineItemDF = lineItemDF
+        } else {
+          unionLineItemDF = unionLineItemDF.union(lineItemDF)
+        }
       }
+    }
+    if(!isSnappy){
+      unionLineItemDF.createOrReplaceTempView("LINEITEM")
+      sqlContext.cacheTable("LINEITEM")
+      sqlContext.table("LINEITEM").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
@@ -269,6 +285,7 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var customerDF: DataFrame = null
+    var unionCustomerDF: DataFrame = null
     for (i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
       if (isParquet) {
@@ -299,10 +316,17 @@ object TPCHColumnPartitionedTable {
         }
         customerDF.write.insertInto("CUSTOMER")
       } else {
-        customerDF.createOrReplaceTempView("CUSTOMER")
-        sqlContext.cacheTable("CUSTOMER")
-        sqlContext.table("CUSTOMER").count()
+        if (i == 1) {
+          unionCustomerDF = customerDF
+        } else {
+          unionCustomerDF = unionCustomerDF.union(customerDF)
+        }
       }
+    }
+    if(!isSnappy){
+      unionCustomerDF.createOrReplaceTempView("CUSTOMER")
+      sqlContext.cacheTable("CUSTOMER")
+      sqlContext.table("CUSTOMER").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
@@ -318,6 +342,7 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partDF: DataFrame = null
+    var unionPartDF: DataFrame = null
     for(i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
       if (isParquet) {
@@ -346,10 +371,17 @@ object TPCHColumnPartitionedTable {
         }
         partDF.write.insertInto("PART")
       } else {
-        partDF.createOrReplaceTempView("PART")
-        sqlContext.cacheTable("PART")
-        sqlContext.table("PART").count()
+        if (i == 1) {
+          unionPartDF = partDF
+        } else {
+          unionPartDF = unionPartDF.union(partDF)
+        }
       }
+    }
+    if(!isSnappy){
+      unionPartDF.createOrReplaceTempView("PART")
+      sqlContext.cacheTable("PART")
+      sqlContext.table("PART").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
@@ -364,6 +396,7 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partSuppDF: DataFrame = null
+    var unionPartSuppDF: DataFrame = null
     for (i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
       if (isParquet) {
@@ -393,10 +426,17 @@ object TPCHColumnPartitionedTable {
         }
         partSuppDF.write.insertInto("PARTSUPP")
       } else {
-        partSuppDF.createOrReplaceTempView("PARTSUPP")
-        sqlContext.cacheTable("PARTSUPP")
-        sqlContext.table("PARTSUPP").count()
+        if (i == 1) {
+          unionPartSuppDF = partSuppDF
+        } else {
+          unionPartSuppDF = unionPartSuppDF.union(partSuppDF)
+        }
       }
+    }
+    if (!isSnappy) {
+      unionPartSuppDF.createOrReplaceTempView("PARTSUPP")
+      sqlContext.cacheTable("PARTSUPP")
+      sqlContext.table("PARTSUPP").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
@@ -489,6 +529,8 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var suppDF: DataFrame = null
+    var unionSuppDF: DataFrame = null
+
     for (i <- 1 to numberOfLoadingStage) {
       // use parquet data if available
       if (isParquet) {
@@ -518,10 +560,17 @@ object TPCHColumnPartitionedTable {
         }
         suppDF.write.insertInto("SUPPLIER")
       } else {
-        suppDF.createOrReplaceTempView("SUPPLIER")
-        sqlContext.cacheTable("SUPPLIER")
-        sqlContext.table("SUPPLIER").count()
+        if (i == 1) {
+          unionSuppDF = suppDF
+        } else {
+          unionSuppDF = unionSuppDF.union(suppDF)
+        }
       }
+    }
+    if (!isSnappy) {
+      unionSuppDF.createOrReplaceTempView("SUPPLIER")
+      sqlContext.cacheTable("SUPPLIER")
+      sqlContext.table("SUPPLIER").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {

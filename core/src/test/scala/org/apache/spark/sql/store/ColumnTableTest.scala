@@ -16,10 +16,9 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.DriverManager
+import java.sql.{DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
-
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
@@ -28,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
-import io.snappydata.{SnappyEmbeddedTableStatsProviderService, Property, SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -138,6 +137,18 @@ class ColumnTableTest
     }
 
     count
+  }
+
+  test("More columns -- SNAP-1345") {
+    snc.sql(s"Create Table coltab (a INT) " +
+        "using column options()")
+    try {
+      snc.sql("insert into coltab values (1, 2)")
+    } catch {
+      case ex: SQLException => assert("42802".equals(ex.getSQLState))
+    }
+    
+    snc.sql("drop table coltab")
   }
 
   test("Test the creation/dropping of column table using Schema") {

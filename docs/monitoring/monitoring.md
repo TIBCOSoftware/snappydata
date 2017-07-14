@@ -1,16 +1,21 @@
-# Overview
-SnappyData Dashboard is a monitoring system that gives you a high-level overview of the status and performance of the cluster. It provides a simple widget based view which helps you easily navigate and monitor your cluster.</br>
+# SnappyData Pulse
 
-To access the SnappyData Dashboard, start your cluster and open http:`<leadhost>`:5050/dashboard/ in your web browser. </br>
+SnappyData Pulse is a monitoring system that gives you a high-level overview of the status and performance of the cluster. It provides a simple widget based view which helps you easily navigate and monitor your cluster.</br>
+
+To access the SnappyData Pulse, start your cluster and open http:`<leadhost>`:5050/dashboard/ in your web browser. </br>
 `<leadhost>` is the hostname or IP of the lead node in your cluster.
 
 The Dashboard also displays the **Last Updated Date** and **Time of statistics** on the top-left side of the page.
 
 
 ## The Dashboard
-SnappyData Dashboard offers the following capabilities and benefits:
+The Dashboard offers the following capabilities and benefits:
 
-### Clusters Statistics
+![Dashboard](../Images/monitoring_topnav.png)
+
+### Cluster Statistics
+
+![Cluster](../Images/monitoring_cluster.png)
 
 * **Cluster Status**</br>
 	Displays the current status of the cluster. 
@@ -18,7 +23,7 @@ SnappyData Dashboard offers the following capabilities and benefits:
     | Status | Description |
 	|--------|--------|
 	|**Normal**|All nodes in the cluster are running|
-    |**Warning **|Some nodes in the cluster are stopped or unavailable|
+    |**Warning**|Some nodes in the cluster are stopped or unavailable|
 
 * **CPU Usage** </br>
    Displays the average CPU utilization of all the nodes present in the cluster.
@@ -29,12 +34,14 @@ SnappyData Dashboard offers the following capabilities and benefits:
 * **JVM Heap Usage**</br>
    Displays the collective JVM Heap usage by all nodes in the cluster.
 
-### Members Statistics
+### Member Statistics
+
+![Dashboard](../Images/monitoring_member.png)
 
 * **Members Count**</br>
    Displays the total number of members (leads, locators and data servers) that exist in the cluster. The tooltip displays the count for each member.
 
-* **Members status**</br>
+* **Members Status**</br>
    Displays the status of the members, which can be either Running or Stopped.
 
 * **Description**</br>
@@ -57,7 +64,9 @@ SnappyData Dashboard offers the following capabilities and benefits:
 * **Off-Heap Memory Usage**</br>
    Displays the members total off-heap memory and used off-heap memory.</br> You can also view the member's off-heap storage and off-heap execution memory and utilizations by clicking on the arrow next to the member name.
 
-### Tables Statistics
+### Table Statistics
+
+![Dashboard](../Images/monitoring_table.png)
 
 * **Tables Count**</br>
    Displays the total number of data tables present in the cluster. The tooltip displays the count for the row and column tables.

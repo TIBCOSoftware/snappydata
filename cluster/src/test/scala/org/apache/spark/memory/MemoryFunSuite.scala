@@ -72,6 +72,7 @@ class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAft
       .config("spark.testing.memory", sparkMemory)
       .config("spark.testing.reservedMemory", "0")
       .config("snappydata.store.critical-heap-percentage", "90")
+      .config("spark.testing.maxStorageFraction", "0.9")
       .config("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
       .config("spark.storage.unrollMemoryThreshold", 500)
       .getOrCreate

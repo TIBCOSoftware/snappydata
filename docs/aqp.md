@@ -1,4 +1,4 @@
-## Overview of Synopsis Data Engine (SDE)
+# Overview of Synopsis Data Engine (SDE)
 The SnappyData Synopsis Data Engine (SDE) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. 
 
 For instance, in exploratory analytics, a data analyst might be slicing and dicing large data sets to understand patterns, trends or to introduce new features. Often the results are rendered in a visualization tool through bar charts, map plots and bubble charts. It would increase the productivity of the engineer by providing a near perfect answer that can be rendered in seconds instead of minutes (visually, it is identical to the 100% correct rendering), while the engineer continues to slice and dice the data sets without any interruptions. 
@@ -20,12 +20,12 @@ SnappyData SDE relies on two methods for approximations - **Stratified Sampling*
 ###  Stratified Sampling
 Sampling is quite intuitive and commonly used by data scientists and explorers. The most common algorithm in use is 'uniform random sampling'. As the term implies, the algorithm is designed to randomly pick a small fraction of the population (the full data set). The algorithm is not biased on any characteristics in the data set. It is totally random and the probability of any element being selected in the sample is the same (or uniform). But, uniform random sampling does not work well for general purpose querying.
 
-Take this simple example table that manages AdImpressions. If we create a random sample that is a third of the original size we pick two records in random. 
+Take this simple example table that manages AdImpressions. If random sample is created that is a third of the original size two records is picked in random. 
 This is depicted in the following figure:
 
 ![Uniform Random Sampling](Images/aqp_stratifiedsampling1.png)
 
-If we run a query like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. 
+If a query is executed, like 'SELECT avg(bid) FROM AdImpresssions where geo = 'VT'', the answer is a 100% wrong. The common solution to this problem could be to increase the size of the sample. 
 
 ![Uniform Random Sampling](Images/aqp_stratifiedsampling2.png)
 
@@ -39,10 +39,10 @@ To understand these concepts in further detail, refer to the [handbook](https://
 
 ### Online Sampling
 SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark DataFrame APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each startum in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
-There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, we can ensure that we have enough samples over each 5-minute time window, while still ensuring that all GEOs have good representation in the sample. 
+There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, SnappyData can ensure having enough samples over each 5-minute time window, while still ensuring that all GEOs have good representation in the sample.
 
 ### Sketching
-While stratified sampling ensures that data dimensions with low representation are captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, we use rely on other data structures like a Count-min-sketch to capture data frequencies in a stream. This is a data structure that requires that it captures how often we see an element in a stream for the top-N such elements. 
+While stratified sampling ensures that data dimensions with low representation are captured, it still does not work well when you want to capture outliers. For instance, queries like 'Find the top-10 users with the most re-tweets in the last 5 minutes may not result in good answers. Instead, other data structures like a Count-min-sketch are relied on to capture data frequencies in a stream. This is a data structure that requires that it captures how often an element is seen in a stream for the top-N such elements. 
 While a [Count-min-sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) is well described, SDE extends this with support for providing top-K estimates over time series data. 
 
 ## Working with Stratified Samples
@@ -107,9 +107,9 @@ Here are some general guidelines to use when creating samples:
 
 * Start by identifying the most common columns used in GroupBy/Where and Having clauses. 
 
-* Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above we picked 'hack_license' (one license per driver) as the strata and we sample 1% of the records associated with each driver. 
+* Then, identify a subset of these columns where the cardinality is not too large. For instance, in the example above 'hack_license' is picked (one license per driver) as the strata and 1% of the records associated with each driver is sampled. 
 
-* Avoid using unique columns or timestamps for your QCS. For instance, in the example above, 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is a possibility that each record in the Dataset has a different timesstamp. Instead, when dealing with time series we use the 'hour' function to capture data for each hour. 
+* Avoid using unique columns or timestamps for your QCS. For instance, in the example above, 'pickup_datetime' is a time stamp and is not a good candidate given its likely hood of high cardinality. That is, there is a possibility that each record in the Dataset has a different timesstamp. Instead, when dealing with time series the 'hour' function is used to capture data for each hour. 
 
 * When the accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 
@@ -148,7 +148,7 @@ SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by 
 ```
 #### Using the Spark DataFrame API
 
-We extend the Spark DataFrame API with support for approximate queries. Here is 'withError' API on DataFrames.
+The Spark DataFrame API is extended with support for approximate queries. Here is 'withError' API on DataFrames.
 ```
 def withError(error: Double,
 confidence: Double = Constant.DEFAULT_CONFIDENCE,
@@ -195,7 +195,7 @@ select medallion,avg(trip_distance) as avgTripDist,
   lower_bound(avgTripDist),upper_bound(avgTripDist) 
   from nyctaxi group by medallion order by medallion desc limit 100
   with error;
-  // We explain these built-in error functions in a section below.
+  //These built-in error functions is explained in a section below.
 ```
 
 **DataFrame API Query:**
@@ -315,11 +315,11 @@ In addition to this, SnappyData supports error functions that can be specified i
 
 The following four methods are available to be used in query projection when running approximate queries:
 
-* **absolute_error(column alias**) : Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap) 
+* **absolute_error(column alias)**: Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap) 
 
-* **relative_error(column alias)** : Indicates ratio of absolute error to estimate.
+* **relative_error(column alias)**: Indicates ratio of absolute error to estimate.
 
-* **lower_bound(column alias)** : Lower value of an estimate interval for a given confidence.
+* **lower_bound(column alias)**: Lower value of an estimate interval for a given confidence.
 
 * **upper_bound(column alias)**: Upper value of an estimate interval for a given confidence.
 

@@ -1,13 +1,10 @@
-### Overview
+# Overview
 SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). 
-All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  
-We therefore recommend that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
-and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). You can also store and manage arbitrary 
-RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still 
-evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](#markdown_link_row_and_column_tables).
+All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.</br>
+It is therefore recommend that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
+and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). You can also store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](#markdown_link_row_and_column_tables).
 
-In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered 
-to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
+In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
 Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but it can also be reliably managed on disk.
 
 <a id="snappysession"></a>
@@ -23,7 +20,7 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
 
 ### To Create a SnappySession
 
-**Scala **
+**Scala**
 
 ```scala
  val spark: SparkSession = SparkSession
@@ -104,6 +101,7 @@ The implementation of the _runSnappyJob_ function from SnappySQLJob uses a Snapp
 The implementation of _runSnappyJob_ from SnappyStreamingJob uses a SnappyStreamingContext to create streams and manage the streaming context.
 The jobs are submitted to the lead node of SnappyData over REST API using a _spark-submit_ like utility.
 
+<a id="snappydata-jobs"></a>
 ## SnappyData Jobs
 To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. Your job is displayed as:
  
@@ -367,7 +365,7 @@ snappy> run 'create_and_load_column_table.sql';
 snappy> run 'create_and_load_row_table.sql';
 ```
 
-The complete list of commands available through _snappy_shell_ can be found [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html)
+The complete list of commands available through _snappy_shell_ can be found [here](reference/command_line_utilities/store-launcher.md)
 
 ## Using the Spark Shell and spark-submit
 
@@ -679,7 +677,7 @@ snsc.sql("select count(*) from streamingExample").show()
 ```
 
 <!--
-> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and SnappyData stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and SnappyData stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
+> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and SnappyData stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and SnappyData stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuring_cluster/configuring_cluster.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 
 <a id="markdown_link_row_and_column_tables"></a>
 
@@ -717,7 +715,7 @@ DROP TABLE [IF EXISTS] table_name
 ```
 Refer to the [How-Tos](howto) section for more information on partitioning and collocating data.
 
-For row format tables column definition can take underlying GemFire XD syntax to create a table. For example, note the PRIMARY KEY clause below.
+For row format tables column definition can take underlying GemFireXD syntax to create a table. For example, note the PRIMARY KEY clause below.
 
 ```scala
 snappy.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
@@ -784,9 +782,14 @@ The below mentioned DDL extensions are required to configure a table based on us
    * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
 
-   * PERSISTENCE:  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local GemFire XD disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   * PERSISTENCE: When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.
+   	
+!!! Note:
+   	* By default, both row and column tables are persistent.
 
-   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](http://rowstore.docs.snappydata.io/docs/reference/language_ref/ref-create-diskstore.html#create-diskstore).
+   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9. Although it does work, it is recommended to use `PERSISTENCE` instead.
+
+   * DISKSTORE: The disk directory where you want to persist the table data. For more information, [refer to this document](reference/sql_reference/create-diskstore.md).
 
    * EXPIRE: You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.
 
@@ -801,7 +804,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
     	* `snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. 
 
-   Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the extensions.
+   Refer to the [SQL Reference Guide](sql_reference.md) for information on the extensions.
 
 
 #### Restrictions on Column Tables
@@ -860,9 +863,9 @@ Several APIs have been added in [SnappySession](http://snappydatainc.github.io/s
 ```
     snappy.delete(tableName, "ITEMREF = 3")
 ```
-
+<!--
 #### String/CHAR/VARCHAR Data Types
-SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as we store its data in CLOB format internally.
+SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as product stores its data in CLOB format internally.
 
 **Create a table with columns of CHAR and VARCHAR datatype using SQL**:
 ```Scala
@@ -902,7 +905,7 @@ Using the system property `spark-string-as-clob` when starting the lead node(s).
 bin/snappy leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
 ```
 
-Defining the column(s) itself as CLOB, either using SQL or API. In the example below, we define the column 'Col2' to be CLOB.
+Defining the column(s) itself as CLOB, either using SQL or API. In the example below, column 'Col2' is defined as CLOB.
 
 ```
 CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
@@ -931,23 +934,24 @@ The usage of `*` above causes all the STRING columns in the table to be rendered
 ```
 SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
 ```
-
+-->
 #### Row Buffers for Column Tables
 
 Generally, the column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.
 
-In SnappyData, the column table consists of two components, delta row buffer and column store. We try to support individual insert of single row, we store them in a delta row buffer which is write optimized and highly available.
+In SnappyData, the column table consists of two components, delta row buffer and column store. SnappyData tries to support individual insert of single row, as it is stored in a delta row buffer which is write optimized and highly available.
+
 Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
-Any query on column table also takes into account the row cached buffer. By doing this, we ensure that the query does not miss any data.
+Any query on column table also takes into account the row cached buffer. By doing this, it ensures that the query does not miss any data.
 
 #### Catalog in SnappyStore
-We use a persistent Hive catalog for all our metadata storage. All table, schema definition are stored here in a reliable manner. As we intend be able to quickly recover from driver failover, we chose GemFireXd itself to store meta information. This gives us the ability to query underlying GemFireXD to reconstruct the meta store in case of a driver failover.
+Persistent Hive catalog for all metadata storage is used. All table, schema definition are stored here in a reliable manner. The product intends to quickly recover from driver failover, using GemFireXD itself to store meta information. This gives the ability to query underlying GemFireXD to reconstruct the meta store in case of a driver failover.
 
 <!--<mark>There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. </mark>-->
 
 #### SQL Reference to the Syntax
 
-Refer to the [SQL Reference Guide](http://rowstore.docs.snappydata.io/docs/reference/sql-language-reference.html) for information on the syntax.
+Refer to the [SQL Reference Guide](sql_reference.md) for information on the syntax.
 
 
 ## Stream processing using SQL
@@ -972,15 +976,15 @@ Internally, it works as follows. Spark Streaming receives live input data stream
 Additional details on the Spark Streaming concepts and programming is covered [here](http://spark.apache.org/docs/latest/streaming-programming-guide.html).
 
 ### SnappyData Streaming Extensions over Spark
-We offer the following enhancements over Spark Streaming: 
+The following enhancements over Spark Streaming is provided: 
 
 1. __Manage Streams declaratively__: Similar to SQL Tables, Streams can be defined declaratively from any SQL client and managed as Tables in the persistent system catalog of SnappyStore. The declarative language follows the SQL language and provides access to any of the Spark Streaming streaming adapters such as Kafka or file input streams. Raw tuples arriving can be transformed into a proper structure through pluggable transformers providing the desired flexibility for custom filtering or type conversions. 
 
 2. __SQL based stream processing__: With streams visible as Tables they can be joined with other streams or resident tables (reference data, history, etc). Essentially, the entire SQL language can be used to analyze distributed streams. 
 
-3. __Continuous queries and time windows__: Similar to popular stream processing products, applications can register “continuous” queries on streams. By default, Spark streaming emits batches once every second and any registered queries would be executed each time a batch is emitted. To support arbitrary time ranges, we extend the standard SQL to be able to specify the time window for the query. 
+3. __Continuous queries and time windows__: Similar to popular stream processing products, applications can register “continuous” queries on streams. By default, Spark streaming emits batches once every second and any registered queries would be executed each time a batch is emitted. To support arbitrary time ranges, the standard SQL is extended to be able to specify the time window for the query. 
 
-4. __OLAP optimizations__: By integrating and collocating stream processing with our hybrid in-memory storage engine, we leverage our optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with our row store.
+4. __OLAP optimizations__: By integrating and collocating stream processing with the hybrid in-memory storage engine, the product leverages the optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with RowStore.
 
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
 
@@ -1119,8 +1123,8 @@ class StringLengthUDF extends UDF1[String, Int] {
 }
 ```
 <a id= create_udf> </a>
-#### **Create the UDF Function**
-After defining an UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-shell` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
+#### Create the UDF Function
+After defining an UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
 
 ```
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'
@@ -1128,7 +1132,6 @@ CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/p
 For example:
 ```
 CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USING JAR '/path/to/file/udf.jar'
-[Rishi] we can modify the declaration section as above
 ```
 
 You can write a JAVA or SCALA class to write an UDF implementation. 
@@ -1137,7 +1140,7 @@ You can write a JAVA or SCALA class to write an UDF implementation.
 	For input/output types: </br>
 	The framework always returns the Java types to the UDFs. So, if you are writing `scala.math.BigDecimal` as an input type or output type, an exception is reported. You can use `java.math.BigDecimal` in the SCALA code. 
 
-**Return Types to UDF program type mapping **
+**Return Types to UDF program type mapping**
 
 | SnappyData Type | UDF Type |
 | --- | --- |

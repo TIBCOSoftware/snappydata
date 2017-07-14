@@ -13,6 +13,9 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
+- 'Migration Guide': 'migration/migration.md'
+- 'Migration Guide':
+    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 - How Tos: howto.md
 - Architecture: architecture.md
 - 'Configuring the Cluster': 'configuration.md'
@@ -27,7 +30,7 @@ pages:
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
-- 'Managing and Monitoring': 'monitoring/monitoring.md'
+- 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'
 # -- Topic - Reference Guide
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
@@ -57,8 +60,8 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
-    - 'Inbuilt System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
-    - 'Inbuilt System Procedures': 
+    - 'Built-in System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
+    - 'Built-in System Procedures': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
@@ -136,7 +139,8 @@ pages:
         - 'sys-disk-dir': 'reference/configuration_parameters/sys-disk-dir.md'
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
-- API Documentation: apidocsintro.md
+    - 'API Documentation': 'apidocsintro.md'
+    - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - Additional Information: additional_docs.md
 #- About:
 #   - Release Notes: about/release-notes.md

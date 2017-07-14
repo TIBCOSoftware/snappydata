@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS staging_orders_details;
 -- CREATE COLUMN TABLE ORDERS_DETAILS --
 CREATE EXTERNAL TABLE staging_orders_details USING com.databricks.spark.csv
              OPTIONS (path ':dataLocation/ORDERS_DETAILS.dat', header 'true', inferSchema 'false',
-              nullValue 'NULL');
+              nullValue 'NULL', maxCharsPerColumn '4096');
 
 CREATE TABLE ORDERS_DETAILS
             (SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) ,SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128) ,
@@ -61,7 +61,7 @@ DROP TABLE IF EXISTS staging_exec_details;
 
 -- CREATE COLUMN TABLE EXEC_DETAILS --
 CREATE EXTERNAL TABLE staging_exec_details USING com.databricks.spark.csv
-             OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL');
+             OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL', maxCharsPerColumn '4096');
 
 CREATE TABLE EXEC_DETAILS(
              EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64),SYS_EXEC_STAT VARCHAR(20),

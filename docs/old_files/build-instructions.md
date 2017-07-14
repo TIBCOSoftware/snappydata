@@ -89,7 +89,7 @@ Useful build and test targets:
                            and also full SnappyData store testsuite
 ```
 
-The default build directory is _build-artifacts/scala-2.11_ for projects. Exception is _store_ project, where the default build directory is _build-artifacts/&lt;os&gt;_ where _&lt;os&gt;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
+The default build directory is _build-artifacts/scala-2.11_ for projects. Exception is _store_ project, where the default build directory is _build-artifacts/;os;_ where _;os;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
 
 The usual gradle test run targets (_test_, _check_) work as expected for junit tests. Separate targets have been provided for running scala tests (_scalaTest_) while the _check_ target will run both the junit and scalatests. One can run a single scala test suite class with _singleSuite_ option while running a single test within some suite works with the _--tests_ option:
 

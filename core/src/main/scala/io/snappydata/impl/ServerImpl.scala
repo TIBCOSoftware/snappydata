@@ -19,7 +19,9 @@ package io.snappydata.impl
 import java.sql.SQLException
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{ProtocolOverrides, Server}
 
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -33,7 +35,12 @@ class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
   @throws(classOf[SQLException])
   override def start(bootProperties: Properties): Unit = {
     GemFireXDDialect.init()
-    start(bootProperties, false)
+    start(bootProperties, ignoreIfStarted = false)
+  }
+
+  @throws[SQLException]
+  override def start(bootProps: Properties, ignoreIfStarted: Boolean): Unit = {
+    super.start(ServiceUtils.setCommonBootDefaults(bootProps), ignoreIfStarted)
   }
 
   override def isServer: Boolean = true

@@ -13,7 +13,7 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     BUCKETS  'num-partitions', // Default 113. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY ‘LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
-    PERSISTENT  ‘ASYNCHRONOUS | SYNCHRONOUS| NONE’,
+    PERSISTENCE  ‘ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
     EXPIRE ‘time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
@@ -79,13 +79,14 @@ column-data-type:
 Column tables can also use ARRAY, MAP and STRUCT types.</br>
 Decimal and numeric has default precision of 38 and scale of 18.</br>
 CHAR and VARCHAR expect size from the user.
+In this release, LONG is supported only for column tables. It is recommended to use BEGIN fo row tables instead.
 
 <a id="ddl"></a>
 `COLOCATE_WITH`</br>
 The COLOCATE_WITH clause specifies a partitioned table to collocate with. The referenced table must already exist. 
 
 `PARTITION_BY`</br>
-Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>As a shortcut, you can use PARTITION BY PRIMARY KEY to refer to the primary key columns (only applicable to row tables) defined for the table.
+Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
 `BUCKETS` </br>
 The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of 5 nodes and bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers will host all the data for this table. If not specified, the number of buckets defaults to 113.
@@ -96,8 +97,14 @@ Use the REDUNDANCY clause to specify the number of redundant copies that should 
 `EVICTION_BY`</br>
 Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. 
 
-`PERSISTENT`</br>
-Persists the in-memory table data to a local SnappyData disk store. i.e. each node in the cluster will persist its managed partitions to configured local disk.
+`PERSISTENCE`</br>
+When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member. 
+
+!!! Note:
+
+   	* By default, both row and column tables are persistent.
+
+   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
 `DISKSTORE`</br>
 The disk directories where you want to persist the table data. By default, SnappyData creates a "default" disk store on each member node. You can use this option to control the location where data will be stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, [refer to this document](create-diskstore.md).
@@ -128,60 +135,60 @@ For example, `create table if not exists Table1 (a int)` is equivalent to `creat
 
 ### Example: Column Table Partitioned on a Single Column
 ```
-	snappy>CREATE TABLE CUSTOMER ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL))
-        USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
+snappy>CREATE TABLE CUSTOMER ( 
+    C_CUSTKEY     INTEGER NOT NULL,
+    C_NAME        VARCHAR(25) NOT NULL,
+    C_ADDRESS     VARCHAR(40) NOT NULL,
+    C_NATIONKEY   INTEGER NOT NULL,
+    C_PHONE       VARCHAR(15) NOT NULL,
+    C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+    C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+    C_COMMENT     VARCHAR(117) NOT NULL))
+    USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
 ```
 
 ### Example: Column Table Partitioned with 10 Buckets and Persistence Enabled
 ```
-	snappy>CREATE TABLE CUSTOMER ( 
-        C_CUSTKEY     INTEGER NOT NULL,
-        C_NAME        VARCHAR(25) NOT NULL,
-        C_ADDRESS     VARCHAR(40) NOT NULL,
-        C_NATIONKEY   INTEGER NOT NULL,
-        C_PHONE       VARCHAR(15) NOT NULL,
-        C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-        C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-        C_COMMENT     VARCHAR(117) NOT NULL))
-        USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENT 'SYNCHRONOUS');
+snappy>CREATE TABLE CUSTOMER ( 
+    C_CUSTKEY     INTEGER NOT NULL,
+    C_NAME        VARCHAR(25) NOT NULL,
+    C_ADDRESS     VARCHAR(40) NOT NULL,
+    C_NATIONKEY   INTEGER NOT NULL,
+    C_PHONE       VARCHAR(15) NOT NULL,
+    C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
+    C_MKTSEGMENT  VARCHAR(10) NOT NULL,
+    C_COMMENT     VARCHAR(117) NOT NULL))
+    USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENCE 'SYNCHRONOUS');
 ```
 
 ### Example: Replicated, Persistent Row Table
 ```
-	snappy>CREATE TABLE SUPPLIER ( 
-          S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
-          S_NAME STRING NOT NULL, 
-          S_ADDRESS STRING NOT NULL, 
-          S_NATIONKEY INTEGER NOT NULL, 
-          S_PHONE STRING NOT NULL, 
-          S_ACCTBAL DECIMAL(15, 2) NOT NULL,
-          S_COMMENT STRING NOT NULL)
-          USING ROW OPTIONS (PERSISTENT);
+snappy>CREATE TABLE SUPPLIER ( 
+      S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
+      S_NAME STRING NOT NULL, 
+      S_ADDRESS STRING NOT NULL, 
+      S_NATIONKEY INTEGER NOT NULL, 
+      S_PHONE STRING NOT NULL, 
+      S_ACCTBAL DECIMAL(15, 2) NOT NULL,
+      S_COMMENT STRING NOT NULL)
+      USING ROW OPTIONS (PERSISTENCE 'ASYNCHRONOUS');
 ```
 
 ### Example: Row Table Partitioned with 10 Buckets and Overflow Enabled
 ```
-	snappy>CREATE TABLE SUPPLIER ( 
-          S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
-          S_NAME STRING NOT NULL, 
-          S_ADDRESS STRING NOT NULL, 
-          S_NATIONKEY INTEGER NOT NULL, 
-          S_PHONE STRING NOT NULL, 
-          S_ACCTBAL DECIMAL(15, 2) NOT NULL,
-          S_COMMENT STRING NOT NULL)
-          USING ROW OPTIONS (BUCKETS '10',
-    	  "PARTITION_BY 'S_SUPPKEY',
-       	  "PERSISTENT 'ASYNCHRONOUS',
-          "EVICTION_BY 'LRUCOUNT 3',
-          "OVERFLOW 'true');
+snappy>CREATE TABLE SUPPLIER ( 
+      S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
+      S_NAME STRING NOT NULL, 
+      S_ADDRESS STRING NOT NULL, 
+      S_NATIONKEY INTEGER NOT NULL, 
+      S_PHONE STRING NOT NULL, 
+      S_ACCTBAL DECIMAL(15, 2) NOT NULL,
+      S_COMMENT STRING NOT NULL)
+      USING ROW OPTIONS (BUCKETS '10',
+      PARTITION_BY 'S_SUPPKEY',
+      PERSISTENCE 'ASYNCHRONOUS',
+      EVICTION_BY 'LRUCOUNT 3',
+      OVERFLOW 'true');
 ```
 
 ### Example: Create Table using Select Query
@@ -198,7 +205,7 @@ Note that only the column names and datatypes from the queried table are used wh
 
 ### Example: Create Table using Spark DataFrame API
 
-For information on using the Apache Spark API, refer to [Using the Spark DataFrame API](/../../aqp.md#using-the-spark-dataframe-api).
+For information on using the Apache Spark API, refer to [Using the Spark DataFrame API](../../aqp.md#using-the-spark-dataframe-api).
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)

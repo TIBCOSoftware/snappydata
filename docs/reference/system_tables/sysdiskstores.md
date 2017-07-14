@@ -2,7 +2,7 @@
 
 Contains information about all disk stores created in the SnappyData distributed system.
 
-See [CREATE DISKSTORE](../../../reference/sql_reference/create-diskstore/#create-diskstore).
+See [CREATE DISKSTORE](../sql_reference/create-diskstore.md).
 
 | Column Name          | Type    | Length | Nullable | Contents                                                                                                                             |
 |----------------------|---------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------|

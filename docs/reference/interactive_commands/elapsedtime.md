@@ -2,17 +2,17 @@
 
 Displays the total time elapsed during statement execution.
 
-##Syntax
+## Syntax
 
 ``` pre
 ELAPSEDTIME { ON | OFF }
 ```
 
-##Description
+## Description
 
 When `elapsedtime` is turned on, `snappy` displays the total time elapsed during statement execution. The default value is OFF.
 
-##Example
+## Example
 
 ``` pre
 snappy> elapsedtime on;

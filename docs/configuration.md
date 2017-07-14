@@ -1,29 +1,39 @@
 # Overview
-SnappyData, a database server cluster, has three main components - Locator, Server, and Lead.
+SnappyData has three main components - Locator, Server, and Lead.
 
 The Lead node embeds a Spark driver and the Server node embeds a Spark Executor. The server node also embeds a SnappyData store.
 
-SnappyData cluster can be started with the default configurations using script `sbin/snappy-start-all.sh`. This script starts up a locator, one data server, and one lead node. However, SnappyData can be configured to start multiple components on different nodes. 
-Also, each component can be configured individually using configuration files. In this document, 
-we discuss how the components can be individually configured. We also discuss various other configurations of SnappyData.
+SnappyData cluster can be started with the default configurations using script `sbin/snappy-start-all.sh`. This script starts up a locator, one data server, and one lead node. However, SnappyData can be configured to start multiple components on different nodes. </br>
+Also, each component can be configured individually using configuration files. In this section, you can learn how the components can be individually configured and also learn about various other configurations of SnappyData.
 
 The following topics are covered in this section:
 
-* [Configuration Files](/../configuration.md#configuration-files)
+* [Configuration Files](configuring_cluster/configuring_cluster.md#configuration-files)
 
-* [HDFS with SnappyData Store](/../configuration.md#hdfs-with-snappydata-store)
+	- [Configuring Locators](configuring_cluster/configuring_cluster.md#locator)
 
-* [SnappyData Properties](/../snappydata_properties/property_description/)
+	- [Configuring Leads](configuring_cluster/configuring_cluster.md#lead)
 
-<a id="configuration-files"></a>
-<a id="configuring-leads"></a>
-<a id="configuring-data-servers"></a>
-<a id="snappydata-specific-properties"></a>
-<a id="example-for-multiple-host-configuration"></a>
-<a id="environment-settings"></a>
-<a id="hadoop-provided-settings"></a>
-<a id="per-component-configuration"></a>
-<a id="snappy-command-line-utility"></a>
-<a id="logging"></a>
-<a id="configuring-ssh-login-without-password"></a>
-<a id="ssl-setup-for-client-server"></a>
+	- [Configuring Data Servers](configuring_cluster/configuring_cluster.md#dataserver)
+
+	- [SnappyData Specific Properties](configuring_cluster/configuring_cluster.md#properties) </br>
+
+* [HDFS with SnappyData Store](configuring_cluster/configuring_cluster.md#hdfs)
+
+* [Example for Multiple-Host Configuration](configuring_cluster/configuring_cluster.md#multi-host)
+
+* [Environment Settings](configuring_cluster/configuring_cluster.md#env-setting)
+
+* [Hadoop Provided Settings](configuring_cluster/configuring_cluster.md#hadoop-setting)
+
+* [Per Component Configuration](configuring_cluster/configuring_cluster.md#per-component)
+
+* [Snappy Command Line Utility](configuring_cluster/configuring_cluster.md#command-line)
+
+* [Logging](configuring_cluster/configuring_cluster.md#logging)
+
+* [Configuring SSH Login without Password](configuring_cluster/configuring_cluster.md#ssh)
+
+* [SSL Setup for Client-Server](configuring_cluster/configuring_cluster.md#ssl)
+
+* [SnappyData Properties](configuring_cluster/property_description.md)
