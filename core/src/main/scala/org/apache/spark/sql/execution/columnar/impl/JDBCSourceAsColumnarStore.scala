@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
+import java.util
 import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
 
@@ -260,34 +261,34 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       connProperties.poolProps, connProps, connProperties.hikariCP)
   }
 
-  lazy val bootProperties = Misc.getMemStore.getBootProperties
+  private lazy val bootProperties = Option(Misc.getMemStoreBootingNoThrow).map(_.getBootProperties)
 
   def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
       connProps: Properties, hikariCP: Boolean): Connection = {
     // Handle security at remote VM in cases like insert
-    if (bootProperties.containsKey("user") && bootProperties.containsKey("password")) {
-      val user: String = bootProperties.get("user").toString
-      val password: String = bootProperties.get("password").toString
-
-      def secureProps(props: Properties): Properties = {
-        if (props.getProperty(Attribute.USERNAME_ATTR) != null &&
-            props.getProperty(Attribute.PASSWORD_ATTR) != null) {
-          props.setProperty(Attribute.USERNAME_ATTR, user)
-          props.setProperty(Attribute.PASSWORD_ATTR, password)
+    bootProperties match {
+      case Some(p) if p.containsKey("user") && p.containsKey("password") =>
+        def secureProps(props: Properties): Properties = {
+          if (props.getProperty(Attribute.USERNAME_ATTR) != null &&
+              props.getProperty(Attribute.PASSWORD_ATTR) != null) {
+            props.setProperty(Attribute.USERNAME_ATTR, p.get("user").toString)
+            props.setProperty(Attribute.PASSWORD_ATTR, p.get("password").toString)
+          }
+          props
         }
-        props
-      }
 
-      // Hikari only take 'username'. So does Tomcat
-      def securePoolProps(props: Map[String, String]): Map[String, String] = {
-        if (props.get("username").isEmpty && props.get("username").isEmpty) {
-          props + ("username" -> user) + ("password" -> password)
-        } else props
-      }
+        // Hikari only take 'username'. So does Tomcat
+        def securePoolProps(props: Map[String, String]): Map[String, String] = {
+          if (props.get("username").isEmpty && props.get("username").isEmpty) {
+            props + ("username" -> p.get("user").toString) +
+                ("password" -> p.get("password").toString)
+          } else props
+        }
 
-      ConnectionPool.getPoolConnection(id, dialect, securePoolProps(poolProps),
-        secureProps(connProps), hikariCP)
-    } else ConnectionPool.getPoolConnection(id, dialect, poolProps, connProps, hikariCP)
+        ConnectionPool.getPoolConnection(id, dialect, securePoolProps(poolProps),
+          secureProps(connProps), hikariCP)
+      case _ => ConnectionPool.getPoolConnection(id, dialect, poolProps, connProps, hikariCP)
+    }
   }
 
   override def getConnectedExternalStore(table: String,
