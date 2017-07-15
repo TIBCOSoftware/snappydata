@@ -317,8 +317,7 @@ object ValidateMVCCDUnitTest {
     val cache = GemFireCacheImpl.getInstance()
     val cbName = ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE")
     println("APP.TESTTABLE Region size : " + cache.getRegion("/APP/TESTTABLE").size())
-    println(s"APP.$cbName  Region size : " + cache.getRegion
-    (s"/APP/$cbName").size())
+    println(s"APP.$cbName  Region size : " + Misc.getRegionForTable(cbName, true).size())
   }
 
 

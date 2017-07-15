@@ -150,10 +150,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatRelation.columnBatchTableName(table)
   }
 
-  override def snappyInternalSchemaName(): String = {
-    io.snappydata.Constant.SHADOW_SCHEMA_NAME
-  }
-
   override def registerRelationDestroyForHiveStore(): Unit = {
     SnappyStoreHiveCatalog.registerRelationDestroy()
   }
