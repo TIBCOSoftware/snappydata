@@ -21,7 +21,6 @@ import java.io.File
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
 import scala.collection.mutable
-
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
@@ -29,12 +28,12 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, TPCHUtils}
 import org.apache.spark.util.Benchmark
@@ -271,7 +270,6 @@ class QueryRoutingDUnitTest(val s: String)
     assert(rs.next())
     assert(rs.getInt(1) == 0)
 
-
     // drop all tables
     conn1.createStatement().executeUpdate(s" drop table $columnTable")
     conn1.createStatement().executeUpdate(s" drop table $rowTable")
@@ -338,7 +336,7 @@ class QueryRoutingDUnitTest(val s: String)
     ps2.close()
   }
 
-  def _testSNAP193_607_8_9(): Unit = {
+  def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -477,7 +475,7 @@ class QueryRoutingDUnitTest(val s: String)
         results += tableMd.getString(2) + '.' + tableMd.getString(3)
       }
       // 2 for column table and 1 for parquet external table
-      assert(results.size == 3, s"Got size = ${results.size} but expected 3")
+      assert(results.size == 3, s"Got size = ${results.size} [$results] but expected 3.")
       assert(results.contains(s"APP.$colTable"))
       assert(results.contains(s"APP_PARQUET.$parquetTable"))
       results.clear()
@@ -570,7 +568,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"$SHADOW_SCHEMA_NAME_WITH_SEPARATOR$t$SHADOW_TABLE_SUFFIX}".
+      if (ColumnFormatRelation.columnBatchTableName(t).
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
@@ -656,6 +654,7 @@ class QueryRoutingDUnitTest(val s: String)
           throw sqe
         }
     }
+    s.execute("DROP TABLE T1")
 
   }
 
