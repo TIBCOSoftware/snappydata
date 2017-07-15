@@ -32,7 +32,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def _testColumnTableRouting(): Unit = {
+  def testColumnTableRouting(): Unit = {
     val tableName: String = "TEST.ColumnTableQR"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
