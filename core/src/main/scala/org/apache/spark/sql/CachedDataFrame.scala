@@ -31,14 +31,14 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientSharedUtils}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.{MemoryConsumer, MemoryManagerCallback, MemoryMode}
+import org.apache.spark.memory.MemoryConsumer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.InternalRow
@@ -59,7 +59,8 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
-    val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty)
+    val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty,
+    val queryHints: Map[String, String] = Map.empty)
     extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
@@ -241,7 +242,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       case plan => plan
     }
 
-    def withNewExecutionId[T](body: T): T = executedPlan match {
+    def withNewExecutionId[T](body: => T): T = executedPlan match {
       // don't create a new executionId for ExecutePlan since it has already done so
       case _: ExecutePlan => body
       case _ => CachedDataFrame.withNewExecutionId(

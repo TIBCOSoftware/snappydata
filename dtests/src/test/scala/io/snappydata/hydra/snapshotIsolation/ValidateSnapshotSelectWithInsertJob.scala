@@ -19,20 +19,19 @@ package io.snappydata.hydra.snapshotIsolation
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.ct.CTTestUtil
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SQLContext, SnappySQLJob, SnappyJobValid, SnappyJobValidation, SnappySession}
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 class ValidateSnapshotSelectWithInsertJob extends SnappySQLJob{
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val outputFile = "ValidateCTQueries_" + jobConfig.getString("logFileName")
+    val outputFile = "ValidateSnapshotQuery_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     Try {
       val tableType = jobConfig.getString("tableType")

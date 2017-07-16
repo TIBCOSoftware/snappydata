@@ -1,3 +1,5 @@
 INCLUDE $JTESTS/io/snappydata/hydra/snapshotIsolation/snapshotIsolationJDBC.bt
 
 INCLUDE $JTESTS/io/snappydata/hydra/snapshotIsolation/snapshotIsolationSnappy.bt
+
+INCLUDE $JTESTS/io/snappydata/hydra/snapshotIsolation/snapshotIsolationWithTestHook.bt
