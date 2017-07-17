@@ -22,6 +22,7 @@ import java.sql.{CallableStatement, Connection, SQLException}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
+import org.apache.spark.sql.catalyst.catalog.CatalogDatabase
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -30,6 +31,8 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition}
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
+
+  import SmartConnectorHelper._
 
   private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
@@ -58,7 +61,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def initializeConnection(): Unit = {
-    val jdbcOptions = new JDBCOptions(connectionURL + ";route-query=false;", "",
+    val jdbcOptions = new JDBCOptions(connectionURL + getSecurePart + ";route-query=false;", "",
       Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     createSnappyTblStmt = conn.prepareCall(createSnappyTblString)
@@ -68,6 +71,17 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     getMetaDataStmt = conn.prepareCall(getMetaDataStmtString)
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
+  }
+
+  private def getSecurePart(): String = {
+    var securePart = ""
+    val user = snappySession.sqlContext.getConf("spark.snappydata.store.user", "")
+    if (!user.isEmpty) {
+      val pass = snappySession.sqlContext.getConf("spark.snappydata.store.password", "")
+      securePart = s";user=$user;password=$pass"
+    }
+    logInfo(s"ABS SCH using $securePart to connect with snappydata")
+    securePart
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {

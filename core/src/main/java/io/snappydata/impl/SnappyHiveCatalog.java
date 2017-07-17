@@ -392,6 +392,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
             Misc.SNAPPY_HIVE_METASTORE);
       }
+      metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE);
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");

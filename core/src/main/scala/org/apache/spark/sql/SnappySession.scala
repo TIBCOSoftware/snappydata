@@ -25,7 +25,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -33,10 +32,10 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -71,7 +70,9 @@ import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
 
 
 class SnappySession(@transient private val sc: SparkContext,
-    @transient private val existingSharedState: Option[SnappySharedState])
+    @transient private val existingSharedState: Option[SnappySharedState],
+    @transient private val user: String = null,
+    @transient private val password: String = null)
     extends SparkSession(sc) {
 
   self =>
@@ -1369,7 +1370,8 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] def getIndexTable(
       indexIdent: QualifiedTableName): QualifiedTableName = {
     // TODO: SW: proper schema handling required here
-    new QualifiedTableName(Constant.SHADOW_SCHEMA_NAME, indexIdent.table)
+    new QualifiedTableName(indexIdent.schemaName, Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
+        indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,
@@ -1647,6 +1649,15 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     sessionState.setPreparedQuery(preparePhase, paramSet)
+
+  def withCredentials(user: String, pass: String): SnappySession = {
+    if (user == null || pass == null || user.isEmpty || pass.isEmpty) {
+      throw new IllegalArgumentException("empty user credentials provided.")
+    }
+    conf.set(Attribute.USERNAME_ATTR, user)
+    conf.set(Attribute.PASSWORD_ATTR, pass)
+    this
+  }
 }
 
 private class FinalizeSession(session: SnappySession)

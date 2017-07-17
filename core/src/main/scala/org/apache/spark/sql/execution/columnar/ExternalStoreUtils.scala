@@ -283,10 +283,8 @@ object ExternalStoreUtils extends Logging {
   def getConnectionProperties(session: Option[SparkSession], url: String, driver: String,
       dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
       executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
-    if (session.isDefined && session.get.conf.getOption(Attribute.USERNAME_ATTR).isDefined &&
-        session.get.conf.getOption(Attribute.PASSWORD_ATTR).isDefined) {
-      val user = session.get.conf.getOption(Attribute.USERNAME_ATTR).get
-      val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR).get
+    if (session.isDefined) {
+      val (user, password) = getCredentials(session)
 
       def secureProps(props: Properties): Properties = {
         props.setProperty(Attribute.USERNAME_ATTR, user)
@@ -302,6 +300,15 @@ object ExternalStoreUtils extends Logging {
         secureProps(connProps), secureProps(executorConnProps), hikariCP)
     } else ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
       hikariCP)
+  }
+
+  def getCredentials(session: Option[SparkSession], prefix: String = ""): (String, String) = {
+    val prefix = SnappyContext.getClusterMode(session.get.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => "spark.snappydata.store."
+      case _ => ""
+    }
+    (session.get.conf.get(prefix + Attribute.USERNAME_ATTR, ""), session.get.conf.get
+    (prefix + Attribute.PASSWORD_ATTR, ""))
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,

@@ -37,8 +37,17 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   private var getStatsStmt: CallableStatement = null
   private var _url: String = null
 
-  def initializeConnection(): Unit = {
-    val jdbcOptions = new JDBCOptions(_url + ";route-query=false;", "",
+  def initializeConnection(sc: SparkContext = null): Unit = {
+    var securePart = ""
+    if (sc != null) {
+      val user = sc.getConf.get("spark.snappydata.store.user", "")
+      if (!user.isEmpty) {
+        val pass = sc.getConf.get("spark.snappydata.store.password", "")
+        securePart = s";user=$user;password=$pass"
+        logInfo(s"ABS Stats using $securePart to connect with snappydata")
+      }
+    }
+    val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",
       Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     getStatsStmt = conn.prepareCall("call sys.GET_SNAPPY_TABLE_STATS(?)")
@@ -52,7 +61,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
   def start(sc: SparkContext, url: String): Unit = {
     _url = url
-    initializeConnection()
+    initializeConnection(sc)
     val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
         "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
     doRun = true

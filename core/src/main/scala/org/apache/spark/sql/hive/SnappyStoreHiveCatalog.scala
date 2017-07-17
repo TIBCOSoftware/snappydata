@@ -23,6 +23,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -82,7 +83,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
-  private[sql] var client = metadataHive
+  private[sql] var client = metadataHive // externalCatalog.client
 
 
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
@@ -99,7 +100,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 //  }
 
   protected var currentSchema: String = {
-    val defaultName = Constant.DEFAULT_SCHEMA
+    var user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
+    val defaultName = if (user.isEmpty) {
+      // In smart connector, property name is different.
+      user = snappySession.conf.get("spark.snappydata.store.user", "")
+      if (user.isEmpty) Constant.DEFAULT_SCHEMA else formatDatabaseName(user)
+    } else {
+      formatDatabaseName(user)
+    }
+    println(s"ABS default schema set to $defaultName")
     val defaultDbDefinition =
       CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
     // Initialize default database if it doesn't already exist
@@ -986,6 +995,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     cachedDataSourceTables.invalidate(inTable)
   }
 
+  def getTableOption(qtn: QualifiedTableName): Option[CatalogTable] = {
+    client.getTableOption(qtn.schemaName, qtn.table)
+  }
 }
 
 object SnappyStoreHiveCatalog {
@@ -1090,7 +1102,7 @@ final class QualifiedTableName(val schemaName: String, _tableIdent: String)
   def getTableOption(
       catalog: SnappyStoreHiveCatalog): Option[CatalogTable] = _table.orElse {
     _table = catalog.getCachedCatalogTable(this).orElse(
-      catalog.client.getTableOption(schemaName, table))
+      catalog.getTableOption(this))
     _table
   }
 

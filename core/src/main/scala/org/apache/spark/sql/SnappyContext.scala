@@ -20,15 +20,15 @@ import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.pivotal.gemfirexd.Attribute
+
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
-
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, Property, SnappyTableStatsProviderService}
-
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, SnappyThinConnectorTableStatsProvider}
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
@@ -1064,6 +1064,19 @@ object SnappyContext extends Logging {
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
         SnappyTableStatsProviderService.start(sc)
         ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
+        // Create a dummy table so that the hive metastore is initialized and smart connector
+        // does not have to initialize.
+//        if ("LDAP".equalsIgnoreCase(Misc.getMemStore.getBootProperty(Attribute.AUTH_PROVIDER))) {
+//          val session = SnappySession.getOrCreate(sc) // Or use an existing session?
+//          // Add boot credentials
+//          session.conf.set(Attribute.USERNAME_ATTR, Misc.getMemStore.getBootProperty(Attribute
+//              .USERNAME_ATTR))
+//          session.conf.set(Attribute.PASSWORD_ATTR, Misc.getMemStore.getBootProperty(Attribute
+//              .PASSWORD_ATTR))
+//          session.createTable("__SNAPPY_DUMMY_INIT_TABLE", "COLUMN", "(ID INT, NAME VARCHAR(10))",
+//              Map.empty[String, String], true)
+//          println("ABS SnappyContext.invokeServices() created dummy table")
+//        }
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
       case ExternalEmbeddedMode(_, url) =>
