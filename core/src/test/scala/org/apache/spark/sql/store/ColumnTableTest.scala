@@ -1002,7 +1002,7 @@ class ColumnTableTest
     val rowBufferCount = rowBuffer.asInstanceOf[PartitionedRegion].getPrStats
         .getDataStoreEntryCount
 
-    val region = Misc.getRegionForTable(
+    val region = Misc.getRegionForTable("APP." +
       ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
     SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats

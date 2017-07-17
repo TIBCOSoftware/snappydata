@@ -29,7 +29,7 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.FunctionIdentifier
@@ -130,11 +130,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   def getInternalTableSchemas: java.util.List[String] = {
-    val schemas = new java.util.ArrayList[String](2)
+    val schemas = new java.util.ArrayList[String](1)
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
-    schemas.add(Constant.SHADOW_SCHEMA_NAME)
     schemas
   }
+
+  override def isColumnTable(qualifiedName: String): Boolean =
+    ColumnFormatRelation.isColumnTable(qualifiedName)
 
   override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
     partitioner.computeHash(dvd, numPartitions)
@@ -147,10 +149,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def columnBatchTableName(table: String): String = {
     ColumnFormatRelation.columnBatchTableName(table)
-  }
-
-  override def snappyInternalSchemaName(): String = {
-    io.snappydata.Constant.SHADOW_SCHEMA_NAME
   }
 
   override def registerRelationDestroyForHiveStore(): Unit = {
