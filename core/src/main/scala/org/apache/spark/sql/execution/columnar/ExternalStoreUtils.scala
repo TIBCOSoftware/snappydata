@@ -20,6 +20,7 @@ import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
@@ -275,8 +276,32 @@ object ExternalStoreUtils extends Logging {
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP, isEmbedded)
-    ConnectionProperties(url, driver, dialect, allPoolProps,
+    getConnectionProperties(session, url, driver, dialect, allPoolProps,
       connProps, executorConnProps, hikariCP)
+  }
+
+  def getConnectionProperties(session: Option[SparkSession], url: String, driver: String,
+      dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
+      executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
+    if (session.isDefined && session.get.conf.getOption(Attribute.USERNAME_ATTR).isDefined &&
+        session.get.conf.getOption(Attribute.PASSWORD_ATTR).isDefined) {
+      val user = session.get.conf.getOption(Attribute.USERNAME_ATTR).get
+      val password = session.get.conf.getOption(Attribute.PASSWORD_ATTR).get
+
+      def secureProps(props: Properties): Properties = {
+        props.setProperty(Attribute.USERNAME_ATTR, user)
+        props.setProperty(Attribute.PASSWORD_ATTR, password)
+        props
+      }
+
+      // Hikari only take 'username'. So does Tomcat
+      def securePoolProps(props: Map[String, String]): Map[String, String] = props +
+          (Attribute.USERNAME_ALT_ATTR.toLowerCase -> user) + (Attribute.PASSWORD_ATTR -> password)
+
+      ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
+        secureProps(connProps), secureProps(executorConnProps), hikariCP)
+    } else ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
+      hikariCP)
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,

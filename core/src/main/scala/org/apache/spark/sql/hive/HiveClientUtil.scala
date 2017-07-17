@@ -148,12 +148,22 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
     val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
-      logInfo(s"Using SnappyStore as metastore database, dbURL = $dbURL")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        dbDriver)
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        Misc.SNAPPY_HIVE_METASTORE)
+      import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
+      import io.snappydata.Constant.STORE_PROPERTY_PREFIX
+      val user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+      val password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+      val secureDbURL = if (user.isDefined && password.isDefined) {
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME, user.get)
+        metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD, password.get)
+        dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";"
+      } else {
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+          Misc.SNAPPY_HIVE_METASTORE)
+        dbURL
+      }
+      logInfo(s"Using SnappyStore as metastore database, dbURL = $secureDbURL")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
     } else if (dbURL != null) {
       logInfo(s"Using specified metastore database, dbURL = $dbURL")
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)

@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
+import com.pivotal.gemfirexd.Attribute;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -379,6 +380,20 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           SnappyStoreHiveCatalog.HIVE_METASTORE() +
           ";disable-streaming=true;default-persistent=true";
       HiveConf metadataConf = new HiveConf();
+      final Map<Object, Object> bootProperties = Misc.getMemStore().getBootProperties();
+      if (bootProperties.containsKey(Attribute.USERNAME_ATTR) &&
+          bootProperties.containsKey(Attribute.PASSWORD_ATTR)) {
+        url = "jdbc:snappydata:;default-schema=" +
+            SnappyStoreHiveCatalog.HIVE_METASTORE() +
+            ";disable-streaming=true;default-persistent=true";
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+            bootProperties.get(Attribute.USERNAME_ATTR).toString());
+        metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD,
+            bootProperties.get(Attribute.PASSWORD_ATTR).toString());
+      } else {
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+            Misc.SNAPPY_HIVE_METASTORE);
+      }
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");

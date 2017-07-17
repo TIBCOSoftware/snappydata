@@ -18,6 +18,8 @@ package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
 
+import com.pivotal.gemfirexd.Attribute
+
 import scala.collection.JavaConverters._
 
 import com.fasterxml.jackson.core.{JsonFactory, JsonGenerator}
@@ -65,6 +67,11 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val session = SnappySessionPerConnection
       .getSnappySessionForConnection(ctx.getConnId)
+
+  if (ctx.getUserName != null && !ctx.getUserName.isEmpty) {
+    session.conf.set(Attribute.USERNAME_ATTR, ctx.getUserName)
+    session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
+  }
 
   session.setSchema(schema)
 
