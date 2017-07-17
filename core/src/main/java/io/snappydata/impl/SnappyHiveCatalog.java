@@ -376,15 +376,15 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver");
       DriverRegistry.register("io.snappydata.jdbc.ClientDriver");
 
-      HiveConf metadataConf = new HiveConf();
-      String urlSecure = "jdbc:snappydata:" +
-          ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
+      String url = "jdbc:snappydata:;user=" +
+          SnappyStoreHiveCatalog.HIVE_METASTORE() +
           ";disable-streaming=true;default-persistent=true";
+      HiveConf metadataConf = new HiveConf();
       final Map<Object, Object> bootProperties = Misc.getMemStore().getBootProperties();
       if (bootProperties.containsKey(Attribute.USERNAME_ATTR) &&
           bootProperties.containsKey(Attribute.PASSWORD_ATTR)) {
-        urlSecure = "jdbc:snappydata:" +
-            ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
+        url = "jdbc:snappydata:;default-schema=" +
+            SnappyStoreHiveCatalog.HIVE_METASTORE() +
             ";disable-streaming=true;default-persistent=true";
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
             bootProperties.get(Attribute.USERNAME_ATTR).toString());
@@ -394,7 +394,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
             Misc.SNAPPY_HIVE_METASTORE);
       }
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");
 

@@ -270,8 +270,8 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       case Some(p) if p.containsKey(Attribute.USERNAME_ATTR) &&
           p.containsKey(Attribute.PASSWORD_ATTR) =>
         def secureProps(props: Properties): Properties = {
-          if (props.getProperty(Attribute.USERNAME_ATTR) != null &&
-              props.getProperty(Attribute.PASSWORD_ATTR) != null) {
+          if (Option(props.getProperty(Attribute.USERNAME_ATTR)).isEmpty &&
+              Option(props.getProperty(Attribute.PASSWORD_ATTR)).isEmpty) {
             props.setProperty(Attribute.USERNAME_ATTR, p.get(Attribute.USERNAME_ATTR).toString)
             props.setProperty(Attribute.PASSWORD_ATTR, p.get(Attribute.PASSWORD_ATTR).toString)
           }
@@ -280,9 +280,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
         // Hikari only take 'username'. So does Tomcat
         def securePoolProps(props: Map[String, String]): Map[String, String] = {
-          if (props.get(Attribute.USERNAME_ALT_ATTR).isEmpty &&
+          if (props.get(Attribute.USERNAME_ALT_ATTR.toLowerCase).isEmpty &&
               props.get(Attribute.PASSWORD_ATTR).isEmpty) {
-            props + (Attribute.USERNAME_ALT_ATTR -> p.get(Attribute.USERNAME_ATTR).toString) +
+            props + (Attribute.USERNAME_ALT_ATTR.toLowerCase ->
+                p.get(Attribute.USERNAME_ATTR).toString) +
                 (Attribute.PASSWORD_ATTR -> p.get(Attribute.PASSWORD_ATTR).toString)
           } else props
         }
