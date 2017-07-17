@@ -26,7 +26,7 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-class SecureQueryRoutingDUnitTest(val s: String)
+class QueryRoutingDUnitSecureTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
   val snappyAdminUser = "gemfire2"
