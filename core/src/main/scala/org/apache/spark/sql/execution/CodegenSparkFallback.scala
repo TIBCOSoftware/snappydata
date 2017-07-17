@@ -23,6 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.CodeGenerationException
 
 /**
@@ -87,6 +88,11 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
             }
           case None => throw t
         }
+    } finally {
+      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      if (ExternalStoreUtils.isSmartConnectorMode(session.sparkContext)) {
+        session.sessionCatalog.invalidateAll()
+      }
     }
   }
 
