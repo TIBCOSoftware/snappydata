@@ -801,9 +801,8 @@ ospackage {
 buildRpm {
   requires('glibc')
   dependsOn ':packageVSD'
-  classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
-    classifier 'without_hadoop_bin'
+    classifier 'without_hadoop'
   }
 }
 
@@ -811,9 +810,8 @@ buildDeb {
   requires('libc6')
   recommends('java8-sdk')
   dependsOn ':packageVSD'
-  classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
-    classifier 'without-hadoop-bin'
+    classifier 'without-hadoop'
   }
 }
 
