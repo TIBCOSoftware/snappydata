@@ -9,11 +9,13 @@ import scala.collection.mutable
 import scala.util.control.Breaks._
 import scala.xml.{Unparsed, Node}
 
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
+import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
+import com.pivotal.gemfirexd.internal.engine.sql.execute.{MemberLogsMessage}
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.Utils
-import org.apache.spark.util.logging.RollingFileAppender
 
 
 private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
@@ -21,7 +23,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
 
   private var workDir: File = null
   private var logFileName: String = null
-  private val defaultBytes = 100 * 1024
+  private val defaultBytes:Long = 1024 * 100
 
   private def createPageTitleNode(title: String): Seq[Node] = {
 
@@ -54,7 +56,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
     val memberType = {
       if(memberDetails.getOrElse("lead", false).toString.toBoolean){
         if(memberDetails.getOrElse("activeLead", false).toString.toBoolean)
-          <strong data-toggle="tooltip" title="" data-original-title="Active Lead">LEAD</strong>
+          "LEAD (Active)"
         else
           "LEAD"
       } else if(memberDetails.getOrElse("locator",false).toString.toBoolean){
@@ -231,7 +233,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
   override def render(request: HttpServletRequest): Seq[Node] = {
 
     val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength = Option(request.getParameter("byteLength")).map(_.toInt).getOrElse(defaultBytes)
+    val byteLength = Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
 
     val memberId = Option(request.getParameter("memId")).map { memberId =>
       UIUtils.decodeURLParameter(memberId)
@@ -263,31 +265,35 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
     workDir = new File(memberDetails.getOrElse("userDir", "").toString)
     logFileName = memberDetails.getOrElse("logFile", "").toString
 
-    val pageHeaderText : String  = SnappyMemberDetailsPage.pageHeaderText
+    // Get Log Details
+    val collector = new GfxdListResultCollector(null, true)
+    val msg = new MemberLogsMessage(collector)
+    msg.setMemberId(memberId)
+    msg.setByteLength(byteLength)
 
-    // Generate Pages HTML
-    val pageTitleNode = createPageTitleNode(pageHeaderText)
+    if(offset == None){
+      // set offset null
+      msg.setOffset(null)
+    } else {
+      msg.setOffset(offset.get)
+    }
 
-    var PageContent: Seq[Node] = mutable.Seq.empty
+    msg.executeFunction()
 
-    val memberLogTitle =
-      <div class="row-fluid">
-        <div class="span12">
-          <h4 style="vertical-align: bottom; display: inline-block;"
-              data-toggle="tooltip" data-placement="top" title=""
-              data-original-title="Member Logs">
-            Member Logs
-          </h4>
-          <div style="margin-left:15px;">
-            <span style="font-weight: bolder;">Location :</span>
-            {memberDetails.getOrElse("userDir", "")}/{memberDetails.getOrElse("logFile", "")}
-          </div>
-        </div>
-      </div>
+    val memStats = collector.getResult
+    val itr = memStats.iterator()
+    var logData: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any];
 
-    // Get logs
-    val (logText, startByte, endByte, logLength) =
-      getLog(workDir.getPath, logFileName, offset, byteLength)
+    while (itr.hasNext) {
+      val o = itr.next().asInstanceOf[ListResultCollectorValue]
+      val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
+      logData = memMap.get("logData").asInstanceOf[java.util.HashMap[String, Any]]
+    }
+
+    val logText = logData.get("logText")
+    val startByte = logData.get("startIndex").asInstanceOf[Long]
+    val endByte = logData.get("endIndex").asInstanceOf[Long]
+    val logLength = logData.get("totalLength").asInstanceOf[Long]
 
     val curLogLength = endByte - startByte
 
@@ -329,12 +335,37 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
         <script>{Unparsed(jsOnload)}</script>
       </div>
 
+    val pageHeaderText : String  = SnappyMemberDetailsPage.pageHeaderText
+
+    // Generate Pages HTML
+    val pageTitleNode = createPageTitleNode(pageHeaderText)
+
+    var PageContent: Seq[Node] = mutable.Seq.empty
+
+    val memberLogTitle =
+      <div class="row-fluid">
+        <div class="span12">
+          <h4 style="vertical-align: bottom; display: inline-block;"
+              data-toggle="tooltip" data-placement="top" title=""
+              data-original-title="Member Logs">
+            Member Logs
+          </h4>
+          <div style="margin-left:15px;">
+            <span style="font-weight: bolder;">Location :</span>
+            {memberDetails.getOrElse("userDir", "")}/{memberDetails.getOrElse("logFile", "")}
+          </div>
+        </div>
+      </div>
+
     PageContent = pageTitleNode ++ memberStats ++ memberLogTitle ++ content
 
-    UIUtils.simpleSparkPageWithTabs_2("Member Details Page", PageContent, parent, Some(500))
+    UIUtils.simpleSparkPageWithTabs_2(pageHeaderText, PageContent, parent, Some(500))
   }
 
   def renderLog(request: HttpServletRequest): String = {
+
+    val offset = Option(request.getParameter("offset")).map(_.toLong)
+    val byteLength = Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
 
     val memberId = Option(request.getParameter("memId")).map { memberId =>
       UIUtils.decodeURLParameter(memberId)
@@ -342,63 +373,39 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
       throw new IllegalArgumentException(s"Missing memId parameter")
     }
 
-    val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength = Option(request.getParameter("byteLength")).map(_.toInt).getOrElse(defaultBytes)
+    // Get Log Details
+    val collector = new GfxdListResultCollector(null, true)
+    val msg = new MemberLogsMessage(collector)
+    msg.setMemberId(memberId)
+    msg.setByteLength(byteLength)
 
-    val (logText, startByte, endByte, logLength) =
-      getLog(workDir.getPath, logFileName, offset, byteLength)
+    if(offset == None){
+      // set offset null
+      msg.setOffset(null)
+    } else {
+      msg.setOffset(offset.get)
+    }
+
+    msg.executeFunction()
+
+    val memStats = collector.getResult
+    val itr = memStats.iterator()
+    var logData: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any];
+
+    while (itr.hasNext) {
+      val o = itr.next().asInstanceOf[ListResultCollectorValue]
+      val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
+      logData = memMap.get("logData").asInstanceOf[java.util.HashMap[String, Any]]
+    }
+    val logText = logData.get("logText")
+    val startByte = logData.get("startIndex").asInstanceOf[Long]
+    val endByte = logData.get("endIndex").asInstanceOf[Long]
+    val logLength = logData.get("totalLength").asInstanceOf[Long]
 
     val pre = s"==== Bytes $startByte-$endByte of $logLength of ${workDir.getPath}/$logFileName ====\n"
 
     pre + logText
 
-  }
-
-  /** Get the part of the log files given the offset and desired length of bytes */
-  private def getLog(
-      logDirectory: String,
-      logFile: String,
-      offsetOption: Option[Long],
-      byteLength: Int
-      ): (String, Long, Long, Long) = {
-
-    if (logFile == null || logFile.isEmpty) {
-      return ("Error: Log file must be specified ", 0, 0, 0)
-    }
-
-    // Verify that the normalized path of the log directory is in the working directory
-    val normalizedUri = new File(logDirectory).toURI.normalize()
-    val normalizedLogDir = new File(normalizedUri.getPath)
-    if (!Utils.isInDirectory(workDir, normalizedLogDir)) {
-      return ("Error: invalid log directory " + logDirectory, 0, 0, 0)
-    }
-
-    try {
-      val files = RollingFileAppender.getSortedRolledOverFiles(logDirectory, logFile)
-      logDebug(s"Sorted log files of type $logFile in $logDirectory:\n${files.mkString("\n")}")
-
-      val fileLengths: Seq[Long] = files.map(Utils.getFileLength(_, parent.parent.conf))
-      val totalLength = fileLengths.sum
-      val offset = offsetOption.getOrElse(totalLength - byteLength)
-      val startIndex = {
-        if (offset < 0) {
-          0L
-        } else if (offset > totalLength) {
-          totalLength
-        } else {
-          offset
-        }
-      }
-      val endIndex = math.min(startIndex + byteLength, totalLength)
-      logDebug(s"Getting log from $startIndex to $endIndex")
-      val logText = Utils.offsetBytes(files, fileLengths, startIndex, endIndex)
-      logDebug(s"Got log of length ${logText.length} bytes")
-      (logText, startIndex, endIndex, totalLength)
-    } catch {
-      case e: Exception =>
-        logError(s"Error getting $logFile logs from directory $logDirectory", e)
-        ("Error getting logs due to exception: " + e.getMessage, 0, 0, 0)
-    }
   }
 
 }
