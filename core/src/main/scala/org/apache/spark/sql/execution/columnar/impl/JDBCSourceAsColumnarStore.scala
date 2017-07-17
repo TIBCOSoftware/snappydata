@@ -267,21 +267,23 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       connProps: Properties, hikariCP: Boolean): Connection = {
     // Handle security at remote VM in cases like insert
     bootProperties match {
-      case Some(p) if p.containsKey("user") && p.containsKey("password") =>
+      case Some(p) if p.containsKey(Attribute.USERNAME_ATTR) &&
+          p.containsKey(Attribute.PASSWORD_ATTR) =>
         def secureProps(props: Properties): Properties = {
           if (props.getProperty(Attribute.USERNAME_ATTR) != null &&
               props.getProperty(Attribute.PASSWORD_ATTR) != null) {
-            props.setProperty(Attribute.USERNAME_ATTR, p.get("user").toString)
-            props.setProperty(Attribute.PASSWORD_ATTR, p.get("password").toString)
+            props.setProperty(Attribute.USERNAME_ATTR, p.get(Attribute.USERNAME_ATTR).toString)
+            props.setProperty(Attribute.PASSWORD_ATTR, p.get(Attribute.PASSWORD_ATTR).toString)
           }
           props
         }
 
         // Hikari only take 'username'. So does Tomcat
         def securePoolProps(props: Map[String, String]): Map[String, String] = {
-          if (props.get("username").isEmpty && props.get("username").isEmpty) {
-            props + ("username" -> p.get("user").toString) +
-                ("password" -> p.get("password").toString)
+          if (props.get(Attribute.USERNAME_ALT_ATTR).isEmpty &&
+              props.get(Attribute.PASSWORD_ATTR).isEmpty) {
+            props + (Attribute.USERNAME_ALT_ATTR -> p.get(Attribute.USERNAME_ATTR).toString) +
+                (Attribute.PASSWORD_ATTR -> p.get(Attribute.PASSWORD_ATTR).toString)
           } else props
         }
 

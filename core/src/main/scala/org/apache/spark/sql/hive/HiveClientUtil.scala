@@ -148,8 +148,10 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
     val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
-      val user = sparkConf.getOption("snappydata.store.user")
-      val password = sparkConf.getOption("snappydata.store.password")
+      import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
+      import io.snappydata.Constant.STORE_PROPERTY_PREFIX
+      val user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+      val password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
       val secureDbURL = if (user.isDefined && password.isDefined) {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME, user.get)
         metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD, password.get)

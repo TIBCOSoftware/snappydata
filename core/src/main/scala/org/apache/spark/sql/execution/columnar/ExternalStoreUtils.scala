@@ -296,7 +296,7 @@ object ExternalStoreUtils extends Logging {
 
       // Hikari only take 'username'. So does Tomcat
       def securePoolProps(props: Map[String, String]): Map[String, String] = props +
-          ("username" -> user) + ("password" -> password)
+          (Attribute.USERNAME_ALT_ATTR -> user) + (Attribute.PASSWORD_ATTR -> password)
 
       ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
         secureProps(connProps), secureProps(executorConnProps), hikariCP)
