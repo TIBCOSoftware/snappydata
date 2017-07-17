@@ -154,18 +154,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
         dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
         Misc.SNAPPY_HIVE_METASTORE)
-    } else if (dbURL != null) {
-      logInfo(s"Using specified metastore database, dbURL = $dbURL")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
-      if (dbDriver != null) {
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-          dbDriver)
-      } else {
-        metadataConf.unset(
-          HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER.varname)
-      }
-      metadataConf.unset(
-        HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME.varname)
     } else {
       logInfo("Using Hive metastore database, dbURL = " +
           metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
@@ -272,8 +260,10 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     val sc = sparkContext
     Property.MetaStoreDBURL.getOption(sparkConf) match {
       case Some(url) =>
-        val driver = Property.MetaStoreDriver.getOption(sparkConf).orNull
-        (false, url, driver)
+//        val driver = Property.MetaStoreDriver.getOption(sparkConf).orNull
+//        (false, url, driver)
+        throw new IllegalArgumentException(s"Invalid property ${Property.MetaStoreDBURL}. " +
+            s"SnappyData does not allow use of property ${Property.MetaStoreDBURL}")
       case None => SnappyContext.getClusterMode(sc) match {
         case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
              LocalMode(_, _) =>
