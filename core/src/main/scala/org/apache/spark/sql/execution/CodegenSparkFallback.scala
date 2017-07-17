@@ -89,6 +89,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
           case None => throw t
         }
     } finally {
+      // SNAP-1422
       val cacheMetaDataForConnector =
         java.lang.Boolean.getBoolean("SMART_CONNECTOR_CACHE_METEADATA")
       lazy val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
