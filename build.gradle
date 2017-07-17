@@ -921,8 +921,6 @@ task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
-  dependsOn distTar, distZip
-  dependsOn distInstallers
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -1040,12 +1038,12 @@ task sparkPackage {
 packagePulse.mustRunAfter product
 packageVSD.mustRunAfter product
 
-distTar.mustRunAfter clean, cleanAll
-distZip.mustRunAfter clean, cleanAll
+distTar.mustRunAfter clean, cleanAll, product
+distZip.mustRunAfter clean, cleanAll, product
 distRpm.mustRunAfter clean, cleanAll, product
 distDeb.mustRunAfter clean, cleanAll, product
 distInstallers.mustRunAfter clean, cleanAll, product, distRpm, distDeb
-distProduct.mustRunAfter clean, cleanAll
+distProduct.mustRunAfter clean, cleanAll, product
 
 
 
