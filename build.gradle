@@ -326,10 +326,9 @@ subprojects {
     def single = rootProject.hasProperty('dunit.single') ?
         rootProject.property('dunit.single') : null
     if (single == null || single.length() == 0) {
-      def dunitTests = fileTree(testClassesDir) {
-          include '**/*DUnitTest.class'
-          exclude '**/*DUnitSecureTest.class'
-      }
+      def dunitTests = fileTree(dir: testClassesDir,
+          includes: ['**/*DUnitTest.class'],
+          excludes: ['**/*DUnitSecureTest.class'])
       FileTree includeTestFiles = dunitTests
       int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
@@ -382,10 +381,9 @@ subprojects {
     def single = rootProject.hasProperty('dunitSecure.single') ?
         rootProject.property('dunitSecure.single') : null
     if (single == null || single.length() == 0) {
-      def dunitSecureTests = fileTree(testClassesDir) {
-          include '**/*DUnitSecureTest.class'
-          exclude '**/*DUnitTest.class'
-      }
+      def dunitSecureTests = fileTree(dir: testClassesDir,
+          includes: ['**/*DUnitSecureTest.class'],
+          excludes: ['**/*DUnitTest.class'])
       FileTree includeTestFiles = dunitSecureTests
       int dunitFrom = rootProject.hasProperty('dunitSecure.from') ?
           getLast(includeTestFiles, rootProject.property('dunitSecure.from')) : 0
