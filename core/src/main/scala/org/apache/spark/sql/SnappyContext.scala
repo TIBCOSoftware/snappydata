@@ -781,7 +781,7 @@ object SnappyContext extends Logging {
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
-
+  var initConf: SparkConf = _
   val COLUMN_SOURCE = "column"
   val ROW_SOURCE = "row"
   val SAMPLE_SOURCE = "column_sample"
@@ -927,6 +927,7 @@ object SnappyContext extends Logging {
    */
   def apply(sc: SparkContext): SnappyContext = {
     if (sc != null) {
+      initConf = sc.conf
       newSnappyContext(sc)
     } else {
       apply()

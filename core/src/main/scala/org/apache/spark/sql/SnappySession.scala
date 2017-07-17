@@ -1646,23 +1646,6 @@ class SnappySession(@transient private val sc: SparkContext,
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     sessionState.setPreparedQuery(preparePhase, paramSet)
 
-  /**
-   * Callback to execute code when a particular property is set.
-   * @param key
-   * @param value
-   */
-  def confCallback(key: String, value: String): Unit = {
-    key match {
-      case "spark.scheduler.pool" =>
-        // set the scheduler pool if the pool exists else throw an exception. 
-        if (sparkContext.getAllPools.exists(_.name == value)) {
-          sparkContext.setLocalProperty(key, value)
-        } else {
-          throw new IllegalArgumentException(s"Invalid Pool $value")
-        }
-      case _ =>
-    }
-  }
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -1871,7 +1854,11 @@ object SnappySession extends Logging {
         evaluatePlan(df, session, key.sqlText, key)
       }
     }
-    CacheBuilder.newBuilder().maximumSize(300).build(loader)
+    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.initConf) match {
+      case Some(size) => size.toInt
+      case None =>  Property.PlanCacheSize.defaultValue.get
+    }
+    CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
 
   def getPlanCache: LoadingCache[CachedKey, CachedDataFrame] = planCache
