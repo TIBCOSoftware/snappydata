@@ -33,8 +33,9 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql._
+import org.apache.spark.sql.collection.Utils
 
 /**
   * Tests for column tables in GFXD.
@@ -429,6 +430,28 @@ class ColumnTableTest
     intercept[TableNotFoundException] {
       snc.sql("alter table non_employee add column age int")
     }
+  }
+
+  test("Test alter table not supported for temp/external tables") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.registerDataFrameAsTable(dataDF, "tempTable")
+    snc.sql("select * from tempTable").show
+    intercept[AnalysisException] { // not supported
+      snc.sql("alter table tempTable add column age int")
+    }
+    snc.dropTempTable("tempTable")
+
+    val schema = StructType(Array(
+      StructField("col_int", IntegerType, false),
+      StructField("col_string", StringType, false)))
+    snc.createExternalTable("extTable", "com.databricks.spark.csv",
+      schema, Map.empty[String, String])
+    intercept[AnalysisException] { // not supported
+      snc.sql("alter table extTable add column age int")
+    }
+    snc.sql("drop table extTable")
   }
 
   test("Test alter table API not supported for column tables") {

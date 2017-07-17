@@ -1267,10 +1267,6 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
-  def invalidateAll(): Unit = {
-    sessionCatalog.invalidateAll()
-  }
-
   private[sql] def alterTable(tableName: String, isAddColumn: Boolean,
                  column: StructField): Unit = {
     alterTable(sessionCatalog.newQualifiedTableName(tableName), isAddColumn, column)
@@ -1281,8 +1277,11 @@ class SnappySession(@transient private val sc: SparkContext,
     val plan = try {
       sessionCatalog.lookupRelation(tableIdent)
     } catch {
-      case tnfe: TableNotFoundException =>
-        throw tnfe
+      case tnfe: TableNotFoundException => throw tnfe
+    }
+
+    if(sessionCatalog.isTemporaryTable(tableIdent)) {
+      throw new AnalysisException("alter table not supported for temp tables")
     }
     plan match {
       case LogicalRelation(c: ColumnFormatRelation, _, _) =>
@@ -1292,13 +1291,10 @@ class SnappySession(@transient private val sc: SparkContext,
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
-        if (!isTempTable) {
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
             .alterTable(tableIdent, isAddColumn, column)
           return
-        }
       case _ =>
     }
 
@@ -1308,6 +1304,8 @@ class SnappySession(@transient private val sc: SparkContext,
         ar.alterTable(tableIdent, isAddColumn, column)
         SnappyStoreHiveCatalog.registerRelationDestroy()
         SnappySession.clearAllCache()
+      case _ =>
+        throw new AnalysisException("alter table not supported for external tables")
     }
   }
 
