@@ -26,15 +26,15 @@ import org.apache.spark.sql.{Row, DataFrame, SnappyContext}
 
 class SnapshotIsolationTestUtils {
 
-  def executeQueries(snc:SnappyContext,pw:PrintWriter):Any = {
-    assertQuery(SnapshotIsolationQueries.Q1,"Q1",snc,pw)
+  def executeQueries(snc: SnappyContext, pw: PrintWriter): Any = {
+    assertQuery(SnapshotIsolationQueries.Q1, "Q1", snc, pw)
   }
 
-  def assertQuery(sqlString: String,queryNum: String,snc: SnappyContext,pw: PrintWriter): Any ={
-    val time =  System.currentTimeMillis()
-    var snappyDF = snc.sql(sqlString)
+  def assertQuery(sqlString: String, queryNum: String, snc: SnappyContext, pw: PrintWriter): Any = {
+    val time = System.currentTimeMillis()
+    val rowList = snc.sql(sqlString).collect()
     try {
-      verifyDuplicateRows(snappyDF,pw)
+      verifyDuplicateRows(rowList, pw)
       //TestUtil.compareFiles(snappyFile, newDFFile, pw, false)
     } catch {
       case ex: Exception => {
@@ -45,30 +45,35 @@ class SnapshotIsolationTestUtils {
     pw.flush()
   }
 
-  def verifyDuplicateRows(df: DataFrame, pw: PrintWriter): Unit = {
+  def verifyDuplicateRows(rowList: Array[Row], pw: PrintWriter): Unit = {
+    val numRows = rowList.length
+    pw.println(s"Num rows in resultSet are ${numRows}.")
+    if (numRows == 0)
+      pw.println(s"There are no duplicate rows in resultSet. ")
+    else {
+      pw.println(s"Below duplicate rows found in resultSet: ")
+      for (row <- rowList)
+        pw.println(row)
+    }
+    /*
     var dupFound = false
     val dupList: util.List[Row] = new util.ArrayList[Row]()
-    val rowList = df.collectAsList()
-    val numRows = rowList.size().asInstanceOf[Int]
-    pw.println(s"Num rows in resultSet are ${numRows} and rows are:")
-    for ( i <- 0 to numRows) {
-      val row = rowList.get(i)
+    for (row <- rowList) {
       pw.println(s"${row}")
-      val index = row.fieldIndex("COUNT")
-      val count = row.getInt(index)
-      if(count > 1){
+      val count = row.getAs("COUNT")
+      if (count > 1) {
         dupFound = true
         pw.print("This is a duplicate row");
         dupList.add(row)
       }
     }
-    if(dupFound) {
+    if (dupFound) {
       pw.println(s"Below duplicate rows found in resultSet: ")
-      for(i <- 0 to dupList.size())
-        pw.println(dupList.get(i))
+      for (i <- dupList)
+        pw.println(dupList)
     }
   }
-
-  def verifyResults(snappyFile: File,pw: PrintWriter): Unit ={
+*/
   }
+
 }

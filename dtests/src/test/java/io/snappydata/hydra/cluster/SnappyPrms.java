@@ -195,6 +195,12 @@ public class SnappyPrms extends BasePrms {
   public static Long isStopMode;
 
   /**
+   * (boolean) - whether to start the snappy cluster forcefully.
+   * This is required in case user wants to restart the cluster multiple times
+   */
+  public static Long forceStart;
+
+  /**
    * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets
    * the gemfirexd.table-default-partitioned to false.
    */
@@ -280,6 +286,11 @@ public class SnappyPrms extends BasePrms {
    * (int) how long (milliseconds) it should wait before retrieving snappy-job status
    */
   public static Long sleepTimeSecsForJobStatus;
+
+  /**
+   * (int) how long (seconds) it should wait before retrieving server status
+   */
+  public static Long sleepTimeSecsForMemberStatus;
 
   /**
    * (int) Number of times the test should retry submitting failed job in case of lead node failover.
@@ -454,6 +465,11 @@ public class SnappyPrms extends BasePrms {
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
     return tasktab().intAt(key, tab().intAt(key, 120));
+  }
+
+  public static int getSleepTimeSecsForMemberStatus() {
+    Long key = sleepTimeSecsForMemberStatus;
+    return tasktab().intAt(key, tab().intAt(key, 30));
   }
 
   public static String getExecutorCores() {

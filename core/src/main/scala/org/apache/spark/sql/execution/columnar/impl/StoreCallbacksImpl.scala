@@ -153,34 +153,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     io.snappydata.Constant.SHADOW_SCHEMA_NAME
   }
 
-  override def cleanUpCachedObjects(table: String,
-      sentFromExternalCluster: lang.Boolean): Unit = {
-    if (sentFromExternalCluster) {
-      // cleanup invoked on embedded mode nodes
-      // from external cluster (in split mode) driver
-      ExternalStoreUtils.removeCachedObjects(table)
-      // clean up cached hive relations on lead node
-      if (GemFireXDUtils.getGfxdAdvisor.getMyProfile.hasSparkURL) {
-        SnappyStoreHiveCatalog.registerRelationDestroy()
-      }
-    } else {
-      // clean up invoked on external cluster driver (in split mode)
-      // from embedded mode lead
-      val sc = SnappyContext.globalSparkContext
-      val mode = SnappyContext.getClusterMode(sc)
-      mode match {
-        case SplitClusterMode(_, _) =>
-          StoreUtils.removeCachedObjects(
-            SnappySession.getOrCreate(sc).sqlContext, table,
-            registerDestroy = true)
-
-        case _ =>
-          throw new SparkException("Clean up expected to be invoked on" +
-              " external cluster driver. Current cluster mode is " + mode)
-      }
-    }
-  }
-
   override def registerRelationDestroyForHiveStore(): Unit = {
     SnappyStoreHiveCatalog.registerRelationDestroy()
   }
