@@ -20,7 +20,7 @@ import java.sql.{Connection, DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
-
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
@@ -156,6 +156,61 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
 
     s.execute("DROP DISKSTORE d1")
+  }
+
+  def testAlterRowTableRoutingFromXD(): Unit = {
+    val tableName: String = "RowTableQR"
+
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    val s = conn.createStatement()
+    s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
+    insertDataXD(conn, tableName)
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    verifyResultAndSchema(snc, tableName, 3)
+
+    s.execute(s"ALTER TABLE $tableName ADD COLUMN Col4 INT")
+    verifyResultAndSchema(snc, tableName, 4)
+
+    s.execute(s"ALTER TABLE $tableName DROP COLUMN Col3")
+    verifyResultAndSchema(snc, tableName, 3)
+
+    // execute at store level
+    s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER ()")
+    s.execute(s"ALTER TABLE $tableName add constraint emp_uk unique (Col1)")
+
+    verifyResultAndSchema(snc, tableName, 3)
+
+    dropTableXD(conn, tableName)
+  }
+
+  def verifyResultAndSchema(snc: SnappyContext, tableName: String, expectedColumns: Int): Unit = {
+    val dataDF = snc.sql("Select * from " + tableName)
+    assert(dataDF.count() == 5)
+    assert(dataDF.schema.fields.length == expectedColumns)
+  }
+
+  def testAlterRowTableFromSnappy(): Unit = {
+    val tableName: String = "RowTableQR"
+
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
+    insertDataXD(conn, tableName)
+    queryDataXD(conn, tableName)
+
+    snc.sql(s"ALTER TABLE $tableName ADD COLUMN Col4 INT")
+    queryDataXD(conn, tableName)
+
+    snc.sql(s"ALTER TABLE $tableName DROP COLUMN Col3")
+    queryDataXD(conn, tableName)
+
+    dropTableXD(conn, tableName)
   }
 
   def createTableXD(conn: Connection, tableName: String,
