@@ -315,9 +315,9 @@ object ValidateMVCCDUnitTest {
 
   def printRegionSize(): Unit = {
     val cache = GemFireCacheImpl.getInstance()
-    println("APP.TESTTABLE Region size : "+cache.getRegion("/APP/TESTTABLE").size())
-    println("SNAPPYSYS_INTERNAL.APP____TESTTABLE_COLUMN_STORE_  Region size : "+cache.getRegion
-    ("/SNAPPYSYS_INTERNAL/APP____TESTTABLE_COLUMN_STORE_").size())
+    val cbName = ColumnFormatRelation.columnBatchTableName("APP.TESTTABLE")
+    println("APP.TESTTABLE Region size : " + cache.getRegion("/APP/TESTTABLE").size())
+    println(s"APP.$cbName  Region size : " + Misc.getRegionForTable(cbName, true).size())
   }
 
 
