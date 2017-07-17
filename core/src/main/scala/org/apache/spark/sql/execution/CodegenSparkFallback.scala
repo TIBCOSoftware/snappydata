@@ -89,8 +89,11 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
           case None => throw t
         }
     } finally {
-      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      if (ExternalStoreUtils.isSmartConnectorMode(session.sparkContext)) {
+      val cacheMetaDataForConnector =
+        java.lang.Boolean.getBoolean("SMART_CONNECTOR_CACHE_METEADATA")
+      lazy val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      if (!cacheMetaDataForConnector &&
+        ExternalStoreUtils.isSmartConnectorMode(session.sparkContext)) {
         session.sessionCatalog.invalidateAll()
       }
     }
