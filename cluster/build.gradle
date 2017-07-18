@@ -109,6 +109,7 @@ dependencies {
   }
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
+  // testRuntime project(path: ':snappy-enterprise_' + scalaBinaryVersion)
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 

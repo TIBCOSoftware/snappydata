@@ -609,6 +609,9 @@ task product(type: Zip) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
     targetProject = project(":snappy-aqp_${scalaBinaryVersion}")
   }
+  if (rootProject.hasProperty('enterprise')) {
+    dependsOn ":snappy-enterprise_${scalaBinaryVersion}:jar"
+  }
 
   if (hasJdbcConnectorProject) {
     dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"

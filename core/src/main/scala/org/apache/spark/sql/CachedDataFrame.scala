@@ -30,7 +30,6 @@ import scala.reflect.ClassTag
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
-import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
@@ -416,7 +415,7 @@ object CachedDataFrame
       output = new ByteBufferDataOutput(4 << 10,
         DirectBufferAllocator.instance(),
         null,
-        ManagedDirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
+        DirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
 
       val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
       while (iter.hasNext) {
