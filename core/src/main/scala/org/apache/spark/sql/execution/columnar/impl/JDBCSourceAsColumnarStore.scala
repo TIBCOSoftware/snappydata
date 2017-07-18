@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.cache.{TXStateInterface, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
@@ -67,10 +67,78 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit = {
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, doInsert(tableName, batch, batchId,
-      getPartitionID(tableName, partitionId), maxDeltaRows),
-      closeOnSuccess = true, onExecutor = true)
+    tryExecute(tableName, closeOnSuccess = true, onExecutor = true)(doInsert(tableName, batch, batchId,
+      getPartitionID(tableName, partitionId), maxDeltaRows))
+
   }
+
+  def beginTx(): String = {
+    tryExecute(tableName, closeOnSuccess = true, onExecutor = true) {
+      (conn: Connection) => {
+        connectionType match {
+          case ConnectionType.Embedded =>
+            if (Misc.getGemFireCache().getCacheTransactionManager().getTXState() == null) {
+              Misc.getGemFireCache().getCacheTransactionManager()
+                  .begin(com.gemstone.gemfire.cache.IsolationLevel.SNAPSHOT, null)
+              Misc.getGemFireCache().getCacheTransactionManager().getTXState().getTransactionId().stringFormat()
+            } else {
+              null
+            }
+          case _ =>
+            if (SparkShellRDDHelper.snapshotTxId == null) {
+              val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID (?)")
+              startAndGetSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
+              startAndGetSnapshotTXId.execute()
+              val txid: String = startAndGetSnapshotTXId.getString(1)
+              startAndGetSnapshotTXId.close()
+              SparkShellRDDHelper.snapshotTxId.set(txid)
+              //logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
+              txid
+            } else {
+              null
+            }
+        }
+      }
+    }
+  }
+
+  def commitTx(txId: String): Unit = {
+    tryExecute(tableName, closeOnSuccess = true, onExecutor = true) {
+      (conn: Connection) => {
+        connectionType match {
+          case ConnectionType.Embedded =>
+            Misc.getGemFireCache().getCacheTransactionManager().commit()
+          case _ =>
+            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
+            ps.setString(1, if (txId == null) "null" else txId)
+            ps.executeUpdate()
+            //logDebug(s"The txid being committed is $txId")
+            ps.close()
+            SparkShellRDDHelper.snapshotTxId.set(null)
+        }
+      }
+    }
+  }
+
+
+  def rollbackTx(txId: String): Unit = {
+    tryExecute(tableName, closeOnSuccess = true, onExecutor = true) {
+      (conn: Connection) => {
+        connectionType match {
+          case ConnectionType.Embedded =>
+            Misc.getGemFireCache().getCacheTransactionManager().rollback()
+          case _ =>
+            val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
+            ps.setString(1, if (txId == null) "null" else txId)
+            ps.executeUpdate()
+            //logDebug(s"The txid being committed is $txId")
+            ps.close()
+            SparkShellRDDHelper.snapshotTxId.set(null)
+        }
+      }
+    }
+  }
+
 
   private def createStatsBuffer(statsData: Array[Byte],
       allocator: BufferAllocator): ByteBuffer = {
@@ -116,6 +184,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       region.putAll(keyValues)
     } catch {
       // TODO: test this code
+      // should be rolled back. so no need to delete.
       case NonFatal(e) =>
         // delete the base entry first
         val key = new ColumnFormatKey(partitionId,
@@ -149,6 +218,19 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       maxDeltaRows: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
+        // we should use a txId to start a tx if not started already
+        // then for subsequent use use the same txid for each connection
+        // the tx will be committed at the end.
+        val txId = SparkShellRDDHelper.snapshotTxId.get
+        // it should always be not null.
+        if (txId != null) {
+          if (!txId.equals("null")) {
+            val statement = connection.createStatement()
+            statement.execute(
+              s"call sys.USE_SNAPSHOT_TXID('$txId')")
+          }
+        }
+
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         var columnIndex = 1
@@ -179,6 +261,9 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           stmt.close()
         } catch {
           // TODO: test this code
+          // Need to rollback.
+          // we can't do this for only this cachedbatch
+          // all the inserts in this partitionId will be rolled back.
           case NonFatal(e) =>
             val deletestmt = connection.prepareStatement(
               s"delete from $tableName where partitionId = $partitionId " +
@@ -214,6 +299,13 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               }
             }
           }
+          val getSnapshotTXId = connection.prepareCall(s"call sys.GET_SNAPSHOT_TXID (?)")
+          getSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
+          getSnapshotTXId.execute()
+          val txid: String = getSnapshotTXId.getString(1)
+          getSnapshotTXId.close()
+          //SparkShellRDDHelper.snapshotTxId.set(txid)
+          //logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
         }
       }
     }
@@ -303,8 +395,13 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       maxDeltaRows: Int): (Connection => Any) = {
     (connection: Connection) => {
       // split the batch and put into row buffer if it is small
+
       if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
         GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
+        // better to start snapshot tx here if not already started.
+        // if onexecutor then tx will be started already? check
+        //
+
         // the lookup key depends only on schema and not on the table
         // name since the prepared statement specific to the table is
         // passed in separately through the references object
@@ -420,7 +517,7 @@ final class ColumnarStorePartitionedRDD(
 
   private[this] var allPartitions: Array[Partition] = _
   private val evaluatePartitions: () => Array[Partition] = () => {
-    store.tryExecute(tableName, conn => {
+    store.tryExecute(tableName) { conn =>
       val resolvedName = ExternalStoreUtils.lookupName(tableName,
         conn.getSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
@@ -448,7 +545,7 @@ final class ColumnarStorePartitionedRDD(
               pr.getTotalNumberOfBuckets, prefNodes.toSeq))
           }
       }
-    })
+    }
   }
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
@@ -555,7 +652,7 @@ final class SmartConnectorColumnRDD(
     if (parts != null && parts.length > 0) {
       return parts
     }
-    store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _))
+    store.tryExecute(tableName)(SparkShellRDDHelper.getPartitions(tableName, _))
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {

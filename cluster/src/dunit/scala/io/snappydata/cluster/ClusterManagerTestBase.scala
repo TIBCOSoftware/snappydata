@@ -47,10 +47,10 @@ abstract class ClusterManagerTestBase(s: String)
 
   val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  bootProps.setProperty("log-level", "fine")
   // Easier to switch ON traces. thats why added this.
-  // bootProps.setProperty("gemfirexd.debug.true",
-  //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
+  bootProps.setProperty("gemfirexd.debug.true",
+     "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
     TestUtils.defaultCores.toString)
@@ -120,10 +120,7 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    vm0.invoke(startNode)
-    vm1.invoke(startNode)
-    vm2.invoke(startNode)
-
+    Array(vm0, vm1, vm2).foreach(_.invoke(startNode))
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {

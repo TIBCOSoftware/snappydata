@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property
 
 import org.apache.spark.TaskContext
@@ -59,6 +60,10 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   @transient private var numInsertions: String = _
   @transient private var schemaTerm: String = _
   @transient private var storeColumnBatch: String = _
+  @transient private var beginSnapshotTx: String = _
+  @transient private var commitSnapshotTx: String = _
+  @transient private var txId: String = _
+  @transient private var rollbackSnapshotTx: String = _
   @transient private var storeColumnBatchArgs: String = _
   @transient private var initEncoders: String = _
 
@@ -151,6 +156,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
+    txId = ctx.freshName("txId")
     val batchSizeDeclaration = if (true) {
       ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
       ""
@@ -220,6 +226,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
     s"""
        |$checkEnd; // already done
+       |String $txId = $beginSnapshotTx();
+       |boolean success = false;
+       |try {
        |$batchSizeDeclaration
        |if ($numInsertions < 0) {
        |  $numInsertions = 0;
@@ -242,6 +251,15 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |${if (numInsertedRowsMetric eq null) ""
         else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |success = true;
+       |}
+       |finally {
+       |if ($txId != null) {
+       |  if(success)
+       |    $commitSnapshotTx($txId);
+       |  else
+       |    $rollbackSnapshotTx($txId);
+       |}
     """.stripMargin
   }
 
@@ -262,6 +280,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
+    txId = ctx.freshName("txId")
     val batchSizeDeclaration = if (useMemberVariables) {
       ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
       ""
@@ -321,6 +340,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
     s"""
        |$checkEnd; // already done
+       |String $txId  = $beginSnapshotTx();
+       |boolean success = false;
+       |try {
        |$batchSizeDeclaration
        |${cursorDeclarations.mkString("\n")}
        |if ($numInsertions < 0) {
@@ -346,6 +368,16 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |success = true;
+       |}
+       |finally {
+       |if ($txId != null) {
+       |  if(success)
+       |    $commitSnapshotTx($txId);
+       |  else
+       |    $rollbackSnapshotTx($txId);
+       |}
+       |}
     """.stripMargin
   }
 
@@ -597,6 +629,27 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
+    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
+    ctx.addNewFunction(beginSnapshotTx,
+      s"""
+         |private final String $beginSnapshotTx() {
+         |  return $externalStoreTerm.beginTx();
+         |}
+      """.stripMargin)
+    commitSnapshotTx = ctx.freshName("commitSnapshotTx")
+    ctx.addNewFunction(commitSnapshotTx,
+      s"""
+         |private final void $commitSnapshotTx(String $txId) {
+         |  $externalStoreTerm.commitTx($txId);
+         |}
+      """.stripMargin)
+    rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
+    ctx.addNewFunction(rollbackSnapshotTx,
+      s"""
+         |private final void $rollbackSnapshotTx(String $txId) {
+         |  $externalStoreTerm.rollbackTx($txId);
+         |}
+      """.stripMargin)
     // no shouldStop check required
     if (!ctx.addedFunctions.contains("shouldStop")) {
       ctx.addNewFunction("shouldStop",
@@ -721,6 +774,27 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm);
          |  $numInsertions += $batchSizeTerm;
+         |}
+      """.stripMargin)
+    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
+    ctx.addNewFunction(beginSnapshotTx,
+      s"""
+         |private final String $beginSnapshotTx() {
+         |  return $externalStoreTerm.beginTx();
+         |}
+      """.stripMargin)
+    commitSnapshotTx = ctx.freshName("commitSnapshotTx")
+    ctx.addNewFunction(commitSnapshotTx,
+      s"""
+         |private final void $commitSnapshotTx(String $txId) {
+         |  $externalStoreTerm.commitTx($txId);
+         |}
+      """.stripMargin)
+    rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
+    ctx.addNewFunction(rollbackSnapshotTx,
+      s"""
+         |private final void $rollbackSnapshotTx(String $txId) {
+         |  $externalStoreTerm.rollbackTx($txId);
          |}
       """.stripMargin)
     // no shouldStop check required

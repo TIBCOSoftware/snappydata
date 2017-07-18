@@ -29,7 +29,7 @@ import io.snappydata.{Locator, ServiceManager}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
@@ -113,6 +113,66 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
   def setDMLMaxChunkSize(size: Long): Unit = {
     GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
+  }
+
+  def testSnapshotInsertionForColumnTable(): Unit = {
+    errorInThread = null
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val snc = SnappyContext(sc)
+    val tableName: String = "TESTTABLE"
+
+    snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using column " +
+        s"OPTIONS (PARTITION_BY 'col1', buckets '1',MAXPARTSIZE '200'," +
+        s"COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
+        s"'5000')")
+
+    val df = for(i <- 1 to 100) yield Seq(i, i+1, i+2)
+
+    for (i <- 1 to 10) {
+      snc.sql(s"insert into $tableName values($i,'${i + 1}',${i + 2})")
+      println(s"Inserting $i")
+    }
+
+    val cnt = snc.sql(s"select * from $tableName").count()
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
+    assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
+    snc.sql(s"drop table $tableName")
+
+    // scalastyle:off
+    println("Successful")
+    // scalastyle:on
+  }
+
+  def testSnapshotInsertionForColumnTableDFInsert(): Unit = {
+    errorInThread = null
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val snc = SnappyContext(sc)
+    val tableName: String = "TESTTABLE"
+
+    snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using column " +
+        s"OPTIONS (PARTITION_BY 'col1', buckets '1',MAXPARTSIZE '200'," +
+        s"COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
+        s"'5000')")
+
+    val df = for(i <- 1 to 100) yield Seq(i, i+1, i+2)
+    val rdd = sc.parallelize(df, df.length).map(
+      s => new Data2(s(0), s(1).toString, s(2).toString))
+
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
+
+    val cnt = snc.sql(s"select * from $tableName").count()
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
+    assert(cnt == 100, s"Expected row count is 10 while actual row count is $cnt")
+    snc.sql(s"drop table $tableName")
+
+    // scalastyle:off
+    println("Successful")
+    // scalastyle:on
   }
 
   def testMVCCForColumnTable(): Unit = {
