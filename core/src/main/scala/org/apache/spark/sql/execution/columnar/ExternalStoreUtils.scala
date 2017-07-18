@@ -294,7 +294,7 @@ object ExternalStoreUtils extends Logging {
 
       // Hikari only take 'username'. So does Tomcat
       def securePoolProps(props: Map[String, String]): Map[String, String] = props +
-          ("username" -> user) + ("password" -> password)
+          (Attribute.USERNAME_ALT_ATTR.toLowerCase -> user) + (Attribute.PASSWORD_ATTR -> password)
 
       ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
         secureProps(connProps), secureProps(executorConnProps), hikariCP)
@@ -304,7 +304,7 @@ object ExternalStoreUtils extends Logging {
 
   def getCredentials(session: Option[SparkSession], prefix: String = ""): (String, String) = {
     val prefix = SnappyContext.getClusterMode(session.get.sparkContext) match {
-      case ThinClientConnectorMode(_, _) => "spark.snappydata.store."
+      case ThinClientConnectorMode(_, _) => Constant.SPARK_STORE_PREFIX
       case _ => ""
     }
     (session.get.conf.get(prefix + Attribute.USERNAME_ATTR, ""), session.get.conf.get

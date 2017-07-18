@@ -19,12 +19,8 @@
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -62,11 +58,18 @@ import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionS
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{StructType, _}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.reflect.runtime.{universe => u}
+import scala.util.control.NonFatal
 
 
 class SnappySession(@transient private val sc: SparkContext,
@@ -978,7 +981,6 @@ class SnappySession(@transient private val sc: SparkContext,
       mode: SaveMode,
       options: Map[String, String],
       isBuiltIn: Boolean): LogicalPlan = {
-
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
         return sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper.createTable(tableIdent,
@@ -1005,7 +1007,6 @@ class SnappySession(@transient private val sc: SparkContext,
     else {
       options + (dbtableProp -> tableIdent.toString)
     }
-
     val source = if (isBuiltIn) SnappyContext.getProvider(provider,
       onlyBuiltIn = true) else provider
 
@@ -1271,6 +1272,48 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
+  private[sql] def alterTable(tableName: String, isAddColumn: Boolean,
+                 column: StructField): Unit = {
+    alterTable(sessionCatalog.newQualifiedTableName(tableName), isAddColumn, column)
+  }
+
+  private[sql]  def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
+                              column: StructField): Unit = {
+    val plan = try {
+      sessionCatalog.lookupRelation(tableIdent)
+    } catch {
+      case tnfe: TableNotFoundException => throw tnfe
+    }
+
+    if(sessionCatalog.isTemporaryTable(tableIdent)) {
+      throw new AnalysisException("alter table not supported for temp tables")
+    }
+    plan match {
+      case LogicalRelation(c: ColumnFormatRelation, _, _) =>
+        throw new AnalysisException("alter table not supported for column tables")
+      case _ =>
+    }
+
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+          sessionCatalog.invalidateTable(tableIdent)
+          sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
+            .alterTable(tableIdent, isAddColumn, column)
+          return
+      case _ =>
+    }
+
+    plan match {
+      case LogicalRelation(ar: AlterableRelation, _, _) =>
+        sessionCatalog.invalidateTable(tableIdent)
+        ar.alterTable(tableIdent, isAddColumn, column)
+        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappySession.clearAllCache()
+      case _ =>
+        throw new AnalysisException("alter table not supported for external tables")
+    }
+  }
+
   /**
    * Set current database/schema.
    *
@@ -1371,7 +1414,7 @@ class SnappySession(@transient private val sc: SparkContext,
       indexIdent: QualifiedTableName): QualifiedTableName = {
     // TODO: SW: proper schema handling required here
     new QualifiedTableName(indexIdent.schemaName, Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
-        indexIdent.table)
+      indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,

@@ -19,14 +19,14 @@ package org.apache.spark.sql.hive
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
-import scala.collection.JavaConverters._
+import com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR
 
+import scala.collection.JavaConverters._
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.hadoop.util.VersionInfo
-
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
@@ -155,30 +155,18 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
     val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
-      var user = sparkConf.getOption("spark.snappydata.store.user")
-      var password = sparkConf.getOption("spark.snappydata.store.password")
-      if (user.isDefined && password.isDefined) {
-        println(s"ABS spark conf HCU: $user, $password")
-        // Thread.currentThread().getStackTrace.foreach(println)
-        val user1 = sparkConf.getOption("snappydata.store.user")
-        val pass1 = sparkConf.getOption("snappydata.store.password")
-        if (user1.isDefined && pass1.isDefined) {
-          println(s"ABS ALSO defined are snappydata conf $user1, $pass1")
-          user = user1
-          password = pass1
-        }
-      } else {
-        user = sparkConf.getOption("snappydata.store.user")
-        password = sparkConf.getOption("snappydata.store.password")
+      import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
+      import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
+      var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
+      var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+      if (!user.isDefined && !password.isDefined) {
+        user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+        password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
         println(s"ABS snappydata conf HCU: $user, $password")
-        // Thread.currentThread().getStackTrace.foreach(println)
       }
       var logURL = dbURL
       val secureDbURL = if (user.isDefined && password.isDefined) {
-        // metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME, user.get)
-        // metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD, password.get)
-        logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE +
-            ";user=" + user.get
+        logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";user=" + user.get
         logURL + ";password=" + password.get + ";"
       } else {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
