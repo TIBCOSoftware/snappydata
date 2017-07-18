@@ -111,9 +111,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     println(s"ABS default schema set to $defaultName")
     val defaultDbDefinition =
       CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
-    // Initialize default database if it doesn't already exist
-    externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
-    client.setCurrentDatabase(defaultName)
+    SnappyContext.getClusterMode(snappySession.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+      case _ =>     // Initialize default database if it doesn't already exist
+        externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
+        client.setCurrentDatabase(defaultName)
+    }
     formatDatabaseName(defaultName)
   }
 

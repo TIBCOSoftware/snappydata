@@ -138,11 +138,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       case mode: ThinClientConnectorMode =>
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_AUTO_CREATE_SCHEMA, "false")
         metadataConf.set("datanucleus.generateSchema.database.mode", "none")
-//        metadataConf.setBoolean("datanucleus.autoCreateTables", true)
-//        metadataConf.setBoolean("datanucleus.readOnlyDatastore", true)
-//        metadataConf.set("datanucleus.readOnlyDatastoreAction", "IGNORE")
-//        metadataConf.setBoolean("datanucleus.fixedDatastore", true)
-//        println(s"ABS Set readOnlyDatastore to true")
       case _ =>
     }
     metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE)
@@ -178,18 +173,19 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
         println(s"ABS snappydata conf HCU: $user, $password")
         // Thread.currentThread().getStackTrace.foreach(println)
       }
+      var logURL = dbURL
       val secureDbURL = if (user.isDefined && password.isDefined) {
-
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME, user.get)
-        metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD, password.get)
-        dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";"
-        dbURL
+        // metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME, user.get)
+        // metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD, password.get)
+        logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE +
+            ";user=" + user.get
+        logURL + ";password=" + password.get + ";"
       } else {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
           Misc.SNAPPY_HIVE_METASTORE)
         dbURL
       }
-      logInfo(s"Using SnappyStore as metastore database, dbURL = $secureDbURL")
+      logInfo(s"Using SnappyStore as metastore database, dbURL = $logURL")
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
     } else if (dbURL != null) {
