@@ -1759,12 +1759,14 @@ public class SnappyTest implements Serializable {
   /**
    * Executes Snappy Jobs.
    */
-  public static void HydraTask_executeSnappyJob() {
+  public static synchronized void HydraTask_executeSnappyJob() {
+    int count = 0;
     int currentThread = snappyTest.getMyTid();
     String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
     SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
     snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms
-        .getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
+        .getUserAppJar(), jarPath, SnappyPrms.getUserAppName() + "_" + count + "_" + System.currentTimeMillis());
+    count++;
   }
 
   /**
@@ -1926,8 +1928,8 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public void executeSnappyJob(Vector jobClassNames, String logFileName, String userAppJar,
-                               String jarPath, String appName) {
+  public synchronized void executeSnappyJob(Vector jobClassNames, String logFileName, String
+      userAppJar, String jarPath, String appName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;
 //        userAppJar = SnappyPrms.getUserAppJar();
