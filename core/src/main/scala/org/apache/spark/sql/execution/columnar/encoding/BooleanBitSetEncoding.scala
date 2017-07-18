@@ -20,7 +20,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
-import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
+import org.apache.spark.sql.types.{BooleanType, DataType}
 import org.apache.spark.unsafe.Platform
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
@@ -49,29 +49,38 @@ abstract class BooleanBitSetDecoderBase
   private[this] var byteCursor = 0L
   private[this] var currentWord = 0L
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = {
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      dataType: DataType): Long = {
+    // baseCursor should never change after initialization
+    baseCursor = cursor
     byteCursor = cursor
-    // return current bit index as the cursor so that is used and
-    // incremented in the next call; the byte position will happen once
-    // every 64 calls so that can be a member variable;
-    // return max to force reading word in first nextBoolean call
-    ColumnEncoding.BITS_PER_LONG
+    // return current bit mask as the cursor so that is used and
+    // updated in the next call; the byte position will happen once
+    // every 64 calls so that is a member variable;
+    // return max mask to force reading word in first nextBoolean call
+    ColumnEncoding.MAX_BITMASK
   }
 
-  override final def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = {
-    var currentBitIndex = cursor
-    currentBitIndex += 1
-    if (currentBitIndex < ColumnEncoding.BITS_PER_LONG) currentBitIndex
+  override final def nextBoolean(columnBytes: AnyRef, mask: Long): Long = {
+    val currentBitMask = mask << 1
+    if (currentBitMask != 1L) currentBitMask
     else {
       currentWord = ColumnEncoding.readLong(columnBytes, byteCursor)
       byteCursor += 8
-      0L
+      1L
     }
   }
 
-  override final def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
-    ((currentWord >> cursor) & 1) != 0
+  override def absoluteBoolean(columnBytes: AnyRef, position: Int): Long = {
+    val getPosition = position - numNullsUntilPosition(columnBytes, position) + 1
+    val wordCursor = baseCursor + (getPosition >> 6) << 3
+    currentWord = ColumnEncoding.readLong(columnBytes, wordCursor)
+    // "cursor" is mod 64 and shift which is what currentWord will be masked with
+    1L << (getPosition & 0x3f)
+  }
+
+  override final def readBoolean(columnBytes: AnyRef, mask: Long): Boolean =
+    (currentWord & mask) != 0
 }
 
 trait BooleanBitSetEncoderBase
@@ -97,8 +106,16 @@ trait BooleanBitSetEncoderBase
     byteCursor = super.initialize(dataType, nullable, initSize,
       withHeader, allocator)
     currentWord = 0L
-    // returns the index into currentWord
-    0L
+    // returns the OR mask to use for currentWord
+    1L
+  }
+
+  override private[sql] def decoderBeforeFinish: ColumnDecoder = {
+    // can't depend on nullCount because even with zero count, it may have
+    // allocated some null space at the start in advance
+    val decoder = if (isNullable) new BooleanBitSetDecoderNullable else new BooleanBitSetDecoder
+    decoder.initializeCursor(null, initializeNullsBeforeFinish(decoder), null)
+    decoder
   }
 
   private def writeCurrentWord(): Long = {
@@ -110,25 +127,25 @@ trait BooleanBitSetEncoderBase
     ColumnEncoding.writeLong(columnBytes, cursor, currentWord)
     // update the statistics
     if (currentWord != 0L) {
-      // there are true's
+      // there are true values
       updateLongStats(1L)
     }
     if (currentWord != -1L) {
-      // there are false's
+      // there are false values
       updateLongStats(0L)
     }
     cursor
   }
 
-  override final def writeBoolean(ordinal: Long, value: Boolean): Long = {
-    if (ordinal < ColumnEncoding.BITS_PER_LONG) {
-      if (value) {
-        currentWord |= (1 << ordinal)
-      }
-      ordinal + 1
+  override final def writeBoolean(mask: Long, value: Boolean): Long = {
+    if (value) {
+      currentWord |= mask
+    }
+    if (mask != ColumnEncoding.MAX_BITMASK) {
+      mask << 1
     } else {
-      byteCursor = writeCurrentWord() + 8
-      currentWord = if (value) 1L else 0L
+      byteCursor = writeCurrentWord() + 8L
+      currentWord = 0L
       1L
     }
   }
@@ -139,7 +156,8 @@ trait BooleanBitSetEncoderBase
   final def writeBooleanAtPosition(position: Int, value: Boolean): Unit = {
     if (((columnEndPosition - columnBeginPosition) << 3) > position) {
       val bytePosition = columnBeginPosition + (position >>> 3)
-      val mask = 1 << (position & 0x7) // mod 8 and shift
+      // mod 8 and shift
+      val mask = 1 << (position & 0x7)
       val currentByte = Platform.getByte(columnBytes, bytePosition)
       if (value) {
         Platform.putByte(columnBytes, bytePosition, (currentByte | mask).toByte)
@@ -152,11 +170,16 @@ trait BooleanBitSetEncoderBase
     }
   }
 
-  override abstract def finish(ordinal: Long): ByteBuffer = {
-    if (ordinal > 0) {
+  override abstract def finish(mask: Long): ByteBuffer = {
+    if (mask > 1L) {
       // one more word required
-      byteCursor = writeCurrentWord() + 8
+      byteCursor = writeCurrentWord() + 8L
     }
     super.finish(byteCursor)
+  }
+
+  override def finishedSize(mask: Long): Long = {
+    if (mask > 1L) super.finishedSize(byteCursor + 8L)
+    else super.finishedSize(byteCursor)
   }
 }

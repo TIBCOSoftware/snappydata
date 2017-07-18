@@ -37,8 +37,8 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
   override protected def initializeNulls(columnBytes: AnyRef,
       cursor: Long, field: StructField): Long = 0L
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = 0L
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      dataType: DataType): Long = 0L
 
   override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
 

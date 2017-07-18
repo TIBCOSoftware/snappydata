@@ -50,7 +50,9 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.unsafe.types.UTF8String
 // import org.apache.spark.sql.execution.datasources.json.JacksonGenerator
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -750,6 +752,59 @@ object Utils {
           buffer.arrayOffset() + buffer.position(), buffer.remaining())
     }
     row
+  }
+
+  def compare(left: UTF8String, right: UTF8String): Int = {
+    val rightBase = right.getBaseObject
+    var rightOffset = right.getBaseOffset
+    val leftBase = left.getBaseObject
+    var leftOffset = left.getBaseOffset
+
+    val len = Math.min(left.numBytes, right.numBytes)
+    var endOffset = leftOffset + len
+    // for architectures that support unaligned accesses, read 8 bytes at a time
+    if (Platform.unaligned() || (((leftOffset & 0x7) == 0) && ((rightOffset & 0x7) == 0))) {
+      endOffset -= 8
+      while (leftOffset <= endOffset) {
+        // Longs should be read in big-endian format for proper comparison order
+        // of individual string bytes.
+        val ll = ColumnEncoding.readLongBigEndian(leftBase, leftOffset)
+        val rl = ColumnEncoding.readLongBigEndian(rightBase, rightOffset)
+        // In UTF-8, the byte should be unsigned, so we should compare them as unsigned long.
+        val res = ll - rl
+        // If the sign of both values is same then "res" is with correct sign.
+        // If the sign of values is different then "res" has opposite sign.
+        // The XOR operations will revert the sign bit of res if sign of values is different.
+        // After that converting to signum is "(1 + ((v >> 63) << 1))"
+        //   where (v >> 63) will flow the sign to give -1 or 0, and (1 + 2 times)
+        //   of that will give -1 or 1 respectively.
+        if (res != 0) return (1 + (((ll ^ rl ^ res) >> 63) << 1)).toInt
+        leftOffset += 8
+        rightOffset += 8
+      }
+      endOffset += 4
+      if (leftOffset <= endOffset) {
+        // In UTF-8, the byte should be unsigned, so we should compare them as unsigned int
+        // which is done by converting to unsigned longs.
+        // After that conversion to signed integer is "(1 + ((v >> 63) << 1))" as above.
+        val res = (ColumnEncoding.readIntBigEndian(leftBase, leftOffset) & 0xffffffffL) -
+            (ColumnEncoding.readIntBigEndian(rightBase, rightOffset) & 0xffffffffL)
+        if (res != 0) return (1 + ((res >> 63) << 1)).toInt
+        leftOffset += 4
+        rightOffset += 4
+      }
+      endOffset += 4
+    }
+    // finish the remaining bytes
+    while (leftOffset < endOffset) {
+      // In UTF-8, the byte should be unsigned, so we should compare them as unsigned int.
+      val res = (Platform.getByte(leftBase, leftOffset) & 0xff) -
+          (Platform.getByte(rightBase, rightOffset) & 0xff)
+      if (res != 0) return res
+      leftOffset += 1
+      rightOffset += 1
+    }
+    left.numBytes - right.numBytes
   }
 }
 

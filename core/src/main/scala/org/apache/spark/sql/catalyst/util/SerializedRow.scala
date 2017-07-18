@@ -153,7 +153,7 @@ trait SerializedRowData extends SpecializedGetters
   // Public methods
   //////////////////////////////////////////////////////////////////////////////
 
-  final def getBaseObject: Any = baseObject
+  final def getBaseObject: AnyRef = baseObject
 
   final def getBaseOffset: Long = baseOffset
 

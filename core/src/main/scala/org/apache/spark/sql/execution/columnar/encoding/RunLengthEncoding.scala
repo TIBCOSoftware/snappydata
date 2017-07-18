@@ -45,8 +45,8 @@ abstract class RunLengthDecoderBase
   private[this] var currentValueLong: Long = _
   private[this] var currentValueString: UTF8String = _
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = {
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      dataType: DataType): Long = {
     cursorPos = cursor
     // use the current count + value for cursor since that will be read and
     // written most frequently while actual cursor will be less frequently used

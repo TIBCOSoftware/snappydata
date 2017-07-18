@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.encoding
 
-import org.apache.spark.sql.types.{DataType, LongType, StructField, TimestampType}
+import org.apache.spark.sql.types.{DataType, LongType, TimestampType}
 import org.apache.spark.unsafe.Platform
 
 trait LongDeltaEncoding extends ColumnEncoding {
@@ -40,8 +40,8 @@ abstract class LongDeltaDecoderBase
 
   private[this] final var prev: Long = 0L
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = cursor
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      dataType: DataType): Long = cursor
 
   override final def nextLong(columnBytes: AnyRef, cursor: Long): Long = {
     val delta = Platform.getByte(columnBytes, cursor)
