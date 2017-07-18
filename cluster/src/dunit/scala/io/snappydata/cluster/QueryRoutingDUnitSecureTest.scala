@@ -208,7 +208,6 @@ class QueryRoutingDUnitSecureTest(val s: String)
     }
     createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
-    insertRows1(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       insertRows1(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
@@ -216,8 +215,8 @@ class QueryRoutingDUnitSecureTest(val s: String)
       case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
+    insertRows1(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
-    insertRows2(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       insertRows2(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
@@ -225,9 +224,9 @@ class QueryRoutingDUnitSecureTest(val s: String)
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
+    insertRows2(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
@@ -235,15 +234,16 @@ class QueryRoutingDUnitSecureTest(val s: String)
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
+    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
-    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       dropTable(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException if x.getSQLState.equals("38000") => // ignore
+      case x: SQLException if x.getSQLState.equals("42507") => // ignore
       case t: Throwable => throw t
     }
+    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
   }
 
   def testRowTableRouting(): Unit = {
@@ -264,7 +264,6 @@ class QueryRoutingDUnitSecureTest(val s: String)
     }
     createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
-    insertRows1(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       insertRows1(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
@@ -272,8 +271,8 @@ class QueryRoutingDUnitSecureTest(val s: String)
       case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
+    insertRows1(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
-    insertRows2(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       insertRows2(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
@@ -281,9 +280,9 @@ class QueryRoutingDUnitSecureTest(val s: String)
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
+    insertRows2(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       query1(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
@@ -291,14 +290,15 @@ class QueryRoutingDUnitSecureTest(val s: String)
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
+    query1(serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
-    dropTable(serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       dropTable(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException if x.getSQLState.equals("38000") => // ignore
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
+    dropTable(serverHostPort, tableName, jdbcUser1, jdbcUser1)
   }
 }
