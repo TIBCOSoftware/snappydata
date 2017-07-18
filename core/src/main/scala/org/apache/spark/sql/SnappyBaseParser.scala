@@ -436,6 +436,9 @@ object SnappyParserConsts {
   final val USING = nonReservedKeyword("using")
   final val RETURNS = nonReservedKeyword("returns")
   final val FN = nonReservedKeyword("fn")
+  final val ALTER = nonReservedKeyword("alter")
+  final val ADD = nonReservedKeyword("add")
+  final val COLUMN = nonReservedKeyword("column")
 
   // Window analytical functions are non-reserved
   final val DURATION = nonReservedKeyword("duration")

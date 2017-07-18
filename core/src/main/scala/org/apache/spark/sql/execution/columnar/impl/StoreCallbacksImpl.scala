@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.lang
 import java.util.{Collections, UUID}
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
@@ -30,18 +29,19 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.FunctionIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.store.{StoreHashFunction, StoreUtils}
+import org.apache.spark.sql.store.StoreHashFunction
 import org.apache.spark.sql.types._
-import org.apache.spark.{Logging, SparkContext, SparkException}
+import org.apache.spark.{Logging, SparkContext}
 
 import scala.collection.JavaConverters._
 
@@ -130,11 +130,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   def getInternalTableSchemas: java.util.List[String] = {
-    val schemas = new java.util.ArrayList[String](2)
+    val schemas = new java.util.ArrayList[String](1)
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
-    schemas.add(Constant.SHADOW_SCHEMA_NAME)
     schemas
   }
+
+  override def isColumnTable(qualifiedName: String): Boolean =
+    ColumnFormatRelation.isColumnTable(qualifiedName)
 
   override def getHashCodeSnappy(dvd: scala.Any, numPartitions: Int): Int = {
     partitioner.computeHash(dvd, numPartitions)
@@ -147,10 +149,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def columnBatchTableName(table: String): String = {
     ColumnFormatRelation.columnBatchTableName(table)
-  }
-
-  override def snappyInternalSchemaName(): String = {
-    io.snappydata.Constant.SHADOW_SCHEMA_NAME
   }
 
   override def registerRelationDestroyForHiveStore(): Unit = {
@@ -243,6 +241,17 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         logDebug(s"StoreCallbacksImpl.performConnectorOp dropping udf $functionName")
         session.sharedState.externalCatalog.dropFunction(db, functionName)
 
+      case LeadNodeSmartConnectorOpContext.OpType.ALTER_TABLE =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val tableName = context.getTableIdentifier
+        val addOrDropCol = context.getAddOrDropCol
+        val columnName = context.getColumnName
+        val columnDataType = context.getColumnDataType
+        val columnNullable = context.getColumnNullable
+        logDebug(s"StoreCallbacksImpl.performConnectorOp alter table ")
+        session.alterTable(tableName, addOrDropCol, StructField(columnName,
+          CatalystSqlParser.parseDataType(columnDataType), columnNullable))
+        SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")
     }
