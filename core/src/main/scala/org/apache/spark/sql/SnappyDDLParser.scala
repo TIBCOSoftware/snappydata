@@ -18,18 +18,12 @@
 package org.apache.spark.sql
 
 
-import scala.collection.mutable.ArrayBuffer
 import java.io.File
-import java.util.Date
-import scala.util.Try
 
 import io.snappydata.Constant
-import org.parboiled2._
-import shapeless.{::, HNil}
-
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
-import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.backwardcomp.{DescribeTable, ExecuteCommand}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -38,13 +32,16 @@ import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.catalyst.catalog.BucketSpec
 import org.apache.spark.sql.execution.datasources.{DataSource, RefreshTable}
 import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
-import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
+import org.apache.spark.streaming._
+import org.parboiled2._
+import shapeless.{::, HNil}
+
+import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
     extends SnappyBaseParser(session) {
@@ -145,6 +142,9 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def FN: Rule0 = rule { keyword(Consts.FN) }
+  final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
+  final def ADD: Rule0 = rule { keyword(Consts.ADD) }
+  final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -314,6 +314,14 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
     TRUNCATE ~ TABLE ~ (IF ~ EXISTS ~> trueFn).? ~ tableIdentifier ~> TruncateTable
+  }
+
+  protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ COLUMN ~ column  ~> AlterTableAddColumn
+  }
+
+  protected def alterTableDropColumn: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ DROP  ~ COLUMN ~ qualifiedName ~> AlterTableDropColumn
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
@@ -579,7 +587,8 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
-    createStream | streamContext | createIndex | dropIndex | createFunction | dropFunction | show
+    alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
+    createIndex | dropIndex | createFunction | dropFunction | show
   }
 
   protected def query: Rule1[LogicalPlan]
@@ -695,6 +704,41 @@ private[sql] case class TruncateTable(ifExists: Any,
     snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
       ifExists.asInstanceOf[Option[Boolean]].isDefined,
       ignoreIfUnsupported = false)
+    Seq.empty
+  }
+}
+
+private[sql] case class AlterTableAddColumn(tableIdent: TableIdentifier,
+   addColumn: StructField) extends ExecuteCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    snc.alterTable(catalog.newQualifiedTableName(tableIdent), true, addColumn)
+    Seq.empty
+  }
+}
+
+private[sql] case class AlterTableDropColumn(
+  tableIdent: TableIdentifier, column: String) extends ExecuteCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    val plan = try {
+      snc.sessionCatalog.lookupRelation(tableIdent)
+    } catch {
+      case tnfe: TableNotFoundException =>
+        throw tnfe
+    }
+    val structField: StructField =
+      plan.schema.find(_.name.equalsIgnoreCase(column)) match {
+        case None => throw new AnalysisException(s"$column column" +
+          s" doesn't exists in table ${tableIdent.table}")
+        case Some(field) => field
+      }
+    val table = catalog.newQualifiedTableName(tableIdent)
+    snc.alterTable(table, false, structField)
     Seq.empty
   }
 }

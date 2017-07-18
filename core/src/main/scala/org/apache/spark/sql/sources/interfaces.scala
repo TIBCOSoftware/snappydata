@@ -25,6 +25,7 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 
 @DeveloperApi
@@ -254,6 +255,18 @@ trait IndexableRelation {
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit
 
+}
+
+@DeveloperApi
+trait AlterableRelation {
+  /**
+    * Alter's table schema by adding or dropping a provided column
+    * @param tableIdent
+    * @param isAddColumn
+    * @param column
+    */
+  def alterTable(tableIdent: QualifiedTableName,
+                 isAddColumn: Boolean, column: StructField): Unit
 }
 
 /**
