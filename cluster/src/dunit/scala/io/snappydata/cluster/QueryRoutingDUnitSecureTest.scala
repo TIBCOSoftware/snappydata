@@ -17,7 +17,7 @@
 
 package io.snappydata.cluster
 
-import java.sql.{Connection, DriverManager, ResultSet}
+import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQLException}
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
@@ -29,8 +29,9 @@ import org.apache.spark.sql.collection.Utils
 class QueryRoutingDUnitSecureTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
-  val snappyAdminUser = "gemfire2"
-  val jdbcUser = "gemfire1"
+  val jdbcUser1 = "gemfire1"
+  val jdbcUser2 = "gemfire2"
+  val adminUser1 = "gemfire3"
 
   override def setUp(): Unit = {
     setSecurityProps()
@@ -48,7 +49,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
   def setSecurityProps(): Unit = {
     import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
-      snappyAdminUser, getClass.getResource("/auth.ldif").getPath)
+      adminUser1, getClass.getResource("/auth.ldif").getPath)
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.setProperty(k, ldapProperties.getProperty(k))
     }
@@ -62,7 +63,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
   def netConnection(netPort: Int, user: String, pass: String): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
-    var url: String = "jdbc:snappydata://localhost:" + netPort + "/"
+    val url: String = "jdbc:snappydata://localhost:" + netPort + "/"
     DriverManager.getConnection(url, user, pass)
   }
 
@@ -74,10 +75,9 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:on println
 
     val stmt1 = conn.createStatement()
-    val rows = (1 to numRows).toSeq
     try {
       var i = 1
-      rows.foreach(d => {
+      (1 to numRows).foreach(_ => {
         stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
         i += 1
         if (i % 1000 == 0) {
@@ -104,9 +104,8 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:on println
 
     val stmt1 = conn.createStatement()
-    val rows = (1 to numRows).toSeq
     try {
-      rows.foreach(i => {
+      (1 to numRows).foreach(i => {
         stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
       })
 
@@ -209,7 +208,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       conn.close()
     }
   }
-  
+
   def testColumnTableRouting(): Unit = {
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
@@ -218,13 +217,52 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:on println
 
     val tableName = "order_line_col"
-    createTable1(serverHostPort, tableName, jdbcUser, jdbcUser)
-    insertRows1(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
-    insertRows2(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
+
+    createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    try {
+      createTable1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
+
+    insertRows1(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    try {
+      insertRows1(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: BatchUpdateException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
+
+    insertRows2(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    try {
+      insertRows2(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, jdbcUser, jdbcUser)
-    dropTable(serverHostPort, tableName, jdbcUser, jdbcUser)
+    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    try {
+      query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
+
+    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    try {
+      dropTable(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
   }
 
   def testRowTableRouting(): Unit = {
@@ -235,12 +273,51 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:on println
 
     val tableName = "order_line_row"
-    createTable2(serverHostPort, tableName, jdbcUser, jdbcUser)
-    insertRows1(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
-    insertRows2(20000, serverHostPort, tableName, jdbcUser, jdbcUser)
+
+    createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    try {
+      createTable2(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
+
+    insertRows1(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    try {
+      insertRows1(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: BatchUpdateException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
+
+    insertRows2(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    try {
+      insertRows2(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, jdbcUser, jdbcUser)
-    dropTable(serverHostPort, tableName, jdbcUser, jdbcUser)
+    query1(serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    try {
+      query1(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
+
+    dropTable(serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    try {
+      dropTable(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: SQLException => x.printStackTrace()
+      case t: Throwable => throw t
+    }
   }
 }
