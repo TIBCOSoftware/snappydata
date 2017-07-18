@@ -35,6 +35,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.FunctionIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
@@ -240,6 +241,17 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         logDebug(s"StoreCallbacksImpl.performConnectorOp dropping udf $functionName")
         session.sharedState.externalCatalog.dropFunction(db, functionName)
 
+      case LeadNodeSmartConnectorOpContext.OpType.ALTER_TABLE =>
+        val session = SnappyContext(null: SparkContext).snappySession
+        val tableName = context.getTableIdentifier
+        val addOrDropCol = context.getAddOrDropCol
+        val columnName = context.getColumnName
+        val columnDataType = context.getColumnDataType
+        val columnNullable = context.getColumnNullable
+        logDebug(s"StoreCallbacksImpl.performConnectorOp alter table ")
+        session.alterTable(tableName, addOrDropCol, StructField(columnName,
+          CatalystSqlParser.parseDataType(columnDataType), columnNullable))
+        SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")
     }

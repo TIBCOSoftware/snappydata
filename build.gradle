@@ -347,6 +347,7 @@ subprojects {
       include single
     }
     exclude '**/*Suite.class'
+    exclude '**/*DUnitSecureTest.class'
 
     workingDir = "${testResultsBase}/dunit"
 
@@ -402,6 +403,7 @@ subprojects {
       include single
     }
     exclude '**/*Suite.class'
+    exclude '**/*DUnitTest.class'
 
     workingDir = "${testResultsBase}/dunitSecure"
 
