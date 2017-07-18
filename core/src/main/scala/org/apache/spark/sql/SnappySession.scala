@@ -130,6 +130,7 @@ class SnappySession(@transient private val sc: SparkContext,
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
+  sessionState.functionRegistry.registerFunction("DSID", e => DSID())
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**

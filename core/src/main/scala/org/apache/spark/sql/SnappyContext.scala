@@ -20,6 +20,10 @@ import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.{ExprCode, CodegenContext}
+import org.apache.spark.unsafe.types.UTF8String
+
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
@@ -34,7 +38,7 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{LeafExpression, ExpressionDescription, SortDirection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -46,7 +50,7 @@ import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyS
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StringType, DataType, StructType}
 import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkEnv, SparkException}
@@ -1249,3 +1253,32 @@ case class ExternalClusterMode(override val sc: SparkContext,
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)
     extends AnalysisException(message) with Serializable
+
+/**
+ * Expression that returns the dsid of the server containing the row.
+ */
+@ExpressionDescription(
+  usage = "_FUNC_() - Returns the dsid of the server containing the row.")
+case class DSID() extends LeafExpression {
+
+  override def nullable: Boolean = false
+
+  override def dataType: DataType = StringType
+
+  override val prettyName = "DSID"
+
+  override def eval(input: InternalRow): UTF8String = {
+    UTF8String.fromString(com.gemstone.gemfire.internal.cache.GemFireCacheImpl.getInstance()
+      .getDistributionManager().getId().getId());
+  }
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+
+    val idTerm = ctx.freshName("dsid")
+    ctx.addMutableState("UTF8String", idTerm, "")
+    ctx.addPartitionInitializationStatement(s"$idTerm = UTF8String.fromString(com.gemstone" +
+      s".gemfire.internal.cache.GemFireCacheImpl.getInstance().getDistributionManager().getId()" +
+      s".getId());")
+    ev.copy(code = s"final ${ctx.javaType(dataType)} ${ev.value} = $idTerm;", isNull = "false")
+  }
+}

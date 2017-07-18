@@ -461,4 +461,17 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("select decudf(tax) from tempTable").collect()
   }
 
+
+
+  test("test dsid function") {
+
+   snc.sql("create table test123( a integer,b integer, c int) using column options()")
+    snc.sql("insert into test123 values(1,2,3)")
+    snc.sql("insert into test123 values(31,42,53)")
+    snc.sql("insert into test123 values(87,76,63)")
+    snc.sql("insert into test123 values(12,24,53)")
+
+    snc.sql("select DSID() from test123").show(5,truncate = false)
+    snc.sql("drop table test123")
+  }
 }
