@@ -218,21 +218,21 @@ class QueryRoutingDUnitSecureTest(val s: String)
 
     val tableName = "order_line_col"
 
-    createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       createTable1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42508") => // ignore
       case t: Throwable => throw t
     }
+    createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     insertRows1(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       insertRows1(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: BatchUpdateException => x.printStackTrace()
+      case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
 
@@ -241,7 +241,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       insertRows2(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
 
@@ -251,7 +251,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
 
@@ -260,7 +260,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       dropTable(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("38000") => // ignore
       case t: Throwable => throw t
     }
   }
@@ -274,21 +274,21 @@ class QueryRoutingDUnitSecureTest(val s: String)
 
     val tableName = "order_line_row"
 
-    createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       createTable2(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42507") => // ignore
       case t: Throwable => throw t
     }
+    createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     insertRows1(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       insertRows1(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: BatchUpdateException => x.printStackTrace()
+      case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
 
@@ -297,7 +297,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       insertRows2(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
 
@@ -307,7 +307,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       query1(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
 
@@ -316,7 +316,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       dropTable(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("38000") => // ignore
       case t: Throwable => throw t
     }
   }
