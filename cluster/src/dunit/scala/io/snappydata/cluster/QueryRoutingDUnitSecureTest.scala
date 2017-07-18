@@ -19,45 +19,26 @@ package io.snappydata.cluster
 
 import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQLException}
 
-import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-class QueryRoutingDUnitSecureTest(val s: String)
-    extends ClusterManagerTestBase(s) with Logging {
+object QueryRoutingDUnitSecureTest{
+  val adminUser: String = "gemfire1"
+}
 
-  val jdbcUser1 = "gemfire1"
-  val jdbcUser2 = "gemfire2"
-  val adminUser1 = "gemfire3"
+class QueryRoutingDUnitSecureTest(val s: String)
+    extends ClusterManagerLDAPTestBase(s, QueryRoutingDUnitSecureTest.adminUser) with Logging {
+  val jdbcUser1 = "gemfire2"
+  val jdbcUser2 = "gemfire3"
 
   override def setUp(): Unit = {
-    setSecurityProps()
     super.setUp()
   }
 
   override def tearDown2(): Unit = {
     super.tearDown2()
-    val ldapServer = LdapTestServer.getInstance()
-    if (ldapServer.isServerStarted) {
-      ldapServer.stopService()
-    }
-  }
-
-  def setSecurityProps(): Unit = {
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
-    val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
-      adminUser1, getClass.getResource("/auth.ldif").getPath)
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.setProperty(k, ldapProperties.getProperty(k))
-    }
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE,
-      Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
-      locatorNetProps.setProperty(k, ldapProperties.getProperty(k))
-      bootProps.setProperty(k, ldapProperties.getProperty(k))
-    }
   }
 
   def netConnection(netPort: Int, user: String, pass: String): Connection = {
