@@ -42,9 +42,8 @@ trait ExternalStore extends Serializable {
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String,
-      f: Connection => T,
-      closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+  def tryExecute[T: ClassTag](tableName: String, closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+      (f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
     var isClosed = false
     val conn = c.getOrElse(getConnection(tableName, onExecutor))
@@ -84,13 +83,13 @@ trait ConnectedExternalStore extends ExternalStore {
   }
 
   override def tryExecute[T: ClassTag](tableName: String,
-      f: Connection => T,
       closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+      (f: Connection => T)
       (implicit c: Option[Connection]): T = {
     assert(!connectedInstance.isClosed)
-    val ret = super.tryExecute(tableName, f,
+    val ret = super.tryExecute(tableName,
       closeOnSuccess = false /* responsibility of the user to close later */ ,
-      onExecutor)(
+      onExecutor)(f)(
       implicitly, Some(connectedInstance))
 
     if (dependentAction.isDefined) {

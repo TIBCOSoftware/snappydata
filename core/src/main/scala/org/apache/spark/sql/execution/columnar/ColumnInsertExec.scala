@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property
 
 import org.apache.spark.TaskContext
@@ -59,6 +60,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   @transient private var numInsertions: String = _
   @transient private var schemaTerm: String = _
   @transient private var storeColumnBatch: String = _
+  @transient private var beginSnapshotTx: String = _
   @transient private var storeColumnBatchArgs: String = _
   @transient private var initEncoders: String = _
 
@@ -180,6 +182,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
     s"""
        |$checkEnd; // already done
+       |boolean txStarted = $beginSnapshotTx();
+       |boolean success = false;
+       |try {
        |$batchSizeDeclaration
        |if ($numInsertions < 0) {
        |  $numInsertions = 0;
@@ -201,6 +206,15 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |${if (numInsertedRowsMetric eq null) ""
         else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |success = true;
+       |}
+       |finally {
+       |if (txStarted) {
+       |  if(success)
+       |    com.pivotal.gemfirexd.internal.engine.Misc.getGemFireCache().getCacheTransactionManager().commit();
+       |  else
+       |    com.pivotal.gemfirexd.internal.engine.Misc.getGemFireCache().getCacheTransactionManager().rollback();
+       |}
     """.stripMargin
   }
 
@@ -300,8 +314,12 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  });
          |}
       """.stripMargin)
+
     s"""
        |$checkEnd; // already done
+       |boolean txStarted = $beginSnapshotTx();
+       |boolean success = false;
+       |try {
        |$batchSizeDeclaration
        |${cursorDeclarations.mkString("\n")}
        |if ($numInsertions < 0) {
@@ -329,6 +347,16 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |success = true;
+       |}
+       |finally {
+       |if (txStarted) {
+       |  if(success)
+       |    com.pivotal.gemfirexd.internal.engine.Misc.getGemFireCache().getCacheTransactionManager().commit();
+       |  else
+       |    com.pivotal.gemfirexd.internal.engine.Misc.getGemFireCache().getCacheTransactionManager().rollback();
+       |}
+       |}
     """.stripMargin
   }
 
@@ -560,6 +588,13 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
+    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
+    ctx.addNewFunction(beginSnapshotTx,
+      s"""
+         |private final boolean $beginSnapshotTx() {
+         |  return $externalStoreTerm.beginTx();
+         |}
+      """.stripMargin)
     // no shouldStop check required
     if (!ctx.addedFunctions.contains("shouldStop")) {
       ctx.addNewFunction("shouldStop",
@@ -683,6 +718,13 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm);
          |  $numInsertions += $batchSizeTerm;
+         |}
+      """.stripMargin)
+    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
+    ctx.addNewFunction(beginSnapshotTx,
+      s"""
+         |private final boolean $beginSnapshotTx() {
+         |  return $externalStoreTerm.beginTx();
          |}
       """.stripMargin)
     // no shouldStop check required
