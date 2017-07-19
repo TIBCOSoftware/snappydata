@@ -85,6 +85,10 @@ object Constant {
 
   final val SHADOW_SCHEMA_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_SEPARATOR
 
+  final val SHADOW_SCHEMA_NAME_WITH_PREFIX = "." + SHADOW_SCHEMA_NAME
+
+  final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR = SHADOW_SCHEMA_NAME + SHADOW_SCHEMA_SEPARATOR
+
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
   val ENABLE_ZEPPELIN_INTERPRETER = "zeppelin.interpreter.enable"

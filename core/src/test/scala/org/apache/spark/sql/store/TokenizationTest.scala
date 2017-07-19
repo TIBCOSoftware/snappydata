@@ -167,6 +167,8 @@ class TokenizationTest
       }
     }
     assert(!found, "did not expect ParamLiteral in logical plan")
+
+    snc.sql(s"SELECT json_tuple('{\"a\":1, \"b\":2}', 'a', 'b');").collect().foreach(println)
   }
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {

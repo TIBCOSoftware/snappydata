@@ -242,7 +242,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
       case plan => plan
     }
 
-    def withNewExecutionId[T](body: T): T = executedPlan match {
+    def withNewExecutionId[T](body: => T): T = executedPlan match {
       // don't create a new executionId for ExecutePlan since it has already done so
       case _: ExecutePlan => body
       case _ => CachedDataFrame.withNewExecutionId(
@@ -454,6 +454,9 @@ object CachedDataFrame
           // TODO Remove the 4 times check once SNAP-1759 is fixed
           val required = 4L * memSize
           val granted = memoryConsumer.acquireMemory(4L * memSize)
+          context.addTaskCompletionListener(context => {
+            memoryConsumer.freeMemory(granted)
+          })
           if (granted < required) {
             throw new LowMemoryException(s"Could not obtain ${memoryConsumer.getMode} " +
                 s"memory of size $required ",
