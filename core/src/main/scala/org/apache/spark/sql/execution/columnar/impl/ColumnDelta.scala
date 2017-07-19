@@ -49,7 +49,7 @@ package org.apache.spark.sql.execution.columnar.impl
 object ColumnDelta {
 
   /**
-   * The initial size of delta column (the smaller delta in the hierarchy).
+   * The initial size of delta column (the smallest delta in the hierarchy).
    */
   val INIT_SIZE = 100
 

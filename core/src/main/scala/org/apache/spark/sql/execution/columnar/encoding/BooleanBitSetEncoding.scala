@@ -91,6 +91,7 @@ trait BooleanBitSetEncoderBase
    * is actually the current index into the currentWord for best performance.
    */
   private var byteCursor: Long = _
+  private var startByteCursor: Long = _
   private var currentWord: Long = _
 
   override def initSizeInBytes(dataType: DataType,
@@ -103,8 +104,9 @@ trait BooleanBitSetEncoderBase
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
-    byteCursor = super.initialize(dataType, nullable, initSize,
+    startByteCursor = super.initialize(dataType, nullable, initSize,
       withHeader, allocator)
+    byteCursor = startByteCursor
     currentWord = 0L
     // returns the OR mask to use for currentWord
     1L
@@ -178,8 +180,8 @@ trait BooleanBitSetEncoderBase
     super.finish(byteCursor)
   }
 
-  override def finishedSize(mask: Long): Long = {
-    if (mask > 1L) super.finishedSize(byteCursor + 8L)
-    else super.finishedSize(byteCursor)
+  override def finishedSize(mask: Long, dataBeginPosition: Long): Long = {
+    if (mask > 1L) super.finishedSize(byteCursor + 8L, startByteCursor)
+    else super.finishedSize(byteCursor, startByteCursor)
   }
 }

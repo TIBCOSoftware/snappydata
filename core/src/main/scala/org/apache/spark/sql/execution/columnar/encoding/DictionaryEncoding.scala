@@ -503,14 +503,14 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     columnData
   }
 
-  override def finishedSize(indexCursor: Long): Long = {
-    val numIndexBytes = indexCursor - this.columnBeginPosition
+  override def finishedSize(indexCursor: Long, dataBeginPosition: Long): Long = {
+    val numIndexBytes = indexCursor - dataBeginPosition
     val dictionarySize =
       if (stringMap ne null) stringMap.valueDataSize
       else if (isIntMap) longArray.size << 2
       else longArray.size << 4
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
-    8L + (getNumNullWords << 3) + dataSize
+    (8L + (getNumNullWords << 3)) /* header */ + dataSize
   }
 
   override def close(): Unit = {

@@ -280,7 +280,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   protected final var allocator: BufferAllocator = _
   private final var finalAllocator: BufferAllocator = _
-  protected final var columnData: ByteBuffer = _
+  protected[sql] final var columnData: ByteBuffer = _
   protected[sql] final var columnBeginPosition: Long = _
   protected[sql] final var columnEndPosition: Long = _
   protected[sql] final var columnBytes: AnyRef = _
@@ -808,7 +808,7 @@ trait ColumnEncoder extends ColumnEncoding {
    * The final size of the encoder column which should match that occupied
    * after [[finish]] but not writing anything.
    */
-  def finishedSize(cursor: Long): Long =
+  def finishedSize(cursor: Long, dataBeginPosition: Long): Long =
     throw new UnsupportedOperationException(s"finishedSize for $toString")
 
   /**
@@ -1251,7 +1251,8 @@ trait NotNullEncoder extends ColumnEncoder {
     }
   }
 
-  override def finishedSize(cursor: Long): Long = cursor - columnBeginPosition
+  override def finishedSize(cursor: Long, dataBeginPosition: Long): Long =
+    cursor - dataBeginPosition + 8L /* header */
 }
 
 trait NullableEncoder extends NotNullEncoder {
@@ -1394,15 +1395,15 @@ trait NullableEncoder extends NotNullEncoder {
     }
   }
 
-  override def finishedSize(cursor: Long): Long = {
+  override def finishedSize(cursor: Long, dataBeginPosition: Long): Long = {
     // trim trailing empty words
     val numWords = getNumNullWords
     // use the same policy as used by finish()
     if (initialNumWords == numWords || allowWastedWords(cursor, numWords)) {
-      cursor - columnBeginPosition
+      cursor - dataBeginPosition + (8L + (initialNumWords << 3)) /* header */
     } else {
       // data will be trimmed to accommodate exact null words size
-      cursor - columnBeginPosition + ((numWords - initialNumWords) << 3)
+      cursor - dataBeginPosition + (8L + (numWords << 3)) /* header */
     }
   }
 }
