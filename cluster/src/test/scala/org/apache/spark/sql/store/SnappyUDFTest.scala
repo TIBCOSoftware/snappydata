@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 
 import java.math
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
@@ -471,7 +472,9 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("insert into test123 values(87,76,63)")
     snc.sql("insert into test123 values(12,24,53)")
 
-    snc.sql("select DSID() from test123").show(5,truncate = false)
+    snc.sql("select DSID() from test123").collect().foreach(row=>{
+      assert(row.getString(0).equals(Misc.getMyId().getId()))
+    });
     snc.sql("drop table test123")
   }
 }

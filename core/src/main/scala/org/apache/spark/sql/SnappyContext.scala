@@ -1282,32 +1282,3 @@ case class ExternalClusterMode(override val sc: SparkContext,
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)
     extends AnalysisException(message) with Serializable
-
-/**
- * Expression that returns the dsid of the server containing the row.
- */
-@ExpressionDescription(
-  usage = "_FUNC_() - Returns the dsid of the server containing the row.")
-case class DSID() extends LeafExpression {
-
-  override def nullable: Boolean = false
-
-  override def dataType: DataType = StringType
-
-  override val prettyName = "DSID"
-
-  override def eval(input: InternalRow): UTF8String = {
-    UTF8String.fromString(com.gemstone.gemfire.internal.cache.GemFireCacheImpl.getInstance()
-      .getDistributionManager().getId().getId());
-  }
-
-  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-
-    val idTerm = ctx.freshName("dsid")
-    ctx.addMutableState("UTF8String", idTerm, "")
-    ctx.addPartitionInitializationStatement(s"$idTerm = UTF8String.fromString(com.gemstone" +
-      s".gemfire.internal.cache.GemFireCacheImpl.getInstance().getDistributionManager().getId()" +
-      s".getId());")
-    ev.copy(code = s"final ${ctx.javaType(dataType)} ${ev.value} = $idTerm;", isNull = "false")
-  }
-}
