@@ -466,6 +466,9 @@ object CachedDataFrame
           // TODO Remove the 4 times check once SNAP-1759 is fixed
           val required = 4L * memSize
           val granted = memoryConsumer.acquireMemory(4L * memSize)
+          context.addTaskCompletionListener(context => {
+            memoryConsumer.freeMemory(granted)
+          })
           if (granted < required) {
             throw new LowMemoryException(s"Could not obtain ${memoryConsumer.getMode} " +
                 s"memory of size $required ",
