@@ -25,13 +25,12 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
 object QueryRoutingDUnitSecureTest{
-  val adminUser: String = "gemfire1"
+  val adminUser: String = "gemfire10"
 }
 
 class QueryRoutingDUnitSecureTest(val s: String)
-    extends ClusterManagerLDAPTestBase(s, QueryRoutingDUnitSecureTest.adminUser) with Logging {
-  val jdbcUser1 = "gemfire2"
-  val jdbcUser2 = "gemfire3"
+    extends ClusterManagerLDAPTestBase(s,
+      ConcurrentQueryRoutingDUnitSecureTest.adminUser) with Logging {
 
   override def setUp(): Unit = {
     super.setUp()
@@ -284,6 +283,8 @@ class QueryRoutingDUnitSecureTest(val s: String)
   }
 
   def testColumnTableRouting(): Unit = {
+    val jdbcUser1 = "gemfire1"
+    val jdbcUser2 = "gemfire2"
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
@@ -296,7 +297,8 @@ class QueryRoutingDUnitSecureTest(val s: String)
       createTable1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException if x.getSQLState.equals("42508") => // ignore
+      case x: SQLException if x.getSQLState.equals("42507") ||
+          x.getSQLState.equals("42508") => // ignore
       case t: Throwable => throw t
     }
     createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
@@ -340,6 +342,8 @@ class QueryRoutingDUnitSecureTest(val s: String)
   }
 
   def testRowTableRouting(): Unit = {
+    val jdbcUser3 = "gemfire3"
+    val jdbcUser4 = "gemfire4"
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
@@ -349,49 +353,50 @@ class QueryRoutingDUnitSecureTest(val s: String)
     val tableName = "order_line_row"
 
     try {
-      createTable2(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      createTable2(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
       assert(false) // fail
     } catch {
-      case x: SQLException if x.getSQLState.equals("42507") => // ignore
+      case x: SQLException if x.getSQLState.equals("42507") ||
+          x.getSQLState.equals("42508") => // ignore
       case t: Throwable => throw t
     }
-    createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    createTable2(serverHostPort, tableName, jdbcUser3, jdbcUser3)
 
     try {
-      insertRows3(200, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      insertRows3(200, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
-    insertRows3(200, serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    insertRows3(200, serverHostPort, tableName, jdbcUser3, jdbcUser3)
 
     try {
-      insertRows4(200, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      insertRows4(200, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    insertRows4(200, serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    insertRows4(200, serverHostPort, tableName, jdbcUser3, jdbcUser3)
 
     // (1 to 5).foreach(d => query())
     try {
-      query2(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      query2(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
-    query2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    query2(serverHostPort, tableName, jdbcUser3, jdbcUser3)
 
     try {
-      dropTable(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      dropTable(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
-    dropTable(serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    dropTable(serverHostPort, tableName, jdbcUser3, jdbcUser3)
   }
 }
