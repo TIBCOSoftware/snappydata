@@ -74,7 +74,6 @@ class SnappySession(@transient private val sc: SparkContext,
 
   self =>
 
-  SnappyContext.initConf = sc.conf
   def this(sc: SparkContext) {
     this(sc, None)
   }
@@ -1841,7 +1840,7 @@ object SnappySession extends Logging {
     cdf
   }
 
-  private[this] val planCache = {
+  private[this] lazy val planCache = {
     val loader = new CacheLoader[CachedKey, CachedDataFrame] {
       override def load(key: CachedKey): CachedDataFrame = {
         val session = key.session
@@ -1855,7 +1854,7 @@ object SnappySession extends Logging {
         evaluatePlan(df, session, key.sqlText, key)
       }
     }
-    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.initConf) match {
+    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
       case Some(size) => size.toInt
       case None =>  Property.PlanCacheSize.defaultValue.get
     }

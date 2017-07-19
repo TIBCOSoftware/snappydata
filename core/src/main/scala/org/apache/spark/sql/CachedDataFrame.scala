@@ -124,6 +124,19 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     clearPartitions(children)
   }
 
+  private def setPoolForExecution : Unit = {
+    var pool = sparkSession.asInstanceOf[SnappySession].
+      sessionState.conf.activeSchedulerPool
+
+    // Check if it is pruned query, execute it automatically on the low latency pool
+    if ((cachedRDD ne null) && cachedRDD.getNumPartitions <= 2 /* some small number */ &&
+      shuffleDependencies.length == 0 && pool == "default") {
+      if (sparkSession.sparkContext.getAllPools.exists(_.name.equals("lowlatency"))) {
+        pool = "lowlatency"
+      }
+    }
+    sparkSession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+  }
 
   /**
    * Wrap a Dataset action to track the QueryExecution and time cost,
@@ -131,11 +144,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
    */
   private def withCallback[U](name: String)(action: DataFrame => U) = {
     try {
-      val snSession = SparkSession.getActiveSession.get.asInstanceOf[SnappySession]
-      val pool = snSession.asInstanceOf[SnappySession].
-        sessionState.conf.activeSchedulerPool
-
-      snSession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+      setPoolForExecution
       queryExecution.executedPlan.foreach { plan =>
         plan.resetMetrics()
       }
