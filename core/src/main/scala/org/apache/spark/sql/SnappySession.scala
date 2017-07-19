@@ -74,6 +74,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   self =>
 
+  SnappyContext.initConf = sc.conf
   def this(sc: SparkContext) {
     this(sc, None)
   }

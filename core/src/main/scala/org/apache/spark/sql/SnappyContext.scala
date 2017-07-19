@@ -886,6 +886,9 @@ object SnappyContext extends Logging {
   }
 
   private def newSnappyContext(sc: SparkContext) = {
+    if (initConf == null){
+      initConf = sc.conf
+    }
     val snc = new SnappyContext(sc)
     // No need to synchronize. any occurrence would do
     if (_anySNContext == null) {
@@ -927,7 +930,6 @@ object SnappyContext extends Logging {
    */
   def apply(sc: SparkContext): SnappyContext = {
     if (sc != null) {
-      initConf = sc.conf
       newSnappyContext(sc)
     } else {
       apply()
@@ -1039,6 +1041,7 @@ object SnappyContext extends Logging {
     if (!_globalSNContextInitialized) {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
+          initConf = sc.conf
           invokeServices(sc)
           sc.addSparkListener(new SparkContextListener)
           initMemberBlockMap(sc)
