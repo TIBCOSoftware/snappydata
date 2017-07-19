@@ -175,7 +175,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       session.conf.set(Attribute.USERNAME_ATTR, context.getUserName)
       session.conf.set(Attribute.PASSWORD_ATTR, context.getAuthToken)
 //      session.setSchema(session.sessionCatalog.formatDatabaseName(context.getUserName))
-//      println(s"ABS schema name set to ${session.sessionCatalog.getCurrentSchema}")
     }
 
     context.getType match {
@@ -196,7 +195,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val isBuiltIn = context.getIsBuiltIn
 
         logDebug(s"StoreCallbacksImpl.performConnectorOp creating table $tableIdent")
-        println(s"ABS SCI table $tableIdent")
         session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
           provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
 
@@ -248,7 +246,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         session.sharedState.externalCatalog.dropFunction(db, functionName)
 
       case LeadNodeSmartConnectorOpContext.OpType.ALTER_TABLE =>
-        val session = SnappyContext(null: SparkContext).snappySession
         val tableName = context.getTableIdentifier
         val addOrDropCol = context.getAddOrDropCol
         val columnName = context.getColumnName

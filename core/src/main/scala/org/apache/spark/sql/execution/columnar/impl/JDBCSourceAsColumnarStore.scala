@@ -316,7 +316,6 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
-        // TODO ashetkar make sure credentials are in pro
         val poolProps = connProperties.poolProps -
             (if (connProperties.hikariCP) "jdbcUrl" else "url")
 

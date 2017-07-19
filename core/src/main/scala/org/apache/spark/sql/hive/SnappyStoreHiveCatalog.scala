@@ -103,12 +103,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     var user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
     val defaultName = if (user.isEmpty) {
       // In smart connector, property name is different.
-      user = snappySession.conf.get("spark.snappydata.store.user", "")
+      user = snappySession.conf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
       if (user.isEmpty) Constant.DEFAULT_SCHEMA else formatDatabaseName(user)
     } else {
       formatDatabaseName(user)
     }
-    println(s"ABS default schema set to $defaultName")
     val defaultDbDefinition =
       CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
     SnappyContext.getClusterMode(snappySession.sparkContext) match {

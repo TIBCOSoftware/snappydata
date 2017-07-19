@@ -73,9 +73,7 @@ import scala.util.control.NonFatal
 
 
 class SnappySession(@transient private val sc: SparkContext,
-    @transient private val existingSharedState: Option[SnappySharedState],
-    @transient private val user: String = null,
-    @transient private val password: String = null)
+    @transient private val existingSharedState: Option[SnappySharedState])
     extends SparkSession(sc) {
 
   self =>
@@ -1693,14 +1691,6 @@ class SnappySession(@transient private val sc: SparkContext,
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     sessionState.setPreparedQuery(preparePhase, paramSet)
 
-  def withCredentials(user: String, pass: String): SnappySession = {
-    if (user == null || pass == null || user.isEmpty || pass.isEmpty) {
-      throw new IllegalArgumentException("empty user credentials provided.")
-    }
-    conf.set(Attribute.USERNAME_ATTR, user)
-    conf.set(Attribute.PASSWORD_ATTR, pass)
-    this
-  }
 }
 
 private class FinalizeSession(session: SnappySession)

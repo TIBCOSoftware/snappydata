@@ -136,7 +136,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     val metadataConf = new HiveConf()
     SnappyContext.getClusterMode(sparkContext) match {
       case mode: ThinClientConnectorMode =>
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_AUTO_CREATE_SCHEMA, "false")
+        metadataConf.setBoolVar(HiveConf.ConfVars.METASTORE_AUTO_CREATE_SCHEMA, false)
         metadataConf.set("datanucleus.generateSchema.database.mode", "none")
       case _ =>
     }
@@ -162,7 +162,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       if (!user.isDefined && !password.isDefined) {
         user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
         password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
-        println(s"ABS snappydata conf HCU: $user, $password")
       }
       var logURL = dbURL
       val secureDbURL = if (user.isDefined && password.isDefined) {

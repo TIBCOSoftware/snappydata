@@ -286,18 +286,25 @@ object ExternalStoreUtils extends Logging {
     if (session.isDefined) {
       val (user, password) = getCredentials(session)
 
-      def secureProps(props: Properties): Properties = {
-        props.setProperty(Attribute.USERNAME_ATTR, user)
-        props.setProperty(Attribute.PASSWORD_ATTR, password)
-        props
+      if (!user.isEmpty && !password.isEmpty) {
+        def secureProps(props: Properties): Properties = {
+          props.setProperty(Attribute.USERNAME_ATTR, user)
+          props.setProperty(Attribute.PASSWORD_ATTR, password)
+          props
+        }
+
+        // Hikari only take 'username'. So does Tomcat
+        def securePoolProps(props: Map[String, String]): Map[String, String] = {
+          props + (Attribute.USERNAME_ALT_ATTR.toLowerCase -> user) + (Attribute.PASSWORD_ATTR ->
+              password)
+        }
+
+        ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
+          secureProps(connProps), secureProps(executorConnProps), hikariCP)
+      } else {
+        ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
+          hikariCP)
       }
-
-      // Hikari only take 'username'. So does Tomcat
-      def securePoolProps(props: Map[String, String]): Map[String, String] = props +
-          (Attribute.USERNAME_ALT_ATTR.toLowerCase -> user) + (Attribute.PASSWORD_ATTR -> password)
-
-      ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
-        secureProps(connProps), secureProps(executorConnProps), hikariCP)
     } else ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
       hikariCP)
   }
@@ -307,8 +314,8 @@ object ExternalStoreUtils extends Logging {
       case ThinClientConnectorMode(_, _) => Constant.SPARK_STORE_PREFIX
       case _ => ""
     }
-    (session.get.conf.get(prefix + Attribute.USERNAME_ATTR, ""), session.get.conf.get
-    (prefix + Attribute.PASSWORD_ATTR, ""))
+    (session.get.conf.get(prefix + Attribute.USERNAME_ATTR, ""),
+        session.get.conf.get(prefix + Attribute.PASSWORD_ATTR, ""))
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,

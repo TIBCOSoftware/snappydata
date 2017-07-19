@@ -24,6 +24,7 @@ import java.util.{Timer, TimerTask}
 
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.{CancelException, DataSerializer}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 import org.apache.spark.SparkContext
@@ -40,11 +41,10 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   def initializeConnection(sc: SparkContext = null): Unit = {
     var securePart = ""
     if (sc != null) {
-      val user = sc.getConf.get("spark.snappydata.store.user", "")
+      val user = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
       if (!user.isEmpty) {
-        val pass = sc.getConf.get("spark.snappydata.store.password", "")
+        val pass = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, "")
         securePart = s";user=$user;password=$pass"
-        logInfo(s"ABS Stats using $securePart to connect with snappydata")
       }
     }
     val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",

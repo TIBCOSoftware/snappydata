@@ -19,7 +19,9 @@ package org.apache.spark.sql
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.sql.{CallableStatement, Connection, SQLException}
 
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.Constant
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.spark.sql.catalyst.catalog.CatalogDatabase
@@ -78,12 +80,14 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   private def getSecurePart(): String = {
     var securePart = ""
-    val user = snappySession.sqlContext.getConf("spark.snappydata.store.user", "")
+    val user = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+        .USERNAME_ATTR, "")
     if (!user.isEmpty) {
-      val pass = snappySession.sqlContext.getConf("spark.snappydata.store.password", "")
+      val pass = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+          .PASSWORD_ATTR, "")
       securePart = s";user=$user;password=$pass"
+      logInfo(s"Using $user credentials to securely connect to snappydata cluster")
     }
-    logInfo(s"ABS SCH using $securePart to connect with snappydata")
     securePart
   }
 

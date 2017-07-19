@@ -1088,19 +1088,6 @@ object SnappyContext extends Logging {
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
         SnappyTableStatsProviderService.start(sc)
         ToolsCallbackInit.toolsCallback.updateUI(sc.ui)
-        // Create a dummy table so that the hive metastore is initialized and smart connector
-        // does not have to initialize.
-//        if ("LDAP".equalsIgnoreCase(Misc.getMemStore.getBootProperty(Attribute.AUTH_PROVIDER))) {
-//          val session = SnappySession.getOrCreate(sc) // Or use an existing session?
-//          // Add boot credentials
-//          session.conf.set(Attribute.USERNAME_ATTR, Misc.getMemStore.getBootProperty(Attribute
-//              .USERNAME_ATTR))
-//          session.conf.set(Attribute.PASSWORD_ATTR, Misc.getMemStore.getBootProperty(Attribute
-//              .PASSWORD_ATTR))
-//          session.createTable("__SNAPPY_DUMMY_INIT_TABLE", "COLUMN", "(ID INT, NAME VARCHAR(10))",
-//              Map.empty[String, String], true)
-//          println("ABS SnappyContext.invokeServices() created dummy table")
-//        }
       case ThinClientConnectorMode(_, url) =>
         SnappyTableStatsProviderService.start(sc, url)
       case ExternalEmbeddedMode(_, url) =>
