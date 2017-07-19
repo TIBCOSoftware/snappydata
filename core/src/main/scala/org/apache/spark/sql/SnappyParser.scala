@@ -221,6 +221,13 @@ class SnappyParser(session: SnappySession)
         mutable.ArrayBuffer(p))
     }
 
+  def removeParamLiteralFromContext(p: ParamLiteral): Unit =
+    session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
+      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      case Some(list) => list -= p
+      case None =>
+    }
+
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
     literal ~> ((l: Literal) => {
       paramcounter = paramcounter + 1
@@ -678,11 +685,19 @@ class SnappyParser(session: SnappySession)
             val udfName = n2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
             var allExprs = e.asInstanceOf[Seq[Expression]]
             var exprs = allExprs
-            if (Constant.FOLDABLE_FUNCTIONS.contains(n1)) {
-              exprs = allExprs.collect {
-                case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
-                case ex: Expression => ex
-              }
+            Constant.FOLDABLE_FUNCTIONS.get(n1) match {
+              case Some(args) =>
+                exprs = allExprs.zipWithIndex.collect {
+                  case (pl: ParamLiteral, index) if args.contains(index) ||
+                      // all args          // all odd args
+                      (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
+                      // all even args
+                      (args.head == -2 && (index & 0x2) == 1) =>
+                    removeParamLiteralFromContext(pl)
+                    Literal.create(pl.value, pl.dataType)
+                  case (ex: Expression, index) => ex
+                }
+              case None =>
             }
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(udfName, exprs, isDistinct = false)
@@ -712,11 +727,19 @@ class SnappyParser(session: SnappySession)
       (fn: FunctionIdentifier, e: Any) =>
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
         var exprs = allExprs
-        if (Constant.FOLDABLE_FUNCTIONS.contains(fn.funcName)) {
-          exprs = allExprs.collect {
-            case pl: ParamLiteral => Literal.create(pl.value, pl.dataType)
-            case ex: Expression => ex
-          }
+        Constant.FOLDABLE_FUNCTIONS.get(fn.funcName) match {
+          case Some(args) =>
+            exprs = allExprs.zipWithIndex.collect {
+              case (pl: ParamLiteral, index) if args.contains(index) ||
+                  // all args          // all odd args
+                  (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
+                  // all even args
+                  (args.head == -2 && (index & 0x2) == 1) =>
+                removeParamLiteralFromContext(pl)
+                Literal.create(pl.value, pl.dataType)
+              case (ex: Expression, index) => ex
+            }
+          case None =>
         }
         fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>

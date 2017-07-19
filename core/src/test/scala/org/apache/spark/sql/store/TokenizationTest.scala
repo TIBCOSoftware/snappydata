@@ -20,12 +20,13 @@ import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.app.Data1
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
-import io.snappydata.core.Data
+import io.snappydata.core.{Data, TestData2}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 
 /**
   * Tests for column tables in GFXD.
@@ -118,7 +119,7 @@ class TokenizationTest
     cacheMap.keySet().toArray().filter(_.asInstanceOf[CachedKey].valid).length
   }
 
-  test("Test no tokenize for functions") {
+  test("Test no tokenize for round functions") {
     snc.sql(s"Drop Table if exists double_tab")
     snc.sql(s"Create Table double_tab (a INT, d Double) " +
         "using column options()")
@@ -126,9 +127,46 @@ class TokenizationTest
     val cacheMap = SnappySession.getPlanCache.asMap()
     assert( cacheMap.size() == 0)
     var res = snc.sql(s"select * from double_tab where round(d, 2) < round(3.3333, 2)").collect()
-    assert(res.size == 2)
+    assert(res.length === 2)
     res = snc.sql(s"select * from double_tab where round(d, 3) < round(3.3333, 3)").collect()
-    assert(res.size == 2)
+    assert(res.length === 2)
+    assert(cacheMap.size() == 2)
+  }
+
+  test("Test some more foldable expressions and limit in where clause") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    assert(cacheMap.size() == 0)
+    var res = snc.sql(s"select * from $table where a in " +
+        s"( select b from $table where b < 5 limit 2 )").collect()
+    assert(res.length == 2)
+    // This should not be tokenized and so cachemap size should be 0
+    assert( cacheMap.size() == 0)
+    createSimpleTableWithAStringColumnAndPoupulateData(100, "tab_str", true)
+    res = snc.sql(s"select * from tab_str where b = 'aa12bb' and b like 'aa1%'").collect()
+    assert(res.length == 1)
+    // This should not be tokenized and so cachemap size should be 0
+    assert( cacheMap.size() == 0)
+
+    // An n-tile query ... but this is not affecting Tokenization as ntile is
+    // not in where clause but in from clause only.
+    res = snc.sql(s"select quartile, avg(c) as avgC, max(c) as maxC" +
+        s" from (select c, ntile(4) over (order by c) as quartile from $table ) x " +
+        s"group by quartile order by quartile").collect()
+    // res.foreach(println)
+
+    // Unix timestamp
+    val df = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01 12:00:00') > a")
+    var found = false
+    df.queryExecution.logical.transformAllExpressions {
+      case pl @ ParamLiteral(_, _, _) => {
+        found = true
+        pl
+      }
+    }
+    assert(!found, "did not expect ParamLiteral in logical plan")
   }
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
@@ -367,6 +405,23 @@ class TokenizationTest
 
   test("Test tokenize for cast queries") {
     logInfo("Successful")
+  }
+
+  private def createSimpleTableWithAStringColumnAndPoupulateData(numRows: Int, name: String,
+      dosleep: Boolean = false) = {
+    val strs = (0 to numRows).map(i => s"aa${i}bb")
+    val data = ((0 to numRows), (0 to numRows), strs).zipped.toArray
+    val rdd = sc.parallelize(data, data.length)
+      .map(s => TestData2(s._1, s._3, s._2))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.sql(s"Drop Table if exists $name")
+    snc.sql(s"Create Table $name (a INT, b string, c INT) " +
+      "using column options()")
+    dataDF.write.insertInto(s"$name")
+    // This sleep was necessary as it has some dependency on the region size
+    // collector thread frequency. Can't remember right now.
+    if (dosleep) Thread.sleep(5000)
   }
 
   private def createSimpleTableAndPoupulateData(numRows: Int, name: String,
