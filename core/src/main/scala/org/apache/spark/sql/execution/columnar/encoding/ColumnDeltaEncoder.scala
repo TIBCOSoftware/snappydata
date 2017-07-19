@@ -26,7 +26,7 @@ import org.codehaus.janino.CompilerFactory
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.LongArray
@@ -35,7 +35,9 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.collection.unsafe.sort.RadixSort
 
 /**
- * Writes data to be stored in [[ColumnFormatValue]] deltas.
+ * Encodes a delta value for a [[ColumnFormatValue]] obtained after an
+ * update operation that can change one or more values. This applies
+ * the update in an optimized batch manner as far as possible.
  *
  * The format of delta encoding is straightforward and adds the positions
  * in the full column in addition to the normal column encoding. So the layout
@@ -57,9 +59,22 @@ import org.apache.spark.util.collection.unsafe.sort.RadixSort
  *    \-----/ \--------------------/
  *     header           body
  * }}}
+ *
  * Whether the value type is a delta or not is determined by the "deltaHierarchy"
  * field in [[ColumnFormatValue]] and the negative columnIndex in ColumnFormatKey.
  * Encoding typeId itself does not store anything for it separately.
+ *
+ * A set of new updated column values results in the merge of those values
+ * with the existing encoded values held in the current delta with smallest
+ * hierarchy depth (i.e. one that has a maximum size of 100).
+ * Each delta can grow to a limit after which it is subsumed in a larger delta
+ * of bigger size thus creating a hierarchy of deltas. So base delta will go
+ * till 100 entries or so, then the next higher level one will go till say 1000 entries
+ * and so on till the full [[ColumnFormatValue]] size is attained. This design
+ * attempts to minimize disk writes at the cost of some scan overhead for
+ * columns that see a large number of updates. The hierarchy is expected to be
+ * small not more than 3-4 levels to get a good balance between write overhead
+ * and scan overhead.
  */
 final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
 
@@ -506,7 +521,7 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
 
 /**
  * Trait to read column values from delta encoded column and write to target
- * delta column. The reads will not be sequential rather random-access reads
+ * delta column. The reads may not be sequential and could be random-access reads
  * while writes will be sequential, sorted by position in the full column value.
  * Implementations should not do any null value handling.
  *
@@ -711,4 +726,19 @@ object DeltaWriter extends Logging {
     }
     case _ => cache.get(dataType).create()
   }
+}
+
+object ColumnDelta {
+
+  /**
+   * The initial size of delta column (the smallest delta in the hierarchy).
+   */
+  val INIT_SIZE = 100
+
+  /**
+   * The maximum depth of the hierarchy of deltas for column starting with
+   * smallest delta, which is merged with larger delta, then larger, ...
+   * till the full column value.
+   */
+  val MAX_DEPTH = 3
 }
