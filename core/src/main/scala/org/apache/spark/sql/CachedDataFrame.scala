@@ -145,6 +145,9 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
   private def withCallback[U](name: String)(action: DataFrame => U) = {
     try {
       setPoolForExecution
+      // This is needed for cases when collect is called twice on the same DF.
+      // The getPlan won't be called and hence the wait has to be done here.
+      waitForLastShuffleCleanup
       queryExecution.executedPlan.foreach { plan =>
         plan.resetMetrics()
       }
