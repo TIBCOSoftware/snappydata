@@ -814,7 +814,6 @@ object SnappyContext extends Logging {
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
-
   val COLUMN_SOURCE = "column"
   val ROW_SOURCE = "row"
   val SAMPLE_SOURCE = "column_sample"
