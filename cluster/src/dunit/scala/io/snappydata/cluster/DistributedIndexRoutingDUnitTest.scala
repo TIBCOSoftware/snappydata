@@ -81,7 +81,7 @@ class DistributedIndexRoutingDUnitTest(s: String) extends ClusterManagerTestBase
     tablesToDrop += tableName
   }
 
-  def testPartitionedSingleColumnTable(): Unit = {
+  def _testPartitionedSingleColumnTable(): Unit = {
     val tableName = "tabOne"
 
     val snContext = SnappyContext(sc)

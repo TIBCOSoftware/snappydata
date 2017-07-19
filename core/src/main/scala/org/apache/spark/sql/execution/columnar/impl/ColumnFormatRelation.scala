@@ -38,7 +38,8 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition}
-
+import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
  * It uses GemFireXD as actual datastore to physically locate the tables.
@@ -72,7 +73,6 @@ abstract class BaseColumnFormatRelation(
       _origOptions, _externalStore, _context)
     with PartitionedDataSourceScan
     with RowInsertableRelation {
-
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
@@ -171,7 +171,6 @@ abstract class BaseColumnFormatRelation(
     }
     (zipped, Nil)
   }
-
 
   def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], RDD[Any],
@@ -298,11 +297,15 @@ abstract class BaseColumnFormatRelation(
     } finally {
       try {
         try {
+          println(s"JdbcExtendedUtils.dropTable shadow table ${externalColumnTableName} start")
           JdbcExtendedUtils.dropTable(conn, externalColumnTableName,
             dialect, sqlContext, ifExists)
+          println(s"JdbcExtendedUtils.dropTable shadow table ${externalColumnTableName} end")
         } finally {
+          println(s"JdbcExtendedUtils.dropTable table ${table} start")
           JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext,
             ifExists)
+          println(s"JdbcExtendedUtils.dropTable table ${table} end")
         }
       } finally {
         conn.commit()
@@ -330,7 +333,7 @@ abstract class BaseColumnFormatRelation(
 //            }
             return
           case SaveMode.ErrorIfExists =>
-            // sys.error(s"Table $table already exists.") TODO: Why so?
+            // from suranjan: sys.error(s"Table $table already exists.")
             return
           case _ => // Ignore
         }
@@ -353,7 +356,6 @@ abstract class BaseColumnFormatRelation(
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "createExternalTableForColumnBatches: expected non-empty table name")
-
 
     val (primaryKey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
@@ -524,7 +526,6 @@ class ColumnFormatRelation(
       tableRelation: JDBCAppendableRelation,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): DataFrame = {
-
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]

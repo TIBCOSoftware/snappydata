@@ -176,12 +176,8 @@ object JdbcExtendedUtils extends Logging {
       conn.getSchema
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
-    try {
       val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()
-    } catch {
-      case _: java.sql.SQLException if !throwExceptionOnFailure => false
-    }
   }
 
   def createSchema(schemaName: String, conn: Connection,
@@ -207,7 +203,6 @@ object JdbcExtendedUtils extends Logging {
           s"SELECT 1 FROM $table FETCH FIRST ROW ONLY",
           s"SELECT COUNT(1) FROM $table")
         for (q <- testQueries) {
-          try {
             val rs = stmt.executeQuery(q)
             rs.next()
             rs.close()
@@ -215,9 +210,6 @@ object JdbcExtendedUtils extends Logging {
             // return is not very efficient but then this code
             // is not performance sensitive
             return true
-          } catch {
-            case NonFatal(_) => // continue
-          }
         }
         false
     }
@@ -227,9 +219,15 @@ object JdbcExtendedUtils extends Logging {
       context: SQLContext, ifExists: Boolean): Unit = {
     dialect match {
       case d: JdbcExtendedDialect =>
+        println(s"dialect JdbcExtendedDialect dropTable tableName=$tableName ${ifExists}");
+        val sw = new java.io.StringWriter
+        (new Exception()).printStackTrace(new java.io.PrintWriter(sw))
+        println(sw.toString)
         d.dropTable(tableName, conn, context, ifExists)
       case _ =>
-        if (!ifExists || tableExists(tableName, conn, dialect, context)) {
+        val tabExist = tableExists(tableName, conn, dialect, context);
+        println(s"dropTable tableName=$tableName, tabExist=$tabExist");
+        if (!ifExists || tabExist) {
           JdbcExtendedUtils.executeUpdate(s"DROP TABLE $tableName", conn)
         }
     }
@@ -324,8 +322,6 @@ object JdbcExtendedUtils extends Logging {
 
     sql.toString()
   }
-
-
 
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
       schema: StructType, resolvedName: String, upsert: Boolean): Int = {
