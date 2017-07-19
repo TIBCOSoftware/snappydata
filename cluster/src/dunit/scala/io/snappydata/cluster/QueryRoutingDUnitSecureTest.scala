@@ -19,45 +19,26 @@ package io.snappydata.cluster
 
 import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQLException}
 
-import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-class QueryRoutingDUnitSecureTest(val s: String)
-    extends ClusterManagerTestBase(s) with Logging {
+object QueryRoutingDUnitSecureTest{
+  val adminUser: String = "gemfire1"
+}
 
-  val jdbcUser1 = "gemfire1"
-  val jdbcUser2 = "gemfire2"
-  val adminUser1 = "gemfire3"
+class QueryRoutingDUnitSecureTest(val s: String)
+    extends ClusterManagerLDAPTestBase(s, QueryRoutingDUnitSecureTest.adminUser) with Logging {
+  val jdbcUser1 = "gemfire2"
+  val jdbcUser2 = "gemfire3"
 
   override def setUp(): Unit = {
-    setSecurityProps()
     super.setUp()
   }
 
   override def tearDown2(): Unit = {
     super.tearDown2()
-    val ldapServer = LdapTestServer.getInstance()
-    if (ldapServer.isServerStarted) {
-      ldapServer.stopService()
-    }
-  }
-
-  def setSecurityProps(): Unit = {
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
-    val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
-      adminUser1, getClass.getResource("/auth.ldif").getPath)
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.setProperty(k, ldapProperties.getProperty(k))
-    }
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE,
-      Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
-      locatorNetProps.setProperty(k, ldapProperties.getProperty(k))
-      bootProps.setProperty(k, ldapProperties.getProperty(k))
-    }
   }
 
   def netConnection(netPort: Int, user: String, pass: String): Connection = {
@@ -218,51 +199,51 @@ class QueryRoutingDUnitSecureTest(val s: String)
 
     val tableName = "order_line_col"
 
-    createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       createTable1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42508") => // ignore
       case t: Throwable => throw t
     }
+    createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
-    insertRows1(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       insertRows1(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: BatchUpdateException => x.printStackTrace()
+      case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
+    insertRows1(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
-    insertRows2(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       insertRows2(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
+    insertRows2(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
+    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
-    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
     try {
       dropTable(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42507") => // ignore
       case t: Throwable => throw t
     }
+    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
   }
 
   def testRowTableRouting(): Unit = {
@@ -274,50 +255,50 @@ class QueryRoutingDUnitSecureTest(val s: String)
 
     val tableName = "order_line_row"
 
-    createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       createTable2(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42507") => // ignore
       case t: Throwable => throw t
     }
+    createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
-    insertRows1(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       insertRows1(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: BatchUpdateException => x.printStackTrace()
+      case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
+    insertRows1(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
-    insertRows2(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       insertRows2(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
+    insertRows2(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     // (1 to 5).foreach(d => query())
-    query1(serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       query1(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
+    query1(serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
-    dropTable(serverHostPort, tableName, jdbcUser1, jdbcUser1)
     try {
       dropTable(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: SQLException => x.printStackTrace()
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
+    dropTable(serverHostPort, tableName, jdbcUser1, jdbcUser1)
   }
 }
