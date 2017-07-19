@@ -20,7 +20,7 @@ import java.sql.{Connection, DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
-
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 
 class DistributedDDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
@@ -174,6 +174,121 @@ class DistributedDDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBa
   } finally {
     val conn = getANetConnection(netPorrt3)
     conn.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+  }
+
+  def testAlterRowTableRoutingFromXD(): Unit = {
+    val tableName: String = "RowTableQR"
+
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    val s = conn.createStatement()
+    s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
+    insertDataXD(conn, tableName)
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    verifyResultAndSchema(snc, tableName, 3)
+
+    s.execute(s"ALTER TABLE $tableName ADD COLUMN Col4 INT")
+    verifyResultAndSchema(snc, tableName, 4)
+
+    s.execute(s"ALTER TABLE $tableName DROP COLUMN Col3")
+    verifyResultAndSchema(snc, tableName, 3)
+
+    s.execute(s"ALTER TABLE $tableName DROP COLUMN Col4")
+    verifyResultAndSchema(snc, tableName, 2)
+
+    // execute at store level
+    s.execute(s"insert into $tableName values (1,1)")
+    s.execute(s"insert into $tableName values (1,1)")
+    s.execute(s"ALTER TABLE $tableName add constraint emp_uk unique (Col1)")
+    try {
+    s.execute(s"insert into $tableName values (1,1)")
+    } catch {
+      case sqle: SQLException =>
+        if (sqle.getSQLState != "23505" ||
+          !sqle.getMessage.contains("duplicate key value in a unique or" +
+            " primary key constraint or unique index")) {
+          throw sqle
+        }
+    }
+    // Commented due to SNAP-1818
+//    s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER ()")
+//    s.execute("CREATE ASYNCEVENTLISTENER myListener (" +
+//      " listenerclass 'com.pivotal.gemfirexd.callbacks.DBSynchronizer'" +
+//      " initparams 'org.apache.derby.jdbc.EmbeddedDriver,jdbc:derby:newDB;create=true')")
+//
+//    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER (myListener) ")
+//    var rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
+//    while (rs.next) {
+//      assert("MYLISTENER".equalsIgnoreCase(rs.getString(17)))
+//    }
+//    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER () ")
+//    rs = s.executeQuery("select * from SYS.SYSTABLES where tablename='TESTTABLE'")
+//    while (rs.next) {
+//      assert(rs.getString(17) == null)
+//    }
+
+    dropTableXD(conn, tableName)
+  }
+
+  def verifyResultAndSchema(snc: SnappyContext, tableName: String, expectedColumns: Int): Unit = {
+    val dataDF = snc.sql("Select * from " + tableName)
+    assert(dataDF.count() == 5)
+    assert(dataDF.schema.fields.length == expectedColumns)
+  }
+
+  def testAlterRowTableFromXD_DifferentConnections(): Unit = {
+    val tableName: String = "RowTableQR"
+
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn1 = getANetConnection(netPort1)
+    val conn2 = getANetConnection(netPort1)
+
+    conn1.createStatement().execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
+    insertDataXD(conn1, tableName)
+    conn2.createStatement().execute(s"ALTER TABLE $tableName ADD COLUMN Col4 INT")
+
+    val rs = conn1.createStatement().executeQuery(s"select Col1, Col4 from $tableName")
+    var cnt = 0
+    while (rs.next()) {
+      cnt += 1
+      rs.getInt(1); rs.getInt(2);
+    }
+    assert(cnt == 5, cnt)
+
+    conn1.createStatement().execute(s"ALTER TABLE $tableName DROP COLUMN Col3")
+    val rs2 = conn2.createStatement().executeQuery(s"select Col1, Col2, Col4 from $tableName")
+    cnt = 0
+    while (rs2.next()) {
+      cnt += 1
+      rs2.getInt(1); rs2.getInt(2); rs2.getInt(3);
+    }
+    assert(cnt == 5, cnt)
+
+    dropTableXD(conn2, tableName)
+  }
+
+  def testAlterRowTableFromSnappy(): Unit = {
+    val tableName: String = "RowTableQR"
+
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
+    insertDataXD(conn, tableName)
+    queryDataXD(conn, tableName)
+
+    snc.sql(s"ALTER TABLE $tableName ADD COLUMN Col4 INT")
+    queryDataXD(conn, tableName)
+
+    snc.sql(s"ALTER TABLE $tableName DROP COLUMN Col3")
+    queryDataXD(conn, tableName)
+
+    dropTableXD(conn, tableName)
   }
 
   def createTableXD(conn: Connection, tableName: String,
