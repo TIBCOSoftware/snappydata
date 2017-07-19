@@ -270,6 +270,12 @@ class SecureSplitClusterDUnitTest(s: String)
     rows = snc.sql(s"select * from $eRowTab1").collect().length
     assert(rows == 1005, s"expected 1005 rows but found $rows in $eRowTab1")
 
+    // drop
+    snc.sql(s"drop table $eColTab1")
+    snc.sql(s"drop table $eRowTab1")
+    assert(!snc.sparkSession.catalog.tableExists(eColTab1), s"$eColTab1 not dropped")
+    assert(!snc.sparkSession.catalog.tableExists(eRowTab1), s"$eRowTab1 not dropped")
+
     // vice versa
   }
 

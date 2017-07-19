@@ -217,12 +217,6 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
       relation: Option[BaseRelation]): Unit = {
     // no op
   }
-
-  override def getTableOption(qtn: QualifiedTableName): Option[CatalogTable] = {
-    val (hiveTable: Table, relationInfo: RelationInfo) =
-      connectorHelper.getHiveTableAndMetadata(qtn)
-    getCatalogTable(new org.apache.hadoop.hive.ql.metadata.Table(hiveTable))
-  }
 }
 
 case class RelationInfo(numBuckets: Int = 1,
