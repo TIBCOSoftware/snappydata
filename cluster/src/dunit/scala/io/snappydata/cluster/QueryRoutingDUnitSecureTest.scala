@@ -99,6 +99,57 @@ class QueryRoutingDUnitSecureTest(val s: String)
     }
   }
 
+  def insertRows3(numRows: Int, serverHostPort: Int, tableName: String,
+      user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"insertRows3: Connected to $serverHostPort")
+    // scalastyle:on println
+
+    val stmt1 = conn.createStatement()
+    try {
+      var i = 1
+      (1 to numRows).foreach(_ => {
+        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
+        i += 1
+        if (i % 10 == 0) {
+          stmt1.executeBatch()
+          i = 0
+        }
+      })
+      stmt1.executeBatch()
+
+      // scalastyle:off println
+      println(s"insertRows3: committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
+  }
+
+  def insertRows4(numRows: Int, serverHostPort: Int, tableName: String,
+      user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"insertRows4: Connected to $serverHostPort")
+    // scalastyle:on println
+
+    val stmt1 = conn.createStatement()
+    try {
+      (1 to numRows).foreach(i => {
+        stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
+      })
+
+      // scalastyle:off println
+      println(s"insertRows4: committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
+  }
+
   def verifyQuery1(qryTest: String, stmt_rs: ResultSet): Unit = {
     val builder = StringBuilder.newBuilder
 
@@ -108,7 +159,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       val stmt_i = stmt_rs.getInt(1)
       val stmt_j = stmt_rs.getInt(2)
       val stmt_s = stmt_rs.getString(3)
-      if (index % 1000 == 0) {
+      if (index % 100 == 0) {
         builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
       }
     }
@@ -116,7 +167,27 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:off println
     println(builder.toString())
     // scalastyle:on println
-    assert(index == 40000)
+    assert(index == 4000)
+  }
+
+  def verifyQuery2(qryTest: String, stmt_rs: ResultSet): Unit = {
+    val builder = StringBuilder.newBuilder
+
+    var index = 0
+    while (stmt_rs.next()) {
+      index += 1
+      val stmt_i = stmt_rs.getInt(1)
+      val stmt_j = stmt_rs.getInt(2)
+      val stmt_s = stmt_rs.getString(3)
+      if (index % 10 == 0) {
+        builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+      }
+    }
+    builder.append(s"$qryTest Stmt: Total number of rows = $index").append("\n")
+    // scalastyle:off println
+    println(builder.toString())
+    // scalastyle:on println
+    assert(index == 400)
   }
 
   def query1(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
@@ -133,6 +204,28 @@ class QueryRoutingDUnitSecureTest(val s: String)
           s""
       val rs1 = stmt1.executeQuery(qry1)
       verifyQuery1(qry1, rs1)
+      rs1.close()
+      // Thread.sleep(1000000)
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
+  }
+
+  def query2(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"query2: Connected to $serverHostPort")
+    // scalastyle:off println
+
+    val stmt1 = conn.createStatement()
+    try {
+      val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 5000000 " +
+          s""
+      val rs1 = stmt1.executeQuery(qry1)
+      verifyQuery2(qry1, rs1)
       rs1.close()
       // Thread.sleep(1000000)
     } finally {
@@ -209,22 +302,22 @@ class QueryRoutingDUnitSecureTest(val s: String)
     createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     try {
-      insertRows1(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      insertRows1(2000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
-    insertRows1(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows1(2000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     try {
-      insertRows2(20000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      insertRows2(2000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    insertRows2(20000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows2(2000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     // (1 to 5).foreach(d => query())
     try {
@@ -265,32 +358,32 @@ class QueryRoutingDUnitSecureTest(val s: String)
     createTable2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     try {
-      insertRows1(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      insertRows3(200, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
-    insertRows1(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    insertRows3(200, serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     try {
-      insertRows2(20000, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      insertRows4(200, serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    insertRows2(20000, serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    insertRows4(200, serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     // (1 to 5).foreach(d => query())
     try {
-      query1(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      query2(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
-    query1(serverHostPort, tableName, jdbcUser1, jdbcUser1)
+    query2(serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     try {
       dropTable(serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
