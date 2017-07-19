@@ -176,7 +176,7 @@ class DistributedDDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBa
     conn.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
   }
 
-  def testAlterRowTableRoutingFromXD(): Unit = {
+  def _testAlterRowTableRoutingFromXD(): Unit = {
     val tableName: String = "RowTableQR"
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
@@ -238,7 +238,7 @@ class DistributedDDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBa
     assert(dataDF.schema.fields.length == expectedColumns)
   }
 
-  def testAlterRowTableFromXD_DifferentConnections(): Unit = {
+  def _testAlterRowTableFromXD_DifferentConnections(): Unit = {
     val tableName: String = "RowTableQR"
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
@@ -270,7 +270,7 @@ class DistributedDDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBa
     dropTableXD(conn2, tableName)
   }
 
-  def testAlterRowTableFromSnappy(): Unit = {
+  def _testAlterRowTableFromSnappy(): Unit = {
     val tableName: String = "RowTableQR"
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
