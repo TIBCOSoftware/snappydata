@@ -167,8 +167,14 @@ class TokenizationTest
       }
     }
     assert(!found, "did not expect ParamLiteral in logical plan")
+    cacheMap.clear()
+    snc.sql("SELECT json_tuple('{\"f1\": \"value1\", \"f2\": \"value2\"}','f1')"
+    ).collect().foreach(println)
 
-    snc.sql(s"SELECT json_tuple('{\"a\":1, \"b\":2}', 'a', 'b');").collect().foreach(println)
+    snc.sql("SELECT json_tuple('{\"f1\": \"value11\", \"f2\": \"value22\"}','f1')"
+    ).collect().foreach(println)
+
+    assert( cacheMap.size() == 2)
   }
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
