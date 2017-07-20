@@ -301,7 +301,7 @@ class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
   var columnTableRoutingCompleted: AtomicInteger = new AtomicInteger(0)
   def columnTableRouting(): Int = {
     val jdbcUser1 = "gemfire1"
-    val jdbcUser2 = "gemfire2"
+    val jdbcUser2 = "gemfire5"
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
@@ -361,8 +361,8 @@ class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
 
   var rowTableRoutingCompleted: AtomicInteger = new AtomicInteger(0)
   def rowTableRouting(): Int = {
-    val jdbcUser3 = "gemfire3"
-    val jdbcUser4 = "gemfire4"
+    val jdbcUser3 = "gemfire2"
+    val jdbcUser4 = "gemfire6"
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
