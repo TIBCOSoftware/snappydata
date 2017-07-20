@@ -83,7 +83,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
-  private[sql] var client = metadataHive // externalCatalog.client
+  private[sql] var client = metadataHive
 
 
   // Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
@@ -101,22 +101,23 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   protected var currentSchema: String = {
     var user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
-    val defaultName = if (user.isEmpty) {
+    if (user.isEmpty) {
       // In smart connector, property name is different.
       user = snappySession.conf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
-      if (user.isEmpty) Constant.DEFAULT_SCHEMA else formatDatabaseName(user)
-    } else {
-      formatDatabaseName(user)
     }
-    val defaultDbDefinition =
-      CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
+    val defaultName = if (user.isEmpty) Constant.DEFAULT_SCHEMA else formatDatabaseName(user)
+
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
-      case _ =>     // Initialize default database if it doesn't already exist
+      case _ => {
+        // Initialize default database if it doesn't already exist
+        val defaultDbDefinition =
+          CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
         externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
         client.setCurrentDatabase(defaultName)
+      }
     }
-    formatDatabaseName(defaultName)
+    defaultName
   }
 
 
