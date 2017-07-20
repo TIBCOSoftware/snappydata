@@ -20,6 +20,8 @@ package io.snappydata.cluster
 import java.io.File
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
+import com.gemstone.gemfire.distributed.DistributedMember
+
 import scala.collection.mutable
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -249,6 +251,29 @@ class QueryRoutingDUnitTest(val s: String)
     assert(rs.next())
     assert(rs.getInt(1) == 1)
 
+
+    // Unit test for DSID function
+    val membersList = mutable.MutableList[String]()
+    val members: java.util.Set[DistributedMember] = GemFireXDUtils.
+      getGfxdAdvisor.adviseDataStores(null);
+    import scala.collection.JavaConverters._
+    members.asScala.foreach(m => {
+      membersList += m.getId
+    })
+
+    rs = conn1.createStatement().executeQuery(s"select DSID() from TEST2.$rowTable")
+    assert(rs.next())
+    do {
+      assert(membersList.contains(rs.getString(1)))
+    } while (rs.next())
+
+    rs = conn1.createStatement().executeQuery(s"select DSID() from TEST2.$columnTable")
+    assert(rs.next())
+    do {
+      assert(membersList.contains(rs.getString(1)))
+    } while (rs.next())
+
+
     // truncate tables
     conn1.createStatement().executeUpdate(s" truncate table $columnTable")
     conn1.createStatement().executeUpdate(s" truncate table $rowTable")
@@ -269,6 +294,8 @@ class QueryRoutingDUnitTest(val s: String)
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$rowTable")
     assert(rs.next())
     assert(rs.getInt(1) == 0)
+
+
 
     // drop all tables
     conn1.createStatement().executeUpdate(s" drop table $columnTable")

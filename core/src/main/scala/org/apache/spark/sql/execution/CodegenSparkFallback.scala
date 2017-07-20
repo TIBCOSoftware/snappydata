@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.SystemFailure
-
+import io.snappydata.Property
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -35,6 +35,9 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {
+      val pool = plan.sqlContext.sparkSession.asInstanceOf[SnappySession].
+        sessionState.conf.activeSchedulerPool
+      sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       f(plan)
     } catch {
       case t: Throwable =>
