@@ -246,10 +246,10 @@ abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
   protected final def columnCharType: Rule1[DataType] = rule {
     VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, baseType = "VARCHAR")) |
+      CharStringType(d.toInt, baseType = "VARCHAR")) |
     CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharType(d.toInt, baseType = "CHAR")) |
-    STRING ~> (() => CharType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING"))
+      CharStringType(d.toInt, baseType = "CHAR")) |
+    STRING ~> (() => CharStringType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING"))
   }
 
   final def columnDataType: Rule1[DataType] = rule {
@@ -436,6 +436,9 @@ object SnappyParserConsts {
   final val USING = nonReservedKeyword("using")
   final val RETURNS = nonReservedKeyword("returns")
   final val FN = nonReservedKeyword("fn")
+  final val ALTER = nonReservedKeyword("alter")
+  final val ADD = nonReservedKeyword("add")
+  final val COLUMN = nonReservedKeyword("column")
 
   // Window analytical functions are non-reserved
   final val DURATION = nonReservedKeyword("duration")
