@@ -79,7 +79,7 @@ object ExternalStoreUtils extends Logging {
   }
 
   private def defaultMaxExternalPoolSize: String =
-    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 4))
+    String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
   private def defaultMaxEmbeddedPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
@@ -97,7 +97,8 @@ object ExternalStoreUtils extends Logging {
     if (hikariCP) {
       props = props + ("jdbcUrl" -> url)
       props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
-      props = addProperty(props, "minimumIdle", "4")
+      props = addProperty(props, "minimumIdle", "10")
+      props = addProperty(props, "idleTimeout", "120000")
     } else {
       props = props + ("url" -> url)
       props = addProperty(props, "maxActive", defaultMaxPoolSize)
@@ -178,8 +179,6 @@ object ExternalStoreUtils extends Logging {
                 "skip-constraint-checks=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false;skip-constraint-checks=true"
-          case SplitClusterMode(_, _) =>
-            ServiceUtils.getLocatorJDBCURL(sc) + ";route-query=false;skip-constraint-checks=true"
           case ExternalEmbeddedMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
           case LocalMode(_, url) =>
@@ -191,9 +190,9 @@ object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isSplitOrLocalMode(sparkContext: SparkContext): Boolean = {
+  def isLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
-      case SplitClusterMode(_, _) | LocalMode(_, _) => true
+      case LocalMode(_, _) => true
       case _ => false
     }
   }

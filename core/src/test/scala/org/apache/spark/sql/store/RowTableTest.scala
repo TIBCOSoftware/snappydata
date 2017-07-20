@@ -16,15 +16,17 @@
  */
 package org.apache.spark.sql.store
 
-import scala.util.{Random, Failure, Success, Try}
+import java.sql.SQLException
 
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
 import io.snappydata.SnappyFunSuite
-
-import io.snappydata.core.{TRIPDATA, Data}
+import io.snappydata.core.{Data, TRIPDATA}
+import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.{IntegerType, StructField}
+import org.apache.spark.sql.{AnalysisException, Row, SaveMode, TableNotFoundException}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{Row, AnalysisException, SaveMode}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Tests for ROW tables.
@@ -376,6 +378,54 @@ class RowTableTest
 
     snc.dropTable(tableName2)
     println("Successful")
+  }
+
+  test("Test alter table SQL syntax") {
+    snc.sql("drop table if exists employee")
+    snc.sql("create table employee(name string, surname string)")
+    assert (snc.sql("select * from employee").schema.fields.length == 2)
+    snc.sql("alter table employee add column age int")
+    assert (snc.sql("select * from employee").schema.fields.length == 3)
+    snc.sql("alter table employee drop column surname")
+    assert (snc.sql("select * from employee").schema.fields.length == 2)
+    snc.sql("insert into employee values ('a' , 1)")
+    assert (snc.sql("select * from employee").count == 1)
+    intercept[TableNotFoundException] {
+      snc.sql("alter table non_employee add column age int")
+    }
+    intercept[EmbedSQLException] {  // existing column 'age'
+      snc.sql("alter table employee add column age int")
+    }
+    intercept[AnalysisException] { // non-existing column
+      snc.sql("alter table employee drop column surname")
+    }
+    snc.sql("alter table employee add column dateCol date")
+    snc.sql("alter table employee add column timeCol timestamp")
+    assert (snc.sql("select * from employee").schema.fields.length == 4)
+    snc.sql("alter table employee drop column dateCol")
+    snc.sql("alter table employee drop column timeCol")
+    assert (snc.sql("select * from employee").schema.fields.length == 2)
+
+    snc.sql("create index emp_age on employee (age)")
+    intercept[SQLException] {  // because INDEX 'EMP_AGE' is dependent on that object
+      snc.sql("alter table employee drop column age")
+    }
+    assert (snc.sql("select * from employee").schema.fields.length == 2)
+    snc.sql("insert into employee values ('b', 2)")
+    assert (snc.sql("select * from employee").count == 2)
+  }
+
+  test("Test alter table API SnappySession") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
+    snc.alterTable(tableName, true, StructField("col4", IntegerType, true))
+    assert(snc.sql("SELECT * FROM " + tableName).schema.fields.length == 4)
+    snc.alterTable(tableName, false, StructField("col3", IntegerType, true))
+    assert(snc.sql("SELECT * FROM " + tableName).schema.fields.length == 3)
   }
 
   test("Test the truncate syntax SQL and SnappyContext") {

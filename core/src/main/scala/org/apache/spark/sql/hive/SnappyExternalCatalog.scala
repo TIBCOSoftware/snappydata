@@ -36,6 +36,7 @@ import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, Bound
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
 import org.apache.spark.sql.execution.datasources.PartitioningUtils
 import org.apache.spark.sql.hive.client.HiveClient
+import org.apache.spark.sql.types.StructType
 
 private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
     extends ExternalCatalog with Logging {
@@ -155,7 +156,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   override def databaseExists(db: String): Boolean = withClient {
-    withHiveExceptionHandling(client.getDatabaseOption(db).isDefined)
+    withHiveExceptionHandling(SnappyStoreHiveCatalog.getDatabaseOption(client, db).isDefined)
   }
 
   override def listDatabases(): Seq[String] = withClient {
@@ -246,6 +247,22 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     requireTableExists(tableDefinition.database, tableDefinition.identifier.table)
     withHiveExceptionHandling(client.alterTable(tableDefinition))
     SnappySession.clearAllCache()
+  }
+
+  def alterTableSchema(db: String, table: String, schema: StructType): Unit = withClient {
+    requireTableExists(db, table)
+    val hiveTable = client.getTable(db, table)
+    val updatedTable = hiveTable.copy(schema = schema)
+    try {
+      client.alterTable(updatedTable)
+    } catch {
+      case NonFatal(e) =>
+        val warningMessage =
+          s"Could not alter schema of table  ${hiveTable.identifier.quotedString} in a Hive " +
+              "compatible way. Updating Hive metastore in Spark SQL specific format."
+        logWarning(warningMessage, e)
+        client.alterTable(updatedTable.copy(schema = updatedTable.partitionSchema))
+    }
   }
 
   override def getTable(db: String, table: String): CatalogTable = withClient {

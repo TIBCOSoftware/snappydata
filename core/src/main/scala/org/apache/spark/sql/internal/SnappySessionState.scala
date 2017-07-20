@@ -29,7 +29,6 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
@@ -40,9 +39,9 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{PartitioningUtils, DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -60,10 +59,9 @@ class SnappySessionState(snappySession: SnappySession)
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
-  protected lazy val snappySharedState: SnappySharedState =
-    snappySession.snappySharedState.asInstanceOf[SnappySharedState]
+  protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
 
-  private[internal] lazy val metadataHive = snappySharedState.metadataHive.newSession()
+  private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -231,7 +229,7 @@ class SnappySessionState(snappySession: SnappySession)
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
-          snappySharedState.externalCatalog,
+          snappySharedState.snappyCatalog(),
           snappySession,
           metadataHive,
           snappySession.sharedState.globalTempViewManager,
@@ -241,7 +239,7 @@ class SnappySessionState(snappySession: SnappySession)
           newHadoopConf())
       case _ =>
         new SnappyStoreHiveCatalog(
-          snappySharedState.externalCatalog,
+          snappySharedState.snappyCatalog(),
           snappySession,
           metadataHive,
           snappySession.sharedState.globalTempViewManager,
@@ -323,7 +321,10 @@ class SnappySessionState(snappySession: SnappySession)
 }
 
 class SnappyConf(@transient val session: SnappySession)
-    extends SQLConf with Serializable with CatalystConf {
+    extends SQLConf with Serializable {
+
+  /** Pool to be used for the execution of queries from this session */
+  @volatile private[this] var schedulerPool: String = Property.SchedulerPool.defaultValue.get
 
   /** If shuffle partitions is set by [[setExecutionShufflePartitions]]. */
   @volatile private[this] var executionShufflePartitions: Int = _
@@ -345,7 +346,7 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
-  private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
+  private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
@@ -357,6 +358,13 @@ class SnappyConf(@transient val session: SnappySession)
         dynamicShufflePartitions = -1
       } else {
         dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
+    case Property.SchedulerPool.name =>
+      schedulerPool = value match {
+        case None => Property.SchedulerPool.defaultValue.get
+        case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
+          pool.toString
+        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool ${pool}")
       }
     case _ => // ignore others
   }
@@ -387,13 +395,17 @@ class SnappyConf(@transient val session: SnappySession)
     }
   }
 
+  def activeSchedulerPool: String = {
+    schedulerPool
+  }
+
   override def setConfString(key: String, value: String): Unit = {
-    keyUpdateActions(key, doSet = true)
+    keyUpdateActions(key, Some(value), doSet = true)
     super.setConfString(key, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
-    keyUpdateActions(entry.key, doSet = true)
+    keyUpdateActions(entry.key, Some(value), doSet = true)
     require(entry != null, "entry cannot be null")
     require(value != null, s"value cannot be null for key: ${entry.key}")
     entry.defaultValue match {
@@ -403,12 +415,12 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   override def unsetConf(key: String): Unit = {
-    keyUpdateActions(key, doSet = false)
+    keyUpdateActions(key, None, doSet = false)
     super.unsetConf(key)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
-    keyUpdateActions(entry.key, doSet = false)
+    keyUpdateActions(entry.key, None, doSet = false)
     super.unsetConf(entry)
   }
 }
