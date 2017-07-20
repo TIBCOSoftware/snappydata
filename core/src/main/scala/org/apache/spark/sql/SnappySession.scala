@@ -31,7 +31,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.{functions => snappydataFunctions, Constant, Property, SnappyTableStatsProviderService}
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -132,6 +132,7 @@ class SnappySession(@transient private val sc: SparkContext,
   private[spark] val snappyContextFunctions = sessionState.contextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
+  snappydataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**
@@ -1885,7 +1886,7 @@ object SnappySession extends Logging {
     cdf
   }
 
-  private[this] val planCache = {
+  private[this] lazy val planCache = {
     val loader = new CacheLoader[CachedKey, CachedDataFrame] {
       override def load(key: CachedKey): CachedDataFrame = {
         val session = key.session
@@ -1899,7 +1900,11 @@ object SnappySession extends Logging {
         evaluatePlan(df, session, key.sqlText, key)
       }
     }
-    CacheBuilder.newBuilder().maximumSize(300).build(loader)
+    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
+      case Some(size) => size.toInt
+      case None =>  Property.PlanCacheSize.defaultValue.get
+    }
+    CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
 
   def getPlanCache: LoadingCache[CachedKey, CachedDataFrame] = planCache

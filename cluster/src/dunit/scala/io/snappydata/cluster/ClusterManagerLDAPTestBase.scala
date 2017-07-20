@@ -28,6 +28,9 @@ import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
  *
  * @author vivek
  */
+object ClusterManagerLDAPTestBase{
+  val securityProperties: Properties = new Properties()
+}
 
 abstract class ClusterManagerLDAPTestBase(s: String, adminUser: String)
     extends ClusterManagerTestBase(s) with Serializable {
@@ -40,11 +43,18 @@ abstract class ClusterManagerLDAPTestBase(s: String, adminUser: String)
   }
 
   override def afterClass(): Unit = {
+    super.afterClass()
     val ldapServer = LdapTestServer.getInstance()
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
     }
-    super.afterClass()
+    ClusterManagerLDAPTestBase.securityProperties.clear()
+  }
+
+  override def setUp(): Unit = {
+    ClusterManagerLDAPTestBase.securityProperties.keySet().toArray.foreach(k =>
+      bootProps.put(k, ClusterManagerLDAPTestBase.securityProperties.get(k)))
+    super.setUp()
   }
 
   def setSecurityProps(ldapProperties: Properties): Unit = {
@@ -56,6 +66,7 @@ abstract class ClusterManagerLDAPTestBase(s: String, adminUser: String)
       Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
       locatorNetProps.setProperty(k, ldapProperties.getProperty(k))
       bootProps.setProperty(k, ldapProperties.getProperty(k))
+      ClusterManagerLDAPTestBase.securityProperties.setProperty(k, ldapProperties.getProperty(k))
     }
   }
 }
