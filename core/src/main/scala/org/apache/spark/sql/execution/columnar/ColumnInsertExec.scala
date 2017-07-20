@@ -260,6 +260,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  else
        |    $rollbackSnapshotTx($txId);
        |}
+       |}
     """.stripMargin
   }
 

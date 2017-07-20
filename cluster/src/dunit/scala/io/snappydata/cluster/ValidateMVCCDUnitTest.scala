@@ -175,6 +175,36 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     // scalastyle:on
   }
 
+  def testSnapshotInsertionForColumnTableDFInsertMultiThreaded(): Unit = {
+    errorInThread = null
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val snc = SnappyContext(sc)
+    val tableName: String = "TESTTABLE"
+
+    snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using column " +
+        s"OPTIONS (PARTITION_BY 'col1', buckets '10',MAXPARTSIZE '200'," +
+        s"COLUMN_MAX_DELTA_ROWS '10',COLUMN_BATCH_SIZE " +
+        s"'5000')")
+
+    val df = for(i <- 1 to 100) yield Seq(i, i+1, i+2)
+    val rdd = sc.parallelize(df, 10).map(
+      s => new Data2(s(0), s(1).toString, s(2).toString))
+
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
+
+    val cnt = snc.sql(s"select * from $tableName").count()
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
+    assert(cnt == 100, s"Expected row count is 10 while actual row count is $cnt")
+    snc.sql(s"drop table $tableName")
+
+    // scalastyle:off
+    println("Successful")
+    // scalastyle:on
+  }
+
   def testMVCCForColumnTable(): Unit = {
     errorInThread = null
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
@@ -205,7 +235,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     snc.sql(s"drop table $tableName")
 
     if (errorInThread != null) {
-
       throw errorInThread
     }
 
@@ -298,14 +327,12 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     snc.sql(s"create table $tableName(col1 integer, col2 String, col3 integer) using row " +
         s"OPTIONS (REDUNDANCY '1',PARTITION_BY 'col1')")
 
-
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "performMixOperationsOnRowTable",
       netPort1)
 
     // scalastyle:off
     println("Successful")
     // scalastyle:on
-
   }
 
 
@@ -329,7 +356,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     // scalastyle:off
     println("Successful")
     // scalastyle:on
-
   }
 
 }
