@@ -2,20 +2,18 @@ package io.snappydata.cluster
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
-import java.sql.DriverManager
+import java.sql.SQLException
 import java.util.Properties
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.LdapTestServer
 import com.pivotal.gemfirexd.security.SecurityTestUtils
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-import io.snappydata.Constant
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
-import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
-import org.apache.spark.Logging
-import org.apache.spark.sql.{Row, SnappyContext}
+import org.apache.spark.sql.{SnappyContext, TableNotFoundException}
 
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process.Process
@@ -28,14 +26,10 @@ class SecureSplitClusterDUnitTest(s: String)
 
   private[this] var ldapProperties: Properties = new Properties()
 
-  private val eColTab1 = "EMBEDDEDCOLTAB1"
-  private val eColTab2 = "EMBEDDEDCOLTAB2"
-  private val sColTab1 = "SMARTCOLTAB1"
-  private val sColTab2 = "SMARTCOLTAB2"
-  private val eRowTab1 = "EMBEDDEDROWTAB1"
-  private val eRowTab2 = "EMBEDDEDROWTAB2"
-  private val sRowTab1 = "SMARTROWTAB1"
-  private val sRowTab2 = "SMARTROWTAB2"
+  private val embeddedColTab1 = "EMBEDDEDCOLTAB1"
+  private val smartColTab1 = "SMARTCOLTAB1"
+  private val embeddedRowTab1 = "EMBEDDEDROWTAB1"
+  private val smartRowTab1 = "SMARTROWTAB1"
 
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
@@ -162,9 +156,9 @@ class SecureSplitClusterDUnitTest(s: String)
 
   override def testRowTableCreation(): Unit = {}
 
-  override def _testComplexTypesForColumnTables_SNAP643(): Unit = {}
+  def testComplexTypesForColumnTables_SNAP643(): Unit = {}
 
-  def _testTableFormChanges(): Unit = {}
+  def testTableFormChanges(): Unit = {}
 
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
@@ -205,20 +199,6 @@ class SecureSplitClusterDUnitTest(s: String)
     assert(rs2.getInt(1) == 5)
   }
 
-  // grant and revoke select, insert, update and delete and check same from smart side.
-  //
-  // Create a thin connection from smart side and attempts to modify hive metastore should fail.
-  //
-  // Attempt to get a snappysession with invalid credentials should fail. Try with null and
-  // empty, username and password combinations.
-  //
-  // Create tables with different flavours of sql
-  //
-  // Use APIs to perform DDLs and DMLs from smart side.
-  // create, drop, alter tables; select, insert, update, delete rows
-  //
-  // udf install jar
-
   // create row and column table in embedded mode and select, insert, update, delete and
   // drop from smart side and vice versa.
   def testSQLOpsWithValidCredentials(): Unit = {
@@ -227,68 +207,268 @@ class SecureSplitClusterDUnitTest(s: String)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
     val conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
     val stmt = conn.createStatement()
-
-    // create row and column table in embedded mode
-    SplitClusterDUnitTest.createTableUsingJDBC(eColTab1, "column", conn, stmt, Map.empty, false)
-    SplitClusterDUnitTest.createTableUsingJDBC(eRowTab1, "row", conn, stmt, Map.empty, false)
-
-
+    val value = "brought up to zero"
     val snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
 
-    // insert
-    snc.sql(s"insert into $eColTab1 values (10000, 'ten thousand', 1000.23)")
-    snc.sql(s"insert into $eRowTab1 values (10000, 'ten thousand', 1000.23)")
-    // select
-    var count = snc.sql(s"select count(*) from $eColTab1").collect()(0).getLong(0)
-    assert(count == 1, s"expected 1 rows but found $count in $eColTab1")
-    count = snc.sql(s"select count(*) from $eRowTab1").collect()(0).getLong(0)
-    assert(count == 1, s"expected 1 rows but found $count in $eRowTab1")
+    try {
+      // create row and column table in embedded mode
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", conn, stmt, Map
+      ("COLUMN_BATCH_SIZE" -> "50"), false)
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", conn, stmt, Map.empty, false)
 
-    // update
-    snc.sql(s"update $eColTab1 set col1 = 5000 where col1 = 10000")
-    snc.sql(s"update $eRowTab1 set col1 = 5000 where col1 = 10000")
-    var col1 = snc.sql(s"select * from $eColTab1").collect()(0).get(0)
-    assert(col1 == 5000, s"Update failed in $eColTab1, found value $col1")
-    col1 = snc.sql(s"select * from $eRowTab1").collect()(0).get(0)
-    assert(col1 == 5000, s"Update failed in $eRowTab1, found value $col1")
+      // insert
+      snc.sql(s"insert into $embeddedColTab1 values (10000, 'ten thousand', 1000.23)")
+      snc.sql(s"insert into $embeddedRowTab1 values (10000, 'ten thousand', 1000.23)")
+      // select
+      var count = snc.sql(s"select count(*) from $embeddedColTab1").collect()(0).getLong(0)
+      assert(count == 1, s"expected 1 rows but found $count in $embeddedColTab1")
+      count = snc.sql(s"select count(*) from $embeddedRowTab1").collect()(0).getLong(0)
+      assert(count == 1, s"expected 1 rows but found $count in $embeddedRowTab1")
 
-    // delete
-    snc.sql(s"delete from $eColTab1 where col1 = 5000")
-    snc.sql(s"delete from $eRowTab1 where col1 = 5000")
+      // update TODO do for column tables when support comes in master.
+      snc.sql(s"update $embeddedRowTab1 set col1 = 5000 where col1 = 10000")
+      var col1 = snc.sql(s"select * from $embeddedRowTab1").collect()(0).get(0)
+      assert(col1 == 5000, s"Update failed in $embeddedRowTab1, found value $col1")
 
-    var rows = snc.sql(s"select * from $eColTab1").collect().length
-    assert(rows == 0, s"expected 0 rows but found $rows in $eColTab1")
-    rows = snc.sql(s"select * from $eRowTab1").collect().length
-    assert(rows == 0, s"expected 0 rows but found $rows in $eRowTab1")
+      // delete TODO do for column tables when support comes in master.
+      snc.sql(s"delete from $embeddedRowTab1 where col1 = 5000")
+      var rows = snc.sql(s"select * from $embeddedRowTab1").collect().length
+      assert(rows == 0, s"expected 0 rows but found $rows in $embeddedRowTab1")
 
-    // insert from embedded side. Adds 1005 rows each
-    SplitClusterDUnitTest.populateTable(eColTab1, conn)
-    SplitClusterDUnitTest.populateTable(eRowTab1, conn)
+      // insert from embedded side. Adds 1005 rows each
+      SplitClusterDUnitTest.populateTable(embeddedColTab1, conn)
+      SplitClusterDUnitTest.populateTable(embeddedRowTab1, conn)
 
-    rows = snc.sql(s"select * from $eColTab1").collect().length
-    assert(rows == 1005, s"expected 1005 rows but found $rows in $eColTab1")
-    rows = snc.sql(s"select * from $eRowTab1").collect().length
-    assert(rows == 1005, s"expected 1005 rows but found $rows in $eRowTab1")
+      rows = snc.sql(s"select * from $embeddedColTab1").collect().length
+      // 1005 + 1 (which was not deleted above)
+      assert(rows == 1006, s"expected 1005 rows but found $rows in $embeddedColTab1")
+      rows = snc.sql(s"select * from $embeddedRowTab1").collect().length
+      assert(rows == 1005, s"expected 1005 rows but found $rows in $embeddedRowTab1")
 
-    // drop
-    snc.sql(s"drop table $eColTab1")
-    snc.sql(s"drop table $eRowTab1")
-    assert(!snc.sparkSession.catalog.tableExists(eColTab1), s"$eColTab1 not dropped")
-    assert(!snc.sparkSession.catalog.tableExists(eRowTab1), s"$eRowTab1 not dropped")
+      // drop
+      snc.sql(s"drop table $embeddedColTab1")
+      snc.sql(s"drop table $embeddedRowTab1")
+      assert(!snc.sparkSession.catalog.tableExists(embeddedColTab1), s"$embeddedColTab1 not dropped")
+      assert(!snc.sparkSession.catalog.tableExists(embeddedRowTab1), s"$embeddedRowTab1 not dropped")
 
-    // vice versa
+      // vice versa: create row and column table in smart connector mode
+      snc.sql(s"create table $smartColTab1 (col1 INT, col2 STRING, col3 DECIMAL) using column")
+      snc.sql(s"create table $smartRowTab1 (col1 INT, col2 STRING, col3 DECIMAL) using row")
+
+      // insert. Adds 1005 rows each
+      SplitClusterDUnitTest.populateTable(smartColTab1, conn)
+      SplitClusterDUnitTest.populateTable(smartRowTab1, conn)
+
+      // select
+      def checkCount(sql: String, count: Int, eq: Boolean = true): Unit = {
+        stmt.execute(sql)
+        rows = 0
+        val rs = stmt.getResultSet
+        while (rs.next()) rows += 1
+        if (eq) {
+          assert(rows == count, s"expected $count rows but found $rows for $sql")
+        } else {
+          assert(rows != count, s"expected less than $count rows but found $rows for $sql")
+        }
+      }
+      checkCount(s"select * from $smartColTab1", 1005)
+      checkCount(s"select * from $smartRowTab1", 1005)
+
+      // update
+      def checkCol1(sql: String): Unit = {
+        stmt.execute(sql)
+        val rs = stmt.getResultSet
+        rs.next()
+        assert(rs.getInt(1) == 0, s"Update failed. Col1 value is ${rs.getInt(0)}, but expected 0 " +
+            s"for $sql")
+      }
+      stmt.execute(s"update $smartRowTab1 set col1 = 0, col2 = '$value' where " +
+          s"col1 < 0")
+      checkCol1(s"select * from $smartRowTab1 where col2 = '$value'")
+
+      // delete
+      stmt.execute(s"delete from $smartRowTab1 where col1 = 0")
+      checkCount(s"select * from $smartRowTab1", 1005, false)
+
+      // drop
+      stmt.execute(s"drop table $smartColTab1")
+      stmt.execute(s"drop table $smartRowTab1")
+      try {
+        snc.sparkSession.catalog.refreshTable(smartColTab1)
+        assert(false, s"Failed to drop $smartColTab1")
+      } catch {
+        case t: TableNotFoundException =>
+      }
+      try {
+        snc.sparkSession.catalog.refreshTable(smartRowTab1)
+        assert(false, s"Failed to drop $smartRowTab1")
+      } catch {
+        case t: TableNotFoundException =>
+      }
+    } finally {
+      snc.sparkContext.stop()
+      stmt.close()
+      conn.close()
+    }
   }
 
-  def _testGrantRevokeAndHiveModification(): Unit = {
+  // grant and revoke select, insert, update and delete and check same from smart and embedded side.
+  // Create a thin connection from smart side and attempts to modify hive metastore should fail.
+  def testGrantRevokeAndHiveModification(): Unit = {
+    var props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    val connUser1 = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    val stmtUser1 = connUser1.createStatement()
+    val value = "brought up to zero"
+
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser2)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser2)
+    var connUser2 = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    var stmtUser2 = connUser2.createStatement()
+
+    var sncUser2 = testObject.getSnappyContextForConnector(locatorClientPort, props)
+
+    try {
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", connUser1, stmtUser1,
+        Map("COLUMN_BATCH_SIZE" -> "50"))
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", connUser1, stmtUser1)
+
+      // All DMLs from another user should fail
+      def assertFailure(sql: () => Unit, s: String): Unit = {
+        try {
+          sql()
+          assert(false, s"Should have failed: $s")
+        } catch {
+          case e: SQLException =>
+            if ("42502".equals(e.getSQLState) || "42500".equals(e.getSQLState))
+              logInfo(s"Found expected error: $e")
+            else {
+              logInfo(s"Found different SQLState ${e.getSQLState}")
+              throw e
+            }
+        }
+      }
+
+      List(s"select * from $jdbcUser1.$embeddedColTab1",
+        s"select * from $jdbcUser1.$embeddedRowTab1",
+        s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
+        s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
+        s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
+            s"col1 < 0",
+        s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
+      ).foreach(s => assertFailure(() => {stmtUser2.execute(s)}, s))
+
+      def reset(): Unit = {
+        // Get a fresh conn.
+        // TODO May not be needed later when cached plans are cleared for grant/revoke
+        stmtUser2.close()
+        connUser2.close()
+        connUser2 = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+        stmtUser2 = SplitClusterDUnitTest.getConnection(locatorClientPort, props).createStatement()
+
+        sncUser2 = testObject.getSnappyContextForConnector(locatorClientPort, props)
+      }
+
+      def exe(permit: String, op: String): Unit = {
+        val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
+        stmtUser1.execute(s"$permit $op on table $embeddedColTab1 $toFrom $jdbcUser2")
+        stmtUser1.execute(s"$permit $op on table $embeddedRowTab1 $toFrom $jdbcUser2")
+        if (!op.equalsIgnoreCase("select")) {
+          // We need select permission for insert, update or delete operation
+          stmtUser1.execute(s"$permit select on table $embeddedColTab1 $toFrom $jdbcUser2")
+          stmtUser1.execute(s"$permit select on table $embeddedRowTab1 $toFrom $jdbcUser2")
+        }
+      }
+
+      def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
+        // grant
+        reset()
+        exe("grant", op)
+        sqls.foreach(s => stmtUser2.execute(s))
+        sqls.foreach(s => sncUser2.sql(s))
+
+        // revoke
+        reset()
+        exe("revoke", op)
+        sqls.foreach(s => assertFailure(() => {stmtUser2.execute(s)}, s))
+        sqls.foreach(s => assertFailure(() => {sncUser2.sql(s)}, s))
+      }
+
+      verifyGrantRevoke("select", List(s"select * from $jdbcUser1.$embeddedColTab1",
+        s"select * from $jdbcUser1.$embeddedRowTab1"))
+      verifyGrantRevoke("insert",
+        List(s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
+          s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)"))
+      // No update on column tables
+      verifyGrantRevoke("update", List(s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = " +
+          s"'$value by $jdbcUser2' where col1 < 0"))
+      // No delete on column tables
+      verifyGrantRevoke("delete", List(s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"))
+
+      // SNAPPY_HIVE_METASTORE should not be modifiable by users.
+      val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
+      assertFailure(() => {stmtUser1.execute(sql)}, sql)
+    } finally {
+      sncUser2.sparkContext.stop()
+      stmtUser1.close()
+      stmtUser2.close()
+      connUser1.close()
+      connUser2.close()
+    }
   }
 
+  // Attempt to get a snappysession or connection with invalid credentials should fail.
   def _testWithInvalidCredentials(): Unit = {
+    val props = new Properties()
+
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+
+    def attemptConn(p: String, s: String): Unit = {
+      props.setProperty(p, s)
+      try {
+        SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+        assert(false, s"JDBC conn should have failed with $p: $s")
+      } catch {
+        case e: Throwable =>
+      }
+      try {
+        testObject.getSnappyContextForConnector(locatorClientPort, props)
+        assert(false, s"Smart conn should have failed with $p: $s")
+      } catch {
+        case e: Throwable =>
+      }
+    }
+
+    List("invalid_password", "").foreach(e => attemptConn(Attribute.PASSWORD_ATTR, e))
+    props.setProperty(Attribute.PASSWORD_ATTR, adminUser1)
+    List("invalid_user", "").foreach(e => attemptConn(Attribute.USERNAME_ATTR, e))
   }
 
+  // Create tables with different flavours of sql
+  //
+  // Use APIs to perform DDLs and DMLs from smart side.
+  // create, drop, alter tables; select, insert, update, delete rows
   def _testAPIsWithValidCredentials(): Unit = {
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+
+    val sns = testObject.getSnappyContextForConnector(locatorClientPort, props).snappySession
+
+    sns.createTable(smartColTab1, "column", "id int, name string", Map("COLUMN_BATCH_SIZE"
+        -> "50"), false)
+
+//    sns.insert(smartColTab1, ...)
+//    sns.put(smartColTab1, ...)
+//    sns.update(smartColTab1, ...)
+//    sns.delete(smartColTab1, ...)
+//    sns.createIndex(smartColTab1, ...)
+//    sns.dropIndex(smartColTab1, ...)
+//    sns.dropTable(smartColTab1, ...)
   }
 
-  def _testAPIsWithInvalidCredentials(): Unit = {
+  def _testUDFAndProcs(): Unit = {
   }
 
   def _testConcurrentUsers(): Unit = {
