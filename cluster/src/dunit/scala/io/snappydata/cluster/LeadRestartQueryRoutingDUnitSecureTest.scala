@@ -22,15 +22,16 @@ import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQL
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 
-object QueryRoutingDUnitSecureTest{
-  val adminUser: String = "gemfire10"
+object LeadRestartQueryRoutingDUnitSecureTest{
+  val adminUser: String = "gemfire5"
 }
 
-class QueryRoutingDUnitSecureTest(val s: String)
+class LeadRestartQueryRoutingDUnitSecureTest(val s: String)
     extends ClusterManagerLDAPTestBase(s,
-      QueryRoutingDUnitSecureTest.adminUser) with Logging {
+      LeadRestartQueryRoutingDUnitSecureTest.adminUser) with Logging {
 
   override def setUp(): Unit = {
     super.setUp()
@@ -158,7 +159,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       val stmt_i = stmt_rs.getInt(1)
       val stmt_j = stmt_rs.getInt(2)
       val stmt_s = stmt_rs.getString(3)
-      if (index % 100 == 0) {
+      if (index % 10 == 0) {
         builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
       }
     }
@@ -166,7 +167,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:off println
     println(builder.toString())
     // scalastyle:on println
-    assert(index == 4000)
+    assert(index == 400)
   }
 
   def verifyQuery2(qryTest: String, stmt_rs: ResultSet): Unit = {
@@ -178,7 +179,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
       val stmt_i = stmt_rs.getInt(1)
       val stmt_j = stmt_rs.getInt(2)
       val stmt_s = stmt_rs.getString(3)
-      if (index % 10 == 0) {
+      if (index % 5 == 0) {
         builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
       }
     }
@@ -186,7 +187,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:off println
     println(builder.toString())
     // scalastyle:on println
-    assert(index == 400)
+    assert(index == 40)
   }
 
   def query1(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
@@ -304,22 +305,39 @@ class QueryRoutingDUnitSecureTest(val s: String)
     createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     try {
-      insertRows1(2000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      insertRows1(200, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
-    insertRows1(2000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows1(200, serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     try {
-      insertRows2(2000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      insertRows2(200, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    insertRows2(2000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows2(200, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+
+    // (1 to 5).foreach(d => query())
+    try {
+      query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
+      case t: Throwable => throw t
+    }
+    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+
+    // stop spark
+    val sparkContext = SnappyContext.globalSparkContext
+    if(sparkContext != null) sparkContext.stop()
+    ClusterManagerTestBase.stopAny()
+
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
 
     // (1 to 5).foreach(d => query())
     try {
@@ -363,22 +381,39 @@ class QueryRoutingDUnitSecureTest(val s: String)
     createTable2(serverHostPort, tableName, jdbcUser3, jdbcUser3)
 
     try {
-      insertRows3(200, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
+      insertRows3(20, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
       case t: Throwable => throw t
     }
-    insertRows3(200, serverHostPort, tableName, jdbcUser3, jdbcUser3)
+    insertRows3(20, serverHostPort, tableName, jdbcUser3, jdbcUser3)
 
     try {
-      insertRows4(200, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
+      insertRows4(20, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    insertRows4(200, serverHostPort, tableName, jdbcUser3, jdbcUser3)
+    insertRows4(20, serverHostPort, tableName, jdbcUser3, jdbcUser3)
+
+    // (1 to 5).foreach(d => query())
+    try {
+      query2(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
+      case t: Throwable => throw t
+    }
+    query2(serverHostPort, tableName, jdbcUser3, jdbcUser3)
+
+    // stop spark
+    val sparkContext = SnappyContext.globalSparkContext
+    if(sparkContext != null) sparkContext.stop()
+    ClusterManagerTestBase.stopAny()
+
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
 
     // (1 to 5).foreach(d => query())
     try {
