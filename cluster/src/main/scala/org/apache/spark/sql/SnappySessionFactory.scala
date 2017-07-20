@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import com.typesafe.config.Config
+import io.snappydata.Constant
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
@@ -37,6 +38,7 @@ class SnappySessionFactory extends SparkContextFactory {
 
 object SnappySessionFactory {
 
+  val job_jar_path = "JOB_JAR_PATH"
   private[this] val snappySession =
     new SnappySession(LeadImpl.getInitializingSparkContext)
 
@@ -55,6 +57,10 @@ object SnappySessionFactory {
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
         SnappyUtils.getSnappyContextURLClassLoader(parent)
       }
+
+      override def addJobJar(jarPath : String): Unit = {
+        addContextObject[String](job_jar_path, jarPath)
+      }
     }
 }
 
@@ -70,12 +76,17 @@ trait SnappySQLJob extends SparkJobBase {
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    val snc = sc.asInstanceOf[SnappySession]
+    val snSession = sc.asInstanceOf[SnappySession]
+    val sparkContext = snSession.sparkContext
+    val jobJarPath = snSession.getContextObject[String](SnappySessionFactory.job_jar_path).get
     try {
-      runSnappyJob(snc, jobConfig)
+      sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, jobJarPath)
+      runSnappyJob(snSession, jobConfig)
     }
     finally {
-      SnappyUtils.removeJobJar(snc.sparkContext)
+      SnappyUtils.removeJobJar(sparkContext, jobJarPath)
+      snSession.removeContextObject(SnappySessionFactory.job_jar_path)
+      sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, null)
     }
   }
 

@@ -106,8 +106,22 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
     new File(jobFile).getName
   }
 
+  protected def getJobNameFromURL(url: URL): String = {
+    var jobFile = ""
+    val taskDeserializationProps = Executor.taskDeserializationProps.get()
+    if (null != taskDeserializationProps) {
+      val changeableJar = taskDeserializationProps.getProperty(io.snappydata.Constant
+          .CHANGEABLE_JAR_NAME, "")
+      if (!changeableJar.isEmpty) {
+        jobFile = url.getPath
+      }
+    }
+    new File(jobFile).getName
+  }
+
   override def addURL(url: URL): Unit = {
-    val jobName = getJobName
+    val jobName = getJobNameFromURL(url)
+    logInfo(s"Adding $url to snappy classloader with jobName = $jobName")
     if (jobName.isEmpty) {
       super.addURL(url)
     }
