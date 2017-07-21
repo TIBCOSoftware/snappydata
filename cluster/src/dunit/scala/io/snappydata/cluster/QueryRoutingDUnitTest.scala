@@ -54,7 +54,7 @@ class QueryRoutingDUnitTest(val s: String)
     super.tearDown2()
   }
 
-  def _testQueryRouting(): Unit = {
+  def testQueryRouting(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -251,7 +251,6 @@ class QueryRoutingDUnitTest(val s: String)
     assert(rs.next())
     assert(rs.getInt(1) == 1)
 
-
     // Unit test for DSID function
     val membersList = mutable.MutableList[String]()
     val members: java.util.Set[DistributedMember] = GemFireXDUtils.
@@ -273,7 +272,6 @@ class QueryRoutingDUnitTest(val s: String)
       assert(membersList.contains(rs.getString(1)))
     } while (rs.next())
 
-
     // truncate tables
     conn1.createStatement().executeUpdate(s" truncate table $columnTable")
     conn1.createStatement().executeUpdate(s" truncate table $rowTable")
@@ -294,8 +292,6 @@ class QueryRoutingDUnitTest(val s: String)
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$rowTable")
     assert(rs.next())
     assert(rs.getInt(1) == 0)
-
-
 
     // drop all tables
     conn1.createStatement().executeUpdate(s" drop table $columnTable")
