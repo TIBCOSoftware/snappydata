@@ -24,6 +24,7 @@ import java.util.{Timer, TimerTask}
 
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.{CancelException, DataSerializer}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 import org.apache.spark.SparkContext
@@ -37,8 +38,16 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   private var getStatsStmt: CallableStatement = null
   private var _url: String = null
 
-  def initializeConnection(): Unit = {
-    val jdbcOptions = new JDBCOptions(_url + ";route-query=false;", "",
+  def initializeConnection(sc: SparkContext = null): Unit = {
+    var securePart = ""
+    if (sc != null) {
+      val user = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
+      if (!user.isEmpty) {
+        val pass = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, "")
+        securePart = s";user=$user;password=$pass"
+      }
+    }
+    val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",
       Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     getStatsStmt = conn.prepareCall("call sys.GET_SNAPPY_TABLE_STATS(?)")
@@ -52,7 +61,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
   def start(sc: SparkContext, url: String): Unit = {
     _url = url
-    initializeConnection()
+    initializeConnection(sc)
     val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
         "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
     doRun = true

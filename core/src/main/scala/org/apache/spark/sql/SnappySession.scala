@@ -19,6 +19,8 @@
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.language.implicitConversions
+
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -26,6 +28,7 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{functions => snappydataFunctions, Constant, Property, SnappyTableStatsProviderService}
