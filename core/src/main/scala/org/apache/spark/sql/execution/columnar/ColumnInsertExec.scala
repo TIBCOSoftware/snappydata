@@ -62,7 +62,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   @transient private var storeColumnBatch: String = _
   @transient private var beginSnapshotTx: String = _
   @transient private var commitSnapshotTx: String = _
+  @transient private var txIdConnArray: String = _
   @transient private var txId: String = _
+  @transient private var conn: String = _
   @transient private var rollbackSnapshotTx: String = _
   @transient private var storeColumnBatchArgs: String = _
   @transient private var initEncoders: String = _
@@ -156,7 +158,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
+    txIdConnArray = ctx.freshName("txIdConnArray")
     txId = ctx.freshName("txId")
+    conn = ctx.freshName("conn")
     val batchSizeDeclaration = if (true) {
       ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
       ""
@@ -226,7 +230,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
     s"""
        |$checkEnd; // already done
-       |String $txId = $beginSnapshotTx();
+       |final Object[] $txIdConnArray = $beginSnapshotTx();
        |boolean success = false;
        |try {
        |$batchSizeDeclaration
@@ -244,7 +248,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  $childProduce
        |}
        |if ($batchSizeTerm > 0) {
-       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs);
+       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |  $batchSizeTerm = 0;
        |}
        |$closeForNoContext
@@ -254,11 +258,11 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |success = true;
        |}
        |finally {
-       |if ($txId != null) {
+       |if ($txIdConnArray[1] != null) {
        |  if(success)
-       |    $commitSnapshotTx($txId);
+       |    $commitSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |  else
-       |    $rollbackSnapshotTx($txId);
+       |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |}
        |}
     """.stripMargin
@@ -281,7 +285,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
+    txIdConnArray = ctx.freshName("txIdConnArray")
     txId = ctx.freshName("txId")
+    conn = ctx.freshName("conn")
     val batchSizeDeclaration = if (useMemberVariables) {
       ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
       ""
@@ -341,7 +347,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
     s"""
        |$checkEnd; // already done
-       |String $txId  = $beginSnapshotTx();
+       |final Object[] $txIdConnArray  = $beginSnapshotTx();
        |boolean success = false;
        |try {
        |$batchSizeDeclaration
@@ -362,7 +368,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |}
        |if ($batchSizeTerm > 0) {
        |  $cursorsArrayCreate
-       |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
+       |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |  $batchSizeTerm = 0;
        |}
        |$closeForNoContext
@@ -372,11 +378,11 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |success = true;
        |}
        |finally {
-       |if ($txId != null) {
+       |if ($txIdConnArray[1] != null) {
        |  if(success)
-       |    $commitSnapshotTx($txId);
+       |    $commitSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |  else
-       |    $rollbackSnapshotTx($txId);
+       |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |}
        |}
     """.stripMargin
@@ -615,7 +621,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(storeColumnBatch,
       s"""
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
-         |    int $batchSizeTerm, long[] $cursorArrayTerm) {
+         |    int $batchSizeTerm, long[] $cursorArrayTerm, scala.Option $conn) {
          |  // create statistics row
          |  $statsSplitCode
          |  ${statsEv.code.trim}
@@ -626,29 +632,29 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes());
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm);
+         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
     beginSnapshotTx = ctx.freshName("beginSnapshotTx")
     ctx.addNewFunction(beginSnapshotTx,
       s"""
-         |private final String $beginSnapshotTx() {
+         |private final Object[] $beginSnapshotTx() {
          |  return $externalStoreTerm.beginTx();
          |}
       """.stripMargin)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
-         |private final void $commitSnapshotTx(String $txId) {
-         |  $externalStoreTerm.commitTx($txId);
+         |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
+         |  $externalStoreTerm.commitTx($txId, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
     ctx.addNewFunction(rollbackSnapshotTx,
       s"""
-         |private final void $rollbackSnapshotTx(String $txId) {
-         |  $externalStoreTerm.rollbackTx($txId);
+         |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
+         |  $externalStoreTerm.rollbackTx($txId, $conn);
          |}
       """.stripMargin)
     // no shouldStop check required
@@ -674,7 +680,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  long $sizeTerm = 0L;
        |  $calculateSize
        |  if ($sizeTerm >= $columnBatchSize) {
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs);
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }
@@ -761,7 +767,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(storeColumnBatch,
       s"""
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
-         |    int $batchSizeTerm, ${batchFunctionDeclarations.toString()}) {
+         |    int $batchSizeTerm, ${batchFunctionDeclarations.toString()}, scala.Some $conn) {
          |  $encoderCursorDeclarations
          |  // create statistics row
          |  ${statsCode.mkString("\n")}
@@ -773,29 +779,29 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes());
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm);
+         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
     beginSnapshotTx = ctx.freshName("beginSnapshotTx")
     ctx.addNewFunction(beginSnapshotTx,
       s"""
-         |private final String $beginSnapshotTx() {
+         |private final Object[] $beginSnapshotTx() {
          |  return $externalStoreTerm.beginTx();
          |}
       """.stripMargin)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
-         |private final void $commitSnapshotTx(String $txId) {
-         |  $externalStoreTerm.commitTx($txId);
+         |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
+         |  $externalStoreTerm.commitTx($txId, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
     ctx.addNewFunction(rollbackSnapshotTx,
       s"""
-         |private final void $rollbackSnapshotTx(String $txId) {
-         |  $externalStoreTerm.rollbackTx($txId);
+         |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
+         |  $externalStoreTerm.rollbackTx($txId, $conn);
          |}
       """.stripMargin)
     // no shouldStop check required
@@ -817,7 +823,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  ${calculateSize.toString()}
        |  if ($sizeTerm >= $columnBatchSize) {
        |    $cursorsArrayCreate
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs);
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }
