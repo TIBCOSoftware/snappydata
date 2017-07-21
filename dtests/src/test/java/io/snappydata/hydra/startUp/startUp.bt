@@ -3,10 +3,10 @@ io/snappydata/hydra/startUp/nwTestWithServerHA_clusterRestart.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column","PartitionedRow","ReplicatedRow","Colocated"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -15,10 +15,10 @@ io/snappydata/hydra/startUp/nwTestWithLeadHA_clusterRestart.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column","PartitionedRow","ReplicatedRow","Colocated"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -27,10 +27,10 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterR
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -39,10 +39,10 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -51,10 +51,10 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterR
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -63,10 +63,10 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -75,10 +75,10 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpDuringLocatorHA
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -87,10 +87,10 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterLocatorSto
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -99,10 +99,10 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterAllLocator
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -111,10 +111,10 @@ io/snappydata/hydra/startUp/executeAndVerifyOpsAfterAllLocatorsStopAndClusterRes
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -124,10 +124,10 @@ io/snappydata/hydra/startUp/nwTestWithServerHAWithRebalance_clusterRestart.conf
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   E=newStore newStoreHosts=1 newStoreVMsPerHost=1 newStoreThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -137,10 +137,10 @@ io/snappydata/hydra/startUp/nwTestWithOpsDuringServerHA_clusterRestart.conf
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   E=newStore newStoreHosts=1 newStoreVMsPerHost=1 newStoreThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -150,9 +150,9 @@ io/snappydata/hydra/startUp/nwTestWithNewServerRebalance_clusterRestart.conf
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   E=newStore newStoreHosts=1 newStoreVMsPerHost=1 newStoreThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
   tableType="Column"
   numVMsToStop=1
-  numRowsValidation = true
+  numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = false
