@@ -186,14 +186,8 @@ class SnappySession(@transient private val sc: SparkContext,
         // object in SnappyStoreHiveCatalog.cachedDataSourceTables
         SnappyContext.getClusterMode(sparkContext) match {
           case ThinClientConnectorMode(_, _) =>
-            val plan = sessionState.sqlParser.parsePlan(sqlText)
-            var tables: Seq[TableIdentifier] = Seq()
-            plan.foreach {
-              case UnresolvedRelation(table, _) => tables = tables.+:(table)
-              case _ =>
-            }
-            tables.foreach(sessionCatalog.refreshTable)
-            Dataset.ofRows(snappyContext.sparkSession, plan)
+            sessionCatalog.invalidateAll()
+            throw e
           case _ =>
             throw e
         }
