@@ -31,6 +31,8 @@ The following topics are covered in this section:
 
 * [How to Load Data in SnappyData Tables](#howto-load)
 
+* [How to Load Data from External Sources](#howto-external-source)
+
 * [How to Perform a Colocated Join](#howto-collacatedJoin)
 
 * [How to Connect using JDBC Driver](#howto-jdbc)
@@ -564,11 +566,16 @@ In the code snippet below a schema is inferred from a CSV file. Column names are
 
 The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). Source for the code to load data from a JSON file can be found in [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
-<a id="howto-external"></a>
+<a id="howto-external-source"></a>
 ## How to Load Data from External Sources
 
-### Loading CSV data from HDFS using API
+!!! Note
+	When creating external tables like CSV or Parquet from SnappyData Smart Connector mode, always use the full path of the CSV or Parquet file that is accessible to the connector, SnappyData leaders, and servers.
+    This is required as the path needs to be resolved into an absolute path both in the Connector and SnappyData server, as the relative location of a file will not work.
 
+### Loading CSV Files from HDFS using API
+
+The example below demonstrates how you can read CSV files from HDFS using an API:
 ```
 %snappydata
 val dataDF=snc.read.option("header","true").csv ("hdfs://localhost:9000/example/data/police_incidents/Police_Department_Incidents.csv")
@@ -589,8 +596,9 @@ res12: org.apache.spark.sql.DataFrame = []
 res13: org.apache.spark.sql.DataFrame = [INCIDNTNUM: string, CATEGORY: string ... 11 more fields]
 ```
 
-### Loading CSV data from HDFS with Data transformation and cleanup
+### Loading and Enriching CSV Data from HDFS using APIs
 
+The example below demonstrates how you can load and enrich CSV Data from HDFS
 ```
 %snappydata
 val dataDF=snc.read.option("header","true").csv ("hdfs://localhost:9000/example/data/police_incidents/Police_Department_Incidents.csv")
@@ -606,12 +614,63 @@ dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y
 //Here X and Y are latitude and longitude columns in raw dataframe
 ```
 
+### Connecting to SQL Database and Importing Data using JDBC 
+
+Before you begin, users need to install the corresponding JDBC driver:
+To install the JDBC Driver of the requested database in SnappyData, run the `install-jar` utility as follows:
+
 ```
-dataDF: org.apache.spark.sql.DataFrame = [IncidntNum: string, Category: string ... 11 more fields]
-res51: org.apache.spark.sql.DataFrame = []
-res52: org.apache.spark.sql.DataFrame = []
-import snc.implicits._
+./snappy install-jar -file=/home/user/.m2/repository/mysql/mysql-connector-java/5.1.38/mysql-connector-java-5.1.38.jar -name=app
 ```
+The example below demonstrates how connect to any SQL database using JDBC:
+
+1. Verify and load the SQL Driver:
+
+	    Class.forName("com.mysql.jdbc.Driver")
+    
+2. Build the parameters into a JDBC URL to pass into the DataFrame APIs:
+
+        import java.util.Properties
+        val jdbcUsername = "USER_NAME"
+        val jdbcPassword = "PASSWORD"
+        val jdbcHostname = "HOSTNAME"
+        val jdbcPort = 3306
+        val jdbcDatabase ="DATABASE"
+        val jdbcUrl = s"jdbc:mysql://${jdbcHostname}:${jdbcPort}/${jdbcDatabase}?user=${jdbcUsername}&password=${jdbcPassword}&relaxAutoCommit=true"
+
+3.  Create a Properties() object to hold the parameters. You can create the JDBC URL without passing the user/password parameters directly:
+
+        val connectionProperties = new Properties()
+        connectionProperties.put("user", "USERNAME")
+        connectionProperties.put("password", "PASSWORD")
+
+4. Create and load a column table with the same schema as that of source table:
+
+        val connection = DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword)
+        connection.isClosed()
+        val md:DatabaseMetaData = connection.getMetaData();
+        val rs:ResultSet = md.getTables(null, null, "%", null);
+        while (rs.next()) {
+
+           val tableName=rs.getString(3)
+           val df=snc.read.jdbc(jdbcUrl, tableName, connectionProperties)
+           df.printSchema
+           df.show()
+           // Create and load a column table with same schema as that of source table 
+           df.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
+        }
+
+5. Create external table on RDBMS table and query it directly from SnappyData as described below:
+
+        snc.sql("drop table if exists external_table")
+        snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')")
+        snc.sql("select * from external_table").show
+
+        //snc.sql("CREATE TABLE oracle_table USING org.apache.spark.sql.jdbc OPTIONS (dbtable 'table_name', driver 'oracle.jdbc.driver.OracleDriver',  user 'USERNAME',  password 'PASSWORD',  url 'jdbc:oracle:thin://@<hostname>:1521/<db>')
+
+### Loading Data from NoSQL store (Cassandra)
+		%snappydata
+        snc.sql(s"CREATE  external TABLE oracle_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')").show
 
 <a id="howto-collacatedJoin"></a>
 ## How to Perform a Colocated Join

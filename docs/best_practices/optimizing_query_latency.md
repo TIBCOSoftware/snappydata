@@ -89,3 +89,28 @@ For example, using `LRUHEAPPERCENT` criteria allows table data to be either evic
 For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.
 
 Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure [OVERFLOW](../reference/sql_reference/create-table.md#overflow) and [EVICTION_BY](../reference/sql_reference/create-table.md#eviction-by) clauses.
+
+## Change NOT IN queries to use NOT EXISTS if possible
+
+Currently, all `NOT IN` queries use an unoptimized plan and lead to a nested-loop-join which can take long if both sides are large ([https://issues.apache.org/jira/browse/SPARK-16951](https://issues.apache.org/jira/browse/SPARK-16951)). Change your queries to use `NOT EXISTS` which uses an optimized anti-join plan. 
+
+For example a query like:
+
+```
+select count(*) from T1 where id not in (select id from T2)
+```
+
+can be changed to:
+
+``` 
+select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
+```
+
+Be aware of the different null value semantics of the two operators as noted here for [Spark](https://databricks-prod-cloudfront.cloud.databricks.com/public/4027ec902e239c93eaaa8714f173bcfc/2728434780191932/1483312212640900/6987336228780374/latest.html).
+
+In a nutshell, the `NOT IN` operator is null-aware and skips the row if the sub-query has a null value, while the `NOT EXISTS` operator ignores the null values in the sub-query. In other words, the following two are equivalent when dealing with null values:
+
+```
+select count(*) from T1 where id not in (select id from T2 where id is not null)
+select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
+```

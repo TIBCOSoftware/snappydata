@@ -166,7 +166,11 @@ See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/
 SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SQLContext per incoming SQL connection. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.
 
 ### Submitting Jobs
-The following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala). This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its `runJob` method. 
+The following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala). This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its `runJob` method.
+
+!!! Note:
+	When submitting concurrent jobs user must ensure that the `--app-name` parameter is different for each concurrent job. If two applications with the same name are submitted concurrently, the job fails and an error is reported, as the job server maintains a map of the application names and jar files used for that application.
+    
 The program is compiled into a jar file (**quickstart.jar**) and submitted to jobs server as shown below.
 
 ```bash
@@ -230,7 +234,7 @@ Python users can submit a Python application using `spark-submit` in the SnappyD
 bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
-    --conf spark.ui.port=4042 $SNAPPY_HOME/quickstart/python/AirlineDataPythonApp.py
+    --conf spark.ui.port=4042 /quickstart/python/CreateTable.py
 ```
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
 
@@ -685,7 +689,10 @@ snsc.sql("select count(*) from streamingExample").show()
 ### Row and Column Tables
 Column tables organize and manage data in memory in compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
+![Column Table](Images/column_table.png)
+
 Row tables, unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location is determined by a hash function and hence is fast for point lookups or updates.
+![Column Table](Images/row_table.png)
 
 Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 

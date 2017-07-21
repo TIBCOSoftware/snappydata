@@ -36,6 +36,7 @@ pages:
 #        - 'Table Memory Requirements' : 'best_practices/setting_up_cluster/table_memory_req.md'
 #        - 'JVM Settings for SnappyData Smart Connector mode and Local mode' : 'best_practices/setting_up_cluster/jvm_setting.md'
     - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
+    - 'Memory Management': 'best_practices/memory_management.md'      
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
 #    - 'Optimizing Query Latency: Partitioning and Replication Strategies':    
 #        - 'Using Column vs Row Table' : 'best_practices/design_schema/column_vs_row_table.md'
@@ -55,6 +56,7 @@ pages:
 - 'Reference Guides': 
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
+        - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
         - 'CREATE Statements': 'reference/sql_reference/create-statements.md'
         - 'CREATE Statements':
             - 'CREATE DISKSTORE': 'reference/sql_reference/create-diskstore.md'
@@ -79,13 +81,14 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
-    - 'Built-in System Procedures': 'reference/inbuilt_system_procedures/system-procedures.md'
-    - 'Built-in System Procedures': 
+    - 'Built-in System Procedures and Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
+    - 'Built-in System Procedures and Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
 #        - 'SET_EVICTION_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_eviction_heap_percentage.md'
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
+        - 'DSDI': 'reference/inbuilt_system_procedures/dsdi.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
@@ -159,6 +162,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
+    - 'Supported Data Types': 'reference/misc/supported-datatypes.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - Additional Information: additional_docs.md
 #- About:
