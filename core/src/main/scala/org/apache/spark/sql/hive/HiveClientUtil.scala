@@ -18,7 +18,10 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
+import java.util.Properties
+import java.util.logging.{Level, Logger}
 
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR
 
 import scala.collection.JavaConverters._
@@ -27,6 +30,7 @@ import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.hadoop.util.VersionInfo
+import org.apache.log4j.LogManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
@@ -121,11 +125,38 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
    * meta-store that is configured in the hive-site.xml file.
    */
   @transient
-  protected[sql] var client: HiveClient = newClient()
+  protected[sql] var client: HiveClient = newClientWithLogSetting()
 
 
   def closeCurrent(): Unit = {
     Hive.closeCurrent()
+  }
+
+  private def newClientWithLogSetting(): HiveClient = {
+    val currentLevel = ClientSharedUtils.converToJavaLogLevel(LogManager.getRootLogger.getLevel)
+    try {
+      ifSmartConn(() => {
+        val props = new Properties()
+        props.setProperty("log4j.logger.DataNucleus.Datastore", "ERROR")
+        props.setProperty("log4j.logger.DataNucleus.Query", "ERROR")
+        ClientSharedUtils.initLog4J(null, props, currentLevel)
+      })
+      val hc = newClient()
+      // Perform some action to hit other paths that could throw warning messages.
+      ifSmartConn(() => {hc.getTableOption(Misc.SNAPPY_HIVE_METASTORE, "DBS")})
+      hc
+    } finally { // reset log config
+      ifSmartConn(() => {
+        ClientSharedUtils.initLog4J(null, currentLevel)
+      })
+    }
+  }
+
+  private def ifSmartConn(func: () => Unit): Unit = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case ThinClientConnectorMode(_, _) => func()
+      case _ =>
+    }
   }
 
   private def newClient(): HiveClient = synchronized {
