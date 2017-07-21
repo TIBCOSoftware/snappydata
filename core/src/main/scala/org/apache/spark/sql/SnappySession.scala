@@ -28,7 +28,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
-  import io.snappydata.{functions => snappydataFunctions, Constant,SnappyTableStatsProviderService}
+import io.snappydata.{functions => snappydataFunctions, Constant, Property, SnappyTableStatsProviderService}
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -186,14 +186,8 @@ class SnappySession(@transient private val sc: SparkContext,
         // object in SnappyStoreHiveCatalog.cachedDataSourceTables
         SnappyContext.getClusterMode(sparkContext) match {
           case ThinClientConnectorMode(_, _) =>
-            val plan = sessionState.sqlParser.parsePlan(sqlText)
-            var tables: Seq[TableIdentifier] = Seq()
-            plan.foreach {
-              case UnresolvedRelation(table, _) => tables = tables.+:(table)
-              case _ =>
-            }
-            tables.foreach(sessionCatalog.refreshTable)
-            Dataset.ofRows(snappyContext.sparkSession, plan)
+            sessionCatalog.invalidateAll()
+            throw e
           case _ =>
             throw e
         }
@@ -1688,6 +1682,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     sessionState.setPreparedQuery(preparePhase, paramSet)
+
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -1882,7 +1877,7 @@ object SnappySession extends Logging {
     cdf
   }
 
-  private[this] val planCache = {
+  private[this] lazy val planCache = {
     val loader = new CacheLoader[CachedKey, CachedDataFrame] {
       override def load(key: CachedKey): CachedDataFrame = {
         val session = key.session
@@ -1896,7 +1891,11 @@ object SnappySession extends Logging {
         evaluatePlan(df, session, key.sqlText, key)
       }
     }
-    CacheBuilder.newBuilder().maximumSize(300).build(loader)
+    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
+      case Some(size) => size.toInt
+      case None =>  Property.PlanCacheSize.defaultValue.get
+    }
+    CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
 
   def getPlanCache: LoadingCache[CachedKey, CachedDataFrame] = planCache

@@ -18,7 +18,7 @@ package org.apache.spark.sql
 
 import java.nio.ByteBuffer
 import java.sql.SQLException
-
+import io.snappydata.Property
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -26,7 +26,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
@@ -35,7 +34,6 @@ import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.MemoryConsumer
@@ -126,6 +124,19 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     clearPartitions(children)
   }
 
+  private def setPoolForExecution : Unit = {
+    var pool = sparkSession.asInstanceOf[SnappySession].
+      sessionState.conf.activeSchedulerPool
+
+    // Check if it is pruned query, execute it automatically on the low latency pool
+    if ((cachedRDD ne null) && cachedRDD.getNumPartitions <= 2 /* some small number */ &&
+      shuffleDependencies.length == 0 && pool == "default") {
+      if (sparkSession.sparkContext.getAllPools.exists(_.name.equals("lowlatency"))) {
+        pool = "lowlatency"
+      }
+    }
+    sparkSession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+  }
 
   /**
    * Wrap a Dataset action to track the QueryExecution and time cost,
@@ -133,6 +144,10 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
    */
   private def withCallback[U](name: String)(action: DataFrame => U) = {
     try {
+      setPoolForExecution
+      // This is needed for cases when collect is called twice on the same DF.
+      // The getPlan won't be called and hence the wait has to be done here.
+      waitForLastShuffleCleanup
       queryExecution.executedPlan.foreach { plan =>
         plan.resetMetrics()
       }

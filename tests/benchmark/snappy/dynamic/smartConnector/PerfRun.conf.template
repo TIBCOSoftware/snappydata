@@ -11,29 +11,70 @@ queries="1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21"
 #sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
 sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g"
 
+leadProperties="-heap-size=2g -conserve-sockets=false"
+
+locatorProperties="-conserve-sockets=false"
+
+serverProperties="-heap-size=3g -memory-size=3g -conserve-sockets=false"
+
+#Machine Setup
+master=pnq-kbachhav
+slave=(pnq-kbachhav)
+
+locator=pnq-kbachhav
+leads=pnq-kbachhav
+servers=(pnq-kbachhav)
+
+#Log Directories
+locatorDir=/home/kishor/SNAPPY/OUTPUT/TPCH/locator
+leadDir=/home/kishor/SNAPPY/OUTPUT/TPCH/lead
+serverDir=/home/kishor/SNAPPY/OUTPUT/TPCH/server
+
+
 #Spark Sql properties are specified while executing query
 #spark.sql.shuffle.partitions=${shufflePartitions},spark.sql.inMemoryColumnarStorage.compressed=${inMemoryColumnarStorageCompressed}
 #spark.sql.inMemoryColumnarStorage.compressed=false
 sparkSqlProperties="\"\""
 
 #location of checkout
-SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
+#SPARK_HOME=/home/kishor/SNAPPY/CHECKOUT/spark-2.1.1-bin-hadoop2.7
+SPARK_HOME=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
+SNAPPY_HOME=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
 #SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata-0.7-bin
 
+#Whether to repartition dataframe
+rePartition=false
+
+#number of buckets for order and lineitem tables
+buckets_Order_Lineitem=5
+
+#number of buckets for Customer, Part and PartSupplier tables
+buckets_Cust_Part_PartSupp=5
+
+#Are Nation, Region, Supplier tables column tables?
+IsSupplierColumnTable=false
+
+#number of buckets for Nation, Region, Supplier
+buckets_Supplier=5
+
+#Redundancy Level
+Redundancy=1
+
+#Whether region is persistent
+Persistence=true
+
+#Type of Persistence
+Persistence_Type=SYNCHRONOUS
+
 #Loading from parquet or csv file
-Parquet=true
+Parquet=false
 
 #From how many files data should be loaded in table
 #NumberOfLoadStages=10
 NumberOfLoadStages=1
 
-#Machine Setup
-master=pnq-kbachhav
-slaves=(pnq-kbachhav)
-client=pnq-kbachhav
-
 #represent whether query should use dynamic paramters or static
-IsDynamic=false
+IsDynamic=true
 
 #Whether to collect results.For performance testing this should be false.
 ResultCollection=true
@@ -44,11 +85,11 @@ WarmupRuns=2
 AverageRuns=3
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.8-tests.jar
+TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.9-tests.jar
 
 #Size of the TPCH data. Do not chage format
-#dataSize=1GB_Stages
-dataSize=1GB
+dataSize=1GB_Stages
+#dataSize=1GB
 
 #Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
 dataDir=/home/kishor/SNAPPY/DATA/TPCH/$dataSize
