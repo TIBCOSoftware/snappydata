@@ -28,6 +28,8 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
 
+import scala.util.control.Breaks._
+
 trait TableStatsProviderService extends Logging {
 
   @volatile
@@ -62,8 +64,11 @@ trait TableStatsProviderService extends Logging {
           val (tableStats, indexStats) = getAggregatedStatsOnDemand
           tableSizeInfo = tableStats
           indexesInfo = indexStats // populating indexes stats
+
+          // Commenting this call to avoid periodic refresh of members stats
           // get members details
-          fillAggregatedMemberStatsOnDemand()
+          // fillAggregatedMemberStatsOnDemand()
+
         } finally {
           running = false
           notifyAll()
@@ -99,8 +104,56 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getMembersStatsOnDemand: mutable.Map[String, mutable.Map[String, Any]] = {
-    fillAggregatedMemberStatsOnDemand()
-    membersInfo
+    // fillAggregatedMemberStatsOnDemand()
+    // membersInfo
+
+    var infoToBeReturned: mutable.Map[String, mutable.Map[String, Any]] =
+      TrieMap.empty[String, mutable.Map[String, Any]]
+    val prevMembersInfo = membersInfo.synchronized{membersInfo}
+    val waitTime:Int = 500;
+
+    val thread = new Thread(new Runnable() {
+      def run() {
+        // update membersInfo
+        fillAggregatedMemberStatsOnDemand()
+      }
+    });
+    thread.start();
+
+    val endTimeMillis = System.currentTimeMillis() + 5000;
+    if(thread.isAlive){
+      breakable {
+        while(thread.isAlive) {
+          if(System.currentTimeMillis() > endTimeMillis) {
+            logWarning("Obtaining updated Members Statistics is taking longer than expected time..")
+            // infoToBeReturned = prevMembersInfo
+            break
+          }
+          try {
+            // Wait
+            logInfo("Obtaining updated Members Statistics in progress.." +
+                "Waiting for " + waitTime + " ms")
+            Thread.sleep(waitTime)
+          } catch {
+            case e: InterruptedException => logWarning("InterruptedException", e)
+          }
+        }
+      }
+
+      if(thread.getState.equals(Thread.State.TERMINATED)){
+        // Thread is terminated so assigning updated member info
+        infoToBeReturned = membersInfo
+      } else {
+        // Thread is still running so assigning last updated member info
+        logWarning("Setting last updated member statistics snapshot..")
+        infoToBeReturned = prevMembersInfo
+      }
+    } else {
+      // Thread is terminated so assigning updated member info
+      infoToBeReturned = membersInfo
+    }
+
+    infoToBeReturned
   }
 
   def stop(): Unit = {
