@@ -59,6 +59,7 @@ case class JDBCMutableRelation(
     with DeletableRelation
     with DestroyRelation
     with IndexableRelation
+    with AlterableRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -366,6 +367,38 @@ case class JDBCMutableRelation(
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     throw new UnsupportedOperationException()
+  }
+
+  override def alterTable(tableIdent: QualifiedTableName,
+                          isAddColumn: Boolean, column: StructField): Unit = {
+    val conn = connFactory()
+    try {
+      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
+        conn, dialect, sqlContext)
+      val sql = isAddColumn match {
+        case true => s"alter table ${table} add column" +
+          s" ${column.name} ${column.dataType.simpleString}"
+        case false => s"alter table ${table} drop column ${column.name}"
+      }
+
+      if (tableExists) {
+        JdbcExtendedUtils.executeUpdate(sql, conn)
+      } else {
+        throw new AnalysisException(s"table $table does not exist.")
+      }
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+            "Ensure that the 'driver' option is set appropriately and " +
+            "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw se
+        }
+    } finally {
+      conn.commit()
+      conn.close()
+    }
   }
 }
 

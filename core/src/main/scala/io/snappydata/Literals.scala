@@ -85,6 +85,10 @@ object Constant {
 
   final val SHADOW_SCHEMA_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_SEPARATOR
 
+  final val SHADOW_SCHEMA_NAME_WITH_PREFIX = "." + SHADOW_SCHEMA_NAME
+
+  final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR = SHADOW_SCHEMA_NAME + SHADOW_SCHEMA_SEPARATOR
+
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
   val ENABLE_ZEPPELIN_INTERPRETER = "zeppelin.interpreter.enable"
@@ -193,6 +197,9 @@ object Property extends Enumeration {
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
+  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
+    s"Number of query plans that will be cached.", Some(3000))
+
   val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is " +
@@ -234,6 +241,12 @@ object Property extends Enumeration {
     "SQLConf property that enables snappydata experimental features like distributed index " +
         "optimizer choice during query planning. Default is turned off.",
     Some(false), Constant.SPARK_PREFIX)
+
+  val SchedulerPool = SQLVal[String](
+    s"${Constant.PROPERTY_PREFIX}scheduler.pool",
+    "Property to set the scheduler pool for the current session. This property can " +
+      "be used to assign queries to different pools for improving " +
+      "throughput of specific queries.", Some("default"))
 
   val FlushReservoirThreshold = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
     "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +
