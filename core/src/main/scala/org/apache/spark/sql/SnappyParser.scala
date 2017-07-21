@@ -692,7 +692,7 @@ class SnappyParser(session: SnappySession)
                       // all args          // all odd args
                       (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
                       // all even args
-                      (args.head == -2 && (index & 0x2) == 1) =>
+                      (args.head == -2 && (index & 0x1) == 0) =>
                     removeParamLiteralFromContext(pl)
                     Literal.create(pl.value, pl.dataType)
                   case (ex: Expression, index) => ex
@@ -734,7 +734,7 @@ class SnappyParser(session: SnappySession)
                   // all args          // all odd args
                   (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
                   // all even args
-                  (args.head == -2 && (index & 0x2) == 1) =>
+                  (args.head == -2 && (index & 0x1) == 0) =>
                 removeParamLiteralFromContext(pl)
                 Literal.create(pl.value, pl.dataType)
               case (ex: Expression, index) => ex

@@ -159,14 +159,25 @@ class TokenizationTest
 
     // Unix timestamp
     val df = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01 12:00:00') > a")
-    var found = false
+    var foundCount = 0
     df.queryExecution.logical.transformAllExpressions {
       case pl @ ParamLiteral(_, _, _) => {
-        found = true
+        foundCount += 1
         pl
       }
     }
-    assert(!found, "did not expect ParamLiteral in logical plan")
+    assert(foundCount == 1, "did not expect num ParamLiteral other than 1")
+
+    val df2 = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01', 'yyyy-mm-dd') > a")
+    foundCount = 0
+    df2.queryExecution.logical.transformAllExpressions {
+      case pl @ ParamLiteral(_, _, _) => {
+        foundCount += 1
+        pl
+      }
+    }
+    assert(foundCount == 1, "did not expect num ParamLiteral other than 1 in logical plan")
+
     cacheMap.clear()
     snc.sql("SELECT json_tuple('{\"f1\": \"value1\", \"f2\": \"value2\"}','f1')"
     ).collect().foreach(println)
