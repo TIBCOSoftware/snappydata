@@ -46,10 +46,10 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.unsafe.types.UTF8String
@@ -101,6 +101,18 @@ object Utils {
 
   def fieldName(f: StructField): String = {
     if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
+  }
+
+  def fieldIndex(relationOutput: Seq[Attribute], columnName: String,
+      caseSensitive: Boolean): Int = {
+    // lookup as per case-sensitivity (SNAP-1714)
+    val resolver = if (caseSensitive) analysis.caseSensitiveResolution
+    else analysis.caseInsensitiveResolution
+    LocalRelation(relationOutput).resolveQuoted(columnName, resolver) match {
+      case Some(a) => relationOutput.indexWhere(_.semanticEquals(a))
+      case None => throw new IllegalArgumentException(
+        s"""Field "$columnName" does not exist in "$relationOutput".""")
+    }
   }
 
   def getAllExecutorsMemoryStatus(

@@ -19,19 +19,22 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, DynamicReplacableConstant, SortDirection, SpecificInternalRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, DynamicReplacableConstant, Expression, SortDirection, SpecificInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.row.RowFormatScanRDD
+import org.apache.spark.sql.execution.row.{RowDeleteExec, RowFormatScanRDD, RowUpdateExec}
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources._
@@ -71,7 +74,8 @@ abstract class BaseColumnFormatRelation(
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
     with PartitionedDataSourceScan
-    with RowInsertableRelation {
+    with RowInsertableRelation
+    with UpdatableRelation {
 
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
@@ -225,16 +229,41 @@ abstract class BaseColumnFormatRelation(
     }
   }
 
-  override def getInsertPlan(relation: LogicalRelation,
-      child: SparkPlan): SparkPlan = {
+  private def partitionExpressions(relation: LogicalRelation) = {
     // use case-insensitive resolution since partitioning columns during
     // creation could be using the same as opposed to during insert
-    val partitionExpressions = partitionColumns.map(colName =>
+    partitionColumns.map(colName =>
       relation.resolveQuoted(colName, analysis.caseInsensitiveResolution)
           .getOrElse(throw new AnalysisException(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
-    new ColumnInsertExec(child, partitionColumns, partitionExpressions, this,
-      externalColumnTableName)
+  }
+
+  override def getInsertPlan(relation: LogicalRelation,
+      child: SparkPlan): SparkPlan = {
+    new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
+      this, externalColumnTableName)
+  }
+
+  /**
+   * Get a spark plan to update rows in the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
+      updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
+      keyColumns: Seq[Attribute]): SparkPlan = {
+    ColumnUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, schema, externalStore, Some(this), updateColumns, updateExpressions,
+      keyColumns, connProperties, onExecutor = false)
+  }
+
+  /**
+   * Get a spark plan to delete rows the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
+      keyColumns: Seq[Attribute]): SparkPlan = {
+    ColumnDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, schema, Some(this), keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -679,11 +708,8 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     Constant.SHADOW_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 
-  final def getTableName(columnBatchTableName: String): String = {
-    columnBatchTableName.substring(Constant.SHADOW_SCHEMA_NAME.length + 1,
-      columnBatchTableName.indexOf(Constant.SHADOW_TABLE_SUFFIX)).
-        replaceFirst(Constant.SHADOW_SCHEMA_SEPARATOR, ".")
-  }
+  final def getTableName(columnBatchTableName: String): String =
+    GemFireContainer.getRowBufferTableName(columnBatchTableName)
 
   final def isColumnTable(tableName: String): Boolean = {
     val r = tableName.startsWith(Constant.SHADOW_SCHEMA_NAME) &&

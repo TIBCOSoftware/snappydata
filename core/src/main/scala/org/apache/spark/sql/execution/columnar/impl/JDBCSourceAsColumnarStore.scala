@@ -21,7 +21,12 @@ import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
+import scala.annotation.meta.param
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 import scala.util.control.NonFatal
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
@@ -30,6 +35,7 @@ import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.catalyst.InternalRow
@@ -44,11 +50,6 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{Partition, TaskContext}
-
-import scala.annotation.meta.param
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 
 /**
  * Column Store implementation for GemFireXD.
@@ -92,23 +93,27 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       batchId: Option[String], partitionId: Int, maxDeltaRows: Int): Unit = {
     val region = Misc.getRegionForTable[ColumnFormatKey,
         ColumnFormatValue](tableName, true)
-    var columnIndex = 1
+    val deltaUpdate = batch.deltaIndexes ne null
+    val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
+    else ColumnFormatEntry.STATROW_COL_INDEX
+    var index = 1
     val uuid = batchId.getOrElse(UUID.randomUUID().toString)
     try {
       // add key-values pairs for each column
       val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](
         batch.buffers.length + 1)
       batch.buffers.foreach { buffer =>
+        val columnIndex = if (deltaUpdate) batch.deltaIndexes(index - 1) else index
         val key = new ColumnFormatKey(partitionId, columnIndex, uuid)
-        val value = new ColumnFormatValue(buffer)
+        val value = if (deltaUpdate) new ColumnDelta(buffer) else new ColumnFormatValue(buffer)
         keyValues.put(key, value)
-        columnIndex += 1
+        index += 1
       }
       // add the stats row
-      val key = new ColumnFormatKey(partitionId,
-        ColumnBatchIterator.STATROW_COL_INDEX, uuid)
+      val key = new ColumnFormatKey(partitionId, statRowIndex, uuid)
       val allocator = Misc.getGemFireCache.getBufferAllocator
       val statsBuffer = createStatsBuffer(batch.statsData, allocator)
+      // stats does not use a ColumnDelta rather a full put
       val value = new ColumnFormatValue(statsBuffer)
       keyValues.put(key, value)
 
@@ -118,8 +123,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       // TODO: test this code
       case NonFatal(e) =>
         // delete the base entry first
-        val key = new ColumnFormatKey(partitionId,
-          ColumnBatchIterator.STATROW_COL_INDEX, uuid)
+        val key = new ColumnFormatKey(partitionId, statRowIndex, uuid)
         try {
           region.destroy(key)
         } catch {
@@ -127,7 +131,8 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         }
         // delete the column entries
         batch.buffers.indices.foreach { index =>
-          val key = new ColumnFormatKey(partitionId, index + 1, uuid)
+          val columnIndex = if (deltaUpdate) batch.deltaIndexes(index) else index + 1
+          val key = new ColumnFormatKey(partitionId, columnIndex, uuid)
           try {
             region.destroy(key)
           } catch {
@@ -151,25 +156,29 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       (connection: Connection) => {
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
-        var columnIndex = 1
+        val deltaUpdate = batch.deltaIndexes ne null
+        val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
+        else ColumnFormatEntry.STATROW_COL_INDEX
+        var index = 1
         val uuid = batchId.getOrElse(UUID.randomUUID().toString)
         var blobs: Array[ClientBlob] = null
         try {
           // add the columns
           blobs = batch.buffers.map(buffer => {
+            val columnIndex = if (deltaUpdate) batch.deltaIndexes(index - 1) else index
             stmt.setString(1, uuid)
             stmt.setInt(2, partitionId)
             stmt.setInt(3, columnIndex)
             val blob = new ClientBlob(buffer, true)
             stmt.setBlob(4, blob)
-            columnIndex += 1
+            index += 1
             stmt.addBatch()
             blob
           })
           // add the stat row
           stmt.setString(1, uuid)
           stmt.setInt(2, partitionId)
-          stmt.setInt(3, ColumnBatchIterator.STATROW_COL_INDEX)
+          stmt.setInt(3, statRowIndex)
           val allocator = GemFireCacheImpl.getCurrentBufferAllocator
           val statsBuffer = createStatsBuffer(batch.statsData, allocator)
           stmt.setBlob(4, new ClientBlob(statsBuffer, true))
@@ -186,7 +195,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             // delete the base entry
             try {
               deletestmt.setString(1, uuid)
-              deletestmt.setInt(2, -1)
+              deletestmt.setInt(2, statRowIndex)
               deletestmt.executeUpdate()
             } catch {
               case NonFatal(_) => // Do nothing
@@ -194,8 +203,9 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
             for (idx <- 1 to batch.buffers.length) {
               try {
+                val columnIndex = if (deltaUpdate) batch.deltaIndexes(idx - 1) else idx
                 deletestmt.setString(1, uuid)
-                deletestmt.setInt(2, idx)
+                deletestmt.setInt(2, columnIndex)
                 deletestmt.executeUpdate()
               } catch {
                 case NonFatal(_) => // Do nothing
@@ -223,10 +233,9 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     new mutable.HashMap[String, String]()
 
   protected def getRowInsertStr(tableName: String, numOfColumns: Int): String = {
-    val istr = insertStrings.getOrElse(tableName, {
+    insertStrings.getOrElse(tableName, {
       lock(makeInsertStmnt(tableName, numOfColumns))
     })
-    istr
   }
 
   private def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
@@ -369,6 +378,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
   protected def getPartitionID(tableName: String,
       partitionId: Int = -1): Int = {
+    if (partitionId >= 0) return partitionId
     val connection = getConnection(tableName, onExecutor = true)
     try {
       connectionType match {

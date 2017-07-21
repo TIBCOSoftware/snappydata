@@ -65,6 +65,12 @@ abstract class ColumnDecoder extends ColumnEncoding {
 
   protected final var baseCursor: Long = _
 
+  /**
+   * Normally not used by decoder but supplied by caller to the methods
+   * but can be used if required but needs to be set by caller explicitly.
+   */
+  final var currentCursor: Long = _
+
   protected def hasNulls: Boolean
 
   protected def initializeNulls(columnBytes: AnyRef,
@@ -469,7 +475,7 @@ trait ColumnEncoder extends ColumnEncoding {
     columnEndPosition = columnBeginPosition + buffer.limit()
   }
 
-  protected final def clearSource(newSize: Int, releaseData: Boolean): Unit = {
+  protected[sql] final def clearSource(newSize: Int, releaseData: Boolean): Unit = {
     if (columnData ne null) {
       if (releaseData) {
         allocator.release(columnData)
@@ -869,10 +875,12 @@ object ColumnEncoding {
     if (buffer.isDirect) ManagedDirectBufferAllocator.instance()
     else HeapBufferAllocator.instance()
 
-  def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
+  def getColumnDecoder(buffer: ByteBuffer,
+      field: StructField): (ColumnDecoder, AnyRef, Long) = {
     val allocator = getAllocator(buffer)
-    getColumnDecoder(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
-        buffer.position(), field)
+    val columnBytes = allocator.baseObject(buffer)
+    val baseOffset = allocator.baseOffset(buffer) + buffer.position()
+    (getColumnDecoder(columnBytes, baseOffset, field), columnBytes, baseOffset)
   }
 
   final def getColumnDecoder(columnBytes: AnyRef, offset: Long,

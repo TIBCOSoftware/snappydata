@@ -87,7 +87,7 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
        |}
        |$result += $numOperations;
        |${if (numOpRowsMetric eq null) ""
-    else s"$numOpRowsMetric.${metricAdd(numOperations)};"}""".stripMargin
+          else s"$numOpRowsMetric.${metricAdd(numOperations)};"}""".stripMargin
 
   protected def doProduce(ctx: CodegenContext, pstmtStr: String): String = {
     val (initCode, commitCode, endCode) = connectionCodes(ctx)
@@ -112,8 +112,8 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
        |    ${executeBatchCode(numOperations, numOpRowsMetric)}
        |    $stmt.close();
        |    $commitCode
-       |    ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |  }
+       |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |} catch (java.sql.SQLException sqle) {
        |  throw new java.io.IOException(sqle.toString(), sqle);
        |}$endCode

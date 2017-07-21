@@ -31,7 +31,7 @@ import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, SerializedDiskBuffer}
-import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, InputStreamChannel, OutputStreamChannel, Version}
+import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, HeapBufferAllocator, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
@@ -48,7 +48,6 @@ import org.slf4j.Logger
 import org.apache.spark.Logging
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.ColumnBatchIterator
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.unsafe.hash.Murmur3_x86_32
@@ -64,9 +63,14 @@ object ColumnFormatEntry extends Logging {
     // register the column key and value types
     GfxdDataSerializable.registerSqlSerializable(classOf[ColumnFormatKey])
     GfxdDataSerializable.registerSqlSerializable(classOf[ColumnFormatValue])
+    GfxdDataSerializable.registerSqlSerializable(classOf[ColumnDelta])
   }
 
   private[columnar] def alignedSize(size: Int) = ((size + 7) >>> 3) << 3
+
+  val STATROW_COL_INDEX: Int = -1
+
+  val DELTA_STATROW_COL_INDEX: Int = -2
 }
 
 /**
@@ -90,7 +94,7 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
     val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
     val currentBucketRegion = itr.getHostedBucketRegion
-    if (columnIndex == ColumnBatchIterator.STATROW_COL_INDEX &&
+    if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX &&
         !re.isDestroyedOrRemoved) {
       val value = re.getValue(currentBucketRegion)
           .asInstanceOf[ColumnFormatValue]
@@ -136,7 +140,7 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
   override def getSizeInBytes: Int = {
     // UUID is shared among all columns so count its overhead only once
     // in stats row (but the reference overhead will be counted in all)
-    if (columnIndex == ColumnBatchIterator.STATROW_COL_INDEX) {
+    if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
       // first the char[] size inside String
       val charSize = Sizeable.PER_OBJECT_OVERHEAD + 4 /* length */ +
           uuid.length * 2
@@ -235,14 +239,13 @@ final class ColumnPartitionResolver(tableName: TableName)
  * DataSerializer.writeObject. This helps it avoid additional byte writes when
  * transferring data to the channels.
  */
-final class ColumnFormatValue
-    extends SerializedDiskBuffer with GfxdSerializable with Sizeable {
+class ColumnFormatValue extends SerializedDiskBuffer
+    with GfxdSerializable with Sizeable {
 
   @volatile
-  @transient private var columnBuffer = DiskEntry.Helper.NULL_BUFFER
-  @transient private var diskId: DiskId = _
-  @transient private var diskRegion: DiskRegionView = _
-  @transient private var deltaHierarchy: Int = _
+  @transient protected var columnBuffer = DiskEntry.Helper.NULL_BUFFER
+  @transient protected var diskId: DiskId = _
+  @transient protected var diskRegion: DiskRegionView = _
 
   def this(buffer: ByteBuffer) = {
     this()
@@ -263,9 +266,15 @@ final class ColumnFormatValue
     assert(refCount == 1, s"Unexpected refCount=$refCount")
   }
 
-  def isDirect: Boolean = columnBuffer.isDirect
+  final def isDirect: Boolean = columnBuffer.isDirect
 
-  @inline private def duplicateBuffer(buffer: ByteBuffer): ByteBuffer = {
+  override final def copyToHeap(owner: String): Unit = {
+    if (isDirect) {
+      columnBuffer = HeapBufferAllocator.instance().transfer(columnBuffer, owner)
+    }
+  }
+
+  @inline protected def duplicateBuffer(buffer: ByteBuffer): ByteBuffer = {
     // slice buffer for non-zero position so callers don't have to deal with it
     if (buffer.position() == 0) buffer.duplicate() else buffer.slice()
   }
@@ -282,7 +291,7 @@ final class ColumnFormatValue
    * which have position as zero so callers can make simplifying assumptions
    * about the same.
    */
-  override def getBufferRetain: ByteBuffer = {
+  override final def getBufferRetain: ByteBuffer = {
     if (retain()) {
       duplicateBuffer(columnBuffer)
     } else synchronized {
@@ -326,7 +335,7 @@ final class ColumnFormatValue
     }
   }
 
-  override def needsRelease: Boolean = columnBuffer.isDirect
+  override final def needsRelease: Boolean = columnBuffer.isDirect
 
   override protected def releaseBuffer(): Unit = synchronized {
     // Remove the buffer at this point. Any further reads will need to be
@@ -338,7 +347,7 @@ final class ColumnFormatValue
     }
   }
 
-  override def setDiskId(id: DiskId, dr: DiskRegionView): Unit = synchronized {
+  override final def setDiskId(id: DiskId, dr: DiskRegionView): Unit = synchronized {
     if (id ne null) {
       this.diskId = id
       // set/update diskRegion only if incoming value has been provided
@@ -351,7 +360,7 @@ final class ColumnFormatValue
     }
   }
 
-  override def write(channel: OutputStreamChannel): Unit = {
+  override final def write(channel: OutputStreamChannel): Unit = {
     // write the pre-serialized buffer as is
     val buffer = getBufferRetain
     try {
@@ -359,7 +368,7 @@ final class ColumnFormatValue
       // write the typeId + classId and size
       channel.write(DSCODE.DS_FIXED_ID_BYTE)
       channel.write(DataSerializableFixedID.GFXD_TYPE)
-      channel.write(GfxdSerializable.COLUMN_FORMAT_VALUE)
+      channel.write(getGfxdID)
       channel.write(0.toByte) // padding
       channel.writeInt(buffer.limit())
 
@@ -370,12 +379,12 @@ final class ColumnFormatValue
     }
   }
 
-  override def writeSerializationHeader(src: ByteBuffer,
+  override final def writeSerializationHeader(src: ByteBuffer,
       writeBuf: ByteBuffer): Boolean = {
     if (writeBuf.remaining() >= 8) {
       writeBuf.put(DSCODE.DS_FIXED_ID_BYTE)
       writeBuf.put(DataSerializableFixedID.GFXD_TYPE)
-      writeBuf.put(GfxdSerializable.COLUMN_FORMAT_VALUE)
+      writeBuf.put(getGfxdID)
       writeBuf.put(0.toByte) // padding
       if (writeBuf.order() eq ByteOrder.BIG_ENDIAN) {
         writeBuf.putInt(src.remaining())
@@ -386,13 +395,13 @@ final class ColumnFormatValue
     } else false
   }
 
-  override def channelSize(): Int = 8 /* header */ + columnBuffer.remaining()
+  override final def channelSize(): Int = 8 /* header */ + columnBuffer.remaining()
 
-  override def size(): Int = columnBuffer.remaining()
+  override final def size(): Int = columnBuffer.remaining()
+
+  override final def getDSFID: Int = DataSerializableFixedID.GFXD_TYPE
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_VALUE
-
-  override def getDSFID: Int = DataSerializableFixedID.GFXD_TYPE
 
   override def getSerializationVersions: Array[Version] = null
 
@@ -482,7 +491,7 @@ final class ColumnFormatValue
           5 * 4 /* 5 ints */ + 3 /* 3 bools */ + 8
       /* address */
       val size = Sizeable.PER_OBJECT_OVERHEAD +
-          REFERENCE_SIZE /* BB */ + 4 /* deltaHierarchy */
+          REFERENCE_SIZE * 3 /* BB, DiskId, DiskRegion */
       alignedSize(size) + alignedSize(bbSize) +
           alignedSize(cleanerSize) + alignedSize(freeMemorySize)
     } else {
@@ -492,7 +501,7 @@ final class ColumnFormatValue
           5 * 4 /* 5 ints */ + 3 /* 3 bools */ + 8
       /* unused address */
       val size = Sizeable.PER_OBJECT_OVERHEAD +
-          REFERENCE_SIZE /* BB */ + 4 /* deltaHierarchy */
+          REFERENCE_SIZE * 3 /* BB, DiskId, DiskRegion */
       alignedSize(size) + alignedSize(bbSize) + alignedSize(hbSize)
     }
   }
@@ -508,13 +517,8 @@ final class ColumnFormatValue
 
   override def toString: String = {
     val buffer = columnBuffer.duplicate()
-    if (deltaHierarchy == 0) {
-      s"ColumnValue[size=${buffer.remaining()} $buffer " +
-          s"diskId=$diskId diskRegion=$diskRegion]"
-    } else {
-      s"ColumnDelta[size=${buffer.remaining()} $buffer " +
-          s"hierarchy=$deltaHierarchy diskId=$diskId diskRegion=$diskRegion]"
-    }
+    s"ColumnValue[size=${buffer.remaining()} $buffer " +
+        s"diskId=$diskId diskRegion=$diskRegion]"
   }
 }
 
@@ -525,7 +529,7 @@ final class ColumnFormatEncoder extends RowEncoder {
     val batchKey = entry.getRawKey.asInstanceOf[ColumnFormatKey]
     val batchValue = value.asInstanceOf[ColumnFormatValue]
     // layout the same way as declared in ColumnFormatRelation
-    val row = new ValueRow(4)
+    val row = new ValueRow(5)
     row.setColumn(1, new SQLVarchar(batchKey.uuid))
     row.setColumn(2, new SQLInteger(batchKey.partitionId))
     row.setColumn(3, new SQLInteger(batchKey.columnIndex))
@@ -544,8 +548,12 @@ final class ColumnFormatEncoder extends RowEncoder {
       case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
     }
     columnBuffer.rewind()
-    // set the buffer into ColumnFormatValue
-    val batchValue = new ColumnFormatValue(columnBuffer)
+    // set the buffer into ColumnFormatValue or ColumnDelta
+    val batchValue = if (batchKey.columnIndex >= ColumnFormatEntry.STATROW_COL_INDEX) {
+      new ColumnFormatValue(columnBuffer)
+    } else {
+      new ColumnDelta(columnBuffer)
+    }
     new java.util.AbstractMap.SimpleEntry[RegionKey, AnyRef](batchKey, batchValue)
   }
 

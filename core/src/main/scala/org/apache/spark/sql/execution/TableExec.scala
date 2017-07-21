@@ -40,7 +40,7 @@ abstract class TableExec(partitionColumns: Seq[String],
     relationSchema: StructType, relation: Option[DestroyRelation],
     onExecutor: Boolean) extends UnaryExecNode with CodegenSupportOnExecutor {
 
-  @transient protected lazy val (metricAdd, _) = Utils.metricMethods
+  @transient protected lazy val (metricAdd, metricValue) = Utils.metricMethods
 
   def partitionExpressions: Seq[Expression]
 
@@ -69,8 +69,9 @@ abstract class TableExec(partitionColumns: Seq[String],
     if (partitioned) {
       // For partitionColumns find the matching child columns
       val schema = relationSchema
+      val childOutput = child.output
       val childPartitioningAttributes = partitionColumns.map(partColumn =>
-        child.output(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
+        childOutput(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
       ClusteredDistribution(childPartitioningAttributes) :: Nil
     } else UnspecifiedDistribution :: Nil
   }

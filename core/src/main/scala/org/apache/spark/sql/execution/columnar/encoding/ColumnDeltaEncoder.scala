@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.codehaus.janino.CompilerFactory
@@ -26,7 +27,7 @@ import org.codehaus.janino.CompilerFactory
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.LongArray
@@ -51,8 +52,8 @@ import org.apache.spark.util.collection.unsafe.sort.RadixSort
  *   |   |   |  .------------- Internal structures of encoding (like dictionary)
  *   |   |   |  |   .--------- Encoded non-null elements
  *   |   |   |  |  |
- *   |   |   |  |  |      .--- Position in full column value followed
- *   V   V   V  V  V      V    by encoded value
+ *   |   |   |  |  |       .-- Position in full column value followed
+ *   V   V   V  V  V       V   by encoded value
  *   +---+---+--+--+----------------+
  *   |   |   |  |  | v1 | v2 |  ... |
  *   +---+---+-----+----------------+
@@ -76,7 +77,7 @@ import org.apache.spark.util.collection.unsafe.sort.RadixSort
  * small not more than 3-4 levels to get a good balance between write overhead
  * and scan overhead.
  */
-final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
+final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   private[this] var dataType: DataType = _
   /*
@@ -111,7 +112,6 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
      RadixSort                 1 /    1         16.6          60.1       3.2X
    */
   private[this] var positionsArray: Array[Long] = _
-  private[this] var positions: LongArray = _
   /**
    * Relative index of the current delta i.e. 1st delta is 0, 2nd delta is 1 and so on.
    * so on. Initialized to -1 so that pre-increment in write initializes to 0 and the
@@ -121,7 +121,6 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
   private[this] var realEncoder: ColumnEncoder = _
   private[this] var dataBeginPosition: Long = _
   private[this] var maxSize: Int = _
-  private[this] var previousDelta: ColumnFormatValue = _
 
   override def typeId: Int = realEncoder.typeId
 
@@ -141,19 +140,34 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
    *
    * @param dataType   DataType of the field to be written
    * @param nullable   True if the field can have nulls else false
-   * @param batchSize  current size of the original column value
+   * @param initSize   initial number of columns to accomodate in the delta
    * @param withHeader ignored
    * @param allocator  the [[BufferAllocator]] to use for the data
    * @return initial position of the cursor that caller must use to write
    */
-  override def initialize(dataType: DataType, nullable: Boolean, batchSize: Int,
+  override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
-    if (batchSize < ColumnDelta.INIT_SIZE && hierarchyDepth > 0) {
+    if (initSize < 4 || (initSize < ColumnDelta.INIT_SIZE && hierarchyDepth > 0)) {
       throw new IllegalStateException(
-        s"Batch size = $batchSize too small for hierarchy depth = $hierarchyDepth")
+        s"Batch size = $initSize too small for hierarchy depth = $hierarchyDepth")
     }
+    this.dataType = dataType
+    this.allocator = allocator
+    this.maxSize = initSize
+    // double the actual space is required by Spark's radix sort
+    positionsArray = new Array[Long](initSize << 1)
+    realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
+    dataBeginPosition = realEncoder.initialize(dataType, nullable,
+      initSize, withHeader, allocator)
+    dataBeginPosition
+  }
+
+  override def writeInternals(columnBytes: AnyRef, cursor: Long): Long =
+    realEncoder.writeInternals(columnBytes, cursor)
+
+  def getMaxSizeForHierarchy(numColumnRows: Int): Int = {
     // max expected hierarchy depth of 3
-    val deltaRatio = batchSize.toDouble / ColumnDelta.INIT_SIZE.toDouble
+    val deltaRatio = numColumnRows.toDouble / ColumnDelta.INIT_SIZE.toDouble
     val hierarchyFactor = ColumnDelta.MAX_DEPTH match {
       case 1 => deltaRatio
       case 2 => math.sqrt(deltaRatio)
@@ -162,34 +176,12 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
         s"Configured hierarchy = $d too deep and can impact queries")
     }
     // calculate the maximum size at this hierarchy depth
-    maxSize = hierarchyDepth match {
+    hierarchyDepth match {
       case 0 => ColumnDelta.INIT_SIZE
       case 1 => (ColumnDelta.INIT_SIZE * hierarchyFactor).toInt
       case 2 => (ColumnDelta.INIT_SIZE * hierarchyFactor * hierarchyFactor).toInt
       case d => throw new IllegalStateException(
         s"Configured hierarchy depth (0 based) = $d exceeds max = ${ColumnDelta.MAX_DEPTH}")
-    }
-    this.dataType = dataType
-    this.allocator = allocator
-    // double the actual space is required by Spark's radix sort
-    positionsArray = new Array[Long](maxSize << 1)
-    positions = new LongArray(MemoryBlock.fromLongArray(positionsArray))
-    realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
-    dataBeginPosition = realEncoder.initialize(dataType, nullable,
-      maxSize, withHeader, allocator)
-    dataBeginPosition
-  }
-
-  override def writeInternals(columnBytes: AnyRef, cursor: Long): Long =
-    realEncoder.writeInternals(columnBytes, cursor)
-
-  def setExistingDelta(delta: ColumnFormatValue): Unit = {
-    if (delta ne null) {
-      setSource(delta.getBufferRetain, releaseOld = true)
-      previousDelta = delta
-    } else {
-      clearSource(0, releaseData = true)
-      previousDelta = null
     }
   }
 
@@ -208,6 +200,13 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
   def setUpdatePosition(position: Int): Unit = {
     // sorted on LSB so position goes in LSB
     positionIndex += 1
+    if (positionIndex == maxSize) {
+      // double the size and array is twice that for Spark's RadixSort
+      val newPositionsArray = new Array[Long](maxSize << 2)
+      System.arraycopy(positionsArray, 0, newPositionsArray, 0, maxSize)
+      maxSize <<= 1
+      positionsArray = newPositionsArray
+    }
     positionsArray(positionIndex) = position.toLong | (positionIndex.toLong << 32L)
   }
 
@@ -283,8 +282,7 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
     }
   }
 
-  private def writeHeader(columnBytes: AnyRef, cursor: Long,
-      numNullWords: Int, numDeltas: Int): Long = {
+  private def writeHeader(columnBytes: AnyRef, cursor: Long, numNullWords: Int): Long = {
     var deltaCursor = cursor
     // typeId
     ColumnEncoding.writeInt(columnBytes, deltaCursor, typeId)
@@ -295,15 +293,11 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
     // write the null bytes
     deltaCursor = writeNulls(columnBytes, deltaCursor, numNullWords)
     // write any internal structures
-    deltaCursor = writeInternals(columnBytes, deltaCursor)
-
-    // write the number of elements
-    ColumnEncoding.writeInt(columnBytes, deltaCursor, numDeltas)
-    deltaCursor + 4
+    writeInternals(columnBytes, deltaCursor)
   }
 
-  override def finish(encoderCursor: Long): ByteBuffer = {
-    val writer = DeltaWriter(dataType)
+  def merge(newValue: ByteBuffer, existingValue: ByteBuffer,
+      existingIsDelta: Boolean, field: StructField): ByteBuffer = {
     // TODO: PERF: delta encoder should create a "merged" dictionary i.e. having
     // only elements beyond the main dictionary so that the overall decoder can be
     // dictionary enabled. As of now delta decoder does not have an overall dictionary
@@ -315,6 +309,184 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
     // can also be sorted with positions rewritten accordingly for dictionary
     // to be useful for even range filters.
     // Also during delta merges, can merge dictionaries separately then rewrite only indexes.
+
+    dataType = field.dataType
+    allocator = GemFireCacheImpl.getCurrentBufferAllocator
+    realEncoder = ColumnEncoding.getColumnEncoder(dataType, field.nullable)
+
+    // Simple two-way merge with duplicate elimination. If current delta has small number
+    // of values say a couple then it might seem that merging using insertion sort
+    // will be faster, but for integers/longs even merging one element into 50 elements
+    // turns out to be faster than lookup in micro-benchmarks due to sequential
+    // reads vs random reads (merging into 50 elements requires ~7 random lookups
+    //   per element for binary search vs merging requires ~50 sequential reads/compares).
+
+    // new delta is on the "left" while the previous delta in the table is on "right"
+    val (decoder1, columnBytes1, offset1) = ColumnEncoding.getColumnDecoder(newValue, field)
+    var decoderCursor1 = decoder1.initialize(columnBytes1, offset1, field)
+    val newValueSize = newValue.remaining()
+    val endOffset1 = offset1 + newValueSize
+
+    val (decoder2, columnBytes2, offset2) = ColumnEncoding.getColumnDecoder(existingValue, field)
+    var decoderCursor2 = decoder2.initialize(columnBytes2, offset2, field)
+    val existingValueSize = existingValue.remaining()
+    val endOffset2 = offset2 + existingValueSize
+
+    // Set the source of encoder with an upper limit for bytes that also avoids
+    // checking buffer limit when writing position integers.
+    // realEncoder will contain the intermediate and final merged and encoded delta.
+    // The final exact size is not known yet due to possible duplicates,
+    // so one copy of the encoded bytes has to be made. An alternative could be
+    // to do one traversal to determine duplicates and get final size but that
+    // would be overall slower than making one extra flat byte array copy.
+    realEncoder.setSource(allocator.allocateForStorage(ColumnEncoding.checkBufferSize(
+      newValueSize + existingValueSize)), releaseOld = false)
+
+    val writer = DeltaWriter(dataType)
+    // merge and write the sorted positions and corresponding values
+    var cursor = realEncoder.columnBeginPosition
+    var position1 = ColumnEncoding.readInt(columnBytes1, decoderCursor1)
+    decoderCursor1 += 4
+    decoder1.currentCursor = decoderCursor1
+    var position2 = 0
+    if (existingIsDelta) {
+      position2 = ColumnEncoding.readInt(columnBytes2, decoderCursor2)
+      decoderCursor2 += 4
+    }
+    decoder2.currentCursor = decoderCursor2
+    var relativePosition1 = 0
+    var relativePosition2 = 0
+    var encoderOrdinal = -1
+
+    var doProcess = decoderCursor1 < endOffset1 && decoderCursor2 < endOffset2
+    while (doProcess) {
+      encoderOrdinal += 1
+      if (position1 > position2) {
+        // consume data at position2 and move it
+        ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position2)
+        cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
+          columnBytes2, writer, cursor + 4, encoderOrdinal, forMerge = true)
+        relativePosition2 += 1
+        decoderCursor2 = decoder2.currentCursor
+        if (decoderCursor2 < endOffset2) {
+          if (existingIsDelta) {
+            position2 = ColumnEncoding.readInt(columnBytes2, decoderCursor2)
+            decoder2.currentCursor += 4
+          } else {
+            position2 += 1
+          }
+        } else {
+          doProcess = false
+        }
+      } else {
+        // consume data at position1 and move it
+        ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position1)
+        // consume data at position1 and move it
+        cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1, relativePosition1,
+          columnBytes1, writer, cursor + 4, encoderOrdinal, forMerge = true)
+        // if the two are equal then keep the more recent delta from first
+        // and skip the second
+        if (position1 == position2) {
+          cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
+            columnBytes2, writer, cursor + 4, encoderOrdinal,
+            forMerge = true, doWrite = false)
+          relativePosition2 += 1
+          decoderCursor2 = decoder2.currentCursor
+          if (decoderCursor2 < endOffset2) {
+            if (existingIsDelta) {
+              position2 = ColumnEncoding.readInt(columnBytes2, decoderCursor2)
+              decoder2.currentCursor += 4
+            } else {
+              position2 += 1
+            }
+          } else {
+            doProcess = false
+          }
+        }
+        relativePosition1 += 1
+        decoderCursor1 = decoder1.currentCursor
+        if (decoderCursor1 < endOffset1) {
+          position1 = ColumnEncoding.readInt(columnBytes1, decoderCursor1)
+          decoder1.currentCursor += 4
+        } else {
+          doProcess = false
+        }
+      }
+    }
+    // check remaining from second
+    if (decoder2.currentCursor < endOffset2) {
+      doProcess = true
+      while (doProcess) {
+        encoderOrdinal += 1
+        ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position2)
+        cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
+          columnBytes2, writer, cursor + 4, encoderOrdinal, forMerge = true)
+        relativePosition2 += 1
+        decoderCursor2 = decoder2.currentCursor
+        if (decoderCursor2 < endOffset2) {
+          if (existingIsDelta) {
+            position2 = ColumnEncoding.readInt(columnBytes2, decoderCursor2)
+            decoder2.currentCursor += 4
+          } else {
+            position2 += 1
+          }
+        } else {
+          doProcess = false
+        }
+      }
+    }
+    // check remaining from first
+    else if (decoder1.currentCursor < endOffset1) {
+      doProcess = true
+      while (doProcess) {
+        encoderOrdinal += 1
+        ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position1)
+        cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1, relativePosition1,
+          columnBytes1, writer, cursor + 4, encoderOrdinal, forMerge = true)
+        relativePosition1 += 1
+        decoderCursor1 = decoder1.currentCursor
+        if (decoderCursor1 < endOffset1) {
+          position1 = ColumnEncoding.readInt(columnBytes1, decoderCursor1)
+          decoder1.currentCursor += 4
+        } else {
+          doProcess = false
+        }
+      }
+    }
+
+    // now the final delta size and layout is known after duplicate
+    // elimination above, so create the final buffer, add header and copy
+    // the encoded data above
+    val encodedData = realEncoder.columnData
+    val encodedBytes = realEncoder.columnBytes
+    val numNullWords = realEncoder.getNumNullWords
+    val deltaStart = realEncoder.columnBeginPosition
+    val deltaSize = cursor - deltaStart
+
+    // TODO: SW: correct the final size calculation
+    var buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(
+      realEncoder.finishedSize(cursor, dataBeginPosition) +
+          4 /* numPositions */))
+    realEncoder.setSource(buffer, releaseOld = false)
+
+    val columnBytes = allocator.baseObject(buffer)
+    cursor = allocator.baseOffset(buffer)
+    // write header and internal structures (e.g. dictionary)
+    cursor = writeHeader(columnBytes, cursor, numNullWords)
+
+    // finally copy the entire encoded data i.e. list of (position + encoded value)
+    Platform.copyMemory(encodedBytes, deltaStart, columnBytes, cursor, deltaSize)
+
+    // release the intermediate buffer
+    allocator.release(encodedData)
+    buffer = realEncoder.columnData
+    realEncoder.clearSource(0, releaseData = false)
+
+    buffer
+  }
+
+  override def finish(encoderCursor: Long): ByteBuffer = {
+    val writer = DeltaWriter(dataType)
     // TODO: PERF: this implementation can potentially be changed to use code
     // generation to embed the DeltaWriter code assuming it can have a good
     // performance improvement. The gains with that need to be proven conclusively
@@ -326,196 +498,39 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
     // sort on the last 4 bytes i.e. the position in full column batch
     // check for special case of single delta
     val numDeltas = positionIndex + 1
+    val positions = new LongArray(MemoryBlock.fromLongArray(positionsArray))
     val startIndex = if (numDeltas <= 1) 0
     else RadixSort.sort(positions, numDeltas, 0, 3, false, false)
     val endIndex = startIndex + numDeltas
     val decoder = realEncoder.decoderBeforeFinish
     val decoderBuffer = realEncoder.buffer
     val allocator = this.storageAllocator
-    // check if there is an existing delta into which this has to be merged
-    if (previousDelta ne null) {
-      // Simple two-way merge with duplicate elimination. If current delta has small number
-      // of values say a couple then it might seem that merging using insertion sort
-      // will be faster, but for integers/longs even merging one element into 50 elements
-      // turns out to be faster than lookup in micro-benchmarks due to sequential
-      // reads vs random reads (merging into 50 elements requires ~7 random lookups
-      //   per element for binary search vs merging requires ~50 sequential reads/compares).
-      try {
-        // temporary StructField for the decoder interface
-        val field = StructField("DELTA", dataType)
-        // new delta (on the "left") is in realEncoder in "unfinished" form while
-        // the previous delta in the table is in "finished" form and set into this
-        // ColumnDeltaEncoder itself, so the decoder for the new delta is obtained
-        // using "decoderBeforeFinish" above while a regular decoder is used for
-        // the current delta in the table
-        val columnBytes2 = this.columnBytes
-        var decoderCursor2 = columnBeginPosition
-        val decoder2 = ColumnEncoding.getColumnDecoder(columnBytes2, decoderCursor2, field)
-        decoderCursor2 = decoder2.initialize(columnBytes2, decoderCursor2, field)
-        // the numDeltas should be immediately after the header + internals
-        val numDeltas2 = ColumnEncoding.readInt(columnBytes2, decoderCursor2)
-        decoderCursor2 += 4
 
-        // Set the source of encoder with an upper limit for bytes that also avoids
-        // checking buffer limit when writing position integers.
-        // realEncoder will now contain the intermediate and final encoded delta
-        // while decoder will continue running on previous data so "releaseold = false".
-        realEncoder.setSource(allocator.allocateForStorage(ColumnEncoding.checkBufferSize(
-          realEncoder.finishedSize(encoderCursor, dataBeginPosition) +
-              (columnEndPosition - decoderCursor2) +
-              ((numDeltas + numDeltas2 + 1) << 2))), releaseOld = false)
+    // make space for the positions at the start
+    val numNullWords = realEncoder.getNumNullWords
+    val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(
+      realEncoder.finishedSize(encoderCursor, dataBeginPosition) +
+          4 /* numPositions */ + (numDeltas << 2)))
+    realEncoder.setSource(buffer, releaseOld = false)
+    val columnBytes = allocator.baseObject(buffer)
+    var cursor = allocator.baseOffset(buffer)
+    // write header and internal structures (e.g. dictionary)
+    cursor = writeHeader(columnBytes, cursor, numNullWords)
 
-        // merge and write the sorted positions and corresponding values
-        var columnBytes = this.columnBytes
-        var cursor = realEncoder.columnBeginPosition
-        var index1 = startIndex
-        var pos1 = positionsArray(index1)
-        var position1 = (pos1 & 0xffffffffL).toInt
-        var position2 = ColumnEncoding.readInt(columnBytes2, decoderCursor2)
-        var relativePosition2 = 0
-        var encoderOrdinal = -1
-        decoderCursor2 += 4
-        writer.decoderCursor = decoderCursor2
-
-        var doProcess = index1 < endIndex && relativePosition2 < numDeltas2
-        while (doProcess) {
-          encoderOrdinal += 1
-          if (position1 > position2) {
-            // consume data at position2 and move it
-            ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position2)
-            cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
-              columnBytes2, writer, cursor + 4, encoderOrdinal, forMerge = true)
-            relativePosition2 += 1
-            if (relativePosition2 < numDeltas2) {
-              position2 = ColumnEncoding.readInt(columnBytes, writer.decoderCursor)
-              writer.decoderCursor += 4
-            } else {
-              doProcess = false
-            }
-          } else {
-            // consume data at position1 and move it
-            ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position1)
-            // the left side "unfinished" delta needs random access reads since it has
-            // been RadixSorted and not written to another buffer in order yet
-            cursor = consumeDecoder(decoder, (pos1 >> 32).toInt, decoderOrdinal = -1,
-              decoderBuffer, writer, cursor + 4, encoderOrdinal, forMerge = true)
-            // if the two are equal then keep the more recent delta from first
-            // and skip the second
-            if (position1 == position2) {
-              cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
-                columnBytes2, writer, cursor + 4, encoderOrdinal,
-                forMerge = true, doWrite = false)
-              relativePosition2 += 1
-              if (relativePosition2 < numDeltas2) {
-                position2 = ColumnEncoding.readInt(columnBytes, writer.decoderCursor)
-                writer.decoderCursor += 4
-              } else {
-                doProcess = false
-              }
-            }
-            index1 += 1
-            if (index1 < endIndex) {
-              pos1 = positionsArray(index1)
-              position1 = (pos1 & 0xffffffffL).toInt
-            } else {
-              doProcess = false
-            }
-          }
-        }
-        // check remaining from second
-        if (relativePosition2 < numDeltas2) {
-          doProcess = true
-          while (doProcess) {
-            encoderOrdinal += 1
-            ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position2)
-            cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
-              columnBytes2, writer, cursor + 4, encoderOrdinal, forMerge = true)
-            relativePosition2 += 1
-            if (relativePosition2 < numDeltas2) {
-              position2 = ColumnEncoding.readInt(columnBytes, writer.decoderCursor)
-              writer.decoderCursor += 4
-            } else {
-              doProcess = false
-            }
-          }
-        }
-        // check remaining from first
-        else if (index1 < endIndex) {
-          doProcess = true
-          while (doProcess) {
-            encoderOrdinal += 1
-            ColumnEncoding.writeInt(realEncoder.columnBytes, cursor, position1)
-            cursor = consumeDecoder(decoder, (pos1 >> 32).toInt, decoderOrdinal = -1,
-              decoderBuffer, writer, cursor + 4, encoderOrdinal, forMerge = true)
-            index1 += 1
-            if (index1 < endIndex) {
-              pos1 = positionsArray(index1)
-              position1 = (pos1 & 0xffffffffL).toInt
-            } else {
-              doProcess = false
-            }
-          }
-        }
-
-        // now the final delta size and layout is known after duplicate
-        // elimination above, so create the final buffer, add header and copy
-        // the encoded data above
-        val encodedData = realEncoder.columnData
-        val encodedBytes = realEncoder.columnBytes
-        val numNullWords = realEncoder.getNumNullWords
-        val deltaStart = realEncoder.columnBeginPosition
-        val deltaSize = cursor - deltaStart
-
-        var buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(
-          realEncoder.finishedSize(encoderCursor, dataBeginPosition) +
-              4 /* numPositions */))
-        realEncoder.setSource(buffer, releaseOld = false)
-
-        columnBytes = allocator.baseObject(buffer)
-        cursor = allocator.baseOffset(buffer)
-        // write header and internal structures (e.g. dictionary)
-        cursor = writeHeader(columnBytes, cursor, numNullWords, encoderOrdinal + 1)
-
-        // finally copy the entire encoded data i.e. list of (position + encoded value)
-        Platform.copyMemory(encodedBytes, deltaStart, columnBytes, cursor, deltaSize)
-
-        // release the intermediate buffer
-        allocator.release(encodedData)
-        buffer = realEncoder.columnData
-        realEncoder.clearSource(0, releaseData = false)
-
-        buffer
-      } finally {
-        previousDelta.release()
-      }
-    } else {
-      // make space for the positions at the start
-      val numUpdates = positions.size().toInt
-      val numNullWords = realEncoder.getNumNullWords
-      val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(
-        realEncoder.finishedSize(encoderCursor, dataBeginPosition) +
-            4 /* numPositions */ + (numUpdates << 2)))
-      realEncoder.setSource(buffer, releaseOld = false)
-      val columnBytes = allocator.baseObject(buffer)
-      var cursor = allocator.baseOffset(buffer)
-      // write header and internal structures (e.g. dictionary)
-      cursor = writeHeader(columnBytes, cursor, numNullWords, numUpdates)
-
-      // write the position in full column, followed by the value
-      var i = startIndex
-      while (i < endIndex) {
-        val position = positionsArray(i)
-        ColumnEncoding.writeInt(columnBytes, cursor, (position & 0xffffffffL).toInt)
-        cursor += 4
-        val decoderPosition = (position >> 32L).toInt
-        cursor = consumeDecoder(decoder, decoderPosition, decoderOrdinal = -1,
-          decoderBuffer, writer, cursor, i - startIndex, forMerge = false)
-        i += 1
-      }
-      // clear the encoder
-      realEncoder.clearSource(0, releaseData = false)
-      buffer
+    // write the position in full column, followed by the value
+    var i = startIndex
+    while (i < endIndex) {
+      val position = positionsArray(i)
+      ColumnEncoding.writeInt(columnBytes, cursor, (position & 0xffffffffL).toInt)
+      cursor += 4
+      val decoderPosition = (position >> 32L).toInt
+      cursor = consumeDecoder(decoder, decoderPosition, decoderOrdinal = -1,
+        decoderBuffer, writer, cursor, i - startIndex, forMerge = false)
+      i += 1
     }
+    // clear the encoder
+    realEncoder.clearSource(0, releaseData = false)
+    buffer
   }
 }
 
@@ -530,8 +545,6 @@ final class ColumnDeltaEncoder(hierarchyDepth: Int) extends ColumnEncoder {
  */
 abstract class DeltaWriter {
 
-  final var decoderCursor: Long = _
-
   /**
    * Read a value (type will be determined by implementation) from given source
    * and write to the destination delta encoder.
@@ -539,7 +552,7 @@ abstract class DeltaWriter {
    * The "forMerge" flag will be true if two sorted delta values are being merged
    * (in which case the writer may decide to re-encode everything) or if a new
    * delta is just being re-ordered (in which case the writer may decide to change
-   * minimally. For example in dictionary encoding it will create new dictionary
+   * minimally). For example in dictionary encoding it will create new dictionary
    * with "forMerge" else it will just re-order the dictionary indexes. When that
    * flag is set then reads will be sequential and srcPosition will be invalid.
    *
@@ -613,9 +626,10 @@ object DeltaWriter extends Logging {
              |      int srcPosition, ColumnEncoder destEncoder, long destCursor,
              |      int encoderOrdinal, boolean forMerge, boolean doWrite) {
              |    if (srcPosition < 0) {
-             |      decoderCursor = srcDecoder.next$name(srcColumnBytes, decoderCursor);
+             |      srcDecoder.currentCursor = srcDecoder.next$name(srcColumnBytes,
+             |        srcDecoder.currentCursor);
              |      return doWrite ? destEncoder.write$name(destCursor,
-             |        srcDecoder.read$name(srcColumnBytes, decoderCursor)) : destCursor;
+             |        srcDecoder.read$name(srcColumnBytes, srcDecoder.currentCursor)) : destCursor;
              |    } else {
              |      return destEncoder.write$name(destCursor, srcDecoder.read$name(
              |        srcColumnBytes, srcDecoder.absolute$name(srcColumnBytes, srcPosition)));
@@ -631,10 +645,11 @@ object DeltaWriter extends Logging {
              |      int srcPosition, ColumnEncoder destEncoder, long destCursor,
              |      int encoderOrdinal, boolean forMerge, boolean doWrite) {
              |    if (srcPosition < 0) {
-             |      decoderCursor = srcDecoder.next$name(srcColumnBytes, decoderCursor);
+             |      srcDecoder.currentCursor = srcDecoder.next$name(srcColumnBytes,
+             |        srcDecoder.currentCursor);
              |      if (doWrite) {
              |        $complexType data = ($complexType)srcDecoder.read$name(srcColumnBytes,
-             |           decoderCursor);
+             |           srcDecoder.currentCursor);
              |        return destEncoder.writeUnsafeData(destCursor, data.getBaseObject(),
              |           data.getBaseOffset(), data.getSizeInBytes());
              |      } else {
@@ -663,9 +678,10 @@ object DeltaWriter extends Logging {
           encoderOrdinal: Int, forMerge: Boolean, doWrite: Boolean): Long = {
         if (forMerge) {
           if (srcPosition < 0) {
-            decoderCursor = srcDecoder.nextUTF8String(srcColumnBytes, decoderCursor)
+            srcDecoder.currentCursor = srcDecoder.nextUTF8String(srcColumnBytes,
+              srcDecoder.currentCursor)
             if (doWrite) {
-              val str = srcDecoder.readUTF8String(srcColumnBytes, decoderCursor)
+              val str = srcDecoder.readUTF8String(srcColumnBytes, srcDecoder.currentCursor)
               destEncoder.writeUTF8String(destCursor, str)
             } else destCursor
           } else {
@@ -693,10 +709,11 @@ object DeltaWriter extends Logging {
           srcPosition: Int, destEncoder: ColumnEncoder, destCursor: Long,
           encoderOrdinal: Int, forMerge: Boolean, doWrite: Boolean): Long = {
         if (srcPosition < 0) {
-          decoderCursor = srcDecoder.nextLongDecimal(srcColumnBytes, decoderCursor)
+          srcDecoder.currentCursor = srcDecoder.nextLongDecimal(srcColumnBytes,
+            srcDecoder.currentCursor)
           if (doWrite) {
             destEncoder.writeLongDecimal(destCursor, srcDecoder.readLongDecimal(
-              srcColumnBytes, d.precision, d.scale, decoderCursor),
+              srcColumnBytes, d.precision, d.scale, srcDecoder.currentCursor),
               encoderOrdinal, d.precision, d.scale)
           } else destCursor
         } else {
@@ -711,10 +728,11 @@ object DeltaWriter extends Logging {
           srcPosition: Int, destEncoder: ColumnEncoder, destCursor: Long,
           encoderOrdinal: Int, forMerge: Boolean, doWrite: Boolean): Long = {
         if (srcPosition < 0) {
-          decoderCursor = srcDecoder.nextDecimal(srcColumnBytes, decoderCursor)
+          srcDecoder.currentCursor = srcDecoder.nextDecimal(srcColumnBytes,
+            srcDecoder.currentCursor)
           if (doWrite) {
             destEncoder.writeDecimal(destCursor, srcDecoder.readDecimal(
-              srcColumnBytes, d.precision, d.scale, decoderCursor),
+              srcColumnBytes, d.precision, d.scale, srcDecoder.currentCursor),
               encoderOrdinal, d.precision, d.scale)
           } else destCursor
         } else {
@@ -726,19 +744,4 @@ object DeltaWriter extends Logging {
     }
     case _ => cache.get(dataType).create()
   }
-}
-
-object ColumnDelta {
-
-  /**
-   * The initial size of delta column (the smallest delta in the hierarchy).
-   */
-  val INIT_SIZE = 100
-
-  /**
-   * The maximum depth of the hierarchy of deltas for column starting with
-   * smallest delta, which is merged with larger delta, then larger, ...
-   * till the full column value.
-   */
-  val MAX_DEPTH = 3
 }

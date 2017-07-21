@@ -34,7 +34,11 @@ import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.{Logging, TaskContext}
 
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
-    statsData: Array[Byte])
+    statsData: Array[Byte], deltaIndexes: Array[Int]) {
+
+  def this(numRows: Int, buffers: Array[ByteBuffer], statsData: Array[Byte]) =
+    this(numRows, buffers, statsData, deltaIndexes = null)
+}
 
 abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext)

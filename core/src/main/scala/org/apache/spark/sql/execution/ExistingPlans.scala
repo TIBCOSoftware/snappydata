@@ -80,17 +80,6 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   def caseSensitive: Boolean
 
-  protected def fieldIndex(relationOutput: Seq[Attribute], columnName: String): Int = {
-    // lookup as per case-sensitivity (SNAP-1714)
-    val resolver = if (caseSensitive) analysis.caseSensitiveResolution
-    else analysis.caseInsensitiveResolution
-    LocalRelation(relationOutput).resolveQuoted(columnName, resolver) match {
-      case Some(a) => relationOutput.indexWhere(_.semanticEquals(a))
-      case None => throw new IllegalArgumentException(
-        s"""Field "$columnName" does not exist in "$relationOutput".""")
-    }
-  }
-
   @transient val (metricAdd, metricValue): (String => String, String => String) =
     Utils.metricMethods
 

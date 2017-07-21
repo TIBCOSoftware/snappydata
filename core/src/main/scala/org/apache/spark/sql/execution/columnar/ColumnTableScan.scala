@@ -457,7 +457,7 @@ private[sql] final case class ColumnTableScan(
         ctx.addMutableState("Object", bufferVar, s"$bufferVar = null;")
       }
       // projections are not pushed in embedded mode for optimized access
-      val baseIndex = fieldIndex(schemaAttributes, attr.name)
+      val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
       val bufferPosition = if (isEmbedded) baseIndex + 1 else index + 1
       val rsPosition = bufferPosition
 
