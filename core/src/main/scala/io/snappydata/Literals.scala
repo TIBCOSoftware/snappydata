@@ -121,6 +121,26 @@ object Constant {
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
+
+  // -10 in sequence will mean all arguments, -1 will mean all odd argument and
+  // -2 will mean all even arguments.
+  // @TODO check whether function like named_struct, ntile etc. can ever
+  // come in the where clause of a query. Right now Tokenization is done
+  // for constants in where clause only.
+  val FOLDABLE_FUNCTIONS: Map[String, Seq[Int]] = Map("ROUND" -> Seq(1),
+    "BROUND" -> Seq(1), "PERCENTILE" -> Seq(1), "STACK" -> Seq(0),
+    "NTILE" -> Seq(0), "STR_TO_MAP" -> Seq(1, 2), "NAMED_STRUCT" -> Seq(-1),
+    "REFLECT" -> Seq(0, 1), "JAVA_METHOD" -> Seq(0, 1), "XPATH" -> Seq(1),
+    "XPATH_BOOLEAN" -> Seq(1), "XPATH_DOUBLE" -> Seq(1),
+    "XPATH_NUMBER" -> Seq(1), "XPATH_FLOAT" -> Seq(1),
+    "XPATH_INT" -> Seq(1), "XPATH_LONG" -> Seq(1),
+    "XPATH_SHORT" -> Seq(1), "XPATH_STRING" -> Seq(1),
+    "PERCENTILE_APPROX" -> Seq(1, 2), "APPROX_PERCENTILE" -> Seq(1, 2),
+    "TRANSLATE" -> Seq(1, 2), "UNIX_TIMESTAMP" -> Seq(1),
+    "TO_UNIX_TIMESTAMP" -> Seq(1), "FROM_UNIX_TIMESTAMP" -> Seq(1),
+    "TO_UTC_TIMESTAMP" -> Seq(1), "FROM_UTC_TIMESTAMP" -> Seq(1),
+    "TRUNC" -> Seq(1), "NEXT_DAY" -> Seq(1),
+    "LIKE" -> Seq(1), "RLIKE" -> Seq(1))
 }
 
 /**
