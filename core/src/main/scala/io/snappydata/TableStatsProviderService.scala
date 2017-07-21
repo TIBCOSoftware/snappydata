@@ -49,6 +49,25 @@ trait TableStatsProviderService extends Logging {
     }
   }
 
+  var memberStatsUpdater: Option[Thread] = None
+
+  protected def getMemberStatsUpdater: Thread = synchronized {
+
+    if (memberStatsUpdater.isEmpty ||
+        memberStatsUpdater.get.getState == Thread.State.TERMINATED) {
+      memberStatsUpdater = {
+        val th = new Thread(new Runnable() {
+          def run() {
+            // update membersInfo
+            fillAggregatedMemberStatsOnDemand()
+          }
+        });
+        Option(th)
+      }
+    }
+    memberStatsUpdater.get
+  }
+
   @volatile protected var doRun: Boolean = false
   @volatile private var running: Boolean = false
 
@@ -110,21 +129,20 @@ trait TableStatsProviderService extends Logging {
     var infoToBeReturned: mutable.Map[String, mutable.Map[String, Any]] =
       TrieMap.empty[String, mutable.Map[String, Any]]
     val prevMembersInfo = membersInfo.synchronized{membersInfo}
-    val waitTime:Int = 500;
+    val waitTime: Int = 500;
 
-    val thread = new Thread(new Runnable() {
-      def run() {
-        // update membersInfo
-        fillAggregatedMemberStatsOnDemand()
-      }
-    });
-    thread.start();
+    // get member stats updater thread
+    val msUpdater = getMemberStatsUpdater;
+    if (!msUpdater.isAlive) {
+      // start updater thread to update members stats
+      msUpdater.start();
+    }
 
     val endTimeMillis = System.currentTimeMillis() + 5000;
-    if(thread.isAlive){
+    if (msUpdater.isAlive) {
       breakable {
-        while(thread.isAlive) {
-          if(System.currentTimeMillis() > endTimeMillis) {
+        while (msUpdater.isAlive) {
+          if (System.currentTimeMillis() > endTimeMillis) {
             logWarning("Obtaining updated Members Statistics is taking longer than expected time..")
             // infoToBeReturned = prevMembersInfo
             break
@@ -140,7 +158,7 @@ trait TableStatsProviderService extends Logging {
         }
       }
 
-      if(thread.getState.equals(Thread.State.TERMINATED)){
+      if (msUpdater.getState == Thread.State.TERMINATED) {
         // Thread is terminated so assigning updated member info
         infoToBeReturned = membersInfo
       } else {
