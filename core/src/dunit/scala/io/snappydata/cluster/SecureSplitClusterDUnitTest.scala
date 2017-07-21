@@ -13,7 +13,8 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
-import org.apache.spark.sql.{SnappyContext, TableNotFoundException}
+import org.apache.spark.sql.types.{IntegerType, StructField}
+import org.apache.spark.sql.{Row, SnappyContext, TableNotFoundException}
 
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process.Process
@@ -25,6 +26,7 @@ class SecureSplitClusterDUnitTest(s: String)
         with Serializable {
 
   private[this] var ldapProperties: Properties = new Properties()
+  private var restartLdap = false;
 
   private val embeddedColTab1 = "EMBEDDEDCOLTAB1"
   private val smartColTab1 = "SMARTCOLTAB1"
@@ -61,6 +63,11 @@ class SecureSplitClusterDUnitTest(s: String)
 
   override def tearDown2(): Unit = {
     super.tearDown2()
+    if (restartLdap) {
+      restartLdap = false
+      stopLdapTestServer()
+      setSecurityProps()
+    }
   }
 
   def setSecurityProps(): Unit = {
@@ -133,6 +140,11 @@ class SecureSplitClusterDUnitTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
 
+    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-lead-1"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-server-1"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-server-2"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-locator-1"))
+
     stopLdapTestServer()
   }
 
@@ -156,11 +168,7 @@ class SecureSplitClusterDUnitTest(s: String)
 
   override def testRowTableCreation(): Unit = {}
 
-  def testComplexTypesForColumnTables_SNAP643(): Unit = {}
-
-  def testTableFormChanges(): Unit = {}
-
-  // test to make sure that stock spark-shell works with SnappyData core jar
+  // Test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$snappyProductDir/../distributions/"),
@@ -199,8 +207,10 @@ class SecureSplitClusterDUnitTest(s: String)
     assert(rs2.getInt(1) == 5)
   }
 
-  // create row and column table in embedded mode and select, insert, update, delete and
-  // drop from smart side and vice versa.
+  /**
+    * Create row and column tables in embedded mode. Perform select, insert, update, delete and
+    * drop from smart side and vice versa.
+    */
   def testSQLOpsWithValidCredentials(): Unit = {
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
@@ -211,7 +221,7 @@ class SecureSplitClusterDUnitTest(s: String)
     val snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
 
     try {
-      // create row and column table in embedded mode
+      // Create row and column tables in embedded mode
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", conn, stmt, Map
       ("COLUMN_BATCH_SIZE" -> "50"), false)
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", conn, stmt, Map.empty, false)
@@ -235,7 +245,7 @@ class SecureSplitClusterDUnitTest(s: String)
       var rows = snc.sql(s"select * from $embeddedRowTab1").collect().length
       assert(rows == 0, s"expected 0 rows but found $rows in $embeddedRowTab1")
 
-      // insert from embedded side. Adds 1005 rows each
+      // insert more data. Adds 1005 rows each
       SplitClusterDUnitTest.populateTable(embeddedColTab1, conn)
       SplitClusterDUnitTest.populateTable(embeddedRowTab1, conn)
 
@@ -251,7 +261,7 @@ class SecureSplitClusterDUnitTest(s: String)
       assert(!snc.sparkSession.catalog.tableExists(embeddedColTab1), s"$embeddedColTab1 not dropped")
       assert(!snc.sparkSession.catalog.tableExists(embeddedRowTab1), s"$embeddedRowTab1 not dropped")
 
-      // vice versa: create row and column table in smart connector mode
+      // vice versa: Create row and column table in smart connector mode
       snc.sql(s"create table $smartColTab1 (col1 INT, col2 STRING, col3 DECIMAL) using column")
       snc.sql(s"create table $smartRowTab1 (col1 INT, col2 STRING, col3 DECIMAL) using row")
 
@@ -282,29 +292,24 @@ class SecureSplitClusterDUnitTest(s: String)
         assert(rs.getInt(1) == 0, s"Update failed. Col1 value is ${rs.getInt(0)}, but expected 0 " +
             s"for $sql")
       }
+      // TODO do for column tables when support comes in master.
       stmt.execute(s"update $smartRowTab1 set col1 = 0, col2 = '$value' where " +
           s"col1 < 0")
       checkCol1(s"select * from $smartRowTab1 where col2 = '$value'")
 
-      // delete
+      // delete TODO do for column tables when support comes in master.
       stmt.execute(s"delete from $smartRowTab1 where col1 = 0")
       checkCount(s"select * from $smartRowTab1", 1005, false)
 
       // drop
       stmt.execute(s"drop table $smartColTab1")
       stmt.execute(s"drop table $smartRowTab1")
-      try {
+      assertTableDeleted(() => {
         snc.sparkSession.catalog.refreshTable(smartColTab1)
-        assert(false, s"Failed to drop $smartColTab1")
-      } catch {
-        case t: TableNotFoundException =>
-      }
-      try {
+      }, smartColTab1)
+      assertTableDeleted(() => {
         snc.sparkSession.catalog.refreshTable(smartRowTab1)
-        assert(false, s"Failed to drop $smartRowTab1")
-      } catch {
-        case t: TableNotFoundException =>
-      }
+      }, smartRowTab1)
     } finally {
       snc.sparkContext.stop()
       stmt.close()
@@ -312,8 +317,21 @@ class SecureSplitClusterDUnitTest(s: String)
     }
   }
 
-  // grant and revoke select, insert, update and delete and check same from smart and embedded side.
-  // Create a thin connection from smart side and attempts to modify hive metastore should fail.
+  private def assertTableDeleted(func: () => Unit, t: String): Unit = {
+    try {
+      func()
+      assert(false, s"Failed to drop $t")
+    } catch {
+      case te: TableNotFoundException =>
+    }
+  }
+
+  /**
+    * Grant and revoke select, insert, update and delete operations and verify from smart and
+    * embedded side.
+    *
+    * Attempt to modify hive metastore should fail via a thin connection.
+    */
   def testGrantRevokeAndHiveModification(): Unit = {
     var props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
@@ -418,7 +436,9 @@ class SecureSplitClusterDUnitTest(s: String)
     }
   }
 
-  // Attempt to get a snappysession or connection with invalid credentials should fail.
+  /**
+    * Attempt to get a snappysession or connection with invalid credentials should fail.
+    */
   def _testWithInvalidCredentials(): Unit = {
     val props = new Properties()
 
@@ -430,42 +450,76 @@ class SecureSplitClusterDUnitTest(s: String)
         SplitClusterDUnitTest.getConnection(locatorClientPort, props)
         assert(false, s"JDBC conn should have failed with $p: $s")
       } catch {
-        case e: Throwable =>
+        case e: Throwable => logInfo(s"Expected exception while getting a JDBC connection $e")
       }
       try {
         testObject.getSnappyContextForConnector(locatorClientPort, props)
         assert(false, s"Smart conn should have failed with $p: $s")
       } catch {
-        case e: Throwable =>
+        case e: Throwable => logInfo(s"Expected exception while getting a smart connection $e")
       }
     }
 
     List("invalid_password", "").foreach(e => attemptConn(Attribute.PASSWORD_ATTR, e))
     props.setProperty(Attribute.PASSWORD_ATTR, adminUser1)
     List("invalid_user", "").foreach(e => attemptConn(Attribute.USERNAME_ATTR, e))
+    restartLdap = true;
   }
 
-  // Create tables with different flavours of sql
-  //
-  // Use APIs to perform DDLs and DMLs from smart side.
-  // create, drop, alter tables; select, insert, update, delete rows
-  def _testAPIsWithValidCredentials(): Unit = {
+  /**
+    * Use APIs to perform DDLs and DMLs from smart side.
+    *
+    * DDLs: create, drop, alter tables
+    *
+    * DMLs: select, insert, update, delete rows
+    */
+  def testAPIsWithValidCredentials(): Unit = {
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
 
     val sns = testObject.getSnappyContextForConnector(locatorClientPort, props).snappySession
 
-    sns.createTable(smartColTab1, "column", "id int, name string", Map("COLUMN_BATCH_SIZE"
-        -> "50"), false)
+    try {
+      val rdd = sns.sparkContext.parallelize(
+        (1 to 113999).map(i => Data2(i, s"name_$i", s"address_$i")))
+      val dataDF = sns.createDataFrame(rdd)
+      val col1 = "COL1"
+      val col2 = "COL2"
+      val col3 = "COL3"
+      val col4 = "COL4"
 
-//    sns.insert(smartColTab1, ...)
-//    sns.put(smartColTab1, ...)
-//    sns.update(smartColTab1, ...)
-//    sns.delete(smartColTab1, ...)
-//    sns.createIndex(smartColTab1, ...)
-//    sns.dropIndex(smartColTab1, ...)
-//    sns.dropTable(smartColTab1, ...)
+      sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE"->"50"), false)
+      sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
+      sns.catalog.refreshTable(smartColTab1)
+      sns.catalog.refreshTable(smartRowTab1)
+
+      sns.insert(smartRowTab1, Row(1, "one", "Don Bosco Road"))
+      sns.insert(smartColTab1, Row(1, "one", "Don Bosco Road"))
+      sns.insert(smartColTab1, Row(1000, "Something to make it more than the column batch size " +
+          "which is set to be fifty bytes above", "Some address"))
+      var rows = sns.sql(s"select * from $smartColTab1").collect().length
+      assert(rows == 2, s"expected 2 rows after insert, found $rows")
+
+      assert(sns.put(smartRowTab1, Row(1, "Don Bosco", "Off Airport Road")) == 1, "Put failed")
+      assert(sns.put(smartRowTab1, Row(1000, "Don Bosco Jr.", "Off Airport Road")) == 1, "Put " +
+          "failed")
+
+      val nameExpected = "Updated this row which had id = 1000"
+      assert(sns.update(smartRowTab1, s"$col1 = 1000", Row(nameExpected), col2) == 1,
+        "Update failed")
+
+      assert(sns.delete(smartRowTab1, s"$col1 = 1000") == 1, "Delete failed")
+
+      sns.sqlContext.alterTable(smartRowTab1, true, StructField(col4, IntegerType, true))
+
+      sns.dropTable(smartColTab1, false)
+      assertTableDeleted(() => {sns.catalog.refreshTable(smartColTab1)}, smartColTab1)
+      sns.dropTable(smartRowTab1, false)
+      assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
+    } finally {
+      sns.sparkContext.stop()
+    }
   }
 
   def _testUDFAndProcs(): Unit = {
@@ -473,7 +527,6 @@ class SecureSplitClusterDUnitTest(s: String)
 
   def _testConcurrentUsers(): Unit = {
   }
-
 }
 
 object SecureSplitClusterDUnitTest extends SplitClusterDUnitTestObject {
