@@ -189,10 +189,11 @@ function extract {
     xtractdir=`dirname ${debugtarzip}`
     tarname=`basename ${debugtarzip}`
     cd $xtractdir
-    tar -xvf $tarname
-    dir=`echo "$tarname" | cut -d'.' -f1-5`
-    cd $dir
-    gunzip `find . -name "*.gz"`
+    tar -xf $tarname
+    for zf in `find . -name '*.gz'`; do
+      ( cd "`dirname "$zf"`" && gunzip "`basename "$zf"`" )
+    done
+    echo "extracted in ${xtractdir}"
 }
 
 function collect_data {
@@ -456,7 +457,7 @@ check_configs
 # host pid cwd
 
 if [ -n "${TAR_FILE}" ]; then
-  extract "${TAR_FILE}"
+  ( extract "${TAR_FILE}" )
   exit 0
 fi
 
