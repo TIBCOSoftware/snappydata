@@ -253,7 +253,8 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
   private def resolveMetaStoreDBProps(): (String, String) = {
     SnappyContext.getClusterMode(sparkContext) match {
-      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
+      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
+           LocalMode(_, _) =>
         (ExternalStoreUtils.defaultStoreURL(Some(sparkContext)) +
             ";disable-streaming=true;default-persistent=true",
             Constant.JDBC_EMBEDDED_DRIVER)
