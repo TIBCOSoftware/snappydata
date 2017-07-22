@@ -217,17 +217,6 @@ object Property extends Enumeration {
     "Enabled in SnappyData embedded cluster and disabled for other " +
         "deployments.", Some(true), Constant.SPARK_PREFIX, isPublic = false)
 
-  val MetaStoreDBURL = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbUrl",
-    "An explicit JDBC URL to use for external meta-data storage. " +
-        "Normally this is set to use the SnappyData store by default and " +
-        "should not be touched unless there are special requirements. " +
-        "Use with caution since an incorrect configuration can result in " +
-        "loss of entire meta-data (and thus data).", None, Constant.SPARK_PREFIX)
-
-  val MetaStoreDriver = Val[String](s"${Constant.PROPERTY_PREFIX}metastore.dbDriver",
-    s"Explicit JDBC driver class for ${MetaStoreDBURL.name} setting.",
-    None, Constant.SPARK_PREFIX)
-
   val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
     s"Number of query plans that will be cached.", Some(3000))
 
