@@ -184,44 +184,27 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     logInfo("Default warehouse location is " + warehouse)
     metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///")
 
-    val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
-    if (useSnappyStore) {
-      import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
-      import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
-      var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
-      var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
-      if (!user.isDefined && !password.isDefined) {
-        user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
-        password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
-      }
-      var logURL = dbURL
-      val secureDbURL = if (user.isDefined && password.isDefined) {
-        logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";user=" + user.get
-        logURL + ";password=" + password.get + ";"
-      } else {
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-          Misc.SNAPPY_HIVE_METASTORE)
-        dbURL
-      }
-      logInfo(s"Using SnappyStore as metastore database, dbURL = $logURL")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
-    } else if (dbURL != null) {
-      logInfo(s"Using specified metastore database, dbURL = $dbURL")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
-      if (dbDriver != null) {
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-          dbDriver)
-      } else {
-        metadataConf.unset(
-          HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER.varname)
-      }
-      metadataConf.unset(
-        HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME.varname)
-    } else {
-      logInfo("Using Hive metastore database, dbURL = " +
-          metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
+    val (dbURL, dbDriver) = resolveMetaStoreDBProps()
+    import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
+    import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
+    var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
+    var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+    if (!user.isDefined && !password.isDefined) {
+      user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+      password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
     }
+    var logURL = dbURL
+    val secureDbURL = if (user.isDefined && password.isDefined) {
+      logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";user=" + user.get
+      logURL + ";password=" + password.get + ";"
+    } else {
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        Misc.SNAPPY_HIVE_METASTORE)
+      dbURL
+    }
+    logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
+    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -320,23 +303,17 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     }
   }
 
-  private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
-    val sc = sparkContext
-    Property.MetaStoreDBURL.getOption(sparkConf) match {
-      case Some(url) =>
-        val driver = Property.MetaStoreDriver.getOption(sparkConf).orNull
-        (false, url, driver)
-      case None => SnappyContext.getClusterMode(sc) match {
-        case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
-             LocalMode(_, _) =>
-          (true, ExternalStoreUtils.defaultStoreURL(Some(sc)) +
-              ";disable-streaming=true;default-persistent=true",
-              Constant.JDBC_EMBEDDED_DRIVER)
-        case ThinClientConnectorMode(_, url) =>
-          (true, url + ";route-query=false;", Constant.JDBC_CLIENT_DRIVER)
-        case ExternalClusterMode(_, _) =>
-          (false, null, null)
-      }
+  private def resolveMetaStoreDBProps(): (String, String) = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
+           LocalMode(_, _) =>
+        (ExternalStoreUtils.defaultStoreURL(Some(sparkContext)) +
+            ";disable-streaming=true;default-persistent=true",
+            Constant.JDBC_EMBEDDED_DRIVER)
+      case ThinClientConnectorMode(_, url) =>
+        (url + ";route-query=false;", Constant.JDBC_CLIENT_DRIVER)
+      case ExternalClusterMode(_, _) =>
+        (null, null)
     }
   }
 }
