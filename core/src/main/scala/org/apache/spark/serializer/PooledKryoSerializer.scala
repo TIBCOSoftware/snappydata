@@ -260,26 +260,25 @@ private[spark] final class PooledKryoSerializerInstance(
     val poolObject = KryoSerializerPool.borrow()
     val output = t match {
       // Special handling for wholeStageCodeGenRDD
-      case p: Tuple2[_ , _] =>
+      case p: Tuple2[_, _] =>
         // If it is a wholestageRDD, we know the serialization buffer needs to be
         // bigger than the code string size. If it is not bigger, the writestring call inside
         // WholeStageCodeGenRDD.write calls writeString_slow. Refer Output.writeString.
         // So create a buffer of size greater than the size of code.
-        if (p._1.isInstanceOf[Product]) {
-          val rdd = p._1.asInstanceOf[Product]
-          // Hackish way to determine if it is a WholeStageRDD.
-          // Any change to WholeStageCodeGenRDD needs to reflect here
-          if (rdd.productArity == 5 &&
-            rdd.productElement(1).isInstanceOf[CodeAndComment]) {
-            val size = rdd.productElement(1).asInstanceOf[CodeAndComment].body.size
-            // round off to a multiple of 1024
-            val roundedSize = ((size + 4 * 1024) >> 10) << 10
-            poolObject.newOutput(roundedSize)
-          } else {
-            poolObject.newOutput()
-          }
-        } else {
-          poolObject.newOutput()
+        p._1 match {
+          case rdd: Product =>
+            if (rdd.productArity == 5 &&
+              // Hackish way to determine if it is a WholeStageRDD.
+              // Any change to WholeStageCodeGenRDD needs to reflect here
+              rdd.productElement(1).isInstanceOf[CodeAndComment]) {
+              val size = rdd.productElement(1).asInstanceOf[CodeAndComment].body.size
+              // round off to a multiple of 1024
+              val roundedSize = ((size + 4 * 1024) >> 10) << 10
+              poolObject.newOutput(roundedSize)
+            } else {
+              poolObject.newOutput()
+            }
+          case _ => poolObject.newOutput()
         }
       case _ => poolObject.newOutput()
     }
