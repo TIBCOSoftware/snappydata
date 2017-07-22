@@ -21,7 +21,7 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
-import io.snappydata.QueryHint
+import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -219,6 +219,13 @@ class SnappyParser(session: SnappySession)
       case Some(list) => list += p
       case None => session.addContextObject(CachedPlanHelperExec.WRAPPED_CONSTANTS,
         mutable.ArrayBuffer(p))
+    }
+
+  def removeParamLiteralFromContext(p: ParamLiteral): Unit =
+    session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
+      CachedPlanHelperExec.WRAPPED_CONSTANTS) match {
+      case Some(list) => list -= p
+      case None =>
     }
 
   protected final def paramliteral: Rule1[ParamLiteral] = rule {
@@ -676,7 +683,22 @@ class SnappyParser(session: SnappySession)
           (DISTINCT ~> trueFn).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Option[String], d: Any, e: Any, w: Any) =>
             val udfName = n2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
-            val exprs = e.asInstanceOf[Seq[Expression]]
+            var allExprs = e.asInstanceOf[Seq[Expression]]
+            var exprs = allExprs
+            Constant.FOLDABLE_FUNCTIONS.get(n1) match {
+              case Some(args) =>
+                exprs = allExprs.zipWithIndex.collect {
+                  case (pl: ParamLiteral, index) if args.contains(index) ||
+                      // all args          // all odd args
+                      (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
+                      // all even args
+                      (args.head == -2 && (index & 0x1) == 0) =>
+                    removeParamLiteralFromContext(pl)
+                    Literal.create(pl.value, pl.dataType)
+                  case (ex: Expression, index) => ex
+                }
+              case None =>
+            }
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(udfName, exprs, isDistinct = false)
             } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
@@ -703,15 +725,29 @@ class SnappyParser(session: SnappySession)
     ) |
     '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
       (fn: FunctionIdentifier, e: Any) =>
+        val allExprs = e.asInstanceOf[Seq[Expression]].toList
+        var exprs = allExprs
+        Constant.FOLDABLE_FUNCTIONS.get(fn.funcName) match {
+          case Some(args) =>
+            exprs = allExprs.zipWithIndex.collect {
+              case (pl: ParamLiteral, index) if args.contains(index) ||
+                  // all args          // all odd args
+                  (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
+                  // all even args
+                  (args.head == -2 && (index & 0x1) == 0) =>
+                removeParamLiteralFromContext(pl)
+                Literal.create(pl.value, pl.dataType)
+              case (ex: Expression, index) => ex
+            }
+          case None =>
+        }
         fn match {
           case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
-            val exprs = e.asInstanceOf[Seq[Expression]].toList
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
                 exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
             DateAdd(exprs(2), exprs(1))
-          case f => UnresolvedFunction(f, e.asInstanceOf[Seq[Expression]],
-            isDistinct = false)
+          case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
     } |
     ( ( test(tokenize) ~ paramliteral ) | literal | paramLiteralQuestionMark) |
