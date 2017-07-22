@@ -2811,6 +2811,7 @@ public class SnappyTest implements Serializable {
       HostDescription hd = TestConfig.getInstance().getMasterDescription()
           .getVmDescription().getHostDescription();
       pidList = SnappyStartUpTest.getServerPidList();
+      pidList.addAll(SnappyStartUpTest.getLeaderPidList());
       log = new File(".");
       String server = log.getCanonicalPath() + File.separator + "threadDumpAllServers.sh";
       logFile = new File(server);
