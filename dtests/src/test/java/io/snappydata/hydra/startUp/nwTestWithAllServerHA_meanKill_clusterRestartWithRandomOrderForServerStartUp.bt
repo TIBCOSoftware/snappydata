@@ -8,4 +8,4 @@ io/snappydata/hydra/startUp/nwTestWithAllServerHA_meanKill_clusterRestartWithRan
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
