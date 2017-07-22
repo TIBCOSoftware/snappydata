@@ -1,8 +1,8 @@
 package io.snappydata.cluster
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Paths}
-import java.sql.SQLException
+import java.sql.{Connection, SQLException}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.Attribute
@@ -20,7 +20,7 @@ import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process.Process
 import scala.sys.process._
 
-class SecureSplitClusterDUnitTest(s: String)
+class SplitClusterDUnitSecureTest(s: String)
     extends DistributedTestBase(s)
         with SplitClusterDUnitTestBase
         with Serializable {
@@ -39,19 +39,15 @@ class SecureSplitClusterDUnitTest(s: String)
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
 
+  var user1Conn = null: Connection
+  var user2Conn = null: Connection
+  var snc = null: SnappyContext
+
   private[this] var host: Host = _
   var vm0: VM = _
   var vm1: VM = _
   var vm2: VM = _
   var vm3: VM = _
-
-  if (Host.getHostCount > 0) {
-    host = Host.getHost(0)
-    vm0 = host.getVM(0)
-    vm1 = host.getVM(1)
-    vm2 = host.getVM(2)
-    vm3 = host.getVM(3)
-  }
 
   val jdbcUser1 = "gemfire1"
   val jdbcUser2 = "gemfire2"
@@ -63,6 +59,9 @@ class SecureSplitClusterDUnitTest(s: String)
 
   override def tearDown2(): Unit = {
     super.tearDown2()
+    if (user1Conn != null) user1Conn.close()
+    if (user2Conn != null) user2Conn.close()
+    if (snc != null) snc.sparkContext.stop()
     if (restartLdap) {
       restartLdap = false
       stopLdapTestServer()
@@ -80,7 +79,7 @@ class SecureSplitClusterDUnitTest(s: String)
   }
 
   def startArgs: Array[AnyRef] = Array(
-    SecureSplitClusterDUnitTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
+    SplitClusterDUnitSecureTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -88,11 +87,11 @@ class SecureSplitClusterDUnitTest(s: String)
   protected val productDir =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
-  override def locatorClientPort: Int = { SecureSplitClusterDUnitTest.locatorNetPort }
+  override def locatorClientPort: Int = { SplitClusterDUnitSecureTest.locatorNetPort }
 
   override def startNetworkServers(): Unit = {}
 
-  override protected def testObject = SecureSplitClusterDUnitTest
+  override protected def testObject = SplitClusterDUnitSecureTest
 
   override def beforeClass(): Unit = {
     super.beforeClass()
@@ -101,8 +100,8 @@ class SecureSplitClusterDUnitTest(s: String)
 
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
-    val port = SecureSplitClusterDUnitTest.locatorPort
-    val netPort = SecureSplitClusterDUnitTest.locatorNetPort
+    val port = SplitClusterDUnitSecureTest.locatorPort
+    val netPort = SplitClusterDUnitSecureTest.locatorNetPort
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val confDir = s"$snappyProductDir/conf"
@@ -114,9 +113,9 @@ class SecureSplitClusterDUnitTest(s: String)
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $ldapConf
           |localhost  -locators=localhost[$port] -client-port=$netPort2 $ldapConf
           |""".stripMargin, s"$confDir/servers")
-    (snappyProductDir + "/sbin/snappy-start-all.sh").!!
+    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
-    vm3.invoke(getClass, "startSparkCluster", productDir)
+    SplitClusterDUnitSecureTest.startSparkCluster(productDir)
   }
 
   def getLdapConf(): String = {
@@ -132,20 +131,18 @@ class SecureSplitClusterDUnitTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
-    vm3.invoke(getClass, "stopSparkCluster", productDir)
+    SplitClusterDUnitSecureTest.stopSparkCluster(productDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
-    (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
+    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+
+    stopLdapTestServer()
+
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
 
-    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-lead-1"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-server-1"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-server-2"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "work", "localhost-locator-1"))
-
-    stopLdapTestServer()
   }
 
   def stopLdapTestServer(): Unit = {
@@ -215,16 +212,16 @@ class SecureSplitClusterDUnitTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    val conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-    val stmt = conn.createStatement()
+    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    val stmt = user1Conn.createStatement()
     val value = "brought up to zero"
-    val snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
 
     try {
       // Create row and column tables in embedded mode
-      SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", conn, stmt, Map
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt, Map
       ("COLUMN_BATCH_SIZE" -> "50"), false)
-      SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", conn, stmt, Map.empty, false)
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt, Map.empty, false)
 
       // insert
       snc.sql(s"insert into $embeddedColTab1 values (10000, 'ten thousand', 1000.23)")
@@ -246,8 +243,8 @@ class SecureSplitClusterDUnitTest(s: String)
       assert(rows == 0, s"expected 0 rows but found $rows in $embeddedRowTab1")
 
       // insert more data. Adds 1005 rows each
-      SplitClusterDUnitTest.populateTable(embeddedColTab1, conn)
-      SplitClusterDUnitTest.populateTable(embeddedRowTab1, conn)
+      SplitClusterDUnitTest.populateTable(embeddedColTab1, user1Conn)
+      SplitClusterDUnitTest.populateTable(embeddedRowTab1, user1Conn)
 
       rows = snc.sql(s"select * from $embeddedColTab1").collect().length
       // 1005 + 1 (which was not deleted above)
@@ -266,8 +263,8 @@ class SecureSplitClusterDUnitTest(s: String)
       snc.sql(s"create table $smartRowTab1 (col1 INT, col2 STRING, col3 DECIMAL) using row")
 
       // insert. Adds 1005 rows each
-      SplitClusterDUnitTest.populateTable(smartColTab1, conn)
-      SplitClusterDUnitTest.populateTable(smartRowTab1, conn)
+      SplitClusterDUnitTest.populateTable(smartColTab1, user1Conn)
+      SplitClusterDUnitTest.populateTable(smartRowTab1, user1Conn)
 
       // select
       def checkCount(sql: String, count: Int, eq: Boolean = true): Unit = {
@@ -313,7 +310,7 @@ class SecureSplitClusterDUnitTest(s: String)
     } finally {
       snc.sparkContext.stop()
       stmt.close()
-      conn.close()
+      user1Conn.close()
     }
   }
 
@@ -330,110 +327,99 @@ class SecureSplitClusterDUnitTest(s: String)
     * Grant and revoke select, insert, update and delete operations and verify from smart and
     * embedded side.
     *
-    * Attempt to modify hive metastore should fail via a thin connection.
+    * Attempt to modify hive metastore via a thin connection should fail.
     */
   def testGrantRevokeAndHiveModification(): Unit = {
     var props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    val connUser1 = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-    val stmtUser1 = connUser1.createStatement()
+    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    val user1Stmt = user1Conn.createStatement()
     val value = "brought up to zero"
 
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser2)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser2)
-    var connUser2 = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-    var stmtUser2 = connUser2.createStatement()
+    user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    var user2Stmt = user2Conn.createStatement()
 
-    var sncUser2 = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
 
-    try {
-      SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", connUser1, stmtUser1,
-        Map("COLUMN_BATCH_SIZE" -> "50"))
-      SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", connUser1, stmtUser1)
+    SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
+      Map("COLUMN_BATCH_SIZE" -> "50"))
+    SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, user1Stmt)
 
-      // All DMLs from another user should fail
-      def assertFailure(sql: () => Unit, s: String): Unit = {
-        try {
-          sql()
-          assert(false, s"Should have failed: $s")
-        } catch {
-          case e: SQLException =>
-            if ("42502".equals(e.getSQLState) || "42500".equals(e.getSQLState))
-              logInfo(s"Found expected error: $e")
-            else {
-              logInfo(s"Found different SQLState ${e.getSQLState}")
-              throw e
-            }
-        }
+    // All DMLs from another user should fail
+    def assertFailure(sql: () => Unit, s: String): Unit = {
+      try {
+        sql()
+        assert(false, s"Should have failed: $s")
+      } catch {
+        case e: SQLException =>
+          if ("42502".equals(e.getSQLState) || "42500".equals(e.getSQLState))
+            logInfo(s"Found expected error: $e")
+          else {
+            logInfo(s"Found different SQLState ${e.getSQLState}")
+            throw e
+          }
       }
-
-      List(s"select * from $jdbcUser1.$embeddedColTab1",
-        s"select * from $jdbcUser1.$embeddedRowTab1",
-        s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
-        s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
-        s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
-            s"col1 < 0",
-        s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
-      ).foreach(s => assertFailure(() => {stmtUser2.execute(s)}, s))
-
-      def reset(): Unit = {
-        // Get a fresh conn.
-        // TODO May not be needed later when cached plans are cleared for grant/revoke
-        stmtUser2.close()
-        connUser2.close()
-        connUser2 = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-        stmtUser2 = SplitClusterDUnitTest.getConnection(locatorClientPort, props).createStatement()
-
-        sncUser2 = testObject.getSnappyContextForConnector(locatorClientPort, props)
-      }
-
-      def exe(permit: String, op: String): Unit = {
-        val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
-        stmtUser1.execute(s"$permit $op on table $embeddedColTab1 $toFrom $jdbcUser2")
-        stmtUser1.execute(s"$permit $op on table $embeddedRowTab1 $toFrom $jdbcUser2")
-        if (!op.equalsIgnoreCase("select")) {
-          // We need select permission for insert, update or delete operation
-          stmtUser1.execute(s"$permit select on table $embeddedColTab1 $toFrom $jdbcUser2")
-          stmtUser1.execute(s"$permit select on table $embeddedRowTab1 $toFrom $jdbcUser2")
-        }
-      }
-
-      def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
-        // grant
-        reset()
-        exe("grant", op)
-        sqls.foreach(s => stmtUser2.execute(s))
-        sqls.foreach(s => sncUser2.sql(s))
-
-        // revoke
-        reset()
-        exe("revoke", op)
-        sqls.foreach(s => assertFailure(() => {stmtUser2.execute(s)}, s))
-        sqls.foreach(s => assertFailure(() => {sncUser2.sql(s)}, s))
-      }
-
-      verifyGrantRevoke("select", List(s"select * from $jdbcUser1.$embeddedColTab1",
-        s"select * from $jdbcUser1.$embeddedRowTab1"))
-      verifyGrantRevoke("insert",
-        List(s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
-          s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)"))
-      // No update on column tables
-      verifyGrantRevoke("update", List(s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = " +
-          s"'$value by $jdbcUser2' where col1 < 0"))
-      // No delete on column tables
-      verifyGrantRevoke("delete", List(s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"))
-
-      // SNAPPY_HIVE_METASTORE should not be modifiable by users.
-      val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
-      assertFailure(() => {stmtUser1.execute(sql)}, sql)
-    } finally {
-      sncUser2.sparkContext.stop()
-      stmtUser1.close()
-      stmtUser2.close()
-      connUser1.close()
-      connUser2.close()
     }
+
+    val sqls = List(s"select * from $jdbcUser1.$embeddedColTab1",
+      s"select * from $jdbcUser1.$embeddedRowTab1",
+      s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
+      s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
+      s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
+          s"col1 < 0",
+      s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
+    )
+    sqls.foreach(s => assertFailure(() => {user2Stmt.execute(s)}, s))
+
+    def reset(): Unit = {
+      // Get a fresh conn.
+      // TODO May not be needed later when cached plans are cleared for grant/revoke
+      user2Stmt.close()
+      user2Conn.close()
+      user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+      user2Stmt = SplitClusterDUnitTest.getConnection(locatorClientPort, props).createStatement()
+
+      snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    }
+
+    def exe(permit: String, op: String): Unit = {
+      val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
+      user1Stmt.execute(s"$permit $op on table $embeddedColTab1 $toFrom $jdbcUser2")
+      user1Stmt.execute(s"$permit $op on table $embeddedRowTab1 $toFrom $jdbcUser2")
+      if (!op.equalsIgnoreCase("select")) {
+        // We need select permission for insert, update or delete operation
+        user1Stmt.execute(s"$permit select on table $embeddedColTab1 $toFrom $jdbcUser2")
+        user1Stmt.execute(s"$permit select on table $embeddedRowTab1 $toFrom $jdbcUser2")
+      }
+    }
+
+    def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
+      // grant
+      reset()
+      exe("grant", op)
+      sqls.foreach(s => user2Stmt.execute(s))
+      sqls.foreach(s => snc.sql(s))
+
+      // revoke
+      reset()
+      exe("revoke", op)
+      sqls.foreach(s => assertFailure(() => {user2Stmt.execute(s)}, s))
+      sqls.foreach(s => assertFailure(() => {snc.sql(s)}, s))
+    }
+
+    verifyGrantRevoke("select", List(sqls(0), sqls(1)))
+    verifyGrantRevoke("insert", List(sqls(2), sqls(3)))
+    // No update on column tables
+    verifyGrantRevoke("update", List(sqls(4)))
+    // No delete on column tables
+    verifyGrantRevoke("delete", List(sqls(5)))
+
+    // SNAPPY_HIVE_METASTORE should not be modifiable by users.
+    val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
+    assertFailure(() => {user1Stmt.execute(sql)}, sql)
   }
 
   /**
@@ -478,48 +464,45 @@ class SecureSplitClusterDUnitTest(s: String)
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
 
-    val sns = testObject.getSnappyContextForConnector(locatorClientPort, props).snappySession
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    val sns = snc.snappySession
 
-    try {
-      val rdd = sns.sparkContext.parallelize(
-        (1 to 113999).map(i => Data2(i, s"name_$i", s"address_$i")))
-      val dataDF = sns.createDataFrame(rdd)
-      val col1 = "COL1"
-      val col2 = "COL2"
-      val col3 = "COL3"
-      val col4 = "COL4"
+    val rdd = sns.sparkContext.parallelize(
+      (1 to 113999).map(i => Data2(i, s"name_$i", s"address_$i")))
+    val dataDF = sns.createDataFrame(rdd)
+    val col1 = "COL1"
+    val col2 = "COL2"
+    val col3 = "COL3"
+    val col4 = "COL4"
 
-      sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE"->"50"), false)
-      sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
-      sns.catalog.refreshTable(smartColTab1)
-      sns.catalog.refreshTable(smartRowTab1)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE"->"50"), false)
+    sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
+    sns.catalog.refreshTable(smartColTab1)
+    sns.catalog.refreshTable(smartRowTab1)
 
-      sns.insert(smartRowTab1, Row(1, "one", "Don Bosco Road"))
-      sns.insert(smartColTab1, Row(1, "one", "Don Bosco Road"))
-      sns.insert(smartColTab1, Row(1000, "Something to make it more than the column batch size " +
-          "which is set to be fifty bytes above", "Some address"))
-      var rows = sns.sql(s"select * from $smartColTab1").collect().length
-      assert(rows == 2, s"expected 2 rows after insert, found $rows")
+    sns.insert(smartRowTab1, Row(1, "one", "Don Bosco Road"))
+    sns.insert(smartColTab1, Row(1, "one", "Don Bosco Road"))
+    sns.insert(smartColTab1, Row(1000, "Something to make it more than the column batch size " +
+        "which is set to be fifty bytes above", "Some address"))
+    var rows = sns.sql(s"select * from $smartColTab1").collect().length
+    assert(rows == 2, s"expected 2 rows after insert, found $rows")
 
-      assert(sns.put(smartRowTab1, Row(1, "Don Bosco", "Off Airport Road")) == 1, "Put failed")
-      assert(sns.put(smartRowTab1, Row(1000, "Don Bosco Jr.", "Off Airport Road")) == 1, "Put " +
-          "failed")
+    assert(sns.put(smartRowTab1, Row(1, "Don Bosco", "Off Airport Road")) == 1, "Put failed")
+    assert(sns.put(smartRowTab1, Row(1000, "Don Bosco Jr.", "Off Airport Road")) == 1, "Put " +
+        "failed")
 
-      val nameExpected = "Updated this row which had id = 1000"
-      assert(sns.update(smartRowTab1, s"$col1 = 1000", Row(nameExpected), col2) == 1,
-        "Update failed")
+    val nameExpected = "Updated this row which had id = 1000"
+    assert(sns.update(smartRowTab1, s"$col1 = 1000", Row(nameExpected), col2) == 1,
+      "Update failed")
 
-      assert(sns.delete(smartRowTab1, s"$col1 = 1000") == 1, "Delete failed")
+    assert(sns.delete(smartRowTab1, s"$col1 = 1000") == 1, "Delete failed")
 
-      sns.sqlContext.alterTable(smartRowTab1, true, StructField(col4, IntegerType, true))
+    sns.sqlContext.alterTable(smartRowTab1, true, StructField(col4, IntegerType, true))
 
-      sns.dropTable(smartColTab1, false)
-      assertTableDeleted(() => {sns.catalog.refreshTable(smartColTab1)}, smartColTab1)
-      sns.dropTable(smartRowTab1, false)
-      assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
-    } finally {
-      sns.sparkContext.stop()
-    }
+    sns.dropTable(smartColTab1, false)
+    assertTableDeleted(() => {sns.catalog.refreshTable(smartColTab1)}, smartColTab1)
+    sns.dropTable(smartRowTab1, false)
+    assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
   }
 
   def _testUDFAndProcs(): Unit = {
@@ -529,21 +512,21 @@ class SecureSplitClusterDUnitTest(s: String)
   }
 }
 
-object SecureSplitClusterDUnitTest extends SplitClusterDUnitTestObject {
+object SplitClusterDUnitSecureTest extends SplitClusterDUnitTestObject {
 
   private val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
   def startSparkCluster(productDir: String): Unit = {
     logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
+    logInfo((productDir + "/sbin/start-all.sh") !!)
   }
 
   def stopSparkCluster(productDir: String): Unit = {
     val sparkContext = SnappyContext.globalSparkContext
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
+    logInfo((productDir + "/sbin/stop-all.sh") !!)
   }
 
   override def createTablesAndInsertData(tableType: String): Unit = {}
