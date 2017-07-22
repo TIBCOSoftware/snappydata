@@ -260,19 +260,6 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     {
       (connection: Connection) => {
         // we are using the same connection on which tx was started.
-        /*// we should use a txId to start a tx if not started already
-        // then for subsequent use use the same txid for each connection
-        // the tx will be committed at the end.
-        val txId = SparkShellRDDHelper.snapshotTxId.get
-        // it should always be not null.
-        if (txId != null) {
-          if (!txId.equals("null")) {
-            val statement = connection.createStatement()
-            statement.execute(
-              s"call sys.USE_SNAPSHOT_TXID('$txId')")
-          }
-        }*/
-
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         var columnIndex = 1
@@ -303,6 +290,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           stmt.close()
         } catch {
           // TODO: test this code
+          //TODO:Suranjan This code is no needed now.
           // Need to rollback.
           // we can't do this for only this cachedbatch
           // all the inserts in this partitionId will be rolled back.
@@ -341,13 +329,6 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               }
             }
           }
-          /*val getSnapshotTXId = connection.prepareCall(s"call sys.GET_SNAPSHOT_TXID (?)")
-          getSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
-          getSnapshotTXId.execute()
-          val txid: String = getSnapshotTXId.getString(1)
-          getSnapshotTXId.close()*/
-          //SparkShellRDDHelper.snapshotTxId.set(txid)
-          //logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
         }
       }
     }
@@ -440,10 +421,6 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
       if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
         GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
-        // better to start snapshot tx here if not already started.
-        // if onexecutor then tx will be started already? check
-        //
-
         // the lookup key depends only on schema and not on the table
         // name since the prepared statement specific to the table is
         // passed in separately through the references object
