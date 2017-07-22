@@ -8,7 +8,7 @@ io/snappydata/hydra/startUp/nwTestWithServerHA_clusterRestart.conf
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwTestWithLeadHA_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -20,7 +20,7 @@ io/snappydata/hydra/startUp/nwTestWithLeadHA_clusterRestart.conf
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -32,7 +32,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterR
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -44,7 +44,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -56,7 +56,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterR
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -68,7 +68,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpDuringLocatorHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -80,7 +80,7 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpDuringLocatorHA
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -92,7 +92,7 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterLocatorSto
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterAllLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -104,7 +104,7 @@ io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpAfterAllLocator
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/executeAndVerifyOpsAfterAllLocatorsStopAndClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -116,7 +116,7 @@ io/snappydata/hydra/startUp/executeAndVerifyOpsAfterAllLocatorsStopAndClusterRes
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwTestWithServerHAWithRebalance_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -129,7 +129,7 @@ io/snappydata/hydra/startUp/nwTestWithServerHAWithRebalance_clusterRestart.conf
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwTestWithOpsDuringServerHA_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -142,7 +142,7 @@ io/snappydata/hydra/startUp/nwTestWithOpsDuringServerHA_clusterRestart.conf
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
 
 io/snappydata/hydra/startUp/nwTestWithNewServerRebalance_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -155,4 +155,4 @@ io/snappydata/hydra/startUp/nwTestWithNewServerRebalance_clusterRestart.conf
   numVMsToStop=1
   numRowsValidation = false
   fullResultSetValidation = true
-  isSmokeRun = false
+  isSmokeRun = true
