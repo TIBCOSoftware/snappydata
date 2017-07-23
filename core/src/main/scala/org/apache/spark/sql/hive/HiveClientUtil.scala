@@ -206,8 +206,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     logInfo(s"Using SnappyStore as metastore database, dbURL = $logURL")
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
     metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-      Misc.SNAPPY_HIVE_METASTORE)
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
