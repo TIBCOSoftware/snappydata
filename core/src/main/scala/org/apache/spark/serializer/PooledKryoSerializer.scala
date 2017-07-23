@@ -21,12 +21,10 @@ import java.lang.ref.SoftReference
 import java.nio.ByteBuffer
 
 import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
 import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
-
 import org.apache.spark.broadcast.TorrentBroadcast
 import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
 import org.apache.spark.network.util.ByteUnit
@@ -34,6 +32,7 @@ import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
@@ -181,6 +180,7 @@ final class PooledObject(serializer: PooledKryoSerializer,
   val input: Input = new KryoInputStringFix(0)
 
   def newOutput(): Output = new Output(bufferSize, -1)
+  def newOutput(size: Int): Output = new Output(size, -1)
 }
 
 // TODO: SW: pool must be per SparkContext
@@ -256,8 +256,33 @@ private[spark] final class PooledKryoSerializerInstance(
   }
 
   override def serialize[T: ClassTag](t: T): ByteBuffer = {
+
     val poolObject = KryoSerializerPool.borrow()
-    val output = poolObject.newOutput()
+    val output = t match {
+      // Special handling for wholeStageCodeGenRDD
+      case p: Tuple2[_, _] =>
+        // If it is a wholestageRDD, we know the serialization buffer needs to be
+        // bigger than the code string size. If it is not bigger, the writestring call inside
+        // WholeStageCodeGenRDD.write calls writeString_slow. Refer Output.writeString.
+        // So create a buffer of size greater than the size of code.
+        p._1 match {
+          case rdd: Product =>
+            if (rdd.productArity == 5 &&
+              // Hackish way to determine if it is a WholeStageRDD.
+              // Any change to WholeStageCodeGenRDD needs to reflect here
+              rdd.productElement(1).isInstanceOf[CodeAndComment]) {
+              val size = rdd.productElement(1).asInstanceOf[CodeAndComment].body.size
+              // round off to a multiple of 1024
+              val roundedSize = ((size + 4 * 1024) >> 10) << 10
+              poolObject.newOutput(roundedSize)
+            } else {
+              poolObject.newOutput()
+            }
+          case _ => poolObject.newOutput()
+        }
+      case _ => poolObject.newOutput()
+    }
+
     try {
       poolObject.kryo.writeClassAndObject(output, t)
       val result = ByteBuffer.wrap(output.toBytes)
