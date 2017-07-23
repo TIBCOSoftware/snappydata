@@ -27,14 +27,14 @@ import io.snappydata.Constant
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, DynamicReplacableConstant, Expression, SortDirection, SpecificInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.row.{RowDeleteExec, RowFormatScanRDD, RowUpdateExec}
+import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources._
@@ -700,21 +700,21 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   }
 
   final def columnBatchTableName(table: String): String = {
-    val tableName = if (table.indexOf('.') > 0) {
-      table.replace(".", Constant.SHADOW_SCHEMA_SEPARATOR)
+    val schemaDot = table.indexOf('.')
+    if (schemaDot > 0) {
+      table.substring(0, schemaDot + 1) + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
+          table.substring(schemaDot + 1) + Constant.SHADOW_TABLE_SUFFIX
     } else {
-      Constant.DEFAULT_SCHEMA + Constant.SHADOW_SCHEMA_SEPARATOR + table
+      Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR + table + Constant.SHADOW_TABLE_SUFFIX
     }
-    Constant.SHADOW_SCHEMA_NAME + "." + tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 
   final def getTableName(columnBatchTableName: String): String =
     GemFireContainer.getRowBufferTableName(columnBatchTableName)
 
   final def isColumnTable(tableName: String): Boolean = {
-    val r = tableName.startsWith(Constant.SHADOW_SCHEMA_NAME) &&
+    tableName.contains(Constant.SHADOW_SCHEMA_NAME_WITH_PREFIX) &&
         tableName.endsWith(Constant.SHADOW_TABLE_SUFFIX)
-    r
   }
 
   def getIndexUpdateStruct(indexEntry: ExternalTableMetaData,
