@@ -197,6 +197,13 @@ object ExternalStoreUtils extends Logging {
     }
   }
 
+  def isSmartConnectorMode(sparkContext: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
+    }
+  }
+
   def validateAndGetAllProps(session: Option[SparkSession],
       parameters: mutable.Map[String, String]): ConnectionProperties = {
 
