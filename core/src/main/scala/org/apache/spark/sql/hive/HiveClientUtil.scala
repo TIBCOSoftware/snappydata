@@ -185,7 +185,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///")
 
     val (dbURL, dbDriver) = resolveMetaStoreDBProps()
-    logInfo(s"Using dbURL = $dbURL for Hive metastore initialization")
     import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
     import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
     val currentUser = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
@@ -203,7 +202,7 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
         (dbURL, dbURL)
       }
     }
-    logInfo(s"Using SnappyStore as metastore database, dbURL = $logURL")
+    logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
     metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
