@@ -25,13 +25,8 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-object ConcurrentQueryRoutingDUnitSecureTest{
-  val adminUser: String = "gemfire7"
-}
-
 class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
-    extends ClusterManagerLDAPTestBase(s,
-      ConcurrentQueryRoutingDUnitSecureTest.adminUser) with Logging {
+    extends ClusterManagerLDAPTestBase(s) with Logging {
 
   override def setUp(): Unit = {
     super.setUp()

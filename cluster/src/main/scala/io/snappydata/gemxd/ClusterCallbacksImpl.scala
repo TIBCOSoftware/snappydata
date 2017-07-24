@@ -29,9 +29,10 @@ import io.snappydata.{SnappyEmbeddedTableStatsProviderService, SnappyTableStatsP
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
-import org.apache.spark.Logging
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.sql.SnappyContext
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -117,5 +118,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def publishColumnTableStats(): Unit = {
     SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
+  }
+
+  override def clearCache(): java.lang.Boolean = {
+    val session = SnappyContext(null: SparkContext).snappySession
+    session.clearPlanCache()
+    true
   }
 }

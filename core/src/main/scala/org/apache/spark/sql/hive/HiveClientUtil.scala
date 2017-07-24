@@ -187,20 +187,20 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     val (dbURL, dbDriver) = resolveMetaStoreDBProps()
     import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
     import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
-    var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
-    var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
-    if (!user.isDefined && !password.isDefined) {
-      user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
-      password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
-    }
-    var logURL = dbURL
-    val secureDbURL = if (user.isDefined && password.isDefined) {
-      logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";user=" + user.get
-      logURL + ";password=" + password.get + ";"
-    } else {
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        Misc.SNAPPY_HIVE_METASTORE)
-      dbURL
+    val currentUser = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
+    val currentPassword = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+    val (logURL, secureDbURL: String) = if (currentUser.isEmpty && currentPassword.isEmpty) {
+      val user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+      val password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+      if (user.isDefined && password.isDefined) {
+        val passwordLessURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE +
+            ";user=" + user.get
+        (passwordLessURL, passwordLessURL + ";password=" + password.get + ";")
+      } else {
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+          Misc.SNAPPY_HIVE_METASTORE)
+        (dbURL, dbURL)
+      }
     }
     logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)

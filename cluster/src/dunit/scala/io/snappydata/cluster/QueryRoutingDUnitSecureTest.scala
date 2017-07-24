@@ -24,13 +24,8 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-object QueryRoutingDUnitSecureTest{
-  val adminUser: String = "gemfire10"
-}
-
 class QueryRoutingDUnitSecureTest(val s: String)
-    extends ClusterManagerLDAPTestBase(s,
-      QueryRoutingDUnitSecureTest.adminUser) with Logging {
+    extends ClusterManagerLDAPTestBase(s) with Logging {
 
   override def setUp(): Unit = {
     super.setUp()
@@ -149,7 +144,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
     }
   }
 
-  def verifyQuery1(qryTest: String, stmt_rs: ResultSet): Unit = {
+  def verifyQuery1(qryTest: String, stmt_rs: ResultSet, numRows: Int): Unit = {
     val builder = StringBuilder.newBuilder
 
     var index = 0
@@ -166,10 +161,30 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:off println
     println(builder.toString())
     // scalastyle:on println
-    assert(index == 4000)
+    assert(index == numRows)
   }
 
-  def verifyQuery2(qryTest: String, stmt_rs: ResultSet): Unit = {
+  def verifyQuery1_1832(qryTest: String, stmt_rs: ResultSet, numRows: Int): Unit = {
+    val builder = StringBuilder.newBuilder
+
+    var index = 0
+    while (stmt_rs.next()) {
+      index += 1
+      val stmt_i = stmt_rs.getInt(1)
+      val stmt_j = stmt_rs.getInt(2)
+      val stmt_s = stmt_rs.getString(3)
+      if (index % 100 == 0) {
+        builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+      }
+    }
+    builder.append(s"$qryTest Stmt: Total number of rows = $index").append("\n")
+    // scalastyle:off println
+    println(builder.toString())
+    // scalastyle:on println
+    assert(index == numRows)
+  }
+
+  def verifyQuery2(qryTest: String, stmt_rs: ResultSet, numRows: Int): Unit = {
     val builder = StringBuilder.newBuilder
 
     var index = 0
@@ -186,10 +201,11 @@ class QueryRoutingDUnitSecureTest(val s: String)
     // scalastyle:off println
     println(builder.toString())
     // scalastyle:on println
-    assert(index == 400)
+    assert(index == numRows)
   }
 
-  def query1(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
+  def query1(serverHostPort: Int, tableName: String, user: String, pass: String,
+      numRows: Int): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
     // scalastyle:off println
     println(s"query1: Connected to $serverHostPort")
@@ -202,7 +218,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
           s" where ol_int_id < 5000000 " +
           s""
       val rs1 = stmt1.executeQuery(qry1)
-      verifyQuery1(qry1, rs1)
+      verifyQuery1(qry1, rs1, numRows)
       rs1.close()
       // Thread.sleep(1000000)
     } finally {
@@ -211,7 +227,31 @@ class QueryRoutingDUnitSecureTest(val s: String)
     }
   }
 
-  def query2(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
+  def query1_1832(serverHostPort: Int, tableName: String, user: String, pass: String,
+      numRows: Int): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"query1_1832: Connected to $serverHostPort")
+    // scalastyle:off println
+
+    val stmt1 = conn.createStatement()
+    try {
+    val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+        s" from $tableName " +
+        s" where ol_int_id < 5000000 " +
+        s""
+    val rs1 = stmt1.executeQuery(qry1)
+    verifyQuery1_1832(qry1, rs1, numRows)
+    rs1.close()
+    // Thread.sleep(1000000)
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
+  }
+
+  def query2(serverHostPort: Int, tableName: String, user: String, pass: String,
+      numRows: Int): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
     // scalastyle:off println
     println(s"query2: Connected to $serverHostPort")
@@ -224,7 +264,7 @@ class QueryRoutingDUnitSecureTest(val s: String)
           s" where ol_int_id < 5000000 " +
           s""
       val rs1 = stmt1.executeQuery(qry1)
-      verifyQuery2(qry1, rs1)
+      verifyQuery2(qry1, rs1, numRows)
       rs1.close()
       // Thread.sleep(1000000)
     } finally {
@@ -323,13 +363,13 @@ class QueryRoutingDUnitSecureTest(val s: String)
 
     // (1 to 5).foreach(d => query())
     try {
-      query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 4000)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
-    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2, 4000)
 
     try {
       dropTable(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
@@ -382,13 +422,13 @@ class QueryRoutingDUnitSecureTest(val s: String)
 
     // (1 to 5).foreach(d => query())
     try {
-      query2(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
+      query2(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4, 400)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
-    query2(serverHostPort, tableName, jdbcUser3, jdbcUser3)
+    query2(serverHostPort, tableName, jdbcUser3, jdbcUser3, 400)
 
     try {
       dropTable(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
@@ -398,5 +438,98 @@ class QueryRoutingDUnitSecureTest(val s: String)
       case t: Throwable => throw t
     }
     dropTable(serverHostPort, tableName, jdbcUser3, jdbcUser3)
+  }
+
+
+  def testColumnTableRouting_1832(): Unit = {
+    val jdbcUser1 = "gemfire5"
+    val jdbcUser2 = "gemfire6"
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"network server started at $serverHostPort")
+    // scalastyle:on println
+
+    val tableName = "order_line_col_1832"
+
+    createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows1(20, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows2(20, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2, 40)
+
+    val sysconn = netConnection(serverHostPort, adminUser, adminUser)
+    try {
+      try {
+        query1_1832(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 40)
+        assert(false) // fail
+      } catch {
+        case x: SQLException if x.getSQLState.equals("42502") => // ignore
+        case t: Throwable => throw t
+      }
+      sysconn.createStatement().execute("grant select on " +
+          jdbcUser2 + "." + tableName + " to " + jdbcUser1)
+      query1_1832(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 40)
+      sysconn.createStatement().execute("revoke select on " +
+          jdbcUser2 + "." + tableName + " from " + jdbcUser1)
+      try {
+        query1_1832(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 40)
+        assert(false) // fail
+      } catch {
+        case x: SQLException if x.getSQLState.equals("42502") => // ignore
+        case t: Throwable => throw t
+      }
+    } finally {
+      if (!sysconn.isClosed) {
+        sysconn.close()
+      }
+    }
+
+    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+  }
+
+  def testRowTableRouting_1832(): Unit = {
+    val jdbcUser1 = "gemfire7"
+    val jdbcUser2 = "gemfire8"
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"network server started at $serverHostPort")
+    // scalastyle:on println
+
+    val tableName = "order_line_row_1832"
+
+    createTable2(serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows3(20, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    insertRows4(20, serverHostPort, tableName, jdbcUser2, jdbcUser2)
+    query2(serverHostPort, tableName, jdbcUser2, jdbcUser2, 40)
+
+    val sysconn = netConnection(serverHostPort, adminUser, adminUser)
+    try {
+      try {
+        query1_1832(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 40)
+        assert(false) // fail
+      } catch {
+        case x: SQLException if x.getSQLState.equals("42502") => // ignore
+        case t: Throwable => throw t
+      }
+      sysconn.createStatement().execute("grant select on " +
+          jdbcUser2 + "." + tableName + " to " + jdbcUser1)
+      query1_1832(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 40)
+      sysconn.createStatement().execute("revoke select on " +
+          jdbcUser2 + "." + tableName + " from " + jdbcUser1)
+      try {
+        query1_1832(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 40)
+        assert(false) // fail
+      } catch {
+        case x: SQLException if x.getSQLState.equals("42502") => // ignore
+        case t: Throwable => throw t
+      }
+    } finally {
+      if (!sysconn.isClosed) {
+        sysconn.close()
+      }
+    }
+
+    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
   }
 }

@@ -32,8 +32,10 @@ object ClusterManagerLDAPTestBase{
   val securityProperties: Properties = new Properties()
 }
 
-abstract class ClusterManagerLDAPTestBase(s: String, adminUser: String)
+abstract class ClusterManagerLDAPTestBase(s: String)
     extends ClusterManagerTestBase(s) with Serializable {
+
+  val adminUser: String = "gemfire10"
 
   override def beforeClass(): Unit = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, adminUser,
