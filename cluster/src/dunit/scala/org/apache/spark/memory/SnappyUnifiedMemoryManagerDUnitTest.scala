@@ -20,6 +20,7 @@ package org.apache.spark.memory
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 
@@ -83,6 +84,24 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm0.invoke(getClass, "resetStorageMemory")
     vm1.invoke(getClass, "resetStorageMemory")
     vm2.invoke(getClass, "resetStorageMemory")
+  }
+
+  override def beforeClass(): Unit = {
+    super.beforeClass()
+    val zeroStartupRecoveryDelay = new SerializableRunnable() {
+      override def run(): Unit = GemFireXDUtils.setDefaultStartupRecoveryDelay(0)
+    }
+    zeroStartupRecoveryDelay.run()
+    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(zeroStartupRecoveryDelay))
+  }
+
+  override def afterClass(): Unit = {
+    super.afterClass()
+    val resetStartupRecoveryDelay = new SerializableRunnable() {
+      override def run(): Unit = GemFireXDUtils.setDefaultStartupRecoveryDelay(120000)
+    }
+    resetStartupRecoveryDelay.run()
+    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(resetStartupRecoveryDelay))
   }
 
   override def setUp(): Unit = {

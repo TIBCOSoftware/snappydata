@@ -29,10 +29,10 @@ sbin="`cd "$sbin"; pwd`"
 
 
 # Start Locators
-"$sbin"/snappy-locators.sh status
+"$sbin"/snappy-locators.sh status "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh status
+"$sbin"/snappy-servers.sh status "$@"
 
 # Start Leads
-"$sbin"/snappy-leads.sh status
+"$sbin"/snappy-leads.sh status "$@"
