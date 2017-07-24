@@ -49,6 +49,7 @@ contextFactory=
 newContext=
 TOK_EMPTY="EMPTY"
 APP_PROPS=$APP_PROPS
+securePart=""
 
 while (( "$#" )); do
   param="$1"
@@ -118,6 +119,15 @@ while (( "$#" )); do
       cmd="stopcontext"
       shift
       contextName="${1:-$TOK_EMPTY}"
+    ;;
+    --user)
+      shift
+      username="${1:-$TOK_EMPTY}"
+      while [ -z ${password} ]; do
+        read -s -p "Enter password for ${username}: " password
+        echo ""
+      done
+      securePart="-u ${username}:${password}"
     ;;
     *)
       showUsage $1
@@ -238,30 +248,32 @@ fi
 # invoke command
 
 jobServerURL="$hostnamePort/${cmdLine}"
+echo ${securePart}
+echo ""
 
 case $cmd in
   jobs | newcontext)
     if [[ $appjar != "" ]]; then
-      curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
+      curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS ${securePart}
     fi
 
     if [[ $newContext != "" ]]; then
-      curl -d "${APP_PROPS}" ${hostnamePort}/${newContext} $CURL_OPTS
+      curl -d "${APP_PROPS}" ${hostnamePort}/${newContext} $CURL_OPTS ${securePart}
     fi
 
-    curl -d "${APP_PROPS}" ${jobServerURL} $CURL_OPTS
+    curl -d "${APP_PROPS}" ${jobServerURL} $CURL_OPTS ${securePart}
   ;;
 
   status)
-    curl ${jobServerURL} $CURL_OPTS
+    curl ${jobServerURL} $CURL_OPTS  ${securePart}
   ;;
 
   listcontexts)
-    curl -X GET ${jobServerURL} $CURL_OPTS
+    curl -X GET ${jobServerURL} $CURL_OPTS  ${securePart}
   ;;
 
   stop | stopcontext)
-    curl -X DELETE ${jobServerURL} $CURL_OPTS
+    curl -X DELETE ${jobServerURL} $CURL_OPTS  ${securePart}
   ;;
 esac
 
