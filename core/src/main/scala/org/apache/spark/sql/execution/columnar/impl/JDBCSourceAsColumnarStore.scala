@@ -69,7 +69,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int)
       (implicit conn: Option[Connection] = None): Unit = {
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, closeOnSuccess = false, onExecutor = true)(doInsert(tableName, batch, batchId,
+    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true)(doInsert(tableName, batch, batchId,
       getPartitionID(conn, tableName, partitionId), maxDeltaRows))(implicitly, conn)
   }
 
@@ -79,7 +79,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     implicit val conn = self.getConnection(tableName, onExecutor = true)
 
     assert(!conn.isClosed)
-    tryExecute(tableName, closeOnSuccess = false, onExecutor = true) {
+    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) {
       (conn: Connection) => {
         connectionType match {
           case ConnectionType.Embedded =>
@@ -117,7 +117,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   }
 
   def commitTx(txId: String)(implicit conn: Option[Connection]): Unit = {
-    tryExecute(tableName, closeOnSuccess = true, onExecutor = true) {
+    tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
       (conn: Connection) => {
         connectionType match {
           case ConnectionType.Embedded =>
@@ -138,7 +138,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
 
   def rollbackTx(txId: String)(implicit conn: Option[Connection]): Unit = {
-    tryExecute(tableName, closeOnSuccess = true, onExecutor = true) {
+    tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
       (conn: Connection) => {
         connectionType match {
           case ConnectionType.Embedded =>

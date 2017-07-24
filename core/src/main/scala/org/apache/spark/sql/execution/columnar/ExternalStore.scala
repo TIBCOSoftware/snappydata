@@ -44,22 +44,21 @@ trait ExternalStore extends Serializable with Logging {
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String, closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+  def tryExecute[T: ClassTag](tableName: String, closeOnSuccessOrFailure: Boolean = true, onExecutor: Boolean = false)
       (f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
-    var isClosed = false
+    var success = false
     val conn = c.getOrElse(getConnection(tableName, onExecutor))
     try {
-      f(conn)
-    } catch {
-      case t: Throwable =>
-        conn.rollback()
-        conn.close()
-        isClosed = true
-        throw t
+      val ret = f(conn)
+      success = true
+      ret
     } finally {
-      if (closeOnSuccess && !isClosed) {
-        conn.commit()
+      if (closeOnSuccessOrFailure) {
+        if(success)
+          conn.commit()
+        else
+          conn.rollback()
         conn.close()
       }
     }
@@ -78,8 +77,13 @@ trait ConnectedExternalStore extends ExternalStore {
   }
 
   def commitAndClose(isSuccess: Boolean): Unit = {
-    if (!connectedInstance.isClosed && isSuccess) {
-      connectedInstance.commit()
+    // ideally shouldn't check for isClosed.it means some bug!
+    if (!connectedInstance.isClosed) {
+      if (isSuccess) {
+        connectedInstance.commit()
+      } else {
+        connectedInstance.rollback()
+      }
     }
     connectedInstance.close()
   }
@@ -90,7 +94,7 @@ trait ConnectedExternalStore extends ExternalStore {
       (implicit c: Option[Connection]): T = {
     assert(!connectedInstance.isClosed)
     val ret = super.tryExecute(tableName,
-      closeOnSuccess = false /* responsibility of the user to close later */ ,
+      closeOnSuccessOrFailure = false /* responsibility of the user to close later */ ,
       onExecutor)(f)(
       implicitly, Some(connectedInstance))
 
