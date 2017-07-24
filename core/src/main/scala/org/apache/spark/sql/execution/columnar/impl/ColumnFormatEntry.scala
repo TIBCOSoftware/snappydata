@@ -70,7 +70,9 @@ object ColumnFormatEntry extends Logging {
 
   val STATROW_COL_INDEX: Int = -1
 
-  val DELTA_STATROW_COL_INDEX: Int = -2
+  val DELETE_MASK_COL_INDEX: Int = -2
+
+  val DELTA_STATROW_COL_INDEX: Int = -3
 }
 
 /**

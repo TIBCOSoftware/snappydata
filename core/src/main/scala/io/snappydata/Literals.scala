@@ -220,13 +220,13 @@ object Property extends Enumeration {
   val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}plancache.size",
     s"Number of query plans that will be cached.", Some(3000))
 
-  val ColumnBatchSize = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.batchSize",
+  val ColumnBatchSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
-        "store. When inserting data into the column storage this is " +
-        "the unit (in bytes) that will be used to split the data into chunks " +
-        "for efficient storage and retrieval. It can also be set for each table " +
-        s"using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
-        "create table DDL.", Some(24 * 1024 * 1024))
+        "store. When inserting data into the column storage this is the unit " +
+        "(in bytes or k/m/g suffixes for units) that will be used to split the data " +
+        "into chunks for efficient storage and retrieval. It can also be set for each " +
+        s"table using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
+        "create table DDL. Maximum allowed size is 2GB.", Some("24m"))
 
   val ColumnMaxDeltaRows = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
     "The maximum number of rows that can be in the delta buffer of a column table. " +
@@ -254,7 +254,7 @@ object Property extends Enumeration {
         "and not the output size. Set this only if there are known to be queries " +
         "that can return very large number of rows in aggregation results. " +
         "Default value is 0b meaning no limit on the size so the optimized " +
-        "hash aggregation is always used.", Some("0b"))
+        "hash aggregation is always used.", Some("0"))
 
   val EnableExperimentalFeatures = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",

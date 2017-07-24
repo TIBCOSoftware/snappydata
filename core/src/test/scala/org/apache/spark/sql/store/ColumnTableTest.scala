@@ -800,7 +800,7 @@ class ColumnTableTest
       Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val snc = new SnappySession(sc)
-    Property.ColumnBatchSize.set(snc.sessionState.conf, 50)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "50")
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.insertInto(tableName)
@@ -983,7 +983,7 @@ class ColumnTableTest
   test("Check columnBatch num rows") {
     val data = (1 to 200) map (i => Seq(i, +i, +i))
     val snc = new SnappySession(sc)
-    Property.ColumnBatchSize.set(snc.sessionState.conf, 100)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "100")
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 

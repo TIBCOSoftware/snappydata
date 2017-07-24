@@ -50,6 +50,9 @@ abstract class UncompressedDecoderBase
     extends ColumnDecoder with Uncompressed {
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
+      field: StructField): Long = initializeCursor(columnBytes, cursor, field.dataType)
+
+  protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long = {
     baseCursor = cursor
     // adjust cursor for the first next call to avoid extra checks in next

@@ -213,24 +213,35 @@ class SnappySessionState(snappySession: SnappySession)
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] {
 
-    private def getKeyAttributes(table: LogicalPlan,
-        child: LogicalPlan, plan: LogicalPlan): Seq[NamedExpression] = {
+    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
+        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan) = {
+      var tableName = ""
       val keyColumns = table.collectFirst {
         case LogicalRelation(mutable: MutableRelation, _, _) =>
           val ks = mutable.getKeyColumns
           if (ks.isEmpty) throw new AnalysisException(
             s"Empty key columns for update/delete on $mutable")
+          tableName = mutable.table
           ks
       }.getOrElse(throw new AnalysisException(
         s"Update/Delete requires a MutableRelation but got $table"))
       // resolve key columns right away since this is late stage of analysis
-      keyColumns.map { name =>
-        analysis.withPosition(plan) {
-          child.resolveChildren(
-            name.split('.'), analyzer.resolver).getOrElse(
-            throw new AnalysisException(s"Could not resolve key column $name")
-          )
-        }
+      child.collectFirst {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _)
+          if mutable.table.equalsIgnoreCase(tableName) => mutable.withKeyColumns(lr, keyColumns)
+      } match {
+        case Some(sourcePlan) =>
+          val keyAttrs = keyColumns.map { name =>
+            analysis.withPosition(sourcePlan) {
+              child.resolveChildren(
+                name.split('.'), analyzer.resolver).getOrElse(
+                throw new AnalysisException(s"Could not resolve key column $name")
+              )
+            }
+          }
+          (keyAttrs, sourcePlan)
+        case _ => throw new AnalysisException(
+          s"Could not find any scan from the table '$tableName' to be updated in $plan")
       }
     }
 
@@ -240,13 +251,13 @@ class SnappySessionState(snappySession: SnappySession)
 
       case u@Update(table, child, keyColumns, _, _) if keyColumns.isEmpty =>
         // add the key columns to the plan
-        val keyAttrs = getKeyAttributes(table, child, u)
-        u.copy(keyColumns = keyAttrs.map(_.toAttribute))
+        val (keyAttrs, newChild) = getKeyAttributes(table, child, u)
+        u.copy(keyColumns = keyAttrs.map(_.toAttribute), child = newChild)
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty =>
         // add and project only the key columns
-        val keyAttrs = getKeyAttributes(table, child, d)
-        d.copy(child = Project(keyAttrs, child),
+        val (keyAttrs, newChild) = getKeyAttributes(table, child, d)
+        d.copy(child = Project(keyAttrs, newChild),
           keyColumns = keyAttrs.map(_.toAttribute))
     }
 

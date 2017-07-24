@@ -29,7 +29,7 @@ case class RowInsertExec(child: SparkPlan, putInto: Boolean,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
     numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
     onExecutor: Boolean, resolvedName: String, connProps: ConnectionProperties)
-    extends RowExec(partitionColumns, tableSchema, relation, onExecutor) {
+    extends RowExec {
 
   override def opType: String = if (putInto) "Put" else "Inserted"
 

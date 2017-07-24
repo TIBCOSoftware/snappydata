@@ -65,17 +65,17 @@ abstract class BaseColumnFormatRelation(
     _provider: String,
     _mode: SaveMode,
     _userSchema: StructType,
-    schemaExtensions: String,
-    ddlExtensionForShadowTable: String,
+    val schemaExtensions: String,
+    val ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    partitioningColumns: Seq[String],
+    val partitioningColumns: Seq[String],
     _context: SQLContext)
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
     with PartitionedDataSourceScan
     with RowInsertableRelation
-    with UpdatableRelation {
+    with MutableRelation {
 
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
@@ -164,12 +164,22 @@ abstract class BaseColumnFormatRelation(
 
   override def buildUnsafeScan(requiredColumns: Array[String],
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
-    val rdd = scanTable(table, requiredColumns, filters, -1)
+    // Remove the update/delete key columns from RDD requiredColumns.
+    // These will be handled by the ColumnTableScan directly.
+    val columns = requiredColumns.filter(!_.startsWith(ColumnDelta.mutableKeyNamePrefix))
+    val rdd = scanTable(table, columns, filters, -1)
     val partitionEvaluator = rdd match {
       case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
       case r => () => r.partitions
     }
-    val zipped = buildRowBufferRDD(partitionEvaluator, requiredColumns, filters,
+    // select the rowId from row buffer for update/delete keys
+    val numColumns = columns.length
+    val rowBufferColumns = if (numColumns < requiredColumns.length) {
+      val newColumns = java.util.Arrays.copyOf(columns, numColumns + 1)
+      newColumns(numColumns) = StoreUtils.SHADOW_COLUMN_NAME
+      newColumns
+    } else columns
+    val zipped = buildRowBufferRDD(partitionEvaluator, rowBufferColumns, filters,
       useResultSet = true).zipPartitions(rdd) { (leftItr, rightItr) =>
       Iterator[Any](leftItr, rightItr)
     }
@@ -244,6 +254,8 @@ abstract class BaseColumnFormatRelation(
       this, externalColumnTableName)
   }
 
+  override def getKeyColumns: Seq[String] = ColumnDelta.mutableKeyNames
+
   /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
    * execution should be a count of number of updated rows.
@@ -262,8 +274,9 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
-      numBuckets, schema, Some(this), keyColumns, connProperties, onExecutor = false)
+    null
+    // ColumnDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+    //  numBuckets, schema, Some(this), keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -484,25 +497,34 @@ class ColumnFormatRelation(
     _provider: String,
     _mode: SaveMode,
     _userSchema: StructType,
-    schemaExtensions: String,
-    ddlExtensionForShadowTable: String,
+    _schemaExtensions: String,
+    _ddlExtensionForShadowTable: String,
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
-    partitioningColumns: Seq[String],
+    _partitioningColumns: Seq[String],
     _context: SQLContext)
   extends BaseColumnFormatRelation(
     _table,
     _provider,
     _mode,
     _userSchema,
-    schemaExtensions,
-    ddlExtensionForShadowTable,
+    _schemaExtensions,
+    _ddlExtensionForShadowTable,
     _origOptions,
     _externalStore,
-    partitioningColumns,
+    _partitioningColumns,
     _context)
   with ParentRelation with DependentRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
+
+  override def withKeyColumns(relation: LogicalRelation,
+      keyColumns: Seq[String]): LogicalRelation = {
+    val cr = relation.relation.asInstanceOf[ColumnFormatRelation]
+    val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
+    relation.copy(relation = new ColumnFormatRelation(cr.table, cr.provider,
+      cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
+      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext))
+  }
 
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
@@ -662,9 +684,19 @@ class IndexColumnFormatRelation(
       _partitioningColumns,
       _context)
         with DependentRelation {
+
   override def baseTable: Option[String] = Some(baseTableName)
 
   override def name: String = _table
+
+  override def withKeyColumns(relation: LogicalRelation,
+      keyColumns: Seq[String]): LogicalRelation = {
+    val cr = relation.relation.asInstanceOf[IndexColumnFormatRelation]
+    val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
+    relation.copy(relation = new IndexColumnFormatRelation(cr.table, cr.provider,
+      cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable, cr.origOptions,
+      cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName))
+  }
 
   def getBaseTableRelation: ColumnFormatRelation = {
     val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
@@ -776,7 +808,7 @@ final class DefaultSource extends SchemaRelationProvider
     val baseTable = options.get(StoreUtils.GEM_INDEXED_TABLE)
     val relation = baseTable match {
       case Some(btable) => new IndexColumnFormatRelation(
-          tableName,
+        tableName,
         getClass.getCanonicalName,
         mode,
         schema,
@@ -788,7 +820,7 @@ final class DefaultSource extends SchemaRelationProvider
         sqlContext,
         btable)
       case None => new ColumnFormatRelation(
-          tableName,
+        tableName,
         getClass.getCanonicalName,
         mode,
         schema,

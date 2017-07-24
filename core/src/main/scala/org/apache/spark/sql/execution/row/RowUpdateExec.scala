@@ -17,10 +17,10 @@
 package org.apache.spark.sql.execution.row
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.StructType
 
 /**
  * Generated code plan for updates in a row table.
@@ -30,7 +30,7 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
     numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
     updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
     keyColumns: Seq[Attribute], connProps: ConnectionProperties, onExecutor: Boolean)
-    extends RowExec(partitionColumns, tableSchema, relation, onExecutor) {
+    extends RowExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
@@ -58,16 +58,8 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
         u, child.output))), doSubexpressionElimination = true)
     ctx.currentVars = null
 
-    var seq = 0
-    val stmtSchema = StructType(updateExpressions.map {
-      case ne: NamedExpression =>
-        val a = ne.toAttribute
-        StructField(a.name, a.dataType, a.nullable, a.metadata)
-      case e: Expression =>
-        val f = StructField(s"UpdateCol_$seq", e.dataType, e.nullable)
-        seq += 1
-        f
-    } ++ StructType.fromAttributes(keyColumns))
+    val stmtSchema = StructType(getUpdateSchema(updateExpressions) ++
+        StructType.fromAttributes(keyColumns))
     super.doConsume(ctx, stmtInput, stmtSchema)
   }
 }

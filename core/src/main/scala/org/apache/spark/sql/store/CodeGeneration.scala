@@ -53,6 +53,10 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  */
 object CodeGeneration extends Logging {
 
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logDebug(msg: => String): Unit = super.logDebug(msg)
+
   /**
    * A loading cache of generated <code>GeneratedStatement</code>s.
    */

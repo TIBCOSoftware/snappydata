@@ -17,12 +17,11 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{ExecutorMultiBucketLocalShellPartition, Utils}
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -36,9 +35,15 @@ import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClie
 /**
  * Base class for bulk insert/mutation operations for column and row tables.
  */
-abstract class TableExec(partitionColumns: Seq[String],
-    relationSchema: StructType, relation: Option[DestroyRelation],
-    onExecutor: Boolean) extends UnaryExecNode with CodegenSupportOnExecutor {
+trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
+
+  def partitionColumns: Seq[String]
+
+  def tableSchema: StructType
+
+  def relation: Option[DestroyRelation]
+
+  def onExecutor: Boolean
 
   @transient protected lazy val (metricAdd, metricValue) = Utils.metricMethods
 
@@ -68,7 +73,7 @@ abstract class TableExec(partitionColumns: Seq[String],
   override def requiredChildDistribution: Seq[Distribution] = {
     if (partitioned) {
       // For partitionColumns find the matching child columns
-      val schema = relationSchema
+      val schema = tableSchema
       val childOutput = child.output
       val childPartitioningAttributes = partitionColumns.map(partColumn =>
         childOutput(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))

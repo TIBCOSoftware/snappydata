@@ -20,18 +20,17 @@ package org.apache.spark.sql.execution.row
 import java.sql.Connection
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression}
 import org.apache.spark.sql.execution.TableExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation}
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.{StructField, StructType}
 
 /**
  * Base class for bulk row table insert, update, put, delete operations.
  */
-abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType,
-    relation: Option[DestroyRelation], onExecutor: Boolean)
-    extends TableExec(partitionColumns, relationSchema, relation, onExecutor) {
+trait RowExec extends TableExec {
 
   @transient private[sql] var connRef = -1
   @transient protected var connTerm: String = _
@@ -48,6 +47,7 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
 
   protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
+    connTerm = ctx.freshName("connection")
     if (onExecutor) {
       // actual connection will be filled into references before execution
       connRef = ctx.references.length
@@ -56,7 +56,6 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
       (s"final $connectionClass $connTerm = $connObj;", "", "")
     } else {
       val utilsClass = ExternalStoreUtils.getClass.getName
-      connTerm = ctx.freshName("connection")
       ctx.addMutableState(connectionClass, connTerm, "")
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       val failure = ctx.freshName("failure")
@@ -70,7 +69,7 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
            |  try {
            |    $connTerm.close();
            |  } catch (java.sql.SQLException sqle) {
-           |    $failure = java.io.IOException(sqle.toString(), sqle);
+           |    $failure = new java.io.IOException(sqle.toString(), sqle);
            |  }
            |}
            |if ($failure != null) throw $failure;""".stripMargin
@@ -89,7 +88,8 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
        |${if (numOpRowsMetric eq null) ""
           else s"$numOpRowsMetric.${metricAdd(numOperations)};"}""".stripMargin
 
-  protected def doProduce(ctx: CodegenContext, pstmtStr: String): String = {
+  protected def doProduce(ctx: CodegenContext, pstmtStr: String,
+      produceAddonCode: String = ""): String = {
     val (initCode, commitCode, endCode) = connectionCodes(ctx)
     result = ctx.freshName("result")
     ctx.addMutableState("long", result, s"$result = -1L;")
@@ -99,6 +99,20 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
     else metricTerm(ctx, s"num${opType}Rows")
     val numOperations = ctx.freshName("numOperations")
     val childProduce = doChildProduce(ctx)
+    val mutateTable = ctx.freshName("mutateTable")
+    ctx.addNewFunction(mutateTable,
+      s"""
+         |private void $mutateTable(final java.sql.PreparedStatement $stmt)
+         |    throws java.io.IOException, java.sql.SQLException {
+         |  int $rowCount = 0;
+         |  $childProduce
+         |  if ($rowCount > 0) {
+         |    ${executeBatchCode(numOperations, numOpRowsMetric)}
+         |    $stmt.close();
+         |    $commitCode
+         |  }$produceAddonCode
+         |}
+      """.stripMargin)
     s"""
        |if ($result >= 0L) return;
        |$initCode
@@ -106,18 +120,24 @@ abstract class RowExec(partitionColumns: Seq[String], relationSchema: StructType
        |  final java.sql.PreparedStatement $stmt =
        |      $connTerm.prepareStatement("$pstmtStr");
        |  $result = 0L;
-       |  int $rowCount = 0;
-       |  $childProduce
-       |  if ($rowCount > 0) {
-       |    ${executeBatchCode(numOperations, numOpRowsMetric)}
-       |    $stmt.close();
-       |    $commitCode
-       |  }
+       |  $mutateTable($stmt);
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |} catch (java.sql.SQLException sqle) {
        |  throw new java.io.IOException(sqle.toString(), sqle);
        |}$endCode
     """.stripMargin
+  }
+
+  protected def getUpdateSchema(updateExpressions: Seq[Expression]): Seq[StructField] = {
+    var seq = -1
+    updateExpressions.map {
+      case ne: NamedExpression =>
+        val a = ne.toAttribute
+        StructField(a.name, a.dataType, a.nullable, a.metadata)
+      case e: Expression =>
+        seq += 1
+        StructField(s"UpdateCol_$seq", e.dataType, e.nullable)
+    }
   }
 
   protected def doConsume(ctx: CodegenContext, input: Seq[ExprCode],

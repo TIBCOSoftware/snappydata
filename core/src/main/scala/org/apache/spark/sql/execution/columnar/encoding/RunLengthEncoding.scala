@@ -46,12 +46,16 @@ abstract class RunLengthDecoderBase
   private[this] var currentValueString: UTF8String = _
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      dataType: DataType): Long = {
+      field: StructField): Long = {
     cursorPos = cursor
     // use the current count + value for cursor since that will be read and
     // written most frequently while actual cursor will be less frequently used
     0L
   }
+
+  override protected[sql] def realCursor(cursor: Long): Long = cursorPos
+
+  override protected[sql] def setRealCursor(cursor: Long): Unit = cursorPos = cursor
 
   override final def nextByte(columnBytes: AnyRef, countValue: Long): Long = {
     val count = countValue.toInt

@@ -14,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql.store
 
 import io.snappydata.Property
@@ -21,13 +22,14 @@ import io.snappydata.Property
 import org.apache.spark.sql.SnappySession
 
 /**
- * Tests for ColumnEncoder and ColumnDecoder implementations.
+ * Tests for updates/deletes on column table.
  */
-class ColumnEncodersTest extends ColumnTablesTestBase {
+class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
-  test("Type encoders/decoders test") {
+  test("basic update") {
     val session = new SnappySession(sc)
-    session.conf.set(Property.ColumnBatchSize.name, "8k")
-    runAllTypesTest(session, numRowsLower = 10000, numRowsUpper = 20000, numIterations = 5)
+    // reduced size to ensure both column table and row buffer have data
+    session.conf.set(Property.ColumnBatchSize.name, "100k")
+    runAllTypesTest(session)
   }
 }

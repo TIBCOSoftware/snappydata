@@ -506,13 +506,6 @@ object Utils {
     }: _*)
   }
 
-  def getSchemaFields(schema: StructType): Map[String, StructField] = {
-    Map(schema.fields.flatMap { f =>
-      Iterator((f.name, f))
-    }: _*)
-  }
-
-
   def getFields(o: Any): Map[String, Any] = {
     val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
       field.setAccessible(true)

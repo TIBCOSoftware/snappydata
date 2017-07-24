@@ -79,14 +79,15 @@ object BitSet {
    */
   def nextSetBit(baseObject: AnyRef, baseAddress: Long, startIndex: Int,
       sizeInBytes: Int): Int = {
-    var byteIndex = startIndex >> 3
+    // round to nearest word
+    var byteIndex = (startIndex >> 6) << 3
     if (byteIndex < sizeInBytes) {
-      // find the next set bit in the current long
-      val longIndex = startIndex & 0x3f
+      // mod 64 gives the number of bits to skip in current word
+      val indexInWord = startIndex & 0x3f
       // get as a long for best efficiency in little-endian format
       // i.e. LSB first since that is the way bytes have been written
       var longVal = ColumnEncoding.readLong(baseObject,
-        baseAddress + byteIndex) >> longIndex
+        baseAddress + byteIndex) >> indexInWord
       if (longVal != 0) {
         return startIndex + java.lang.Long.numberOfTrailingZeros(longVal)
       }

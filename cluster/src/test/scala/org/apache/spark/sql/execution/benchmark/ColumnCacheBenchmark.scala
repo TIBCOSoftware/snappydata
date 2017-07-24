@@ -41,13 +41,13 @@ package org.apache.spark.sql.execution.benchmark
 import java.util.UUID
 
 import io.snappydata.SnappyFunSuite
-
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
@@ -319,7 +319,8 @@ object ColumnCacheBenchmark {
     val len = Math.min(o1.numBytes(), o2.numBytes())
     var i = 0
     while (i < len) {
-      val res = (o1.getByte(i) & 0xFF) - (o2.getByte(i) & 0xFF)
+      val res = (Platform.getByte(o1.getBaseObject, o1.getBaseOffset + i) & 0xFF) -
+        (Platform.getByte(o2.getBaseObject, o2.getBaseOffset + i) & 0xFF)
       if (res != 0) return res
       i += 1
     }

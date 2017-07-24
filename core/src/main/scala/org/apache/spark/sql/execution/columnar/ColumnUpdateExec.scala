@@ -22,8 +22,11 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Exp
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
+import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
-import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation}
+import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -34,25 +37,36 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     tableSchema: StructType, externalStore: ExternalStore, relation: Option[DestroyRelation],
     updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
     keyColumns: Seq[Attribute], connProps: ConnectionProperties, onExecutor: Boolean)
-    extends TableExec(partitionColumns, tableSchema, relation, onExecutor) {
+    extends TableExec with RowExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
+  private lazy val schemaAttributes = tableSchema.toAttributes
   /**
    * The indexes below are the final ones that go into ColumnFormatKey(columnIndex).
    * For deltas the convention is to use negative values beyond those available for
-   * each hierarchy depth. So starting at DELTA_STATROW index of -2, the first column
-   * will use indexes -3, -4, -5 for hierarchy depth 3, second column will use
-   * indexes -6, -7, -8 and so on. The values below are initialized to the first value
-   * in the series.
+   * each hierarchy depth. So starting at DELTA_STATROW index of -3, the first column
+   * will use indexes -4, -5, -6 for hierarchy depth 3, second column will use
+   * indexes -7, -8, -9 and so on. The values below are initialized to the first value
+   * in the series while merges with higher hierarchy depth will be done via a
+   * CacheListener on the store.
    */
   private val updateIndexes = updateColumns.map(a => ColumnDelta.deltaColumnIndex(
-    Utils.fieldIndex(tableSchema.toAttributes, a.name,
+    Utils.fieldIndex(schemaAttributes, a.name,
       sqlContext.conf.caseSensitiveAnalysis), hierarchyDepth = 0))
 
   override protected def opType: String = "Update"
 
   override def nodeName: String = "ColumnUpdate"
+
+  override lazy val metrics: Map[String, SQLMetric] = {
+    if (onExecutor) Map.empty
+    else Map(
+      "numUpdateRows" -> SQLMetrics.createMetric(sparkContext,
+        "number of updates to row buffer"),
+      "numUpdateColumnBatchRows" -> SQLMetrics.createMetric(sparkContext,
+        "number of updates to column batches"))
+  }
 
   @transient private var batchIdTerm: String = _
   @transient private var batchOrdinal: String = _
@@ -60,16 +74,17 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
   @transient private var updateMetric: String = _
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    val result = ctx.freshName("result")
-    val childProduce = doChildProduce(ctx)
-    s"""
-       |$childProduce
-       |if ($batchOrdinal > 0) {
-       |  $finishUpdate($batchIdTerm);
-       |}
-       |final long $result = ${if (updateMetric eq null) "0L" else metricValue(updateMetric)};
-       |${consume(ctx, Seq(ExprCode("", "false", result)))}
-    """.stripMargin
+    val sql = new StringBuilder
+    sql.append("UPDATE ").append(resolvedName).append(" SET ")
+    JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name), escapeQuotes = true)
+    sql.append(s" WHERE ${StoreUtils.SHADOW_COLUMN_NAME}=?")
+
+    doProduce(ctx, sql.toString(),
+      s"""
+         |if ($batchOrdinal > 0) {
+         |  $finishUpdate($batchIdTerm);
+         |}
+      """.stripMargin)
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
@@ -90,7 +105,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val tableName = ctx.addReferenceObj("columnTable", resolvedName, "java.lang.String")
     val partitionId = ctx.freshName("partitionId")
-    updateMetric = if (onExecutor) null else metricTerm(ctx, "numUpdateRows")
+    updateMetric = if (onExecutor) null else metricTerm(ctx, "numUpdateColumnBatchRows")
 
     val deltaEncoderClass = classOf[ColumnDeltaEncoder].getName
     val columnBatchClass = classOf[ColumnBatch].getName
@@ -111,14 +126,19 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
         u, child.output))), doSubexpressionElimination = true)
     ctx.currentVars = null
 
-    // first column in keyColumns should be column batchId
-    assert(keyColumns.head.name.equalsIgnoreCase(ColumnDelta.COLUMN_BATCH_ID_COLUMN))
-    // second column in keyColumns should be ordinal in the column
-    assert(keyColumns(1).name.equalsIgnoreCase(ColumnDelta.COLUMN_BATCH_ORDINAL_COLUMN))
+    // first column in keyColumns should be ordinal in the column
+    assert(keyColumns.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
+    // second column in keyColumns should be column batchId
+    assert(keyColumns(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
 
     val numKeys = keyColumns.length
-    batchIdTerm = updateInput(updateInput.length - numKeys).value
-    val positionTerm = updateInput(updateInput.length - numKeys + 1).value
+    val positionTerm = updateInput(updateInput.length - numKeys).value
+    batchIdTerm = updateInput(updateInput.length - numKeys + 1).value
+
+    val updateVarsCode = evaluateVariables(updateInput)
+    // row buffer needs to select the rowId for the ordinal
+    val rowConsume = doConsume(ctx, updateInput, StructType(
+      getUpdateSchema(updateExpressions) :+ ColumnDelta.mutableKeyFields.head))
 
     ctx.addNewFunction(initializeEncoders,
       s"""
@@ -144,9 +164,9 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
-           |private void $function(int $ordinal, int columnPosition,
+           |private void $function(int $ordinal, int $positionTerm,
            |    ${ctx.javaType(dataType)} ${ev.value}, boolean ${ev.isNull}) {
-           |  $encoderTerm.setUpdatePosition(columnPosition);
+           |  $encoderTerm.setUpdatePosition($positionTerm);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
                 cursorTerm, ev, ordinal)}
            |}
@@ -170,6 +190,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch,
          |        $partitionId, $lastColumnBatchId, -1);
+         |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();
          |    $lastColumnBatchId = $batchIdTerm;
@@ -179,12 +200,16 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
       """.stripMargin)
 
     s"""
-       |${evaluateVariables(updateInput)}
-       |// finish and apply update if the next column batch ID is seen
-       |$finishUpdate($batchIdTerm);
-       |// write to the encoders
-       |$callEncoders
-       |$batchOrdinal++;
+       |$updateVarsCode
+       |if ($batchIdTerm != null) {
+       |  // finish and apply update if the next column batch ID is seen
+       |  $finishUpdate($batchIdTerm);
+       |  // write to the encoders
+       |  $callEncoders
+       |  $batchOrdinal++;
+       |} else {
+       |  $rowConsume
+       |}
     """.stripMargin
   }
 }

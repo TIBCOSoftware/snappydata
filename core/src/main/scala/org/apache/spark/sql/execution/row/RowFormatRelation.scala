@@ -133,7 +133,7 @@ class RowFormatRelation(
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
-    val isPartitioned = numBuckets > 0
+    val isPartitioned = numBuckets != 1
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>

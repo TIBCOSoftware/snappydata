@@ -20,7 +20,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
-import org.apache.spark.sql.types.{BooleanType, DataType}
+import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
 import org.apache.spark.unsafe.Platform
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
@@ -50,7 +50,7 @@ abstract class BooleanBitSetDecoderBase
   private[this] var currentWord = 0L
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      dataType: DataType): Long = {
+      field: StructField): Long = {
     // baseCursor should never change after initialization
     baseCursor = cursor
     byteCursor = cursor
@@ -61,9 +61,13 @@ abstract class BooleanBitSetDecoderBase
     ColumnEncoding.MAX_BITMASK
   }
 
+  override protected[sql] def realCursor(cursor: Long): Long = byteCursor
+
+  override protected[sql] def setRealCursor(cursor: Long): Unit = byteCursor = cursor
+
   override final def nextBoolean(columnBytes: AnyRef, mask: Long): Long = {
     val currentBitMask = mask << 1
-    if (currentBitMask != 1L) currentBitMask
+    if (currentBitMask != 0L) currentBitMask
     else {
       currentWord = ColumnEncoding.readLong(columnBytes, byteCursor)
       byteCursor += 8
@@ -139,6 +143,8 @@ trait BooleanBitSetEncoderBase
     cursor
   }
 
+  override def sizeInBytes(cursor: Long): Long = byteCursor - columnBeginPosition + 8
+
   override final def writeBoolean(mask: Long, value: Boolean): Long = {
     if (value) {
       currentWord |= mask
@@ -172,16 +178,20 @@ trait BooleanBitSetEncoderBase
     }
   }
 
-  override abstract def finish(mask: Long): ByteBuffer = {
-    if (mask > 1L) {
+  override def flushWithoutFinish(mask: Long): Long = {
+    if (mask != 1L) {
       // one more word required
       byteCursor = writeCurrentWord() + 8L
     }
-    super.finish(byteCursor)
+    byteCursor
   }
 
-  override def finishedSize(mask: Long, dataBeginPosition: Long): Long = {
-    if (mask > 1L) super.finishedSize(byteCursor + 8L, startByteCursor)
-    else super.finishedSize(byteCursor, startByteCursor)
+  override abstract def finish(mask: Long): ByteBuffer = {
+    super.finish(flushWithoutFinish(mask))
+  }
+
+  override def encodedSize(mask: Long, dataBeginPosition: Long): Long = {
+    if (mask != 1L) super.encodedSize(byteCursor + 8L, startByteCursor)
+    else super.encodedSize(byteCursor, startByteCursor)
   }
 }

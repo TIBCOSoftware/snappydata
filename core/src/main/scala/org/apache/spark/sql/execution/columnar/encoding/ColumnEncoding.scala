@@ -73,22 +73,41 @@ abstract class ColumnDecoder extends ColumnEncoding {
 
   protected def hasNulls: Boolean
 
-  protected def initializeNulls(columnBytes: AnyRef,
+  protected[sql] def initializeNulls(columnBytes: AnyRef,
       cursor: Long, field: StructField): Long
 
   protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      dataType: DataType): Long
+      field: StructField): Long
 
-  def initialize(buffer: ByteBuffer, field: StructField): Long = {
+  /**
+   * Get the cursor position for the real encoded data. Some encodings return
+   * a dummy value as cursor and track their own cursor to underlying data,
+   * so this method should return that.
+   */
+  protected[sql] def realCursor(cursor: Long): Long = cursor
+
+  /**
+   * Update the cursor to the underlying data for encodings that track their own
+   * cursors (e.g. boolean bitset, run length) as returned by [[realCursor()]].
+   * It is assumed that the dummy value returned by [[initializeCursor()]] would
+   * not be effected by this call and the one returned initially will still be valid.
+   */
+  protected[sql] def setRealCursor(cursor: Long): Unit =
+    throw new UnsupportedOperationException(s"setRealCursor for $toString")
+
+  final def initialize(buffer: ByteBuffer, field: StructField): Long = {
     val allocator = ColumnEncoding.getAllocator(buffer)
     initialize(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
         buffer.position(), field)
   }
 
-  def initialize(columnBytes: AnyRef, cursor: Long,
+  /**
+   * Delta encoder/decoder depend on initialize being final and invoking
+   * initializeCursor and initializeNulls as below.
+   */
+  final def initialize(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = {
-    initializeCursor(columnBytes, initializeNulls(columnBytes, cursor, field),
-      field.dataType)
+    initializeCursor(columnBytes, initializeNulls(columnBytes, cursor, field), field)
   }
 
   private[sql] def initializeNullsBeforeFinish(
@@ -371,6 +390,8 @@ trait ColumnEncoder extends ColumnEncoding {
     initialize(Utils.getSQLDataType(field.dataType), field.nullable,
       initSize, withHeader, allocator)
 
+  var SW_dataType: DataType = _
+
   /**
    * Initialize this ColumnEncoder.
    *
@@ -383,6 +404,7 @@ trait ColumnEncoder extends ColumnEncoding {
    */
   def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
+    SW_dataType = dataType
     setAllocator(allocator)
     val defSize = defaultSize(dataType)
 
@@ -804,6 +826,9 @@ trait ColumnEncoder extends ColumnEncoding {
     position + 8
   }
 
+  /** flush any pending data when [[finish]] is not being invoked explicitly */
+  def flushWithoutFinish(cursor: Long): Long = cursor
+
   /**
    * Finish encoding the current column and return the data as a ByteBuffer.
    * The encoder can be reused for new column data of same type again.
@@ -811,11 +836,11 @@ trait ColumnEncoder extends ColumnEncoding {
   def finish(cursor: Long): ByteBuffer
 
   /**
-   * The final size of the encoder column which should match that occupied
-   * after [[finish]] but not writing anything.
+   * The final size of the encoder column (excluding header and nulls) which should match
+   * that occupied after [[finish]] but without writing anything.
    */
-  def finishedSize(cursor: Long, dataBeginPosition: Long): Long =
-    throw new UnsupportedOperationException(s"finishedSize for $toString")
+  def encodedSize(cursor: Long, dataBeginPosition: Long): Long =
+    throw new UnsupportedOperationException(s"encodedSize for $toString")
 
   /**
    * Close and relinquish all resources of this encoder.
@@ -875,7 +900,13 @@ object ColumnEncoding {
     if (buffer.isDirect) ManagedDirectBufferAllocator.instance()
     else HeapBufferAllocator.instance()
 
-  def getColumnDecoder(buffer: ByteBuffer,
+  def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
+    val allocator = getAllocator(buffer)
+    getColumnDecoder(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
+        buffer.position(), field)
+  }
+
+  def getColumnDecoderAndBuffer(buffer: ByteBuffer,
       field: StructField): (ColumnDecoder, AnyRef, Long) = {
     val allocator = getAllocator(buffer)
     val columnBytes = allocator.baseObject(buffer)
@@ -1148,8 +1179,8 @@ trait NullableDecoder extends ColumnDecoder {
 
   protected def initializeNulls(columnBytes: AnyRef,
       cursor: Long, field: StructField): Long = {
-    var position = cursor + 4
     // skip typeId
+    var position = cursor + 4
     numNullBytes = ColumnEncoding.readInt(columnBytes, position)
     assert(numNullBytes > 0,
       s"Expected valid null values but got length = $numNullBytes")
@@ -1259,8 +1290,8 @@ trait NotNullEncoder extends ColumnEncoder {
     }
   }
 
-  override def finishedSize(cursor: Long, dataBeginPosition: Long): Long =
-    cursor - dataBeginPosition + 8L /* header */
+  override def encodedSize(cursor: Long, dataBeginPosition: Long): Long =
+    cursor - dataBeginPosition
 }
 
 trait NullableEncoder extends NotNullEncoder {
@@ -1400,18 +1431,6 @@ trait NullableEncoder extends NotNullEncoder {
       // write the null words
       writeNulls(newColumnBytes, position, numWords)
       newColumnData
-    }
-  }
-
-  override def finishedSize(cursor: Long, dataBeginPosition: Long): Long = {
-    // trim trailing empty words
-    val numWords = getNumNullWords
-    // use the same policy as used by finish()
-    if (initialNumWords == numWords || allowWastedWords(cursor, numWords)) {
-      cursor - dataBeginPosition + (8L + (initialNumWords << 3)) /* header */
-    } else {
-      // data will be trimmed to accommodate exact null words size
-      cursor - dataBeginPosition + (8L + (numWords << 3)) /* header */
     }
   }
 }

@@ -86,11 +86,20 @@ trait SingleRowInsertableRelation {
 @DeveloperApi
 trait MutableRelation extends DestroyRelation {
 
+  /** Name of this mutable table as stored in catalog. */
+  def table: String
+
   /**
    * Get the "key" columns for the table that need to be projected out by
    * UPDATE and DELETE operations for affecting the selected rows.
    */
   def getKeyColumns: Seq[String]
+
+  /**
+   * If required inject the key columns in the original relation.
+   */
+  def withKeyColumns(relation: LogicalRelation,
+      keyColumns: Seq[String]): LogicalRelation = relation
 
   /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan

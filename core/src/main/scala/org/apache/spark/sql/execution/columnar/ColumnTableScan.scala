@@ -38,6 +38,7 @@ package org.apache.spark.sql.execution.columnar
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
+import org.apache.spark._
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -47,14 +48,13 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -258,7 +258,7 @@ private[sql] final case class ColumnTableScan(
 
   def splitMoveNextMethods(ctx: CodegenContext, blocks: ArrayBuffer[String],
       arg: String): String = {
-    val functions = blocks.zipWithIndex.map { case (body, i) =>
+    val functions = blocks.map { body =>
       val name = ctx.freshName("moveNext")
       val code =
         s"""
@@ -276,7 +276,6 @@ private[sql] final case class ColumnTableScan(
   def convertExprToMethodCall(ctx: CodegenContext, expr: ExprCode,
                               attr: Attribute, index: Int, batchOrdinal : String,
                               notNullVar : String): ExprCode = {
-    val apply = ctx.freshName("apply")
     val retValName = ctx.freshName(s"col$index")
     val nullVarForCol = ctx.freshName(s"nullVarForCol$index")
     ctx.addMutableState("boolean", nullVarForCol, "")
@@ -304,10 +303,8 @@ private[sql] final case class ColumnTableScan(
     val numRowsBuffer = metricTerm(ctx, "numRowsBuffer")
     val numRowsOther =
       if (otherRDDs.isEmpty) null else metricTerm(ctx, "numRowsOtherRDDs")
-    val isEmbedded = (baseRelation eq null) || (baseRelation.connectionType match {
-      case ConnectionType.Embedded => true
-      case _ => false
-    })
+    val isEmbedded = (baseRelation eq null) ||
+      (baseRelation.connectionType == ConnectionType.Embedded)
     // PartitionedPhysicalRDD always has one input.
     // It returns an iterator of iterators (row + column)
     // except when doing union with multiple RDDs where other
@@ -446,7 +443,28 @@ private[sql] final case class ColumnTableScan(
 
     val isWideSchema = output.length > MAX_CURSOR_DECLARATIONS
     val batchConsumers = getBatchConsumers(parent)
-    val columnsInput = output.zipWithIndex.map { case (attr, index) =>
+    // check for "key" columns for update/delete and all three must be present
+    var columnBatchIdTerm: String = null
+    var ordinalIdTerm: String = null
+    var partitionIdTerm: String = null
+    val columnsOutput = if (output.exists(_.name == ColumnDelta.mutableKeyNames.head)) {
+      val out = output.filter(_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))
+      if (out.length + 3 != output.length) {
+        throw new IllegalStateException(
+          s"Expect all three key columns to be projected for update/delete but got $output")
+      }
+      if (otherRDDs.nonEmpty || isForSampleReservoirAsRegion) {
+        throw new IllegalStateException(
+          s"Unexpected update/delete invoked for sample table $relation")
+      }
+      columnBatchIdTerm = ctx.freshName("columnBatchId")
+      ordinalIdTerm = ctx.freshName("ordinalId")
+      partitionIdTerm = ctx.freshName("partitionId")
+      ctx.addMutableState("int", partitionIdTerm, "")
+      ctx.addPartitionInitializationStatement(s"$partitionIdTerm = partitionIndex;")
+      out
+    } else output
+    var columnsInput = columnsOutput.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
       val cursor = s"${decoder}Cursor"
       val buffer = ctx.freshName("buffer")
@@ -534,9 +552,9 @@ private[sql] final case class ColumnTableScan(
 
       if (!isWideSchema) {
         moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
-          cursorVar, batchOrdinal, attr.dataType, notNullVar, false)).append('\n')
+          cursorVar, batchOrdinal, attr.dataType, notNullVar, isWideSchema = false)).append('\n')
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
-          cursorVar, attr, notNullVar, weightVarName, false)
+          cursorVar, attr, notNullVar, weightVarName, wideTable = false)
         bufferInitCode.append(bufferInit)
         ev
       } else {
@@ -547,11 +565,11 @@ private[sql] final case class ColumnTableScan(
           }
         }
         val producedCode = genCodeColumnNext(ctx, decoder, bufferVar,
-          cursor, batchOrdinal, attr.dataType, notNullVar, true)
+          cursor, batchOrdinal, attr.dataType, notNullVar, isWideSchema = true)
         moveNextMultCode.append(producedCode)
 
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoder, bufferVar,
-          cursor, attr, notNullVar, weightVarName, true)
+          cursor, attr, notNullVar, weightVarName, wideTable = true)
         val changedExpr = convertExprToMethodCall(ctx,
           ev, attr, index, batchOrdinal, notNullVar)
         bufferInitCode.append(bufferInit)
@@ -668,13 +686,29 @@ private[sql] final case class ColumnTableScan(
          |    $batchInit
          |    $incrementBatchOutputRows
          |    // initialize the column buffers and decoders
-         |    ${columnBufferInitCodeStr.toString()}
+         |    $columnBufferInitCodeStr
          |  }
          |  $batchIndex = 0;
          |  return true;
          |}
       """.stripMargin)
 
+    val (assignBatchId, assignOrdinalId) = if (columnBatchIdTerm ne null) {
+      columnsInput ++= Seq(ExprCode("", "false", ordinalIdTerm),
+        ExprCode("", "false", columnBatchIdTerm),
+        ExprCode("", "false", partitionIdTerm))
+      (
+        s"""
+           |final UTF8String $columnBatchIdTerm = $inputIsRow ? null
+           |    : UTF8String.fromString($colInput.getCurrentBatchId());
+           |final int $partitionIdTerm = this.$partitionIdTerm;
+           |final boolean $inputIsRow = this.$inputIsRow;
+        """.stripMargin,
+        s"""
+           |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(${output.length - 2})
+           |    : $batchOrdinal;
+        """.stripMargin)
+    } else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
       columnsInput)).mkString("\n").trim
     val beforeStop = batchConsumers.map(_.beforeStop(ctx, this,
@@ -692,12 +726,14 @@ private[sql] final case class ColumnTableScan(
        |// using an UnsafeRow adapter.
        |try {
        |  while ($nextBatch()) {
-       |    ${bufferInitCodeStr.toString()}
+       |    $bufferInitCodeStr
+       |    $assignBatchId
        |    $batchConsume
        |    final int $numRows = $numBatchRows;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
-       |      ${moveNextCodeStr}
+       |      $assignOrdinalId
+       |      $moveNextCodeStr
        |      $consumeCode
        |      if (shouldStop()) {
        |        $beforeStop

@@ -72,12 +72,13 @@ abstract class DictionaryDecoderBase
    * adds support for long/integer dictionary encoding.
    */
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      dataType: DataType): Long = {
+      field: StructField): Long = {
     val numElements = ColumnEncoding.readInt(columnBytes, cursor)
     // last index in the dictionary is for null element
     val dictionaryLen = if (hasNulls) numElements + 1 else numElements
     // move cursor back so that first next call increments it
-    initializeDictionary(columnBytes, cursor + 4, numElements, dictionaryLen, dataType) - 2
+    initializeDictionary(columnBytes, cursor + 4, numElements, dictionaryLen,
+      field.dataType) - 2
   }
 
   private def initializeDictionary(columnBytes: AnyRef, cursor: Long,
@@ -168,9 +169,9 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
   override def typeId: Int = ColumnEncoding.BIG_DICTIONARY_TYPE_ID
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      dataType: DataType): Long = {
+      field: StructField): Long = {
     // move cursor further back for 4 byte integer index reads
-    super.initializeCursor(columnBytes, cursor, dataType) - 2
+    super.initializeCursor(columnBytes, cursor, field) - 2
   }
 
   override private[sql] def initializeBeforeFinish(dictionaryBytes: AnyRef,
@@ -503,14 +504,13 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     columnData
   }
 
-  override def finishedSize(indexCursor: Long, dataBeginPosition: Long): Long = {
+  override def encodedSize(indexCursor: Long, dataBeginPosition: Long): Long = {
     val numIndexBytes = indexCursor - dataBeginPosition
     val dictionarySize =
       if (stringMap ne null) stringMap.valueDataSize
       else if (isIntMap) longArray.size << 2
       else longArray.size << 4
-    val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
-    (8L + (getNumNullWords << 3)) /* header */ + dataSize
+    4L /* dictionary size */ + dictionarySize + numIndexBytes
   }
 
   override def close(): Unit = {

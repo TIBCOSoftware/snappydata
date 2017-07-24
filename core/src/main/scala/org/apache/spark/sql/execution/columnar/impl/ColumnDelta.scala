@@ -26,8 +26,9 @@ import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
 
 /**
  * Encapsulates a delta for update to be applied to column table and also
@@ -123,15 +124,30 @@ object ColumnDelta {
    */
   val MAX_DEPTH = 3
 
-  val COLUMN_BATCH_ID_COLUMN = "SNAPPYDATA_INTERNAL_COLUMN_BATCH_ID"
-  val COLUMN_BATCH_ORDINAL_COLUMN = "SNAPPYDATA_INTERNAL_COLUMN_BATCH_ORDINAL"
-  val COLUMN_BATCH_PARTITION_COLUMN = "SNAPPYDATA_INTERNAL_COLUMN_PARTITION_ORDINAL"
+  val mutableKeyNamePrefix = "SNAPPYDATA_INTERNAL_COLUMN_"
+  /**
+   * These are the virtual columns that are injected in the select plan for
+   * update/delete so that those operations can actually apply the changes.
+   */
+  val mutableKeyNames: Seq[String] = Seq(
+    mutableKeyNamePrefix + "ROW_ORDINAL",
+    mutableKeyNamePrefix + "BATCH_ID",
+    mutableKeyNamePrefix + "PARTITION_ORDINAL"
+  )
+  val mutableKeyFields: Seq[StructField] = Seq(
+    StructField(mutableKeyNames.head, LongType, nullable = false),
+    StructField(mutableKeyNames(1), StringType, nullable = true),
+    StructField(mutableKeyNames(2), IntegerType, nullable = false)
+  )
+  val mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
-  def deltaHierarchyDepth(deltaColumnIndex: Int): Int = (-deltaColumnIndex +
-      ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) % MAX_DEPTH
+  def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
+    (-deltaColumnIndex + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) % MAX_DEPTH
+  } else -1
 
-  def tableColumnIndex(deltaColumnIndex: Int): Int = (-deltaColumnIndex +
-      ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) / MAX_DEPTH
+  def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
+    (-deltaColumnIndex + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) / MAX_DEPTH
+  } else deltaColumnIndex
 
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1 - hierarchyDepth

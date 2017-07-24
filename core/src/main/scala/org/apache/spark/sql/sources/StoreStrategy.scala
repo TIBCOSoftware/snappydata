@@ -38,8 +38,8 @@ object StoreStrategy extends Strategy {
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
       val cmd =
         CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
-          None, SnappyContext.getProvider(tableDesc.provider.get, false), false,
-          options, false)
+          None, SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
+          mode != SaveMode.ErrorIfExists, options, isBuiltIn = false)
       ExecutedCommand(cmd) :: Nil
 
     case CreateTable(tableDesc, mode, Some(query)) =>
@@ -75,13 +75,12 @@ object StoreStrategy extends Strategy {
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
-    case Update(l@LogicalRelation(u: UpdatableRelation, _, _), child,
+    case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
     keyColumns, updateColumns, updateExpressions) =>
       ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
         updateExpressions, keyColumns)) :: Nil
 
-    case Delete(l@LogicalRelation(d: DeletableRelation, _, _), child,
-    keyColumns) =>
+    case Delete(l@LogicalRelation(d: MutableRelation, _, _), child, keyColumns) =>
       ExecutePlan(d.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
 
     case DeleteFromTable(l@LogicalRelation(d: DeletableRelation, _, _), query) =>
