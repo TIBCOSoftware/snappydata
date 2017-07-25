@@ -19,7 +19,12 @@
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
+import scala.reflect.runtime.{universe => u}
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
@@ -31,12 +36,13 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
-import io.snappydata.{functions => snappydataFunctions, Constant, Property, SnappyTableStatsProviderService}
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, functions => snappydataFunctions}
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.backwardcomp.ExecutedCommand
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -64,14 +70,6 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-import scala.util.control.NonFatal
-
-
 class SnappySession(@transient private val sc: SparkContext,
     @transient private val existingSharedState: Option[SnappySharedState])
     extends SparkSession(sc) {
@@ -81,7 +79,6 @@ class SnappySession(@transient private val sc: SparkContext,
   def this(sc: SparkContext) {
     this(sc, None)
   }
-
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -373,7 +370,6 @@ class SnappySession(@transient private val sc: SparkContext,
     SnappySession.clearSessionCache(id)
   }
 
-
   def clear(): Unit = synchronized {
     clearContext()
     clearQueryData()
@@ -517,7 +513,6 @@ class SnappySession(@transient private val sc: SparkContext,
     Dataset.ofRows(self, logicalPlan)
   }
 
-
   /**
    * Create a stratified sample table.
    *
@@ -557,7 +552,6 @@ class SnappySession(@transient private val sc: SparkContext,
     createSampleTable(tableName, Option(baseTable),
       samplingOptions.asScala.toMap, allowExisting)
   }
-
 
   /**
    * Create a stratified sample table.
@@ -602,7 +596,6 @@ class SnappySession(@transient private val sc: SparkContext,
     createSampleTable(tableName, Option(baseTable), schema,
       samplingOptions.asScala.toMap, allowExisting)
   }
-
 
   /**
    * Create approximate structure to query top-K with time series support.
@@ -1282,7 +1275,7 @@ class SnappySession(@transient private val sc: SparkContext,
       throw new AnalysisException("alter table not supported for temp tables")
     }
     plan match {
-      case LogicalRelation(c: ColumnFormatRelation, _, _) =>
+      case LogicalRelation(_: ColumnFormatRelation, _, _) =>
         throw new AnalysisException("alter table not supported for column tables")
       case _ =>
     }
@@ -1333,7 +1326,6 @@ class SnappySession(@transient private val sc: SparkContext,
       baseTable: String,
       indexColumns: java.util.Map[String, java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
-
 
     val indexCol = indexColumns.asScala.mapValues {
       case null => None
@@ -1623,7 +1615,6 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
-
   /**
    * Delete all rows in table that match passed filter expression
    *
@@ -1644,7 +1635,6 @@ class SnappySession(@transient private val sc: SparkContext,
     val rowAsArray: Array[Any] = row.asScala.toArray
     new GenericRow(rowAsArray)
   }
-
 
   /**
    * Fetch the topK entries in the Approx TopK synopsis for the specified
@@ -1896,7 +1886,7 @@ object SnappySession extends Logging {
     }
     val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
       case Some(size) => size.toInt
-      case None =>  Property.PlanCacheSize.defaultValue.get
+      case None => Property.PlanCacheSize.defaultValue.get
     }
     CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
@@ -2062,7 +2052,8 @@ object SnappySession extends Logging {
   }
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
-    if (!SnappyTableStatsProviderService.suspendCacheInvalidation) {
+    if (!SnappyTableStatsProviderService.suspendCacheInvalidation &&
+        (SnappyContext.globalSparkContext ne null)) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
         CodeGeneration.clearAllCache()
