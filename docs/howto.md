@@ -577,7 +577,6 @@ The source code to load the data from a CSV/Parquet files is in [CreateColumnTab
 
 The example below demonstrates how you can read CSV files from HDFS using an API:
 ```
-%snappydata
 val dataDF=snc.read.option("header","true").csv ("hdfs://localhost:9000/example/data/police_incidents/Police_Department_Incidents.csv")
 
 // drop table if exist
@@ -590,17 +589,10 @@ snc.createTable("police_incidents", "column", dataDF.schema,Map.empty[String, St
 dataDF.write.mode(SaveMode.Overwrite).saveAsTable("police_incidents")
 ```
 
-```
-dataDF: org.apache.spark.sql.DataFrame = [IncidntNum: string, Category: string ... 11 more fields]
-res12: org.apache.spark.sql.DataFrame = []
-res13: org.apache.spark.sql.DataFrame = [INCIDNTNUM: string, CATEGORY: string ... 11 more fields]
-```
-
 ### Loading and Enriching CSV Data from HDFS using APIs
 
-The example below demonstrates how you can load and enrich CSV Data from HDFS
+The example below demonstrates how you can load and enrich CSV Data from HDFS:
 ```
-%snappydata
 val dataDF=snc.read.option("header","true").csv ("hdfs://localhost:9000/example/data/police_incidents/Police_Department_Incidents.csv")
 
 // drop table if exist and create it with only required fields 
@@ -616,13 +608,10 @@ dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y
 
 ### Connecting to SQL Database and Importing Data using JDBC 
 
-Before you begin, users need to install the corresponding JDBC driver:
-To install the JDBC Driver of the requested database in SnappyData, run the `install-jar` utility as follows:
-
-```
-./snappy install-jar -file=/home/user/.m2/repository/mysql/mysql-connector-java/5.1.38/mysql-connector-java-5.1.38.jar -name=app
-```
 The example below demonstrates how connect to any SQL database using JDBC:
+
+!!! Note:
+	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
 
 1. Verify and load the SQL Driver:
 
@@ -652,11 +641,11 @@ The example below demonstrates how connect to any SQL database using JDBC:
         val rs:ResultSet = md.getTables(null, null, "%", null);
         while (rs.next()) {
 
-           val tableName=rs.getString(3)
-           val df=snc.read.jdbc(jdbcUrl, tableName, connectionProperties)
-           df.printSchema
-           df.show()
-           // Create and load a column table with same schema as that of source table 
+        val tableName=rs.getString(3)
+        val df=snc.read.jdbc(jdbcUrl, tableName, connectionProperties)
+        df.printSchema
+        df.show()
+        // Create and load a column table with same schema as that of source table 
            df.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
         }
 
@@ -666,11 +655,20 @@ The example below demonstrates how connect to any SQL database using JDBC:
         snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')")
         snc.sql("select * from external_table").show
 
-        //snc.sql("CREATE TABLE oracle_table USING org.apache.spark.sql.jdbc OPTIONS (dbtable 'table_name', driver 'oracle.jdbc.driver.OracleDriver',  user 'USERNAME',  password 'PASSWORD',  url 'jdbc:oracle:thin://@<hostname>:1521/<db>')
 
 ### Loading Data from NoSQL store (Cassandra)
-		%snappydata
-        snc.sql(s"CREATE  external TABLE oracle_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')").show
+
+The example below demonstrates how you can load data from a NoSQL store:
+
+!!!Note:
+	Before you begin, you must install the corresponding Spark-casssandra connector jar. To do so, copy the spark-cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
+    
+```
+
+val df = snc.read.format("org.apache.spark.sql.cassandra").options(Map( "table" -> "Police_Department_Incidents", "keyspace" -> "test")) .load
+df.write.format("column").mode(SaveMode.Append).saveAsTable("Police_Department_Incidents")
+snc.sql("select * from Police_Department_Incidents").show
+```
 
 <a id="howto-collacatedJoin"></a>
 ## How to Perform a Colocated Join
