@@ -110,14 +110,7 @@ abstract case class JDBCAppendableRelation(
 
   def scanTable(tableName: String, requiredColumns: Array[String],
       filters: Array[Filter], prunePartitions: => Int): RDD[Any] = {
-
-    // Only to verify security credentials and Authorize Select statements
-    val connProps = connProperties.connProps.asScala.toMap
-    if (Option(connProps.get(Attribute.USERNAME_ATTR)).isDefined &&
-        Option(connProps.get(Attribute.PASSWORD_ATTR)).isDefined) {
-      JDBCRDD.resolveTable(new JDBCOptions(connProperties.url, table, connProps))
-    }
-
+    
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
         schema.fields.minBy { a =>
@@ -254,7 +247,8 @@ abstract case class JDBCAppendableRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      ExternalStoreUtils.removeCachedObjects(sqlContext, table)
+      ExternalStoreUtils.removeCachedObjects(sqlContext, table,
+        connProperties.poolProps.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, ""))
     } finally {
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
