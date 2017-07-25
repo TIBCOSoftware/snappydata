@@ -65,7 +65,7 @@ abstract class BooleanBitSetDecoderBase
 
   override protected[sql] def setRealCursor(cursor: Long): Unit = byteCursor = cursor
 
-  override final def nextBoolean(columnBytes: AnyRef, mask: Long): Long = {
+  override final def nextBoolean(columnBytes: AnyRef, mask: Long, mutated: Int): Long = {
     val currentBitMask = mask << 1
     if (currentBitMask != 0L) currentBitMask
     else {
@@ -83,7 +83,7 @@ abstract class BooleanBitSetDecoderBase
     1L << (getPosition & 0x3f)
   }
 
-  override final def readBoolean(columnBytes: AnyRef, mask: Long): Boolean =
+  override final def readBoolean(columnBytes: AnyRef, mask: Long, mutated: Int): Boolean =
     (currentWord & mask) != 0
 }
 

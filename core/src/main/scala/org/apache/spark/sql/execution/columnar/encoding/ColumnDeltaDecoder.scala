@@ -34,7 +34,7 @@ private[encoding] final class ColumnDeltaDecoder(realDecoder: ColumnDecoder)
   private var deltaCursor: Long = _
 
   private var positionCursor: Long = _
-  private var nextPosition: Int = _
+  private var positionEndCursor: Long = _
   private var positionOrdinal: Int = _
 
   override def typeId: Int = realDecoder.typeId
@@ -55,107 +55,139 @@ private[encoding] final class ColumnDeltaDecoder(realDecoder: ColumnDecoder)
 
     // find the start of data after padding
     deltaBytes = columnBytes
-    deltaCursor = ((offset + (numPositions << 2) + 63) >> 6) << 6
 
-    nextPosition = ColumnEncoding.readInt(columnBytes, offset)
+    positionEndCursor = offset + (numPositions << 2)
+    val nextPosition = ColumnEncoding.readInt(columnBytes, offset)
     offset += 4
+    positionCursor = offset
 
+    // round to nearest word to get data start position
+    offset = ((positionEndCursor + 63) >> 6) << 6
     if (hasOwnCursor) {
       realDecoder.setRealCursor(offset)
-      positionCursor = initialCursor
+      deltaCursor = initialCursor
     } else {
-      positionCursor = offset
+      deltaCursor = offset
     }
     nextPosition
   }
 
-  private[encoding] def moveNextPosition(): Int = {
-    nextPosition = ColumnEncoding.readInt(deltaBytes, positionCursor)
-    positionCursor += 4
-    positionOrdinal += 1
-    nextPosition
+  private[encoding] def moveToNextPosition(): Int = {
+    val cursor = positionCursor
+    if (cursor < positionEndCursor) {
+      val nextPosition = ColumnEncoding.readInt(deltaBytes, cursor)
+      positionCursor += 4
+      positionOrdinal += 1
+      nextPosition
+    } else {
+      // convention used by MutableColumnDecoder to denote the end
+      // which is greater than everything so will never get selected
+      Int.MaxValue
+    }
   }
 
-  override protected def hasNulls: Boolean =
-    throw new UnsupportedOperationException(s"hasNulls for $toString")
+  override protected[sql] def hasNulls: Boolean = realDecoder.hasNulls
 
-  override def notNull(columnBytes: AnyRef, ordinal: Int): Int =
-    throw new UnsupportedOperationException(s"notNull for $toString")
+  override def isNull(columnBytes: AnyRef, ordinal: Int, mutated: Int): Int =
+    throw new UnsupportedOperationException(s"isNull for $toString")
 
-  def notNull: Int = realDecoder.notNull(deltaBytes, positionOrdinal)
+  def isNull: Int = realDecoder.isNull(deltaBytes, positionOrdinal, mutated = 0)
 
-  def readBoolean: Boolean = {
-    deltaCursor = realDecoder.nextBoolean(deltaBytes, deltaCursor)
-    realDecoder.readBoolean(deltaBytes, deltaCursor)
+  def nextBoolean(): Unit = {
+    deltaCursor = realDecoder.nextBoolean(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readByte: Byte = {
-    deltaCursor = realDecoder.nextByte(deltaBytes, deltaCursor)
-    realDecoder.readByte(deltaBytes, deltaCursor)
+  def readBoolean: Boolean = realDecoder.readBoolean(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextByte(): Unit = {
+    deltaCursor = realDecoder.nextByte(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readShort: Short = {
-    deltaCursor = realDecoder.nextShort(deltaBytes, deltaCursor)
-    realDecoder.readShort(deltaBytes, deltaCursor)
+  def readByte: Byte = realDecoder.readByte(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextShort(): Unit = {
+    deltaCursor = realDecoder.nextShort(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readInt: Int = {
-    deltaCursor = realDecoder.nextInt(deltaBytes, deltaCursor)
-    realDecoder.readInt(deltaBytes, deltaCursor)
+  def readShort: Short = realDecoder.readShort(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextInt(): Unit = {
+    deltaCursor = realDecoder.nextInt(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readLong: Long = {
-    deltaCursor = realDecoder.nextLong(deltaBytes, deltaCursor)
-    realDecoder.readLong(deltaBytes, deltaCursor)
+  def readInt: Int = realDecoder.readInt(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextLong(): Unit = {
+    deltaCursor = realDecoder.nextLong(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readFloat: Float = {
-    deltaCursor = realDecoder.nextFloat(deltaBytes, deltaCursor)
-    realDecoder.readFloat(deltaBytes, deltaCursor)
+  def readLong: Long = realDecoder.readLong(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextFloat(): Unit = {
+    deltaCursor = realDecoder.nextFloat(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readDouble: Double = {
-    deltaCursor = realDecoder.nextDouble(deltaBytes, deltaCursor)
-    realDecoder.readDouble(deltaBytes, deltaCursor)
+  def readFloat: Float = realDecoder.readFloat(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextDouble(): Unit = {
+    deltaCursor = realDecoder.nextDouble(deltaBytes, deltaCursor, mutated = 0)
+  }
+
+  def readDouble: Double = realDecoder.readDouble(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextLongDecimal(): Unit = {
+    deltaCursor = realDecoder.nextLongDecimal(deltaBytes, deltaCursor, mutated = 0)
   }
 
   def readLongDecimal(precision: Int, scale: Int): Decimal = {
-    deltaCursor = realDecoder.nextLongDecimal(deltaBytes, deltaCursor)
-    realDecoder.readLongDecimal(deltaBytes, precision, scale, deltaCursor)
+    realDecoder.readLongDecimal(deltaBytes, precision, scale, deltaCursor, mutated = 0)
+  }
+
+  def nextDecimal(): Unit = {
+    deltaCursor = realDecoder.nextDecimal(deltaBytes, deltaCursor, mutated = 0)
   }
 
   def readDecimal(precision: Int, scale: Int): Decimal = {
-    deltaCursor = realDecoder.nextDecimal(deltaBytes, deltaCursor)
-    realDecoder.readDecimal(deltaBytes, precision, scale, deltaCursor)
+    realDecoder.readDecimal(deltaBytes, precision, scale, deltaCursor, mutated = 0)
   }
 
-  def readUTF8String: UTF8String = {
-    deltaCursor = realDecoder.nextUTF8String(deltaBytes, deltaCursor)
-    realDecoder.readUTF8String(deltaBytes, deltaCursor)
+  def nextUTF8String(): Unit = {
+    deltaCursor = realDecoder.nextUTF8String(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readInterval: CalendarInterval = {
-    deltaCursor = realDecoder.nextInterval(deltaBytes, deltaCursor)
-    realDecoder.readInterval(deltaBytes, deltaCursor)
+  def readUTF8String: UTF8String =
+    realDecoder.readUTF8String(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextInterval(): Unit = {
+    deltaCursor = realDecoder.nextInterval(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readBinary: Array[Byte] = {
-    deltaCursor = realDecoder.nextBinary(deltaBytes, deltaCursor)
-    realDecoder.readBinary(deltaBytes, deltaCursor)
+  def readInterval: CalendarInterval =
+    realDecoder.readInterval(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextBinary(): Unit = {
+    deltaCursor = realDecoder.nextBinary(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readArray: ArrayData = {
-    deltaCursor = realDecoder.nextArray(deltaBytes, deltaCursor)
-    realDecoder.readArray(deltaBytes, deltaCursor)
+  def readBinary: Array[Byte] = realDecoder.readBinary(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextArray(): Unit = {
+    deltaCursor = realDecoder.nextArray(deltaBytes, deltaCursor, mutated = 0)
   }
 
-  def readMap: MapData = {
-    deltaCursor = realDecoder.nextMap(deltaBytes, deltaCursor)
-    realDecoder.readMap(deltaBytes, deltaCursor)
+  def readArray: ArrayData = realDecoder.readArray(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextMap(): Unit = {
+    deltaCursor = realDecoder.nextMap(deltaBytes, deltaCursor, mutated = 0)
+  }
+
+  def readMap: MapData = realDecoder.readMap(deltaBytes, deltaCursor, mutated = 0)
+
+  def nextStruct(): Unit = {
+    deltaCursor = realDecoder.nextStruct(deltaBytes, deltaCursor, mutated = 0)
   }
 
   def readStruct(numFields: Int): InternalRow = {
-    deltaCursor = realDecoder.nextStruct(deltaBytes, deltaCursor)
-    realDecoder.readStruct(deltaBytes, numFields, deltaCursor)
+    realDecoder.readStruct(deltaBytes, numFields, deltaCursor, mutated = 0)
   }
 }

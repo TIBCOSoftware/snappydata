@@ -43,7 +43,7 @@ abstract class IntDeltaDecoderBase
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = cursor
 
-  override final def nextInt(columnBytes: AnyRef, cursor: Long): Long = {
+  override final def nextInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Long = {
     val delta = Platform.getByte(columnBytes, cursor)
     if (delta > Byte.MinValue) {
       prev += delta
@@ -54,7 +54,7 @@ abstract class IntDeltaDecoderBase
     }
   }
 
-  override final def readInt(columnBytes: AnyRef, cursor: Long): Int = prev
+  override final def readInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Int = prev
 
-  override final def readDate(columnBytes: AnyRef, cursor: Long): Int = prev
+  override final def readDate(columnBytes: AnyRef, cursor: Long, mutated: Int): Int = prev
 }

@@ -57,7 +57,8 @@ abstract class RunLengthDecoderBase
 
   override protected[sql] def setRealCursor(cursor: Long): Unit = cursorPos = cursor
 
-  override final def nextByte(columnBytes: AnyRef, countValue: Long): Long = {
+  override final def nextByte(columnBytes: AnyRef, countValue: Long,
+      mutated: Int): Long = {
     val count = countValue.toInt
     if (count != runLength) {
       countValue + 1
@@ -71,17 +72,18 @@ abstract class RunLengthDecoderBase
     }
   }
 
-  override final def readByte(columnBytes: AnyRef, countValue: Long): Byte =
+  override final def readByte(columnBytes: AnyRef, countValue: Long, mutated: Int): Byte =
     (countValue >> 32).toByte
 
-  override final def nextBoolean(columnBytes: AnyRef, countValue: Long): Long =
-    this.nextByte(columnBytes, countValue)
+  override final def nextBoolean(columnBytes: AnyRef, countValue: Long,
+      mutated: Int): Long = this.nextByte(columnBytes, countValue, mutated)
 
   override final def readBoolean(columnBytes: AnyRef,
-      countValue: Long): Boolean =
+      countValue: Long, mutated: Int): Boolean =
     (countValue >> 32) == 1
 
-  override final def nextShort(columnBytes: AnyRef, countValue: Long): Long = {
+  override final def nextShort(columnBytes: AnyRef, countValue: Long,
+      mutated: Int): Long = {
     val count = countValue.toInt
     if (count != runLength) {
       countValue + 1
@@ -95,10 +97,10 @@ abstract class RunLengthDecoderBase
     }
   }
 
-  override final def readShort(columnBytes: AnyRef, countValue: Long): Short =
-    (countValue >> 32).toShort
+  override final def readShort(columnBytes: AnyRef, countValue: Long,
+      mutated: Int): Short = (countValue >> 32).toShort
 
-  override final def nextInt(columnBytes: AnyRef, countValue: Long): Long = {
+  override final def nextInt(columnBytes: AnyRef, countValue: Long, mutated: Int): Long = {
     val count = countValue.toInt
     if (count != runLength) {
       countValue + 1
@@ -112,13 +114,13 @@ abstract class RunLengthDecoderBase
     }
   }
 
-  override final def readInt(columnBytes: AnyRef, countValue: Long): Int =
+  override final def readInt(columnBytes: AnyRef, countValue: Long, mutated: Int): Int =
     (countValue >> 32).toInt
 
-  override final def readDate(columnBytes: AnyRef, countValue: Long): Int =
+  override final def readDate(columnBytes: AnyRef, countValue: Long, mutated: Int): Int =
     (countValue >> 32).toInt
 
-  override final def nextLong(columnBytes: AnyRef, count: Long): Long = {
+  override final def nextLong(columnBytes: AnyRef, count: Long, mutated: Int): Long = {
     if (count != runLength) {
       count + 1
     } else {
@@ -131,13 +133,14 @@ abstract class RunLengthDecoderBase
     }
   }
 
-  override final def readLong(columnBytes: AnyRef, count: Long): Long =
+  override final def readLong(columnBytes: AnyRef, count: Long, mutated: Int): Long =
     currentValueLong
 
-  override final def readTimestamp(columnBytes: AnyRef, count: Long): Long =
+  override final def readTimestamp(columnBytes: AnyRef, count: Long, mutated: Int): Long =
     currentValueLong
 
-  override final def nextUTF8String(columnBytes: AnyRef, count: Long): Long = {
+  override final def nextUTF8String(columnBytes: AnyRef, count: Long,
+      mutated: Int): Long = {
     if (count != runLength) {
       count + 1
     } else {
@@ -153,6 +156,6 @@ abstract class RunLengthDecoderBase
   }
 
   override final def readUTF8String(columnBytes: AnyRef,
-      count: Long): UTF8String =
+      count: Long, mutated: Int): UTF8String =
     currentValueString
 }
