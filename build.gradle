@@ -789,8 +789,8 @@ ospackage {
   packageDescription = productName + ', the Spark Database. Stream - Transact - Analyze - Predict all in one cluster'
   summary = productName + ' Installer'
 
-  user = 'root'
-  permissionGroup = 'root'
+  user = 'snappydata'
+  permissionGroup = 'snappydata'
 
   from(snappyProductDir) {
 //    fileMode = 0664
