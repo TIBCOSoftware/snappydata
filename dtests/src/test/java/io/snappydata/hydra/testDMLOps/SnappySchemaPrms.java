@@ -39,6 +39,9 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long testUniqueKeys;
 
+  public static Long updateTables;
+
+  public static Long deleteTables;
 
   public static String[] getTableNames() {
     Long key = tablesList;
@@ -157,6 +160,26 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static String[] getDeleteStmts(){
     Long key = deleteStmts;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[selectStmt.size()];
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr[i] = (String)selectStmt.elementAt(i);
+    }
+    return strArr;
+  }
+
+  public static String[] getUpdateTables(){
+    Long key = updateTables;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[selectStmt.size()];
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr[i] = (String)selectStmt.elementAt(i);
+    }
+    return strArr;
+  }
+
+  public static String[] getDeleteTables(){
+    Long key = deleteTables;
     Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     String[] strArr = new String[selectStmt.size()];
     for (int i = 0; i < selectStmt.size(); i++) {

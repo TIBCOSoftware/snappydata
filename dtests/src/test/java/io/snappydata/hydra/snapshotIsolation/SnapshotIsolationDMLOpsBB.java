@@ -32,7 +32,7 @@ public class SnapshotIsolationDMLOpsBB extends Blackboard {
    */
   public static synchronized SnapshotIsolationDMLOpsBB getBB() {
     if (bbInstance == null)
-      synchronized (SnapshotIsolationBB.class) {
+      synchronized (SnapshotIsolationDMLOpsBB.class) {
         if (bbInstance == null)
           bbInstance = new SnapshotIsolationDMLOpsBB(SNAPSHOT_DML_BB_NAME, SNAPSHOT_DML_BB_TYPE);
       }
