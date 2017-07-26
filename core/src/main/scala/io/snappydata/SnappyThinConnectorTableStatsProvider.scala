@@ -38,12 +38,12 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   private var getStatsStmt: CallableStatement = null
   private var _url: String = null
 
-  def initializeConnection(sc: SparkContext = null): Unit = {
+  def initializeConnection(sc: Option[SparkContext] = None): Unit = {
     var securePart = ""
-    if (sc != null) {
-      val user = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
+    if (sc.isDefined) {
+      val user = sc.get.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
       if (!user.isEmpty) {
-        val pass = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, "")
+        val pass = sc.get.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, "")
         securePart = s";user=$user;password=$pass"
       }
     }
@@ -64,7 +64,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
       this.synchronized {
         if (!doRun) {
           _url = url
-          initializeConnection()
+          initializeConnection(Some(sc))
           val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
               "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
@@ -86,15 +86,15 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     }
   }
 
-  def executeStatsStmt(): Unit = {
-    if (conn == null) initializeConnection()
+  def executeStatsStmt(sc: Option[SparkContext] = None): Unit = {
+    if (conn == null) initializeConnection(sc)
     getStatsStmt.execute()
   }
 
-  override def getStatsFromAllServers: (Seq[SnappyRegionStats],
+  override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats]) = {
     try {
-      executeStatsStmt()
+      executeStatsStmt(sc)
     } catch {
       case e: Exception =>
         logWarning("Warning: unable to retrieve table stats " +
