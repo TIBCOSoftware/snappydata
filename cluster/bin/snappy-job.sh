@@ -248,8 +248,6 @@ fi
 # invoke command
 
 jobServerURL="$hostnamePort/${cmdLine}"
-echo ${securePart}
-echo ""
 
 case $cmd in
   jobs | newcontext)
