@@ -81,12 +81,13 @@ object ConnectionPool {
   def getPoolDataSource(id: String, props: Map[String, String],
       connectionProps: Properties, hikariCP: Boolean): DataSource = {
     // fast lock-free path first (the usual case)
-    val dsKey = idToPoolMap.get((id, props.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, "")))
+    val username = props.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, "")
+    val dsKey = idToPoolMap.get((id, username))
     if (dsKey != null) {
       dsKey._1
     } else pools.synchronized {
       // double check after the global lock
-      val dsKey = idToPoolMap.get((id, props.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, "")))
+      val dsKey = idToPoolMap.get((id, username))
       if (dsKey != null) {
         dsKey._1
       } else {
@@ -97,8 +98,7 @@ object ConnectionPool {
         pools.get(poolKey) match {
           case Some((newDS, ids)) =>
             ids += id
-            val err = idToPoolMap.putIfAbsent((id,
-                props.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, "")), (newDS, poolKey))
+            val err = idToPoolMap.putIfAbsent((id, username), (newDS, poolKey))
             require(err == null, s"unexpected existing pool for $id: $err")
             newDS
           case None =>
@@ -118,8 +118,7 @@ object ConnectionPool {
               new TDataSource(tconf)
             }
             pools(poolKey) = (newDS, mutable.Set(id))
-            val err = idToPoolMap.putIfAbsent((id,
-                props.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, "")), (newDS, poolKey))
+            val err = idToPoolMap.putIfAbsent((id, username), (newDS, poolKey))
             require(err == null, s"unexpected existing pool for $id: $err")
             newDS
         }
