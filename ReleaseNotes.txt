@@ -7,6 +7,14 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+Release 1.0
+
+- New Features/Fixed Issues
+
+  [Snap-1792] Snappy Monitoring UI now also displays Member Details View which shows member specific information,
+  various statistics (like Status, CPU, Memory, Heap & Off-Heap Usages, etc) and members logs in incremental way.
+
+
 Release 0.9
 
 - New Features/Fixed Issues
