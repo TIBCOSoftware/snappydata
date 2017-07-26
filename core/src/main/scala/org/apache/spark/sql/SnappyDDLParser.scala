@@ -317,11 +317,11 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ COLUMN ~ column  ~> AlterTableAddColumn
+    ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ (COLUMN).? ~ column  ~> AlterTableAddColumn
   }
 
   protected def alterTableDropColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ DROP  ~ COLUMN ~ qualifiedName ~> AlterTableDropColumn
+    ALTER ~ TABLE ~ tableIdentifier ~ DROP  ~ (COLUMN).? ~ qualifiedName ~> AlterTableDropColumn
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
