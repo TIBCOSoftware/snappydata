@@ -82,9 +82,8 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
       executeStatsStmt()
     } catch {
       case e: Exception =>
-        logWarning("SnappyThinConnectorTableStatsProvider: exception while retrieving stats " +
-            "from Snappy embedded cluster. Check whether the embedded cluster is stopped. " +
-            "Exception: " + e.toString)
+        logWarning("Warning: unable to retrieve table stats " +
+            "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
         conn = null
         return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats])
