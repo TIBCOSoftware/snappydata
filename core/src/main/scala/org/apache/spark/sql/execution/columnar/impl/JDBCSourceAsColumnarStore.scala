@@ -84,7 +84,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         connectionType match {
           case ConnectionType.Embedded =>
             val txMgr = Misc.getGemFireCache().getCacheTransactionManager()
-            if (txMgr.getTXState() == null) {
+            if (TXManagerImpl.snapshotTxState.get() == null && (txMgr.getTXState == null)) {
               txMgr.begin(com.gemstone.gemfire.cache.IsolationLevel.SNAPSHOT, null)
               Array(conn, txMgr.getTransactionId().stringFormat())
             } else {
@@ -121,6 +121,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       (conn: Connection) => {
         connectionType match {
           case ConnectionType.Embedded =>
+            //if(SparkShellRDDHelper.snapshotTxIdForRead.get)
             Misc.getGemFireCache().getCacheTransactionManager().commit()
           case _ =>
             logDebug(s"Going to commit ${txId} the transaction on server ")
