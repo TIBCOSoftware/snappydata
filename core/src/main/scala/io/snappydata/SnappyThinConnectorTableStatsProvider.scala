@@ -51,26 +51,28 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   }
 
   def start(sc: SparkContext, url: String): Unit = {
-    this.synchronized {
-      if (!doRun) {
-        _url = url
-        initializeConnection()
-        val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
-            "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
-        doRun = true
-        new Timer("SnappyThinConnectorTableStatsProvider", true).schedule(
-          new TimerTask {
-            override def run(): Unit = {
-              try {
-                if (doRun) {
-                  aggregateStats()
+    if (!doRun) {
+      this.synchronized {
+        if (!doRun) {
+          _url = url
+          initializeConnection()
+          val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
+              "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
+          doRun = true
+          new Timer("SnappyThinConnectorTableStatsProvider", true).schedule(
+            new TimerTask {
+              override def run(): Unit = {
+                try {
+                  if (doRun) {
+                    aggregateStats()
+                  }
+                } catch {
+                  case _: CancelException => // ignore
+                  case e: Exception => logError("SnappyThinConnectorTableStatsProvider", e)
                 }
-              } catch {
-                case _: CancelException => // ignore
-                case e: Exception => logError("SnappyThinConnectorTableStatsProvider", e)
               }
-            }
-          }, delay, delay)
+            }, delay, delay)
+        }
       }
     }
   }
