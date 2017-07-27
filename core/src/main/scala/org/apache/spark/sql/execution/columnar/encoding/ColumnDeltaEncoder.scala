@@ -867,11 +867,15 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 
   private def createFinalBuffer(numPositions: Long): ByteBuffer = {
     val allocator = storageAllocator
-    val bufferSize = numPositions << 2
+    // add a header of 4 bytes for future use (e.g. format change)
+    val bufferSize = (numPositions << 2) + 4
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(bufferSize))
     val bufferBytes = allocator.baseObject(buffer)
     var bufferCursor = allocator.baseOffset(buffer)
 
+    // header for future use
+    ColumnEncoding.writeInt(bufferBytes, bufferCursor, 0)
+    bufferCursor += 4
     if (ColumnEncoding.littleEndian) {
       // bulk copy if platform endian-ness matches the final format
       Platform.copyMemory(deletedPositions, Platform.INT_ARRAY_OFFSET,

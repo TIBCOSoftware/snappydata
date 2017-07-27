@@ -226,20 +226,24 @@ class SnappySessionState(snappySession: SnappySession)
       }.getOrElse(throw new AnalysisException(
         s"Update/Delete requires a MutableRelation but got $table"))
       // resolve key columns right away since this is late stage of analysis
-      child.collectFirst {
+      var mutablePlan: Option[LogicalRelation] = None
+      val newChild = child.transformDown {
         case lr@LogicalRelation(mutable: MutableRelation, _, _)
-          if mutable.table.equalsIgnoreCase(tableName) => mutable.withKeyColumns(lr, keyColumns)
-      } match {
+          if mutable.table.equalsIgnoreCase(tableName) =>
+          mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
+          mutablePlan.get
+      }
+      mutablePlan match {
         case Some(sourcePlan) =>
           val keyAttrs = keyColumns.map { name =>
             analysis.withPosition(sourcePlan) {
-              child.resolveChildren(
+              newChild.resolveChildren(
                 name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve key column $name")
               )
             }
           }
-          (keyAttrs, sourcePlan)
+          (keyAttrs, newChild)
         case _ => throw new AnalysisException(
           s"Could not find any scan from the table '$tableName' to be updated in $plan")
       }

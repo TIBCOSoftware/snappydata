@@ -54,7 +54,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
    */
   private val updateIndexes = updateColumns.map(a => ColumnDelta.deltaColumnIndex(
     Utils.fieldIndex(schemaAttributes, a.name,
-      sqlContext.conf.caseSensitiveAnalysis), hierarchyDepth = 0))
+      sqlContext.conf.caseSensitiveAnalysis), hierarchyDepth = 0)).toArray
 
   override protected def opType: String = "Update"
 
@@ -69,8 +69,8 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
         "number of updates to column batches"))
   }
 
-  @transient private var batchIdTerm: String = _
   @transient private var batchOrdinal: String = _
+  @transient private var batchIdTerm: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
 
@@ -80,7 +80,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name), escapeQuotes = true)
     sql.append(s" WHERE ${StoreUtils.SHADOW_COLUMN_NAME}=?")
 
-    super.doProduce(ctx, sql.toString(),
+    super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
          |  $finishUpdate($batchIdTerm);
@@ -91,30 +91,38 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
     // use an array of delta encoders and cursors
-    val numColumns = updateColumns.length
     val deltaEncoders = ctx.freshName("deltaEncoders")
     val cursors = ctx.freshName("cursors")
     val index = ctx.freshName("index")
     batchOrdinal = ctx.freshName("batchOrdinal")
+    batchIdTerm = ctx.freshName("batchId")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
-    val updateSchema = StructType.fromAttributes(updateColumns)
+    val partitionId = ctx.freshName("partitionId")
     finishUpdate = ctx.freshName("finishUpdate")
     val initializeEncoders = ctx.freshName("initializeEncoders")
+
+    val updateSchema = StructType.fromAttributes(updateColumns)
     val schemaTerm = ctx.addReferenceObj("updateSchema", updateSchema,
       classOf[StructType].getName)
-    val deltaIndexes = ctx.addReferenceObj("deltaIndexes", updateIndexes)
+    val deltaIndexes = ctx.addReferenceObj("deltaIndexes", updateIndexes, "int[]")
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val tableName = ctx.addReferenceObj("columnTable", resolvedName, "java.lang.String")
-    val partitionId = ctx.freshName("partitionId")
     updateMetric = if (onExecutor) null else metricTerm(ctx, "numUpdateColumnBatchRows")
 
+    val numColumns = updateColumns.length
     val deltaEncoderClass = classOf[ColumnDeltaEncoder].getName
     val columnBatchClass = classOf[ColumnBatch].getName
 
     ctx.addMutableState(s"$deltaEncoderClass[]", deltaEncoders, "")
-    ctx.addMutableState("long[]", cursors, "")
-    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
+    ctx.addMutableState("long[]", cursors,
+      s"""
+         |$deltaEncoders = new $deltaEncoderClass[$numColumns];
+         |$cursors = new long[$numColumns];
+         |$initializeEncoders();
+      """.stripMargin)
     ctx.addMutableState("int", batchOrdinal, "")
+    ctx.addMutableState("UTF8String", batchIdTerm, "")
+    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
     ctx.addMutableState("int", partitionId, "")
     ctx.addPartitionInitializationStatement(s"$partitionId = partitionIndex;")
 
@@ -134,9 +142,12 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
 
     val numKeys = keyColumns.length
     val positionTerm = updateInput(updateInput.length - numKeys).value
-    batchIdTerm = updateInput(updateInput.length - numKeys + 1).value
 
-    val updateVarsCode = evaluateVariables(updateInput)
+    val updateVarsCode =
+      s"""
+         |${evaluateVariables(updateInput)}
+         |$batchIdTerm = ${updateInput(updateInput.length - numKeys + 1).value};
+      """.stripMargin
     // row buffer needs to select the rowId for the ordinal
     val rowConsume = super.doConsume(ctx, updateInput, StructType(
       getUpdateSchema(updateExpressions) :+ ColumnDelta.mutableKeyFields.head))
@@ -144,12 +155,10 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     ctx.addNewFunction(initializeEncoders,
       s"""
          |private void $initializeEncoders() {
-         |  $deltaEncoders = new $deltaEncoderClass[$numColumns];
-         |  $cursors = new long[$numColumns];
          |  for (int $index = 0; $index < $numColumns; $index++) {
          |    $deltaEncoders[$index] = new $deltaEncoderClass(0);
-         |    $cursors[$index] = $deltaEncoders[$index].initialize(
-         |        $schemaTerm.fields()[$index], $deltaEncoderClass.INIT_SIZE());
+         |    $cursors[$index] = $deltaEncoders[$index].initialize($schemaTerm.fields()[$index],
+         |        ${classOf[ColumnDelta].getName}.INIT_SIZE(), true);
          |  }
          |}
       """.stripMargin)
@@ -178,8 +187,8 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(UTF8String $batchIdTerm) {
-         |  if (!$batchIdTerm.equals($lastColumnBatchId)) {
-         |    if ($lastColumnBatchId == null) return;
+         |  if ($batchIdTerm != $lastColumnBatchId && !$batchIdTerm.equals($lastColumnBatchId)) {
+         |    if ($lastColumnBatchId == null) return; // first call
          |    // finish previous encoders, put into table and re-initialize
          |    final java.nio.ByteBuffer[] buffers = new java.nio.ByteBuffer[$numColumns];
          |    for (int $index = 0; $index < $numColumns; $index++) {

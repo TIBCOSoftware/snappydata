@@ -126,7 +126,7 @@ object CodeGeneration extends Logging {
       }
     })
 
-  private[this] def getColumnSetterFragment(col: Int, dataType: DataType,
+  def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ev: ExprCode, stmt: String, schema: String,
       ctx: CodegenContext): String = {
     val timeUtilsClass = DateTimeUtils.getClass.getName.replace("$", "")

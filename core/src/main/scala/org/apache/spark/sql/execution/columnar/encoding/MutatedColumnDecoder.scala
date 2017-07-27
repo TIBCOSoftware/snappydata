@@ -126,6 +126,8 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     val allocator = ColumnEncoding.getAllocator(deleteBuffer)
     deleteCursor = allocator.baseOffset(deleteBuffer) + deleteBuffer.position()
     deleteEndCursor = deleteCursor + deleteBuffer.limit()
+    // skip 4 bytes header which is unused as of now
+    deleteCursor += 4
     deletePosition = nextDeletedPosition()
     allocator.baseObject(deleteBuffer)
   } else null

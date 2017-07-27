@@ -528,7 +528,8 @@ class ColumnFormatRelation(
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     relation.copy(relation = new ColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
-      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext))
+      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext),
+      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
   }
 
   override def addDependent(dependent: DependentRelation,

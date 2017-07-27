@@ -389,7 +389,7 @@ private[sql] final case class ColumnTableScan(
     // shipping as StructType for efficient serialization
     val planSchema = ctx.addReferenceObj("schema", schema,
       classOf[StructType].getName)
-    val columnBufferInitCode = new StringBuilder
+    val columnBufferInit = new StringBuilder
     val bufferInitCode = new StringBuilder
     val moveNextMultCode = new StringBuilder
     val cursorUpdateCode = new StringBuilder
@@ -436,7 +436,6 @@ private[sql] final case class ColumnTableScan(
     }
 
     val initRowTableDecoders = new StringBuilder
-    val columnBufferInitCodeBlocks = new ArrayBuffer[String]()
     val bufferInitCodeBlocks = new ArrayBuffer[String]()
     val moveNextCodeBlocks = new ArrayBuffer[String]()
 
@@ -447,7 +446,7 @@ private[sql] final case class ColumnTableScan(
     var ordinalIdTerm: String = null
     var partitionIdTerm: String = null
     val columnsOutput = if (output.exists(_.name == ColumnDelta.mutableKeyNames.head)) {
-      val out = output.filter(_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))
+      val out = output.filter(!_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))
       if (out.length + 3 != output.length) {
         throw new IllegalStateException(
           s"Expect all three key columns to be projected for update/delete but got $output")
@@ -470,6 +469,7 @@ private[sql] final case class ColumnTableScan(
       val cursorVar = s"${buffer}Cursor"
       val decoderVar = s"${buffer}Decoder"
       val bufferVar = s"${buffer}Object"
+      val initBufferFunction = s"${buffer}Init"
       if (isWideSchema) {
         ctx.addMutableState("Object", bufferVar, s"$bufferVar = null;")
       }
@@ -502,26 +502,20 @@ private[sql] final case class ColumnTableScan(
       }
       ctx.addMutableState("long", cursor, s"$cursor = 0L;")
 
-
-      if (isWideSchema) {
-        if (columnBufferInitCode.length > 1024) {
-          columnBufferInitCodeBlocks.append(columnBufferInitCode.toString())
-          columnBufferInitCode.clear()
-        }
-      }
-
-      columnBufferInitCode.append(
+      ctx.addNewFunction(initBufferFunction,
         s"""
-          $buffer = $colInput.getColumnLob($bufferPosition);
-          $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
-            $planSchema.apply($index));
-          // check for mutated column
-          $decoder = $colInput.getMutatedColumnDecoderIfRequired($decoder,
-            $planSchema.apply($index), $bufferPosition, ${index != 0});
-          // initialize the decoder and store the starting cursor position
-          $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
-        """)
-
+           |private void $initBufferFunction() {
+           |  $buffer = $colInput.getColumnLob($bufferPosition);
+           |  $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
+           |      $planSchema.apply($index));
+           |  // check for mutated column
+           |  $decoder = $colInput.getMutatedColumnDecoderIfRequired($decoder,
+           |      $planSchema.apply($index), ${bufferPosition - 1}, ${index != 0});
+           |  // initialize the decoder and store the starting cursor position
+           |  $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
+           |}
+        """.stripMargin)
+      columnBufferInit.append(s"$initBufferFunction();\n")
 
       if (isWideSchema) {
         if (bufferInitCode.length > 1024) {
@@ -582,15 +576,8 @@ private[sql] final case class ColumnTableScan(
     }
 
     if (isWideSchema) {
-      columnBufferInitCodeBlocks.append(columnBufferInitCode.toString())
       bufferInitCodeBlocks.append(bufferInitCode.toString())
       moveNextCodeBlocks.append(moveNextMultCode.toString())
-    }
-
-    val columnBufferInitCodeStr = if (isWideSchema) {
-      splitToMethods(ctx, columnBufferInitCodeBlocks)
-    } else {
-      columnBufferInitCode.toString()
     }
 
     val bufferInitCodeStr = if (isWideSchema) {
@@ -690,7 +677,7 @@ private[sql] final case class ColumnTableScan(
          |    $batchInit
          |    $incrementBatchOutputRows
          |    // initialize the column buffers and decoders
-         |    $columnBufferInitCodeStr
+         |    $columnBufferInit
          |  }
          |  $batchIndex = 0;
          |  return true;
@@ -699,13 +686,12 @@ private[sql] final case class ColumnTableScan(
 
     val (assignBatchId, assignOrdinalId) = if (columnBatchIdTerm ne null) {
       columnsInput ++= Seq(ExprCode("", "false", ordinalIdTerm),
-        ExprCode("", "false", columnBatchIdTerm),
+        ExprCode("", s"$columnBatchIdTerm == null", columnBatchIdTerm),
         ExprCode("", "false", partitionIdTerm))
       (
         s"""
            |final UTF8String $columnBatchIdTerm = $inputIsRow ? null
            |    : UTF8String.fromString($colInput.getCurrentBatchId());
-           |final int $partitionIdTerm = this.$partitionIdTerm;
            |final boolean $inputIsRow = this.$inputIsRow;
         """.stripMargin,
         s"""
@@ -750,10 +736,12 @@ private[sql] final case class ColumnTableScan(
        |    }
        |    $buffers = null;
        |  }
+       |} catch (java.io.IOException ioe) {
+       |  throw ioe;
        |} catch (RuntimeException re) {
        |  throw re;
        |} catch (Exception e) {
-       |  throw new RuntimeException(e);
+       |  throw new java.io.IOException(e.toString(), e);
        |} finally {
        |  $finallyCode
        |}
@@ -913,7 +901,7 @@ private[sql] final case class ColumnTableScan(
       // indicate (true/false/use wasNull) and code below is a tri-switch.
       val code = s"""
           $jtDecl
-          final boolean $nullVar;
+          boolean $nullVar;
           if ($isNullVar == 0) {
             $colAssign
             $nullVar = false;
@@ -931,7 +919,7 @@ private[sql] final case class ColumnTableScan(
         val dictionaryCode =
           s"""
             $jtDecl
-            final boolean $nullVar;
+            boolean $nullVar;
             if ($isNullVar == 0) {
               $dictionaryAssignCode
               $nullVar = false;

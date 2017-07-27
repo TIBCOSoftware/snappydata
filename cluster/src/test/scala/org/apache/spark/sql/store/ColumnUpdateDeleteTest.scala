@@ -27,6 +27,33 @@ import org.apache.spark.sql.SnappySession
 class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
   test("basic update") {
+    val session = this.snc.snappySession
+    session.conf.set(Property.ColumnBatchSize.name, "10k")
+
+    val numElements = 10000
+
+    session.sql("create table updateTable (id int, addr string) using column")
+    session.sql("create table updateTable2 (id int, addr string) using column")
+
+    session.range(numElements).selectExpr("id", "concat('addr', cast(id as string))")
+        .write.insertInto("updateTable")
+    session.range(numElements).selectExpr("id + 1", "concat('addr', cast(id as string))")
+        .write.insertInto("updateTable2")
+
+    // session.sql("update updateTable set id = id + 1")
+
+    try {
+      assert(session.table("updateTable").count() === numElements)
+      assert(session.table("updateTable2").count() === numElements)
+
+      assert(session.sql("select * from updateTable EXCEPT select * from updateTable2")
+          .collect().length === 0)
+    } finally {
+      Thread.sleep(1000000)
+    }
+  }
+
+  test("test update for all types") {
     val session = new SnappySession(sc)
     // reduced size to ensure both column table and row buffer have data
     session.conf.set(Property.ColumnBatchSize.name, "100k")

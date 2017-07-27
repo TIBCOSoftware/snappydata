@@ -72,6 +72,8 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   val rr_table = "app.rr_table"
   val memoryMode = MemoryMode.ON_HEAP
 
+  bootProps.setProperty("default-startup-recovery-delay", "0");
+
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
     snc.setConf(io.snappydata.Property.ColumnBatchSize.name, "500")

@@ -89,10 +89,9 @@ trait RowExec extends TableExec {
           else s"$numOpRowsMetric.${metricAdd(numOperations)};"}""".stripMargin
 
   protected def doProduce(ctx: CodegenContext, pstmtStr: String,
-      produceAddonCode: String = ""): String = {
+      produceAddonCode: () => String = () => ""): String = {
     val (initCode, commitCode, endCode) = connectionCodes(ctx)
     result = ctx.freshName("result")
-    ctx.addMutableState("long", result, s"$result = -1L;")
     stmt = ctx.freshName("statement")
     rowCount = ctx.freshName("rowCount")
     val numOpRowsMetric = if (onExecutor) null
@@ -100,27 +99,28 @@ trait RowExec extends TableExec {
     val numOperations = ctx.freshName("numOperations")
     val childProduce = doChildProduce(ctx)
     val mutateTable = ctx.freshName("mutateTable")
+
+    ctx.addMutableState("java.sql.PreparedStatement", stmt, "")
+    ctx.addMutableState("long", result, s"$result = -1L;")
+    ctx.addMutableState("long", rowCount, "")
     ctx.addNewFunction(mutateTable,
       s"""
-         |private void $mutateTable(final java.sql.PreparedStatement $stmt)
-         |    throws java.io.IOException, java.sql.SQLException {
-         |  int $rowCount = 0;
+         |private void $mutateTable() throws java.io.IOException, java.sql.SQLException {
          |  $childProduce
          |  if ($rowCount > 0) {
          |    ${executeBatchCode(numOperations, numOpRowsMetric)}
          |    $stmt.close();
          |    $commitCode
-         |  }$produceAddonCode
+         |  }${produceAddonCode()}
          |}
       """.stripMargin)
     s"""
        |if ($result >= 0L) return;
        |$initCode
        |try {
-       |  final java.sql.PreparedStatement $stmt =
-       |      $connTerm.prepareStatement("$pstmtStr");
+       |  $stmt = $connTerm.prepareStatement("$pstmtStr");
        |  $result = 0L;
-       |  $mutateTable($stmt);
+       |  $mutateTable();
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |} catch (java.sql.SQLException sqle) {
        |  throw new java.io.IOException(sqle.toString(), sqle);
@@ -145,16 +145,45 @@ trait RowExec extends TableExec {
     val schemaTerm = ctx.addReferenceObj("schema", schema)
     val schemaFields = ctx.freshName("schemaFields")
     val structFieldClass = classOf[StructField].getName
+    ctx.addMutableState(s"$structFieldClass[]", schemaFields,
+      s"$schemaFields = $schemaTerm.fields();")
     val batchSize = connProps.executorConnProps
         .getProperty("batchsize", "1000").toInt
     val numOpRowsMetric = if (onExecutor) null
     else metricTerm(ctx, s"num${opType}Rows")
     val numOperations = ctx.freshName("numOperations")
+
+    val inputCode = evaluateVariables(input)
+    val functionCalls = schema.indices.map { col =>
+      val f = schema(col)
+      val ev = input(col)
+      val dataType = ctx.javaType(f.dataType)
+      val columnSetterFunction = ctx.freshName("setColumnOfRow")
+      val columnSetterCode = CodeGeneration.getColumnSetterFragment(
+        col, f.dataType, connProps.dialect, ev, stmt, schemaFields, ctx)
+      if (ev.isNull.isEmpty || ev.isNull == "false") {
+        ctx.addNewFunction(columnSetterFunction,
+          s"""
+             |private void $columnSetterFunction(final $dataType ${ev.value})
+             |    throws java.sql.SQLException {
+             |  $columnSetterCode
+             |}
+      """.stripMargin)
+        s"$columnSetterFunction(${ev.value});"
+      } else {
+        ctx.addNewFunction(columnSetterFunction,
+          s"""
+             |private void $columnSetterFunction(final boolean ${ev.isNull},
+             |    final $dataType ${ev.value}) throws java.sql.SQLException {
+             |  $columnSetterCode
+             |}
+      """.stripMargin)
+        s"$columnSetterFunction(${ev.isNull}, ${ev.value});"
+      }
+    }.mkString("\n")
     s"""
-       |${evaluateVariables(input)}
-       |final $structFieldClass[] $schemaFields = $schemaTerm.fields();
-       |${CodeGeneration.genStmtSetters(schema.fields,
-          connProps.dialect, input, stmt, schemaFields, ctx)}
+       |$inputCode
+       |$functionCalls
        |$rowCount++;
        |$stmt.addBatch();
        |if (($rowCount % $batchSize) == 0) {

@@ -51,8 +51,8 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
         "number of deletes in column batches"))
   }
 
-  @transient private var batchIdTerm: String = _
   @transient private var batchOrdinal: String = _
+  @transient private var batchIdTerm: String = _
   @transient private var finishDelete: String = _
   @transient private var deleteMetric: String = _
 
@@ -61,7 +61,7 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     sql.append("DELETE FROM ").append(resolvedName)
         .append(s" WHERE ${StoreUtils.SHADOW_COLUMN_NAME}=?")
 
-    super.doProduce(ctx, sql.toString(),
+    super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
          |  $finishDelete($batchIdTerm);
@@ -75,6 +75,7 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
     val deleteEncoder = ctx.freshName("deleteEncoder")
     batchOrdinal = ctx.freshName("batchOrdinal")
+    batchIdTerm = ctx.freshName("batchId")
     val partitionId = ctx.freshName("partitionId")
     finishDelete = ctx.freshName("finishDelete")
     deleteMetric = if (onExecutor) null else metricTerm(ctx, "numDeleteColumnBatchRows")
@@ -83,8 +84,9 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
 
     ctx.addMutableState(deleteEncoderClass, deleteEncoder, "")
     ctx.addMutableState("long", cursor, "")
-    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
     ctx.addMutableState("int", batchOrdinal, "")
+    ctx.addMutableState("UTF8String", batchIdTerm, "")
+    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
     ctx.addMutableState("int", partitionId, "")
     ctx.addPartitionInitializationStatement(s"$partitionId = partitionIndex;")
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
@@ -104,9 +106,12 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
 
     val numKeys = keyColumns.length
     val positionTerm = keysInput(keysInput.length - numKeys).value
-    batchIdTerm = keysInput(keysInput.length - numKeys + 1).value
 
-    val keyVarsCode = evaluateVariables(keysInput)
+    val keyVarsCode =
+      s"""
+         |${evaluateVariables(keysInput)}
+         |$batchIdTerm = ${keysInput(keysInput.length - numKeys + 1).value};
+      """.stripMargin
     // row buffer needs to select the rowId for the ordinal
     val rowConsume = super.doConsume(ctx, keysInput,
       StructType(Seq(ColumnDelta.mutableKeyFields.head)))
@@ -119,8 +124,8 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     ctx.addNewFunction(finishDelete,
       s"""
          |private void $finishDelete(UTF8String $batchIdTerm) {
-         |  if (!$batchIdTerm.equals($lastColumnBatchId)) {
-         |    if ($lastColumnBatchId == null) return;
+         |  if ($batchIdTerm != $lastColumnBatchId && !$batchIdTerm.equals($lastColumnBatchId)) {
+         |    if ($lastColumnBatchId == null) return; // first call
          |    // finish previous encoder, put into table and re-initialize
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($cursor);
          |    $externalStoreTerm.storeDelete($resolvedName, buffer,

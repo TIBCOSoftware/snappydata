@@ -26,6 +26,7 @@ import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteEncoder, ColumnDeltaEncoder}
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
 
@@ -138,6 +139,7 @@ object ColumnDelta {
     StructField(mutableKeyNames(1), StringType, nullable = true),
     StructField(mutableKeyNames(2), IntegerType, nullable = false)
   )
+  def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
   def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) % MAX_DEPTH
