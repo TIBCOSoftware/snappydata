@@ -18,6 +18,7 @@
 package io.snappydata.hydra.testDMLOps
 
 import java.io.{File, FileOutputStream, PrintWriter}
+import java.util
 
 import scala.util.{Failure, Success, Try}
 
@@ -39,12 +40,17 @@ object ValidateInsertOpUsingAPI_Job extends SnappySQLJob{
     Try {
       val snc = snSession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=23")
-      val stmt = jobConfig.getString("stmt")
-      snc.setConf("stmt", stmt)
+      val tableName = jobConfig.getString("tableName")
+      val row: String = jobConfig.getString("row")
+
+      val valueList: util.ArrayList[_] = new util.ArrayList(util.Arrays.asList(row
+          .split(",")))
+      val rowList: util.ArrayList[util.ArrayList[_]] = new util.ArrayList[util.ArrayList[_]]();
+      rowList.add(valueList)
       // scalastyle:off println
-      pw.println(s"Executing ${stmt} on snappy")
+      pw.println(s"Executing insert on table ${tableName} on snappy")
       val startTime = System.currentTimeMillis
-      // val df = snc.insert(tableName, stmt)
+      val df = snc.put(tableName, rowList)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       // pw.println(df);

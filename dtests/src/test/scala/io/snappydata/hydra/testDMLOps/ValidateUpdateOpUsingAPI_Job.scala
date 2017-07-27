@@ -18,13 +18,15 @@
 package io.snappydata.hydra.testDMLOps
 
 import java.io.{File, FileOutputStream, PrintWriter}
+
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
 import util.TestException
+import java.util
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SnappySession, SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 class ValidateUpdateOpUsingAPI_Job extends SnappySQLJob {
 
@@ -40,13 +42,22 @@ class ValidateUpdateOpUsingAPI_Job extends SnappySQLJob {
     Try {
       val snc = snSession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=23")
-      val stmt = jobConfig.getString("stmt")
-      snc.setConf("stmt", stmt)
+
+      val whereClause = jobConfig.getString("whereClause")
+      val tableName = jobConfig.getString("tableName")
+      val newValues = jobConfig.getString("newValues")
+      val valueList: util.ArrayList[_] = new util.ArrayList(util.Arrays.asList(newValues.split
+      (",")))
+      val newValueList: util.ArrayList[util.ArrayList[_]] = new util.ArrayList[util.ArrayList[_]]();
+      newValueList.add(valueList)
+      val updateColumn = jobConfig.getString("updateColumns")
+      val updateColumnList: java.util.ArrayList[String] = new java.util.ArrayList[String]
+      (updateColumn.split(","))
       // scalastyle:off println
-      pw.println(s"Executing ${stmt} on snappy")
+      pw.println(s"Executing insert on ${tableName} on snappy")
       pw.flush()
       val startTime = System.currentTimeMillis
-      val df = snc.sql(stmt)
+      val df = snc.update(tableName, whereClause, newValueList, updateColumnList)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(df);

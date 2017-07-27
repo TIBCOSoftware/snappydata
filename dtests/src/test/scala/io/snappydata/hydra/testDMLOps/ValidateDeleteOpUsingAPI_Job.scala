@@ -41,15 +41,16 @@ class ValidateDeleteOpUsingAPI_Job extends SnappySQLJob {
     Try {
       val snc = snSession.sqlContext
       snc.sql("set spark.sql.shuffle.partitions=23")
-      val stmt = jobConfig.getString("stmt")
-      snc.setConf("stmt", stmt)
+      val tableName = jobConfig.getString("tableName")
+      val whereClause = jobConfig.getString("whereClause")
+
       // scalastyle:off println
-      pw.println(s"Executing ${stmt} using delete API on snappy")
+      pw.println(s"Executing delete on table ${tableName} using API on snappy")
       val startTime = System.currentTimeMillis
-      // val df = snc.delete(stmt)
+      val df = snc.delete(tableName, whereClause)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
-      // pw.println(df);
+      pw.println(df);
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")
       println(s"Operation completed successfully. See ${getCurrentDirectory}/${outputFile}")
       pw.println(s"Operation completed successfully.")

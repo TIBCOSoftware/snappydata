@@ -1,9 +1,29 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+
 package io.snappydata.hydra.testDMLOps;
 
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -24,6 +44,7 @@ import hydra.TestConfig;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.snapshotIsolation.SnapshotIsolationDMLOpsBB;
+import org.apache.commons.lang.ArrayUtils;
 import sql.SQLHelper;
 import sql.SQLPrms;
 import sql.sqlutil.GFXDStructImpl;
@@ -35,6 +56,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public static boolean hasDerbyServer = false;
   public static boolean testUniqueKeys = false;
+  public static boolean isHATest = false;
   protected static hydra.blackboard.SharedLock dmlLock;
 
   protected static SnappyDMLOpsUtil testInstance;
@@ -45,6 +67,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       testInstance = new SnappyDMLOpsUtil();
     hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
     testUniqueKeys = TestConfig.tab().booleanAt(SnappySchemaPrms.testUniqueKeys, true);
+    isHATest = TestConfig.tab().booleanAt(SnappySchemaPrms.isHATest,false);
     int dmlTableLength = SnappySchemaPrms.getDMLTables().length;
     ArrayList<Integer> insertCounters = new ArrayList<>();
     for (int i = 0; i < dmlTableLength; i++) {
@@ -106,6 +129,23 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       } else if (conn.equals(SMARTCONNECTOR.getConnType())) {
         return SMARTCONNECTOR;
       } else return null;
+    }
+  }
+
+  public static void HydraTask_changeMetaDataDirForSpark(){
+    String sparkDir = hd.getGemFireHome() + ".." + sep + ".." + sep + ".." + sep + "spark" + sep;
+    String filePath = sparkDir + "launcher" + sep + "build-artifacts" + sep + "scala-2.11" +
+        sep + "resources" + sep + "test" + sep + "spark-defaults.conf";
+    try {
+      File file = new File(filePath);
+      FileWriter fw = new FileWriter(file.getAbsoluteFile(), true);
+      BufferedWriter bw = new BufferedWriter(fw);
+      bw.write("derby.system.home=test_db");
+      bw.newLine();
+      bw.close();
+    }
+    catch(IOException ie){
+      throw new TestException("Error while writing to spark file.");
     }
   }
 
@@ -780,15 +820,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           stmt = stmt + " AND tid=" + tid;
         else stmt = stmt + " WHERE tid=" + tid;
       }
-      //call to snappy job
+
       if(connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid,"stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
             jarPath, SnappyPrms.getUserAppName());
       }
-      else{
-        dynamicAppProps.put(tid,stmt + " " + tid);
+      else{ // thin client smart connector mode
+        dynamicAppProps.put(tid,"\"" + stmt + "\""  + " " + tid);
         String logFile = "snappyAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
       }
@@ -822,14 +862,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           stmt = stmt + " AND tid=" + tid;
         else stmt = stmt + " WHERE tid=" + tid;
       }
-      // call snappy job here.
+
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid,"stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
             jarPath, SnappyPrms.getUserAppName());
-      } else {
-        dynamicAppProps.put(tid,stmt + " " + tid);
+      } else { // thin client smart connector mode
+        dynamicAppProps.put(tid, "\"" + stmt + "\"" + " " + tid);
         String logFile = "snappyAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
       }
@@ -861,14 +901,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       String stmt = SnappySchemaPrms.getInsertStmts()[rand];
       String insertStmt = getStmt(stmt, row, tableName);
       int tid = getMyTid();
+
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid,"stmt=\\\"" + insertStmt + "\\\",tableName=" + tableName + "," +
             "tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
             jarPath, SnappyPrms.getUserAppName());
-      } else {
-        dynamicAppProps.put(tid,stmt + " " + tid);
+      } else { // thin client smart connector mode
+        dynamicAppProps.put(tid,"\"" + insertStmt + "\""  + " " + tid);
         String logFile = "snappyAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
         executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
       }
@@ -892,4 +933,109 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     dmlLock.unlock();
   }
 
+  public String buildUpdateStmt(String tableName){
+    String updateStmt = "update $tableName set $updateList where $whereClause";
+    //String[] tables = SnappySchemaPrms.getDMLTables();
+    //String tableName = tables[new Random().nextInt(tables.length)];
+    updateStmt = updateStmt.replace("$tableName", tableName);
+    String whereClause = "";
+    int tid = getMyTid();
+    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+        ("tableMetaData_" + tableName);
+    String[] columnNames = sType.getFieldNames();
+    ObjectType[] oTypes = sType.getFieldTypes();
+    String updateList = "";
+    int numColumnsToUpdate = new Random().nextInt(2);
+    for(int i=0;i<numColumnsToUpdate;i++){
+      if(updateList.length()!=0)
+        updateList.concat(" , ");
+      int randomInt = new Random().nextInt(columnNames.length);
+      String updateColumn = columnNames[randomInt];
+      ArrayUtils.remove(columnNames,randomInt);
+      updateColumn.concat("=");
+
+      updateList.concat("");
+    }
+    updateStmt = updateStmt.replace("$updateList", updateList);
+    whereClause = "";
+    if (whereClause.length() != 0)
+      whereClause.concat(" AND ");
+    whereClause.concat(" tid = " + tid);
+    updateStmt = updateStmt.replace("$whereClause", whereClause);
+    return updateStmt;
+  }
+
+  public String buildDeleteStmt(String tableName){
+    String deleteStmt = "delete from $tableName where $whereClause";
+    //String[] tables = SnappySchemaPrms.getDMLTables();
+    //String tableName = tables[new Random().nextInt(tables.length)];
+    deleteStmt = deleteStmt.replace("$tableName", tableName);
+    String whereClause = "";
+    int tid = getMyTid();
+    StructTypeImpl sType = (StructTypeImpl)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get
+        ("tableMetaData_" + tableName);
+    String[] columnNames = sType.getFieldNames();
+    ObjectType[] oTypes = sType.getFieldTypes();
+
+    whereClause = "";
+    if (whereClause.length() != 0)
+      whereClause.concat(" AND ");
+    whereClause.concat(" tid = " + tid);
+    deleteStmt = deleteStmt.replace("$whereClause", whereClause);
+    return deleteStmt;
+  }
+
+  //ENUM for where clause operator
+  public enum WhereClauseOperator {
+    LESSTHAN("<"),
+    GREATERTHAN(">"),
+    EQUALTO("=");
+
+    String opType;
+
+    WhereClauseOperator(String opType) {
+      this.opType = opType;
+    }
+
+    public String getOpType() {
+      return opType;
+    }
+
+    public static SnappyDMLOpsUtil.WhereClauseOperator getOperation(String op) {
+      if (op.equals(LESSTHAN.getOpType())) {
+        return LESSTHAN;
+      } else if (op.equals(GREATERTHAN.getOpType())) {
+        return GREATERTHAN;
+      } else if (op.equals(EQUALTO.getOpType())) {
+        return EQUALTO;
+      } else return null;
+    }
+  }
+
+  //ENUM for Connection Type
+  public enum ExprOperator {
+    ADDITION("+"),
+    SUBTRACTION("-"),
+    MULTIPLICATION("*");
+
+    String opType;
+
+    ExprOperator(String opType) {
+      this.opType = opType;
+    }
+
+    public String getOpType() {
+      return opType;
+    }
+
+    public static SnappyDMLOpsUtil.ExprOperator getOperation(String conn) {
+      if (conn.equals(ADDITION.getOpType())) {
+        return ADDITION;
+      } else if (conn.equals(SUBTRACTION.getOpType())) {
+        return SUBTRACTION;
+      } else if (conn.equals(MULTIPLICATION.getOpType())) {
+        return MULTIPLICATION;
+      } else return null;
+    }
+  }
 }

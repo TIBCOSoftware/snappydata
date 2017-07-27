@@ -32,7 +32,7 @@ object ValidateDMLOpApp {
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val threadID = args(2).toBoolean
+    val threadID = args(1)
     val outputFile = "DMLOpsApp_thr_" + threadID + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))
     val stmt = args(0)

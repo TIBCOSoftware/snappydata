@@ -1954,7 +1954,6 @@ public class SnappyTest implements Serializable {
           APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
         }
         if(SnappyPrms.hasDynamicAppProps()){
-          Log.getLogWriter().info("[Sonal]" + dynamicAppProps.get(getMyTid()));
           APP_PROPS = "\"" + APP_PROPS +  "," + dynamicAppProps.get(getMyTid()) + "\"" ;
         }
         String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
@@ -2003,7 +2002,6 @@ public class SnappyTest implements Serializable {
         String primaryLocatorPort = getPrimaryLocatorPort();
         String userAppJars =  SnappyPrms.getUserAppArgs();
         if(SnappyPrms.hasDynamicAppProps()){
-          Log.getLogWriter().info("[Sonal]" + dynamicAppProps.get(getMyTid()));
           userAppJars = userAppJars +  " " + dynamicAppProps.get(getMyTid());
         }
         command = snappyJobScript + " --class " + userJob +
