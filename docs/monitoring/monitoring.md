@@ -88,3 +88,40 @@ The Dashboard offers the following capabilities and benefits:
 
 * **Total Size**</br>
    Displays the collective physical memory and disk overflow space used by the data table to store its data/records.
+   
+## SQL Page
+![](../Images/query_analysis_sql.png)
+
+* Colocated/Replicated Tables: When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.
+
+* Per node execution timing: Displays the time required for the execution of each node.
+
+* Column Details: Move the mouse over a component to view its details. 
+
+* Filter: Displays the number of rows that are filtered for each node.
+
+* Joins: If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.
+
+
+## Jobs Page
+![](../Images/query_analysis_job.png)
+
+* Status: Displays the status of the job. 
+
+* Click on the Stage to view its details. The table displays the time taken for completion of each stage. 
+
+
+## Stages Page
+![](../Images/query_analysis_stage.png)
+
+* On this page you can view the total time required for all the tasks in a job to complete.
+
+* You can view if any tasks has taken a long time to complete. This may occur in case of uneven data distribution. 
+
+* Scheduler Delay indicates the waiting period for the task.
+
+* Shuffle reads and writes: Shuffles are written to disk and take lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high performance SSD drives for temporary storage (spark.local.dir) to improve shuffle times.  
+
+* Number of parallel tasks: Due to concurrency, multiple queries may take cores and a particular query may take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](/best_practices/capacity_planning.md).
+
+* GC time: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables) and avoid HashJoin and use SortMergeJoin. 

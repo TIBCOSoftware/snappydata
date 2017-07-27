@@ -4,7 +4,7 @@ Spark executors and SnappyData in-memory store share the same memory space. Snap
 SnappyData also monitors the JVM memory pools and avoids running into Out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold memory allocations within SnappyData fail, and an LowMemoryException error is thrown. This, however, safeguards the server from crashing due to OutOfMemoryException.
 
 !!! Note: 
- **SnappyUnifiedMemoryManager** is used only in the embedded mode. Spark’s default memory manager is used for local mode and split cluster(smart connector) mode.
+ **SnappyUnifiedMemoryManager** is used only in the embedded mode. Spark’s default memory manager is used for local mode and smart connector mode.
 
 ## Estimating memory size for column and row tables
 Column tables uses compression by default and the amount of compression is quite dependent on the data itself. While, we commonly see compression of 50%, it is also possible to achieve much higher compression ratios when the data has many repeated strings or text. 
@@ -53,7 +53,7 @@ TODO: review these rules. Correct the verbiage - Jags
 * If storage pool has some free memory execution pool can borrow that memory from storage pool during execution. The borrowed memory is returned back once execution is over. 
 
 TODO: I don't see this image ... and, it isn't referenced in the description. Need to review once the pic is in place - Jags
-![Heap-Size](/Images/heap_size.png)
+![Heap-Size](../Images/heap_size.png)
 
 Here is an example configuration for memory (typically configured in conf/leads or conf/servers) 
 ```
@@ -71,7 +71,7 @@ Heap_Max_Storage_pool_Size => 16.5 * 0.81 = 13.4 ( 0.81 derived from eviction_he
 ```
 
 ## SnappyData Off-Heap Memory 
-Alongside heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, off-heap setting is recommended. However several artifacts in the product need heap memory, so some minimum heap size is also required for this.
+In addition to heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.
 
 | Parameter Name | Default Value | Description	 |
 |--------|--------|--------|
@@ -79,7 +79,7 @@ Alongside heap memory, SnappyData can also be configured with off-heap memory. I
 
 Similar to heap pools, off-heap pools are also divided between off-heap storage pool and off-heap execution pool. The rules of borrowing memory from each other also remains same.
 
-![Off-Heap](/Images/off_heap_size.png)
+![Off-Heap](../Images/off_heap_size.png)
 Here is an exmaple off-heap configuration: 
 
 ```

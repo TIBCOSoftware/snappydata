@@ -1,6 +1,6 @@
 # ALTER TABLE
 
-Use the ALTER TABLE statement to add and drop columns in row tables using SnappyData APIs or SQL.
+Use the ALTER TABLE statement to add and drop columns in row tables using SnappyData API or SQL.
 
 !!! Note: 
 
@@ -10,7 +10,7 @@ Use the ALTER TABLE statement to add and drop columns in row tables using Snappy
 
 ## Syntax
 
-**SQL Query:**
+**SQL**
 ```
 ALTER TABLE table-name
 {
@@ -20,15 +20,15 @@ ALTER TABLE table-name
 
 ```
 
-**AP Query:**
+**API:**
 ```
-snappySession.alterTable(tableName, isAddColumn, column)
+snc.alterTable(tableName, isAddColumn, column)
 
 ```
 
 ## Example
 
-**SQL Query:**
+**SQL:**
 
 ```
 -- create a table
@@ -45,20 +45,19 @@ ALTER TABLE trade.customers DROP COLUMN addr;
 ALTER TABLE trade.customers ADD COLUMN addr varchar(100);
 ```
 
-**API Query:**
+**API:**
 
 ```
 
-/*create a table in Snappy store*/
-snc.createTable("orders", "row",
-ordersDF.schema, Map.empty[String, String])
+//create a table in Snappy store
+	snc.createTable("orders", "row", ordersDF.schema, Map.empty[String, String])
 
-/*alter table adds/drops provided column, only supprted for row tables.*/
+//alter table add/drop specified column, only supported for row tables.
 
-/*for adding a column isAddColumn should be true, else it will drop the column*/
-snc.alterTable("orders", true, StructField("FirstName", StringType, true))
+// for adding a column isAddColumn should be true
+	snc.alterTable("orders", true, StructField("FirstName", StringType, true))
 
-/*for dropping a column isAddColumn should be false, else it will add the column*/
-snc.alterTable("orders", true, StructField("FirstName", StringType, true))
+// for dropping a column isAddColumn should be false
+	snc.alterTable("orders", false, StructField("FirstName", StringType, true))
 ```
 
