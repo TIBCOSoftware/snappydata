@@ -41,9 +41,8 @@ import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, funct
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.backwardcomp.ExecutedCommand
 import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.encoders.{RowEncoder, _}
+import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
@@ -1770,7 +1769,7 @@ object SnappySession extends Logging {
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
-      case _: ExecutedCommandExec | _: ExecutedCommand | _: ExecutePlan =>
+      case _: ExecutedCommandExec | _: ExecutePlan =>
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         val childRDD = if (withFallback ne null) withFallback.execute(plan.child)
