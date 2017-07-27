@@ -20,6 +20,7 @@ package org.apache.spark.memory
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 
@@ -71,7 +72,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   val rr_table = "app.rr_table"
   val memoryMode = MemoryMode.ON_HEAP
 
-
+  bootProps.setProperty("default-startup-recovery-delay", "0");
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
@@ -85,29 +86,40 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm2.invoke(getClass, "resetStorageMemory")
   }
 
+  override def beforeClass(): Unit = {
+    super.beforeClass()
+    val zeroStartupRecoveryDelay = new SerializableRunnable() {
+      override def run(): Unit = GemFireXDUtils.setDefaultStartupRecoveryDelay(0)
+    }
+    zeroStartupRecoveryDelay.run()
+    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(zeroStartupRecoveryDelay))
+  }
+
+  override def afterClass(): Unit = {
+    super.afterClass()
+    val resetStartupRecoveryDelay = new SerializableRunnable() {
+      override def run(): Unit = GemFireXDUtils.setDefaultStartupRecoveryDelay(120000)
+    }
+    resetStartupRecoveryDelay.run()
+    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(resetStartupRecoveryDelay))
+  }
+
   override def setUp(): Unit = {
     super.setUp()
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
+    cleanTestResources
   }
 
-  override def tearDown2(): Unit = {
+  private def cleanTestResources(): Unit = {
     val snc = SnappyContext(sc).newSession()
     snc.dropTable(col_table, ifExists = true)
     snc.dropTable(rr_table, ifExists = true)
-    resetMemoryManagers()
-    super.tearDown2()
+    resetMemoryManagers
   }
 
-  // There is no other way to have a reference memory usage rather than a clean boot
-  def cleanRefServer(props : Properties): Unit = {
-    val port = ClusterManagerTestBase.locPort
-    def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
-      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
-    }
-
-    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
-    Thread.sleep(1000 * 5) // give some time for executor thread shutdown
-    vm2.invoke(restartServer(props))
+  override def tearDown2(): Unit = {
+    cleanTestResources
+    super.tearDown2()
   }
 
   // Approximate because we include hash map size also, which can vary across VMs
@@ -190,8 +202,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
 
-    cleanRefServer(props)
-
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
@@ -210,7 +220,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val waitAssert = new WaitAssert(20, getClass)
     // Setting ignore bytecount as VM doing GII does have a valid value, hence key is kept as null
     // This decreases the size of entry overhead. @TODO find out why only column table needs this ?
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, col_table),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "col__table"),
       waitAssert.exceptionString(),
       20000, 5000, true)
   }
@@ -229,8 +239,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
 
-    cleanRefServer(props)
-
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
     val data = for (i <- 1 to 50) yield (Seq(i, (i + 1), (i + 2)))
@@ -244,7 +252,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(restartServer(props))
 
     val waitAssert = new WaitAssert(10, getClass)
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "rr__table"),
       waitAssert.exceptionString(),
       20000, 5000, true)
   }
@@ -263,8 +271,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
 
-    cleanRefServer(props)
-
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
     val data = for (i <- 1 to 50) yield (Seq(i, (i + 1), (i + 2)))
@@ -281,7 +287,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(restartServer(props))
 
     val waitAssert = new WaitAssert(10, getClass)
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "rr__table"),
       waitAssert.exceptionString(),
       20000, 5000, true)
   }
@@ -299,7 +305,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
-    cleanRefServer(props)
 
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val snc = newContext()
@@ -327,7 +332,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
 
     val waitAssert = new WaitAssert(10, getClass)
     // The delete operation takes time to propagate
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "rr__table"),
       waitAssert.exceptionString(),
       60000, 5000, true)
   }
@@ -341,7 +346,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
-    cleanRefServer(props)
 
     val snc = newContext()
 
@@ -377,8 +381,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
-    cleanRefServer(props)
-
     val snc = newContext()
 
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
@@ -398,7 +400,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(restartServer(props))
 
     val waitAssert = new WaitAssert(2, getClass)
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, rr_table),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "rr__table"),
       waitAssert.exceptionString(),
       30000, 5000, true)
   }
@@ -410,8 +412,6 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
     }
-
-    cleanRefServer(props)
 
     def rebalance(conf: ConnectionConf): SerializableRunnable = new SerializableRunnable() {
       override def run(): Unit = {
@@ -461,8 +461,12 @@ object SnappyUnifiedMemoryManagerDUnitTest {
     if (SparkEnv.get != null) {
       SparkEnv.get.memoryManager.releaseAllStorageMemory
       if (SparkEnv.get.memoryManager.isInstanceOf[SnappyUnifiedMemoryManager]) {
-        SparkEnv.get.memoryManager
-          .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap.clear()
+        val umm = SparkEnv.get.memoryManager
+            .asInstanceOf[SnappyUnifiedMemoryManager]
+        if (umm._memoryForObjectMap ne null) {
+          umm._memoryForObjectMap.clear()
+        }
+        MemoryManagerCallback.resetMemoryManager()
       }
     }
   }
@@ -481,6 +485,8 @@ object SnappyUnifiedMemoryManagerDUnitTest {
       if (SparkEnv.get.memoryManager.isInstanceOf[SnappyUnifiedMemoryManager]) {
         val mMap = SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap
+        SparkEnv.get.memoryManager
+            .asInstanceOf[SnappyUnifiedMemoryManager].logStats()
         val keys = mMap.keySet().iterator()
         var sum = 0L
         while (keys.hasNext) {

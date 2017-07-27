@@ -395,10 +395,13 @@ object SnappyParserConsts {
  final val SAMPLER_WEIGHTAGE = nonReservedKeyword(Utils.WEIGHTAGE_COLUMN_NAME)
 
   // non-reserved keywords
+  final val ADD = nonReservedKeyword("add")
+  final val ALTER = nonReservedKeyword("alter")
   final val ANTI = nonReservedKeyword("anti")
   final val CACHE = nonReservedKeyword("cache")
   final val CLEAR = nonReservedKeyword("clear")
   final val CLUSTER = nonReservedKeyword("cluster")
+  final val COLUMN = nonReservedKeyword("column")
   final val COMMENT = nonReservedKeyword("comment")
   final val DESCRIBE = nonReservedKeyword("describe")
   final val DISTRIBUTE = nonReservedKeyword("distribute")
