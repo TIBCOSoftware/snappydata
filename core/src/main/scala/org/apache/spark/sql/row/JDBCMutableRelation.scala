@@ -18,6 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import com.pivotal.gemfirexd.Attribute
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.rdd.RDD
@@ -300,7 +301,8 @@ case class JDBCMutableRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      ExternalStoreUtils.removeCachedObjects(sqlContext, table)
+      ExternalStoreUtils.removeCachedObjects(sqlContext, table,
+        connProperties.poolProps.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, ""))
     } finally {
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)

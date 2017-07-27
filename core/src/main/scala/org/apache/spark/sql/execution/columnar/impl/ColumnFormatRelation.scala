@@ -19,9 +19,12 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
@@ -294,7 +297,8 @@ abstract class BaseColumnFormatRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      StoreUtils.removeCachedObjects(sqlContext, table)
+      StoreUtils.removeCachedObjects(sqlContext, table,
+        connProperties.poolProps.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, ""))
     } finally {
       try {
         try {

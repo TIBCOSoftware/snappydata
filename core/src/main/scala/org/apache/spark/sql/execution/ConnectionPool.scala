@@ -23,9 +23,10 @@ import javax.sql.DataSource
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.pivotal.gemfirexd.Attribute
 import com.zaxxer.hikari.util.PropertyElf
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
+import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
@@ -50,7 +51,7 @@ object ConnectionPool {
    * only lock-free reads so keeping it at minimum.
    */
   private[this] val idToPoolMap = new java.util.concurrent.ConcurrentHashMap[
-      String, (DataSource, PoolKey)](8, 0.75f, 1)
+      (String, String), (DataSource, PoolKey)](8, 0.75f, 1)
 
   /**
    * Reference counted pools which will share a pool across IDs
@@ -80,12 +81,13 @@ object ConnectionPool {
   def getPoolDataSource(id: String, props: Map[String, String],
       connectionProps: Properties, hikariCP: Boolean): DataSource = {
     // fast lock-free path first (the usual case)
-    val dsKey = idToPoolMap.get(id)
+    val username = props.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, "")
+    val dsKey = idToPoolMap.get((id, username))
     if (dsKey != null) {
       dsKey._1
     } else pools.synchronized {
       // double check after the global lock
-      val dsKey = idToPoolMap.get(id)
+      val dsKey = idToPoolMap.get((id, username))
       if (dsKey != null) {
         dsKey._1
       } else {
@@ -96,7 +98,7 @@ object ConnectionPool {
         pools.get(poolKey) match {
           case Some((newDS, ids)) =>
             ids += id
-            val err = idToPoolMap.putIfAbsent(id, (newDS, poolKey))
+            val err = idToPoolMap.putIfAbsent((id, username), (newDS, poolKey))
             require(err == null, s"unexpected existing pool for $id: $err")
             newDS
           case None =>
@@ -116,7 +118,7 @@ object ConnectionPool {
               new TDataSource(tconf)
             }
             pools(poolKey) = (newDS, mutable.Set(id))
-            val err = idToPoolMap.putIfAbsent(id, (newDS, poolKey))
+            val err = idToPoolMap.putIfAbsent((id, username), (newDS, poolKey))
             require(err == null, s"unexpected existing pool for $id: $err")
             newDS
         }
@@ -169,8 +171,8 @@ object ConnectionPool {
    * @return true if this was the last reference and entire pool was removed
    *         and false otherwise
    */
-  def removePoolReference(id: String): Boolean = {
-    val dsKey = idToPoolMap.remove(id)
+  def removePoolReference(id: String, userName: String): Boolean = {
+    val dsKey = idToPoolMap.remove((id, userName))
     if (dsKey != null) pools.synchronized {
       removePoolKey(id, dsKey)
     } else false
@@ -179,7 +181,7 @@ object ConnectionPool {
   /** To be invoked only on SparkContext stop or from tests. */
   def clear(): Unit = pools.synchronized {
     idToPoolMap.asScala.foreach {
-      case (id, dsKey) => removePoolKey(id, dsKey)
+      case (id, dsKey) => removePoolKey(id._1, dsKey)
     }
     pools.clear()
     idToPoolMap.clear()
