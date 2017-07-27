@@ -20,24 +20,25 @@ package org.apache.spark.sql.execution.columnar
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
-import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 
 /**
  * Generated code plan for updates into a column table.
+ * This extends [[RowExec]] to generate the combined code for row buffer updates.
  */
 case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
     tableSchema: StructType, externalStore: ExternalStore, relation: Option[DestroyRelation],
     updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
     keyColumns: Seq[Attribute], connProps: ConnectionProperties, onExecutor: Boolean)
-    extends TableExec with RowExec {
+    extends RowExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
@@ -79,7 +80,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name), escapeQuotes = true)
     sql.append(s" WHERE ${StoreUtils.SHADOW_COLUMN_NAME}=?")
 
-    doProduce(ctx, sql.toString(),
+    super.doProduce(ctx, sql.toString(),
       s"""
          |if ($batchOrdinal > 0) {
          |  $finishUpdate($batchIdTerm);
@@ -137,7 +138,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
 
     val updateVarsCode = evaluateVariables(updateInput)
     // row buffer needs to select the rowId for the ordinal
-    val rowConsume = doConsume(ctx, updateInput, StructType(
+    val rowConsume = super.doConsume(ctx, updateInput, StructType(
       getUpdateSchema(updateExpressions) :+ ColumnDelta.mutableKeyFields.head))
 
     ctx.addNewFunction(initializeEncoders,
@@ -154,7 +155,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
       """.stripMargin)
     // Creating separate encoder write functions instead of inlining for wide-schemas
     // in updates (especially with support for putInto being added). Performance should
-    // be about the same since JVM will inline if the number of columns is small.
+    // be about the same since JVM inlines where it determines will help performance.
     val callEncoders = updateColumns.zipWithIndex.map { case (col, i) =>
       val function = ctx.freshName("encoderFunction")
       val ordinal = ctx.freshName("ordinal")

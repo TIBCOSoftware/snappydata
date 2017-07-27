@@ -26,8 +26,7 @@ import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.AttributeReference
-import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteEncoder, ColumnDeltaEncoder}
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
 
 /**
@@ -139,7 +138,6 @@ object ColumnDelta {
     StructField(mutableKeyNames(1), StringType, nullable = true),
     StructField(mutableKeyNames(2), IntegerType, nullable = false)
   )
-  val mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
   def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) % MAX_DEPTH
@@ -151,4 +149,65 @@ object ColumnDelta {
 
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1 - hierarchyDepth
+}
+
+/** Simple delta that merges the deleted positions */
+final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
+
+  def this(buffer: ByteBuffer) = {
+    this()
+    setBuffer(buffer)
+  }
+
+  override def apply(putEvent: EntryEvent[_, _]): AnyRef = {
+    val event = putEvent.asInstanceOf[EntryEventImpl]
+    apply(event.getRegion, event.getKey, event.getOldValueAsOffHeapDeserializedOrRaw,
+      event.getTransactionId == null)
+  }
+
+  override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
+      prepareForOffHeap: Boolean): AnyRef = {
+    if (oldValue eq null) {
+      // first delta, so put as is
+      val result = new ColumnFormatValue(columnBuffer)
+      // buffer has been transferred and should be removed from delta
+      // which would no longer be usable after this point
+      columnBuffer = DiskEntry.Helper.NULL_BUFFER
+      result
+    } else {
+      // merge with existing delete list
+      val encoder = new ColumnDeleteEncoder
+      val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
+      val existingBuffer = oldColumnValue.getBufferRetain
+      try {
+        new ColumnFormatValue(encoder.merge(existingBuffer, columnBuffer))
+      } finally {
+        oldColumnValue.release()
+        // release own buffer too and delta should be unusable now
+        release()
+      }
+    }
+  }
+
+  /** first delta update for a column will be put as is into the region */
+  override def allowCreate(): Boolean = true
+
+  override def merge(region: Region[_, _], toMerge: Delta): Delta =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteDelta.merge")
+
+  override def cloneDelta(): Delta =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteDelta.cloneDelta")
+
+  override def setVersionTag(versionTag: VersionTag[_ <: VersionSource[_]]): Unit =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteDelta.setVersionTag")
+
+  override def getVersionTag: VersionTag[_ <: VersionSource[_]] =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteDelta.getVersionTag")
+
+  override def getGfxdID: Byte = GfxdSerializable.COLUMN_DELETE_DELTA
+
+  override def toString: String = {
+    val buffer = columnBuffer.duplicate()
+    s"ColumnDeleteDelta[size=${buffer.remaining()} $buffer"
+  }
 }

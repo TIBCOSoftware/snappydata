@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.nio.ByteBuffer
 import java.sql.Connection
 
 import scala.reflect.ClassTag
@@ -24,6 +25,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.unsafe.types.UTF8String
 
 trait ExternalStore extends Serializable {
 
@@ -31,6 +33,15 @@ trait ExternalStore extends Serializable {
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit
+
+  def storeColumnBatch(tableName: String, batch: ColumnBatch,
+      partitionId: Int, batchId: UTF8String, maxDeltaRows: Int): Unit = {
+    storeColumnBatch(tableName, batch, partitionId,
+      if (batchId ne null) Some(batchId.toString) else None, maxDeltaRows)
+  }
+
+  def storeDelete(tableName: String, buffer: ByteBuffer,
+      partitionId: Int, batchId: String): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]

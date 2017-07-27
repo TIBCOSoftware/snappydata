@@ -392,8 +392,6 @@ trait ColumnEncoder extends ColumnEncoding {
     initialize(Utils.getSQLDataType(field.dataType), field.nullable,
       initSize, withHeader, allocator)
 
-  var SW_dataType: DataType = _
-
   /**
    * Initialize this ColumnEncoder.
    *
@@ -406,7 +404,6 @@ trait ColumnEncoder extends ColumnEncoding {
    */
   def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
-    SW_dataType = dataType
     setAllocator(allocator)
     val defSize = defaultSize(dataType)
 

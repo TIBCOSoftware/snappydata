@@ -19,10 +19,8 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
-import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.meta.param
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 import scala.util.control.NonFatal
@@ -33,11 +31,13 @@ import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, Parti
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
+import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnectionContext
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.serializer.ConnectionPropertiesSerializer
+import org.apache.spark.serializer.{ConnectionPropertiesSerializer, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{DynamicReplacableConstant, ParamLiteral}
 import org.apache.spark.sql.collection._
@@ -54,23 +54,78 @@ import org.apache.spark.{Partition, TaskContext}
 /**
  * Column Store implementation for GemFireXD.
  */
-class JDBCSourceAsColumnarStore(override val connProperties: ConnectionProperties,
-    numPartitions: Int, val tableName: String, val schema: StructType)
-    extends ExternalStore {
+class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionProperties,
+    var numPartitions: Int, var tableName: String, var schema: StructType)
+    extends ExternalStore with KryoSerializable {
 
   self =>
   @transient
   protected lazy val rand = new Random
 
+  override final def connProperties: ConnectionProperties = _connProperties
+
   private lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    ConnectionPropertiesSerializer.write(kryo, output, _connProperties)
+    output.writeInt(numPartitions)
+    output.writeString(tableName)
+    StructTypeSerializer.write(kryo, output, schema)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    _connProperties = ConnectionPropertiesSerializer.read(kryo, input)
+    numPartitions = input.readInt()
+    tableName = input.readString()
+    schema = StructTypeSerializer.read(kryo, input, c = null)
+  }
 
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit = {
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, doInsert(tableName, batch, batchId,
+    tryExecute(tableName, doInsertOrPut(tableName, batch, batchId,
       getPartitionID(tableName, partitionId), maxDeltaRows),
       closeOnSuccess = true, onExecutor = true)
+  }
+
+  override def storeDelete(tableName: String, buffer: ByteBuffer,
+      partitionId: Int, batchId: String): Unit = {
+    connectionType match {
+      case ConnectionType.Embedded =>
+        val region = Misc.getRegionForTable[ColumnFormatKey,
+            ColumnFormatValue](tableName, true)
+        val key = new ColumnFormatKey(partitionId,
+          ColumnFormatEntry.DELETE_MASK_COL_INDEX, batchId)
+        val value = new ColumnFormatValue(buffer)
+        region.put(key, value)
+
+      case _ =>
+        // noinspection RedundantDefaultArgument
+        tryExecute(tableName, { connection =>
+          val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
+          val stmt = connection.prepareStatement(deleteStr)
+          var blob: ClientBlob = null
+          try {
+            stmt.setString(1, batchId)
+            stmt.setInt(2, partitionId)
+            stmt.setInt(3, ColumnFormatEntry.DELETE_MASK_COL_INDEX)
+            blob = new ClientBlob(buffer, true)
+            stmt.setBlob(4, blob)
+            stmt.executeUpdate()
+            stmt.close()
+          } finally {
+            // free the blob
+            if (blob != null) {
+              try {
+                blob.free()
+              } catch {
+                case NonFatal(_) => // ignore
+              }
+            }
+          }
+        }, closeOnSuccess = true, onExecutor = true)
+    }
   }
 
   private def createStatsBuffer(statsData: Array[Byte],
@@ -89,7 +144,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  protected def doSnappyInsert(tableName: String, batch: ColumnBatch,
+  protected def doSnappyInsertOrPut(tableName: String, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int, maxDeltaRows: Int): Unit = {
     val region = Misc.getRegionForTable[ColumnFormatKey,
         ColumnFormatValue](tableName, true)
@@ -149,14 +204,14 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  protected def doGFXDInsert(tableName: String, batch: ColumnBatch,
+  protected def doGFXDInsertOrPut(tableName: String, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int,
       maxDeltaRows: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
-        val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
-        val stmt = connection.prepareStatement(rowInsertStr)
         val deltaUpdate = batch.deltaIndexes ne null
+        val rowInsertStr = getRowInsertOrPutStr(tableName, deltaUpdate)
+        val stmt = connection.prepareStatement(rowInsertStr)
         val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
         else ColumnFormatEntry.STATROW_COL_INDEX
         var index = 1
@@ -229,35 +284,21 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     }
   }
 
-  protected val insertStrings: mutable.HashMap[String, String] =
-    new mutable.HashMap[String, String]()
-
-  protected def getRowInsertStr(tableName: String, numOfColumns: Int): String = {
-    insertStrings.getOrElse(tableName, {
-      lock(makeInsertStmnt(tableName, numOfColumns))
-    })
-  }
-
-  private def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
-    if (!insertStrings.contains(tableName)) {
-      val s = insertStrings.getOrElse(tableName,
-        s"insert into $tableName values(?,?,?,?)")
-      insertStrings.put(tableName, s)
-    }
-    insertStrings(tableName)
-  }
-
-  protected val insertStmntLock = new ReentrantLock()
-
-  /** Acquires a read lock on the cache for the duration of `f`. */
-  protected[sql] def lock[A](f: => A): A = {
-    insertStmntLock.lock()
-    try f finally {
-      insertStmntLock.unlock()
-    }
+  protected def getRowInsertOrPutStr(tableName: String, isPut: Boolean): String = {
+    if (isPut) s"put into $tableName values (?, ?, ?, ?)"
+    else s"insert into $tableName values (?, ?, ?, ?)"
   }
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
+    connectionType match {
+      case ConnectionType.Embedded =>
+        val currentCM = ContextService.getFactory.getCurrentContextManager
+        if (currentCM ne null) {
+          val conn = EmbedConnectionContext.getEmbedConnection(currentCM)
+          if (conn ne null) return conn
+        }
+      case _ => // get pooled connection
+    }
     val connProps = if (onExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
@@ -268,7 +309,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       onExecutor: Boolean): ConnectedExternalStore =
     new JDBCSourceAsColumnarStore(connProperties, numPartitions, tableName, schema)
         with ConnectedExternalStore {
-      protected[this] override val connectedInstance: Connection =
+      @transient protected[this] override val connectedInstance: Connection =
         self.getConnection(table, onExecutor)
     }
 
@@ -307,7 +348,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     }
   }
 
-  protected def doInsert(columnTableName: String, batch: ColumnBatch,
+  protected def doInsertOrPut(columnTableName: String, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int,
       maxDeltaRows: Int): (Connection => Any) = {
     (connection: Connection) => {
@@ -365,15 +406,15 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
             val region = Misc.getRegionForTable(resolvedColumnTableName, true)
                 .asInstanceOf[PartitionedRegion]
             val batchID = Some(batchId.getOrElse(region.newJavaUUID().toString))
-            doSnappyInsert(resolvedColumnTableName, batch, batchID,
+            doSnappyInsertOrPut(resolvedColumnTableName, batch, batchID,
               partitionId, maxDeltaRows)
 
           case _ =>
-            doGFXDInsert(resolvedColumnTableName, batch, batchId, partitionId,
+            doGFXDInsertOrPut(resolvedColumnTableName, batch, batchId, partitionId,
               maxDeltaRows)(connection)
         }
       }
-     }
+    }
   }
 
   protected def getPartitionID(tableName: String,

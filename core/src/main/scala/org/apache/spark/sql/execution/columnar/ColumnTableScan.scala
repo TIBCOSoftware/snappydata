@@ -467,10 +467,10 @@ private[sql] final case class ColumnTableScan(
       val decoder = ctx.freshName("decoder")
       val cursor = s"${decoder}Cursor"
       val buffer = ctx.freshName("buffer")
-      val cursorVar = s"cursor$index"
-      val decoderVar = s"decoder$index"
-      val bufferVar = s"buffer$index"
-      if(isWideSchema){
+      val cursorVar = s"${buffer}Cursor"
+      val decoderVar = s"${buffer}Decoder"
+      val bufferVar = s"${buffer}Object"
+      if (isWideSchema) {
         ctx.addMutableState("Object", bufferVar, s"$bufferVar = null;")
       }
       // projections are not pushed in embedded mode for optimized access
@@ -515,6 +515,9 @@ private[sql] final case class ColumnTableScan(
           $buffer = $colInput.getColumnLob($bufferPosition);
           $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
             $planSchema.apply($index));
+          // check for mutated column
+          $decoder = $colInput.getMutatedColumnDecoderIfRequired($decoder,
+            $planSchema.apply($index), $bufferPosition, ${index != 0});
           // initialize the decoder and store the starting cursor position
           $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
         """)

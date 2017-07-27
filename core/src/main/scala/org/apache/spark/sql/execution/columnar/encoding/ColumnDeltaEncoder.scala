@@ -421,8 +421,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
           columnBytes2, writer, cursor, encoderOrdinal, forMerge = true)
         relativePosition2 += 1
-        decoderCursor2 = decoder2.currentCursor
-        if (decoderCursor2 < endOffset2) {
+        if (decoder2.currentCursor < endOffset2) {
           if (existingIsDelta) {
             position2 = ColumnEncoding.readInt(columnBytes2, positionCursor2)
             positionCursor2 += 4
@@ -446,8 +445,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
             columnBytes2, writer, cursor, encoderOrdinal,
             forMerge = true, doWrite = false)
           relativePosition2 += 1
-          decoderCursor2 = decoder2.currentCursor
-          if (decoderCursor2 < endOffset2) {
+          if (decoder2.currentCursor < endOffset2) {
             if (existingIsDelta) {
               position2 = ColumnEncoding.readInt(columnBytes2, positionCursor2)
               positionCursor2 += 4
@@ -459,8 +457,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
           }
         }
         relativePosition1 += 1
-        decoderCursor1 = decoder1.currentCursor
-        if (decoderCursor1 < endOffset1) {
+        if (decoder1.currentCursor < endOffset1) {
           position1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
           positionCursor1 += 4
         } else {
@@ -468,48 +465,31 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         }
       }
     }
-    // check remaining from second
-    if (decoder2.currentCursor < endOffset2) {
-      doProcess = true
-      while (doProcess) {
-        encoderOrdinal += 1
-        // set next update position to be from second
-        if (existingIsDelta) positionsArray(encoderOrdinal) = position2
-        cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
-          columnBytes2, writer, cursor, encoderOrdinal, forMerge = true)
-        relativePosition2 += 1
-        decoderCursor2 = decoder2.currentCursor
-        if (decoderCursor2 < endOffset2) {
-          if (existingIsDelta) {
-            position2 = ColumnEncoding.readInt(columnBytes2, positionCursor2)
-            positionCursor2 += 4
-          } else {
-            position2 += 1
-          }
-        } else {
-          doProcess = false
-        }
+    // consume any remaining (slight inefficiency of reading first positions again
+    //   but doing that for code clarity)
+    while (decoder1.currentCursor < endOffset1) {
+      encoderOrdinal += 1
+      // set next update position to be from first
+      if (existingIsDelta) {
+        positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
+        positionCursor1 += 4
       }
+      cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1, relativePosition1,
+        columnBytes1, writer, cursor, encoderOrdinal, forMerge = true)
+      relativePosition1 += 1
     }
-    // check remaining from first
-    else if (decoder1.currentCursor < endOffset1) {
-      doProcess = true
-      while (doProcess) {
-        encoderOrdinal += 1
-        // set next update position to be from first
-        if (existingIsDelta) positionsArray(encoderOrdinal) = position1
-        cursor = consumeDecoder(decoder1, decoderAbsolutePosition = -1, relativePosition1,
-          columnBytes1, writer, cursor, encoderOrdinal, forMerge = true)
-        relativePosition1 += 1
-        decoderCursor1 = decoder1.currentCursor
-        if (decoderCursor1 < endOffset1) {
-          position1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
-          positionCursor1 += 4
-        } else {
-          doProcess = false
-        }
+    while (decoder2.currentCursor < endOffset2) {
+      encoderOrdinal += 1
+      // set next update position to be from second
+      if (existingIsDelta) {
+        positionsArray(encoderOrdinal) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
+        positionCursor2 += 4
       }
+      cursor = consumeDecoder(decoder2, decoderAbsolutePosition = -1, relativePosition2,
+        columnBytes2, writer, cursor, encoderOrdinal, forMerge = true)
+      relativePosition2 += 1
     }
+
     // check that all positions have been consumed
     if (relativePosition1 != numPositions1) {
       throw new IllegalStateException("BUG: failed to consume required left-side deltas: " +
@@ -828,5 +808,157 @@ object DeltaWriter extends Logging {
       }
     }
     case _ => cache.get(dataType).create()
+  }
+}
+
+/**
+ * Currently just stores the deleted positions in a sorted way. This can be optimized
+ * to use a more efficient storage when number of positions is large like
+ * a boolean bitset, or use a more comprehensive compression scheme like
+ * PFOR (https://github.com/lemire/JavaFastPFOR).
+ */
+final class ColumnDeleteEncoder extends ColumnEncoder {
+
+  override def typeId: Int = -1
+
+  override def supports(dataType: DataType): Boolean = dataType eq IntegerType
+
+  override def nullCount: Int = 0
+
+  override def isNullable: Boolean = false
+
+  override protected[sql] def getNumNullWords: Int = 0
+
+  override protected[sql] def initializeNulls(initSize: Int): Int =
+    throw new UnsupportedOperationException(s"initializeNulls for $toString")
+
+  override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long, numWords: Int): Long =
+    throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
+
+  override protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long =
+    throw new UnsupportedOperationException(s"initializeNullsBeforeFinish for $toString")
+
+  override private[sql] def decoderBeforeFinish: ColumnDecoder =
+    throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
+
+  override def writeIsNull(ordinal: Int): Unit =
+    throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
+
+  private var deletedPositions: Array[Int] = _
+
+  def initialize(initSize: Int): Long = {
+    setAllocator(allocator)
+    deletedPositions = new Array[Int](math.max(initSize << 2, 16))
+    // cursor indicates index into deletedPositions array
+    0L
+  }
+
+  override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
+      withHeader: Boolean, allocator: BufferAllocator): Long = initialize(initSize)
+
+  override def writeInt(cursor: Long, value: Int): Long = {
+    if (cursor >= deletedPositions.length) {
+      deletedPositions = java.util.Arrays.copyOf(deletedPositions,
+        (deletedPositions.length * 3) >> 1)
+    }
+    deletedPositions(cursor.toInt) = value
+    cursor + 1
+  }
+
+  private def createFinalBuffer(numPositions: Long): ByteBuffer = {
+    val allocator = storageAllocator
+    val bufferSize = numPositions << 2
+    val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(bufferSize))
+    val bufferBytes = allocator.baseObject(buffer)
+    var bufferCursor = allocator.baseOffset(buffer)
+
+    if (ColumnEncoding.littleEndian) {
+      // bulk copy if platform endian-ness matches the final format
+      Platform.copyMemory(deletedPositions, Platform.INT_ARRAY_OFFSET,
+        bufferBytes, bufferCursor, bufferSize)
+    } else {
+      var index = 0
+      while (index < numPositions) {
+        ColumnEncoding.writeInt(bufferBytes, bufferCursor, deletedPositions(index))
+        bufferCursor += 4
+        index += 1
+      }
+    }
+    buffer
+  }
+
+  def merge(newValue: ByteBuffer, existingValue: ByteBuffer): ByteBuffer = {
+    deletedPositions = new Array[Int](16)
+    var position = 0L
+
+    val allocator1 = ColumnEncoding.getAllocator(newValue)
+    val columnBytes1 = allocator1.baseObject(newValue)
+    var cursor1 = allocator1.baseOffset(newValue) + newValue.position()
+    val endOffset1 = cursor1 + newValue.remaining()
+    var position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
+
+    val allocator2 = ColumnEncoding.getAllocator(existingValue)
+    val columnBytes2 = allocator2.baseObject(existingValue)
+    var cursor2 = allocator2.baseOffset(existingValue) + existingValue.position()
+    val endOffset2 = cursor2 + existingValue.remaining()
+    var position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
+
+    // Simple two-way merge of deleted positions with duplicate elimination.
+    var doProcess = cursor1 < endOffset1 && cursor2 < endOffset2
+    while (doProcess) {
+      if (position1 > position2) {
+        // consume position2 and move
+        position = writeInt(position, position2)
+        cursor2 += 4
+        if (cursor2 < endOffset2) {
+          position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
+        } else {
+          doProcess = false
+        }
+      } else {
+        // consume position1 and move
+        position = writeInt(position, position1)
+        if (position1 == position2) {
+          // move position2 without consuming
+          cursor2 += 4
+          if (cursor2 < endOffset2) {
+            position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
+          } else {
+            doProcess = false
+          }
+        }
+        cursor1 += 4
+        if (cursor1 < endOffset1) {
+          position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
+        } else {
+          doProcess = false
+        }
+      }
+    }
+    // consume any remaining (slight inefficiency of reading first positions again
+    //   but doing that for code clarity)
+    while (cursor1 < endOffset1) {
+      position = writeInt(position, ColumnEncoding.readInt(columnBytes1, cursor1))
+      cursor1 += 4
+    }
+    while (cursor2 < endOffset2) {
+      position = writeInt(position, ColumnEncoding.readInt(columnBytes2, cursor2))
+      cursor2 += 4
+    }
+
+    createFinalBuffer(position)
+  }
+
+  override def finish(cursor: Long): ByteBuffer = {
+    // sort the deleted positions and create the final storage buffer
+
+    // Spark's RadixSort is the fastest for larger sizes >= 1000. It requires
+    // long values and sorting on partial bytes is a bit costly at small sizes.
+    // The more common case is sorting of small number of elements where the
+    // JDK's standard Arrays.sort is the fastest among those tested
+    // (Fastutil's radixSort, quickSort, mergeSort, and Spark's RadixSort)
+    if (cursor > 1) java.util.Arrays.sort(deletedPositions)
+
+    createFinalBuffer(cursor)
   }
 }

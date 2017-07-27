@@ -274,9 +274,9 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    null
-    // ColumnDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
-    //  numBuckets, schema, Some(this), keyColumns, connProperties, onExecutor = false)
+    ColumnDeleteExec(child, resolvedName, partitionColumns,
+      partitionExpressions(relation), numBuckets, schema, externalStore,
+      Some(this), keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -519,6 +519,11 @@ class ColumnFormatRelation(
 
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
+    // keyColumns should match the key fields required for update/delete
+    if (keyColumns != ColumnDelta.mutableKeyNames) {
+      throw new IllegalStateException(s"Unexpected keyColumns=$keyColumns, " +
+          s"required=${ColumnDelta.mutableKeyNames}")
+    }
     val cr = relation.relation.asInstanceOf[ColumnFormatRelation]
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     relation.copy(relation = new ColumnFormatRelation(cr.table, cr.provider,

@@ -34,23 +34,31 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  * Only the first column being decoded should set the "deleteBuffer", if present,
  * and generated code should check the return value of "next*" methods to continue
  * if it is negative.
+ *
+ * To create an instance, use the companion class apply method which will create
+ * a nullable or non-nullable version as appropriate.
  */
-final class MutatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
-    delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer, delta3Buffer: ByteBuffer,
-    deleteBuffer: ByteBuffer)
-    extends MutatedColumnDecoderBase(decoder, field,
-      delta1Buffer, delta2Buffer, delta3Buffer, deleteBuffer) {
+final class MutatedColumnDecoder(decoder: ColumnDecoder,
+    delta1Position: Int, delta1: ColumnDeltaDecoder,
+    delta2Position: Int, delta2: ColumnDeltaDecoder,
+    delta3Position: Int, delta3: ColumnDeltaDecoder, deleteBuffer: ByteBuffer)
+    extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
+      delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
   override protected[sql] def hasNulls: Boolean = false
 
   override def isNull(columnBytes: AnyRef, ordinal: Int, mutated: Int): Int = 0
 }
 
-final class MutatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructField,
-    delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer, delta3Buffer: ByteBuffer,
-    deleteBuffer: ByteBuffer)
-    extends MutatedColumnDecoderBase(decoder, field,
-      delta1Buffer, delta2Buffer, delta3Buffer, deleteBuffer) {
+/**
+ * Nullable version of [[MutatedColumnDecoder]].
+ */
+final class MutatedColumnDecoderNullable(decoder: ColumnDecoder,
+    delta1Position: Int, delta1: ColumnDeltaDecoder,
+    delta2Position: Int, delta2: ColumnDeltaDecoder,
+    delta3Position: Int, delta3: ColumnDeltaDecoder, deleteBuffer: ByteBuffer)
+    extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
+      delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
   override protected[sql] def hasNulls: Boolean = true
 
@@ -64,33 +72,52 @@ final class MutatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructFi
   }
 }
 
-abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructField,
-    delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer, delta3Buffer: ByteBuffer,
+object MutatedColumnDecoder {
+  def apply(decoder: ColumnDecoder, field: StructField,
+      delta1Buffer: ByteBuffer, delta2Buffer: ByteBuffer, delta3Buffer: ByteBuffer,
+      deleteBuffer: ByteBuffer): MutatedColumnDecoderBase = {
+
+    // positions are initialized at max so that they always are greater
+    // than a valid index
+
+    var delta1Position = Int.MaxValue
+    val delta1 = if (delta1Buffer ne null) {
+      val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta1Buffer, field))
+      delta1Position = d.initialize(delta1Buffer, field).toInt
+      d
+    } else null
+
+    var delta2Position = Int.MaxValue
+    val delta2 = if (delta2Buffer ne null) {
+      val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta2Buffer, field))
+      delta2Position = d.initialize(delta2Buffer, field).toInt
+      d
+    } else null
+
+    var delta3Position = Int.MaxValue
+    val delta3 = if (delta3Buffer ne null) {
+      val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta3Buffer, field))
+      delta3Position = d.initialize(delta3Buffer, field).toInt
+      d
+    } else null
+
+    // check if any of the deltas or full value have nulls
+    if (field.nullable && (decoder.hasNulls || ((delta1 ne null) && delta1.hasNulls) ||
+        ((delta2 ne null) && delta2.hasNulls) || ((delta3 ne null) && delta3.hasNulls))) {
+      new MutatedColumnDecoderNullable(decoder, delta1Position, delta1,
+        delta2Position, delta2, delta3Position, delta3, deleteBuffer)
+    } else {
+      new MutatedColumnDecoder(decoder, delta1Position, delta1,
+        delta2Position, delta2, delta3Position, delta3, deleteBuffer)
+    }
+  }
+}
+
+abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
+    private final var delta1Position: Int, delta1: ColumnDeltaDecoder,
+    private final var delta2Position: Int, delta2: ColumnDeltaDecoder,
+    private final var delta3Position: Int, delta3: ColumnDeltaDecoder,
     deleteBuffer: ByteBuffer) extends ColumnDecoder {
-
-  // positions are initialized at max so that they always are greater
-  // than a valid index
-
-  private final var delta1Position = Int.MaxValue
-  private final val delta1 = if (delta1Buffer ne null) {
-    val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta1Buffer, field))
-    delta1Position = d.initialize(delta1Buffer, field).toInt
-    d
-  } else null
-
-  private final var delta2Position = Int.MaxValue
-  private final val delta2 = if (delta2Buffer ne null) {
-    val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta2Buffer, field))
-    delta2Position = d.initialize(delta2Buffer, field).toInt
-    d
-  } else null
-
-  private final var delta3Position = Int.MaxValue
-  private final val delta3 = if (delta3Buffer ne null) {
-    val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta3Buffer, field))
-    delta3Position = d.initialize(delta3Buffer, field).toInt
-    d
-  } else null
 
   private final var deletePosition = Int.MaxValue
   private final var deleteCursor: Long = _
@@ -109,11 +136,6 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   override def typeId: Int = decoder.typeId
 
   override final def supports(dataType: DataType): Boolean = decoder.supports(dataType)
-
-  protected[sql] val SW_hasNulls: Boolean = {
-    field.nullable && (decoder.hasNulls || ((delta1 ne null) && delta1.hasNulls)
-        || ((delta2 ne null) && delta2.hasNulls) || ((delta3 ne null) && delta3.hasNulls))
-  }
 
   override protected[sql] def initializeNulls(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = decoder.initializeNulls(columnBytes, cursor, field)

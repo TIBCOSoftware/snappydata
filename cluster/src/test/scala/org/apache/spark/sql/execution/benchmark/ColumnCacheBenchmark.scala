@@ -41,6 +41,7 @@ package org.apache.spark.sql.execution.benchmark
 import java.util.UUID
 
 import io.snappydata.SnappyFunSuite
+
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
