@@ -391,8 +391,8 @@ class LeadImpl extends ServerImpl with Lead
                 val props = new Properties()
                 props.setProperty(Attribute.USERNAME_ATTR, u.user)
                 props.setProperty(Attribute.PASSWORD_ATTR, u.pass)
-                val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc.getMemStoreBooting
-                    .getDatabaseName, props)
+                val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc
+                    .getMemStoreBooting.getDatabaseName, props)
                 if (result != null) {
                   logInfo(s"ACCESS DENIED, user [${u.user}]. $result")
                   None
