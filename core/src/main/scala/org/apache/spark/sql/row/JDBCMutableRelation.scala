@@ -26,12 +26,12 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, OverwriteOptions}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.execution.row.RowDMLExec
+import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -58,11 +58,11 @@ case class JDBCMutableRelation(
     with InsertableRelation
     with PlanInsertableRelation
     with RowInsertableRelation
-    with MutableRelation
     with UpdatableRelation
     with DeletableRelation
     with DestroyRelation
     with IndexableRelation
+    with AlterableRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -93,6 +93,12 @@ case class JDBCMutableRelation(
 
   final lazy val schemaFields: Map[String, StructField] =
     Utils.schemaFields(schema)
+
+  def partitionColumns: Seq[String] = Seq.empty
+
+  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Seq.empty
+
+  def numBuckets: Int = -1
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
@@ -187,8 +193,9 @@ case class JDBCMutableRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowDMLExec(child, upsert = false, Seq.empty, Seq.empty, -1,
-      schema, Some(this), onExecutor = false, resolvedName, connProperties)
+    RowInsertExec(child, putInto = false, partitionColumns,
+      partitionExpressions(relation), numBuckets, schema, Some(this),
+      onExecutor = false, table, connProperties)
   }
 
   /**
@@ -198,8 +205,9 @@ case class JDBCMutableRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    RowUpdateExec(child, resolvedName, schema, updateColumns,
-      updateExpressions, keyColumns, connProperties, onExecutor = false)
+    RowUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, schema, Some(this), updateColumns, updateExpressions, keyColumns,
+      connProperties, onExecutor = false)
   }
 
   /**
@@ -208,8 +216,8 @@ case class JDBCMutableRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    RowDeleteExec(child, resolvedName, schema, keyColumns, connProperties,
-      onExecutor = false)
+    RowDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, schema, Some(this), keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -236,12 +244,6 @@ case class JDBCMutableRelation(
     }
   }
 
-  override def getDeletePlan(relation: LogicalRelation,
-      child: SparkPlan): SparkPlan = {
-    RowDMLExec(child, putInto = false, delete = true, Seq.empty, Seq.empty, -1,
-      schema, Some(this), onExecutor = false, table, connProperties)
-  }
-
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     // use the InsertIntoTable plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
@@ -250,7 +252,7 @@ case class JDBCMutableRelation(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
-        overwrite,
+        OverwriteOptions(overwrite),
         ifNotExists = false)).toRdd
   }
 
@@ -265,7 +267,7 @@ case class JDBCMutableRelation(
     // use bulk insert using insert plan for large number of rows
     if (numRows > (batchSize * 4)) {
       JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        table, upsert = false)
+        table, putInto = false)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
         connProperties.poolProps, connProps, connProperties.hikariCP)
@@ -423,6 +425,38 @@ case class JDBCMutableRelation(
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     throw new UnsupportedOperationException()
+  }
+
+  override def alterTable(tableIdent: QualifiedTableName,
+                          isAddColumn: Boolean, column: StructField): Unit = {
+    val conn = connFactory()
+    try {
+      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
+        conn, dialect, sqlContext)
+      val sql = isAddColumn match {
+        case true => s"alter table ${table} add column" +
+          s" ${column.name} ${column.dataType.simpleString}"
+        case false => s"alter table ${table} drop column ${column.name}"
+      }
+
+      if (tableExists) {
+        JdbcExtendedUtils.executeUpdate(sql, conn)
+      } else {
+        throw new AnalysisException(s"table $table does not exist.")
+      }
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+            "Ensure that the 'driver' option is set appropriately and " +
+            "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw se
+        }
+    } finally {
+      conn.commit()
+      conn.close()
+    }
   }
 }
 

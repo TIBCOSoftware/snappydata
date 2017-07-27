@@ -23,38 +23,40 @@ import io.snappydata.SnappyFunSuite
  */
 class RowMutableTest extends SnappyFunSuite {
 
-  test("Test the update table ") {
-    snc.sql("CREATE TABLE RowTableUpdate(CODE INT,DESCRIPTION varchar(100)) " +
-        "USING row")
+  test("Simple key updates") {
+    val session = snc.snappySession
 
-    snc.sql("insert into RowTableUpdate values (5,'test')")
-    snc.sql("insert into RowTableUpdate values (6,'test1')")
+    session.sql("CREATE TABLE RowTableUpdate(CODE INT, " +
+        "DESCRIPTION varchar(100)) USING row")
 
-    val df1 = snc.sql("select DESCRIPTION from RowTableUpdate " +
+    session.sql("insert into RowTableUpdate values (5,'test')")
+    session.sql("insert into RowTableUpdate values (6,'test1')")
+
+    val df1 = session.sql("select DESCRIPTION from RowTableUpdate " +
         "where DESCRIPTION = 'test'")
     assert(df1.count() == 1)
 
-    val d1 = snc.sql("select * from RowTableUpdate")
+    val d1 = session.sql("select * from RowTableUpdate")
     assert(d1.count() == 2)
 
-    snc.sql("CREATE TABLE RowTableUpdate2 (CODE INT PRIMARY KEY, DESCRIPTION varchar(100)) " +
-        "USING row AS (select * from  RowTableUpdate)")
+    session.sql("CREATE TABLE RowTableUpdate2 (CODE INT PRIMARY KEY, " +
+        "DESCRIPTION varchar(100)) USING row AS (select * from  RowTableUpdate)")
 
-    val d2 = snc.sql("select * from  RowTableUpdate2")
+    val d2 = session.sql("select * from RowTableUpdate2")
     assert(d2.count() == 2)
 
-    snc.sql("update RowTableUpdate2 set DESCRIPTION ='No#complaints' " +
-        "where CODE = 5").collect()
+    session.sql("update RowTableUpdate2 set DESCRIPTION ='No#complaints' " +
+        "where CODE = 5")
 
-    val df2 = snc.sql("select DESCRIPTION from RowTableUpdate2 " +
+    val df2 = session.sql("select DESCRIPTION from RowTableUpdate2 " +
         "where DESCRIPTION = 'No#complaints' ")
     assert(df2.count() == 1)
 
-    val df3 = snc.sql("select DESCRIPTION from RowTableUpdate2 " +
+    val df3 = session.sql("select DESCRIPTION from RowTableUpdate2 " +
         "where DESCRIPTION in ('No#complaints', 'test1') ")
     assert(df3.count() == 2)
 
-    snc.dropTable("RowTableUpdate")
-    snc.dropTable("RowTableUpdate2")
+    session.dropTable("RowTableUpdate")
+    session.dropTable("RowTableUpdate2")
   }
 }

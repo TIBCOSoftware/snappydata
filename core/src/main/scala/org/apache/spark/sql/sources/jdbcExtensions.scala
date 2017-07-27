@@ -314,38 +314,32 @@ object JdbcExtendedUtils extends Logging {
   }
 
   /**
-   * Returns the SQL for prepare to insert or put rows into a table.
+   * Returns the SQL for creating the WHERE clause for a set of columns.
    */
-  def getDeleteString(table: String, rddSchema: StructType,
-      escapeQuotes: Boolean = false): String = {
-    val sql = new StringBuilder()
-    sql.append(s"DELETE FROM $table WHERE ")
-    var fieldsLeft = rddSchema.fields.length
-    rddSchema.fields.foreach { field =>
-      if(escapeQuotes) {
-        sql.append("""\"""").append(field.name).append("""\"""")
+  def fillColumnsClause(sql: StringBuilder, fields: Seq[String],
+      escapeQuotes: Boolean = false): Unit = {
+    var fieldsLeft = fields.length
+    fields.foreach { field =>
+      if (escapeQuotes) {
+        sql.append("""\"""").append(field).append("""\"""")
       } else {
-        sql.append('"').append(field.name).append('"')
+        sql.append('"').append(field).append('"')
       }
-      sql.append('=').append('?')
+      sql.append("=?")
       if (fieldsLeft > 1) sql.append(" AND ")
       fieldsLeft -= 1
     }
-
-    sql.toString()
   }
 
-
-
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
-      schema: StructType, resolvedName: String, upsert: Boolean): Int = {
+      schema: StructType, resolvedName: String, putInto: Boolean): Int = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val sessionState = session.sessionState
     val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
     val encoder = RowEncoder(schema)
     val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
       rows.map(encoder.toRow)), schema)
-    val plan = if (upsert) {
+    val plan = if (putInto) {
       PutIntoTable(
         table = UnresolvedRelation(tableIdent),
         child = ds.logicalPlan)

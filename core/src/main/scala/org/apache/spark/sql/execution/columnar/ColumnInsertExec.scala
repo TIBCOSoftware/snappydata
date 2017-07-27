@@ -25,11 +25,10 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.bitset.BitSetMethods
 import org.apache.spark.util.TaskCompletionListener
 
 /**
@@ -40,7 +39,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     relation: Option[DestroyRelation], batchParams: (Int, Int, String),
     columnTable: String, onExecutor: Boolean, tableSchema: StructType,
     externalStore: ExternalStore, useMemberVariables: Boolean)
-    extends TableExec(partitionColumns, tableSchema, relation, onExecutor) {
+    extends TableExec {
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
       partitionExpressions: Seq[Expression],
@@ -74,6 +73,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   def columnBatchSize: Int = batchParams._1
 
   def columnMaxDeltaRows: Int = batchParams._2
+
+  override protected def opType: String = "Inserted"
 
   /** Frequency of rows to check for total size exceeding batch size. */
   private val (checkFrequency, checkMask) = {
@@ -176,7 +177,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val initEncoderCode =
       s"""
          |this.$encoderArrayTerm[i] = $encodingClass$$.MODULE$$.getColumnEncoder(
-         |           |  $schemaTerm.fields()[i]);
+         |    $schemaTerm.fields()[i]);
        """.stripMargin
 
     val initEncoderArray = loop(initEncoderCode, schemaLength)
@@ -215,7 +216,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val closeEncoders = loop(
       s"if ($encoderArrayTerm[i] != null) $encoderArrayTerm[i].close();",
-      relationSchema.length)
+      schema.length)
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
     s"""
        |$checkEnd; // already done
@@ -318,6 +319,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |}
       """.stripMargin)
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
+    val useBatchSize = if (columnBatchSize > 0) columnBatchSize
+    else ExternalStoreUtils.sizeAsBytes(Property.ColumnBatchSize.defaultValue.get,
+      Property.ColumnBatchSize.name)
     s"""
        |$checkEnd; // already done
        |$batchSizeDeclaration
@@ -326,9 +330,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $numInsertions = 0;
        |  int $defaultRowSize = 0;
        |  ${declarations.mkString("\n")}
-       |  $defaultBatchSizeTerm = Math.max(
-       |    (${math.abs( if (columnBatchSize > 0) columnBatchSize else Property.ColumnBatchSize.
-            defaultValue.get)} - 8) / $defaultRowSize, 16);
+       |  $defaultBatchSizeTerm = Math.max(($useBatchSize - 8) / $defaultRowSize, 16);
        |  // ceil to nearest multiple of $checkFrequency since size is checked
        |  // every $checkFrequency rows
        |  $defaultBatchSizeTerm = ((($defaultBatchSizeTerm - 1) / $checkFrequency) + 1)
@@ -590,22 +592,12 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      new java.nio.ByteBuffer[${schema.length}];
          |  $buffersCode
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
-         |      $batchSizeTerm, $buffers, $statsRow.getBytes());
+         |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    // no shouldStop check required
-    if (!ctx.addedFunctions.contains("shouldStop")) {
-      ctx.addNewFunction("shouldStop",
-        s"""
-          @Override
-          protected final boolean shouldStop() {
-            return false;
-          }
-        """)
-    }
 
     storeColumnBatchArgs = s"$batchSizeTerm, $cursorArrayTerm"
 
@@ -715,7 +707,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      new java.nio.ByteBuffer[${schema.length}];
          |  ${buffersCode.toString()}
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
-         |      $batchSizeTerm, $buffers, $statsRow.getBytes());
+         |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm);
          |  $numInsertions += $batchSizeTerm;
@@ -814,6 +806,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       ExprCode("", upperIsNull, upper),
       ExprCode("", "false", nullCount)))
   }
+
+  override def simpleString: String = s"ColumnInsert($columnTable) partitionColumns=" +
+      s"${partitionColumns.mkString("[", ",", "]")} numBuckets = $numBuckets " +
+      s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows"
 }
 
 object ColumnWriter {
@@ -1053,7 +1049,7 @@ object ColumnWriter {
     // scalastyle:on
 
     val getter = ctx.getValue(input, dt, index)
-    val bitSetMethodsClass = classOf[BitSetMethods].getName
+    val bitSetClass = BitSet.getClass.getName
     val fieldOffset = ctx.freshName("fieldOffset")
     val value = ctx.freshName("value")
     var canBeNull = nullable
@@ -1078,7 +1074,7 @@ object ColumnWriter {
       s"""
          |final ${ctx.javaType(dt)} $value;
          |if ($checkNull) {
-         |  $bitSetMethodsClass.set($encoder.buffer(),
+         |  $bitSetClass.MODULE$$.set($encoder.buffer(),
          |      $encoder.baseOffset() + $baseOffset, $index + ${skipBytes << 3});
          |} else {$assignValue$serializeValue}
         """.stripMargin

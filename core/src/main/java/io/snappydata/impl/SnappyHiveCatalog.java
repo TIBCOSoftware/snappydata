@@ -62,8 +62,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public static final ThreadLocal<Boolean> SKIP_HIVE_TABLE_CALLS =
       new ThreadLocal<>();
 
-  private final ThreadLocal<HMSQuery> queries = new ThreadLocal<>();
-
   private final ExecutorService hmsQueriesExecutorService;
 
   public SnappyHiveCatalog() {
@@ -181,12 +179,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   private HMSQuery getHMSQuery() {
-    HMSQuery q = this.queries.get();
-    if (q == null) {
-      q = new HMSQuery();
-      this.queries.set(q);
-    }
-    return q;
+    return new HMSQuery();
   }
 
   private <T> T handleFutureResult(Future<T> f) {

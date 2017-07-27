@@ -57,5 +57,6 @@ public class SnapshotIsolationBB extends Blackboard {
   public static int BlockOps;
   public static int firstThread;
   public static int firstResultsReady;
+  public static int numRowsInserted;
 
 }

@@ -26,7 +26,7 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.{Logging, Partition}
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
@@ -42,6 +42,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?, ?, ?)"
   private val createUDFString = "call sys.CREATE_SNAPPY_UDF(?, ?, ?, ?)"
   private val dropUDFString = "call sys.DROP_SNAPPY_UDF(?, ?)"
+  private val alterTableStmtString = "call sys.ALTER_SNAPPY_TABLE(?, ?, ?, ?, ?)"
   private var getMetaDataStmt: CallableStatement = _
   private var createSnappyTblStmt: CallableStatement = _
   private var dropSnappyTblStmt: CallableStatement = _
@@ -49,6 +50,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private var dropSnappyIdxStmt: CallableStatement = _
   private var createUDFStmt: CallableStatement = _
   private var dropUDFStmt: CallableStatement = _
+  private var alterTableStmt: CallableStatement = _
 
   clusterMode match {
     case ThinClientConnectorMode(_, url) =>
@@ -68,6 +70,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     getMetaDataStmt = conn.prepareCall(getMetaDataStmtString)
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
+    alterTableStmt = conn.prepareCall(alterTableStmtString)
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {
@@ -128,6 +131,23 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists))
     SnappyStoreHiveCatalog.registerRelationDestroy()
     SnappySession.clearAllCache()
+  }
+
+  def alterTable(tableIdent: QualifiedTableName,
+                 isAddColumn: Boolean, column: StructField): Unit = {
+    runStmtWithExceptionHandling(executeAlterTableStmt(tableIdent, isAddColumn, column))
+    SnappySession.clearAllCache()
+  }
+
+  private def executeAlterTableStmt(tableIdent: QualifiedTableName,
+                                    isAddColumn: Boolean,
+                                    column: StructField): Unit = {
+    alterTableStmt.setString(1, tableIdent.table)
+    alterTableStmt.setBoolean(2, isAddColumn)
+    alterTableStmt.setString(3, column.name)
+    alterTableStmt.setString(4, column.dataType.simpleString)
+    alterTableStmt.setBoolean(5, column.nullable)
+    alterTableStmt.execute()
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,

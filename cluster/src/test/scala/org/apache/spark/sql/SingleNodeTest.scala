@@ -48,7 +48,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   test("Nodes Pruning") {
     val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
     try {
-      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, 1000)
+      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "1000")
       SingleNodeTest.testNodesPruning(snc)
     } finally {
       io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)

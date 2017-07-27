@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,16 +15,21 @@
  * LICENSE file.
  */
 
-package io.snappydata.hydra.snapshotIsolation
+package org.apache.spark.sql.store
 
-object SnapshotIsolationDMLs {
+import io.snappydata.Property
 
-  val insert1: String = "insert into employees values(10,'Smith','D','Sales Representative','Mr.'," +
-      "'1966-01-27 00:00:00.000','1994-11-15 00:00:00.000','Houndstooth Rd.,London',NULL,'WG2 7LT'," +
-      "'UK','(71) 555-4444','452',NULL,'Smith has a BA degree in English from St. Lawrence College.'," +
-      "5,'http://accweb/emmployees/davolio.bmp')"
+import org.apache.spark.sql.SnappySession
 
-  val inserts = List  (
-  "insert1" -> insert1
-  )
+/**
+ * Tests for updates/deletes on column table.
+ */
+class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
+
+  test("basic update") {
+    val session = new SnappySession(sc)
+    // reduced size to ensure both column table and row buffer have data
+    session.conf.set(Property.ColumnBatchSize.name, "100k")
+    runAllTypesTest(session)
+  }
 }

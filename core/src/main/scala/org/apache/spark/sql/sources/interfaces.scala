@@ -25,6 +25,7 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 
 @DeveloperApi
@@ -83,13 +84,22 @@ trait SingleRowInsertableRelation {
  * API for updates and deletes to a relation.
  */
 @DeveloperApi
-trait MutableRelation extends InsertableRelation with DestroyRelation {
+trait MutableRelation extends DestroyRelation {
+
+  /** Name of this mutable table as stored in catalog. */
+  def table: String
 
   /**
    * Get the "key" columns for the table that need to be projected out by
    * UPDATE and DELETE operations for affecting the selected rows.
    */
   def getKeyColumns: Seq[String]
+
+  /**
+   * If required inject the key columns in the original relation.
+   */
+  def withKeyColumns(relation: LogicalRelation,
+      keyColumns: Seq[String]): LogicalRelation = relation
 
   /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
@@ -200,7 +210,7 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
 }
 
 @DeveloperApi
-trait UpdatableRelation extends SingleRowInsertableRelation {
+trait UpdatableRelation extends SingleRowInsertableRelation with MutableRelation {
 
   /**
    * Update a set of rows matching given criteria.
@@ -217,7 +227,7 @@ trait UpdatableRelation extends SingleRowInsertableRelation {
 }
 
 @DeveloperApi
-trait DeletableRelation {
+trait DeletableRelation extends MutableRelation {
 
   /**
    * Delete a set of row matching given criteria.
@@ -227,13 +237,6 @@ trait DeletableRelation {
    * @return number of rows deleted
    */
   def delete(filterExpr: String): Int
-
-  /**
-   * Get a spark plan for puts. If the row is already present, it gets updated
-   * otherwise it gets inserted into the table represented by this relation.
-   * The result of SparkPlan execution should be a count of number of rows put.
-   */
-  def getDeletePlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
 @DeveloperApi
@@ -284,6 +287,18 @@ trait IndexableRelation {
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit
 
+}
+
+@DeveloperApi
+trait AlterableRelation {
+  /**
+    * Alter's table schema by adding or dropping a provided column
+    * @param tableIdent
+    * @param isAddColumn
+    * @param column
+    */
+  def alterTable(tableIdent: QualifiedTableName,
+                 isAddColumn: Boolean, column: StructField): Unit
 }
 
 /**

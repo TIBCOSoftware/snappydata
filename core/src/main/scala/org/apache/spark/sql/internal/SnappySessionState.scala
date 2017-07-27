@@ -29,6 +29,7 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
+import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions._
@@ -36,7 +37,6 @@ import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.{CatalystConf, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -213,24 +213,35 @@ class SnappySessionState(snappySession: SnappySession)
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] {
 
-    private def getKeyAttributes(table: LogicalPlan,
-        child: LogicalPlan, plan: LogicalPlan): Seq[NamedExpression] = {
+    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
+        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan) = {
+      var tableName = ""
       val keyColumns = table.collectFirst {
         case LogicalRelation(mutable: MutableRelation, _, _) =>
           val ks = mutable.getKeyColumns
           if (ks.isEmpty) throw new AnalysisException(
             s"Empty key columns for update/delete on $mutable")
+          tableName = mutable.table
           ks
       }.getOrElse(throw new AnalysisException(
         s"Update/Delete requires a MutableRelation but got $table"))
       // resolve key columns right away since this is late stage of analysis
-      keyColumns.map { name =>
-        analysis.withPosition(plan) {
-          child.resolveChildren(
-            name.split('.'), analyzer.resolver).getOrElse(
-            throw new AnalysisException(s"Could not resolve key column $name")
-          )
-        }
+      child.collectFirst {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _)
+          if mutable.table.equalsIgnoreCase(tableName) => mutable.withKeyColumns(lr, keyColumns)
+      } match {
+        case Some(sourcePlan) =>
+          val keyAttrs = keyColumns.map { name =>
+            analysis.withPosition(sourcePlan) {
+              child.resolveChildren(
+                name.split('.'), analyzer.resolver).getOrElse(
+                throw new AnalysisException(s"Could not resolve key column $name")
+              )
+            }
+          }
+          (keyAttrs, sourcePlan)
+        case _ => throw new AnalysisException(
+          s"Could not find any scan from the table '$tableName' to be updated in $plan")
       }
     }
 
@@ -240,13 +251,13 @@ class SnappySessionState(snappySession: SnappySession)
 
       case u@Update(table, child, keyColumns, _, _) if keyColumns.isEmpty =>
         // add the key columns to the plan
-        val keyAttrs = getKeyAttributes(table, child, u)
-        u.copy(keyColumns = keyAttrs.map(_.toAttribute))
+        val (keyAttrs, newChild) = getKeyAttributes(table, child, u)
+        u.copy(keyColumns = keyAttrs.map(_.toAttribute), child = newChild)
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty =>
         // add and project only the key columns
-        val keyAttrs = getKeyAttributes(table, child, d)
-        d.copy(child = Project(keyAttrs, child),
+        val (keyAttrs, newChild) = getKeyAttributes(table, child, d)
+        d.copy(child = Project(keyAttrs, newChild),
           keyColumns = keyAttrs.map(_.toAttribute))
     }
 
@@ -358,6 +369,9 @@ class SnappySessionState(snappySession: SnappySession)
 class SnappyConf(@transient val session: SnappySession)
     extends SQLConf with Serializable {
 
+  /** Pool to be used for the execution of queries from this session */
+  @volatile private[this] var schedulerPool: String = Property.SchedulerPool.defaultValue.get
+
   /** If shuffle partitions is set by [[setExecutionShufflePartitions]]. */
   @volatile private[this] var executionShufflePartitions: Int = _
 
@@ -378,7 +392,7 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
-  private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
+  private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
@@ -390,6 +404,13 @@ class SnappyConf(@transient val session: SnappySession)
         dynamicShufflePartitions = -1
       } else {
         dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
+    case Property.SchedulerPool.name =>
+      schedulerPool = value match {
+        case None => Property.SchedulerPool.defaultValue.get
+        case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
+          pool.toString
+        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool ${pool}")
       }
     case _ => // ignore others
   }
@@ -420,13 +441,17 @@ class SnappyConf(@transient val session: SnappySession)
     }
   }
 
+  def activeSchedulerPool: String = {
+    schedulerPool
+  }
+
   override def setConfString(key: String, value: String): Unit = {
-    keyUpdateActions(key, doSet = true)
+    keyUpdateActions(key, Some(value), doSet = true)
     super.setConfString(key, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
-    keyUpdateActions(entry.key, doSet = true)
+    keyUpdateActions(entry.key, Some(value), doSet = true)
     require(entry != null, "entry cannot be null")
     require(value != null, s"value cannot be null for key: ${entry.key}")
     entry.defaultValue match {
@@ -436,12 +461,12 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   override def unsetConf(key: String): Unit = {
-    keyUpdateActions(key, doSet = false)
+    keyUpdateActions(key, None, doSet = false)
     super.unsetConf(key)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
-    keyUpdateActions(entry.key, doSet = false)
+    keyUpdateActions(entry.key, None, doSet = false)
     super.unsetConf(entry)
   }
 }
