@@ -176,14 +176,14 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
 
     vm2.invoke(restartServer)
-    val netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    var netPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
 
-    val conn = getANetConnection(netPort)
-    val s = conn.createStatement()
+    var conn = getANetConnection(netPort)
+    var s = conn.createStatement()
     s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
     insertDataXD(conn, tableName)
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+    var snc = org.apache.spark.sql.SnappyContext(sc)
     verifyResultAndSchema(snc, tableName, 3)
 
     s.execute(s"ALTER TABLE $tableName ADD Col4 INT")
@@ -226,12 +226,6 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     while (rs.next) {
       assert("MYLISTENER".equalsIgnoreCase(rs.getString(17)))
     }
-    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER () ")
-    rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
-    while (rs.next) {
-      assert(rs.getString(17) == null)
-    }
-    s.execute(s"drop ASYNCEVENTLISTENER myListener")
 
     // gatewaysenders/receivers
     s.execute("CREATE GATEWAYSENDER gwSender ( REMOTEDSID 2) SERVER GROUPS (sg1)")
@@ -241,6 +235,22 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     while (rs.next) {
       assert("gwSender".equalsIgnoreCase(rs.getString(19)))
     }
+
+    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm2.invoke(restartServer)
+    netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
+
+    conn = getANetConnection(netPort)
+    s = conn.createStatement()
+
+    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER () ")
+    rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
+    while (rs.next) {
+      assert(rs.getString(17) == null)
+    }
+    s.execute(s"drop ASYNCEVENTLISTENER myListener")
+
     s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER () ")
     rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
     while (rs.next) {
