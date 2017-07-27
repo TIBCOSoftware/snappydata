@@ -1,12 +1,21 @@
 # Overview
-The memory management model introduced in the SnappyData 0.9 version. As SnappyData is a unified platform for data storage and execution, a balance between the two has to be acheieved in terms of memory consumption.
+Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and Snappydata column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark and the Store, elastically expanding one to make room for the other. Rather than pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool.
 
-The memory management model is implemented using the SnappyUnifiedMemoryManager class. The primary job of this class is to manage different memory allocation and deallocation. If the memory usage limits are breached, memory cannot be allocated any futher, which leads to a LowMemoryException error. This, however, safeguards the server from crashing due to OutOfMemoryException.
-
-The benefit of the unified memory manager is that both the execution and storage memory requirements are controlled by one manager.
+SnappyData also monitors the JVM memory pools and avoids running into Out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold memory allocations within SnappyData fail, and an LowMemoryException error is thrown. This, however, safeguards the server from crashing due to OutOfMemoryException.
 
 !!! Note: 
-	**SnappyUnifiedMemoryManager** is used only in the embedded mode. Spark’s default memory manager is used for local mode and split cluster mode.
+ **SnappyUnifiedMemoryManager** is used only in the embedded mode. Spark’s default memory manager is used for local mode and split cluster(smart connector) mode.
+
+## Estimating memory size for column and row tables
+Column tables uses compression by default and the amount of compression is quite dependent on the data itself. While, we commonly see compression of 50%, it is also possible to achieve much higher compression ratios when the data has many repeated strings or text. 
+Row tables on the other hand consume more space than the original data size. There is a per row overhead in SnappyData. While this overhead varies and is dependent on the options configured on the Row table as a simple guideline we suggest you assume 100 bytes per row as overhead. 
+Given this above description, it is clear that it isn't very straightforward to compute the memory requirements. What we recommend is to take a sample of the data set (as close as possible to your production data) and populate each of the tables. Make sure you create any required indexes also. Then, jot down the size estimates (in bytes) in the SnappyData Pulse dashboard. Simply extrapolate this number given the total number of records you anticipate to load or grow into for the memory requirements for your table. 
+
+## Estimating memory size for execution
+Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, spark execution, application managed objects (e.g. a UDF allocating memory), etc. Most of these allocations will automatically overflow to disk. But, we strongly recommend allocating at least 5GB per DataServer/lead node for production systems that will run large scale analytic queries. 
+(TODO: get more specific ??)
+
+SnappyData uses JVM heap memory for most of its allocations. Only column tables can use off-heap storage (if configured). We suggest going throught the following options and configuring them appropriately based on the sizing estimates from above. 
 
 ## SnappyData Heap Memory
 You can set the following heap memory configuration parameters:
@@ -14,11 +23,11 @@ You can set the following heap memory configuration parameters:
 |Parameter Name |Default Value|Description|
 |--------|--------|--------|
 |heap-size|4GB in Snappy embedded mode cluster|Max heap size which can be used by the JVM|
-|critical-heap-percentage|90%|This value suggests how much heap memory one needs to reserve for miscellaneous usage like UDFs, temporary garbage data. Beyond this point, SnappyData starts cancelling all jobs and queries. Critical percentage of 90 means, beyond 90% of heap usage jobs and queries will get cancelled. |
+|critical-heap-percentage|90%|(TODO: I don't understand this descrip- Jags) This value suggests how much heap memory one needs to reserve for miscellaneous usage like UDFs, temporary garbage data. Beyond this point, SnappyData starts cancelling all jobs and queries. Critical percentage of 90 means, beyond 90% of heap usage jobs and queries will get cancelled. |
 |eviction-heap-percentage|81|This percent determined when in memory table data would be evicted to disk. Beyond this Table rows are evicted in LRU fashion.|
-|spark.memory.fraction|0.92|A buffer area before critical heap memory is reached. |
+|spark.memory.fraction|0.92|(TODO: I don't understand this descrip- Jags)A buffer area before critical heap memory is reached. |
 
-SnappyData heap memory regions are divided into two parts called pools. Sizes of each pool are determined by the config parameters provided at boot time to each server.
+SnappyData heap memory regions are divided into two parts called pools. Sizes of each pool are determined by the config parameters provided at boot time to each server(TODO: I don't understand this descrip .. thought each will elastically expand into the other- Jags).
 The two pools are as below:
 
 ### Heap Storage Pool:
