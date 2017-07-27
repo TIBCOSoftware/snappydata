@@ -630,7 +630,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           // Can not inherit from this class. Ideally we should
           // be extending from this case class
           tableType = CatalogTableType.EXTERNAL,
-          schema = new StructType,
+          schema = tableSchema,
           storage = CatalogStorageFormat(
             locationUri = None,
             inputFormat = None,

@@ -18,10 +18,9 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.backwardcomp.{ExecuteCommand, ExecutedCommand}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -40,7 +39,7 @@ object StoreStrategy extends Strategy {
         CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
           None, SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
           mode != SaveMode.ErrorIfExists, options, isBuiltIn = false)
-      ExecutedCommand(cmd) :: Nil
+      ExecutedCommandExec(cmd) :: Nil
 
     case CreateTable(tableDesc, mode, Some(query)) =>
       val userSpecifiedSchema = SparkSession.getActiveSession.get
@@ -51,26 +50,26 @@ object StoreStrategy extends Strategy {
           SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
           temporary = false, tableDesc.partitionColumnNames.toArray, mode,
           options, query, isBuiltIn = false)
-      ExecutedCommand(cmd) :: Nil
+      ExecutedCommandExec(cmd) :: Nil
     case create: CreateMetastoreTableUsing =>
-      ExecutedCommand(create) :: Nil
+      ExecutedCommandExec(create) :: Nil
     case createSelect: CreateMetastoreTableUsingSelect =>
-      ExecutedCommand(createSelect) :: Nil
+      ExecutedCommandExec(createSelect) :: Nil
     case drop: DropTable =>
-      ExecutedCommand(drop) :: Nil
+      ExecutedCommandExec(drop) :: Nil
 
     case p: EncoderPlan[_] =>
       val plan = p.asInstanceOf[EncoderPlan[Any]]
       EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
         plan.encoder, plan.isFlat, plan.output) :: Nil
 
-    case logical.InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
+    case InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
     _, _), part, query, overwrite, false) if part.isEmpty =>
       val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
     case DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
-      ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
@@ -86,7 +85,7 @@ object StoreStrategy extends Strategy {
     case DeleteFromTable(l@LogicalRelation(d: DeletableRelation, _, _), query) =>
       ExecutePlan(d.getDeletePlan(l, planLater(query), query.output)) :: Nil
 
-    case r: ExecuteCommand => ExecutedCommand(r) :: Nil
+    case r: RunnableCommand => ExecutedCommandExec(r) :: Nil
 
     case _ => Nil
   }
@@ -94,7 +93,7 @@ object StoreStrategy extends Strategy {
 
 case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
-    command: String) extends ExecuteCommand {
+    command: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
