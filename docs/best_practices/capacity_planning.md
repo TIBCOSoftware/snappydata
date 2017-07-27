@@ -21,7 +21,8 @@ The following topics are covered in this section:
 
 
 ## Handling concurrency: computing the CPU cores required
-###  How are low latency vs Analytic jobs handled?
+
+### How are low latency vs Analytic jobs handled?
 Unlike Spark, SnappyData is able to distinguish requests that are very cheap (low latency) vs requests that require a lot of computational resources (high latency) and best done by a resource scheduler that can balance the needs of many contending users/threads. 
 
 For instance, when a SQL client executes a ‘fetch by primary key’ query there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and response directly sent to the requesting client (probably within a few milliseconds). In the current version of the product, all query requests that filter on a primary key, a set of keys or can directly filter using an index will be executed without routing to the Snappy scheduler. Only Row tables can have primary keys or indexes. All DML (updates, inserts, deletes) executed from a SQL client (JDBC, ODBC) are directly routed to the responsible data node (partition) and do not involve the scheduler. 
