@@ -428,6 +428,21 @@ class RowTableTest
     assert(snc.sql("SELECT * FROM " + tableName).schema.fields.length == 3)
   }
 
+  test("SNAP-1825") {
+    snc.sql("create table tabOne(id int, name String, address String)" +
+      " USING row OPTIONS(partition_by 'id')")
+    snc.sql("insert into tabOne values(111, 'aaa', 'hello')")
+    snc.sql("insert into tabOne values(222, 'bbb', 'halo')")
+    snc.sql("insert into tabOne values(333, 'aaa', 'hello')")
+    snc.sql("insert into tabOne values(444, 'bbb', 'halo')")
+    snc.sql("insert into tabOne values(555, 'ccc', 'halo')")
+    snc.sql("insert into tabOne values(666, 'ccc', 'halo')")
+    assert(snc.sql("select * from tabOne").collect().length == 6)
+    snc.sql("ALTER TABLE tabOne ADD city String")
+    snc.sql("insert into tabOne values(777, 'ddd', 'halo', 'Pune')")
+    assert (snc.sql("select id, name from tabOne where city='Pune'").collect().length == 1)
+  }
+
   test("Test the truncate syntax SQL and SnappyContext") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
