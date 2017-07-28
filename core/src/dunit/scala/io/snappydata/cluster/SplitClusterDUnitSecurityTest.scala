@@ -1,8 +1,24 @@
+/*
+ * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.cluster
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Paths}
-import java.sql.{Connection, SQLException}
+import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.Attribute
@@ -20,7 +36,7 @@ import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process.Process
 import scala.sys.process._
 
-class SplitClusterDUnitSecureTest(s: String)
+class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
         with SplitClusterDUnitTestBase
         with Serializable {
@@ -39,6 +55,7 @@ class SplitClusterDUnitSecureTest(s: String)
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
 
+  var adminConn = null: Connection
   var user1Conn = null: Connection
   var user2Conn = null: Connection
   var snc = null: SnappyContext
@@ -51,7 +68,8 @@ class SplitClusterDUnitSecureTest(s: String)
 
   val jdbcUser1 = "gemfire1"
   val jdbcUser2 = "gemfire2"
-  val adminUser1 = "gemfire3"
+  val jdbcUser3 = "gemfire3"
+  val adminUser1 = "gemfire4"
 
   override def setUp(): Unit = {
     super.setUp()
@@ -59,6 +77,7 @@ class SplitClusterDUnitSecureTest(s: String)
 
   override def tearDown2(): Unit = {
     super.tearDown2()
+    if (adminConn != null) adminConn.close()
     if (user1Conn != null) user1Conn.close()
     if (user2Conn != null) user2Conn.close()
     if (snc != null) snc.sparkContext.stop()
@@ -79,7 +98,7 @@ class SplitClusterDUnitSecureTest(s: String)
   }
 
   def startArgs: Array[AnyRef] = Array(
-    SplitClusterDUnitSecureTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
+    SplitClusterDUnitSecurityTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -87,11 +106,11 @@ class SplitClusterDUnitSecureTest(s: String)
   protected val productDir =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
-  override def locatorClientPort: Int = { SplitClusterDUnitSecureTest.locatorNetPort }
+  override def locatorClientPort: Int = { SplitClusterDUnitSecurityTest.locatorNetPort }
 
   override def startNetworkServers(): Unit = {}
 
-  override protected def testObject = SplitClusterDUnitSecureTest
+  override protected def testObject = SplitClusterDUnitSecurityTest
 
   override def beforeClass(): Unit = {
     super.beforeClass()
@@ -100,8 +119,8 @@ class SplitClusterDUnitSecureTest(s: String)
 
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
-    val port = SplitClusterDUnitSecureTest.locatorPort
-    val netPort = SplitClusterDUnitSecureTest.locatorNetPort
+    val port = SplitClusterDUnitSecurityTest.locatorPort
+    val netPort = SplitClusterDUnitSecurityTest.locatorNetPort
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val confDir = s"$snappyProductDir/conf"
@@ -115,7 +134,7 @@ class SplitClusterDUnitSecureTest(s: String)
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
-    SplitClusterDUnitSecureTest.startSparkCluster(productDir)
+    SplitClusterDUnitSecurityTest.startSparkCluster(productDir)
   }
 
   def getLdapConf(): String = {
@@ -131,7 +150,7 @@ class SplitClusterDUnitSecureTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
-    SplitClusterDUnitSecureTest.stopSparkCluster(productDir)
+    SplitClusterDUnitSecurityTest.stopSparkCluster(productDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
@@ -219,9 +238,10 @@ class SplitClusterDUnitSecureTest(s: String)
 
     try {
       // Create row and column tables in embedded mode
-      SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt, Map
-      ("COLUMN_BATCH_SIZE" -> "50"), false)
-      SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt, Map.empty, false)
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
+        Map("COLUMN_BATCH_SIZE" -> "50"), false)
+      SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
+        Map.empty, false)
 
       // insert
       snc.sql(s"insert into $embeddedColTab1 values (10000, 'ten thousand', 1000.23)")
@@ -232,12 +252,12 @@ class SplitClusterDUnitSecureTest(s: String)
       count = snc.sql(s"select count(*) from $embeddedRowTab1").collect()(0).getLong(0)
       assert(count == 1, s"expected 1 rows but found $count in $embeddedRowTab1")
 
-      // update TODO do for column tables when support comes in master.
+      // update TODO for column tables when support comes in master.
       snc.sql(s"update $embeddedRowTab1 set col1 = 5000 where col1 = 10000")
       var col1 = snc.sql(s"select * from $embeddedRowTab1").collect()(0).get(0)
       assert(col1 == 5000, s"Update failed in $embeddedRowTab1, found value $col1")
 
-      // delete TODO do for column tables when support comes in master.
+      // delete TODO for column tables when support comes in master.
       snc.sql(s"delete from $embeddedRowTab1 where col1 = 5000")
       var rows = snc.sql(s"select * from $embeddedRowTab1").collect().length
       assert(rows == 0, s"expected 0 rows but found $rows in $embeddedRowTab1")
@@ -255,8 +275,10 @@ class SplitClusterDUnitSecureTest(s: String)
       // drop
       snc.sql(s"drop table $embeddedColTab1")
       snc.sql(s"drop table $embeddedRowTab1")
-      assert(!snc.sparkSession.catalog.tableExists(embeddedColTab1), s"$embeddedColTab1 not dropped")
-      assert(!snc.sparkSession.catalog.tableExists(embeddedRowTab1), s"$embeddedRowTab1 not dropped")
+      assert(!snc.sparkSession.catalog.tableExists(embeddedColTab1),
+        s"$embeddedColTab1 not dropped")
+      assert(!snc.sparkSession.catalog.tableExists(embeddedRowTab1),
+        s"$embeddedRowTab1 not dropped")
 
       // vice versa: Create row and column table in smart connector mode
       snc.sql(s"create table $smartColTab1 (col1 INT, col2 STRING, col3 DECIMAL) using column")
@@ -289,12 +311,12 @@ class SplitClusterDUnitSecureTest(s: String)
         assert(rs.getInt(1) == 0, s"Update failed. Col1 value is ${rs.getInt(0)}, but expected 0 " +
             s"for $sql")
       }
-      // TODO do for column tables when support comes in master.
+      // TODO for column tables when support comes in master.
       stmt.execute(s"update $smartRowTab1 set col1 = 0, col2 = '$value' where " +
           s"col1 < 0")
       checkCol1(s"select * from $smartRowTab1 where col2 = '$value'")
 
-      // delete TODO do for column tables when support comes in master.
+      // delete TODO for column tables when support comes in master.
       stmt.execute(s"delete from $smartRowTab1 where col1 = 0")
       checkCount(s"select * from $smartRowTab1", 1005, false)
 
@@ -330,19 +352,25 @@ class SplitClusterDUnitSecureTest(s: String)
     * Attempt to modify hive metastore via a thin connection should fail.
     */
   def testGrantRevokeAndHiveModification(): Unit = {
-    var props = new Properties()
-    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
-    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    val props1 = new Properties()
+    props1.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props1.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props1)
     val user1Stmt = user1Conn.createStatement()
     val value = "brought up to zero"
 
-    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser2)
-    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser2)
-    user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    val props2 = new Properties()
+    props2.setProperty(Attribute.USERNAME_ATTR, jdbcUser2)
+    props2.setProperty(Attribute.PASSWORD_ATTR, jdbcUser2)
+    user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props2)
     var user2Stmt = user2Conn.createStatement()
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props2)
 
-    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    val adminProps = new Properties()
+    adminProps.setProperty(Attribute.USERNAME_ATTR, adminUser1)
+    adminProps.setProperty(Attribute.PASSWORD_ATTR, adminUser1)
+    adminConn = SplitClusterDUnitTest.getConnection(locatorClientPort, adminProps)
+    var adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
       Map("COLUMN_BATCH_SIZE" -> "50"))
@@ -354,13 +382,28 @@ class SplitClusterDUnitSecureTest(s: String)
         sql()
         assert(false, s"Should have failed: $s")
       } catch {
-        case e: SQLException =>
-          if ("42502".equals(e.getSQLState) || "42500".equals(e.getSQLState))
-            logInfo(s"Found expected error: $e")
-          else {
-            logInfo(s"Found different SQLState ${e.getSQLState}")
-            throw e
+        case sqle: SQLException =>
+          if ("42502".equals(sqle.getSQLState) || "42500".equals(sqle.getSQLState)) {
+            logInfo(s"Found expected error: $sqle")
+          } else {
+            logError(s"Found different SQLState: ${sqle.getSQLState}")
+            throw sqle
           }
+        case t: Throwable => if (t.getMessage.contains("42502")) {
+          logInfo(s"Found expected error in: ${t.getClass.getName}, ${t.getMessage}")
+        } else {
+          logInfo(s"Found unexpected error in: ${t.getClass.getName}, ${t.getMessage}")
+          throw t
+        }
+      }
+    }
+
+    def executeSQL(stmt: Statement, s: String): Unit = {
+      stmt.execute(s)
+      val rs = stmt.getResultSet
+      if (rs ne null) {
+        while (rs.next()) {}
+        rs.close()
       }
     }
 
@@ -369,20 +412,19 @@ class SplitClusterDUnitSecureTest(s: String)
       s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
       s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
       s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
-          s"col1 < 0",
+          s"col3 < 1.0",
       s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
     )
-    sqls.foreach(s => assertFailure(() => {user2Stmt.execute(s)}, s))
+    sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
+    sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
     def reset(): Unit = {
       // Get a fresh conn.
       // TODO May not be needed later when cached plans are cleared for grant/revoke
       user2Stmt.close()
       user2Conn.close()
-      user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-      user2Stmt = SplitClusterDUnitTest.getConnection(locatorClientPort, props).createStatement()
-
-      snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+      user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props2)
+      user2Stmt = user2Conn.createStatement()
     }
 
     def exe(permit: String, op: String): Unit = {
@@ -400,14 +442,15 @@ class SplitClusterDUnitSecureTest(s: String)
       // grant
       reset()
       exe("grant", op)
-      sqls.foreach(s => user2Stmt.execute(s))
-      sqls.foreach(s => snc.sql(s))
+      sqls.foreach(s => executeSQL(user2Stmt, s))
+      sqls.foreach(s => snc.sql(s).collect())
 
       // revoke
       reset()
       exe("revoke", op)
-      sqls.foreach(s => assertFailure(() => {user2Stmt.execute(s)}, s))
-      sqls.foreach(s => assertFailure(() => {snc.sql(s)}, s))
+      sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
+      sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
+      sqls.foreach(s => executeSQL(adminStmt, s))
     }
 
     verifyGrantRevoke("select", List(sqls(0), sqls(1)))
@@ -475,7 +518,7 @@ class SplitClusterDUnitSecureTest(s: String)
     val col3 = "COL3"
     val col4 = "COL4"
 
-    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE"->"50"), false)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "50"), false)
     sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
     sns.catalog.refreshTable(smartColTab1)
     sns.catalog.refreshTable(smartRowTab1)
@@ -512,7 +555,7 @@ class SplitClusterDUnitSecureTest(s: String)
   }
 }
 
-object SplitClusterDUnitSecureTest extends SplitClusterDUnitTestObject {
+object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
 
   private val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
