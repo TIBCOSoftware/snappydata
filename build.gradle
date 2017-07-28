@@ -203,8 +203,8 @@ task cleanDUnit << {
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
 }
-task cleanSecureDUnit << {
-  String workingDir = "${testResultsBase}/dunitSecure"
+task cleanSecurityDUnit << {
+  String workingDir = "${testResultsBase}/dunit-security"
   delete workingDir
   file(workingDir).mkdirs()
   // clean spark cluster directories
@@ -293,7 +293,7 @@ subprojects {
 
     include '**/*.class'
     exclude '**/*DUnitTest.class'
-    exclude '**/*DUnitSecureTest.class'
+    exclude '**/*DUnitSecurityTest.class'
     exclude '**/*DUnitSingleTest.class'
     exclude '**/*TestBase.class'
 
@@ -328,7 +328,7 @@ subprojects {
     if (single == null || single.length() == 0) {
       def dunitTests = fileTree(dir: testClassesDir,
           includes: ['**/*DUnitTest.class'],
-          excludes: ['**/*DUnitSecureTest.class'])
+          excludes: ['**/*DUnitSecurityTest.class'])
       FileTree includeTestFiles = dunitTests
       int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
@@ -347,7 +347,7 @@ subprojects {
       include single
     }
     exclude '**/*Suite.class'
-    exclude '**/*DUnitSecureTest.class'
+    exclude '**/*DUnitSecurityTest.class'
 
     workingDir = "${testResultsBase}/dunit"
 
@@ -366,8 +366,8 @@ subprojects {
     }
   }
 
-  task dunitSecureTest(type: Test) {
-    dependsOn ':cleanSecureDUnit'
+  task dunitSecurityTest(type: Test) {
+    dependsOn ':cleanSecurityDUnit'
     dependsOn ':product'
     dependsOn ':copyShadowJars'
     maxParallelForks = 1
@@ -379,17 +379,17 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def single = rootProject.hasProperty('dunitSecure.single') ?
-        rootProject.property('dunitSecure.single') : null
+    def single = rootProject.hasProperty('dunitSecurity.single') ?
+        rootProject.property('dunitSecurity.single') : null
     if (single == null || single.length() == 0) {
-      def dunitSecureTests = fileTree(dir: testClassesDir,
-          includes: ['**/*DUnitSecureTest.class'],
+      def dunitSecurityTests = fileTree(dir: testClassesDir,
+          includes: ['**/*DUnitSecurityTest.class'],
           excludes: ['**/*DUnitTest.class'])
-      FileTree includeTestFiles = dunitSecureTests
-      int dunitFrom = rootProject.hasProperty('dunitSecure.from') ?
-          getLast(includeTestFiles, rootProject.property('dunitSecure.from')) : 0
-      int dunitTo = rootProject.hasProperty('dunitSecure.to') ?
-          getLast(includeTestFiles, rootProject.property('dunitSecure.to')) : includeTestFiles.size()
+      FileTree includeTestFiles = dunitSecurityTests
+      int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
+          getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
+      int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
+          getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
 
       int begin = dunitFrom != -1 ? dunitFrom : 0
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
@@ -405,7 +405,7 @@ subprojects {
     exclude '**/*Suite.class'
     exclude '**/*DUnitTest.class'
 
-    workingDir = "${testResultsBase}/dunitSecure"
+    workingDir = "${testResultsBase}/dunit-security"
 
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")

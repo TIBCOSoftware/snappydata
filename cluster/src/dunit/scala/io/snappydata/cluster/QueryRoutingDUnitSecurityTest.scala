@@ -24,7 +24,7 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-class QueryRoutingDUnitSecureTest(val s: String)
+class QueryRoutingDUnitSecurityTest(val s: String)
     extends ClusterManagerLDAPTestBase(s) with Logging {
 
   def testColumnTableRouting(): Unit = {
@@ -39,7 +39,8 @@ class QueryRoutingDUnitSecureTest(val s: String)
         s" network server started at $serverHostPort")
     // scalastyle:on println
 
-    QueryRoutingDUnitSecureTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
+    QueryRoutingDUnitSecurityTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName,
+      serverHostPort)
   }
 
   def testRowTableRouting(): Unit = {
@@ -53,11 +54,11 @@ class QueryRoutingDUnitSecureTest(val s: String)
         s" network server started at $serverHostPort")
     // scalastyle:on println
 
-    QueryRoutingDUnitSecureTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
+    QueryRoutingDUnitSecurityTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
   }
 }
 
-object QueryRoutingDUnitSecureTest {
+object QueryRoutingDUnitSecurityTest {
   def columnTableRouting(jdbcUser1: String, jdbcUser2: String, tableName: String,
       serverHostPort: Int): Unit = {
     try {

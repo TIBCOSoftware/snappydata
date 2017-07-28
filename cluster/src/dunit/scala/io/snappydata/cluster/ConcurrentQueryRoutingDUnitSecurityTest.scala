@@ -21,7 +21,7 @@ import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
 
-class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
+class ConcurrentQueryRoutingDUnitSecurityTest(val s: String)
     extends ClusterManagerLDAPTestBase(s) with Logging {
 
   def columnTableRouting(thr: Int, iter: Int, jdbcUser1: String, jdbcUser2: String): Int = {
@@ -32,7 +32,8 @@ class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
     println(s"ConcurrentQueryRoutingDUnitSecureTest.columnTableRouting-${thr}-${iter}:" +
         s"network server started at $serverHostPort")
     // scalastyle:on println
-    QueryRoutingDUnitSecureTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
+    QueryRoutingDUnitSecurityTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName,
+      serverHostPort)
     // scalastyle:off println
     println(s"ConcurrentQueryRoutingDUnitSecureTest.columnTableRouting-${thr}-${iter} done")
     // scalastyle:on println
@@ -47,7 +48,7 @@ class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
     println(s"ConcurrentQueryRoutingDUnitSecureTest.rowTableRouting-${thr}-${iter}:" +
         s"network server started at $serverHostPort")
     // scalastyle:on println
-    QueryRoutingDUnitSecureTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
+    QueryRoutingDUnitSecurityTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
     // scalastyle:off println
     println(s"ConcurrentQueryRoutingDUnitSecureTest.rowTableRouting-${thr}-${iter} done")
     // scalastyle:on println

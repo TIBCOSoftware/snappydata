@@ -173,5 +173,5 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest, dunitTest, dunitSecureTest
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion
