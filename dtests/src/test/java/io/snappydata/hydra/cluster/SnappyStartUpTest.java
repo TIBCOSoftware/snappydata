@@ -111,6 +111,19 @@ public class SnappyStartUpTest extends SnappyTest {
     return pidList;
   }
 
+  protected static synchronized Set<String> getLeaderPidList() {
+    Set<String> pidList = new HashSet<>();
+    Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+    for (String key : keys) {
+      if (key.startsWith("pid") && key.contains("_LeaderLauncher")) {
+        String pid = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
+        pidList.add(pid);
+      }
+    }
+    Log.getLogWriter().info("Returning leader pid list: " + pidList);
+    return pidList;
+  }
+
   /**
    * Mandatory to use this method in case of clusterRestartWithRandomOrderForServerStartUp test.
    * As per current implementation, for starting the server snappy-servers.sh script is used, which starts

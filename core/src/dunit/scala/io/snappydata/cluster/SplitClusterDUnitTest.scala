@@ -173,25 +173,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     s"jdbc:${Constant.JDBC_URL_PREFIX}localhost:$netPort")
 
   override def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
-    val hostName = InetAddress.getLocalHost.getHostName
-    val conf = new SparkConf()
-        .setAppName("test Application")
-        .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.cores", TestUtils.defaultCores.toString)
-        .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-
-    val sc = SparkContext.getOrCreate(conf)
-    val catalog = SnappySession.getOrCreate(sc).sessionCatalog
-    val t = catalog.newQualifiedTableName(tableName)
-    try {
-      catalog.getCachedHiveTable(t)
-      assert(assertion = false, s"Table $tableName should not exist in the " +
-          s"cached Hive catalog")
-    } catch {
-      // expected exception
-      case e: org.apache.spark.sql.TableNotFoundException =>
-    }
   }
 
   override def createTablesAndInsertData(tableType: String): Unit = {

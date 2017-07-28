@@ -24,6 +24,7 @@
   </pool>
   <pool name="lowlatency">
     <schedulingMode>FAIR</schedulingMode>
-    <weight>1</weight>
+    <weight>2</weight>
+    <minShare>2</minShare>
   </pool>
 </allocations>

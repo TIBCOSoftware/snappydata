@@ -20,6 +20,7 @@ package org.apache.spark.memory
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 
@@ -85,21 +86,39 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm2.invoke(getClass, "resetStorageMemory")
   }
 
+  override def beforeClass(): Unit = {
+    super.beforeClass()
+    val zeroStartupRecoveryDelay = new SerializableRunnable() {
+      override def run(): Unit = GemFireXDUtils.setDefaultStartupRecoveryDelay(0)
+    }
+    zeroStartupRecoveryDelay.run()
+    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(zeroStartupRecoveryDelay))
+  }
+
+  override def afterClass(): Unit = {
+    super.afterClass()
+    val resetStartupRecoveryDelay = new SerializableRunnable() {
+      override def run(): Unit = GemFireXDUtils.setDefaultStartupRecoveryDelay(120000)
+    }
+    resetStartupRecoveryDelay.run()
+    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(resetStartupRecoveryDelay))
+  }
+
   override def setUp(): Unit = {
     super.setUp()
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
-    cleanupTables
+    cleanTestResources
   }
 
-  private def cleanupTables(): Unit = {
+  private def cleanTestResources(): Unit = {
     val snc = SnappyContext(sc).newSession()
     snc.dropTable(col_table, ifExists = true)
     snc.dropTable(rr_table, ifExists = true)
+    resetMemoryManagers
   }
 
   override def tearDown2(): Unit = {
-    cleanupTables
-    resetMemoryManagers()
+    cleanTestResources
     super.tearDown2()
   }
 
@@ -442,8 +461,12 @@ object SnappyUnifiedMemoryManagerDUnitTest {
     if (SparkEnv.get != null) {
       SparkEnv.get.memoryManager.releaseAllStorageMemory
       if (SparkEnv.get.memoryManager.isInstanceOf[SnappyUnifiedMemoryManager]) {
-        SparkEnv.get.memoryManager
-          .asInstanceOf[SnappyUnifiedMemoryManager]._memoryForObjectMap.clear()
+        val umm = SparkEnv.get.memoryManager
+            .asInstanceOf[SnappyUnifiedMemoryManager]
+        if (umm._memoryForObjectMap ne null) {
+          umm._memoryForObjectMap.clear()
+        }
+        MemoryManagerCallback.resetMemoryManager()
       }
     }
   }

@@ -784,7 +784,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         }</b></div>
       </td>
       <td>
-        <div style="width: 80%; float: left; padding-left: 10px;">{memberDescription}</div>
+        <div style="width: 80%; float: left; padding-left: 10px; font-weight: bold;">
+          <a href={
+             parent.appUIBaseAddress +
+                 "/" + parent.prefix +
+                 "/memberDetails/?memId=" +
+                 memberDetails.getOrElse("id","NA")
+             }>{memberDescription}</a>
+        </div>
         <div style="width: 10px; float: right; padding-right: 10px; cursor: pointer;"
              onclick={memberDescDetailsHandler}>
           <span class="caret-downward" id={memberDescDetailsBtn}></span>
