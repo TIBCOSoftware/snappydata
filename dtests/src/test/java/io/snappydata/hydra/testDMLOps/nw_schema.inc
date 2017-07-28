@@ -68,20 +68,15 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmts =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
-"UPDATE app.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = 2"
+"UPDATE app.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = (SELECT max(CategoryID) from products where tid=$tid)"
 "UPDATE app.products SET UnitPrice = UnitPrice * 0.9"
-"UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = 1"
+"UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = (SELECT min(CategoryID) from products where tid=$tid)"
 "UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1"
 "UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1 WHERE ORDERID < 10450"
-"UPDATE app.employees SET TitleOfCourtesy='Mr.' WHERE FIRSTNAME LIKE '%31'"
-"UPDATE app.orders SET ShipVia = ShipVia + 1 WHERE OrderID = 10290"
+"UPDATE app.employees SET TitleOfCourtesy='Mr.' WHERE FIRSTNAME LIKE '%3%'"
+"UPDATE app.orders SET ShipVia = ShipVia + 1 WHERE OrderID IN (SELECT max(orderID) from orders where tid=$tid)"
 "UPDATE app.orders SET Freight = Freight * 1.1 WHERE Freight >= 100"
-;
-
-io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
-"delete from app.employees where EmployeeID = 6"
-"delete from app.employees where EmployeeID < 5"
-"delete from app.employees where FIRSTNAME LIKE '%2'"
+"UPDATE app.customers SET CompanyName='abc_$tid'"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
@@ -93,9 +88,20 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
 "employees"
 "orders"
 "orders"
+"customers"
+;
+
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
+"delete from app.orders where orderid IN (SELECT max(orderID) from orders where tid=$tid)"
+"delete from app.customers where custId IN (SELECT min(custID) from customers where tid=$tid)"
+"delete from app.employees where EmployeeID = 6"
+"delete from app.employees where EmployeeID < 5"
+"delete from app.employees where FIRSTNAME LIKE '%2'"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteTables =
+"orders"
+"customers"
 "employees"
 "employees"
 "employees"

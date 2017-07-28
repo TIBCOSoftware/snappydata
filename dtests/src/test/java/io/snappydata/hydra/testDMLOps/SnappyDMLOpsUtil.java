@@ -438,10 +438,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int numRows = 0;
       int rand = new Random().nextInt(updateStmt.length);
       String stmt = updateStmt[rand];
+      int tid = getMyTid();
+      if (stmt.contains("$tid"))
+        stmt = stmt.replace("$tid",""+ tid);
       if (testUniqueKeys) {
         if (stmt.toUpperCase().contains("WHERE"))
-          stmt = stmt + " AND tid=" + getMyTid();
-        else stmt = stmt + " WHERE tid=" + getMyTid();
+          stmt = stmt + " AND tid=" + tid;
+        else stmt = stmt + " WHERE tid=" + tid;
       }
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
@@ -478,10 +481,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int numRows = 0;
       int rand = new Random().nextInt(deleteStmt.length);
       String stmt = deleteStmt[rand];
+      int tid = getMyTid();
+      if (stmt.contains("$tid"))
+        stmt = stmt.replace("$tid",""+ tid);
       if (testUniqueKeys) {
         if (stmt.toUpperCase().contains("WHERE"))
-          stmt = stmt + " AND tid=" + getMyTid();
-        else stmt = stmt + " WHERE tid=" + getMyTid();
+          stmt = stmt + " AND tid=" + tid;
+        else stmt = stmt + " WHERE tid=" + tid;
       }
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
@@ -761,6 +767,10 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     dmlLock.lock();
   }
 
+  protected void releaseDmlLock() {
+    dmlLock.unlock();
+  }
+
   public String getStmt(String stmt, String row, String tableName) {
     String[] columnValues = row.split(",");
     String replaceString = stmt;
@@ -815,6 +825,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       String stmt = updateStmt[rand];
       String tableName = SnappySchemaPrms.getUpdateTables()[rand];
       int tid = getMyTid();
+      if (stmt.contains("$tid"))
+        stmt = stmt.replace("$tid", ""+tid);
       if (testUniqueKeys) {
         if (stmt.toUpperCase().contains("WHERE"))
           stmt = stmt + " AND tid=" + tid;
@@ -857,6 +869,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       String stmt = deleteStmt[rand];
       String tableName = SnappySchemaPrms.getDeleteTables()[rand];
       int tid = getMyTid();
+      if (stmt.contains("$tid"))
+        stmt = stmt.replace("$tid","" + tid);
       if (testUniqueKeys) {
         if (stmt.toUpperCase().contains("WHERE"))
           stmt = stmt + " AND tid=" + tid;
@@ -928,11 +942,6 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       throw new TestException("Got exception while performing insert operation.", se);
     }
   }
-
-  protected void releaseDmlLock() {
-    dmlLock.unlock();
-  }
-
   public String buildUpdateStmt(String tableName){
     String updateStmt = "update $tableName set $updateList where $whereClause";
     //String[] tables = SnappySchemaPrms.getDMLTables();
