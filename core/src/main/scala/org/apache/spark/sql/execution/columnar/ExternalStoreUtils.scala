@@ -507,21 +507,21 @@ object ExternalStoreUtils extends Logging {
 
   }
 
-  def removeCachedObjects(sqlContext: SQLContext, table: String, userName: String,
+  def removeCachedObjects(sqlContext: SQLContext, table: String,
       registerDestroy: Boolean = false): Unit = {
     // clean up the connection pool and caches on executors first
     Utils.mapExecutors(sqlContext,
-      removeCachedObjects(table, userName)
+      removeCachedObjects(table)
     ).count()
     // then on the driver
-    removeCachedObjects(table, userName)()
+    removeCachedObjects(table)()
     if (registerDestroy) {
       SnappyStoreHiveCatalog.registerRelationDestroy()
     }
   }
 
-  def removeCachedObjects(table: String, userName: String): () => Iterator[Unit] = () => {
-    ConnectionPool.removePoolReference(table, userName)
+  def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
     CodeGeneration.removeCache(table)
     Iterator.empty
   }

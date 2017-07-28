@@ -247,8 +247,7 @@ abstract case class JDBCAppendableRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      ExternalStoreUtils.removeCachedObjects(sqlContext, table,
-        connProperties.poolProps.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, ""))
+      ExternalStoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)

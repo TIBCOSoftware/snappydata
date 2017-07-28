@@ -82,12 +82,13 @@ object ConnectionPool {
       connectionProps: Properties, hikariCP: Boolean): DataSource = {
     // fast lock-free path first (the usual case)
     val username = props.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, "")
-    val dsKey = idToPoolMap.get((id, username))
+    val lookupKey = id -> username
+    val dsKey = idToPoolMap.get(lookupKey)
     if (dsKey != null) {
       dsKey._1
     } else pools.synchronized {
       // double check after the global lock
-      val dsKey = idToPoolMap.get((id, username))
+      val dsKey = idToPoolMap.get(lookupKey)
       if (dsKey != null) {
         dsKey._1
       } else {
@@ -98,7 +99,7 @@ object ConnectionPool {
         pools.get(poolKey) match {
           case Some((newDS, ids)) =>
             ids += id
-            val err = idToPoolMap.putIfAbsent((id, username), (newDS, poolKey))
+            val err = idToPoolMap.putIfAbsent(lookupKey, (newDS, poolKey))
             require(err == null, s"unexpected existing pool for $id: $err")
             newDS
           case None =>
@@ -118,7 +119,7 @@ object ConnectionPool {
               new TDataSource(tconf)
             }
             pools(poolKey) = (newDS, mutable.Set(id))
-            val err = idToPoolMap.putIfAbsent((id, username), (newDS, poolKey))
+            val err = idToPoolMap.putIfAbsent(lookupKey, (newDS, poolKey))
             require(err == null, s"unexpected existing pool for $id: $err")
             newDS
         }
@@ -171,6 +172,11 @@ object ConnectionPool {
    * @return true if this was the last reference and entire pool was removed
    *         and false otherwise
    */
+  def removePoolReference(id: String): Boolean = {
+    val ids = idToPoolMap.asScala.keySet.filter(_._1.equalsIgnoreCase(id))
+    ids.forall(id => removePoolReference(id._1, id._2))
+  }
+
   def removePoolReference(id: String, userName: String): Boolean = {
     val dsKey = idToPoolMap.remove((id, userName))
     if (dsKey != null) pools.synchronized {

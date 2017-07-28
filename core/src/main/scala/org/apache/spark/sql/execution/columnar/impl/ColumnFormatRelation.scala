@@ -297,8 +297,7 @@ abstract class BaseColumnFormatRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      StoreUtils.removeCachedObjects(sqlContext, table,
-        connProperties.poolProps.getOrElse(Attribute.USERNAME_ALT_ATTR.toLowerCase, ""))
+      StoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         try {
