@@ -323,6 +323,9 @@ class SnappySessionState(snappySession: SnappySession)
 class SnappyConf(@transient val session: SnappySession)
     extends SQLConf with Serializable {
 
+  /** Pool to be used for the execution of queries from this session */
+  @volatile private[this] var schedulerPool: String = Property.SchedulerPool.defaultValue.get
+
   /** If shuffle partitions is set by [[setExecutionShufflePartitions]]. */
   @volatile private[this] var executionShufflePartitions: Int = _
 
@@ -343,7 +346,7 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
-  private def keyUpdateActions(key: String, doSet: Boolean): Unit = key match {
+  private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
@@ -355,6 +358,13 @@ class SnappyConf(@transient val session: SnappySession)
         dynamicShufflePartitions = -1
       } else {
         dynamicShufflePartitions = SnappyContext.totalCoreCount.get()
+      }
+    case Property.SchedulerPool.name =>
+      schedulerPool = value match {
+        case None => Property.SchedulerPool.defaultValue.get
+        case Some(pool) if session.sparkContext.getAllPools.exists(_.name == pool) =>
+          pool.toString
+        case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool ${pool}")
       }
     case _ => // ignore others
   }
@@ -385,13 +395,17 @@ class SnappyConf(@transient val session: SnappySession)
     }
   }
 
+  def activeSchedulerPool: String = {
+    schedulerPool
+  }
+
   override def setConfString(key: String, value: String): Unit = {
-    keyUpdateActions(key, doSet = true)
+    keyUpdateActions(key, Some(value), doSet = true)
     super.setConfString(key, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
-    keyUpdateActions(entry.key, doSet = true)
+    keyUpdateActions(entry.key, Some(value), doSet = true)
     require(entry != null, "entry cannot be null")
     require(value != null, s"value cannot be null for key: ${entry.key}")
     entry.defaultValue match {
@@ -401,12 +415,12 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   override def unsetConf(key: String): Unit = {
-    keyUpdateActions(key, doSet = false)
+    keyUpdateActions(key, None, doSet = false)
     super.unsetConf(key)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
-    keyUpdateActions(entry.key, doSet = false)
+    keyUpdateActions(entry.key, None, doSet = false)
     super.unsetConf(entry)
   }
 }

@@ -20,6 +20,10 @@ import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.{ExprCode, CodegenContext}
+import org.apache.spark.unsafe.types.UTF8String
+
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
@@ -27,17 +31,22 @@ import scala.reflect.runtime.{universe => u}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyThinConnectorTableStatsProvider, Constant, Property, SnappyTableStatsProviderService}
-
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{LeafExpression, ExpressionDescription, SortDirection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.types.StructField
+
+import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
+import scala.language.implicitConversions
+import scala.reflect.runtime.{universe => u}
 // import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
@@ -46,10 +55,10 @@ import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyS
 import org.apache.spark.sql.internal.SnappySessionState
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StringType, DataType, StructType}
 import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkEnv, SparkException}
+import org.apache.spark._
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -128,6 +137,30 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   def appendToTempTableCache(df: DataFrame, table: String,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK): Unit = {
     snappySession.appendToTempTableCache(df, table, storageLevel)
+  }
+
+  /**
+    * alter table adds/drops provided column, only supprted for row tables.
+    * For adding a column isAddColumn should be true, else it will be drop column
+    * @param tableName
+    * @param isAddColumn
+    * @param column
+    */
+  def alterTable(tableName: String, isAddColumn: Boolean,
+                 column: StructField): Unit = {
+    snappySession.alterTable(tableName, isAddColumn, column)
+  }
+
+  /**
+    * alter table adds/drops provided column, only supprted for row tables.
+    * For adding a column isAddColumn should be true, else it will be drop column
+    * @param tableIdent
+    * @param isAddColumn
+    * @param column
+    */
+  private[sql] def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
+                              column: StructField): Unit = {
+    snappySession.alterTable(tableIdent, isAddColumn, column)
   }
 
   /**
@@ -781,7 +814,6 @@ object SnappyContext extends Logging {
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
-
   val COLUMN_SOURCE = "column"
   val ROW_SOURCE = "row"
   val SAMPLE_SOURCE = "column_sample"
