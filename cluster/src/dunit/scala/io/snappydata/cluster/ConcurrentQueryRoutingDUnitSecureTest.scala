@@ -17,8 +17,6 @@
 
 package io.snappydata.cluster
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
@@ -26,84 +24,106 @@ import org.apache.spark.Logging
 class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
     extends ClusterManagerLDAPTestBase(s) with Logging {
 
-  var columnTableRoutingCompleted: AtomicInteger = new AtomicInteger(0)
-  def columnTableRouting(): Int = {
-    val jdbcUser1 = "gemfire1"
-    val jdbcUser2 = "gemfire5"
-    val tableName = "order_line_col"
+  def columnTableRouting(thr: Int, iter: Int, jdbcUser1: String, jdbcUser2: String): Int = {
+    val tableName = s"order_line_col_${thr}_${iter}"
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
-    println(s"ConcurrentQueryRoutingDUnitSecureTest.columnTableRouting:" +
+    println(s"ConcurrentQueryRoutingDUnitSecureTest.columnTableRouting-${thr}-${iter}:" +
         s"network server started at $serverHostPort")
     // scalastyle:on println
-
     QueryRoutingDUnitSecureTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
-    columnTableRoutingCompleted.incrementAndGet()
+    // scalastyle:off println
+    println(s"ConcurrentQueryRoutingDUnitSecureTest.columnTableRouting-${thr}-${iter} done")
+    // scalastyle:on println
+    1
   }
 
-  var rowTableRoutingCompleted: AtomicInteger = new AtomicInteger(0)
-  def rowTableRouting(): Int = {
-    val jdbcUser1 = "gemfire2"
-    val jdbcUser2 = "gemfire6"
-    val tableName = "order_line_row"
+  def rowTableRouting(thr: Int, iter: Int, jdbcUser1: String, jdbcUser2: String): Int = {
+    val tableName = s"order_line_row_${thr}_${iter}"
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
-    println(s"ConcurrentQueryRoutingDUnitSecureTest.rowTableRouting:" +
+    println(s"ConcurrentQueryRoutingDUnitSecureTest.rowTableRouting-${thr}-${iter}:" +
         s"network server started at $serverHostPort")
     // scalastyle:on println
-
     QueryRoutingDUnitSecureTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
-    rowTableRoutingCompleted.incrementAndGet()
+    // scalastyle:off println
+    println(s"ConcurrentQueryRoutingDUnitSecureTest.rowTableRouting-${thr}-${iter} done")
+    // scalastyle:on println
+    1
   }
 
   def testConcurrency(): Unit = {
-    val colThread = new Thread(new Runnable {
-      def run() {
-        (1 to 5) foreach (i => {
-          // scalastyle:off println
-          println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
-              s" columnTableRouting started $i")
-          // scalastyle:on println
-          val completed = columnTableRouting()
-          // scalastyle:off println
-          println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
-              s" columnTableRouting finished $i $completed")
-          // scalastyle:on println
+
+    var thrCount1: Integer = 0
+    val colThread1 = new Thread(new Runnable {def run() {
+      (1 to 5) foreach (i => {
+        thrCount1 += columnTableRouting(1, i, "gemfire1", "gemfire2")
         })
       }
     })
-    val rowThread = new Thread(new Runnable {
-      def run() {
-        (1 to 5) foreach (i => {
-          // scalastyle:off println
-          println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
-              s" rowTableRouting started $i")
-          // scalastyle:on println
-          val completed = rowTableRouting()
-          // scalastyle:off println
-          println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
-              s" rowTableRouting finished $i $completed")
-          // scalastyle:on println
-        })
-      }
+    colThread1.start()
+
+    var thrCount2: Integer = 0
+    val colThread2 = new Thread(new Runnable {def run() {
+      (1 to 5) foreach (i => {
+        thrCount2 += columnTableRouting(2, i, "gemfire3", "gemfire4")
+      })
+    }
     })
-    colThread.start()
-    rowThread.start()
-    colThread.join(5 * 60 * 1000)
+    colThread2.start()
+
+    var thrCount3: Integer = 0
+    val rowThread1 = new Thread(new Runnable {def run() {
+      (1 to 5) foreach (i => {
+        thrCount3 += columnTableRouting(3, i, "gemfire5", "gemfire6")
+      })
+    }
+    })
+    rowThread1.start()
+
+    var thrCount4: Integer = 0
+    val rowThread2 = new Thread(new Runnable {def run() {
+      (1 to 5) foreach (i => {
+        thrCount4 += columnTableRouting(4, i, "gemfire7", "gemfire8")
+      })
+    }
+    })
+    rowThread2.start()
+
+    colThread1.join(5 * 60 * 1000)
     // scalastyle:off println
     println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
-        s" columnTableRouting done")
+        s" columnTableRouting-1 thread done")
     // scalastyle:on println
-    rowThread.join(5 * 60 * 1000)
+    rowThread1.join(5 * 60 * 1000)
     // scalastyle:off println
     println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
-        s"rowTableRouting done")
+        s"rowTableRouting-1 thread done")
     // scalastyle:on println
-    assert(columnTableRoutingCompleted.get() == 5,
-      s"columnTableRoutingCompleted=${columnTableRoutingCompleted.get()}")
-    assert(rowTableRoutingCompleted.get() == 5,
-      s"rowTableRoutingCompleted=${rowTableRoutingCompleted.get()}")
+    colThread1.join(5 * 60 * 1000)
+    // scalastyle:off println
+    println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
+        s" columnTableRouting-2 thread done")
+    // scalastyle:on println
+    rowThread1.join(5 * 60 * 1000)
+    // scalastyle:off println
+    println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
+        s"rowTableRouting-2 thread done")
+    // scalastyle:on println
+
+    assert(thrCount1 == 5,
+      s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
+          s" columnTableRoutingCompleted-1=$thrCount1")
+    assert(thrCount2 == 5,
+      s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
+          s" rowTableRoutingCompleted-1=$thrCount2")
+    assert(thrCount3 == 5,
+      s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
+          s" columnTableRoutingCompleted-2=$thrCount3")
+    assert(thrCount4 == 5,
+      s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
+          s" rowTableRoutingCompleted-2=$thrCount4")
   }
 }

@@ -73,38 +73,39 @@ object QueryRoutingDUnitSecureTest {
       tableName, jdbcUser2, jdbcUser2)
 
     try {
-      batchInsert("testColumnTableRouting-1", 2000, 200,
+      batchInsert("testColumnTableRouting-1", 200, 100,
         serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    batchInsert("testColumnTableRouting-2", 2000, 200,
+    batchInsert("testColumnTableRouting-2", 200, 100,
       serverHostPort, tableName, jdbcUser2, jdbcUser2)
 
     try {
-      singleInsert("testColumnTableRouting-1", 2000, serverHostPort,
+      singleInsert("testColumnTableRouting-1", 200, serverHostPort,
         jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    singleInsert("testColumnTableRouting-2", 2000, serverHostPort,
+    singleInsert("testColumnTableRouting-2", 200, serverHostPort,
       tableName, jdbcUser2, jdbcUser2)
 
     // (1 to 5).foreach(d => query())
     try {
       query("testColumnTableRouting-1", serverHostPort,
-        jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 4000, 400)
+        jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 400, 40)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
     query("testColumnTableRouting-2", serverHostPort,
-      tableName, jdbcUser2, jdbcUser2, 4000, 400)
+      tableName, jdbcUser2, jdbcUser2, 400, 40)
 
     try {
       dropTable("testColumnTableRouting-1", serverHostPort,
@@ -133,38 +134,39 @@ object QueryRoutingDUnitSecureTest {
       serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     try {
-      batchInsert("testRowTableRouting-1", 200, 20,
+      batchInsert("testRowTableRouting-1", 20, 20,
         serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    batchInsert("testRowTableRouting-2", 200, 20,
+    batchInsert("testRowTableRouting-2", 20, 20,
       serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     try {
-      singleInsert("testRowTableRouting-1", 200,
+      singleInsert("testRowTableRouting-1", 20,
         serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
-    singleInsert("testRowTableRouting-2", 200,
+    singleInsert("testRowTableRouting-2", 20,
       serverHostPort, tableName, jdbcUser1, jdbcUser1)
 
     // (1 to 5).foreach(d => query())
     try {
       query("testRowTableRouting-1", serverHostPort,
-        jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2, 400, 40)
+        jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2, 40, 4)
       assert(false) // fail
     } catch {
       case x: SQLException if x.getSQLState.equals("42502") => // ignore
       case t: Throwable => throw t
     }
     query("testRowTableRouting-2", serverHostPort, tableName,
-      jdbcUser1, jdbcUser1, 400, 40)
+      jdbcUser1, jdbcUser1, 40, 4)
 
     try {
       dropTable("testRowTableRouting-1", serverHostPort,
