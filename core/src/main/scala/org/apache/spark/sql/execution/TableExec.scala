@@ -36,13 +36,15 @@ import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClie
 /**
  * Common methods for bulk inserts into column and row tables.
  */
-abstract class TableExec(override val child: SparkPlan,
-    partitionColumns: Seq[String], val partitionExpressions: Seq[Expression],
-    val numBuckets: Int, relationSchema: StructType,
-    relation: Option[DestroyRelation], onExecutor: Boolean)
-    extends UnaryExecNode with CodegenSupportOnExecutor {
+abstract class TableExec(partitionColumns: Seq[String],
+    relationSchema: StructType, relation: Option[DestroyRelation],
+    onExecutor: Boolean) extends UnaryExecNode with CodegenSupportOnExecutor {
 
   @transient protected lazy val (metricAdd, _) = Utils.metricMethods
+
+  def partitionExpressions: Seq[Expression]
+
+  def numBuckets: Int
 
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil
@@ -138,32 +140,23 @@ abstract class TableExec(override val child: SparkPlan,
   }
 
   protected def doChildProduce(ctx: CodegenContext): String = {
-    child match {
+    val childProduce = child match {
       case c: CodegenSupportOnExecutor if onExecutor =>
         c.produceOnExecutor(ctx, this)
       case c: CodegenSupport => c.produce(ctx, this)
       case _ => throw new UnsupportedOperationException(
         s"Expected a child supporting code generation. Got: $child")
     }
-  }
-}
-
-/**
- * Allow invoking produce/consume calls on executor without requiring
- * a SparkContext.
- */
-trait CodegenSupportOnExecutor extends CodegenSupport {
-
-  /**
-   * Returns Java source code to process the rows from input RDD that
-   * will work on executors too (assuming no sub-query processing required).
-   */
-  def produceOnExecutor(ctx: CodegenContext, parent: CodegenSupport): String = {
-    this.parent = parent
-    ctx.freshNamePrefix = nodeName.toLowerCase
-    s"""
-       |${ctx.registerComment(s"PRODUCE ON EXECUTOR: ${this.simpleString}")}
-       |${doProduce(ctx)}
-     """.stripMargin
+    if (!ctx.addedFunctions.contains("shouldStop")) {
+      // no need to stop in iteration at any point
+      ctx.addNewFunction("shouldStop",
+        s"""
+           |@Override
+           |protected final boolean shouldStop() {
+           |  return false;
+           |}
+        """.stripMargin)
+    }
+    childProduce
   }
 }

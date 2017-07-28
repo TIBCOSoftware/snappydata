@@ -35,13 +35,12 @@ import org.apache.spark.util.TaskCompletionListener
 /**
  * Generated code plan for bulk insertion into a column table.
  */
-case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
-    _partitionExpressions: Seq[Expression], _numBuckets: Int,
+case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
+    partitionExpressions: Seq[Expression], numBuckets: Int,
     relation: Option[DestroyRelation], batchParams: (Int, Int, String),
-    columnTable: String, onExecutor: Boolean, relationSchema: StructType,
+    columnTable: String, onExecutor: Boolean, tableSchema: StructType,
     externalStore: ExternalStore, useMemberVariables: Boolean)
-    extends TableExec(_child, partitionColumns, _partitionExpressions,
-      _numBuckets, relationSchema, relation, onExecutor) {
+    extends TableExec(partitionColumns, tableSchema, relation, onExecutor) {
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
       partitionExpressions: Seq[Expression],
@@ -141,10 +140,10 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
     else metricTerm(ctx, "numInsertedRows")
-    schemaTerm = ctx.addReferenceObj("schema", relationSchema,
+    schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
 
-    val schemaLength = relationSchema.length
+    val schemaLength = tableSchema.length
     encoderArrayTerm = ctx.freshName("encoderArray")
     cursorArrayTerm = ctx.freshName("cursorArray")
     numInsertions = ctx.freshName("numInsertions")
@@ -180,7 +179,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |           |  $schemaTerm.fields()[i]);
        """.stripMargin
 
-    val initEncoderArray = loop(initEncoderCode, relationSchema.length)
+    val initEncoderArray = loop(initEncoderCode, schemaLength)
 
     ctx.addMutableState(s"$encoderClass[]",
       encoderArrayTerm,
@@ -198,7 +197,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
     val encoderLoopCode = s"$defaultRowSize += " +
       s"$encoderArrayTerm[i].defaultSize($schemaTerm.fields()[i].dataType());"
 
-    val declarations = loop(encoderLoopCode, relationSchema.length)
+    val declarations = loop(encoderLoopCode, schemaLength)
 
     val checkEnd = if (useMemberVariables) {
       "if (!currentRows.isEmpty()) return"
@@ -246,16 +245,16 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    if (relationSchema.length > MAX_CURSOR_DECLARATIONS) {
+    if (tableSchema.length > MAX_CURSOR_DECLARATIONS) {
       return doProduceWideTable(ctx)
     }
     val encodingClass = classOf[ColumnEncoding].getName
     val encoderClass = classOf[ColumnEncoder].getName
     val numInsertedRowsMetric = if (onExecutor) null
     else metricTerm(ctx, "numInsertedRows")
-    schemaTerm = ctx.addReferenceObj("schema", relationSchema,
+    schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
-    encoderCursorTerms = relationSchema.map { _ =>
+    encoderCursorTerms = tableSchema.map { _ =>
       (ctx.freshName("encoder"), ctx.freshName("cursor"))
     }
     numInsertions = ctx.freshName("numInsertions")
@@ -487,7 +486,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
   private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode],
                                   row: ExprCode): String = {
-    val schema = relationSchema
+    val schema = tableSchema
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
@@ -540,8 +539,8 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
     val encoderLoopCode = s"$sizeTerm += $encoderArrayTerm[i].sizeInBytes($cursorArrayTerm[i]);"
 
-    initEncoders = loop(cursorLoopCode, relationSchema.length)
-    val calculateSize = loop(encoderLoopCode, relationSchema.length)
+    initEncoders = loop(cursorLoopCode, schema.length)
+    val calculateSize = loop(encoderLoopCode, schema.length)
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", None,
@@ -568,7 +567,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
 
     val bufferLoopCode =
       s"""$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n""".stripMargin
-    val buffersCode = loop(bufferLoopCode, relationSchema.length)
+    val buffersCode = loop(bufferLoopCode, schema.length)
 
     val (statsSplitCode, statsRowTerm) = genMultipleStatsMethods(ctx,
       "writeStats", statsCode, statsSchema, statsAttrs, stats)
@@ -634,12 +633,11 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
 
-    if (relationSchema.length > MAX_CURSOR_DECLARATIONS) {
+    if (tableSchema.length > MAX_CURSOR_DECLARATIONS) {
       return doConsumeWideTables(ctx, input, row)
     }
-    val schema = relationSchema
+    val schema = tableSchema
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-
 
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
@@ -723,16 +721,6 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    // no shouldStop check required
-    if (!ctx.addedFunctions.contains("shouldStop")) {
-      ctx.addNewFunction("shouldStop",
-        s"""
-          @Override
-          protected final boolean shouldStop() {
-            return false;
-          }
-        """)
-    }
     storeColumnBatchArgs = s"$batchSizeTerm, ${batchFunctionCall.toString()}"
     s"""
        |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&

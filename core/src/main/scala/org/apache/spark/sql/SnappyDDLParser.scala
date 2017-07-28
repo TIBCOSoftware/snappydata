@@ -98,16 +98,20 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
 
   // non-reserved keywords
+  final def ADD: Rule0 = rule { keyword(Consts.ADD) }
+  final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
+  final def FN: Rule0 = rule { keyword(Consts.FN) }
   final def FULL: Rule0 = rule { keyword(Consts.FULL) }
   final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
   final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
@@ -126,6 +130,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
+  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
@@ -139,11 +144,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
-  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
-  final def FN: Rule0 = rule { keyword(Consts.FN) }
-  final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
-  final def ADD: Rule0 = rule { keyword(Consts.ADD) }
-  final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
+  final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }

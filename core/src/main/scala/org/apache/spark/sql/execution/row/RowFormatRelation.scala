@@ -76,9 +76,6 @@ class RowFormatRelation(
   private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
     table, schema, putInto = true)
 
-  private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
-    tableSchema)
-
   @transient override lazy val region: LocalRegion =
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 

@@ -19,7 +19,7 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
@@ -50,7 +50,7 @@ trait PlanInsertableRelation extends InsertableRelation with DestroyRelation {
   def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
-trait RowPutRelation extends SingleRowInsertableRelation with DestroyRelation {
+trait RowPutRelation extends DestroyRelation {
 
   /**
    * If the row is already present, it gets updated otherwise it gets
@@ -76,6 +76,36 @@ trait SingleRowInsertableRelation {
    * Execute a DML SQL and return the number of rows affected.
    */
   def executeUpdate(sql: String): Int
+}
+
+/**
+ * ::DeveloperApi
+ *
+ * API for updates and deletes to a relation.
+ */
+@DeveloperApi
+trait MutableRelation extends InsertableRelation with DestroyRelation {
+
+  /**
+   * Get the "key" columns for the table that need to be projected out by
+   * UPDATE and DELETE operations for affecting the selected rows.
+   */
+  def getKeyColumns: Seq[String]
+
+  /**
+   * Get a spark plan to update rows in the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
+      updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
+      keyColumns: Seq[Attribute]): SparkPlan
+
+  /**
+   * Get a spark plan to delete rows the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
+      keyColumns: Seq[Attribute]): SparkPlan
 }
 
 /**

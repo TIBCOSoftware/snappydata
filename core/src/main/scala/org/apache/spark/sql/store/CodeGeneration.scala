@@ -410,12 +410,6 @@ object CodeGeneration extends Logging {
     result.executeStatement(stmt, multipleRows, rows, batchSize, schema)
   }
 
-  def executeUpdate(name: String, stmt: PreparedStatement,
-      rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int =
-    executeUpdate(name, stmt, rows.asJava, multipleRows, batchSize,
-      schema, dialect)
-
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
       dialect: JdbcDialect): Int = {

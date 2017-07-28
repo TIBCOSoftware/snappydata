@@ -165,9 +165,7 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
-  def tableExistsInMetaData(table: String, conn: Connection,
-      dialect: JdbcDialect): Boolean = {
-    // using the JDBC meta-data API
+  def getTableWithSchema(table: String, conn: Connection): (String, String) = {
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
       table.substring(0, dotIndex)
@@ -176,7 +174,14 @@ object JdbcExtendedUtils extends Logging {
       conn.getSchema
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
+    (schemaName, tableName)
+  }
+
+  def tableExistsInMetaData(table: String, conn: Connection,
+      dialect: JdbcDialect): Boolean = {
+    val (schemaName, tableName) = getTableWithSchema(table, conn)
     try {
+      // using the JDBC meta-data API
       val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()
     } catch {

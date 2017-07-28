@@ -18,12 +18,15 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import scala.collection.mutable
+
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -55,6 +58,7 @@ case class JDBCMutableRelation(
     with InsertableRelation
     with PlanInsertableRelation
     with RowInsertableRelation
+    with MutableRelation
     with UpdatableRelation
     with DeletableRelation
     with DestroyRelation
@@ -82,6 +86,9 @@ case class JDBCMutableRelation(
 
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
     new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
+
+  private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
+    tableSchema)
 
   var tableExists: Boolean = _
 
@@ -181,8 +188,53 @@ case class JDBCMutableRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowDMLExec(child, putInto = false, delete = false, Seq.empty, Seq.empty, -1,
-      schema, Some(this), onExecutor = false, table, connProperties)
+    RowDMLExec(child, upsert = false, Seq.empty, Seq.empty, -1,
+      schema, Some(this), onExecutor = false, resolvedName, connProperties)
+  }
+
+  /**
+   * Get a spark plan to update rows in the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
+      updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
+      keyColumns: Seq[Attribute]): SparkPlan = {
+    RowUpdateExec(child, resolvedName, schema, updateColumns,
+      updateExpressions, keyColumns, connProperties, onExecutor = false)
+  }
+
+  /**
+   * Get a spark plan to delete rows the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
+      keyColumns: Seq[Attribute]): SparkPlan = {
+    RowDeleteExec(child, resolvedName, schema, keyColumns, connProperties,
+      onExecutor = false)
+  }
+
+  /**
+   * Get the "key" columns for the table that need to be projected out by
+   * UPDATE and DELETE operations for affecting the selected rows.
+   */
+  override def getKeyColumns: Seq[String] = {
+    val conn = ConnectionPool.getPoolConnection(table, dialect,
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
+    try {
+      val metadata = conn.getMetaData
+      val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
+        table, conn)
+      val primaryKeys = metadata.getPrimaryKeys(null, schemaName, tableName)
+      val keyColumns = new mutable.ArrayBuffer[String](2)
+      while (primaryKeys.next()) {
+        keyColumns += primaryKeys.getString(4)
+      }
+      primaryKeys.close()
+      keyColumns
+    } finally {
+      conn.close()
+    }
   }
 
   override def getDeletePlan(relation: LogicalRelation,
@@ -192,10 +244,15 @@ case class JDBCMutableRelation(
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    // use the normal DataFrameWriter which will create an InsertIntoTable plan
+    // use the InsertIntoTable plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
-    data.write.mode(if (overwrite) SaveMode.Overwrite else SaveMode.Append)
-        .insertInto(table)
+    sqlContext.sessionState.executePlan(
+      InsertIntoTable(
+        table = LogicalRelation(this),
+        partition = Map.empty[String, Option[String]],
+        child = data.logicalPlan,
+        overwrite,
+        ifNotExists = false)).toRdd
   }
 
   override def insert(rows: Seq[Row]): Int = {
