@@ -32,11 +32,13 @@ import org.apache.spark.sql.types.StructType
  * Generated code plan for deletes into a column table.
  * This extends [[RowExec]] to generate the combined code for row buffer deletes.
  */
-case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
+case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
     numBuckets: Int, tableSchema: StructType, externalStore: ExternalStore,
     relation: Option[DestroyRelation], keyColumns: Seq[Attribute],
     connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
+
+  override def resolvedName: String = externalStore.tableName
 
   override protected def opType: String = "Delete"
 
@@ -64,7 +66,7 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishDelete($batchIdTerm);
+         |  $finishDelete(null); // force a finish
          |}
       """.stripMargin)
   }
@@ -76,7 +78,7 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     val deleteEncoder = ctx.freshName("deleteEncoder")
     batchOrdinal = ctx.freshName("batchOrdinal")
     batchIdTerm = ctx.freshName("batchId")
-    val partitionId = ctx.freshName("partitionId")
+    val bucketId = ctx.freshName("bucketId")
     finishDelete = ctx.freshName("finishDelete")
     deleteMetric = if (onExecutor) null else metricTerm(ctx, "numDeleteColumnBatchRows")
 
@@ -87,8 +89,7 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     ctx.addMutableState("int", batchOrdinal, "")
     ctx.addMutableState("UTF8String", batchIdTerm, "")
     ctx.addMutableState("UTF8String", lastColumnBatchId, "")
-    ctx.addMutableState("int", partitionId, "")
-    ctx.addPartitionInitializationStatement(s"$partitionId = partitionIndex;")
+    ctx.addMutableState("int", bucketId, "")
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
 
     ctx.INPUT_ROW = null
@@ -103,6 +104,8 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     assert(keyColumns.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
     // second column in keyColumns should be column batchId
     assert(keyColumns(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
+    // last column in keyColumns should be bucketId
+    assert(keyColumns(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
 
     val numKeys = keyColumns.length
     val positionTerm = keysInput(keysInput.length - numKeys).value
@@ -111,6 +114,7 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
       s"""
          |${evaluateVariables(keysInput)}
          |$batchIdTerm = ${keysInput(keysInput.length - numKeys + 1).value};
+         |$bucketId = ${keysInput(keysInput.length - numKeys + 2).value}
       """.stripMargin
     // row buffer needs to select the rowId for the ordinal
     val rowConsume = super.doConsume(ctx, keysInput,
@@ -124,12 +128,18 @@ case class ColumnDeleteExec(child: SparkPlan, resolvedName: String,
     ctx.addNewFunction(finishDelete,
       s"""
          |private void $finishDelete(UTF8String $batchIdTerm) {
-         |  if ($batchIdTerm != $lastColumnBatchId && !$batchIdTerm.equals($lastColumnBatchId)) {
-         |    if ($lastColumnBatchId == null) return; // first call
+         |  if ($batchIdTerm != $lastColumnBatchId && ($batchIdTerm == null ||
+         |      !$batchIdTerm.equals($lastColumnBatchId))) {
+         |    if ($lastColumnBatchId == null) {
+         |      // first call
+         |      $lastColumnBatchId = $batchIdTerm;
+         |      return;
+         |    }
          |    // finish previous encoder, put into table and re-initialize
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($cursor);
-         |    $externalStoreTerm.storeDelete($resolvedName, buffer,
-         |        $partitionId, $lastColumnBatchId.toString());
+         |    // delete puts an empty stats row to denote that there are changes
+         |    $externalStoreTerm.storeDelete($columnTable, buffer,
+         |        new byte[] { 0, 0, 0, 0 }, $bucketId, $lastColumnBatchId.toString());
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoder

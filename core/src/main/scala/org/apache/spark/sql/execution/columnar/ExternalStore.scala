@@ -31,6 +31,8 @@ trait ExternalStore extends Serializable {
 
   final val columnPrefix = "COL_"
 
+  def tableName: String
+
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit
 
@@ -41,7 +43,7 @@ trait ExternalStore extends Serializable {
   }
 
   def storeDelete(tableName: String, buffer: ByteBuffer,
-      partitionId: Int, batchId: String): Unit
+      statsData: Array[Byte], partitionId: Int, batchId: String): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]

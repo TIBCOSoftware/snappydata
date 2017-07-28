@@ -263,9 +263,9 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
-      numBuckets, schema, externalStore, Some(this), updateColumns, updateExpressions,
-      keyColumns, connProperties, onExecutor = false)
+    ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
+      partitionExpressions(relation), numBuckets, schema, externalStore, Some(this),
+      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -274,7 +274,7 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnDeleteExec(child, resolvedName, partitionColumns,
+    ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
       partitionExpressions(relation), numBuckets, schema, externalStore,
       Some(this), keyColumns, connProperties, onExecutor = false)
   }

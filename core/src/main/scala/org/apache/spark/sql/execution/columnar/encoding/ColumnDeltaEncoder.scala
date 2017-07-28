@@ -24,10 +24,10 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.codehaus.janino.CompilerFactory
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.LongArray
@@ -309,7 +309,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         i += 1
       }
       // pad to nearest word boundary before writing encoded data
-      ((deltaCursor + 63) >> 6) << 6
+      ((deltaCursor + 7) >> 3) << 3
     } else deltaCursor
   }
 
@@ -562,10 +562,10 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
     // make space for the positions at the start
     val numNullWords = realEncoder.getNumNullWords
-    val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize(8L +
+    val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         (numNullWords << 3) /* header */ +
         // round positions to nearest word as done by writeHeader
-        (((4 /* numPositions */ + (numDeltas << 2) + 63) >> 6) << 6) +
+        4 /* numPositions */ + (numDeltas << 2) + 7) >> 3) << 3) +
         realEncoder.encodedSize(encoderCursor, dataBeginPosition)))
     realEncoder.setSource(buffer, releaseOld = false)
     val columnBytes = allocator.baseObject(buffer)
@@ -636,7 +636,7 @@ trait DeltaWriterFactory {
   def create(): DeltaWriter
 }
 
-object DeltaWriter extends Logging {
+object DeltaWriter {
 
   private[this] val defaultImports = Array(
     classOf[UTF8String].getName,
@@ -653,7 +653,7 @@ object DeltaWriter extends Logging {
    * Code generated cache for ease of maintenance of similar DeltaWriter code
    * for most data types.
    */
-  private val cache = CacheBuilder.newBuilder().build(
+  private val cache = CacheBuilder.newBuilder().maximumSize(100).build(
     new CacheLoader[DataType, DeltaWriterFactory]() {
       override def load(dataType: DataType): DeltaWriterFactory = {
         val evaluator = new CompilerFactory().newScriptEvaluator()
@@ -687,16 +687,16 @@ object DeltaWriter extends Logging {
              |      int srcPosition, ColumnEncoder destEncoder, long destCursor,
              |      int encoderOrdinal, boolean forMerge, boolean doWrite) {
              |    if (srcPosition < 0) {
-             |      srcDecoder.currentCursor = srcDecoder.next$name(srcColumnBytes,
-             |        srcDecoder.currentCursor, 0);
+             |      srcDecoder.currentCursor_$$eq(srcDecoder.next$name(srcColumnBytes,
+             |        srcDecoder.currentCursor(), 0));
              |      return doWrite ? destEncoder.write$name(destCursor, srcDecoder.read$name(
-             |          srcColumnBytes, srcDecoder.currentCursor, 0)) : destCursor;
+             |          srcColumnBytes, srcDecoder.currentCursor(), 0)) : destCursor;
              |    } else {
              |      return destEncoder.write$name(destCursor, srcDecoder.read$name(
              |          srcColumnBytes, srcDecoder.absolute$name(srcColumnBytes, srcPosition), 0));
              |    }
              |  }
-             |}
+             |};
           """.stripMargin
         } else {
           s"""
@@ -706,11 +706,11 @@ object DeltaWriter extends Logging {
              |      int srcPosition, ColumnEncoder destEncoder, long destCursor,
              |      int encoderOrdinal, boolean forMerge, boolean doWrite) {
              |    if (srcPosition < 0) {
-             |      srcDecoder.currentCursor = srcDecoder.next$name(srcColumnBytes,
-             |        srcDecoder.currentCursor, 0);
+             |      srcDecoder.currentCursor_$$eq(srcDecoder.next$name(srcColumnBytes,
+             |        srcDecoder.currentCursor(), 0));
              |      if (doWrite) {
              |        $complexType data = ($complexType)srcDecoder.read$name(srcColumnBytes,
-             |           srcDecoder.currentCursor, 0);
+             |           srcDecoder.currentCursor(), 0);
              |        return destEncoder.writeUnsafeData(destCursor, data.getBaseObject(),
              |           data.getBaseOffset(), data.getSizeInBytes());
              |      } else {
@@ -723,10 +723,11 @@ object DeltaWriter extends Logging {
              |        data.getBaseOffset(), data.getSizeInBytes());
              |    }
              |  }
-             |}
+             |};
           """.stripMargin
         }
-        logDebug(s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
+        CodeGeneration.logInfo(
+          s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
           Array.empty[String]).asInstanceOf[DeltaWriterFactory]
       }

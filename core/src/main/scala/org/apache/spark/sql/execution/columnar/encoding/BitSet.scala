@@ -49,14 +49,19 @@ object BitSet {
   }
 
   /**
-   * Returns true if the bit is set at the specified index.
+   * Returns true if the bit is set at the specified index
+   * given maximum size of nulls bitmask in bytes.
    */
-  def isSet(baseObject: AnyRef, baseAddress: Long, position: Int): Boolean = {
-    val bytePosition = baseAddress + (position >> 3)
-    // mod 8 and shift
-    val mask = 1 << (position & 0x7)
-    val currentByte = Platform.getByte(baseObject, bytePosition)
-    (currentByte & mask) != 0
+  def isSet(baseObject: AnyRef, baseAddress: Long, position: Int, maxBytes: Int): Boolean = {
+    val byteIndex = position >> 3
+    if (byteIndex < maxBytes) {
+      val bytePosition = baseAddress + byteIndex
+      val currentByte = Platform.getByte(baseObject, bytePosition)
+      // mod 8 and shift
+      val mask = 1 << (position & 0x7)
+      (currentByte & mask) != 0
+    }
+    else false
   }
 
   /**

@@ -77,7 +77,7 @@ abstract class UncompressedDecoderBase
     cursor + 1
 
   override def absoluteBoolean(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + (position - numNullsUntilPosition(columnBytes, position) + 1)
+    baseCursor + (position - numNullsUntilPosition(columnBytes, position))
 
   override def readBoolean(columnBytes: AnyRef, cursor: Long, mutated: Int): Boolean =
     Platform.getByte(columnBytes, cursor) == 1
@@ -86,7 +86,7 @@ abstract class UncompressedDecoderBase
     cursor + 1
 
   override def absoluteByte(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + (position - numNullsUntilPosition(columnBytes, position) + 1)
+    baseCursor + (position - numNullsUntilPosition(columnBytes, position))
 
   override def readByte(columnBytes: AnyRef, cursor: Long, mutated: Int): Byte =
     Platform.getByte(columnBytes, cursor)
@@ -95,7 +95,7 @@ abstract class UncompressedDecoderBase
     cursor + 2
 
   override def absoluteShort(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 1)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 1)
 
   override def readShort(columnBytes: AnyRef, cursor: Long, mutated: Int): Short =
     ColumnEncoding.readShort(columnBytes, cursor)
@@ -104,7 +104,7 @@ abstract class UncompressedDecoderBase
     cursor + 4
 
   override def absoluteInt(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 2)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 2)
 
   override def readInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
     ColumnEncoding.readInt(columnBytes, cursor)
@@ -113,7 +113,7 @@ abstract class UncompressedDecoderBase
     cursor + 8
 
   override def absoluteLong(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 3)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 3)
 
   override def readLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
     ColumnEncoding.readLong(columnBytes, cursor)
@@ -122,7 +122,7 @@ abstract class UncompressedDecoderBase
     cursor + 4
 
   override def absoluteFloat(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 2)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 2)
 
   override def readFloat(columnBytes: AnyRef, cursor: Long, mutated: Int): Float =
     ColumnEncoding.readFloat(columnBytes, cursor)
@@ -131,7 +131,7 @@ abstract class UncompressedDecoderBase
     cursor + 8
 
   override def absoluteDouble(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 3)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 3)
 
   override def readDouble(columnBytes: AnyRef, cursor: Long, mutated: Int): Double =
     ColumnEncoding.readDouble(columnBytes, cursor)
@@ -140,7 +140,7 @@ abstract class UncompressedDecoderBase
     cursor + 8
 
   override def absoluteLongDecimal(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 3)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 3)
 
   override def readLongDecimal(columnBytes: AnyRef, precision: Int,
       scale: Int, cursor: Long, mutated: Int): Decimal =
@@ -186,7 +186,7 @@ abstract class UncompressedDecoderBase
     cursor + 12
 
   override def absoluteInterval(columnBytes: AnyRef, position: Int): Long =
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) * 12)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) * 12)
 
   override def readInterval(columnBytes: AnyRef,
       cursor: Long, mutated: Int): CalendarInterval = {

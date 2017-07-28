@@ -67,7 +67,7 @@ final class MutatedColumnDecoderNullable(decoder: ColumnDecoder,
       decoder.isNull(columnBytes, ordinal, mutated)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.isNull
+      currentDeltaBuffer.isNull
     }
   }
 }
@@ -132,8 +132,9 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     allocator.baseObject(deleteBuffer)
   } else null
 
-  protected final var nextMutationPosition: Int = -1
+  protected final var nextMutatedPosition: Int = -1
   protected final var nextDeltaBuffer: ColumnDeltaDecoder = _
+  protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
 
   override def typeId: Int = decoder.typeId
 
@@ -144,7 +145,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = {
-    updateNextMutationPosition()
+    updateNextMutatedPosition()
     decoder.initializeCursor(columnBytes, cursor, field)
   }
 
@@ -156,7 +157,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     } else Int.MaxValue
   }
 
-  protected final def updateNextMutationPosition(): Unit = {
+  protected final def updateNextMutatedPosition(): Unit = {
     var next = Int.MaxValue
     var movedIndex = -1
 
@@ -195,15 +196,16 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
         nextDeltaBuffer = delta3
       case _ =>
     }
-    nextMutationPosition = next
+    nextMutatedPosition = next
   }
 
   override final def mutated(ordinal: Int): Int = {
-    if (nextMutationPosition != ordinal) 0
+    if (nextMutatedPosition != ordinal) 0
     else {
-      updateNextMutationPosition()
+      currentDeltaBuffer = nextDeltaBuffer
+      updateNextMutatedPosition()
       // value of -1 indicates deleted to the caller
-      if (nextDeltaBuffer ne null) 1 else -1
+      if (currentDeltaBuffer ne null) 1 else -1
     }
   }
 
@@ -213,7 +215,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextBoolean(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextBoolean()
+      currentDeltaBuffer.nextBoolean()
       cursor
     }
   }
@@ -223,7 +225,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readBoolean(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readBoolean
+      currentDeltaBuffer.readBoolean
     }
   }
 
@@ -233,7 +235,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextByte(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextByte()
+      currentDeltaBuffer.nextByte()
       cursor
     }
   }
@@ -243,7 +245,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readByte(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readByte
+      currentDeltaBuffer.readByte
     }
   }
 
@@ -253,7 +255,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextShort(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextShort()
+      currentDeltaBuffer.nextShort()
       cursor
     }
   }
@@ -263,7 +265,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readShort(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readShort
+      currentDeltaBuffer.readShort
     }
   }
 
@@ -273,7 +275,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextInt(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextInt()
+      currentDeltaBuffer.nextInt()
       cursor
     }
   }
@@ -283,7 +285,8 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readInt(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readInt
+      val r = currentDeltaBuffer.readInt
+      r
     }
   }
 
@@ -293,7 +296,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextLong(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextLong()
+      currentDeltaBuffer.nextLong()
       cursor
     }
   }
@@ -303,7 +306,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readLong(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readLong
+      currentDeltaBuffer.readLong
     }
   }
 
@@ -313,7 +316,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextFloat(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextFloat()
+      currentDeltaBuffer.nextFloat()
       cursor
     }
   }
@@ -323,7 +326,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readFloat(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readFloat
+      currentDeltaBuffer.readFloat
     }
   }
 
@@ -333,7 +336,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextDouble(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextDouble()
+      currentDeltaBuffer.nextDouble()
       cursor
     }
   }
@@ -343,7 +346,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readDouble(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readDouble
+      currentDeltaBuffer.readDouble
     }
   }
 
@@ -353,7 +356,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextLongDecimal(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextLongDecimal()
+      currentDeltaBuffer.nextLongDecimal()
       cursor
     }
   }
@@ -363,7 +366,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readLongDecimal(columnBytes, precision, scale, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readLongDecimal(precision, scale)
+      currentDeltaBuffer.readLongDecimal(precision, scale)
     }
   }
 
@@ -373,7 +376,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextDecimal(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextDecimal()
+      currentDeltaBuffer.nextDecimal()
       cursor
     }
   }
@@ -383,7 +386,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readDecimal(columnBytes, precision, scale, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readDecimal(precision, scale)
+      currentDeltaBuffer.readDecimal(precision, scale)
     }
   }
 
@@ -393,7 +396,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextUTF8String(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextUTF8String()
+      currentDeltaBuffer.nextUTF8String()
       cursor
     }
   }
@@ -403,7 +406,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readUTF8String(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readUTF8String
+      currentDeltaBuffer.readUTF8String
     }
   }
 
@@ -413,7 +416,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextInterval(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextInterval()
+      currentDeltaBuffer.nextInterval()
       cursor
     }
   }
@@ -423,7 +426,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readInterval(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readInterval
+      currentDeltaBuffer.readInterval
     }
   }
 
@@ -433,7 +436,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextBinary(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextBinary()
+      currentDeltaBuffer.nextBinary()
       cursor
     }
   }
@@ -443,7 +446,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readBinary(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readBinary
+      currentDeltaBuffer.readBinary
     }
   }
 
@@ -453,7 +456,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextArray(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextArray()
+      currentDeltaBuffer.nextArray()
       cursor
     }
   }
@@ -463,7 +466,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readArray(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readArray
+      currentDeltaBuffer.readArray
     }
   }
 
@@ -473,7 +476,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextMap(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextMap()
+      currentDeltaBuffer.nextMap()
       cursor
     }
   }
@@ -483,7 +486,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readMap(columnBytes, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readMap
+      currentDeltaBuffer.readMap
     }
   }
 
@@ -493,7 +496,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
       decoder.nextStruct(columnBytes, cursor, mutated = 0)
     } else {
       // delete should never land here and should continue after mutated call
-      nextDeltaBuffer.nextStruct()
+      currentDeltaBuffer.nextStruct()
       cursor
     }
   }
@@ -503,7 +506,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (mutated == 0) {
       decoder.readStruct(columnBytes, numFields, cursor, mutated = 0)
     } else {
-      nextDeltaBuffer.readStruct(numFields)
+      currentDeltaBuffer.readStruct(numFields)
     }
   }
 }

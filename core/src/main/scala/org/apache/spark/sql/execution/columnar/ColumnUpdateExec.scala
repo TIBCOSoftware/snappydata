@@ -33,7 +33,7 @@ import org.apache.spark.sql.types.StructType
  * Generated code plan for updates into a column table.
  * This extends [[RowExec]] to generate the combined code for row buffer updates.
  */
-case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
+case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
     tableSchema: StructType, externalStore: ExternalStore, relation: Option[DestroyRelation],
     updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
@@ -41,6 +41,8 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     extends RowExec {
 
   assert(updateColumns.length == updateExpressions.length)
+
+  override def resolvedName: String = externalStore.tableName
 
   private lazy val schemaAttributes = tableSchema.toAttributes
   /**
@@ -83,7 +85,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishUpdate($batchIdTerm);
+         |  $finishUpdate(null); // force a finish
          |}
       """.stripMargin)
   }
@@ -97,7 +99,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     batchOrdinal = ctx.freshName("batchOrdinal")
     batchIdTerm = ctx.freshName("batchId")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
-    val partitionId = ctx.freshName("partitionId")
+    val bucketId = ctx.freshName("bucketId")
     finishUpdate = ctx.freshName("finishUpdate")
     val initializeEncoders = ctx.freshName("initializeEncoders")
 
@@ -106,7 +108,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
       classOf[StructType].getName)
     val deltaIndexes = ctx.addReferenceObj("deltaIndexes", updateIndexes, "int[]")
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    val tableName = ctx.addReferenceObj("columnTable", resolvedName, "java.lang.String")
+    val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
     updateMetric = if (onExecutor) null else metricTerm(ctx, "numUpdateColumnBatchRows")
 
     val numColumns = updateColumns.length
@@ -123,8 +125,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     ctx.addMutableState("int", batchOrdinal, "")
     ctx.addMutableState("UTF8String", batchIdTerm, "")
     ctx.addMutableState("UTF8String", lastColumnBatchId, "")
-    ctx.addMutableState("int", partitionId, "")
-    ctx.addPartitionInitializationStatement(s"$partitionId = partitionIndex;")
+    ctx.addMutableState("int", bucketId, "")
 
     ctx.INPUT_ROW = null
     ctx.currentVars = input
@@ -139,6 +140,8 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     assert(keyColumns.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
     // second column in keyColumns should be column batchId
     assert(keyColumns(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
+    // last column in keyColumns should be bucketId
+    assert(keyColumns(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
 
     val numKeys = keyColumns.length
     val positionTerm = updateInput(updateInput.length - numKeys).value
@@ -147,6 +150,7 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
       s"""
          |${evaluateVariables(updateInput)}
          |$batchIdTerm = ${updateInput(updateInput.length - numKeys + 1).value};
+         |$bucketId = ${updateInput(updateInput.length - numKeys + 2).value};
       """.stripMargin
     // row buffer needs to select the rowId for the ordinal
     val rowConsume = super.doConsume(ctx, updateInput, StructType(
@@ -168,6 +172,8 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
     val callEncoders = updateColumns.zipWithIndex.map { case (col, i) =>
       val function = ctx.freshName("encoderFunction")
       val ordinal = ctx.freshName("ordinal")
+      val isNull = ctx.freshName("isNull")
+      val field = ctx.freshName("field")
       val dataType = col.dataType
       val encoderTerm = s"$deltaEncoders[$i]"
       val cursorTerm = s"$cursors[$i]"
@@ -175,31 +181,37 @@ case class ColumnUpdateExec(child: SparkPlan, resolvedName: String,
       ctx.addNewFunction(function,
         s"""
            |private void $function(int $ordinal, int $positionTerm,
-           |    ${ctx.javaType(dataType)} ${ev.value}, boolean ${ev.isNull}) {
+           |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
            |  $encoderTerm.setUpdatePosition($positionTerm);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
-                cursorTerm, ev, ordinal)}
+                cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal, (int)$positionTerm, ${ev.value}, ${ev.isNull});"
+      s"$function($batchOrdinal, (int)$positionTerm, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(UTF8String $batchIdTerm) {
-         |  if ($batchIdTerm != $lastColumnBatchId && !$batchIdTerm.equals($lastColumnBatchId)) {
-         |    if ($lastColumnBatchId == null) return; // first call
+         |  if ($batchIdTerm != $lastColumnBatchId && ($batchIdTerm == null ||
+         |      !$batchIdTerm.equals($lastColumnBatchId))) {
+         |    if ($lastColumnBatchId == null) {
+         |      // first call
+         |      $lastColumnBatchId = $batchIdTerm;
+         |      return;
+         |    }
          |    // finish previous encoders, put into table and re-initialize
          |    final java.nio.ByteBuffer[] buffers = new java.nio.ByteBuffer[$numColumns];
          |    for (int $index = 0; $index < $numColumns; $index++) {
          |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index]);
          |    }
          |    // TODO: SW: delta stats row (can have full limits for those columns)
+         |    // for now put dummy bytes in delta stats row
          |    final $columnBatchClass columnBatch = $columnBatchClass.apply(
-         |        $batchOrdinal, buffers, new byte[0], $deltaIndexes);
+         |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch,
-         |        $partitionId, $lastColumnBatchId, -1);
+         |        $bucketId, $lastColumnBatchId, -1);
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();

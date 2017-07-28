@@ -19,7 +19,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.io.{DataInput, DataOutput}
 import java.nio.{ByteBuffer, ByteOrder}
-import java.sql.Blob
 import java.util.concurrent.locks.LockSupport
 
 import scala.collection.JavaConverters._
@@ -34,15 +33,11 @@ import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, 
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, HeapBufferAllocator, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
+import com.pivotal.gemfirexd.internal.engine.store.RegionKey
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
-import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
-import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLVarchar}
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLVarchar}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
-import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
-import io.snappydata.thrift.common.BufferedBlob
-import io.snappydata.thrift.internal.ClientBlob
 import org.slf4j.Logger
 
 import org.apache.spark.Logging
@@ -70,9 +65,9 @@ object ColumnFormatEntry extends Logging {
 
   val STATROW_COL_INDEX: Int = -1
 
-  val DELETE_MASK_COL_INDEX: Int = -2
+  val DELTA_STATROW_COL_INDEX: Int = -2
 
-  val DELTA_STATROW_COL_INDEX: Int = -3
+  val DELETE_MASK_COL_INDEX: Int = -3
 }
 
 /**
@@ -522,45 +517,4 @@ class ColumnFormatValue extends SerializedDiskBuffer
     s"ColumnValue[size=${buffer.remaining()} $buffer " +
         s"diskId=$diskId diskRegion=$diskRegion]"
   }
-}
-
-final class ColumnFormatEncoder extends RowEncoder {
-
-  override def toRow(entry: RegionEntry, value: AnyRef,
-      container: GemFireContainer): ExecRow = {
-    val batchKey = entry.getRawKey.asInstanceOf[ColumnFormatKey]
-    val batchValue = value.asInstanceOf[ColumnFormatValue]
-    // layout the same way as declared in ColumnFormatRelation
-    val row = new ValueRow(5)
-    row.setColumn(1, new SQLVarchar(batchKey.uuid))
-    row.setColumn(2, new SQLInteger(batchKey.partitionId))
-    row.setColumn(3, new SQLInteger(batchKey.columnIndex))
-    // set value reference which will be released after thrift write
-    row.setColumn(4, new SQLBlob(new ClientBlob(batchValue)))
-    row
-  }
-
-  override def fromRow(row: Array[DataValueDescriptor],
-      container: GemFireContainer): java.util.Map.Entry[RegionKey, AnyRef] = {
-    val batchKey = new ColumnFormatKey(uuid = row(0).getString,
-      partitionId = row(1).getInt, columnIndex = row(2).getInt)
-    // transfer buffer from BufferedBlob as is, or copy for others
-    val columnBuffer = row(3).getObject match {
-      case blob: BufferedBlob => blob.getAsLastChunk.chunk
-      case blob: Blob => ByteBuffer.wrap(blob.getBytes(1, blob.length().toInt))
-    }
-    columnBuffer.rewind()
-    // set the buffer into ColumnFormatValue or ColumnDelta
-    val batchValue = if (batchKey.columnIndex >= ColumnFormatEntry.STATROW_COL_INDEX) {
-      new ColumnFormatValue(columnBuffer)
-    } else {
-      new ColumnDelta(columnBuffer)
-    }
-    new java.util.AbstractMap.SimpleEntry[RegionKey, AnyRef](batchKey, batchValue)
-  }
-
-  override def fromRowToKey(key: Array[DataValueDescriptor],
-      container: GemFireContainer): RegionKey =
-    new ColumnFormatKey(uuid = key(0).getString,
-      partitionId = key(1).getInt, columnIndex = key(2).getInt)
 }

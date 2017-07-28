@@ -55,12 +55,14 @@ import org.apache.spark.{Partition, TaskContext}
  * Column Store implementation for GemFireXD.
  */
 class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionProperties,
-    var numPartitions: Int, var tableName: String, var schema: StructType)
+    var numPartitions: Int, private var _tableName: String, var schema: StructType)
     extends ExternalStore with KryoSerializable {
 
   self =>
   @transient
   protected lazy val rand = new Random
+
+  override final def tableName: String = _tableName
 
   override final def connProperties: ConnectionProperties = _connProperties
 
@@ -70,14 +72,14 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   override def write(kryo: Kryo, output: Output): Unit = {
     ConnectionPropertiesSerializer.write(kryo, output, _connProperties)
     output.writeInt(numPartitions)
-    output.writeString(tableName)
+    output.writeString(_tableName)
     StructTypeSerializer.write(kryo, output, schema)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
     _connProperties = ConnectionPropertiesSerializer.read(kryo, input)
     numPartitions = input.readInt()
-    tableName = input.readString()
+    _tableName = input.readString()
     schema = StructTypeSerializer.read(kryo, input, c = null)
   }
 
@@ -90,15 +92,26 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(tableName: String, buffer: ByteBuffer,
-      partitionId: Int, batchId: String): Unit = {
+      statsData: Array[Byte], partitionId: Int, batchId: String): Unit = {
+    val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+    val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable[ColumnFormatKey,
             ColumnFormatValue](tableName, true)
-        val key = new ColumnFormatKey(partitionId,
+        val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](2)
+        var key = new ColumnFormatKey(partitionId,
           ColumnFormatEntry.DELETE_MASK_COL_INDEX, batchId)
-        val value = new ColumnFormatValue(buffer)
-        region.put(key, value)
+        val value = new ColumnDeleteDelta(buffer)
+        keyValues.put(key, value)
+
+        // add the stats row
+        key = new ColumnFormatKey(partitionId,
+          ColumnFormatEntry.DELTA_STATROW_COL_INDEX, batchId)
+        val statsValue = new ColumnDelta(statsBuffer)
+        keyValues.put(key, statsValue)
+
+        region.putAll(keyValues)
 
       case _ =>
         // noinspection RedundantDefaultArgument
@@ -112,7 +125,16 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setInt(3, ColumnFormatEntry.DELETE_MASK_COL_INDEX)
             blob = new ClientBlob(buffer, true)
             stmt.setBlob(4, blob)
-            stmt.executeUpdate()
+            stmt.addBatch()
+
+            // add the stats row
+            stmt.setString(1, batchId)
+            stmt.setInt(2, partitionId)
+            stmt.setInt(3, ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
+            blob = new ClientBlob(statsBuffer, true)
+            stmt.setBlob(4, blob)
+
+            stmt.executeBatch()
             stmt.close()
           } finally {
             // free the blob
@@ -168,8 +190,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       val key = new ColumnFormatKey(partitionId, statRowIndex, uuid)
       val allocator = Misc.getGemFireCache.getBufferAllocator
       val statsBuffer = createStatsBuffer(batch.statsData, allocator)
-      // stats does not use a ColumnDelta rather a full put
-      val value = new ColumnFormatValue(statsBuffer)
+      val value = if (deltaUpdate) new ColumnDelta(statsBuffer)
+      else new ColumnFormatValue(statsBuffer)
       keyValues.put(key, value)
 
       // do a putAll of the key-value map

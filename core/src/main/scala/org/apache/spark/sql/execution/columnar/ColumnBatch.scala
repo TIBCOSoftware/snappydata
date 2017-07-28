@@ -151,6 +151,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 
   def getCurrentBatchId: String = currentKeyUUID
 
+  def getCurrentBucketId: Int = currentKeyPartitionId
+
   private def getColumnBuffer(columnIndex: Int, throwIfMissing: Boolean): ByteBuffer = {
     val key = new ColumnFormatKey(currentKeyPartitionId, columnIndex,
       currentKeyUUID)

@@ -61,10 +61,6 @@ abstract class BooleanBitSetDecoderBase
     ColumnEncoding.MAX_BITMASK
   }
 
-  override protected[sql] def realCursor(cursor: Long): Long = byteCursor
-
-  override protected[sql] def setRealCursor(cursor: Long): Unit = byteCursor = cursor
-
   override final def nextBoolean(columnBytes: AnyRef, mask: Long, mutated: Int): Long = {
     val currentBitMask = mask << 1
     if (currentBitMask != 0L) currentBitMask

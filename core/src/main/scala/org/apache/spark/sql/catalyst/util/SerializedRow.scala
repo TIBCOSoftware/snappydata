@@ -201,7 +201,8 @@ trait SerializedRowData extends SpecializedGetters
 
   final def isNullAt(ordinal: Int): Boolean = {
     if (indexIsValid(ordinal)) {
-      BitSet.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3))
+      BitSet.isSet(baseObject, baseOffset, ordinal + (skipBytes << 3),
+        bitSetWidthInBytes)
     } else throw indexInvalid(ordinal)
   }
 

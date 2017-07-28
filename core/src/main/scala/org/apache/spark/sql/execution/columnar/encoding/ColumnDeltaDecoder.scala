@@ -46,10 +46,8 @@ private[encoding] final class ColumnDeltaDecoder(realDecoder: ColumnDecoder)
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = {
-    val initialCursor = realDecoder.initializeCursor(columnBytes, cursor, field)
-    var offset = realDecoder.realCursor(initialCursor)
-    val hasOwnCursor = initialCursor != offset
     // read the positions
+    var offset = cursor
     val numPositions = ColumnEncoding.readInt(columnBytes, offset)
     offset += 4
 
@@ -62,13 +60,12 @@ private[encoding] final class ColumnDeltaDecoder(realDecoder: ColumnDecoder)
     positionCursor = offset
 
     // round to nearest word to get data start position
-    offset = ((positionEndCursor + 63) >> 6) << 6
-    if (hasOwnCursor) {
-      realDecoder.setRealCursor(offset)
-      deltaCursor = initialCursor
-    } else {
-      deltaCursor = offset
-    }
+    offset = ((positionEndCursor + 7) >> 3) << 3
+
+    // the actual cursor is tracked as a field while return value is the
+    // next update position
+    deltaCursor = realDecoder.initializeCursor(columnBytes, offset, field)
+
     nextPosition
   }
 

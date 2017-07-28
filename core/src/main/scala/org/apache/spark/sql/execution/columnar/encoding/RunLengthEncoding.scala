@@ -53,10 +53,6 @@ abstract class RunLengthDecoderBase
     0L
   }
 
-  override protected[sql] def realCursor(cursor: Long): Long = cursorPos
-
-  override protected[sql] def setRealCursor(cursor: Long): Unit = cursorPos = cursor
-
   override final def nextByte(columnBytes: AnyRef, countValue: Long,
       mutated: Int): Long = {
     val count = countValue.toInt

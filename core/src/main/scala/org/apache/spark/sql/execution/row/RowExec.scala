@@ -156,30 +156,21 @@ trait RowExec extends TableExec {
     val inputCode = evaluateVariables(input)
     val functionCalls = schema.indices.map { col =>
       val f = schema(col)
+      val isNull = ctx.freshName("isNull")
+      val field = ctx.freshName("field")
       val ev = input(col)
       val dataType = ctx.javaType(f.dataType)
       val columnSetterFunction = ctx.freshName("setColumnOfRow")
-      val columnSetterCode = CodeGeneration.getColumnSetterFragment(
-        col, f.dataType, connProps.dialect, ev, stmt, schemaFields, ctx)
-      if (ev.isNull.isEmpty || ev.isNull == "false") {
-        ctx.addNewFunction(columnSetterFunction,
-          s"""
-             |private void $columnSetterFunction(final $dataType ${ev.value})
-             |    throws java.sql.SQLException {
-             |  $columnSetterCode
-             |}
-      """.stripMargin)
-        s"$columnSetterFunction(${ev.value});"
-      } else {
-        ctx.addNewFunction(columnSetterFunction,
-          s"""
-             |private void $columnSetterFunction(final boolean ${ev.isNull},
-             |    final $dataType ${ev.value}) throws java.sql.SQLException {
-             |  $columnSetterCode
-             |}
-      """.stripMargin)
-        s"$columnSetterFunction(${ev.isNull}, ${ev.value});"
-      }
+      val columnSetterCode = CodeGeneration.getColumnSetterFragment(col, f.dataType,
+        connProps.dialect, ev.copy(isNull = isNull, value = field), stmt, schemaFields, ctx)
+      ctx.addNewFunction(columnSetterFunction,
+        s"""
+           |private void $columnSetterFunction(final boolean $isNull,
+           |    final $dataType $field) throws java.sql.SQLException {
+           |  $columnSetterCode
+           |}
+        """.stripMargin)
+      s"$columnSetterFunction(${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     s"""
        |$inputCode

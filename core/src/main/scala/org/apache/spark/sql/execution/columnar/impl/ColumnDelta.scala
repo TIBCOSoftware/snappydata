@@ -70,19 +70,24 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
     } else {
       // merge with existing delta
       val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
-      val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex)
-      val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
-      val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
-          .fetchHiveMetaData(false).schema.asInstanceOf[StructType]
-      val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
-      val existingBuffer = oldColumnValue.getBufferRetain
-      try {
-        new ColumnFormatValue(encoder.merge(existingBuffer, columnBuffer,
-          columnIndex < ColumnFormatEntry.DELTA_STATROW_COL_INDEX, schema(tableColumnIndex)))
-      } finally {
-        oldColumnValue.release()
-        // release own buffer too and delta should be unusable now
-        release()
+      if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
+        // TODO: SW: merge stats
+        oldValue
+      } else {
+        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex)
+        val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
+        val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
+            .fetchHiveMetaData(false).schema.asInstanceOf[StructType]
+        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
+        val existingBuffer = oldColumnValue.getBufferRetain
+        try {
+          new ColumnFormatValue(encoder.merge(existingBuffer, columnBuffer,
+            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)))
+        } finally {
+          oldColumnValue.release()
+          // release own buffer too and delta should be unusable now
+          release()
+        }
       }
     }
   }
@@ -132,7 +137,7 @@ object ColumnDelta {
   val mutableKeyNames: Seq[String] = Seq(
     mutableKeyNamePrefix + "ROW_ORDINAL",
     mutableKeyNamePrefix + "BATCH_ID",
-    mutableKeyNamePrefix + "PARTITION_ORDINAL"
+    mutableKeyNamePrefix + "BUCKET_ORDINAL"
   )
   val mutableKeyFields: Seq[StructField] = Seq(
     StructField(mutableKeyNames.head, LongType, nullable = false),
@@ -142,15 +147,15 @@ object ColumnDelta {
   def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
   def deltaHierarchyDepth(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
-    (-deltaColumnIndex + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) % MAX_DEPTH
+    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) % MAX_DEPTH
   } else -1
 
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
-    (-deltaColumnIndex + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1) / MAX_DEPTH
+    (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
   } else deltaColumnIndex
 
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
-    -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELTA_STATROW_COL_INDEX - 1 - hierarchyDepth
+    -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
 }
 
 /** Simple delta that merges the deleted positions */

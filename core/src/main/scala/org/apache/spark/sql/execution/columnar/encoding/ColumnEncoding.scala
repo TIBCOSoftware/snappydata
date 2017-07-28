@@ -79,22 +79,6 @@ abstract class ColumnDecoder extends ColumnEncoding {
   protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long
 
-  /**
-   * Get the cursor position for the real encoded data. Some encodings return
-   * a dummy value as cursor and track their own cursor to underlying data,
-   * so this method should return that.
-   */
-  protected[sql] def realCursor(cursor: Long): Long = cursor
-
-  /**
-   * Update the cursor to the underlying data for encodings that track their own
-   * cursors (e.g. boolean bitset, run length) as returned by [[realCursor()]].
-   * It is assumed that the dummy value returned by [[initializeCursor()]] would
-   * not be effected by this call and the one returned initially will still be valid.
-   */
-  protected[sql] def setRealCursor(cursor: Long): Unit =
-    throw new UnsupportedOperationException(s"setRealCursor for $toString")
-
   final def initialize(buffer: ByteBuffer, field: StructField): Long = {
     val allocator = ColumnEncoding.getAllocator(buffer)
     initialize(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
@@ -1206,8 +1190,9 @@ trait NullableDecoder extends ColumnDecoder {
     }
   }
 
-  override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
-    BitSet.isSet(columnBytes, nullOffset, position)
+  override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = {
+    BitSet.isSet(columnBytes, nullOffset, position, numNullBytes)
+  }
 
   /**
    * Get the number of null values till given 0-based position (exclusive)

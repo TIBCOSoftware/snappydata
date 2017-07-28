@@ -444,7 +444,7 @@ private[sql] final case class ColumnTableScan(
     // check for "key" columns for update/delete and all three must be present
     var columnBatchIdTerm: String = null
     var ordinalIdTerm: String = null
-    var partitionIdTerm: String = null
+    var bucketIdTerm: String = null
     val columnsOutput = if (output.exists(_.name == ColumnDelta.mutableKeyNames.head)) {
       val out = output.filter(!_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))
       if (out.length + 3 != output.length) {
@@ -457,9 +457,7 @@ private[sql] final case class ColumnTableScan(
       }
       columnBatchIdTerm = ctx.freshName("columnBatchId")
       ordinalIdTerm = ctx.freshName("ordinalId")
-      partitionIdTerm = ctx.freshName("partitionId")
-      ctx.addMutableState("int", partitionIdTerm, "")
-      ctx.addPartitionInitializationStatement(s"$partitionIdTerm = partitionIndex;")
+      bucketIdTerm = ctx.freshName("partitionId")
       out
     } else output
     var columnsInput = columnsOutput.zipWithIndex.map { case (attr, index) =>
@@ -687,12 +685,19 @@ private[sql] final case class ColumnTableScan(
     val (assignBatchId, assignOrdinalId) = if (columnBatchIdTerm ne null) {
       columnsInput ++= Seq(ExprCode("", "false", ordinalIdTerm),
         ExprCode("", s"$columnBatchIdTerm == null", columnBatchIdTerm),
-        ExprCode("", "false", partitionIdTerm))
+        ExprCode("", "false", bucketIdTerm))
       (
         s"""
-           |final UTF8String $columnBatchIdTerm = $inputIsRow ? null
-           |    : UTF8String.fromString($colInput.getCurrentBatchId());
            |final boolean $inputIsRow = this.$inputIsRow;
+           |final UTF8String $columnBatchIdTerm;
+           |final int $bucketIdTerm;
+           |if ($inputIsRow) {
+           |  $columnBatchIdTerm = null;
+           |  $bucketIdTerm = -1; // not required for row buffer
+           |} else {
+           |  $columnBatchIdTerm = UTF8String.fromString($colInput.getCurrentBatchId());
+           |  $bucketIdTerm = $colInput.getCurrentBucketId();
+           |}
         """.stripMargin,
         s"""
            |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(${output.length - 2})
