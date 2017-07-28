@@ -102,12 +102,12 @@ class ConcurrentQueryRoutingDUnitSecureTest(val s: String)
     println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
         s"rowTableRouting-1 thread done")
     // scalastyle:on println
-    colThread1.join(5 * 60 * 1000)
+    colThread2.join(5 * 60 * 1000)
     // scalastyle:off println
     println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
         s" columnTableRouting-2 thread done")
     // scalastyle:on println
-    rowThread1.join(5 * 60 * 1000)
+    rowThread2.join(5 * 60 * 1000)
     // scalastyle:off println
     println(s"ConcurrentQueryRoutingDUnitSecureTest.testConcurrency:" +
         s"rowTableRouting-2 thread done")
