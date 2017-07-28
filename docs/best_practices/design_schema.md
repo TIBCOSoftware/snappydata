@@ -17,7 +17,7 @@ The general strategy for designing a SnappyData database is to identify the tabl
 
 1. Read [Identify Entity Groups and Partitioning Keys](#entity_groups) and [Replicate Dimension Tables](optimizing_query_latency.md#partition-replicate) to understand the basic rules for defining partitioned or replicated tables.
 
-2. Evaluate your data access patterns to define those entity groups that are candidates for partitioning. Focus your efforts on commonly-joined entities. Colocating commonly joined tables will improve performance of join queries by avoiding shuffle of data when the join is on partitioning keys.
+2. Evaluate your data access patterns to define those entity groups that are candidates for partitioning. Focus your efforts on commonly-joined entities. Colocating commonly joined tables will improve the performance of join queries by avoiding shuffle of data when the join is on partitioning keys.
 
 3. Identify all of the tables in the entity groups.
 

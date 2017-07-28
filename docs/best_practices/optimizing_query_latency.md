@@ -67,7 +67,7 @@ For more information on BUCKETS, refer to [BUCKETS](capacity_planning.md#buckets
 
 <a id="dimension"></a>
 **Criteria for Column Partitioning**</br>
-SnappyData partition is mainly for distributed and collocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query are executed concurrently.</br>
+SnappyData partition is mainly for distributed and collocated joins. It is recommended to use a relevant dimension for partitioning so that all partitions are active and the query is executed concurrently.</br>
 If only a single partition is active and is used largely by queries (especially concurrent queries) it means a significant bottleneck where only a single partition is active all the time, while others are idle. This serializes execution into a single thread handling that partition. Therefore, it is not recommended to use DATE/TIMESTAMP as partitioning.
 
 <a id="redundancy"></a>
@@ -77,7 +77,7 @@ REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md) 
 
 A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.
 
-For an example of the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide.md#tables-in-snappydata).
+For an example on the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide.md#tables-in-snappydata).
 
 <a id="overflow"></a>
 ## Overflow Configuration

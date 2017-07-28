@@ -101,9 +101,9 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-You can check SnappyData UI by opening `http://<leadHostname>:5050` in browser, where `<leadHostname>` is the host name of your lead node. Use [Snappy SQL shell](howto.md#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+You can check the SnappyData UI by opening `http://<leadHostname>:5050` in your browser, where `<leadHostname>` is the host name of your lead node. Use [Snappy SQL shell](howto.md#howto-snappyShell) to connect to the cluster and perform various SQL operations.
 
-**Shutdown Cluster**: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command:
+**Shutdown Cluster**: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command:
 
 ```
 $ sbin/snappy-stop-all.sh
@@ -131,7 +131,7 @@ To start the cluster on multiple hosts:
 A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
 
 **Implementing a Job**: 
-A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create table, load data, execute queries using the SnappySession. <br/>
+A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
 Any of the Spark APIs can be invoked by a SnappyJob.
 
 ```
@@ -423,7 +423,7 @@ For example:
 <a id="howto-column"></a>
 ## How to Create Column Tables and Run Queries
 
-Column tables organize and manage data in columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).
+Column tables organize and manage data in a columnar form such that modern day CPUs can traverse and run computations like a sum or an average fast (as the values are available in contiguous memory).
 
 Refer to the [Row and column tables](programming_guide.md#tables-in-snappydata) documentation for the complete list of attributes for column tables.
 
@@ -603,12 +603,12 @@ import snc.implicits._
 // Project and transform data from df and load it in table.
 dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y").write.mode(SaveMode.Overwrite).saveAsTable("police_incidents")
 
-//Here X and Y are latitude and longitude columns in raw dataframe
+//Here X and Y are latitude and longitude columns in raw data frame
 ```
 
 ### Connecting to SQL Database and Importing Data using JDBC 
 
-The example below demonstrates how connect to any SQL database using JDBC:
+The example below demonstrates how to connect to any SQL database using JDBC:
 
 !!! Note:
 	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
@@ -661,7 +661,7 @@ The example below demonstrates how connect to any SQL database using JDBC:
 The example below demonstrates how you can load data from a NoSQL store:
 
 !!!Note:
-	Before you begin, you must install the corresponding Spark-casssandra connector jar. To do so, copy the spark-cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
+	Before you begin, you must install the corresponding Spark-Casssandra connector jar. To do so, copy the Spark-Cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
     
 ```
 
@@ -864,7 +864,7 @@ You can use domain object to load data into SnappyData tables and select the dat
 
 **Code Example: Insert Person object into the column table**
 
-The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala). After creating SnappySession, the Person objects is inserted using Spark API and loads into a SnappyData table.
+The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala). After creating SnappySession, the Person objects are inserted using Spark API and loads into a SnappyData table.
 
 **Get a SnappySession**:
 
@@ -931,7 +931,7 @@ The code snippet below inserts Person objects into a column table. The source co
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the [documentation](programming_guide.md#stream-processing-using-sql).
 
 **Code Example**: 
-Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below shows how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
+Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below show how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
 
 **First get a SnappySession and a SnappyStreamingContext**: 
 Here SnappyStreamingContext is initialized in a batch duration of one second.
@@ -1237,7 +1237,7 @@ To download and install the Visual C++ Redistributable for Visual Studio 2015:
 
 2. Depending on your Windows installation, download the required version of the SnappyData ODBC Driver.
 
-3. Select **Run** to start the installation, and follow the steps to complete the installation.
+3. Select **Run** to start the installation and follow the steps to complete the installation.
 
 <a id="howto-odbc-step2"></a>
 ### Step 2: Install SnappyData ODBC Driver
@@ -1276,7 +1276,7 @@ Refer to the documentation for detailed information on [Setting Up SnappyData OD
 <a id="howto-external-client"></a>
 ## How to Connect to the Cluster from External Clients
 
-You can also connect to the SnappyData cluster from a different network as client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
+You can also connect to the SnappyData cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
 
 When [starting the locator and server](configuring_cluster/configuring_cluster.md) set the following properties in the *conf/locators* and *conf/servers* files:
 
@@ -1304,7 +1304,7 @@ When [starting the locator and server](configuring_cluster/configuring_cluster.m
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-	|[Version 0.6.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) </br> [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) and [future realeases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
+	|[Version 0.6.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.6.1)|[Version 0.6](https://zeppelin.apache.org/download.html) |[Release 0.7](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.7) </br> [Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) and [future releases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
     |[Version 0.7.1](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.1) |[Version 0.7](https://zeppelin.apache.org/download.html) |[Release 0.8](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.8) [and future releases](https://github.com/SnappyDataInc/snappydata/releases/tag/v0.9)|
 
 2. [Configure the SnappyData Cluster](configuring_cluster/configuring_cluster.md).
@@ -1384,7 +1384,7 @@ When [starting the locator and server](configuring_cluster/configuring_cluster.m
 
 ### Known Issue
 
-If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
 ### More Information
 Refer to these sections for information:

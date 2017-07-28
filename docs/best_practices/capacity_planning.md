@@ -25,13 +25,13 @@ The following topics are covered in this section:
 ### How are low latency vs Analytic jobs handled?
 Unlike Spark, SnappyData is able to distinguish requests that are very cheap (low latency) vs requests that require a lot of computational resources (high latency) and best done by a resource scheduler that can balance the needs of many contending users/threads. 
 
-For instance, when a SQL client executes a ‘fetch by primary key’ query there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and response directly sent to the requesting client (probably within a few milliseconds). In the current version of the product, all query requests that filter on a primary key, a set of keys or can directly filter using an index will be executed without routing to the Snappy scheduler. Only Row tables can have primary keys or indexes. All DML (updates, inserts, deletes) executed from a SQL client (JDBC, ODBC) are directly routed to the responsible data node (partition) and do not involve the scheduler. 
+For instance, when a SQL client executes a ‘fetch by primary key’ query there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and response directly sent to the requesting client (probably within a few milliseconds). In the current version of the product, all query requests that filter on a primary key, a set of keys or can directly filter using an index will be executed without routing to the SnappyData scheduler. Only Row tables can have primary keys or indexes. All DML (updates, inserts, deletes) executed from a SQL client (JDBC, ODBC) are directly routed to the responsible data node (partition) and do not involve the scheduler. 
 
 When the above conditions are not met, the request is routed to the ‘Lead’ node where the Spark plan is generated and ‘jobs’ are scheduled for execution. The scheduler uses a FAIR scheduling algorithm for higher concurrency. i.e. all concurrent jobs will be executed in a round robin manner. 
 
-Here is something that is important to understand - Each Job is made up of one or more stages and the planning phase computes the number of  parallel tasks for the stage. Tasks from scheduled Jobs are then allocated to the logical cores available (see below for how it is computed) until all cores are allocated. A round-robin algorithm picks one task from Job1, task from Job2 and so on. If more cores are available, second task from Job1 is picked and the cycle continues. But, there are circumstances a single Job can completely consume all cores. 
+Here is something that is important to understand - Each Job is made up of one or more stages and the planning phase computes the number of  parallel tasks for the stage. Tasks from scheduled Jobs are then allocated to the logical cores available (see below for how it is computed) until all cores are allocated. A round-robin algorithm picks a task from Job1, a task from Job2 and so on. If more cores are available, the second task from Job1 is picked and the cycle continues. But, there are circumstances a single Job can completely consume all cores. 
 
-For instance, when all cores where available, if a large loading Job gets scheduled it will receive all available cores. And, it is possible each of the tasks is long running. During this time, if other concurrent jobs show up, none of the executing tasks will be preempted. 
+For instance, when all cores are available if a large loading job gets scheduled it receives all available cores. And, it is possible that each of the task is long running. During this time, if other concurrent jobs show up, none of the executing tasks is pre-empted. 
 (todo: graphic to depict this … links to Spark scheduling docs)
 
 Note: This above scheduling logic is applicable only when queries are fully managed by SnappyData cluster. When running your application using the smart connector, each task running in the spark cluster will directly access the store partitions. 
@@ -74,11 +74,11 @@ It is recommended to use 2 X number of cores on a machine. If more than one serv
 `spark.executor.cores` is used to override the number of cores per server.
 
 For example, for a cluster with 2 servers running on two different machines with  4 CPU cores each, a maximum number of tasks that can run concurrently is 16. </br> 
-If a table has 17 partitions (buckets, for row or column tables), a scan query on this table creates 17 tasks. This means, 16 tasks runs concurrently and the last task will run when one of these 16 tasks has finished execution.
+If a table has 17 partitions (buckets, for row or column tables), a scan query on this table creates 17 tasks. This means, 16 tasks run concurrently and the last task will run when one of these 16 tasks has finished execution.
 
 SnappyData uses an optimization method which clubs multiple partitions on a single machine to form a single partition when there are fewer cores available. This reduces the overhead of scheduling partitions. 
 
-In SnappyData, multiple queries can be executed concurrently, if they are submitted by different threads or different jobs. For concurrent queries, SnappyData uses fair scheduling to manage the available resources such that all the queries get fair distribution of resources. 
+In SnappyData, multiple queries can be executed concurrently, if they are submitted by different threads or different jobs. For concurrent queries, SnappyData uses fair scheduling to manage the available resources such that all the queries get a fair distribution of resources. 
  
 For example: In the image below, 6 cores are available on 3 systems, and 2 jobs have 4 tasks each. Because of fair scheduling, both jobs get 3 cores and hence three tasks per job execute concurrently.
 
@@ -101,7 +101,7 @@ It is recommended to use off-heap storage for column tables. Row tables are alwa
 The memory pool (off-heap and on-heap) available in SnappyData's cluster is divided into two parts – Execution and Storage memory pool. The storage memory pool as the name indicates is for the table storage. 
 
 The amount of memory that is available for storage is 50% of the total memory but it can grow to 90% (or `eviction-heap-percentage` store property for heap memory if set) if the execution memory is unused.
-This can be altered by specifying the `spark.memory.storageFraction` property. But, it is recommend to not change this setting. 
+This can be altered by specifying the `spark.memory.storageFraction` property. But, it is recommended to not change this setting. 
 
 A certain fraction of heap memory is reserved for JVM objects outside of SnappyData storage and eviction. If the `critical-heap-percentage` store property is set then SnappyData uses memory only until that limit is reached and the remaining memory is reserved. If no critical-heap-percentage has been specified then it defaults to 90%. There is no reserved memory for off-heap.
 
@@ -131,10 +131,10 @@ However, the redundant copies double the memory requirements. If there are no re
 <a id="buckets"></a>
 ### Buckets
 
-Bucket is the unit of partitioning for SnappyData tables. The data is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, the buckets are moved around for rebalancing. 
+A bucket is the unit of partitioning for SnappyData tables. The data is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, the buckets are moved around for rebalancing. 
 
 The number of buckets should be set according to the table size. By default, there are 113 buckets for a table. 
-If there are more buckets in a table than required, it means there is fewer data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. 
+If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. 
 Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently.
 Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.
 
@@ -175,7 +175,7 @@ ec2-user          soft    sigpending  524288
 
 
 **OS Cache Size**</br> 
-When there is lot of disk activity especially during table joins and during eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
+When there is a lot of disk activity especially during table joins and during an eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
 The following are the typical configuration to be done on the machines that are running SnappyData processes. 
 
 ```
@@ -186,7 +186,7 @@ sudo sysctl -w vm.dirty_writeback_centisecs=300
 ```
 
 **Swap File** </br> 
-Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in process going down.</br>
+Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
 It is recommended to set swap space on your system using the following commands.
 
 ```
@@ -199,7 +199,7 @@ sudo swapon /var/swapfile.1
 <a id="table-memory"></a>
 ## Table Memory Requirements
 
-SnappyData column tables encodes data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (i.e. off-heap is enabled), the entire column table is stored in off-heap memory. 
+SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (i.e. off-heap is enabled), the entire column table is stored in off-heap memory. 
 
 SnappyData row tables memory requirements have to be calculated by taking into account row overheads. Row tables have different amounts of heap memory overhead per table and index entry, which depends on whether you persist table data or configure tables for overflow to disk.
 

@@ -92,23 +92,27 @@ The Dashboard offers the following capabilities and benefits:
 ## SQL Page
 ![](../Images/query_analysis_sql.png)
 
-* Colocated/Replicated Tables: When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.
+* **Colocated**: When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions. 
 
-* Per node execution timing: Displays the time required for the execution of each node.
+* **Whole-Stage Code Generation**: A whole stage code generation node complies a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.
 
-* Column Details: Move the mouse over a component to view its details. 
+* **Per node execution timing**: Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged, 
 
-* Filter: Displays the number of rows that are filtered for each node.
+* **Pool Name**: Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command ‘set snappydata.scheduler.pool=lowlatency’. 
 
-* Joins: If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.
+* **Query Node Details**: Move the mouse over a component to view its details.
+
+* **Filter**: Displays the number of rows that are filtered for each node. 
+
+* **Joins**: If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.
 
 
 ## Jobs Page
 ![](../Images/query_analysis_job.png)
 
-* Status: Displays the status of the job. 
+* **Status**: Displays the status of the job. 
 
-* Click on the Stage to view its details. The table displays the time taken for completion of each stage. 
+* **Stages**: Click on the Stage to view its details. The table displays the time taken for completion of each stage. 
 
 
 ## Stages Page
@@ -118,10 +122,10 @@ The Dashboard offers the following capabilities and benefits:
 
 * You can view if any tasks has taken a long time to complete. This may occur in case of uneven data distribution. 
 
-* Scheduler Delay indicates the waiting period for the task.
+* Scheduler Delay indicates the waiting period for the task. Delays can  be caused if there are too many concurrent jobs.
 
 * Shuffle reads and writes: Shuffles are written to disk and take lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high performance SSD drives for temporary storage (spark.local.dir) to improve shuffle times.  
 
 * Number of parallel tasks: Due to concurrency, multiple queries may take cores and a particular query may take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](/best_practices/capacity_planning.md).
 
-* GC time: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables) and avoid HashJoin and use SortMergeJoin. 
+* GC time: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables).
