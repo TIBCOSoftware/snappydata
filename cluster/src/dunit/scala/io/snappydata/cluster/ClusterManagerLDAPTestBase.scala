@@ -25,14 +25,12 @@ import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 
 /**
  * Base class for start and stop of LDAP Server
- *
- * @author vivek
  */
 object ClusterManagerLDAPTestBase{
   val securityProperties: Properties = new Properties()
 }
 
-abstract class ClusterManagerLDAPTestBase(s: String, adminUser: String)
+abstract class ClusterManagerLDAPTestBase(s: String, val adminUser: String = "gemfire10")
     extends ClusterManagerTestBase(s) with Serializable {
 
   override def beforeClass(): Unit = {
@@ -43,12 +41,15 @@ abstract class ClusterManagerLDAPTestBase(s: String, adminUser: String)
   }
 
   override def afterClass(): Unit = {
-    super.afterClass()
-    val ldapServer = LdapTestServer.getInstance()
-    if (ldapServer.isServerStarted) {
-      ldapServer.stopService()
+    try {
+      super.afterClass()
+    } finally {
+      val ldapServer = LdapTestServer.getInstance()
+      if (ldapServer.isServerStarted) {
+        ldapServer.stopService()
+      }
+      ClusterManagerLDAPTestBase.securityProperties.clear()
     }
-    ClusterManagerLDAPTestBase.securityProperties.clear()
   }
 
   override def setUp(): Unit = {

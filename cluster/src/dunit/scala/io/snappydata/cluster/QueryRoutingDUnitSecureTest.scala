@@ -24,20 +24,158 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-object QueryRoutingDUnitSecureTest{
-  val adminUser: String = "gemfire10"
-}
-
 class QueryRoutingDUnitSecureTest(val s: String)
-    extends ClusterManagerLDAPTestBase(s,
-      QueryRoutingDUnitSecureTest.adminUser) with Logging {
+    extends ClusterManagerLDAPTestBase(s) with Logging {
 
-  override def setUp(): Unit = {
-    super.setUp()
+  def testColumnTableRouting(): Unit = {
+    val jdbcUser1 = "gemfire1"
+    val jdbcUser2 = "gemfire2"
+    val tableName = "order_line_col"
+
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"QueryRoutingDUnitSecureTest.testColumnTableRouting:" +
+        s" network server started at $serverHostPort")
+    // scalastyle:on println
+
+    QueryRoutingDUnitSecureTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
   }
 
-  override def tearDown2(): Unit = {
-    super.tearDown2()
+  def testRowTableRouting(): Unit = {
+    val jdbcUser1 = "gemfire3"
+    val jdbcUser2 = "gemfire4"
+    val tableName = "order_line_row"
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"QueryRoutingDUnitSecureTest.testRowTableRouting:" +
+        s" network server started at $serverHostPort")
+    // scalastyle:on println
+
+    QueryRoutingDUnitSecureTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
+  }
+}
+
+object QueryRoutingDUnitSecureTest {
+  def columnTableRouting(jdbcUser1: String, jdbcUser2: String, tableName: String,
+      serverHostPort: Int): Unit = {
+    try {
+      createColumnTable("testColumnTableRouting-1", serverHostPort,
+        jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42507") ||
+          x.getSQLState.equals("42508") => // ignore
+      case t: Throwable => throw t
+    }
+    createColumnTable("testColumnTableRouting-2", serverHostPort,
+      tableName, jdbcUser2, jdbcUser2)
+
+    try {
+      batchInsert("testColumnTableRouting-1", 2000, 200,
+        serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: BatchUpdateException => // ignore
+      case t: Throwable => throw t
+    }
+    batchInsert("testColumnTableRouting-2", 2000, 200,
+      serverHostPort, tableName, jdbcUser2, jdbcUser2)
+
+    try {
+      singleInsert("testColumnTableRouting-1", 2000, serverHostPort,
+        jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
+      case t: Throwable => throw t
+    }
+    singleInsert("testColumnTableRouting-2", 2000, serverHostPort,
+      tableName, jdbcUser2, jdbcUser2)
+
+    // (1 to 5).foreach(d => query())
+    try {
+      query("testColumnTableRouting-1", serverHostPort,
+        jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 4000, 400)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
+      case t: Throwable => throw t
+    }
+    query("testColumnTableRouting-2", serverHostPort,
+      tableName, jdbcUser2, jdbcUser2, 4000, 400)
+
+    try {
+      dropTable("testColumnTableRouting-1", serverHostPort,
+        jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42507") => // ignore
+      case t: Throwable => throw t
+    }
+    dropTable("testColumnTableRouting-2", serverHostPort,
+      tableName, jdbcUser2, jdbcUser2)
+  }
+
+  def rowTableRouting(jdbcUser1: String, jdbcUser2: String, tableName: String,
+      serverHostPort: Int): Unit = {
+    try {
+      createRowTable("testRowTableRouting-1", serverHostPort,
+        jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42507") ||
+          x.getSQLState.equals("42508") => // ignore
+      case t: Throwable => throw t
+    }
+    createRowTable("testRowTableRouting-2",
+      serverHostPort, tableName, jdbcUser1, jdbcUser1)
+
+    try {
+      batchInsert("testRowTableRouting-1", 200, 20,
+        serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: BatchUpdateException => // ignore
+      case t: Throwable => throw t
+    }
+    batchInsert("testRowTableRouting-2", 200, 20,
+      serverHostPort, tableName, jdbcUser1, jdbcUser1)
+
+    try {
+      singleInsert("testRowTableRouting-1", 200,
+        serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
+      case t: Throwable => throw t
+    }
+    singleInsert("testRowTableRouting-2", 200,
+      serverHostPort, tableName, jdbcUser1, jdbcUser1)
+
+    // (1 to 5).foreach(d => query())
+    try {
+      query("testRowTableRouting-1", serverHostPort,
+        jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2, 400, 40)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
+      case t: Throwable => throw t
+    }
+    query("testRowTableRouting-2", serverHostPort, tableName,
+      jdbcUser1, jdbcUser1, 400, 40)
+
+    try {
+      dropTable("testRowTableRouting-1", serverHostPort,
+        jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
+      assert(false) // fail
+    } catch {
+      case x: SQLException if x.getSQLState.equals("42502") => // ignore
+      case t: Throwable => throw t
+    }
+    dropTable("testRowTableRouting-2", serverHostPort,
+      tableName, jdbcUser1, jdbcUser1)
   }
 
   def netConnection(netPort: Int, user: String, pass: String): Connection = {
@@ -47,228 +185,29 @@ class QueryRoutingDUnitSecureTest(val s: String)
     DriverManager.getConnection(url, user, pass)
   }
 
-  def insertRows1(numRows: Int, serverHostPort: Int, tableName: String,
+  def createColumnTable(testName: String, serverHostPort: Int, tableName: String,
       user: String, pass: String): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
     // scalastyle:off println
-    println(s"insertRows1: Connected to $serverHostPort")
+    println(s"createColumnTable-$testName: Connected to $serverHostPort")
     // scalastyle:on println
 
     val stmt1 = conn.createStatement()
     try {
-      var i = 1
-      (1 to numRows).foreach(_ => {
-        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
-        i += 1
-        if (i % 1000 == 0) {
-          stmt1.executeBatch()
-          i = 0
-        }
-      })
-      stmt1.executeBatch()
-
-      // scalastyle:off println
-      println(s"insertRows1: committed $numRows rows")
-      // scalastyle:on println
+      stmt1.execute(s"create table $tableName (ol_int_id  integer," +
+          s" ol_int2_id  integer, ol_str_id STRING) using column " +
+          "options( partition_by 'ol_int_id, ol_int2_id', buckets '5', COLUMN_BATCH_SIZE '200')")
     } finally {
       stmt1.close()
       conn.close()
     }
   }
 
-  def insertRows2(numRows: Int, serverHostPort: Int, tableName: String,
+  def createRowTable(testName: String, serverHostPort: Int, tableName: String,
       user: String, pass: String): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
     // scalastyle:off println
-    println(s"insertRows2: Connected to $serverHostPort")
-    // scalastyle:on println
-
-    val stmt1 = conn.createStatement()
-    try {
-      (1 to numRows).foreach(i => {
-        stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
-      })
-
-      // scalastyle:off println
-      println(s"insertRows2: committed $numRows rows")
-      // scalastyle:on println
-    } finally {
-      stmt1.close()
-      conn.close()
-    }
-  }
-
-  def insertRows3(numRows: Int, serverHostPort: Int, tableName: String,
-      user: String, pass: String): Unit = {
-    val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"insertRows3: Connected to $serverHostPort")
-    // scalastyle:on println
-
-    val stmt1 = conn.createStatement()
-    try {
-      var i = 1
-      (1 to numRows).foreach(_ => {
-        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
-        i += 1
-        if (i % 10 == 0) {
-          stmt1.executeBatch()
-          i = 0
-        }
-      })
-      stmt1.executeBatch()
-
-      // scalastyle:off println
-      println(s"insertRows3: committed $numRows rows")
-      // scalastyle:on println
-    } finally {
-      stmt1.close()
-      conn.close()
-    }
-  }
-
-  def insertRows4(numRows: Int, serverHostPort: Int, tableName: String,
-      user: String, pass: String): Unit = {
-    val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"insertRows4: Connected to $serverHostPort")
-    // scalastyle:on println
-
-    val stmt1 = conn.createStatement()
-    try {
-      (1 to numRows).foreach(i => {
-        stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
-      })
-
-      // scalastyle:off println
-      println(s"insertRows4: committed $numRows rows")
-      // scalastyle:on println
-    } finally {
-      stmt1.close()
-      conn.close()
-    }
-  }
-
-  def verifyQuery1(qryTest: String, stmt_rs: ResultSet): Unit = {
-    val builder = StringBuilder.newBuilder
-
-    var index = 0
-    while (stmt_rs.next()) {
-      index += 1
-      val stmt_i = stmt_rs.getInt(1)
-      val stmt_j = stmt_rs.getInt(2)
-      val stmt_s = stmt_rs.getString(3)
-      if (index % 100 == 0) {
-        builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
-      }
-    }
-    builder.append(s"$qryTest Stmt: Total number of rows = $index").append("\n")
-    // scalastyle:off println
-    println(builder.toString())
-    // scalastyle:on println
-    assert(index == 4000)
-  }
-
-  def verifyQuery2(qryTest: String, stmt_rs: ResultSet): Unit = {
-    val builder = StringBuilder.newBuilder
-
-    var index = 0
-    while (stmt_rs.next()) {
-      index += 1
-      val stmt_i = stmt_rs.getInt(1)
-      val stmt_j = stmt_rs.getInt(2)
-      val stmt_s = stmt_rs.getString(3)
-      if (index % 10 == 0) {
-        builder.append(s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
-      }
-    }
-    builder.append(s"$qryTest Stmt: Total number of rows = $index").append("\n")
-    // scalastyle:off println
-    println(builder.toString())
-    // scalastyle:on println
-    assert(index == 400)
-  }
-
-  def query1(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
-    val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"query1: Connected to $serverHostPort")
-    // scalastyle:off println
-
-    val stmt1 = conn.createStatement()
-    try {
-      val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < 5000000 " +
-          s""
-      val rs1 = stmt1.executeQuery(qry1)
-      verifyQuery1(qry1, rs1)
-      rs1.close()
-      // Thread.sleep(1000000)
-    } finally {
-      stmt1.close()
-      conn.close()
-    }
-  }
-
-  def query2(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
-    val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"query2: Connected to $serverHostPort")
-    // scalastyle:off println
-
-    val stmt1 = conn.createStatement()
-    try {
-      val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
-          s" from $tableName " +
-          s" where ol_int_id < 5000000 " +
-          s""
-      val rs1 = stmt1.executeQuery(qry1)
-      verifyQuery2(qry1, rs1)
-      rs1.close()
-      // Thread.sleep(1000000)
-    } finally {
-      stmt1.close()
-      conn.close()
-    }
-  }
-
-  def createTable1(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
-    val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"createTable1: Connected to $serverHostPort")
-    // scalastyle:on println
-
-    val stmt1 = conn.createStatement()
-    try {
-    stmt1.execute(s"create table $tableName (ol_int_id  integer," +
-        s" ol_int2_id  integer, ol_str_id STRING) using column " +
-        "options( partition_by 'ol_int_id, ol_int2_id', buckets '5', COLUMN_BATCH_SIZE '200')")
-    } finally {
-      stmt1.close()
-      conn.close()
-    }
-  }
-
-  def dropTable(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
-    val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"dropTable1: Connected to $serverHostPort")
-    // scalastyle:on println
-
-    val stmt1 = conn.createStatement()
-    try {
-      stmt1.execute(s"drop table $tableName")
-    } finally {
-      stmt1.close()
-      conn.close()
-    }
-  }
-
-  def createTable2(serverHostPort: Int, tableName: String, user: String, pass: String): Unit = {
-    val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"createTable2: Connected to $serverHostPort")
+    println(s"createRowTable-$testName: Connected to $serverHostPort")
     // scalastyle:on println
 
     val stmt1 = conn.createStatement()
@@ -282,121 +221,116 @@ class QueryRoutingDUnitSecureTest(val s: String)
     }
   }
 
-  def testColumnTableRouting(): Unit = {
-    val jdbcUser1 = "gemfire1"
-    val jdbcUser2 = "gemfire2"
-    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+  def dropTable(testName: String, serverHostPort: Int, tableName: String,
+      user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
     // scalastyle:off println
-    println(s"network server started at $serverHostPort")
+    println(s"dropTable-$testName: Connected to $serverHostPort")
     // scalastyle:on println
 
-    val tableName = "order_line_col"
-
+    val stmt1 = conn.createStatement()
     try {
-      createTable1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42507") ||
-          x.getSQLState.equals("42508") => // ignore
-      case t: Throwable => throw t
+      stmt1.execute(s"drop table $tableName")
+    } finally {
+      stmt1.close()
+      conn.close()
     }
-    createTable1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
-
-    try {
-      insertRows1(2000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
-      assert(false) // fail
-    } catch {
-      case x: BatchUpdateException => // ignore
-      case t: Throwable => throw t
-    }
-    insertRows1(2000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
-
-    try {
-      insertRows2(2000, serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42500") => // ignore
-      case t: Throwable => throw t
-    }
-    insertRows2(2000, serverHostPort, tableName, jdbcUser2, jdbcUser2)
-
-    // (1 to 5).foreach(d => query())
-    try {
-      query1(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42502") => // ignore
-      case t: Throwable => throw t
-    }
-    query1(serverHostPort, tableName, jdbcUser2, jdbcUser2)
-
-    try {
-      dropTable(serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42507") => // ignore
-      case t: Throwable => throw t
-    }
-    dropTable(serverHostPort, tableName, jdbcUser2, jdbcUser2)
   }
 
-  def testRowTableRouting(): Unit = {
-    val jdbcUser3 = "gemfire3"
-    val jdbcUser4 = "gemfire4"
-    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+  def batchInsert(testName: String, numRows: Int, batchSize: Int, serverHostPort: Int,
+      tableName: String, user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
     // scalastyle:off println
-    println(s"network server started at $serverHostPort")
+    println(s"batchInsert-$testName: Connected to $serverHostPort")
     // scalastyle:on println
 
-    val tableName = "order_line_row"
-
+    val stmt1 = conn.createStatement()
     try {
-      createTable2(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42507") ||
-          x.getSQLState.equals("42508") => // ignore
-      case t: Throwable => throw t
-    }
-    createTable2(serverHostPort, tableName, jdbcUser3, jdbcUser3)
+      var i = 1
+      (1 to numRows).foreach(_ => {
+        stmt1.addBatch(s"insert into $tableName values($i, $i, '$i')")
+        i += 1
+        if (i % batchSize == 0) {
+          stmt1.executeBatch()
+          i = 0
+        }
+      })
+      stmt1.executeBatch()
 
-    try {
-      insertRows3(200, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
-      assert(false) // fail
-    } catch {
-      case x: BatchUpdateException => // ignore
-      case t: Throwable => throw t
+      // scalastyle:off println
+      println(s"batchInsert-$testName: committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt1.close()
+      conn.close()
     }
-    insertRows3(200, serverHostPort, tableName, jdbcUser3, jdbcUser3)
+  }
 
-    try {
-      insertRows4(200, serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42500") => // ignore
-      case t: Throwable => throw t
-    }
-    insertRows4(200, serverHostPort, tableName, jdbcUser3, jdbcUser3)
+  def singleInsert(testName: String, numRows: Int, serverHostPort: Int, tableName: String,
+      user: String, pass: String): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"singleInsert-$testName: Connected to $serverHostPort")
+    // scalastyle:on println
 
-    // (1 to 5).foreach(d => query())
+    val stmt1 = conn.createStatement()
     try {
-      query2(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42502") => // ignore
-      case t: Throwable => throw t
-    }
-    query2(serverHostPort, tableName, jdbcUser3, jdbcUser3)
+      (1 to numRows).foreach(i => {
+        stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
+      })
 
-    try {
-      dropTable(serverHostPort, jdbcUser3 + "." + tableName, jdbcUser4, jdbcUser4)
-      assert(false) // fail
-    } catch {
-      case x: SQLException if x.getSQLState.equals("42502") => // ignore
-      case t: Throwable => throw t
+      // scalastyle:off println
+      println(s"singleInsert-$testName: committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt1.close()
+      conn.close()
     }
-    dropTable(serverHostPort, tableName, jdbcUser3, jdbcUser3)
+  }
+
+  def verifyQuery(testName: String, qryTest: String, stmt_rs: ResultSet, numRows: Int,
+      debugNumRows: Int): Unit = {
+    val builder = StringBuilder.newBuilder
+
+    var index = 0
+    while (stmt_rs.next()) {
+      index += 1
+      val stmt_i = stmt_rs.getInt(1)
+      val stmt_j = stmt_rs.getInt(2)
+      val stmt_s = stmt_rs.getString(3)
+      if (index % debugNumRows == 0) {
+        builder.append(s"verifyQuery-$testName: " +
+            s"$qryTest Stmt: row($index) $stmt_i $stmt_j $stmt_s ").append("\n")
+      }
+    }
+    builder.append(s"verifyQuery-$testName: " +
+        s"$qryTest Stmt: Total number of rows = $index").append("\n")
+    // scalastyle:off println
+    println(builder.toString())
+    // scalastyle:on println
+    assert(index == numRows)
+  }
+
+  def query(testName: String, serverHostPort: Int, tableName: String,
+      user: String, pass: String, numRows: Int, debugNumRows: Int): Unit = {
+    val conn = netConnection(serverHostPort, user, pass)
+    // scalastyle:off println
+    println(s"query-$testName: Connected to $serverHostPort")
+    // scalastyle:off println
+
+    val stmt1 = conn.createStatement()
+    try {
+      val qry1 = s"select ol_int_id, ol_int2_id, ol_str_id " +
+          s" from $tableName " +
+          s" where ol_int_id < 5000000 " +
+          s""
+      val rs1 = stmt1.executeQuery(qry1)
+      verifyQuery(testName, qry1, rs1, numRows, debugNumRows)
+      rs1.close()
+      // Thread.sleep(1000000)
+    } finally {
+      stmt1.close()
+      conn.close()
+    }
   }
 }
