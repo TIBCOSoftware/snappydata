@@ -342,8 +342,7 @@ object SplitSnappyClusterDUnitTest
       prop: Properties,
       locatorClientPort: Int): Unit = {
 
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
     // create a udf in split mode
     val udfText = "public class IntegerUDF2 implements org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
@@ -382,8 +381,7 @@ object SplitSnappyClusterDUnitTest
   def verifyUDFInSplitMode(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
     // function that was dropped in embedded mode
     try {
@@ -512,8 +510,7 @@ object SplitSnappyClusterDUnitTest
   def checkCollocatedJoins(locatorPort: Int, prop: Properties,
        table1: String, table2: String,
       locatorClientPort: Int): Unit = {
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
     val testJoins = new ClusterSnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
@@ -525,8 +522,8 @@ object SplitSnappyClusterDUnitTest
    * Returns the SnappyContext for external(compute) Spark cluster connected to
    * SnappyData cluster using the locator property
    */
-  override def getSnappyContextForConnector(locatorPort: Int,
-      locatorClientPort: Int): SnappyContext = {
+  override def getSnappyContextForConnector(locatorClientPort: Int, properties: Properties = null)
+  : SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
     //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
     val connectionURL = s"localhost:$locatorClientPort"
@@ -567,8 +564,7 @@ object SplitSnappyClusterDUnitTest
 
     val tblBatchSize200 = "tblBatchSizeSmall_split"
 
-    val snc = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc = getSnappyContextForConnector(locatorClientPort)
     snc.sql(s"CREATE TABLE $tblBatchSize200(Key1 INT ,Value STRING) " +
         "USING column " +
         "options " +
@@ -596,8 +592,7 @@ object SplitSnappyClusterDUnitTest
   def checkStatsForSplitMode(locatorPort: Int, prop: Properties,
        buckets: String,
       locatorClientPort: Int): Unit = {
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
     snc.sql("drop table if exists snappyTable")
     snc.sql(s"create table snappyTable (id bigint not null, sym varchar(10) not null) using " +
         s"column options(redundancy '1', buckets '$buckets')")
@@ -627,8 +622,7 @@ object SplitSnappyClusterDUnitTest
   def splitModeCreateTableUsingCTAS(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
-    val snc = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc = getSnappyContextForConnector(locatorClientPort)
     val customerFile: String = getClass.getResource("/customer.csv").getPath
 
     snc.sql(s"CREATE EXTERNAL TABLE CUSTOMER_STAGING ( " +
@@ -689,8 +683,7 @@ object SplitSnappyClusterDUnitTest
       locatorClientPort: Int,
       tableType: String): Unit = {
     if (connectorSnc == null || connectorSnc.sparkContext.isStopped) {
-      connectorSnc = getSnappyContextForConnector(locatorPort,
-        locatorClientPort)
+      connectorSnc = getSnappyContextForConnector(locatorClientPort)
     }
     // row table
     connectorSnc.sql(s"CREATE TABLE T1(C1 INT, C2 INT, C3 INT) " +
@@ -737,8 +730,7 @@ object SplitSnappyClusterDUnitTest
       locatorClientPort: Int): Unit = {
 
     val props = Map.empty[String, String]
-    val snc = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc = getSnappyContextForConnector(locatorClientPort)
     val rowTable = "rowTable"
     val colTable = "colTable"
 
@@ -765,8 +757,7 @@ object SplitSnappyClusterDUnitTest
       tempRowTableOptions: String = "",
       tempColTableOptions: String = ""): Unit = {
 
-    val snc = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc = getSnappyContextForConnector(locatorClientPort)
     val rowTable = "rowTable"
     val colTable = "colTable"
 

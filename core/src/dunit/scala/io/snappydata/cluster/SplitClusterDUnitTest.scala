@@ -169,8 +169,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   private val locatorPort = AvailablePortHelper.getRandomAvailableTCPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
-  private def getConnection(netPort: Int) = DriverManager.getConnection(
-    s"jdbc:${Constant.JDBC_URL_PREFIX}localhost:$netPort")
+  def getConnection(netPort: Int, props: Properties = new Properties()) = DriverManager
+      .getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort", props)
 
   override def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
   }
@@ -265,14 +265,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   def createTableUsingJDBC(tableName: String, tableType: String,
       conn: Connection, stmt: Statement,
-      propsMap: Map[String, String] = props): Unit = {
-    val data = ArrayBuffer(Data(1, "2", Decimal("3.2")),
-      Data(7, "8", Decimal("9.8")), Data(9, "2", Decimal("3.9")),
-      Data(4, "2", Decimal("2.4")), Data(5, "6", Decimal("7.6")))
-    for (i <- 1 to 1000) {
-      data += Data(Random.nextInt(), Integer.toString(Random.nextInt()),
-        Decimal(Random.nextInt(100).toString + '.' + Random.nextInt(100)))
-    }
+      propsMap: Map[String, String] = props, addData: Boolean = true): Unit = {
 
     stmt.execute(s"drop table if exists $tableName")
 
@@ -282,8 +275,19 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
           col1 Int, col2 String, col3 Decimal
         ) USING $tableType${getPropertiesAsSQLString(propsMap)}""")
 
-    val pstmt = conn.prepareStatement(
-      s"insert into $tableName values (?, ?, ?)")
+    if (addData) populateTable(tableName, conn)
+  }
+
+  def populateTable(tableName: String, conn: Connection): Unit = {
+    val data = ArrayBuffer(Data(1, "2", Decimal("3.2")),
+      Data(7, "8", Decimal("9.8")), Data(9, "2", Decimal("3.9")),
+      Data(4, "2", Decimal("2.4")), Data(5, "6", Decimal("7.6")))
+    for (i <- 1 to 1000) {
+      data += Data(Random.nextInt(), Integer.toString(Random.nextInt()),
+        Decimal(Random.nextInt(100).toString + '.' + Random.nextInt(100)))
+    }
+
+    val pstmt = conn.prepareStatement(s"insert into $tableName values (?, ?, ?)")
     for (d <- data) {
       pstmt.setInt(1, d.col1)
       pstmt.setString(2, d.col2)
