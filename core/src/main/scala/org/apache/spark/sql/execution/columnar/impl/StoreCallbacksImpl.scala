@@ -68,6 +68,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       // via a proper connection
       var conn: EmbedConnection = null
       var contextSet: Boolean = false
+      var txStateSet: Boolean = false
       try {
         var lcc: LanguageConnectionContext = Misc.getLanguageConnectionContext
         if (lcc == null) {
@@ -85,8 +86,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
         try {
           val state: TXStateInterface = TXManagerImpl.getCurrentTXState
-          if (state != null) {
+          if (tc.getCurrentTXStateProxy == null && state != null) {
             tc.setActiveTXState(state, true)
+            txStateSet = true
           }
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
@@ -118,7 +120,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             batchID, bucketID, dependents)
         } finally {
           lcc.setExecuteLocally(null, null, false, null)
-          tc.clearActiveTXState(false, true)
+          if(txStateSet)
+            tc.clearActiveTXState(false, true)
         }
       } catch {
         case e: Throwable => throw e
