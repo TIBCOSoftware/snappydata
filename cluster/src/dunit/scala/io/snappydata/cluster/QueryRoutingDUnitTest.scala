@@ -285,13 +285,13 @@ class QueryRoutingDUnitTest(val s: String)
     // verify that all tables are empty
     rs = conn1.createStatement().executeQuery(s"select count(*) from APP.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST1.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
 
     // drop all tables
     conn1.createStatement().executeUpdate(s" drop table $columnTable")
