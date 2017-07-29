@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util
 import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
 
