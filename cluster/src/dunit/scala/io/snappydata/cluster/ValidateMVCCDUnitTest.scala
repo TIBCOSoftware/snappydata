@@ -18,8 +18,9 @@
 package io.snappydata.cluster
 
 import java.sql.DriverManager
+import java.util
 
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{TXStateProxy, GemFireCacheImpl}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -140,6 +141,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     assert(cnt == 10, s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
+    vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -167,9 +169,10 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     val cnt = snc.sql(s"select * from $tableName").count()
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
-    assert(cnt == 100, s"Expected row count is 10 while actual row count is $cnt")
+    assert(cnt == 100, s"Expected row count is 100 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
+    vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -200,6 +203,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     assert(cnt == 100, s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
+    vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -239,6 +243,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     }
 
     vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
+    vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -307,6 +312,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
       throw errorInThread
     }
     vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
+    vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -329,7 +335,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "performMixOperationsOnRowTable",
       netPort1)
-
+    vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -352,7 +358,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
 
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "performBatchInsert",
       netPort1)
-
+    vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
@@ -405,7 +411,6 @@ object ValidateMVCCDUnitTest {
     println("APP.TESTTABLE Region size : " + cache.getRegion("/APP/TESTTABLE").size())
     println(s"APP.$cbName  Region size : " + Misc.getRegionForTable(cbName, true).size())
   }
-
 
   def validateResults(netPort: Int): Unit = {
     val ctmp = Misc.getGemFireCacheNoThrow

@@ -22,6 +22,7 @@ import java.util.Properties
 import scala.language.postfixOps
 import scala.sys.process._
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata._
@@ -199,6 +200,9 @@ abstract class ClusterManagerTestBase(s: String)
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
   }
+
+
+
 }
 
 /**
@@ -313,5 +317,18 @@ object ClusterManagerTestBase extends Logging {
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
+  }
+
+  def validateNoActiveSnapshotTX(): Unit = {
+    val cache = Misc.getGemFireCache
+    val txMgr = cache.getCacheTransactionManager
+    if (txMgr != null) {
+      val itr = txMgr.getHostedTransactionsInProgress.iterator()
+      while (itr.hasNext) {
+        val tx = itr.next()
+        if (tx.isSnapshot)
+          assert(tx.isClosed, s"${tx} is not closed. ")
+      }
+    }
   }
 }
