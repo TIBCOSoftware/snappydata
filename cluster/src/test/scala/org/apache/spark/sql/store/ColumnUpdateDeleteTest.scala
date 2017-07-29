@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 
 import io.snappydata.Property
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.SnappySession
 
 /**
@@ -26,31 +27,61 @@ import org.apache.spark.sql.SnappySession
  */
 class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
+  override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
+    val conf = new SparkConf().
+        setIfMissing("spark.master", "local[1]").
+        setAppName(getClass.getName)
+    if (addOn != null) {
+      addOn(conf)
+    }
+    conf
+  }
+
   test("basic update") {
     val session = this.snc.snappySession
-    session.conf.set(Property.ColumnBatchSize.name, "10k")
+    // session.conf.set(Property.ColumnBatchSize.name, "10k")
+    session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
 
-    val numElements = 10000
+    val numElements = 300
 
-    session.sql("create table updateTable (id int, addr string) using column")
-    session.sql("create table updateTable2 (id int, addr string) using column")
+    session.sql("create table updateTable (id int, addr string) " +
+        "using column options(buckets '1')")
+    session.sql("create table updateTable2 (id int, addr string) " +
+        "using column options(buckets '1')")
 
-    session.range(numElements).selectExpr("id", "concat('addr', cast(id as string))")
-        .write.insertInto("updateTable")
-    session.range(numElements).selectExpr("id + 1", "concat('addr', cast(id as string))")
-        .write.insertInto("updateTable2")
+    session.range(numElements).selectExpr("id",
+      "concat('addr', cast(id as string))").write.insertInto("updateTable")
+    session.range(numElements).selectExpr(s"id + $numElements",
+      "concat('addr', cast(id as string))").write.insertInto("updateTable2")
 
-    // session.sql("update updateTable set id = id + 1")
+    assert(session.table("updateTable").count() === numElements)
+    assert(session.table("updateTable2").count() === numElements)
 
-    try {
-      assert(session.table("updateTable").count() === numElements)
-      assert(session.table("updateTable2").count() === numElements)
+    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 123")
+    session.table("updateTable").show()
 
-      assert(session.sql("select * from updateTable EXCEPT select * from updateTable2")
-          .collect().length === 0)
-    } finally {
-      Thread.sleep(1000000)
-    }
+    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 123")
+    session.table("updateTable").show()
+
+    assert(session.table("updateTable").count() === numElements)
+    assert(session.table("updateTable2").count() === numElements)
+
+    var res = session.sql("select * from updateTable where id = 123").collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 123)
+    assert(res(0).getString(1) === "addr123")
+
+    res = session.sql("select * from updateTable where id = cast(substr(addr, 5) as int)")
+        .collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 123)
+    assert(res(0).getString(1) === "addr123")
+
+    res = session.sql("select * from updateTable EXCEPT select * from updateTable2")
+        .collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 123)
+    assert(res(0).getString(1) === "addr123")
   }
 
   test("test update for all types") {

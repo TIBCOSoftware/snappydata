@@ -71,6 +71,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
         "number of updates to column batches"))
   }
 
+  override def simpleString: String =
+    s"${super.simpleString} update: columns=$updateColumns expressions=$updateExpressions"
+
   @transient private var batchOrdinal: String = _
   @transient private var batchIdTerm: String = _
   @transient private var finishUpdate: String = _
@@ -79,7 +82,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
     sql.append("UPDATE ").append(resolvedName).append(" SET ")
-    JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name), escapeQuotes = true)
+    JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
+      escapeQuotes = true, separator = ", ")
     sql.append(s" WHERE ${StoreUtils.SHADOW_COLUMN_NAME}=?")
 
     super.doProduce(ctx, sql.toString(), () =>

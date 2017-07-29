@@ -325,7 +325,7 @@ trait ColumnEncoder extends ColumnEncoding {
   protected final def isAllocatorFinal: Boolean =
     allocator.getClass eq storageAllocator.getClass
 
-  protected final def setAllocator(allocator: BufferAllocator): Unit = {
+  protected[sql] final def setAllocator(allocator: BufferAllocator): Unit = {
     if (this.allocator ne allocator) {
       this.allocator = allocator
       this.finalAllocator = null

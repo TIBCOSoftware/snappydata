@@ -910,6 +910,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // check if any join key is null or min/max for integral keys
         $initFilterCode {
           $mapLookupCode
+        } else {
+          $entryVar = $className.EMPTY;
         }"""
     }
 

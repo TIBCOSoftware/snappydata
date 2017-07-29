@@ -91,6 +91,8 @@ private[sql] final case class ColumnTableScan(
         "number of output rows from row buffer"),
       "columnBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
         "column batches seen"),
+      "mutatedColumnsSeen" -> SQLMetrics.createMetric(sparkContext,
+        "mutated columns seen in batches"),
       "columnBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
         "column batches skipped by the predicate")) ++ (
         if (otherRDDs.isEmpty) Map.empty
@@ -319,6 +321,7 @@ private[sql] final case class ColumnTableScan(
     val rsIterClass = classOf[ResultSetTraversal].getName
     val unsafeHolder = if (otherRDDs.isEmpty && !isForSampleReservoirAsRegion) null
     else ctx.freshName("unsafeHolder")
+    val mutatedColumnsSeen = metricTerm(ctx, "mutatedColumnsSeen")
     val unsafeHolderClass = classOf[UnsafeRowHolder].getName
     val stratumRowClass = classOf[StratumInternalRow].getName
 
@@ -460,8 +463,10 @@ private[sql] final case class ColumnTableScan(
       bucketIdTerm = ctx.freshName("partitionId")
       out
     } else output
+    var deletedCheck = ""
     var columnsInput = columnsOutput.zipWithIndex.map { case (attr, index) =>
       val decoder = ctx.freshName("decoder")
+      val mutatedDecoder = s"mutated_$decoder"
       val cursor = s"${decoder}Cursor"
       val buffer = ctx.freshName("buffer")
       val cursorVar = s"${buffer}Cursor"
@@ -475,6 +480,8 @@ private[sql] final case class ColumnTableScan(
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
       val bufferPosition = if (isEmbedded) baseIndex + 1 else index + 1
       val rsPosition = bufferPosition
+      val incrementMutatedColumnCount = if (mutatedColumnsSeen eq null) ""
+      else s"if ($decoder != $mutatedDecoder) $mutatedColumnsSeen.${metricAdd("1")};\n"
 
       ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
 
@@ -507,8 +514,9 @@ private[sql] final case class ColumnTableScan(
            |  $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
            |      $planSchema.apply($index));
            |  // check for mutated column
-           |  $decoder = $colInput.getMutatedColumnDecoderIfRequired($decoder,
-           |      $planSchema.apply($index), ${bufferPosition - 1}, ${index != 0});
+           |  $decoderClass $mutatedDecoder = $colInput.getMutatedColumnDecoderIfRequired(
+           |      $decoder, $planSchema.apply($index), ${bufferPosition - 1}, ${index != 0});
+           |  $incrementMutatedColumnCount$decoder = $mutatedDecoder;
            |  // initialize the decoder and store the starting cursor position
            |  $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
            |}
@@ -545,10 +553,11 @@ private[sql] final case class ColumnTableScan(
       val isNullVar = if (attr.nullable) ctx.freshName("isNullInt") else null
       val mutatedVar = ctx.freshName("mutated")
 
+      if (index == 0) deletedCheck = s"if ($mutatedVar == -1) continue;"
       if (!isWideSchema) {
         moveNextCode.append(genCodeColumnNext(ctx, decoderVar, bufferVar,
           cursorVar, batchOrdinal, attr.dataType, isNullVar, mutatedVar,
-          index == 0, isWideSchema = false)).append('\n')
+          isWideSchema = false)).append('\n')
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoderVar, bufferVar,
           cursorVar, attr, isNullVar, mutatedVar, weightVarName, wideTable = false)
         bufferInitCode.append(bufferInit)
@@ -562,7 +571,7 @@ private[sql] final case class ColumnTableScan(
         }
         val producedCode = genCodeColumnNext(ctx, decoder, bufferVar,
           cursor, batchOrdinal, attr.dataType, isNullVar, mutatedVar,
-          index == 0, isWideSchema = true)
+          isWideSchema = true)
         moveNextMultCode.append(producedCode)
 
         val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoder, bufferVar,
@@ -729,6 +738,7 @@ private[sql] final case class ColumnTableScan(
        |         $batchOrdinal++) {
        |      $assignOrdinalId
        |      $moveNextCodeStr
+       |      $deletedCheck
        |      $consumeCode
        |      if (shouldStop()) {
        |        $beforeStop
@@ -766,7 +776,7 @@ private[sql] final case class ColumnTableScan(
   private def genCodeColumnNext(ctx: CodegenContext, decoder: String,
       buffer: String, cursorVar: String, batchOrdinal: String,
       dataType: DataType, isNullVar: String , mutatedVar: String,
-      isFirstColumn: Boolean, isWideSchema: Boolean): String = {
+      isWideSchema: Boolean): String = {
     val sqlType = Utils.getSQLDataType(dataType)
     val jt = ctx.javaType(sqlType)
     val moveNext = sqlType match {
@@ -793,16 +803,13 @@ private[sql] final case class ColumnTableScan(
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
-    // check for deleted row only for first column
-    val deletedCheck =
-      if (isFirstColumn) s"\nif ($mutatedVar == -1) continue; // deleted" else ""
     if (isNullVar != null) {
       if (isWideSchema) {
         ctx.addMutableState("int", mutatedVar, "")
         ctx.addMutableState("int", isNullVar, "")
         val nullCode =
           s"""
-             |$mutatedVar = $decoder.mutated($batchOrdinal);$deletedCheck
+             |$mutatedVar = $decoder.mutated($batchOrdinal);
              |$isNullVar = $decoder.isNull($buffer, $batchOrdinal, $mutatedVar);
           """.stripMargin
         if (moveNext.isEmpty) nullCode
@@ -810,7 +817,7 @@ private[sql] final case class ColumnTableScan(
       } else {
         val nullCode =
           s"""
-             |final int $mutatedVar = $decoder.mutated($batchOrdinal);$deletedCheck
+             |final int $mutatedVar = $decoder.mutated($batchOrdinal);
              |final int $isNullVar = $decoder.isNull($buffer, $batchOrdinal, $mutatedVar);
           """.stripMargin
         if (moveNext.isEmpty) nullCode
@@ -818,7 +825,7 @@ private[sql] final case class ColumnTableScan(
       }
     } else {
       s"""
-         |final int $mutatedVar = $decoder.mutated($batchOrdinal);$deletedCheck
+         |final int $mutatedVar = $decoder.mutated($batchOrdinal);
          |$moveNext""".stripMargin
     }
   }

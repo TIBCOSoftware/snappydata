@@ -884,9 +884,9 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
-    UPDATE ~ tableIdentifier ~ SET ~ ((identifier + ('.' ~ ws)) ~ '=' ~ ws ~
+    UPDATE ~ tableIdentifier ~ SET ~ (((identifier + ('.' ~ ws)) ~ '=' ~ ws ~
         expression ~> ((cols: Seq[String], e: Expression) =>
-      UnresolvedAttribute(cols) -> e)). + ~ (WHERE ~ expression).? ~>
+      UnresolvedAttribute(cols) -> e)) + commaSep) ~ (WHERE ~ expression).? ~>
         ((tableName: TableIdentifier, updateExprs: Seq[(UnresolvedAttribute,
             Expression)], whereExpr: Any) => {
           val base = UnresolvedRelation(tableName)

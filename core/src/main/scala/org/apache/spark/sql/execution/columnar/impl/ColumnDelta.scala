@@ -81,7 +81,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue]
         val existingBuffer = oldColumnValue.getBufferRetain
         try {
-          new ColumnFormatValue(encoder.merge(existingBuffer, columnBuffer,
+          new ColumnFormatValue(encoder.merge(columnBuffer, existingBuffer,
             columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)))
         } finally {
           oldColumnValue.release()

@@ -41,7 +41,8 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
     sql.append("UPDATE ").append(resolvedName).append(" SET ")
-    JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name), escapeQuotes = true)
+    JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
+      escapeQuotes = true, separator = ", ")
     sql.append(" WHERE ")
     JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.map(_.name), escapeQuotes = true)
     super.doProduce(ctx, sql.toString())

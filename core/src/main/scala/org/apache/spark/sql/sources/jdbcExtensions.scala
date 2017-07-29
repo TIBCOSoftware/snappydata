@@ -317,7 +317,7 @@ object JdbcExtendedUtils extends Logging {
    * Returns the SQL for creating the WHERE clause for a set of columns.
    */
   def fillColumnsClause(sql: StringBuilder, fields: Seq[String],
-      escapeQuotes: Boolean = false): Unit = {
+      escapeQuotes: Boolean = false, separator: String = " AND "): Unit = {
     var fieldsLeft = fields.length
     fields.foreach { field =>
       if (escapeQuotes) {
@@ -326,7 +326,7 @@ object JdbcExtendedUtils extends Logging {
         sql.append('"').append(field).append('"')
       }
       sql.append("=?")
-      if (fieldsLeft > 1) sql.append(" AND ")
+      if (fieldsLeft > 1) sql.append(separator)
       fieldsLeft -= 1
     }
   }

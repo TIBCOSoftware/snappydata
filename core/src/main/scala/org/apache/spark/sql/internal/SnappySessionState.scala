@@ -214,7 +214,7 @@ class SnappySessionState(snappySession: SnappySession)
       analyzer: Analyzer) extends Rule[LogicalPlan] {
 
     private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
-        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan) = {
+        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
         case LogicalRelation(mutable: MutableRelation, _, _) =>
@@ -239,11 +239,10 @@ class SnappySessionState(snappySession: SnappySession)
             analysis.withPosition(sourcePlan) {
               newChild.resolveChildren(
                 name.split('.'), analyzer.resolver).getOrElse(
-                throw new AnalysisException(s"Could not resolve key column $name")
-              )
+                throw new AnalysisException(s"Could not resolve key column $name"))
             }
           }
-          (keyAttrs, newChild)
+          (keyAttrs, newChild, sourcePlan)
         case _ => throw new AnalysisException(
           s"Could not find any scan from the table '$tableName' to be updated in $plan")
       }
@@ -253,14 +252,37 @@ class SnappySessionState(snappySession: SnappySession)
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
 
-      case u@Update(table, child, keyColumns, _, _) if keyColumns.isEmpty =>
+      case u@Update(table, child, keyColumns, updateCols, updateExprs)
+        if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
-        val (keyAttrs, newChild) = getKeyAttributes(table, child, u)
-        u.copy(keyColumns = keyAttrs.map(_.toAttribute), child = newChild)
+        val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)
+        // resolve the columns being updated and cast the expressions if required
+        val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (col, expr) =>
+          val attr = analysis.withPosition(relation) {
+            newChild.resolveChildren(
+              col.name.split('.'), analyzer.resolver).getOrElse(
+              throw new AnalysisException(s"Could not resolve update column ${col.name}"))
+          }
+          val newExpr = if (attr.dataType.sameType(expr.dataType)) {
+            expr
+          } else {
+            // avoid unnecessary copy+cast when inserting DECIMAL types
+            // into column table
+            expr.dataType match {
+              case _: DecimalType
+                if attr.dataType.isInstanceOf[DecimalType] => expr
+              case _ => Alias(Cast(expr, attr.dataType), attr.name)()
+            }
+          }
+          (attr, newExpr)
+        }.unzip
+        // cast the update expressions if required
+        u.copy(child = newChild, keyColumns = keyAttrs.map(_.toAttribute),
+          updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
 
-      case d@Delete(table, child, keyColumns) if keyColumns.isEmpty =>
+      case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
         // add and project only the key columns
-        val (keyAttrs, newChild) = getKeyAttributes(table, child, d)
+        val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d)
         d.copy(child = Project(keyAttrs, newChild),
           keyColumns = keyAttrs.map(_.toAttribute))
     }
