@@ -79,7 +79,7 @@ object QueryRoutingDUnitSecurityTest {
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
-      case x: SQLException if x.getSQLState.equals("42500") => // ignore
+      // case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
     batchInsert("testColumnTableRouting-2", 200, 100,
@@ -140,7 +140,7 @@ object QueryRoutingDUnitSecurityTest {
       assert(false) // fail
     } catch {
       case x: BatchUpdateException => // ignore
-      case x: SQLException if x.getSQLState.equals("42500") => // ignore
+      // case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
     batchInsert("testRowTableRouting-2", 20, 20,
