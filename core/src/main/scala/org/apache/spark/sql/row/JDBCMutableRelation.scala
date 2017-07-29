@@ -18,7 +18,6 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import com.pivotal.gemfirexd.Attribute
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.rdd.RDD

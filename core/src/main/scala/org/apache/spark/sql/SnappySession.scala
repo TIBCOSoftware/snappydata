@@ -33,7 +33,6 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, functions => snappydataFunctions}
@@ -69,6 +68,7 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext}
 
+
 class SnappySession(@transient private val sc: SparkContext,
     @transient private val existingSharedState: Option[SnappySharedState])
     extends SparkSession(sc) {
@@ -78,6 +78,7 @@ class SnappySession(@transient private val sc: SparkContext,
   def this(sc: SparkContext) {
     this(sc, None)
   }
+
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -369,6 +370,7 @@ class SnappySession(@transient private val sc: SparkContext,
     SnappySession.clearSessionCache(id)
   }
 
+
   def clear(): Unit = synchronized {
     clearContext()
     clearQueryData()
@@ -512,6 +514,7 @@ class SnappySession(@transient private val sc: SparkContext,
     Dataset.ofRows(self, logicalPlan)
   }
 
+
   /**
    * Create a stratified sample table.
    *
@@ -551,6 +554,7 @@ class SnappySession(@transient private val sc: SparkContext,
     createSampleTable(tableName, Option(baseTable),
       samplingOptions.asScala.toMap, allowExisting)
   }
+
 
   /**
    * Create a stratified sample table.
@@ -595,6 +599,7 @@ class SnappySession(@transient private val sc: SparkContext,
     createSampleTable(tableName, Option(baseTable), schema,
       samplingOptions.asScala.toMap, allowExisting)
   }
+
 
   /**
    * Create approximate structure to query top-K with time series support.
@@ -1326,6 +1331,7 @@ class SnappySession(@transient private val sc: SparkContext,
       indexColumns: java.util.Map[String, java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
 
+
     val indexCol = indexColumns.asScala.mapValues {
       case null => None
       case java.lang.Boolean.TRUE => Some(Ascending)
@@ -1614,6 +1620,7 @@ class SnappySession(@transient private val sc: SparkContext,
     }
   }
 
+
   /**
    * Delete all rows in table that match passed filter expression
    *
@@ -1634,6 +1641,7 @@ class SnappySession(@transient private val sc: SparkContext,
     val rowAsArray: Array[Any] = row.asScala.toArray
     new GenericRow(rowAsArray)
   }
+
 
   /**
    * Fetch the topK entries in the Approx TopK synopsis for the specified
