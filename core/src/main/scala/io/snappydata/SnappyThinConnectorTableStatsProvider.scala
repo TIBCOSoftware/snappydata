@@ -51,24 +51,30 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   }
 
   def start(sc: SparkContext, url: String): Unit = {
-    _url = url
-    initializeConnection()
-    val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
-        "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
-    doRun = true
-    new Timer("SnappyThinConnectorTableStatsProvider", true).schedule(
-      new TimerTask {
-        override def run(): Unit = {
-          try {
-            if (doRun) {
-              aggregateStats()
-            }
-          } catch {
-            case _: CancelException => // ignore
-            case e: Exception => logError("SnappyThinConnectorTableStatsProvider", e)
-          }
+    if (!doRun) {
+      this.synchronized {
+        if (!doRun) {
+          _url = url
+          initializeConnection()
+          val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
+              "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
+          doRun = true
+          new Timer("SnappyThinConnectorTableStatsProvider", true).schedule(
+            new TimerTask {
+              override def run(): Unit = {
+                try {
+                  if (doRun) {
+                    aggregateStats()
+                  }
+                } catch {
+                  case _: CancelException => // ignore
+                  case e: Exception => logError("SnappyThinConnectorTableStatsProvider", e)
+                }
+              }
+            }, delay, delay)
         }
-      }, delay, delay)
+      }
+    }
   }
 
   def executeStatsStmt(): Unit = {
@@ -82,9 +88,8 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
       executeStatsStmt()
     } catch {
       case e: Exception =>
-        logWarning("SnappyThinConnectorTableStatsProvider: exception while retrieving stats " +
-            "from Snappy embedded cluster. Check whether the embedded cluster is stopped. " +
-            "Exception: " + e.toString)
+        logWarning("Warning: unable to retrieve table stats " +
+            "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
         conn = null
         return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats])

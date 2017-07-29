@@ -93,34 +93,40 @@ object SnappyTableStatsProviderService {
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
 
   def start(sc: SparkContext): Unit = {
-    val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
-        "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
-    doRun = true
-    Misc.getGemFireCache.getCCPTimer.schedule(
-      new SystemTimer.SystemTimerTask {
-        private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
+    if (!doRun) {
+      this.synchronized {
+        if (!doRun) {
+          val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
+              "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
+          doRun = true
+          Misc.getGemFireCache.getCCPTimer.schedule(
+            new SystemTimer.SystemTimerTask {
+              private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
 
-        override def run2(): Unit = {
-          try {
-            if (doRun) {
-              aggregateStats()
-            }
-          } catch {
-            case _: CancelException => // ignore
-            case e: Exception => if (!e.getMessage.contains(
-              "com.gemstone.gemfire.cache.CacheClosedException")) {
-              logger.warning(e)
-            } else {
-              logger.error(e)
-            }
-          }
-        }
+              override def run2(): Unit = {
+                try {
+                  if (doRun) {
+                    aggregateStats()
+                  }
+                } catch {
+                  case _: CancelException => // ignore
+                  case e: Exception => if (!e.getMessage.contains(
+                    "com.gemstone.gemfire.cache.CacheClosedException")) {
+                    logger.warning(e)
+                  } else {
+                    logger.error(e)
+                  }
+                }
+              }
 
-        override def getLoggerI18n: LogWriterI18n = {
-          logger
+              override def getLoggerI18n: LogWriterI18n = {
+                logger
+              }
+            },
+            delay, delay)
         }
-      },
-      delay, delay)
+      }
+    }
   }
 
   override def start(sc: SparkContext, url: String): Unit = {
