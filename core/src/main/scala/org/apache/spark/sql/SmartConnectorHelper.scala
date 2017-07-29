@@ -19,9 +19,12 @@ package org.apache.spark.sql
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.sql.{CallableStatement, Connection, SQLException}
 
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.Constant
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
+import org.apache.spark.sql.catalyst.catalog.CatalogDatabase
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -30,6 +33,8 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.{Logging, Partition}
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
+
+  import SmartConnectorHelper._
 
   private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
@@ -60,7 +65,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def initializeConnection(): Unit = {
-    val jdbcOptions = new JDBCOptions(connectionURL + ";route-query=false;", "",
+    val jdbcOptions = new JDBCOptions(connectionURL + getSecurePart + ";route-query=false;", "",
       Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     createSnappyTblStmt = conn.prepareCall(createSnappyTblString)
@@ -71,6 +76,19 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
     alterTableStmt = conn.prepareCall(alterTableStmtString)
+  }
+
+  private def getSecurePart(): String = {
+    var securePart = ""
+    val user = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+        .USERNAME_ATTR, "")
+    if (!user.isEmpty) {
+      val pass = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+          .PASSWORD_ATTR, "")
+      securePart = s";user=$user;password=$pass"
+      logInfo(s"Using $user credentials to securely connect to snappydata cluster")
+    }
+    securePart
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {
