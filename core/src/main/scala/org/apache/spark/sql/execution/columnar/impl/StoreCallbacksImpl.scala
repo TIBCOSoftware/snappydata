@@ -177,7 +177,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     if (context.getUserName != null && !context.getUserName.isEmpty) {
       session.conf.set(Attribute.USERNAME_ATTR, context.getUserName)
       session.conf.set(Attribute.PASSWORD_ATTR, context.getAuthToken)
-//      session.setSchema(session.sessionCatalog.formatDatabaseName(context.getUserName))
     }
 
     context.getType match {

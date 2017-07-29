@@ -38,14 +38,16 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   private var getStatsStmt: CallableStatement = null
   private var _url: String = null
 
-  def initializeConnection(sc: Option[SparkContext] = None): Unit = {
+  def initializeConnection(context: Option[SparkContext] = None): Unit = {
     var securePart = ""
-    if (sc.isDefined) {
-      val user = sc.get.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
-      if (!user.isEmpty) {
-        val pass = sc.get.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, "")
-        securePart = s";user=$user;password=$pass"
-      }
+    context match {
+      case Some(sc) =>
+        val user = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
+        if (!user.isEmpty) {
+          val pass = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, "")
+          securePart = s";user=$user;password=$pass"
+        }
+      case None =>
     }
     val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",
       Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
