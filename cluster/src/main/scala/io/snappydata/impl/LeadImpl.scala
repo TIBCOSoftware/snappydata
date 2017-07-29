@@ -28,9 +28,11 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
@@ -394,7 +396,11 @@ class LeadImpl extends ServerImpl with Lead
                 val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc
                     .getMemStoreBooting.getDatabaseName, props)
                 if (result != null) {
-                  logInfo(s"ACCESS DENIED, user [${u.user}]. $result")
+                  val msg = s"ACCESS DENIED, user [${u.user}]. $result"
+                  if (GemFireXDUtils.TraceAuthentication) {
+                    SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
+                  }
+                  logInfo(msg)
                   None
                 } else {
                   Option(new AuthInfo(new User(u.user, u.pass)))

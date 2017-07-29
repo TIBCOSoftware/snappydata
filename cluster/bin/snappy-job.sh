@@ -21,17 +21,17 @@
 
 usage=$'Usage: 
        # Create a new context using the provided context factory
-       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>]
+       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>] [--passfile <netrc-file-path-with-credentials>]
        # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
-       snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>]
+       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>] [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>] [--passfile <netrc-file-path-with-credentials>]
        # Get status of the job with the given job-id
-       snappy-job.sh status --lead <hostname:port> --job-id <job-id>
+       snappy-job.sh status --job-id <job-id> [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]
        # Stop a job with the given job-id
-       snappy-job.sh stop --lead <hostname:port> --job-id <job-id>
+       snappy-job.sh stop --job-id <job-id> [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]
        # List all the current contexts
-       snappy-job.sh listcontexts --lead <hostname:port>
+       snappy-job.sh listcontexts [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]
        # Stop a context with the given name
-       snappy-job.sh stopcontext <context-name> [--lead <hostname:port>]'
+       snappy-job.sh stopcontext <context-name> [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]'
 
 function showUsage {
   echo "ERROR: incorrect argument specified: " "$@"
@@ -120,14 +120,14 @@ while (( "$#" )); do
       shift
       contextName="${1:-$TOK_EMPTY}"
     ;;
-    --user)
+    --passfile)
       shift
-      username="${1:-$TOK_EMPTY}"
-      while [ -z ${password} ]; do
-        read -s -p "Enter password for ${username}: " password
-        echo ""
-      done
-      securePart="-u ${username}:${password}"
+      passwordfile="${1:-$TOK_EMPTY}"
+      if [[ ! -e $passwordfile ]]; then
+        echo "The netrc file $passwordfile not found."
+        exit 1
+      fi
+      securePart=" --netrc-file ${passwordfile}"
     ;;
     *)
       showUsage $1

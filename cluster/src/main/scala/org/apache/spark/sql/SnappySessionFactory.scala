@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.Constant
 import io.snappydata.impl.LeadImpl
@@ -80,14 +81,7 @@ trait SnappySQLJob extends SparkJobBase {
   }
 
   private def updateCredentials(snc: SnappySession, jobConfig: Config): Config = {
-    var authP = ""
-    try {
-      authP = jobConfig.getString(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-          .Attribute.AUTH_PROVIDER)
-    } catch {
-      case m: ConfigException.Missing => // Security not enabled.
-    }
-    if ("LDAP".equalsIgnoreCase(authP)) {
+    if (Misc.isSecurityEnabled) {
       try {
         // Pass job credentials to snappy session
         val username = jobConfig.getString("snappydata.user")

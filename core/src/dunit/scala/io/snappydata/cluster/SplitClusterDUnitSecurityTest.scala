@@ -352,24 +352,21 @@ class SplitClusterDUnitSecurityTest(s: String)
     * Attempt to modify hive metastore via a thin connection should fail.
     */
   def testGrantRevokeAndHiveModification(): Unit = {
-    val props1 = new Properties()
-    props1.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
-    props1.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props1)
+    def getConn(u: String, setSNC: Boolean = false): Connection = {
+      val props = new Properties()
+      props.setProperty(Attribute.USERNAME_ATTR, u)
+      props.setProperty(Attribute.PASSWORD_ATTR, u)
+      if (setSNC) snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+      SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    }
+    user1Conn = getConn(jdbcUser1)
     val user1Stmt = user1Conn.createStatement()
     val value = "brought up to zero"
 
-    val props2 = new Properties()
-    props2.setProperty(Attribute.USERNAME_ATTR, jdbcUser2)
-    props2.setProperty(Attribute.PASSWORD_ATTR, jdbcUser2)
-    user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props2)
+    user2Conn = getConn(jdbcUser2, true)
     var user2Stmt = user2Conn.createStatement()
-    snc = testObject.getSnappyContextForConnector(locatorClientPort, props2)
 
-    val adminProps = new Properties()
-    adminProps.setProperty(Attribute.USERNAME_ATTR, adminUser1)
-    adminProps.setProperty(Attribute.PASSWORD_ATTR, adminUser1)
-    adminConn = SplitClusterDUnitTest.getConnection(locatorClientPort, adminProps)
+    adminConn = getConn(adminUser1)
     var adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
@@ -418,15 +415,6 @@ class SplitClusterDUnitSecurityTest(s: String)
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
-    def reset(): Unit = {
-      // Get a fresh conn.
-      // TODO May not be needed later when cached plans are cleared for grant/revoke
-      user2Stmt.close()
-      user2Conn.close()
-      user2Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props2)
-      user2Stmt = user2Conn.createStatement()
-    }
-
     def exe(permit: String, op: String): Unit = {
       val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
       user1Stmt.execute(s"$permit $op on table $embeddedColTab1 $toFrom $jdbcUser2")
@@ -440,13 +428,11 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
       // grant
-      reset()
       exe("grant", op)
       sqls.foreach(s => executeSQL(user2Stmt, s))
       sqls.foreach(s => snc.sql(s).collect())
 
       // revoke
-      reset()
       exe("revoke", op)
       sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
       sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
