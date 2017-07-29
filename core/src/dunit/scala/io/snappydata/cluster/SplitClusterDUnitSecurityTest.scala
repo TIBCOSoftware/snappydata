@@ -184,6 +184,8 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   override def testRowTableCreation(): Unit = {}
 
+  override def testTableFormChanges(): Unit = {}
+
   // Test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
     // perform some operation thru spark-shell

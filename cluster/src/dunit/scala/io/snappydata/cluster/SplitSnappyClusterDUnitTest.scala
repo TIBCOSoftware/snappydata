@@ -694,15 +694,8 @@ object SplitSnappyClusterDUnitTest
     connectorSnc.sql("INSERT INTO T1 VALUES(4, 4, 4)")
     connectorSnc.sql("INSERT INTO T1 VALUES(5, 5, 5)")
 
-    var rs: Array[Row] = null
-    try {
-    rs = connectorSnc.sql("select * from t1 order by c1").collect()
-  } catch {
-    case sqle: SQLException
-      if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
-      rs = connectorSnc.sql("select * from t1 order by c1").collect()
-    case e: Exception => throw e
-  }
+    val rs = connectorSnc.sql("select * from t1 order by c1").collect()
+
     assert(rs.length == 5)
     assert(rs(0).getAs[Int]("C1") == 1)
     assert(rs(0).getAs[Int]("C2") == 1)
@@ -716,17 +709,15 @@ object SplitSnappyClusterDUnitTest
 //      connectorSnc = getSnappyContextForConnector(locatorPort,
 //        locatorClientPort)
 //    }
-    var resultDF = connectorSnc.sql("select * from t1 order by col1")
-    var rs: Array[Row] = null
+    var resultDF: org.apache.spark.sql.DataFrame = null
     try {
-      rs = resultDF.collect()
+      resultDF = connectorSnc.sql("select * from t1 order by col1")
     } catch {
-      case sqle: SQLException
-        if sqle.getSQLState.equals(SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH) =>
+      case a: org.apache.spark.sql.AnalysisException =>
         resultDF = connectorSnc.sql("select * from t1 order by col1")
-        rs = resultDF.collect()
-      case e: Exception => throw e
     }
+
+    val  rs = resultDF.collect()
     assert(rs.length == 5, s"Expected 5 but got ${rs.length}")
     assert(rs(0).getAs[String]("COL1").equals("AA"))
     assert(rs(0).getAs[String]("COL2").equals("AA"))

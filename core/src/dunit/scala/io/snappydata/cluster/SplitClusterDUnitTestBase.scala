@@ -154,8 +154,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
-  // SNAP-1680 is filed to enable this
-  def DISABLEDtestTableFormChanges(): Unit = {
+  def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
 
