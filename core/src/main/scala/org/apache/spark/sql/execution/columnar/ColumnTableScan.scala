@@ -482,7 +482,6 @@ private[sql] final case class ColumnTableScan(
           initRowTableDecoders.append(rowDecoderCode).append('\n')
         } else {
           ctx.addMutableState(decoderClass, decoder, rowDecoderCode)
-          ctx.addMutableState(mutatedDecoderClass, mutatedDecoder, "")
         }
       } else {
         ctx.addMutableState(decoderClass, decoder,
@@ -496,6 +495,7 @@ private[sql] final case class ColumnTableScan(
         )
       }
       ctx.addMutableState("long", cursor, s"$cursor = 0L;")
+      ctx.addMutableState(mutatedDecoderClass, mutatedDecoder, "")
 
       ctx.addNewFunction(initBufferFunction,
         s"""
