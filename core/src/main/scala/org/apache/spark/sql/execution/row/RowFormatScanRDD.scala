@@ -231,33 +231,29 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
 
-    var snapshotTxStarted = false
-
     if (pushProjections || useResultSet) {
       if (!pushProjections) {
         val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
         if (txManagerImpl.getTXState == null) {
           txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
-          snapshotTxStarted = true
+          //if (commitTx)
+            commitTxBeforeTaskCompletion(None, context)
         }
       }
       // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
       val itr = new ResultSetTraversal(conn, stmt, rs, context)
-      if (commitTx) {
-        if (!pushProjections) {
-          if (snapshotTxStarted)
-            commitTxBeforeTaskCompletion(Option(conn), context)
-        } else {
-          commitTxBeforeTaskCompletion(Option(conn), context)
-        }
+      if (commitTx && pushProjections) {
+        commitTxBeforeTaskCompletion(Option(conn), context)
       }
       itr
     } else {
       val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
       if (txManagerImpl.getTXState == null) {
         txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
-        snapshotTxStarted=true
+        //if (commitTx) {
+          commitTxBeforeTaskCompletion(None, context)
+        //}
       }
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
@@ -271,9 +267,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
         val txId = txManagerImpl.getTransactionId
         val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId)
-        if (commitTx && snapshotTxStarted) {
-          commitTxBeforeTaskCompletion(None, context)
-        }
+
         itr
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
@@ -283,9 +277,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
             resultSetField.get(p).asInstanceOf[EmbedResultSet]
         }
         val itr = new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
-        if (commitTx && snapshotTxStarted) {
-          commitTxBeforeTaskCompletion(Option(conn), context)
-        }
         itr
       }
     }
