@@ -18,7 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.UUID
+import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.meta.param
@@ -51,6 +51,14 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{Logging, Partition, TaskContext}
+import scala.annotation.meta.param
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
+
+import com.pivotal.gemfirexd.Attribute
+
+import org.apache.spark.sql.jdbc.JdbcDialect
 
 /**
  * Column Store implementation for GemFireXD.
@@ -372,8 +380,41 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
     val connProps = if (onExecutor) connProperties.executorConnProps
     else connProperties.connProps
-    ConnectionPool.getPoolConnection(id, connProperties.dialect,
+    getPoolConnection(id, connProperties.dialect,
       connProperties.poolProps, connProps, connProperties.hikariCP)
+  }
+
+  private lazy val bootProperties = Option(Misc.getMemStoreBootingNoThrow).map(_.getBootProperties)
+
+  def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
+      connProps: Properties, hikariCP: Boolean): Connection = {
+    // Handle security at remote VM in cases like insert
+    bootProperties match {
+      case Some(p) if p.containsKey(Attribute.USERNAME_ATTR) &&
+          p.containsKey(Attribute.PASSWORD_ATTR) =>
+        def secureProps(props: Properties): Properties = {
+          if (Option(props.getProperty(Attribute.USERNAME_ATTR)).isEmpty &&
+              Option(props.getProperty(Attribute.PASSWORD_ATTR)).isEmpty) {
+            props.setProperty(Attribute.USERNAME_ATTR, p.get(Attribute.USERNAME_ATTR).toString)
+            props.setProperty(Attribute.PASSWORD_ATTR, p.get(Attribute.PASSWORD_ATTR).toString)
+          }
+          props
+        }
+
+        // Hikari only take 'username'. So does Tomcat
+        def securePoolProps(props: Map[String, String]): Map[String, String] = {
+          if (props.get(Attribute.USERNAME_ALT_ATTR.toLowerCase).isEmpty &&
+              props.get(Attribute.PASSWORD_ATTR).isEmpty) {
+            props + (Attribute.USERNAME_ALT_ATTR.toLowerCase ->
+                p.get(Attribute.USERNAME_ATTR).toString) +
+                (Attribute.PASSWORD_ATTR -> p.get(Attribute.PASSWORD_ATTR).toString)
+          } else props
+        }
+
+        ConnectionPool.getPoolConnection(id, dialect, securePoolProps(poolProps),
+          secureProps(connProps), hikariCP)
+      case _ => ConnectionPool.getPoolConnection(id, dialect, poolProps, connProps, hikariCP)
+    }
   }
 
   override def getConnectedExternalStore(table: String,

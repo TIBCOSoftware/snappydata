@@ -148,7 +148,7 @@ trait TableStatsProviderService extends Logging {
       Map[String, SnappyIndexStats]) = {
     val snc = this.snc
     if (snc == null) return (Map.empty, Map.empty)
-    val (tableStats, indexStats) = getStatsFromAllServers
+    val (tableStats, indexStats) = getStatsFromAllServers()
 
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     val aggregatedStatsIndex = scala.collection.mutable.Map[String, SnappyIndexStats]()
@@ -181,5 +181,6 @@ trait TableStatsProviderService extends Logging {
   }
   */
 
-  def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats])
+  def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
+      Seq[SnappyIndexStats])
 }

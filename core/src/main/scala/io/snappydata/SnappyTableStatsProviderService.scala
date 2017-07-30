@@ -172,7 +172,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       membersInfo(m).put("status", "Stopped"))
   }
 
-  override def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
+  override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
+      Seq[SnappyIndexStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
     try {
