@@ -30,6 +30,7 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
@@ -75,7 +76,6 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
 
   // begin should decide the connection which will be used by insert/commit/rollback
   def beginTx(): Array[_ <: Object] = {
-
     implicit val conn = self.getConnection(tableName, onExecutor = true)
 
     assert(!conn.isClosed)
@@ -159,25 +159,30 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   }
 
 
-  def closeConnection(conn: Connection): Unit = {
-    if (!conn.isClosed) {
-      conn match {
-        case ConnectionType.Embedded =>
-          conn.close()
-        case _ =>
-          // it should always be not null.
-          // get clears the state from connection
-          // the tx would have been committed earlier
-          // or it will be committed later
-          val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
-          if (!txId.equals("null")) {
-            val statement = conn.createStatement()
-            statement.execute(
-              s"call sys.GET_SNAPSHOT_TXID('$txId')")
-          }
-          conn.commit()
-          conn.close()
-      }
+  def closeConnection(conn: Option[Connection]): Unit = {
+    conn match {
+      case Some(conn) if !conn.isClosed =>
+        conn match {
+          case ConnectionType.Embedded =>
+            // conn commit removed txState from the conn context.
+            conn.commit()
+            conn.close()
+          case _ =>
+            // it should always be not null.
+            // get clears the state from connection
+            // the tx would have been committed earlier
+            // or it will be committed later
+            val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
+            if (txId != null && !txId.equals("null")) {
+              val statement = conn.createStatement()
+              statement.execute(
+                s"call sys.GET_SNAPSHOT_TXID('$txId')")
+            }
+            // conn commit removed txState from the conn context.
+            conn.commit()
+            conn.close()
+        }
+      case None => //Do nothing
     }
   }
 
