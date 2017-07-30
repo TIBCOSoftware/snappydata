@@ -23,24 +23,30 @@ import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
-
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
+import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
+import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
-
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
+import spray.routing.authentication.UserPass
+
+import scala.concurrent.Future
 
 class LeadImpl extends ServerImpl with Lead
     with ProtocolOverrides with Logging {
@@ -355,6 +361,7 @@ class LeadImpl extends ServerImpl with Lead
         case c => Array(c)
       }
 
+      configureAuthenticatorForSJS()
       JobServer.start(confFile, getConfig, createActorSystem)
     }
 
@@ -368,6 +375,47 @@ class LeadImpl extends ServerImpl with Lead
     LeadImpl.clearInitializingSparkContext()
   }
 
+  def configureAuthenticatorForSJS(): Unit = {
+    if (Misc.isSecurityEnabled) {
+      logInfo("Configuring authenticator for Snappy Job users.")
+      SnappyAuthenticator.auth = new SnappyAuthenticator {
+
+        import scala.concurrent.ExecutionContext.Implicits.global
+
+        override def authenticate(userPass: Option[UserPass]): Future[Option[AuthInfo]] = {
+          Future { checkCredentials(userPass) }
+        }
+
+        def checkCredentials(userPass: Option[UserPass]): Option[AuthInfo] = {
+          userPass match {
+            case Some(u) => {
+              try {
+                val props = new Properties()
+                props.setProperty(Attribute.USERNAME_ATTR, u.user)
+                props.setProperty(Attribute.PASSWORD_ATTR, u.pass)
+                val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc
+                    .getMemStoreBooting.getDatabaseName, props)
+                if (result != null) {
+                  val msg = s"ACCESS DENIED, user [${u.user}]. $result"
+                  if (GemFireXDUtils.TraceAuthentication) {
+                    SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
+                  }
+                  logInfo(msg)
+                  None
+                } else {
+                  Option(new AuthInfo(new User(u.user, u.pass)))
+                }
+              } catch {
+                case t: Throwable => logWarning(s"Failed to authenticate the snappy job. $t")
+                  None
+              }
+            }
+            case None => None
+          }
+        }
+      }
+    }
+  }
 
   def getConfig(args: Array[String]): Config = {
 

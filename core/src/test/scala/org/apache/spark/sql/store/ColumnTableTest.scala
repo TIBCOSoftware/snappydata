@@ -798,7 +798,7 @@ class ColumnTableTest
     val props = Map("BUCKETS" -> "1", "PARTITION_BY" -> "col1")
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
       Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
+    val rdd = sc.parallelize(data, 1).map(s => Data(s.head, s(1), s(2)))
     val snc = new SnappySession(sc)
     Property.ColumnBatchSize.set(snc.sessionState.conf, "50")
     val dataDF = snc.createDataFrame(rdd)

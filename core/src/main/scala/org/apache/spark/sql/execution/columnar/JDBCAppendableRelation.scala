@@ -70,9 +70,9 @@ abstract case class JDBCAppendableRelation(
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 
-  val resolvedName: String = externalStore.tryExecute(table, conn => {
+  val resolvedName: String = externalStore.tryExecute(table) { conn =>
     ExternalStoreUtils.lookupName(table, conn.getSchema)
-  })
+  }
 
   def numBuckets: Int = -1
 
@@ -166,9 +166,9 @@ abstract case class JDBCAppendableRelation(
 
   // truncate both actual and shadow table
   def truncate(): Unit = writeLock {
-    externalStore.tryExecute(table, conn => {
+    externalStore.tryExecute(table) { conn =>
       JdbcExtendedUtils.truncateTable(conn, table, dialect)
-    })
+    }
   }
 
   def createTable(mode: SaveMode): Unit = {
@@ -219,8 +219,8 @@ abstract case class JDBCAppendableRelation(
   def createTable(externalStore: ExternalStore, tableStr: String,
       tableName: String, dropIfExists: Boolean): Unit = {
 
-    externalStore.tryExecute(tableName,
-      conn => {
+    externalStore.tryExecute(tableName)
+      { conn =>
         if (dropIfExists) {
           JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
             ifExists = true)
@@ -237,7 +237,7 @@ abstract case class JDBCAppendableRelation(
             case _ => // do nothing
           }
         }
-      })
+      }
   }
 
   /**

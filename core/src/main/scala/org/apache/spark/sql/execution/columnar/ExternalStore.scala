@@ -36,7 +36,8 @@ trait ExternalStore extends Serializable {
   def tableName: String
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit
+      partitionId: Int, batchId: Option[String], maxDeltaRows: Int)
+      (implicit c: Option[Connection] = None): Unit
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: UTF8String, maxDeltaRows: Int): Unit = {
@@ -57,23 +58,19 @@ trait ExternalStore extends Serializable {
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String,
-      f: Connection => T,
-      closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+  def tryExecute[T: ClassTag](tableName: String, closeOnSuccessOrFailure: Boolean = true,
+      onExecutor: Boolean = false)(f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
-    var isClosed = false
+    var success = false
     val conn = c.getOrElse(getConnection(tableName, onExecutor))
     try {
-      f(conn)
-    } catch {
-      case t: Throwable =>
-        conn.rollback()
-        conn.close()
-        isClosed = true
-        throw t
+      val ret = f(conn)
+      success = true
+      ret
     } finally {
-      if (closeOnSuccess && !isClosed && !conn.isInstanceOf[EmbedConnection]) {
-        conn.commit()
+      if (closeOnSuccessOrFailure && !conn.isInstanceOf[EmbedConnection]) {
+        if (success) conn.commit()
+        else conn.rollback()
         conn.close()
       }
     }
@@ -92,23 +89,25 @@ trait ConnectedExternalStore extends ExternalStore {
   }
 
   def commitAndClose(isSuccess: Boolean): Unit = {
+    // ideally shouldn't check for isClosed.it means some bug!
     val conn = connectedInstance
-    if (!conn.isInstanceOf[EmbedConnection]) {
-      if (!conn.isClosed && isSuccess) {
+    if (!conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
+      if (isSuccess) {
         conn.commit()
+      } else {
+        conn.rollback()
       }
-      conn.close()
     }
   }
 
   override def tryExecute[T: ClassTag](tableName: String,
-      f: Connection => T,
       closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
+      (f: Connection => T)
       (implicit c: Option[Connection]): T = {
     assert(!connectedInstance.isClosed)
-    val ret = super.tryExecute(tableName, f,
-      closeOnSuccess = false /* responsibility of the user to close later */ ,
-      onExecutor)(
+    val ret = super.tryExecute(tableName,
+      closeOnSuccessOrFailure = false /* responsibility of the user to close later */ ,
+      onExecutor)(f)(
       implicitly, Some(connectedInstance))
 
     if (dependentAction.isDefined) {

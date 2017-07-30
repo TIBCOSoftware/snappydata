@@ -317,13 +317,13 @@ abstract class BaseColumnFormatRelation(
   // truncate both actual and shadow table
   override def truncate(): Unit = writeLock {
     try {
-      externalStore.tryExecute(externalColumnTableName, conn => {
+      externalStore.tryExecute(externalColumnTableName) { conn =>
         JdbcExtendedUtils.truncateTable(conn, externalColumnTableName, dialect)
-      })
+      }
     } finally {
-      externalStore.tryExecute(table, conn => {
+      externalStore.tryExecute(table) { conn =>
         JdbcExtendedUtils.truncateTable(conn, table, dialect)
-      })
+      }
     }
   }
 

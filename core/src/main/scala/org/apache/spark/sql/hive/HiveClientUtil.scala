@@ -18,15 +18,19 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
+import java.util.Properties
+import java.util.logging.{Level, Logger}
+
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR
 
 import scala.collection.JavaConverters._
-
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.hadoop.util.VersionInfo
-
+import org.apache.log4j.LogManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
@@ -121,11 +125,38 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
    * meta-store that is configured in the hive-site.xml file.
    */
   @transient
-  protected[sql] var client: HiveClient = newClient()
+  protected[sql] var client: HiveClient = newClientWithLogSetting()
 
 
   def closeCurrent(): Unit = {
     Hive.closeCurrent()
+  }
+
+  private def newClientWithLogSetting(): HiveClient = {
+    val currentLevel = ClientSharedUtils.converToJavaLogLevel(LogManager.getRootLogger.getLevel)
+    try {
+      ifSmartConn(() => {
+        val props = new Properties()
+        props.setProperty("log4j.logger.DataNucleus.Datastore", "ERROR")
+        props.setProperty("log4j.logger.DataNucleus.Query", "ERROR")
+        ClientSharedUtils.initLog4J(null, props, currentLevel)
+      })
+      val hc = newClient()
+      // Perform some action to hit other paths that could throw warning messages.
+      ifSmartConn(() => {hc.getTableOption(Misc.SNAPPY_HIVE_METASTORE, "DBS")})
+      hc
+    } finally { // reset log config
+      ifSmartConn(() => {
+        ClientSharedUtils.initLog4J(null, currentLevel)
+      })
+    }
+  }
+
+  private def ifSmartConn(func: () => Unit): Unit = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case ThinClientConnectorMode(_, _) => func()
+      case _ =>
+    }
   }
 
   private def newClient(): HiveClient = synchronized {
@@ -134,6 +165,13 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
     val metadataConf = new HiveConf()
+    SnappyContext.getClusterMode(sparkContext) match {
+      case mode: ThinClientConnectorMode =>
+        metadataConf.setBoolVar(HiveConf.ConfVars.METASTORE_AUTO_CREATE_SCHEMA, false)
+        metadataConf.set("datanucleus.generateSchema.database.mode", "none")
+      case _ =>
+    }
+    metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE)
     metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_POOLING_TYPE, "DBCP")
     var warehouse = metadataConf.get(
       HiveConf.ConfVars.METASTOREWAREHOUSE.varname)
@@ -147,12 +185,26 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///")
 
     val (dbURL, dbDriver) = resolveMetaStoreDBProps()
-    logInfo(s"Using dbURL = $dbURL for Hive metastore initialization")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-      dbDriver)
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-      Misc.SNAPPY_HIVE_METASTORE)
+    import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
+    import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
+    var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
+    var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+    if (!user.isDefined && !password.isDefined) {
+      user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+      password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+    }
+    var logURL = dbURL
+    val secureDbURL = if (user.isDefined && password.isDefined) {
+      logURL = dbURL + ";default-schema=" + Misc.SNAPPY_HIVE_METASTORE + ";user=" + user.get
+      logURL + ";password=" + password.get + ";"
+    } else {
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        Misc.SNAPPY_HIVE_METASTORE)
+      dbURL
+    }
+    logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
+    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
