@@ -28,6 +28,8 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import io.snappydata.thrift.common.BufferedBlob
 import io.snappydata.thrift.internal.ClientBlob
 
+import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
+
 /**
  * A [[RowEncoder]] implementation for [[ColumnFormatValue]] and child classes.
  */

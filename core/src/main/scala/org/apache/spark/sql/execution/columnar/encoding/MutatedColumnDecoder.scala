@@ -43,7 +43,7 @@ final class MutatedColumnDecoder(decoder: ColumnDecoder,
     extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
-  def isNull: Int = 0
+  def isNull: Int = if (currentDeltaBuffer ne null) 0 else 1
 }
 
 /**
@@ -56,7 +56,7 @@ final class MutatedColumnDecoderNullable(decoder: ColumnDecoder,
     extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
-  def isNull: Int = currentDeltaBuffer.isNull
+  def isNull: Int = if (currentDeltaBuffer ne null) currentDeltaBuffer.isNull else 1
 }
 
 object MutatedColumnDecoder {
@@ -113,10 +113,11 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     val allocator = ColumnEncoding.getAllocator(deleteBuffer)
     deleteCursor = allocator.baseOffset(deleteBuffer) + deleteBuffer.position()
     deleteEndCursor = deleteCursor + deleteBuffer.limit()
-    // skip 4 bytes header which is unused as of now
-    deleteCursor += 4
-    deletePosition = nextDeletedPosition()
-    allocator.baseObject(deleteBuffer)
+    // skip 8 bytes header
+    deleteCursor += 8
+    val bytes = allocator.baseObject(deleteBuffer)
+    deletePosition = nextDeletedPosition(bytes)
+    bytes
   } else null
 
   protected final var nextMutatedPosition: Int = -1
@@ -129,7 +130,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     updateNextMutatedPosition()
   }
 
-  private def nextDeletedPosition(): Int = {
+  private def nextDeletedPosition(deleteBytes: AnyRef): Int = {
     val cursor = deleteCursor
     if (cursor < deleteEndCursor) {
       deleteCursor += 4
@@ -163,7 +164,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     }
     movedIndex match {
       case 0 =>
-        nextDeletedPosition()
+        deletePosition = nextDeletedPosition(deleteBytes)
         nextDeltaBuffer = null
       case 1 =>
         delta1Position = delta1.moveToNextPosition()

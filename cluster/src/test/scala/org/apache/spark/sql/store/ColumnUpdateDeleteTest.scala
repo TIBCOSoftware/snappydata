@@ -151,6 +151,93 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     assert(res(0).getString(1) === "addr32" || res(1).getString(1) === "addr32")
   }
 
+  test("basic delete") {
+    val session = this.snc.snappySession
+    session.conf.set(Property.ColumnBatchSize.name, "10k")
+    // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
+
+    val numElements = 50000
+
+    session.sql("create table updateTable (id int, addr string, status boolean) " +
+        "using column options(buckets '5')")
+    session.sql("create table checkTable1 (id int, addr string, status boolean) " +
+        "using column options(buckets '3')")
+    session.sql("create table checkTable2 (id int, addr string, status boolean) " +
+        "using column options(buckets '7')")
+
+    session.range(numElements).selectExpr("id",
+      "concat('addr', cast(id as string))",
+      "case when (id % 2) = 0 then true else false end").write.insertInto("updateTable")
+
+    // check deletes
+
+    session.range(numElements).filter("(id % 10) <> 0").selectExpr(s"id",
+      "concat('addr', cast(id as string))",
+      "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable1")
+
+    assert(session.table("updateTable").count() === numElements)
+    assert(session.table("checkTable1").count() === (numElements * 9) / 10)
+
+    session.sql(s"delete from updateTable where (id % 10) = 0")
+
+    assert(session.table("updateTable").count() === (numElements * 9) / 10)
+    assert(session.table("updateTable").collect().length === (numElements * 9) / 10)
+
+    var res = session.sql("select * from updateTable EXCEPT select * from checkTable1").collect()
+    assert(res.length === 0)
+
+
+    // now check deletes after updates to columns
+
+    session.range(numElements).filter("(id % 10) <> 0").selectExpr(s"id + $numElements",
+      "concat('addr', cast(id as string))",
+      "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable2")
+
+    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.table("updateTable").show()
+
+    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.table("updateTable").show()
+
+    assert(session.table("updateTable").count() === (numElements * 9) / 10)
+    assert(session.table("updateTable").collect().length === (numElements * 9) / 10)
+
+    res = session.sql("select * from updateTable where id = 73").collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 73)
+    assert(res(0).getString(1) === "addr73")
+
+    res = session.sql("select * from updateTable where id = cast(substr(addr, 5) as int)")
+        .collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 73)
+    assert(res(0).getString(1) === "addr73")
+
+    res = session.sql("select * from updateTable EXCEPT select * from checkTable2").collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 73)
+    assert(res(0).getString(1) === "addr73")
+
+    /* TODO: SW: check numbers below
+    // more deletes
+
+    session.sql(s"delete from updateTable where (id % 5) = 0")
+
+    assert(session.table("updateTable").count() === (numElements * 8) / 10)
+    assert(session.table("updateTable").collect().length === (numElements * 8) / 10)
+
+    res = session.sql("select * from updateTable EXCEPT select * from checkTable2").collect()
+    assert(res.length === (numElements * 9) / 10 + 1)
+
+    session.sql(s"delete from checkTable2 where (id % 5) = 0")
+
+    res = session.sql("select * from updateTable EXCEPT select * from checkTable2").collect()
+    assert(res.length === 1)
+    assert(res(0).getInt(0) === 73)
+    assert(res(0).getString(1) === "addr73")
+    */
+  }
+
   test("test update for all types") {
     /*
     val session = new SnappySession(sc)

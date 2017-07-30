@@ -17,8 +17,8 @@
 
 package org.apache.spark.sql.execution.columnar
 
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSeq, Expression}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
@@ -54,7 +54,6 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
   }
 
   @transient private var batchOrdinal: String = _
-  @transient private var batchIdTerm: String = _
   @transient private var finishDelete: String = _
   @transient private var deleteMetric: String = _
 
@@ -66,7 +65,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishDelete(null); // force a finish
+         |  $finishDelete(null, -1); // force a finish
          |}
       """.stripMargin)
   }
@@ -75,30 +74,27 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
       row: ExprCode): String = {
     val cursor = ctx.freshName("cursor")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
+    val lastBucketId = ctx.freshName("lastBucketId")
     val deleteEncoder = ctx.freshName("deleteEncoder")
     batchOrdinal = ctx.freshName("batchOrdinal")
-    batchIdTerm = ctx.freshName("batchId")
-    val bucketId = ctx.freshName("bucketId")
     finishDelete = ctx.freshName("finishDelete")
     deleteMetric = if (onExecutor) null else metricTerm(ctx, "numDeleteColumnBatchRows")
 
     val deleteEncoderClass = classOf[ColumnDeleteEncoder].getName
 
-    ctx.addMutableState(deleteEncoderClass, deleteEncoder, "")
-    ctx.addMutableState("long", cursor, "")
-    ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("UTF8String", batchIdTerm, "")
-    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
-    ctx.addMutableState("int", bucketId, "")
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+    val initializeEncoder =
+      s"""
+         |$deleteEncoder = new $deleteEncoderClass();
+         |$cursor = $deleteEncoder.initialize(8); // start with a default size
+      """.stripMargin
 
-    ctx.INPUT_ROW = null
-    ctx.currentVars = input
-    // bind the key columns
-    val keysInput = ctx.generateExpressions(keyColumns.map(
-      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, child.output))), doSubexpressionElimination = true)
-    ctx.currentVars = null
+    ctx.addMutableState(deleteEncoderClass, deleteEncoder, "")
+    ctx.addMutableState("long", cursor, initializeEncoder)
+    ctx.addMutableState("int", batchOrdinal, "")
+    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
+    ctx.addMutableState("int", lastBucketId, "")
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+    val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
 
     // first column in keyColumns should be ordinal in the column
     assert(keyColumns.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
@@ -107,43 +103,36 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     // last column in keyColumns should be bucketId
     assert(keyColumns(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
 
-    val numKeys = keyColumns.length
-    val positionTerm = keysInput(keysInput.length - numKeys).value
+    // bind the key columns
+    val (ordinalId, batchId, bucketId) = ColumnDelta.bindKeyColumns(
+      keyColumns, ctx, input, child.output)
+    val batchIdVar = batchId.value
+    val keyVarsCode = evaluateVariables(Seq(ordinalId, batchId, bucketId))
 
-    val keyVarsCode =
-      s"""
-         |${evaluateVariables(keysInput)}
-         |$batchIdTerm = ${keysInput(keysInput.length - numKeys + 1).value};
-         |$bucketId = ${keysInput(keysInput.length - numKeys + 2).value}
-      """.stripMargin
     // row buffer needs to select the rowId for the ordinal
-    val rowConsume = super.doConsume(ctx, keysInput,
+    val rowConsume = super.doConsume(ctx, Seq(ordinalId),
       StructType(Seq(ColumnDelta.mutableKeyFields.head)))
 
-    val initializeEncoder =
-      s"""
-         |$deleteEncoder = new $deleteEncoderClass();
-         |$cursor = $deleteEncoder.initialize(8); // start with a default size
-      """.stripMargin
     ctx.addNewFunction(finishDelete,
       s"""
-         |private void $finishDelete(UTF8String $batchIdTerm) {
-         |  if ($batchIdTerm != $lastColumnBatchId && ($batchIdTerm == null ||
-         |      !$batchIdTerm.equals($lastColumnBatchId))) {
+         |private void $finishDelete(UTF8String batchId, int bucketId) {
+         |  if (batchId == null || !batchId.equals($lastColumnBatchId)) {
          |    if ($lastColumnBatchId == null) {
          |      // first call
-         |      $lastColumnBatchId = $batchIdTerm;
+         |      $lastColumnBatchId = batchId;
+         |      $lastBucketId = bucketId;
          |      return;
          |    }
          |    // finish previous encoder, put into table and re-initialize
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($cursor);
          |    // delete puts an empty stats row to denote that there are changes
-         |    $externalStoreTerm.storeDelete($columnTable, buffer,
-         |        new byte[] { 0, 0, 0, 0 }, $bucketId, $lastColumnBatchId.toString());
+         |    $externalStoreTerm.storeDelete($tableName, buffer,
+         |        new byte[] { 0, 0, 0, 0 }, $lastBucketId, $lastColumnBatchId.toString());
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoder
-         |    $lastColumnBatchId = $batchIdTerm;
+         |    $lastColumnBatchId = batchId;
+         |    $lastBucketId = bucketId;
          |    $batchOrdinal = 0;
          |  }
          |}
@@ -151,11 +140,13 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
     s"""
        |$keyVarsCode
-       |if ($batchIdTerm != null) {
-       |  // finish and apply update if the next column batch ID is seen
-       |  $finishDelete($batchIdTerm);
+       |if ($batchIdVar != null) {
+       |  // finish and apply delete if the next column batch ID is seen
+       |  if ($batchIdVar != $lastColumnBatchId) {
+       |    $finishDelete($batchIdVar, ${bucketId.value});
+       |  }
        |  // write to the encoder
-       |  $cursor = $deleteEncoder.writeInt($positionTerm, $cursor);
+       |  $cursor = $deleteEncoder.writeInt($cursor, (int)${ordinalId.value});
        |  $batchOrdinal++;
        |} else {
        |  $rowConsume

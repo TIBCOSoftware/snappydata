@@ -445,27 +445,14 @@ private[sql] final case class ColumnTableScan(
 
     val isWideSchema = output.length > MAX_CURSOR_DECLARATIONS
     val batchConsumers = getBatchConsumers(parent)
-    // check for "key" columns for update/delete and all three must be present
+    // "key" columns for update/delete with reserved names in ColumnDelta.mutableKeyNames
     var columnBatchIdTerm: String = null
     var ordinalIdTerm: String = null
     var bucketIdTerm: String = null
-    val columnsOutput = if (output.exists(_.name == ColumnDelta.mutableKeyNames.head)) {
-      val out = output.filter(!_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))
-      if (out.length + 3 != output.length) {
-        throw new IllegalStateException(
-          s"Expect all three key columns to be projected for update/delete but got $output")
-      }
-      if (otherRDDs.nonEmpty || isForSampleReservoirAsRegion) {
-        throw new IllegalStateException(
-          s"Unexpected update/delete invoked for sample table $relation")
-      }
-      columnBatchIdTerm = ctx.freshName("columnBatchId")
-      ordinalIdTerm = ctx.freshName("ordinalId")
-      bucketIdTerm = ctx.freshName("partitionId")
-      out
-    } else output
     var deletedCheck = ""
-    var columnsInput = columnsOutput.zipWithIndex.map { case (attr, index) =>
+    var deletedCountCheck = ""
+    // this mapper is for the physical columns in the table
+    val columnsInputMapper = (attr: Attribute, index: Int) => {
       val decoder = ctx.freshName("decoder")
       val mutatedDecoder = s"mutated_$decoder"
       val cursor = s"${decoder}Cursor"
@@ -589,6 +576,29 @@ private[sql] final case class ColumnTableScan(
         changedExpr
       }
     }
+    val columnsInput = output.zipWithIndex.map {
+      case (attr, _) if attr.name.startsWith(ColumnDelta.mutableKeyNamePrefix) =>
+        ColumnDelta.mutableKeyNames.indexOf(attr.name) match {
+          case 0 =>
+            // ordinalId
+            ordinalIdTerm = ctx.freshName("ordinalId")
+            ExprCode("", "false", ordinalIdTerm)
+          case 1 =>
+            // batchId
+            columnBatchIdTerm = ctx.freshName("columnBatchId")
+            ExprCode("", s"$columnBatchIdTerm == null", columnBatchIdTerm)
+          case 2 =>
+            bucketIdTerm = ctx.freshName("bucketId")
+            ExprCode("", "false", bucketIdTerm)
+          case _ => throw new IllegalStateException(s"Unexpected internal attribute $attr")
+        }
+      case (attr, index) => columnsInputMapper(attr, index)
+    }
+
+    if (deletedCheck.isEmpty) {
+      // no columns in a count(.) query
+      deletedCountCheck = s" - $colInput.getDeletedRowCount();"
+    }
 
     if (isWideSchema) {
       bufferInitCodeBlocks.append(bufferInitCode.toString())
@@ -699,11 +709,7 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin)
 
-    val (assignBatchId, assignOrdinalId) = if (columnBatchIdTerm ne null) {
-      columnsInput ++= Seq(ExprCode("", "false", ordinalIdTerm),
-        ExprCode("", s"$columnBatchIdTerm == null", columnBatchIdTerm),
-        ExprCode("", "false", bucketIdTerm))
-      (
+    val (assignBatchId, assignOrdinalId) = if (ordinalIdTerm ne null) (
         s"""
            |final boolean $inputIsRow = this.$inputIsRow;
            |final UTF8String $columnBatchIdTerm;
@@ -716,11 +722,12 @@ private[sql] final case class ColumnTableScan(
            |  $bucketIdTerm = $colInput.getCurrentBucketId();
            |}
         """.stripMargin,
+        // ordinalId is the last column in the row buffer table (exclude 3 virtual columns)
         s"""
-           |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(${output.length - 2})
+           |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(${relationSchema.length - 2})
            |    : $batchOrdinal;
         """.stripMargin)
-    } else ("", "")
+    else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
       columnsInput)).mkString("\n").trim
     val beforeStop = batchConsumers.map(_.beforeStop(ctx, this,
@@ -741,7 +748,7 @@ private[sql] final case class ColumnTableScan(
        |    $bufferInitCodeStr
        |    $assignBatchId
        |    $batchConsume
-       |    final int $numRows = $numBatchRows;
+       |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      $assignOrdinalId

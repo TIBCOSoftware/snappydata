@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSeq, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
@@ -130,11 +130,11 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
     ctx.INPUT_ROW = null
     ctx.currentVars = input
-    // bind the update expressions followed by key columns
-    val allExpressions = updateExpressions ++ keyColumns
-    val updateInput = ctx.generateExpressions(allExpressions.map(
+    // bind the update expressions
+    val childOutput: AttributeSeq = child.output
+    val updateInput = ctx.generateExpressions(updateExpressions.map(
       u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, child.output))), doSubexpressionElimination = true)
+        u, childOutput))), doSubexpressionElimination = true)
     ctx.currentVars = null
 
     // first column in keyColumns should be ordinal in the column
@@ -144,14 +144,15 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // last column in keyColumns should be bucketId
     assert(keyColumns(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
 
-    val numKeys = keyColumns.length
-    val positionTerm = updateInput(updateInput.length - numKeys).value
+    val (ordinalId, batchId, bucketId) = ColumnDelta.bindKeyColumns(
+      keyColumns, ctx, input, childOutput)
+    val ordinalIdVar = ordinalId.value
+    val batchIdVar = batchId.value
 
     val updateVarsCode = evaluateVariables(updateInput)
-    val batchIdVar = updateInput(updateInput.length - numKeys + 1).value
-    val bucketIdVar = updateInput(updateInput.length - numKeys + 2).value
+    val keyVarsCode = evaluateVariables(Seq(ordinalId, batchId, bucketId))
     // row buffer needs to select the rowId for the ordinal
-    val rowConsume = super.doConsume(ctx, updateInput, StructType(
+    val rowConsume = super.doConsume(ctx, updateInput :+ ordinalId, StructType(
       getUpdateSchema(updateExpressions) :+ ColumnDelta.mutableKeyFields.head))
 
     ctx.addNewFunction(initializeEncoders,
@@ -178,15 +179,15 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
-           |private void $function(int $ordinal, int $positionTerm,
+           |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
-           |  $encoderTerm.setUpdatePosition($positionTerm);
+           |  $encoderTerm.setUpdatePosition($ordinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
                 cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal, (int)$positionTerm, ${ev.isNull}, ${ev.value});"
+      s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
@@ -221,11 +222,11 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       """.stripMargin)
 
     s"""
-       |$updateVarsCode
+       |$updateVarsCode$keyVarsCode
        |if ($batchIdVar != null) {
        |  // finish and apply update if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {
-       |    $finishUpdate($batchIdVar, $bucketIdVar);
+       |    $finishUpdate($batchIdVar, ${bucketId.value});
        |  }
        |  // write to the encoders
        |  $callEncoders

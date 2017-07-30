@@ -263,6 +263,7 @@ class SnappySessionState(snappySession: SnappySession)
               col.name.split('.'), analyzer.resolver).getOrElse(
               throw new AnalysisException(s"Could not resolve update column ${col.name}"))
           }
+          // cast the update expressions if required
           val newExpr = if (attr.dataType.sameType(expr.dataType)) {
             expr
           } else {
@@ -276,8 +277,12 @@ class SnappySessionState(snappySession: SnappySession)
           }
           (attr, newExpr)
         }.unzip
-        // cast the update expressions if required
-        u.copy(child = newChild, keyColumns = keyAttrs.map(_.toAttribute),
+        // collect all references and project on them to explicitly eliminate
+        // any extra columns
+        val allReferences = newChild.references ++
+            AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
+        u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
+          keyColumns = keyAttrs.map(_.toAttribute),
           updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>

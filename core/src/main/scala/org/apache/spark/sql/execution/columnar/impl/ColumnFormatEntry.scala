@@ -43,7 +43,7 @@ import org.slf4j.Logger
 import org.apache.spark.Logging
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.unsafe.hash.Murmur3_x86_32
 
@@ -59,6 +59,7 @@ object ColumnFormatEntry extends Logging {
     GfxdDataSerializable.registerSqlSerializable(classOf[ColumnFormatKey])
     GfxdDataSerializable.registerSqlSerializable(classOf[ColumnFormatValue])
     GfxdDataSerializable.registerSqlSerializable(classOf[ColumnDelta])
+    GfxdDataSerializable.registerSqlSerializable(classOf[ColumnDeleteDelta])
   }
 
   private[columnar] def alignedSize(size: Int) = ((size + 7) >>> 3) << 3
