@@ -291,7 +291,7 @@ abstract class UncompressedDecoderBase
 
 trait UncompressedEncoderBase extends ColumnEncoder with Uncompressed {
 
-  override private[sql] def decoderBeforeFinish: ColumnDecoder = {
+  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder = {
     // can't depend on nullCount because even with zero count, it may have
     // allocated some null space at the start in advance
     val decoder = if (isNullable) new UncompressedDecoderNullable else new UncompressedDecoder

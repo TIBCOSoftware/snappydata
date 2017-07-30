@@ -451,7 +451,7 @@ trait ColumnEncoder extends ColumnEncoding {
    * The decoder is required to be already initialized and caller should be able
    * to invoke "absolute*" methods on it.
    */
-  private[sql] def decoderBeforeFinish: ColumnDecoder
+  private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder
 
   /**
    * Initialize the position skipping header on currently written data

@@ -151,12 +151,6 @@ final class ColumnDeltaDecoder(realDecoder: ColumnDecoder) {
   @inline def readUTF8String: UTF8String =
     realDecoder.readUTF8String(deltaBytes, deltaCursor)
 
-  // TODO: SW: need to create a combined delta+full value dictionary for this to work
-
-  @inline def getStringDictionary: Array[UTF8String] = null
-
-  @inline def readDictionaryIndex: Int = -1
-
   @inline def nextInterval(): Unit = {
     deltaCursor = realDecoder.nextInterval(deltaBytes, deltaCursor)
   }

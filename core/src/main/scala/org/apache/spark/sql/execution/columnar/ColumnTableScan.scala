@@ -560,7 +560,8 @@ private[sql] final case class ColumnTableScan(
       val isNullVar = if (attr.nullable) ctx.freshName("isNullInt") else null
       val mutatedVar = ctx.freshName("mutated")
 
-      if (index == 0) deletedCheck = s"if ($mutatedVar == -1) continue;"
+      if (index == 0) deletedCheck =
+          s"if ($mutatedVar && $mutatedDecoderVar.getCurrentDeltaBuffer() == null) continue;"
       if (!isWideSchema) {
         moveNextCode.append(genCodeColumnNext(ctx, decoderVar, mutatedDecoderVar, bufferVar,
           cursorVar, batchOrdinal, attr.dataType, isNullVar, mutatedVar,
@@ -802,14 +803,15 @@ private[sql] final case class ColumnTableScan(
     val moveNext = s"$cursorVar = $decoder.next$typeName($buffer, $cursorVar);"
     if (isNullVar != null) {
       if (isWideSchema) {
-        ctx.addMutableState("int", mutatedVar, "")
+        ctx.addMutableState("boolean", mutatedVar, "")
         ctx.addMutableState("int", isNullVar, "")
         val nullCode = s"$isNullVar = $decoder.isNull($buffer, $batchOrdinal);"
         s"""
-           |${nullCode}if ($isNullVar == 0) $moveNext
-           |$mutatedVar = $mutatedDecoder == null ? 0
-           |    : $mutatedDecoder.mutated($batchOrdinal);
-           |if ($mutatedVar == 1) {
+           |$nullCode
+           |if ($isNullVar == 0) $moveNext
+           |$mutatedVar = $mutatedDecoder != null &&
+           |    $mutatedDecoder.mutated($batchOrdinal);
+           |if ($mutatedVar) {
            |  $isNullVar = $mutatedDecoder.isNull();
            |  if ($isNullVar == 0) $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
            |}
@@ -817,10 +819,11 @@ private[sql] final case class ColumnTableScan(
       } else {
         val nullCode = s"int $isNullVar = $decoder.isNull($buffer, $batchOrdinal);"
         s"""
-           |${nullCode}if ($isNullVar == 0) $moveNext
-           |final int $mutatedVar = $mutatedDecoder == null ? 0
-           |    : $mutatedDecoder.mutated($batchOrdinal);
-           |if ($mutatedVar == 1) {
+           |$nullCode
+           |if ($isNullVar == 0) $moveNext
+           |final boolean $mutatedVar = $mutatedDecoder != null &&
+           |    $mutatedDecoder.mutated($batchOrdinal);
+           |if ($mutatedVar) {
            |  $isNullVar = $mutatedDecoder.isNull();
            |  if ($isNullVar == 0) $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
            |}
@@ -829,9 +832,9 @@ private[sql] final case class ColumnTableScan(
     } else {
       s"""
          |$moveNext
-         |final int $mutatedVar = $mutatedDecoder == null ? 0
-         |    : $mutatedDecoder.mutated($batchOrdinal);
-         |if ($mutatedVar == 1) {
+         |final boolean $mutatedVar = $mutatedDecoder != null &&
+         |    $mutatedDecoder.mutated($batchOrdinal);
+         |if ($mutatedVar) {
          |  $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
          |}
       """.stripMargin
@@ -877,9 +880,8 @@ private[sql] final case class ColumnTableScan(
 
         bufferInit =
             s"""
-               |$dictionary = if ($mutatedVar == 1)
-               |    ? $mutableDecoder.getCurrentDeltaBuffer().getStringDictionary()
-               |    : $decoder.getStringDictionary();
+               |$dictionary = $mutableDecoder == null ? $decoder.getStringDictionary()
+               |    : $mutableDecoder.getStringDictionary();
                |$dictionaryLen = $dictionary != null ? $dictionary.length : -1;
             """.stripMargin
         dictionaryAssignCode = s"$dictIndex = $dictionary != null " +
@@ -926,7 +928,10 @@ private[sql] final case class ColumnTableScan(
           $jtDecl
           boolean $nullVar;
           if ($isNullVar == 0) {
-            $colAssign
+            if ($mutatedVar) $col = $mutableDecoder.getCurrentDeltaBuffer().read$typeName();
+            else {
+              $colAssign
+            }
             $nullVar = false;
           } else {
             if ($isNullVar == 1) {
@@ -968,8 +973,10 @@ private[sql] final case class ColumnTableScan(
       var code =
         s"""
            |$jtDecl
-           |if ($mutatedVar == 1) $col = $mutableDecoder.getCurrentDeltaBuffer().read$typeName();
-           |else $colAssign
+           |if ($mutatedVar) $col = $mutableDecoder.getCurrentDeltaBuffer().read$typeName();
+           |else {
+           |  $colAssign
+           |}
         """.stripMargin
       if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {
         code += s"if ($col == 1) $col = $weightVar;\n"

@@ -116,10 +116,11 @@ abstract class DictionaryDecoderBase
   }
 
   private[sql] def initializeBeforeFinish(dictionaryBytes: AnyRef,
-      dictionaryCursor: Long, dictionaryLen: Int, cursor: Long, dataType: DataType): Long = {
+      dictionaryCursor: Long, dictionaryLen: Int, cursor: Long, dataType: DataType): Unit = {
     initializeDictionary(dictionaryBytes, dictionaryCursor,
       dictionaryLen, dictionaryLen, dataType)
-    cursor - 2 // move cursor back so that first next call increments it
+    // base cursor will start at the given cursor since dictionary is separate
+    baseCursor = cursor
   }
 
   override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
@@ -128,7 +129,7 @@ abstract class DictionaryDecoderBase
   override def absoluteUTF8String(columnBytes: AnyRef, position: Int): Long = {
     // TODO: PERF: optimize for local index access case by filling
     // in the dictionary array lazily on access
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 1)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 1)
   }
 
   override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
@@ -173,20 +174,13 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
     super.initializeCursor(columnBytes, cursor, field) - 2
   }
 
-  override private[sql] def initializeBeforeFinish(dictionaryBytes: AnyRef,
-      dictionaryCursor: Long, dictionaryLen: Int, cursor: Long, dataType: DataType): Long = {
-    // move cursor further back for 4 byte integer index reads
-    super.initializeBeforeFinish(dictionaryBytes, dictionaryCursor,
-      dictionaryLen, cursor, dataType) - 2
-  }
-
   override final def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
   override def absoluteUTF8String(columnBytes: AnyRef, position: Int): Long = {
     // TODO: PERF: optimize for local index access case by filling
     // in the dictionary array lazily on access
-    baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 2)
+    baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 2)
   }
 
   override final def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
@@ -314,7 +308,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     writeDictionary(columnBytes, cursor, numDictionaryElements, dictionarySize)
   }
 
-  override private[sql] def decoderBeforeFinish: ColumnDecoder = {
+  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder = {
     // can depend on nullCount here because there is no additional space
     // pre-allocated for storing nulls by dictionary encoder
     val decoder = if (nullCount > 0) {

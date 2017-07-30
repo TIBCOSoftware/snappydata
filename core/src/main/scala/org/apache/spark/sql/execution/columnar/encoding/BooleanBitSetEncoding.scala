@@ -72,8 +72,8 @@ abstract class BooleanBitSetDecoderBase
   }
 
   override def absoluteBoolean(columnBytes: AnyRef, position: Int): Long = {
-    val getPosition = position - numNullsUntilPosition(columnBytes, position) + 1
-    val wordCursor = baseCursor + (getPosition >> 6) << 3
+    val getPosition = position - numNullsUntilPosition(columnBytes, position)
+    val wordCursor = baseCursor + ((getPosition >> 6) << 3)
     currentWord = ColumnEncoding.readLong(columnBytes, wordCursor)
     // "cursor" is mod 64 and shift which is what currentWord will be masked with
     1L << (getPosition & 0x3f)
@@ -112,12 +112,22 @@ trait BooleanBitSetEncoderBase
     1L
   }
 
-  override private[sql] def decoderBeforeFinish: ColumnDecoder = {
+  override private[sql] def decoderBeforeFinish(mask: Long): ColumnDecoder = {
+    flushWithoutFinish(mask)
     // can't depend on nullCount because even with zero count, it may have
     // allocated some null space at the start in advance
     val decoder = if (isNullable) new BooleanBitSetDecoderNullable else new BooleanBitSetDecoder
     decoder.initializeCursor(null, initializeNullsBeforeFinish(decoder), null)
     decoder
+  }
+
+  override def writeInternals(columnBytes: AnyRef, cursor: Long): Long = {
+    startByteCursor = cursor
+    byteCursor = cursor
+    // nothing extra to be written but clear the currentWord
+    currentWord = 0L
+    // return the initial OR mask as expected by writeBoolean
+    1L
   }
 
   private def writeCurrentWord(): Long = {

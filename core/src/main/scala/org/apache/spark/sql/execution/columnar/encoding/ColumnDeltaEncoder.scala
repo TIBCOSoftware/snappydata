@@ -194,7 +194,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   override protected[sql] def initializeNulls(initSize: Int): Int =
     realEncoder.initializeNulls(initSize)
 
-  override private[sql] def decoderBeforeFinish: ColumnDecoder =
+  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder =
     throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
 
   override protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long =
@@ -551,7 +551,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val startIndex = if (numDeltas <= 1) 0
     else RadixSort.sort(positions, numDeltas, 0, 3, false, false)
     val endIndex = startIndex + numDeltas
-    val decoder = realEncoder.decoderBeforeFinish
+    val decoder = realEncoder.decoderBeforeFinish(encoderCursor)
     val decoderBuffer = realEncoder.buffer
     val allocator = this.storageAllocator
 
@@ -569,7 +569,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     cursor = writeHeader(columnBytes, cursor, numNullWords, positionsArray, startIndex, endIndex)
 
     // write any internal structures (e.g. dictionary)
-    cursor = writeInternals(columnBytes, cursor)
+    cursor = realEncoder.writeInternals(columnBytes, cursor)
 
     // write the encoded values
     var i = startIndex
@@ -748,7 +748,8 @@ object DeltaWriter {
           // string types currently always use dictionary encoding so when
           // not merging (i.e. sorting single set of deltas), then simply
           // read and write dictionary indexes and leave the dictionary alone
-          val index = srcDecoder.readDictionaryIndex(srcColumnBytes, srcDecoder.absoluteUTF8String(srcColumnBytes, srcPosition))
+          val index = srcDecoder.readDictionaryIndex(srcColumnBytes,
+            srcDecoder.absoluteUTF8String(srcColumnBytes, srcPosition))
           if (destEncoder.typeId == ColumnEncoding.DICTIONARY_TYPE_ID) {
             ColumnEncoding.writeShort(destEncoder.buffer, destCursor, index.toShort)
             destCursor + 2
@@ -828,7 +829,7 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
   override protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long =
     throw new UnsupportedOperationException(s"initializeNullsBeforeFinish for $toString")
 
-  override private[sql] def decoderBeforeFinish: ColumnDecoder =
+  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder =
     throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
 
   override def writeIsNull(ordinal: Int): Unit =

@@ -348,7 +348,7 @@ object JdbcExtendedUtils extends Logging {
         table = UnresolvedRelation(tableIdent),
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,
-        overwrite = OverwriteOptions(false),
+        overwrite = OverwriteOptions(enabled = false),
         ifNotExists = false)
     }
     session.sessionState.executePlan(plan).executedPlan.executeCollect()

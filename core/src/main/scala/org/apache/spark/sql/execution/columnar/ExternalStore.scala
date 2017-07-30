@@ -21,6 +21,8 @@ import java.sql.Connection
 
 import scala.reflect.ClassTag
 
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -70,7 +72,7 @@ trait ExternalStore extends Serializable {
         isClosed = true
         throw t
     } finally {
-      if (closeOnSuccess && !isClosed) {
+      if (closeOnSuccess && !isClosed && !conn.isInstanceOf[EmbedConnection]) {
         conn.commit()
         conn.close()
       }
@@ -90,10 +92,13 @@ trait ConnectedExternalStore extends ExternalStore {
   }
 
   def commitAndClose(isSuccess: Boolean): Unit = {
-    if (!connectedInstance.isClosed && isSuccess) {
-      connectedInstance.commit()
+    val conn = connectedInstance
+    if (!conn.isInstanceOf[EmbedConnection]) {
+      if (!conn.isClosed && isSuccess) {
+        conn.commit()
+      }
+      conn.close()
     }
-    connectedInstance.close()
   }
 
   override def tryExecute[T: ClassTag](tableName: String,

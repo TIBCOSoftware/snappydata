@@ -22,7 +22,6 @@ import java.util.UUID
 
 import scala.annotation.meta.param
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -32,7 +31,7 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnectionContext
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
 
@@ -49,6 +48,7 @@ import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
+import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Partition, TaskContext}
 
 /**
@@ -59,8 +59,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     extends ExternalStore with KryoSerializable {
 
   self =>
-  @transient
-  protected lazy val rand = new Random
+
+  @transient protected lazy val rand = new XORShiftRandom
 
   override final def tableName: String = _tableName
 
@@ -377,11 +377,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
         val resolvedName = ExternalStoreUtils.lookupName(tableName,
           connection.getSchema)
-        // the lookup key depends only on schema and not on the table
-        // name since the prepared statement specific to the table is
-        // passed in separately through the references object
         val gen = CodeGeneration.compileCode(
-          "COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
+          resolvedName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
             val schemaAttrs = schema.toAttributes
             val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
               otherRDDs = Seq.empty, numBuckets = -1,
@@ -472,8 +469,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
       }
     } finally {
-      connection.commit()
-      connection.close()
+      if (!connection.isInstanceOf[EmbedConnection]) {
+        connection.commit()
+        connection.close()
+      }
     }
   }
 }
