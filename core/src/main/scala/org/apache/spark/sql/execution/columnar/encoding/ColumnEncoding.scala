@@ -97,179 +97,171 @@ abstract class ColumnDecoder extends ColumnEncoding {
   private[sql] def initializeNullsBeforeFinish(
       columnBytes: AnyRef, cursor: Long, numNullBytes: Int): Unit = {}
 
-  def mutated(ordinal: Int): Int = 1
-
   /**
    * Returns 1 to indicate that column value was not-null,
    * 0 to indicate that it was null and -1 to indicate that
    * <code>wasNull()</code> needs to be invoked after the
    * appropriate read method.
    */
-  def isNull(columnBytes: AnyRef, ordinal: Int, mutated: Int): Int
+  def isNull(columnBytes: AnyRef, ordinal: Int): Int
 
   /** Absolute ordinal null check for random access. */
   def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
     throw new UnsupportedOperationException(s"isNullAt for $toString")
 
-  def nextBoolean(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextBoolean(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextBoolean for $toString")
 
   /** Random access to the encoded data. */
   def absoluteBoolean(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteBoolean for $toString")
 
-  def readBoolean(columnBytes: AnyRef, cursor: Long, mutated: Int): Boolean =
+  def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
     throw new UnsupportedOperationException(s"readBoolean for $toString")
 
-  def nextByte(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextByte(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextByte for $toString")
 
   def absoluteByte(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteByte for $toString")
 
-  def readByte(columnBytes: AnyRef, cursor: Long, mutated: Int): Byte =
+  def readByte(columnBytes: AnyRef, cursor: Long): Byte =
     throw new UnsupportedOperationException(s"readByte for $toString")
 
-  def nextShort(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextShort(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextShort for $toString")
 
   def absoluteShort(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteShort for $toString")
 
-  def readShort(columnBytes: AnyRef, cursor: Long, mutated: Int): Short =
+  def readShort(columnBytes: AnyRef, cursor: Long): Short =
     throw new UnsupportedOperationException(s"readShort for $toString")
 
-  def nextInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextInt for $toString")
 
   def absoluteInt(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteInt for $toString")
 
-  def readInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
+  def readInt(columnBytes: AnyRef, cursor: Long): Int =
     throw new UnsupportedOperationException(s"readInt for $toString")
 
-  def nextLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextLong for $toString")
 
   def absoluteLong(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteLong for $toString")
 
-  def readLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def readLong(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"readLong for $toString")
 
-  def nextFloat(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextFloat(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextFloat for $toString")
 
   def absoluteFloat(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteFloat for $toString")
 
-  def readFloat(columnBytes: AnyRef, cursor: Long, mutated: Int): Float =
+  def readFloat(columnBytes: AnyRef, cursor: Long): Float =
     throw new UnsupportedOperationException(s"readFloat for $toString")
 
-  def nextDouble(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextDouble(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextDouble for $toString")
 
   def absoluteDouble(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteDouble for $toString")
 
-  def readDouble(columnBytes: AnyRef, cursor: Long, mutated: Int): Double =
+  def readDouble(columnBytes: AnyRef, cursor: Long): Double =
     throw new UnsupportedOperationException(s"readDouble for $toString")
 
-  def nextLongDecimal(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextLongDecimal for $toString")
 
   def absoluteLongDecimal(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteLongDecimal for $toString")
 
   def readLongDecimal(columnBytes: AnyRef, precision: Int,
-      scale: Int, cursor: Long, mutated: Int): Decimal =
+      scale: Int, cursor: Long): Decimal =
     throw new UnsupportedOperationException(s"readLongDecimal for $toString")
 
-  def nextDecimal(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextDecimal(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextDecimal for $toString")
 
   def absoluteDecimal(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteDecimal for $toString")
 
   def readDecimal(columnBytes: AnyRef, precision: Int,
-      scale: Int, cursor: Long, mutated: Int): Decimal =
+      scale: Int, cursor: Long): Decimal =
     throw new UnsupportedOperationException(s"readDecimal for $toString")
 
-  def nextUTF8String(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextUTF8String for $toString")
 
   def absoluteUTF8String(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteUTF8String for $toString")
 
-  def readUTF8String(columnBytes: AnyRef, cursor: Long, mutated: Int): UTF8String =
+  def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     throw new UnsupportedOperationException(s"readUTF8String for $toString")
 
   def getStringDictionary: Array[UTF8String] = null
 
-  def readDictionaryIndex(columnBytes: AnyRef, cursor: Long, mutated: Int): Int = -1
-
-  def nextDate(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
-    nextInt(columnBytes, cursor, mutated)
+  def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int = -1
 
   def absoluteDate(columnBytes: AnyRef, position: Int): Long =
     absoluteInt(columnBytes, position)
 
-  def readDate(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
-    readInt(columnBytes, cursor, mutated)
+  def readDate(columnBytes: AnyRef, cursor: Long): Int =
+    readInt(columnBytes, cursor)
 
-  def nextTimestamp(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
-    nextLong(columnBytes, cursor, mutated)
-
-  def absoluteTimestamp(columnBytes: AnyRef, position: Int, mutated: Int): Long =
+  def absoluteTimestamp(columnBytes: AnyRef, position: Int): Long =
     absoluteLong(columnBytes, position)
 
-  def readTimestamp(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
-    readLong(columnBytes, cursor, mutated)
+  def readTimestamp(columnBytes: AnyRef, cursor: Long): Long =
+    readLong(columnBytes, cursor)
 
-  def nextInterval(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextInterval(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextInterval for $toString")
 
   def absoluteInterval(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteInterval for $toString")
 
-  def readInterval(columnBytes: AnyRef, cursor: Long, mutated: Int): CalendarInterval =
+  def readInterval(columnBytes: AnyRef, cursor: Long): CalendarInterval =
     throw new UnsupportedOperationException(s"readInterval for $toString")
 
-  def nextBinary(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextBinary(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextBinary for $toString")
 
   def absoluteBinary(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteBinary for $toString")
 
-  def readBinary(columnBytes: AnyRef, cursor: Long, mutated: Int): Array[Byte] =
+  def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] =
     throw new UnsupportedOperationException(s"readBinary for $toString")
 
-  def nextArray(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextArray(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextArray for $toString")
 
   def absoluteArray(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteArray for $toString")
 
-  def readArray(columnBytes: AnyRef, cursor: Long, mutated: Int): ArrayData =
+  def readArray(columnBytes: AnyRef, cursor: Long): ArrayData =
     throw new UnsupportedOperationException(s"readArray for $toString")
 
-  def nextMap(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextMap(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextMap for $toString")
 
   def absoluteMap(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteMap for $toString")
 
-  def readMap(columnBytes: AnyRef, cursor: Long, mutated: Int): MapData =
+  def readMap(columnBytes: AnyRef, cursor: Long): MapData =
     throw new UnsupportedOperationException(s"readMap for $toString")
 
-  def nextStruct(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  def nextStruct(columnBytes: AnyRef, cursor: Long): Long =
     throw new UnsupportedOperationException(s"nextStruct for $toString")
 
   def absoluteStruct(columnBytes: AnyRef, position: Int): Long =
     throw new UnsupportedOperationException(s"absoluteStruct for $toString")
 
   def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long, mutated: Int): InternalRow =
+      cursor: Long): InternalRow =
     throw new UnsupportedOperationException(s"readStruct for $toString")
 
   /**
@@ -1138,7 +1130,7 @@ trait NotNullDecoder extends ColumnDecoder {
     cursor + 8 // skip typeId and nullValuesSize
   }
 
-  override final def isNull(columnBytes: AnyRef, ordinal: Int, mutated: Int): Int = 0
+  override final def isNull(columnBytes: AnyRef, ordinal: Int): Int = 0
 
   override def isNullAt(columnBytes: AnyRef, position: Int): Boolean = false
 
@@ -1182,7 +1174,7 @@ trait NullableDecoder extends ColumnDecoder {
     updateNextNullOrdinal(columnBytes)
   }
 
-  override final def isNull(columnBytes: AnyRef, ordinal: Int, mutated: Int): Int = {
+  override final def isNull(columnBytes: AnyRef, ordinal: Int): Int = {
     if (ordinal != nextNullOrdinal) 0
     else {
       updateNextNullOrdinal(columnBytes)

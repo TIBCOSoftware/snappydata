@@ -166,10 +166,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  protected def doSnappyInsertOrPut(tableName: String, batch: ColumnBatch,
+  protected def doSnappyInsertOrPut(tableName: String, region: LocalRegion, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int, maxDeltaRows: Int): Unit = {
-    val region = Misc.getRegionForTable[ColumnFormatKey,
-        ColumnFormatValue](tableName, true)
     val deltaUpdate = batch.deltaIndexes ne null
     val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
     else ColumnFormatEntry.STATROW_COL_INDEX
@@ -426,9 +424,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         connectionType match {
           case ConnectionType.Embedded =>
             val region = Misc.getRegionForTable(resolvedColumnTableName, true)
-                .asInstanceOf[PartitionedRegion]
+                .asInstanceOf[LocalRegion]
             val batchID = Some(batchId.getOrElse(region.newJavaUUID().toString))
-            doSnappyInsertOrPut(resolvedColumnTableName, batch, batchID,
+            doSnappyInsertOrPut(resolvedColumnTableName, region, batch, batchID,
               partitionId, maxDeltaRows)
 
           case _ =>

@@ -275,9 +275,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       decoderBytes: AnyRef, writer: DeltaWriter, encoderCursor: Long,
       encoderOrdinal: Int, forMerge: Boolean, doWrite: Boolean = true): Long = {
     assert(doWrite || decoderAbsolutePosition < 0)
-    if (true) { // realEncoder.isNullable) {
+    if (realEncoder.isNullable) {
       val isNull = if (decoderAbsolutePosition < 0) {
-        decoder.isNull(decoderBytes, decoderOrdinal, mutated = 0) == 1
+        decoder.isNull(decoderBytes, decoderOrdinal) == 1
       } else decoder.isNullAt(decoderBytes, decoderAbsolutePosition)
       if (isNull) {
         if (doWrite) realEncoder.writeIsNull(encoderOrdinal)
@@ -682,12 +682,12 @@ object DeltaWriter {
              |      int encoderOrdinal, boolean forMerge, boolean doWrite) {
              |    if (srcPosition < 0) {
              |      srcDecoder.currentCursor_$$eq(srcDecoder.next$name(srcColumnBytes,
-             |        srcDecoder.currentCursor(), 0));
+             |        srcDecoder.currentCursor()));
              |      return doWrite ? destEncoder.write$name(destCursor, srcDecoder.read$name(
-             |          srcColumnBytes, srcDecoder.currentCursor(), 0)) : destCursor;
+             |          srcColumnBytes, srcDecoder.currentCursor())) : destCursor;
              |    } else {
              |      return destEncoder.write$name(destCursor, srcDecoder.read$name(
-             |          srcColumnBytes, srcDecoder.absolute$name(srcColumnBytes, srcPosition), 0));
+             |          srcColumnBytes, srcDecoder.absolute$name(srcColumnBytes, srcPosition)));
              |    }
              |  }
              |};
@@ -701,10 +701,10 @@ object DeltaWriter {
              |      int encoderOrdinal, boolean forMerge, boolean doWrite) {
              |    if (srcPosition < 0) {
              |      srcDecoder.currentCursor_$$eq(srcDecoder.next$name(srcColumnBytes,
-             |        srcDecoder.currentCursor(), 0));
+             |        srcDecoder.currentCursor()));
              |      if (doWrite) {
              |        $complexType data = ($complexType)srcDecoder.read$name(srcColumnBytes,
-             |           srcDecoder.currentCursor(), 0);
+             |           srcDecoder.currentCursor());
              |        return destEncoder.writeUnsafeData(destCursor, data.getBaseObject(),
              |           data.getBaseOffset(), data.getSizeInBytes());
              |      } else {
@@ -712,7 +712,7 @@ object DeltaWriter {
              |      }
              |    } else {
              |      $complexType data = ($complexType)srcDecoder.read$name(srcColumnBytes,
-             |        srcDecoder.absolute$name(srcColumnBytes, srcPosition), 0);
+             |        srcDecoder.absolute$name(srcColumnBytes, srcPosition));
              |      return destEncoder.writeUnsafeData(destCursor, data.getBaseObject(),
              |        data.getBaseOffset(), data.getSizeInBytes());
              |    }
@@ -735,23 +735,20 @@ object DeltaWriter {
         if (forMerge) {
           if (srcPosition < 0) {
             srcDecoder.currentCursor = srcDecoder.nextUTF8String(srcColumnBytes,
-              srcDecoder.currentCursor, mutated = 0)
+              srcDecoder.currentCursor)
             if (doWrite) {
-              val str = srcDecoder.readUTF8String(srcColumnBytes, srcDecoder.currentCursor,
-                mutated = 0)
+              val str = srcDecoder.readUTF8String(srcColumnBytes, srcDecoder.currentCursor)
               destEncoder.writeUTF8String(destCursor, str)
             } else destCursor
           } else {
             destEncoder.writeUTF8String(destCursor, srcDecoder.readUTF8String(
-              srcColumnBytes, srcDecoder.absoluteUTF8String(srcColumnBytes, srcPosition),
-              mutated = 0))
+              srcColumnBytes, srcDecoder.absoluteUTF8String(srcColumnBytes, srcPosition)))
           }
         } else {
           // string types currently always use dictionary encoding so when
           // not merging (i.e. sorting single set of deltas), then simply
           // read and write dictionary indexes and leave the dictionary alone
-          val index = srcDecoder.readDictionaryIndex(srcColumnBytes,
-            srcDecoder.absoluteUTF8String(srcColumnBytes, srcPosition), mutated = 0)
+          val index = srcDecoder.readDictionaryIndex(srcColumnBytes, srcDecoder.absoluteUTF8String(srcColumnBytes, srcPosition))
           if (destEncoder.typeId == ColumnEncoding.DICTIONARY_TYPE_ID) {
             ColumnEncoding.writeShort(destEncoder.buffer, destCursor, index.toShort)
             destCursor + 2
@@ -768,17 +765,16 @@ object DeltaWriter {
           encoderOrdinal: Int, forMerge: Boolean, doWrite: Boolean): Long = {
         if (srcPosition < 0) {
           srcDecoder.currentCursor = srcDecoder.nextLongDecimal(srcColumnBytes,
-            srcDecoder.currentCursor, mutated = 0)
+            srcDecoder.currentCursor)
           if (doWrite) {
             destEncoder.writeLongDecimal(destCursor, srcDecoder.readLongDecimal(
-              srcColumnBytes, d.precision, d.scale, srcDecoder.currentCursor,
-              mutated = 0), encoderOrdinal, d.precision, d.scale)
+              srcColumnBytes, d.precision, d.scale, srcDecoder.currentCursor),
+              encoderOrdinal, d.precision, d.scale)
           } else destCursor
         } else {
           destEncoder.writeLongDecimal(destCursor, srcDecoder.readLongDecimal(
             srcColumnBytes, d.precision, d.scale, srcDecoder.absoluteLongDecimal(
-              srcColumnBytes, srcPosition), mutated = 0), encoderOrdinal,
-            d.precision, d.scale)
+              srcColumnBytes, srcPosition)), encoderOrdinal, d.precision, d.scale)
         }
       }
     }
@@ -788,17 +784,16 @@ object DeltaWriter {
           encoderOrdinal: Int, forMerge: Boolean, doWrite: Boolean): Long = {
         if (srcPosition < 0) {
           srcDecoder.currentCursor = srcDecoder.nextDecimal(srcColumnBytes,
-            srcDecoder.currentCursor, mutated = 0)
+            srcDecoder.currentCursor)
           if (doWrite) {
             destEncoder.writeDecimal(destCursor, srcDecoder.readDecimal(
-              srcColumnBytes, d.precision, d.scale, srcDecoder.currentCursor,
-              mutated = 0), encoderOrdinal, d.precision, d.scale)
+              srcColumnBytes, d.precision, d.scale, srcDecoder.currentCursor),
+              encoderOrdinal, d.precision, d.scale)
           } else destCursor
         } else {
           destEncoder.writeDecimal(destCursor, srcDecoder.readDecimal(
             srcColumnBytes, d.precision, d.scale, srcDecoder.absoluteDecimal(
-              srcColumnBytes, srcPosition), mutated = 0), encoderOrdinal,
-            d.precision, d.scale)
+              srcColumnBytes, srcPosition)), encoderOrdinal, d.precision, d.scale)
         }
       }
     }

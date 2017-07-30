@@ -19,10 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.types.{DataType, Decimal, StructField}
-import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+import org.apache.spark.sql.types.StructField
 
 /**
  * Decodes a column of a batch that has seen some changes (updates or deletes) by
@@ -45,9 +42,7 @@ final class MutatedColumnDecoder(decoder: ColumnDecoder,
     extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
-  override protected[sql] def hasNulls: Boolean = false
-
-  override def isNull(columnBytes: AnyRef, ordinal: Int, mutated: Int): Int = 0
+  def isNull: Int = 0
 }
 
 /**
@@ -60,17 +55,7 @@ final class MutatedColumnDecoderNullable(decoder: ColumnDecoder,
     extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
-  override protected[sql] def hasNulls: Boolean = true
-
-  override def isNull(columnBytes: AnyRef, ordinal: Int, mutated: Int): Int = {
-    if (mutated == 1) {
-      // TODO: SW: for null and base column non-null this will not move cursor of base
-      currentDeltaBuffer.isNull
-    } else {
-      // for deleted read from main column itself so next* can be invoked if required
-      decoder.isNull(columnBytes, ordinal, mutated)
-    }
-  }
+  def isNull: Int = currentDeltaBuffer.isNull
 }
 
 object MutatedColumnDecoder {
@@ -118,7 +103,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     private final var delta1Position: Int, delta1: ColumnDeltaDecoder,
     private final var delta2Position: Int, delta2: ColumnDeltaDecoder,
     private final var delta3Position: Int, delta3: ColumnDeltaDecoder,
-    deleteBuffer: ByteBuffer) extends ColumnDecoder {
+    deleteBuffer: ByteBuffer) {
 
   private final var deletePosition = Int.MaxValue
   private final var deleteCursor: Long = _
@@ -137,17 +122,10 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
   protected final var nextDeltaBuffer: ColumnDeltaDecoder = _
   protected final var currentDeltaBuffer: ColumnDeltaDecoder = _
 
-  override def typeId: Int = decoder.typeId
+  final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
-  override final def supports(dataType: DataType): Boolean = decoder.supports(dataType)
-
-  override protected[sql] def initializeNulls(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = decoder.initializeNulls(columnBytes, cursor, field)
-
-  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = {
+  def initialize(): Unit = {
     updateNextMutatedPosition()
-    decoder.initializeCursor(columnBytes, cursor, field)
   }
 
   private def nextDeletedPosition(): Int = {
@@ -200,7 +178,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     nextMutatedPosition = next
   }
 
-  override final def mutated(ordinal: Int): Int = {
+  final def mutated(ordinal: Int): Int = {
     if (nextMutatedPosition != ordinal) 0
     else {
       currentDeltaBuffer = nextDeltaBuffer
@@ -210,288 +188,5 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     }
   }
 
-  override final def nextBoolean(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextBoolean()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextBoolean(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readBoolean(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Boolean = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readBoolean(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readBoolean
-    }
-  }
-
-  override final def nextByte(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextByte()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextByte(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readByte(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Byte = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readByte(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readByte
-    }
-  }
-
-  override final def nextShort(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextShort()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextShort(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readShort(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Short = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readShort(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readShort
-    }
-  }
-
-  override final def nextInt(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextInt()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextInt(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readInt(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Int = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readInt(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readInt
-    }
-  }
-
-  override final def nextLong(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextLong()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextLong(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readLong(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readLong(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readLong
-    }
-  }
-
-  override final def nextFloat(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextFloat()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextFloat(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readFloat(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Float = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readFloat(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readFloat
-    }
-  }
-
-  override final def nextDouble(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextDouble()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextDouble(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readDouble(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Double = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readDouble(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readDouble
-    }
-  }
-
-  override final def nextLongDecimal(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextLongDecimal()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextLongDecimal(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readLongDecimal(columnBytes: AnyRef, precision: Int,
-      scale: Int, cursor: Long, mutated: Int): Decimal = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readLongDecimal(columnBytes, precision, scale, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readLongDecimal(precision, scale)
-    }
-  }
-
-  override final def nextDecimal(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextDecimal()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextDecimal(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readDecimal(columnBytes: AnyRef, precision: Int,
-      scale: Int, cursor: Long, mutated: Int): Decimal = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readDecimal(columnBytes, precision, scale, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readDecimal(precision, scale)
-    }
-  }
-
-  override final def nextUTF8String(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextUTF8String()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextUTF8String(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readUTF8String(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): UTF8String = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readUTF8String(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readUTF8String
-    }
-  }
-
-  override final def nextInterval(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextInterval()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextInterval(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readInterval(columnBytes: AnyRef,
-      cursor: Long, mutated: Int): CalendarInterval = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readInterval(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readInterval
-    }
-  }
-
-  override final def nextBinary(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextBinary()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextBinary(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readBinary(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Array[Byte] = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readBinary(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readBinary
-    }
-  }
-
-  override final def nextArray(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextArray()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextArray(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readArray(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): ArrayData = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readArray(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readArray
-    }
-  }
-
-  override final def nextMap(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextMap()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextMap(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readMap(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): MapData = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readMap(columnBytes, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readMap
-    }
-  }
-
-  override final def nextStruct(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
-    if (mutated == 1) {
-      currentDeltaBuffer.nextStruct()
-    }
-    // should increment the main column cursor in any case
-    decoder.nextStruct(columnBytes, cursor, mutated = 0)
-  }
-
-  override final def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long, mutated: Int): InternalRow = {
-    // deleted case not handled here and caller should continue
-    if (mutated == 0) {
-      decoder.readStruct(columnBytes, numFields, cursor, mutated = 0)
-    } else {
-      currentDeltaBuffer.readStruct(numFields)
-    }
-  }
+  def isNull: Int
 }

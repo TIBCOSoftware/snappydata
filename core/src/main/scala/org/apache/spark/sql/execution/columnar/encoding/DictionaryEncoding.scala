@@ -122,7 +122,7 @@ abstract class DictionaryDecoderBase
     cursor - 2 // move cursor back so that first next call increments it
   }
 
-  override def nextUTF8String(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
 
   override def absoluteUTF8String(columnBytes: AnyRef, position: Int): Long = {
@@ -131,36 +131,35 @@ abstract class DictionaryDecoderBase
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 1)
   }
 
-  override def readUTF8String(columnBytes: AnyRef,
-      cursor: Long, mutated: Int): UTF8String =
+  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     stringDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 
   override final def getStringDictionary: Array[UTF8String] =
     stringDictionary
 
-  override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
+  override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
     if (ColumnEncoding.littleEndian) {
       Platform.getShort(columnBytes, cursor)
     } else {
       java.lang.Short.reverseBytes(Platform.getShort(columnBytes, cursor))
     }
 
-  override def nextInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
 
   override def absoluteInt(columnBytes: AnyRef, position: Int): Long =
     absoluteUTF8String(columnBytes, position)
 
-  override def readInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
+  override def readInt(columnBytes: AnyRef, cursor: Long): Int =
     intDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 
-  override def nextLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
 
   override def absoluteLong(columnBytes: AnyRef, position: Int): Long =
     absoluteUTF8String(columnBytes, position)
 
-  override def readLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def readLong(columnBytes: AnyRef, cursor: Long): Long =
     longDictionary(ColumnEncoding.readShort(columnBytes, cursor))
 }
 
@@ -181,8 +180,8 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
       dictionaryLen, cursor, dataType) - 2
   }
 
-  override final def nextUTF8String(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = cursor + 4
+  override final def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
+    cursor + 4
 
   override def absoluteUTF8String(columnBytes: AnyRef, position: Int): Long = {
     // TODO: PERF: optimize for local index access case by filling
@@ -190,33 +189,32 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position) + 1) << 2)
   }
 
-  override final def readUTF8String(columnBytes: AnyRef,
-      cursor: Long, mutated: Int): UTF8String =
+  override final def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     stringDictionary(ColumnEncoding.readInt(columnBytes, cursor))
 
-  override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
+  override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
     if (ColumnEncoding.littleEndian) {
       Platform.getInt(columnBytes, cursor)
     } else {
       java.lang.Integer.reverseBytes(Platform.getInt(columnBytes, cursor))
     }
 
-  override final def nextInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override final def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
   override def absoluteInt(columnBytes: AnyRef, position: Int): Long =
     absoluteUTF8String(columnBytes, position)
 
-  override final def readInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
+  override final def readInt(columnBytes: AnyRef, cursor: Long): Int =
     intDictionary(ColumnEncoding.readInt(columnBytes, cursor))
 
-  override final def nextLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override final def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
   override def absoluteLong(columnBytes: AnyRef, position: Int): Long =
     absoluteUTF8String(columnBytes, position)
 
-  override final def readLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override final def readLong(columnBytes: AnyRef, cursor: Long): Long =
     longDictionary(ColumnEncoding.readInt(columnBytes, cursor))
 }
 

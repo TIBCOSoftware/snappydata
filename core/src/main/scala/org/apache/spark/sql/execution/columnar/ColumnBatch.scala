@@ -29,7 +29,7 @@ import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, MutatedColumnDecoder}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, MutatedColumnDecoder, MutatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.types.StructField
@@ -182,8 +182,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   }
 
   def getMutatedColumnDecoderIfRequired(decoder: ColumnDecoder, field: StructField,
-      columnIndex: Int, skipDelete: Boolean): ColumnDecoder = {
-    if (currentDeltaVal eq null) decoder
+      columnIndex: Int, skipDelete: Boolean): MutatedColumnDecoderBase = {
+    if (currentDeltaVal eq null) null
     else {
       // TODO: SW: check for actual delta stats to see if there are updates
       val deltaIndex = ColumnDelta.deltaColumnIndex(columnIndex, 0)
@@ -194,7 +194,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
       else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX, throwIfMissing = false)
       if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
         MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
-      } else decoder
+      } else null
     }
   }
 
@@ -294,7 +294,9 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   }
 
   def getMutatedColumnDecoderIfRequired(decoder: ColumnDecoder, field: StructField,
-      columnIndex: Int, skipDelete: Boolean): ColumnDecoder = {
+      columnIndex: Int, skipDelete: Boolean): MutatedColumnDecoder = {
+    null
+    /*
     val deltaIndex = ColumnDelta.deltaColumnIndex(columnIndex, 0)
     val buffers = colBuffers
     val delta1 = buffers.get(deltaIndex)
@@ -305,6 +307,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
       MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
     } else decoder
+    */
   }
 
   private def releaseColumns(): Unit = {

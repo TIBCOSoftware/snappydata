@@ -75,7 +75,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     s"${super.simpleString} update: columns=$updateColumns expressions=$updateExpressions"
 
   @transient private var batchOrdinal: String = _
-  @transient private var batchIdTerm: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
 
@@ -89,7 +88,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishUpdate(null); // force a finish
+         |  $finishUpdate(null, -1); // force a finish
          |}
       """.stripMargin)
   }
@@ -101,9 +100,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val cursors = ctx.freshName("cursors")
     val index = ctx.freshName("index")
     batchOrdinal = ctx.freshName("batchOrdinal")
-    batchIdTerm = ctx.freshName("batchId")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
-    val bucketId = ctx.freshName("bucketId")
+    val lastBucketId = ctx.freshName("lastBucketId")
     finishUpdate = ctx.freshName("finishUpdate")
     val initializeEncoders = ctx.freshName("initializeEncoders")
 
@@ -127,9 +125,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |$initializeEncoders();
       """.stripMargin)
     ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("UTF8String", batchIdTerm, "")
     ctx.addMutableState("UTF8String", lastColumnBatchId, "")
-    ctx.addMutableState("int", bucketId, "")
+    ctx.addMutableState("int", lastBucketId, "")
 
     ctx.INPUT_ROW = null
     ctx.currentVars = input
@@ -150,12 +147,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val numKeys = keyColumns.length
     val positionTerm = updateInput(updateInput.length - numKeys).value
 
-    val updateVarsCode =
-      s"""
-         |${evaluateVariables(updateInput)}
-         |$batchIdTerm = ${updateInput(updateInput.length - numKeys + 1).value};
-         |$bucketId = ${updateInput(updateInput.length - numKeys + 2).value};
-      """.stripMargin
+    val updateVarsCode = evaluateVariables(updateInput)
+    val batchIdVar = updateInput(updateInput.length - numKeys + 1).value
+    val bucketIdVar = updateInput(updateInput.length - numKeys + 2).value
     // row buffer needs to select the rowId for the ordinal
     val rowConsume = super.doConsume(ctx, updateInput, StructType(
       getUpdateSchema(updateExpressions) :+ ColumnDelta.mutableKeyFields.head))
@@ -196,12 +190,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     }.mkString("\n")
     ctx.addNewFunction(finishUpdate,
       s"""
-         |private void $finishUpdate(UTF8String $batchIdTerm) {
-         |  if ($batchIdTerm != $lastColumnBatchId && ($batchIdTerm == null ||
-         |      !$batchIdTerm.equals($lastColumnBatchId))) {
+         |private void $finishUpdate(UTF8String batchId, int bucketId) {
+         |  if (batchId == null || !batchId.equals($lastColumnBatchId)) {
          |    if ($lastColumnBatchId == null) {
          |      // first call
-         |      $lastColumnBatchId = $batchIdTerm;
+         |      $lastColumnBatchId = batchId;
+         |      $lastBucketId = bucketId;
          |      return;
          |    }
          |    // finish previous encoders, put into table and re-initialize
@@ -215,11 +209,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch,
-         |        $bucketId, $lastColumnBatchId, -1);
+         |        $lastBucketId, $lastColumnBatchId, -1);
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();
-         |    $lastColumnBatchId = $batchIdTerm;
+         |    $lastColumnBatchId = batchId;
+         |    $lastBucketId = bucketId;
          |    $batchOrdinal = 0;
          |  }
          |}
@@ -227,9 +222,11 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
     s"""
        |$updateVarsCode
-       |if ($batchIdTerm != null) {
+       |if ($batchIdVar != null) {
        |  // finish and apply update if the next column batch ID is seen
-       |  $finishUpdate($batchIdTerm);
+       |  if ($batchIdVar != $lastColumnBatchId) {
+       |    $finishUpdate($batchIdVar, $bucketIdVar);
+       |  }
        |  // write to the encoders
        |  $callEncoders
        |  $batchOrdinal++;

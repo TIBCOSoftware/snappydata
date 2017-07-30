@@ -73,81 +73,81 @@ abstract class UncompressedDecoderBase
     }
   }
 
-  override def nextBoolean(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 1
 
   override def absoluteBoolean(columnBytes: AnyRef, position: Int): Long =
     baseCursor + (position - numNullsUntilPosition(columnBytes, position))
 
-  override def readBoolean(columnBytes: AnyRef, cursor: Long, mutated: Int): Boolean =
+  override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
     Platform.getByte(columnBytes, cursor) == 1
 
-  override def nextByte(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextByte(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 1
 
   override def absoluteByte(columnBytes: AnyRef, position: Int): Long =
     baseCursor + (position - numNullsUntilPosition(columnBytes, position))
 
-  override def readByte(columnBytes: AnyRef, cursor: Long, mutated: Int): Byte =
+  override def readByte(columnBytes: AnyRef, cursor: Long): Byte =
     Platform.getByte(columnBytes, cursor)
 
-  override def nextShort(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextShort(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
 
   override def absoluteShort(columnBytes: AnyRef, position: Int): Long =
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 1)
 
-  override def readShort(columnBytes: AnyRef, cursor: Long, mutated: Int): Short =
+  override def readShort(columnBytes: AnyRef, cursor: Long): Short =
     ColumnEncoding.readShort(columnBytes, cursor)
 
-  override def nextInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
   override def absoluteInt(columnBytes: AnyRef, position: Int): Long =
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 2)
 
-  override def readInt(columnBytes: AnyRef, cursor: Long, mutated: Int): Int =
+  override def readInt(columnBytes: AnyRef, cursor: Long): Int =
     ColumnEncoding.readInt(columnBytes, cursor)
 
-  override def nextLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextLong(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 8
 
   override def absoluteLong(columnBytes: AnyRef, position: Int): Long =
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 3)
 
-  override def readLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def readLong(columnBytes: AnyRef, cursor: Long): Long =
     ColumnEncoding.readLong(columnBytes, cursor)
 
-  override def nextFloat(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextFloat(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4
 
   override def absoluteFloat(columnBytes: AnyRef, position: Int): Long =
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 2)
 
-  override def readFloat(columnBytes: AnyRef, cursor: Long, mutated: Int): Float =
+  override def readFloat(columnBytes: AnyRef, cursor: Long): Float =
     ColumnEncoding.readFloat(columnBytes, cursor)
 
-  override def nextDouble(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextDouble(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 8
 
   override def absoluteDouble(columnBytes: AnyRef, position: Int): Long =
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 3)
 
-  override def readDouble(columnBytes: AnyRef, cursor: Long, mutated: Int): Double =
+  override def readDouble(columnBytes: AnyRef, cursor: Long): Double =
     ColumnEncoding.readDouble(columnBytes, cursor)
 
-  override def nextLongDecimal(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextLongDecimal(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 8
 
   override def absoluteLongDecimal(columnBytes: AnyRef, position: Int): Long =
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 3)
 
   override def readLongDecimal(columnBytes: AnyRef, precision: Int,
-      scale: Int, cursor: Long, mutated: Int): Decimal =
+      scale: Int, cursor: Long): Decimal =
     Decimal.createUnsafe(ColumnEncoding.readLong(columnBytes, cursor),
       precision, scale)
 
-  override def nextDecimal(columnBytes: AnyRef, cursor: Long, mutated: Int): Long = {
+  override def nextDecimal(columnBytes: AnyRef, cursor: Long): Long = {
     // cursor == 0 indicates first call so don't increment cursor
     if (cursor != 0) {
       cursor + 4 + ColumnEncoding.readInt(columnBytes, cursor)
@@ -168,40 +168,40 @@ abstract class UncompressedDecoderBase
   }
 
   override def readDecimal(columnBytes: AnyRef, precision: Int,
-      scale: Int, cursor: Long, mutated: Int): Decimal = {
+      scale: Int, cursor: Long): Decimal = {
     Decimal.apply(new BigDecimal(new BigInteger(readBinary(columnBytes,
-      cursor, mutated)), scale), precision, scale)
+      cursor)), scale), precision, scale)
   }
 
-  override def nextUTF8String(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
-    nextDecimal(columnBytes, cursor, mutated)
+  override def nextUTF8String(columnBytes: AnyRef, cursor: Long): Long =
+    nextDecimal(columnBytes, cursor)
 
   override def absoluteUTF8String(columnBytes: AnyRef, position: Int): Long =
     absoluteDecimal(columnBytes, position)
 
-  override def readUTF8String(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): UTF8String = ColumnEncoding.readUTF8String(columnBytes, cursor)
+  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
+    ColumnEncoding.readUTF8String(columnBytes, cursor)
 
-  override def nextInterval(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
+  override def nextInterval(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 12
 
   override def absoluteInterval(columnBytes: AnyRef, position: Int): Long =
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) * 12)
 
   override def readInterval(columnBytes: AnyRef,
-      cursor: Long, mutated: Int): CalendarInterval = {
+      cursor: Long): CalendarInterval = {
     val months = ColumnEncoding.readInt(columnBytes, cursor)
     val micros = ColumnEncoding.readLong(columnBytes, cursor + 4)
     new CalendarInterval(months, micros)
   }
 
-  override def nextBinary(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
-    nextDecimal(columnBytes, cursor, mutated)
+  override def nextBinary(columnBytes: AnyRef, cursor: Long): Long =
+    nextDecimal(columnBytes, cursor)
 
   override def absoluteBinary(columnBytes: AnyRef, position: Int): Long =
     absoluteDecimal(columnBytes, position)
 
-  override def readBinary(columnBytes: AnyRef, cursor: Long, mutated: Int): Array[Byte] = {
+  override def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] = {
     val size = ColumnEncoding.readInt(columnBytes, cursor)
     val b = new Array[Byte](size)
     Platform.copyMemory(columnBytes, cursor + 4, b,
@@ -209,7 +209,7 @@ abstract class UncompressedDecoderBase
     b
   }
 
-  override def nextArray(columnBytes: AnyRef, cursor: Long, mutated: Int): Long = {
+  override def nextArray(columnBytes: AnyRef, cursor: Long): Long = {
     // cursor == 0 indicates first call so don't increment cursor
     if (cursor != 0) {
       val size = ColumnEncoding.readInt(columnBytes, cursor)
@@ -232,8 +232,7 @@ abstract class UncompressedDecoderBase
     cursor
   }
 
-  override def readArray(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): SerializedArray = {
+  override def readArray(columnBytes: AnyRef, cursor: Long): SerializedArray = {
     // 4 bytes for size and then 4 bytes for number of elements
     val result = new SerializedArray(8)
     val size = ColumnEncoding.readInt(columnBytes, cursor)
@@ -241,7 +240,7 @@ abstract class UncompressedDecoderBase
     result
   }
 
-  override def nextMap(columnBytes: AnyRef, cursor: Long, mutated: Int): Long = {
+  override def nextMap(columnBytes: AnyRef, cursor: Long): Long = {
     // cursor == 0 indicates first call so don't increment cursor
     if (cursor != 0) {
       var position = cursor
@@ -266,21 +265,20 @@ abstract class UncompressedDecoderBase
     cursor
   }
 
-  override def readMap(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): SerializedMap = {
+  override def readMap(columnBytes: AnyRef, cursor: Long): SerializedMap = {
     val result = new SerializedMap
     result.pointTo(columnBytes, cursor)
     result
   }
 
-  override def nextStruct(columnBytes: AnyRef, cursor: Long, mutated: Int): Long =
-    nextArray(columnBytes, cursor, mutated)
+  override def nextStruct(columnBytes: AnyRef, cursor: Long): Long =
+    nextArray(columnBytes, cursor)
 
   override def absoluteStruct(columnBytes: AnyRef, position: Int): Long =
     absoluteArray(columnBytes, position)
 
   override def readStruct(columnBytes: AnyRef, numFields: Int,
-      cursor: Long, mutated: Int): SerializedRow = {
+      cursor: Long): SerializedRow = {
     // creates a SerializedRow with skipBytes = 4 and does not change the
     // cursor itself to get best 8-byte word alignment (the 4 bytes are
     //   subsumed in the null bit mask at the start)

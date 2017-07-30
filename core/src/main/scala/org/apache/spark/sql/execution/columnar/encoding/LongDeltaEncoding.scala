@@ -43,8 +43,7 @@ abstract class LongDeltaDecoderBase
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = cursor
 
-  override final def nextLong(columnBytes: AnyRef, cursor: Long,
-      mutated: Int): Long = {
+  override final def nextLong(columnBytes: AnyRef, cursor: Long): Long = {
     val delta = Platform.getByte(columnBytes, cursor)
     if (delta > Byte.MinValue) {
       prev += delta
@@ -55,8 +54,7 @@ abstract class LongDeltaDecoderBase
     }
   }
 
-  override final def readLong(columnBytes: AnyRef, cursor: Long, mutated: Int): Long = prev
+  override final def readLong(columnBytes: AnyRef, cursor: Long): Long = prev
 
-  override final def readTimestamp(columnBytes: AnyRef,
-      cursor: Long, mutated: Int): Long = prev
+  override final def readTimestamp(columnBytes: AnyRef, cursor: Long): Long = prev
 }
