@@ -128,6 +128,10 @@ final class ColumnDeltaDecoder(realDecoder: ColumnDecoder) {
 
   @inline def readDouble: Double = realDecoder.readDouble(deltaBytes, deltaCursor)
 
+  @inline def readDate(): Int = realDecoder.readDate(deltaBytes, deltaCursor)
+
+  @inline def readTimestamp(): Long = realDecoder.readTimestamp(deltaBytes, deltaCursor)
+
   @inline def nextLongDecimal(): Unit = {
     deltaCursor = realDecoder.nextLongDecimal(deltaBytes, deltaCursor)
   }

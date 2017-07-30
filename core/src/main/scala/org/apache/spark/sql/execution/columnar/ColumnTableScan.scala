@@ -547,9 +547,11 @@ private[sql] final case class ColumnTableScan(
       val isNullVar = if (attr.nullable) ctx.freshName("isNullInt") else null
       val mutatedVar = ctx.freshName("mutated")
 
-      if (index == 0) deletedCheck =
-          s"if ($mutatedVar && $mutatedDecoderVar.getCurrentDeltaBuffer() == null) continue;"
       if (!isWideSchema) {
+        if (index == 0) {
+          deletedCheck =
+              s"if ($mutatedVar && $mutatedDecoderVar.getCurrentDeltaBuffer() == null) continue;"
+        }
         moveNextCode.append(genCodeColumnNext(ctx, decoderVar, mutatedDecoderVar, bufferVar,
           cursorVar, batchOrdinal, attr.dataType, isNullVar, mutatedVar,
           isWideSchema = false)).append('\n')
@@ -558,18 +560,20 @@ private[sql] final case class ColumnTableScan(
         bufferInitCode.append(bufferInit)
         ev
       } else {
-        if (isWideSchema) {
-          if (moveNextMultCode.length > 1024) {
-            moveNextCodeBlocks.append(moveNextMultCode.toString())
-            moveNextMultCode.clear()
-          }
+        if (index == 0) {
+          deletedCheck =
+              s"if ($mutatedVar && $mutatedDecoder.getCurrentDeltaBuffer() == null) continue;"
         }
-        val producedCode = genCodeColumnNext(ctx, decoder, mutatedDecoderVar, bufferVar,
+        if (moveNextMultCode.length > 1024) {
+          moveNextCodeBlocks.append(moveNextMultCode.toString())
+          moveNextMultCode.clear()
+        }
+        val producedCode = genCodeColumnNext(ctx, decoder, mutatedDecoder, bufferVar,
           cursor, batchOrdinal, attr.dataType, isNullVar, mutatedVar,
           isWideSchema = true)
         moveNextMultCode.append(producedCode)
 
-        val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoder, mutatedDecoderVar, bufferVar,
+        val (ev, bufferInit) = genCodeColumnBuffer(ctx, decoder, mutatedDecoder, bufferVar,
           cursor, attr, isNullVar, mutatedVar, weightVarName, wideTable = true)
         val changedExpr = convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
         bufferInitCode.append(bufferInit)
@@ -864,6 +868,7 @@ private[sql] final case class ColumnTableScan(
     var jtDecl = s"final $jt $col;"
     val nullVar = ctx.freshName("nullVal")
     var colAssign = ""
+    var mutatedAssign = ""
     val typeName = sqlType match {
       case DateType => "Date"
       case TimestampType => "Timestamp"
@@ -906,10 +911,12 @@ private[sql] final case class ColumnTableScan(
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         colAssign = s"$col = $decoder.readLongDecimal($buffer, ${d.precision}, " +
             s"${d.scale}, $cursorVar);"
+        mutatedAssign = s"readLongDecimal(${d.precision}, ${d.scale})"
         "LongDecimal"
       case d: DecimalType =>
         colAssign = s"$col = $decoder.readDecimal($buffer, ${d.precision}, " +
             s"${d.scale}, $cursorVar);"
+        mutatedAssign = s"readDecimal(${d.precision}, ${d.scale})"
         "Decimal"
       case BinaryType => "Binary"
       case CalendarIntervalType => "Interval"
@@ -917,6 +924,7 @@ private[sql] final case class ColumnTableScan(
       case _: MapType => "Map"
       case t: StructType =>
         colAssign = s"$col = $decoder.readStruct($buffer, ${t.size}, $cursorVar);"
+        mutatedAssign = s"readStruct(${t.size})"
         "Struct"
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
@@ -924,6 +932,11 @@ private[sql] final case class ColumnTableScan(
     if (colAssign.isEmpty) {
       colAssign = s"$col = $decoder.read$typeName($buffer, $cursorVar);"
     }
+    if (mutatedAssign.isEmpty) {
+      mutatedAssign = s"read$typeName()"
+    }
+    mutatedAssign = s"$col = $mutableDecoder.getCurrentDeltaBuffer().$mutatedAssign;"
+
     if (isNullVar != null) {
       // For ResultSets wasNull() is always a post-facto operation
       // i.e. works only after get has been invoked. However, for column
@@ -935,7 +948,7 @@ private[sql] final case class ColumnTableScan(
           $jtDecl
           boolean $nullVar;
           if ($isNullVar == 0) {
-            if ($mutatedVar) $col = $mutableDecoder.getCurrentDeltaBuffer().read$typeName();
+            if ($mutatedVar) $mutatedAssign
             else {
               $colAssign
             }
@@ -980,7 +993,7 @@ private[sql] final case class ColumnTableScan(
       var code =
         s"""
            |$jtDecl
-           |if ($mutatedVar) $col = $mutableDecoder.getCurrentDeltaBuffer().read$typeName();
+           |if ($mutatedVar) $mutatedAssign
            |else {
            |  $colAssign
            |}
