@@ -30,8 +30,7 @@ import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, Parti
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
-import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
-import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
 
@@ -310,6 +309,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
+    /*
     connectionType match {
       case ConnectionType.Embedded =>
         val currentCM = ContextService.getFactory.getCurrentContextManager
@@ -319,6 +319,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         }
       case _ => // get pooled connection
     }
+    */
     val connProps = if (onExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
