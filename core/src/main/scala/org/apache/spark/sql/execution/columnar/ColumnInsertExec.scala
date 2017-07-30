@@ -61,6 +61,7 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
   @transient private var schemaTerm: String = _
   @transient private var storeColumnBatch: String = _
   @transient private var beginSnapshotTx: String = _
+  @transient private var closeConnection: String = _
   @transient private var commitSnapshotTx: String = _
   @transient private var txIdConnArray: String = _
   @transient private var txId: String = _
@@ -264,6 +265,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |  else
        |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |}
+       |else {
+       |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |}
        |}
     """.stripMargin
   }
@@ -383,6 +387,9 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
        |    $commitSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |  else
        |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |}
+       |else {
+       |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |}
        |}
     """.stripMargin
@@ -657,6 +664,13 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
          |  $externalStoreTerm.rollbackTx($txId, $conn);
          |}
       """.stripMargin)
+    closeConnection = ctx.freshName("closeConnection")
+    ctx.addNewFunction(closeConnection,
+      s"""
+         |private final void $closeConnection(scala.Option $conn) {
+         |  $externalStoreTerm.closeConnection($conn);
+         |}
+      """.stripMargin)
     // no shouldStop check required
     if (!ctx.addedFunctions.contains("shouldStop")) {
       ctx.addNewFunction("shouldStop",
@@ -802,6 +816,13 @@ case class ColumnInsertExec(_child: SparkPlan, partitionColumns: Seq[String],
       s"""
          |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
          |  $externalStoreTerm.rollbackTx($txId, $conn);
+         |}
+      """.stripMargin)
+    closeConnection = ctx.freshName("closeConnection")
+    ctx.addNewFunction(closeConnection,
+      s"""
+         |private final void $closeConnection(scala.Option $conn) {
+         |  $externalStoreTerm.closeConnection($conn);
          |}
       """.stripMargin)
     // no shouldStop check required
