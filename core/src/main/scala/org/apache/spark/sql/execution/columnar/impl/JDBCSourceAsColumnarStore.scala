@@ -485,9 +485,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     val refs = gen._2.clone()
     // set the statement object for current execution
     val statementRef = refs(refs.length - 1).asInstanceOf[Int]
-    val resolvedName = ExternalStoreUtils.lookupName(tableName,
-      connection.getSchema)
-    val putSQL = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
+    val putSQL = JdbcExtendedUtils.getInsertOrPutString(tableName,
       schema, putInto = true)
     val stmt = connection.prepareStatement(putSQL)
     refs(statementRef) = stmt
@@ -546,34 +544,30 @@ final class ColumnarStorePartitionedRDD(
 
   private[this] var allPartitions: Array[Partition] = _
   private val evaluatePartitions: () => Array[Partition] = () => {
-    store.tryExecute(tableName) { conn =>
-      val resolvedName = ExternalStoreUtils.lookupName(tableName,
-        conn.getSchema)
-      val region = Misc.getRegionForTable(resolvedName, true)
-      partitionPruner match {
-        case -1 if allPartitions != null =>
-          allPartitions
-        case -1 =>
+    val region = Misc.getRegionForTable(tableName, true)
+    partitionPruner match {
+      case -1 if allPartitions != null =>
+        allPartitions
+      case -1 =>
+        allPartitions = session.sessionState.getTablePartitions(
+          region.asInstanceOf[PartitionedRegion])
+        allPartitions
+      case bucketId: Int =>
+        if (java.lang.Boolean.getBoolean("DISABLE_PARTITION_PRUNING")) {
           allPartitions = session.sessionState.getTablePartitions(
             region.asInstanceOf[PartitionedRegion])
           allPartitions
-        case bucketId: Int =>
-          if (java.lang.Boolean.getBoolean("DISABLE_PARTITION_PRUNING")) {
-            allPartitions = session.sessionState.getTablePartitions(
-              region.asInstanceOf[PartitionedRegion])
-            allPartitions
-          } else {
-            val pr = region.asInstanceOf[PartitionedRegion]
-            val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
-            val prefNodes = distMembers.collect {
-              case m if SnappyContext.containsBlockId(m.toString) =>
-                Utils.getHostExecutorId(SnappyContext.getBlockId(
-                  m.toString).get.blockId)
-            }
-            Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
-              pr.getTotalNumberOfBuckets, prefNodes.toSeq))
+        } else {
+          val pr = region.asInstanceOf[PartitionedRegion]
+          val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
+          val prefNodes = distMembers.collect {
+            case m if SnappyContext.containsBlockId(m.toString) =>
+              Utils.getHostExecutorId(SnappyContext.getBlockId(
+                m.toString).get.blockId)
           }
-      }
+          Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
+            pr.getTotalNumberOfBuckets, prefNodes.toSeq))
+        }
     }
   }
 
@@ -646,8 +640,7 @@ final class SmartConnectorColumnRDD(
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
-    val resolvedTableName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
-    val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(resolvedTableName,
+    val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
       split.index, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
     // fetch the stats
     val (statement, rs, txId) = helper.executeQuery(conn, tableName, split,
@@ -681,7 +674,7 @@ final class SmartConnectorColumnRDD(
     if (parts != null && parts.length > 0) {
       return parts
     }
-    store.tryExecute(tableName)(SparkShellRDDHelper.getPartitions(tableName, _))
+    SparkShellRDDHelper.getPartitions(tableName)
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
@@ -741,19 +734,17 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(
       connProperties, thePart)
-    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-
     if (isPartitioned) {
       val ps = conn.prepareStatement(
         s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ${_relDestroyVersion})")
-      ps.setString(1, resolvedName)
+      ps.setString(1, tableName)
       val partition = thePart.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
       val bucketString = partition.buckets.mkString(",")
       ps.setString(2, bucketString)
       ps.executeUpdate()
       ps.close()
     }
-    val sqlText = s"SELECT $columnList FROM $resolvedName$filterWhereClause"
+    val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
 
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
@@ -805,14 +796,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (parts != null && parts.length > 0) {
       return parts
     }
-    val conn = ExternalStoreUtils.getConnection(tableName, connProperties,
-      forExecutor = true)
-    try {
-      SparkShellRDDHelper.getPartitions(tableName, conn)
-    } finally {
-      conn.commit()
-      conn.close()
-    }
+    SparkShellRDDHelper.getPartitions(tableName)
   }
 
   def getSQLStatement(resolvedTableName: String,
