@@ -91,9 +91,12 @@ object StoreStrategy extends Strategy {
   }
 }
 
+// marker trait to indicate a plan that can mutate a table
+trait TableMutationPlan
+
 case class ExternalTableDMLCmd(
     storeRelation: LogicalRelation,
-    command: String) extends RunnableCommand {
+    command: String) extends RunnableCommand with TableMutationPlan {
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
@@ -107,7 +110,7 @@ case class ExternalTableDMLCmd(
 }
 
 case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
-    extends LogicalPlan {
+    extends LogicalPlan with TableMutationPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
 
@@ -124,7 +127,7 @@ case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
 
 case class Update(table: LogicalPlan, child: LogicalPlan,
     keyColumns: Seq[Attribute], updateColumns: Seq[Attribute],
-    updateExpressions: Seq[Expression]) extends LogicalPlan {
+    updateExpressions: Seq[Expression]) extends LogicalPlan with TableMutationPlan {
 
   assert(updateColumns.length == updateExpressions.length,
     s"Internal error: updateColumns=${updateColumns.length} " +
@@ -137,7 +140,7 @@ case class Update(table: LogicalPlan, child: LogicalPlan,
 }
 
 case class Delete(table: LogicalPlan, child: LogicalPlan,
-    keyColumns: Seq[Attribute]) extends LogicalPlan {
+    keyColumns: Seq[Attribute]) extends LogicalPlan with TableMutationPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
 
@@ -150,7 +153,7 @@ case class Delete(table: LogicalPlan, child: LogicalPlan,
 private[sql] case class DeleteFromTable(
     table: LogicalPlan,
     child: LogicalPlan)
-    extends LogicalPlan {
+    extends LogicalPlan with TableMutationPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
 

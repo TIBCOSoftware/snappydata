@@ -106,8 +106,8 @@ trait RowExec extends TableExec {
          |  $childProduce
          |  if ($rowCount > 0) {
          |    ${executeBatchCode(numOperations, numOpRowsMetric)}
-         |    $stmt.close();
          |  }
+         |  $stmt.close();
          |  $commitCode${produceAddonCode()}
          |}
       """.stripMargin)

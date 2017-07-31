@@ -26,6 +26,7 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.cache.EntryDestroyedException
 import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, RegionEntry}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
@@ -98,6 +99,14 @@ abstract class ResultSetIterator[A](conn: Connection,
     }
     try {
       if (stmt ne null) {
+        stmt.getConnection match {
+          case embedConn: EmbedConnection =>
+            val lcc = embedConn.getLanguageConnection
+            if (lcc ne null) {
+              lcc.clearExecuteLocally()
+            }
+          case _ =>
+        }
         stmt.close()
       }
     } catch {
@@ -294,7 +303,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         val colIter = ps.executeQuery()
         while (colIter.next()) {
           val colBlob = colIter.getBlob(1)
-          val index = colIter.getInt(1)
+          val index = colIter.getInt(2)
           val colBuffer = colBlob match {
             case blob: BufferedBlob => blob.getAsLastChunk.chunk
             case blob => ByteBuffer.wrap(blob.getBytes(

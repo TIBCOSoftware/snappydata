@@ -113,7 +113,8 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
-    // TODO: [SachinK] This code is commented to avoid forced refresh of stats on every call (as indexesInfo could be empty).
+    // TODO: [SachinK] This code is commented to avoid forced refresh of stats
+    // on every call (as indexesInfo could be empty).
     /*
     val indexStats = this.indexesInfo
     if (indexStats.isEmpty) {
@@ -125,7 +126,8 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getTableSizeStats: Map[String, SnappyRegionStats] = {
-    // TODO: [SachinK] Below conditional check can be commented to avoid forced refresh of stats on every call (tableSizeInfo could be empty).
+    // TODO: [SachinK] Below conditional check can be commented to avoid
+    // forced refresh of stats on every call (tableSizeInfo could be empty).
     val tableSizes = this.tableSizeInfo
     if (tableSizes.isEmpty) {
       // force run

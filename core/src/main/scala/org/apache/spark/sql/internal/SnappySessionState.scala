@@ -168,7 +168,7 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
-        case _: InsertIntoTable | _: PutIntoTable =>
+        case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
         case PhysicalOperation(_, _, LogicalRelation(
@@ -235,7 +235,7 @@ class SnappySessionState(snappySession: SnappySession)
           ks
       }.getOrElse(throw new AnalysisException(
         s"Update/Delete requires a MutableRelation but got $table"))
-      // resolve key columns right away since this is late stage of analysis
+      // resolve key columns right away
       var mutablePlan: Option[LogicalRelation] = None
       val newChild = child.transformDown {
         case lr@LogicalRelation(mutable: MutableRelation, _, _)

@@ -26,6 +26,11 @@ import org.apache.spark.SparkConf
  */
 class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    stopAll()
+  }
+
   override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
     val conf = new SparkConf().
         setIfMissing("spark.master", "local[1]").
@@ -149,6 +154,11 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     assert(res(0).getString(1) === "addr87_update" || res(1).getString(1) === "addr87_update")
     assert(res(0).getInt(0) === 32 || res(1).getInt(0) === 32)
     assert(res(0).getString(1) === "addr32" || res(1).getString(1) === "addr32")
+
+    session.sql("drop table updateTable")
+    session.sql("drop table checkTable1")
+    session.sql("drop table checkTable2")
+    session.sql("drop table checkTable3")
   }
 
   test("basic delete") {
@@ -236,14 +246,16 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     assert(res(0).getInt(0) === 73)
     assert(res(0).getString(1) === "addr73")
     */
+
+    session.sql("drop table updateTable")
+    session.sql("drop table checkTable1")
+    session.sql("drop table checkTable2")
   }
 
-  test("test update for all types") {
-    /*
-    val session = new SnappySession(sc)
+  ignore("test update for all types") {
+    val session = this.snc.snappySession
     // reduced size to ensure both column table and row buffer have data
     session.conf.set(Property.ColumnBatchSize.name, "100k")
     runAllTypesTest(session)
-    */
   }
 }

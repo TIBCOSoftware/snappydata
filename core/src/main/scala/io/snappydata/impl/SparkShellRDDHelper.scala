@@ -66,7 +66,7 @@ final class SparkShellRDDHelper {
     })
     val fetchColString = (fetchCols.flatMap { col =>
       val deltaCol = ColumnDelta.deltaColumnIndex(col, 0)
-      Array(col, deltaCol, deltaCol - 1, deltaCol - 2).map(
+      (col +: (deltaCol until (deltaCol - ColumnDelta.MAX_DEPTH, -1))).map(
         i => s"(select data, columnIndex from $resolvedTableName where " +
             s"partitionId = $partitionId and uuid = ? and columnIndex = $i)")
     } :+ s"select data, columnIndex from $resolvedTableName where " +
