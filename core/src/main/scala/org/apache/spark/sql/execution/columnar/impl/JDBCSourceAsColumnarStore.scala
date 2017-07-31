@@ -18,19 +18,14 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.{Properties, UUID}
+import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
-import scala.annotation.meta.param
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
-import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
@@ -56,9 +51,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
-import com.pivotal.gemfirexd.Attribute
-
-import org.apache.spark.sql.jdbc.JdbcDialect
+import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnectionContext
 
 /**
  * Column Store implementation for GemFireXD.
@@ -77,9 +71,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int)
       (implicit conn: Option[Connection] = None): Unit = {
-    // noinspection RedundantDefaultArgument
-    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true)(doInsert(tableName, batch, batchId,
-      getPartitionID(conn, tableName, partitionId), maxDeltaRows))(implicitly, conn)
+    doInsert(tableName, batch, batchId, getPartitionID(tableName, partitionId), maxDeltaRows)(conn)
   }
 
   // begin should decide the connection which will be used by insert/commit/rollback
@@ -170,11 +162,8 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   def closeConnection(conn: Option[Connection]): Unit = {
     conn match {
       case Some(conn) if !conn.isClosed =>
-        conn match {
-          case ConnectionType.Embedded =>
-            // conn commit removed txState from the conn context.
-            conn.commit()
-            conn.close()
+        connectionType match {
+          case ConnectionType.Embedded => // Do nothing
           case _ =>
             // it should always be not null.
             // get clears the state from connection
@@ -186,11 +175,12 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
               statement.execute(
                 s"call sys.GET_SNAPSHOT_TXID('$txId')")
             }
+
             // conn commit removed txState from the conn context.
             conn.commit()
             conn.close()
         }
-      case None => //Do nothing
+      case None => // Do nothing
     }
   }
 
@@ -378,43 +368,22 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   }
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
+    connectionType match {
+      case ConnectionType.Embedded =>
+        val currentCM = ContextService.getFactory.getCurrentContextManager
+        // val currentCM = ContextService.getFactory.newContextManager()
+        if (currentCM ne null) {
+          val conn = EmbedConnectionContext.getEmbedConnection(currentCM)
+          if (conn ne null) return conn
+        }
+      case _ =>
+    }
+
+    // get pooled connection
     val connProps = if (onExecutor) connProperties.executorConnProps
     else connProperties.connProps
-    getPoolConnection(id, connProperties.dialect,
+    ConnectionPool.getPoolConnection(id, connProperties.dialect,
       connProperties.poolProps, connProps, connProperties.hikariCP)
-  }
-
-  private lazy val bootProperties = Option(Misc.getMemStoreBootingNoThrow).map(_.getBootProperties)
-
-  def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
-      connProps: Properties, hikariCP: Boolean): Connection = {
-    // Handle security at remote VM in cases like insert
-    bootProperties match {
-      case Some(p) if p.containsKey(Attribute.USERNAME_ATTR) &&
-          p.containsKey(Attribute.PASSWORD_ATTR) =>
-        def secureProps(props: Properties): Properties = {
-          if (Option(props.getProperty(Attribute.USERNAME_ATTR)).isEmpty &&
-              Option(props.getProperty(Attribute.PASSWORD_ATTR)).isEmpty) {
-            props.setProperty(Attribute.USERNAME_ATTR, p.get(Attribute.USERNAME_ATTR).toString)
-            props.setProperty(Attribute.PASSWORD_ATTR, p.get(Attribute.PASSWORD_ATTR).toString)
-          }
-          props
-        }
-
-        // Hikari only take 'username'. So does Tomcat
-        def securePoolProps(props: Map[String, String]): Map[String, String] = {
-          if (props.get(Attribute.USERNAME_ALT_ATTR.toLowerCase).isEmpty &&
-              props.get(Attribute.PASSWORD_ATTR).isEmpty) {
-            props + (Attribute.USERNAME_ALT_ATTR.toLowerCase ->
-                p.get(Attribute.USERNAME_ATTR).toString) +
-                (Attribute.PASSWORD_ATTR -> p.get(Attribute.PASSWORD_ATTR).toString)
-          } else props
-        }
-
-        ConnectionPool.getPoolConnection(id, dialect, securePoolProps(poolProps),
-          secureProps(connProps), hikariCP)
-      case _ => ConnectionPool.getPoolConnection(id, dialect, poolProps, connProps, hikariCP)
-    }
   }
 
   override def getConnectedExternalStore(table: String,
@@ -460,92 +429,87 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     }
   }
 
-  private def doInsert(columnTableName: String, batch: ColumnBatch,
-      batchId: Option[String], partitionId: Int,
-      maxDeltaRows: Int): (Connection => Any) = {
-    (connection: Connection) => {
-      // split the batch and put into row buffer if it is small
+  private def doInsert(columnTableName: String, batch: ColumnBatch, batchId: Option[String],
+      partitionId: Int, maxDeltaRows: Int) (implicit conn: Option[Connection] = None): Unit = {
+    // split the batch and put into row buffer if it is small
+    if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
+      GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
+      // noinspection RedundantDefaultArgument
+      tryExecute(tableName, closeOnSuccessOrFailure = false,
+        onExecutor = true)(doInsertImpl(tableName, batch, batchId, partitionId,
+        maxDeltaRows))(implicitly, conn)
+    } else {
+      connectionType match {
+        case ConnectionType.Embedded =>
+          val region = Misc.getRegionForTable(columnTableName, true)
+              .asInstanceOf[PartitionedRegion]
+          val batchID = Some(batchId.getOrElse(region.newJavaUUID().toString))
+          doSnappyInsert(columnTableName, batch, batchID,
+            partitionId, maxDeltaRows)
 
-      if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
-        GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
-        // the lookup key depends only on schema and not on the table
-        // name since the prepared statement specific to the table is
-        // passed in separately through the references object
-        val gen = CodeGeneration.compileCode(
-          "COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
-            val schemaAttrs = schema.toAttributes
-            val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
-              otherRDDs = Seq.empty, numBuckets = -1,
-              partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
-              baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
-              caseSensitive = true)
-            val insertPlan = RowDMLExec(tableScan, putInto = true, delete = false,
-              Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
-              resolvedName = null, connProperties)
-            // now generate the code with the help of WholeStageCodegenExec
-            // this is only used for local code generation while its RDD
-            // semantics and related methods are all ignored
-            val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-              WholeStageCodegenExec(insertPlan), insertPlan)
-            val references = ctx.references
-            // also push the index of connection reference at the end which
-            // will be used by caller to update connection before execution
-            references += insertPlan.statementRef
-            (code, references.toArray)
-          })
-        val refs = gen._2.clone()
-        // set the statement object for current execution
-        val statementRef = refs(refs.length - 1).asInstanceOf[Int]
-        val resolvedName = ExternalStoreUtils.lookupName(tableName,
-          connection.getSchema)
-        val putSQL = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
-          schema, putInto = true)
-        val stmt = connection.prepareStatement(putSQL)
-        refs(statementRef) = stmt
-        // no harm in passing a references array with extra element at end
-        val iter = gen._1.generate(refs).asInstanceOf[BufferedRowIterator]
-        // put the single ColumnBatch in the iterator read by generated code
-        iter.init(partitionId, Array(Iterator[Any](new ResultSetTraversal(
-          conn = null, stmt = null, rs = null, context = null),
-          ColumnBatchIterator(batch)).asInstanceOf[Iterator[InternalRow]]))
-        // ignore the result which is the update count
-        while (iter.hasNext) {
-          iter.next()
-        }
-        // release the batch buffers
-        batch.buffers.foreach(UnsafeHolder.releaseIfDirectBuffer)
-      } else {
-        val resolvedColumnTableName = ExternalStoreUtils.lookupName(
-          columnTableName, connection.getSchema)
-        connectionType match {
-          case ConnectionType.Embedded =>
-            val region = Misc.getRegionForTable(resolvedColumnTableName, true)
-                .asInstanceOf[PartitionedRegion]
-            val batchID = Some(batchId.getOrElse(region.newJavaUUID().toString))
-            doSnappyInsert(resolvedColumnTableName, batch, batchID,
-              partitionId, maxDeltaRows)
-
-          case _ =>
-            doGFXDInsert(resolvedColumnTableName, batch, batchId, partitionId,
-              maxDeltaRows)(connection)
-        }
+        case _ =>
+          // noinspection RedundantDefaultArgument
+          tryExecute(tableName, closeOnSuccessOrFailure = false,
+            onExecutor = true)(doGFXDInsert(columnTableName, batch, batchId, partitionId,
+            maxDeltaRows))(implicitly, conn)
       }
-     }
+    }
   }
 
-  // use the same saved connection for all operation
-  private def getPartitionID(conn: Option[Connection], tableName: String,
-      partitionId: Int = -1): Int = {
-    val connection = conn match {
-      case Some(conn) => conn
-      case None => getConnection(tableName, onExecutor = true)
+  private def doInsertImpl(columnTableName: String, batch: ColumnBatch, batchId: Option[String],
+      partitionId: Int, maxDeltaRows: Int): (Connection => Any) = (connection: Connection) => {
+    // the lookup key depends only on schema and not on the table
+    // name since the prepared statement specific to the table is
+    // passed in separately through the references object
+    val gen = CodeGeneration.compileCode("COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
+      val schemaAttrs = schema.toAttributes
+      val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
+        otherRDDs = Seq.empty, numBuckets = -1,
+        partitionColumns = Seq.empty, partitionColumnAliases = Seq.empty,
+        baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
+        caseSensitive = true)
+      val insertPlan = RowDMLExec(tableScan, putInto = true, delete = false,
+        Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
+        resolvedName = null, connProperties)
+      // now generate the code with the help of WholeStageCodegenExec
+      // this is only used for local code generation while its RDD
+      // semantics and related methods are all ignored
+      val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
+        WholeStageCodegenExec(insertPlan), insertPlan)
+      val references = ctx.references
+      // also push the index of connection reference at the end which
+      // will be used by caller to update connection before execution
+      references += insertPlan.statementRef
+      (code, references.toArray)
+    })
+    val refs = gen._2.clone()
+    // set the statement object for current execution
+    val statementRef = refs(refs.length - 1).asInstanceOf[Int]
+    val resolvedName = ExternalStoreUtils.lookupName(tableName,
+      connection.getSchema)
+    val putSQL = JdbcExtendedUtils.getInsertOrPutString(resolvedName,
+      schema, putInto = true)
+    val stmt = connection.prepareStatement(putSQL)
+    refs(statementRef) = stmt
+    // no harm in passing a references array with extra element at end
+    val iter = gen._1.generate(refs).asInstanceOf[BufferedRowIterator]
+    // put the single ColumnBatch in the iterator read by generated code
+    iter.init(partitionId, Array(Iterator[Any](new ResultSetTraversal(
+      conn = null, stmt = null, rs = null, context = null),
+      ColumnBatchIterator(batch)).asInstanceOf[Iterator[InternalRow]]))
+    // ignore the result which is the update count
+    while (iter.hasNext) {
+      iter.next()
     }
+    // release the batch buffers
+    batch.buffers.foreach(UnsafeHolder.releaseIfDirectBuffer)
+  }
+
+  private def getPartitionID(tableName: String,
+      partitionId: Int = -1): Int = if (partitionId == -1) {
     connectionType match {
       case ConnectionType.Embedded =>
-        val resolvedName = ExternalStoreUtils.lookupName(tableName,
-          connection.getSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
-            .asInstanceOf[LocalRegion]
+        val region = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
         region match {
           case pr: PartitionedRegion =>
             if (partitionId == -1) {
@@ -567,9 +531,9 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
         }
       // TODO: SW: for split mode, get connection to one of the
       // local servers and a bucket ID for only one of those
-      case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
+      case _ => rand.nextInt(numPartitions)
     }
-  }
+  } else partitionId
 }
 
 

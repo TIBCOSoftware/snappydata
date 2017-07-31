@@ -20,6 +20,8 @@ import java.sql.Connection
 
 import scala.reflect.ClassTag
 
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -44,7 +46,8 @@ trait ExternalStore extends Serializable with Logging {
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String, closeOnSuccessOrFailure: Boolean = true, onExecutor: Boolean = false)
+  def tryExecute[T: ClassTag](tableName: String,
+      closeOnSuccessOrFailure: Boolean = true, onExecutor: Boolean = false)
       (f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
     var success = false
@@ -54,11 +57,8 @@ trait ExternalStore extends Serializable with Logging {
       success = true
       ret
     } finally {
-      if (closeOnSuccessOrFailure) {
-        if(success)
-          conn.commit()
-        else
-          conn.rollback()
+      if (closeOnSuccessOrFailure && !conn.isInstanceOf[EmbedConnection]) {
+        if (success) conn.commit() else conn.rollback()
         conn.close()
       }
     }
