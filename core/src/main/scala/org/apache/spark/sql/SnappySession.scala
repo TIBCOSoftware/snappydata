@@ -1891,10 +1891,12 @@ object SnappySession extends Logging {
         evaluatePlan(df, session, key.sqlText, key)
       }
     }
-    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
-      case Some(size) => size.toInt
-      case None => Property.PlanCacheSize.defaultValue.get
-    }
+    val cacheSize = if (SnappyContext.globalSparkContext != null) {
+      Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
+        case Some(size) => size.toInt
+        case None => Property.PlanCacheSize.defaultValue.get
+      }
+    } else Property.PlanCacheSize.defaultValue.get
     CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
 
