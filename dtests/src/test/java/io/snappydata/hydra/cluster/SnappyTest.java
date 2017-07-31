@@ -230,7 +230,7 @@ public class SnappyTest implements Serializable {
     return userAppJarPath;
   }
 
-  protected String getDataLocation(String paramName) {
+  public String getDataLocation(String paramName) {
     if (paramName.equals(" ")) return paramName;
     String scriptPath = null;
     if (new File(paramName).exists()) {
