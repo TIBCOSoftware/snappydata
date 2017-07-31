@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSeq, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
@@ -83,7 +83,14 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     sql.append("UPDATE ").append(resolvedName).append(" SET ")
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
       escapeQuotes = true, separator = ", ")
-    sql.append(s" WHERE ${StoreUtils.SHADOW_COLUMN_NAME}=?")
+    sql.append(" WHERE ")
+    // only the ordinalId is required apart from partitioning columns
+    if (keyColumns.length > 3) {
+      JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(3).map(_.name),
+        escapeQuotes = true)
+      sql.append(" AND ")
+    }
+    sql.append(StoreUtils.ROWID_COLUMN_NAME).append("=?")
 
     super.doProduce(ctx, sql.toString(), () =>
       s"""
@@ -128,32 +135,30 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     ctx.addMutableState("UTF8String", lastColumnBatchId, "")
     ctx.addMutableState("int", lastBucketId, "")
 
+    // last three columns in keyColumns should be internal ones
+    val keyCols = keyColumns.takeRight(3)
+    assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
+    assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
+    assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
+
+    // bind the update expressions
     ctx.INPUT_ROW = null
     ctx.currentVars = input
-    // bind the update expressions
-    val childOutput: AttributeSeq = child.output
-    val updateInput = ctx.generateExpressions(updateExpressions.map(
+    val allExpressions = updateExpressions ++ keyColumns
+    val updateInput = ctx.generateExpressions(allExpressions.map(
       u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
-        u, childOutput))), doSubexpressionElimination = true)
+        u, child.output))), doSubexpressionElimination = true)
     ctx.currentVars = null
 
-    // first column in keyColumns should be ordinal in the column
-    assert(keyColumns.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
-    // second column in keyColumns should be column batchId
-    assert(keyColumns(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
-    // last column in keyColumns should be bucketId
-    assert(keyColumns(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
-
-    val (ordinalId, batchId, bucketId) = ColumnDelta.bindKeyColumns(
-      keyColumns, ctx, input, childOutput)
-    val ordinalIdVar = ordinalId.value
-    val batchIdVar = batchId.value
+    val keyVars = updateInput.takeRight(3)
+    val ordinalIdVar = keyVars.head.value
+    val batchIdVar = keyVars(1).value
+    val bucketVar = keyVars(2).value
 
     val updateVarsCode = evaluateVariables(updateInput)
-    val keyVarsCode = evaluateVariables(Seq(ordinalId, batchId, bucketId))
-    // row buffer needs to select the rowId for the ordinal
-    val rowConsume = super.doConsume(ctx, updateInput :+ ordinalId, StructType(
-      getUpdateSchema(updateExpressions) :+ ColumnDelta.mutableKeyFields.head))
+    // row buffer needs to select the rowId and partitioning columns so drop last two
+    val rowConsume = super.doConsume(ctx, updateInput.dropRight(2),
+      StructType(getUpdateSchema(allExpressions.dropRight(2))))
 
     ctx.addNewFunction(initializeEncoders,
       s"""
@@ -222,11 +227,11 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       """.stripMargin)
 
     s"""
-       |$updateVarsCode$keyVarsCode
+       |$updateVarsCode
        |if ($batchIdVar != null) {
        |  // finish and apply update if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {
-       |    $finishUpdate($batchIdVar, ${bucketId.value});
+       |    $finishUpdate($batchIdVar, $bucketVar);
        |  }
        |  // write to the encoders
        |  $callEncoders

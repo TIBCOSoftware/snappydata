@@ -17,14 +17,14 @@
 
 package org.apache.spark.sql.execution.columnar
 
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSeq, Expression}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
-import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation}
+import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 
@@ -59,8 +59,14 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
-    sql.append("DELETE FROM ").append(resolvedName)
-        .append(s" WHERE ${StoreUtils.SHADOW_COLUMN_NAME}=?")
+    sql.append("DELETE FROM ").append(resolvedName).append(" WHERE ")
+    // only the ordinalId is required apart from partitioning columns
+    if (keyColumns.length > 3) {
+      JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(3).map(_.name),
+        escapeQuotes = true)
+      sql.append(" AND ")
+    }
+    sql.append(StoreUtils.ROWID_COLUMN_NAME).append("=?")
 
     super.doProduce(ctx, sql.toString(), () =>
       s"""
@@ -96,22 +102,29 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
 
-    // first column in keyColumns should be ordinal in the column
-    assert(keyColumns.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
-    // second column in keyColumns should be column batchId
-    assert(keyColumns(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
-    // last column in keyColumns should be bucketId
-    assert(keyColumns(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
+    // last three columns in keyColumns should be internal ones
+    val keyCols = keyColumns.takeRight(3)
+    assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
+    assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
+    assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
 
-    // bind the key columns
-    val (ordinalId, batchId, bucketId) = ColumnDelta.bindKeyColumns(
-      keyColumns, ctx, input, child.output)
-    val batchIdVar = batchId.value
-    val keyVarsCode = evaluateVariables(Seq(ordinalId, batchId, bucketId))
+    // bind the key columns (including partitioning columns if present)
+    ctx.INPUT_ROW = null
+    ctx.currentVars = input
+    val keysInput = ctx.generateExpressions(keyColumns.map(
+      u => ExpressionCanonicalizer.execute(BindReferences.bindReference(
+        u, child.output))), doSubexpressionElimination = true)
+    ctx.currentVars = null
 
-    // row buffer needs to select the rowId for the ordinal
-    val rowConsume = super.doConsume(ctx, Seq(ordinalId),
-      StructType(Seq(ColumnDelta.mutableKeyFields.head)))
+    val keyVars = keysInput.takeRight(3)
+    val ordinalIdVar = keyVars.head.value
+    val batchIdVar = keyVars(1).value
+    val bucketVar = keyVars(2).value
+
+    val keyVarsCode = evaluateVariables(keysInput)
+    // row buffer needs to select the rowId and partitioning columns so drop last two
+    val rowConsume = super.doConsume(ctx, keysInput.dropRight(2),
+      StructType(getUpdateSchema(keyColumns.dropRight(2))))
 
     ctx.addNewFunction(finishDelete,
       s"""
@@ -143,10 +156,10 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
        |if ($batchIdVar != null) {
        |  // finish and apply delete if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {
-       |    $finishDelete($batchIdVar, ${bucketId.value});
+       |    $finishDelete($batchIdVar, $bucketVar);
        |  }
        |  // write to the encoder
-       |  $cursor = $deleteEncoder.writeInt($cursor, (int)${ordinalId.value});
+       |  $cursor = $deleteEncoder.writeInt($cursor, (int)$ordinalIdVar);
        |  $batchOrdinal++;
        |} else {
        |  $rowConsume

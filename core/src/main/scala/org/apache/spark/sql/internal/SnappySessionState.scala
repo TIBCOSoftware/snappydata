@@ -217,10 +217,20 @@ class SnappySessionState(snappySession: SnappySession)
         plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
-        case LogicalRelation(mutable: MutableRelation, _, _) =>
+        case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
           val ks = mutable.getKeyColumns
-          if (ks.isEmpty) throw new AnalysisException(
-            s"Empty key columns for update/delete on $mutable")
+          if (ks.isEmpty) {
+            val currentKey = snappySession.currentKey
+            // if this is a row table, then fallback to direct execution
+            mutable match {
+              case _: UpdatableRelation if currentKey ne null =>
+                return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
+                  mutable.table), lr, currentKey.sqlText), lr)
+              case _ =>
+                throw new AnalysisException(
+                  s"Empty key columns for update/delete on $mutable")
+            }
+          }
           tableName = mutable.table
           ks
       }.getOrElse(throw new AnalysisException(
@@ -256,40 +266,48 @@ class SnappySessionState(snappySession: SnappySession)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
         val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)
-        // resolve the columns being updated and cast the expressions if required
-        val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (col, expr) =>
-          val attr = analysis.withPosition(relation) {
-            newChild.resolveChildren(
-              col.name.split('.'), analyzer.resolver).getOrElse(
-              throw new AnalysisException(s"Could not resolve update column ${col.name}"))
-          }
-          // cast the update expressions if required
-          val newExpr = if (attr.dataType.sameType(expr.dataType)) {
-            expr
-          } else {
-            // avoid unnecessary copy+cast when inserting DECIMAL types
-            // into column table
-            expr.dataType match {
-              case _: DecimalType
-                if attr.dataType.isInstanceOf[DecimalType] => expr
-              case _ => Alias(Cast(expr, attr.dataType), attr.name)()
+        // if this is a row table with no PK, then fallback to direct execution
+        if (keyAttrs.isEmpty) newChild
+        else {
+          // resolve the columns being updated and cast the expressions if required
+          val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
+            val attr = analysis.withPosition(relation) {
+              newChild.resolveChildren(
+                c.name.split('.'), analyzer.resolver).getOrElse(
+                throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
-          }
-          (attr, newExpr)
-        }.unzip
-        // collect all references and project on them to explicitly eliminate
-        // any extra columns
-        val allReferences = newChild.references ++
-            AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
-        u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
-          keyColumns = keyAttrs.map(_.toAttribute),
-          updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
+            // cast the update expressions if required
+            val newExpr = if (attr.dataType.sameType(expr.dataType)) {
+              expr
+            } else {
+              // avoid unnecessary copy+cast when inserting DECIMAL types
+              // into column table
+              expr.dataType match {
+                case _: DecimalType
+                  if attr.dataType.isInstanceOf[DecimalType] => expr
+                case _ => Alias(Cast(expr, attr.dataType), attr.name)()
+              }
+            }
+            (attr, newExpr)
+          }.unzip
+          // collect all references and project on them to explicitly eliminate
+          // any extra columns
+          val allReferences = newChild.references ++
+              AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
+          u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
+            keyColumns = keyAttrs.map(_.toAttribute),
+            updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
+        }
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
         // add and project only the key columns
         val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d)
-        d.copy(child = Project(keyAttrs, newChild),
-          keyColumns = keyAttrs.map(_.toAttribute))
+        // if this is a row table with no PK, then fallback to direct execution
+        if (keyAttrs.isEmpty) newChild
+        else {
+          d.copy(child = Project(keyAttrs, newChild),
+            keyColumns = keyAttrs.map(_.toAttribute))
+        }
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {

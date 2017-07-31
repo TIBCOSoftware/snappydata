@@ -247,7 +247,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $childProduce
        |}
        |if ($batchSizeTerm > 0) {
-       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs,
+       |      new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |  $batchSizeTerm = 0;
        |}
        |$closeForNoContext
@@ -371,7 +372,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |if ($batchSizeTerm > 0) {
        |  $cursorsArrayCreate
-       |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs,
+       |      new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |  $batchSizeTerm = 0;
        |}
        |$closeForNoContext

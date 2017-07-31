@@ -238,6 +238,10 @@ case class JDBCMutableRelation(
         keyColumns += primaryKeys.getString(4)
       }
       primaryKeys.close()
+      // if partitioning columns are different from primary key then add those
+      if (keyColumns.nonEmpty) {
+        partitionColumns.foreach(p => if (!keyColumns.contains(p)) keyColumns += p)
+      }
       keyColumns
     } finally {
       conn.close()

@@ -23,11 +23,11 @@ import io.snappydata.SnappyFunSuite
  */
 class ColumnMutableTest extends SnappyFunSuite {
 
-  test("Simple single row updates") {
+  def singleRowUpdates(provider: String): Unit = {
     val session = snc.snappySession
 
     session.sql("CREATE TABLE TableUpdate(CODE INT, " +
-        "DESCRIPTION varchar(100)) USING column")
+        s"DESCRIPTION varchar(100)) USING $provider options (partition_by 'CODE')")
 
     session.sql("insert into TableUpdate values (5,'test')")
     session.sql("insert into TableUpdate values (6,'test1')")
@@ -39,24 +39,43 @@ class ColumnMutableTest extends SnappyFunSuite {
     val d1 = session.sql("select * from TableUpdate")
     assert(d1.count() == 2)
 
-    session.sql("CREATE TABLE TableUpdate2 USING column AS " +
+    session.sql(s"CREATE TABLE TableUpdate2 USING $provider AS " +
         "(select * from  TableUpdate)")
 
     val d2 = session.sql("select * from TableUpdate2")
     assert(d2.count() == 2)
 
-    session.sql("update TableUpdate2 set DESCRIPTION ='No#complaints' " +
-        "where CODE = 5").collect()
+    session.sql("update TableUpdate set DESCRIPTION ='No#complaints' " +
+        "where CODE = 5")
 
-    val df2 = session.sql("select DESCRIPTION from TableUpdate2 " +
+    var df2 = session.sql("select DESCRIPTION from TableUpdate " +
         "where DESCRIPTION = 'No#complaints' ")
     assert(df2.count() == 1)
 
-    val df3 = session.sql("select DESCRIPTION from TableUpdate2 " +
+    var df3 = session.sql("select DESCRIPTION from TableUpdate " +
+        "where DESCRIPTION in ('No#complaints', 'test1') ")
+    assert(df3.count() == 2)
+
+    session.sql("update TableUpdate2 set DESCRIPTION ='No#complaints' " +
+        "where CODE = 5")
+
+    df2 = session.sql("select DESCRIPTION from TableUpdate2 " +
+        "where DESCRIPTION = 'No#complaints' ")
+    assert(df2.count() == 1)
+
+    df3 = session.sql("select DESCRIPTION from TableUpdate2 " +
         "where DESCRIPTION in ('No#complaints', 'test1') ")
     assert(df3.count() == 2)
 
     session.dropTable("TableUpdate")
     session.dropTable("TableUpdate2")
+  }
+
+  test("Simple single row updates") {
+    singleRowUpdates("column")
+  }
+
+  test("Simple single row updates (row table)") {
+    singleRowUpdates("row")
   }
 }

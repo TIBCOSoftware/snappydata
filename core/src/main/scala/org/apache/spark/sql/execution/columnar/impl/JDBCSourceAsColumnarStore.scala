@@ -87,8 +87,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int)
       (implicit conn: Option[Connection] = None): Unit = {
+    // TODO: SW: temporarily made close=true for updates
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true)(
+    tryExecute(tableName, closeOnSuccessOrFailure = batch.deltaIndexes ne null, onExecutor = true)(
         doInsertOrPut(tableName, batch, batchId, getPartitionID(conn, tableName,
             partitionId), maxDeltaRows))(implicitly, conn)
   }
@@ -202,6 +203,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         region.putAll(keyValues)
 
       case _ =>
+        // TODO: SW: temporarily made close=true for delete
         // noinspection RedundantDefaultArgument
         tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) { connection =>
           val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
@@ -261,7 +263,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             conn.commit()
             conn.close()
         }
-      case None => // Do nothing
+      case _ => // Do nothing
     }
   }
 

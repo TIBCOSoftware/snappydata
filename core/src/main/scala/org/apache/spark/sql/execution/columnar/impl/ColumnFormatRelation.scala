@@ -176,7 +176,7 @@ abstract class BaseColumnFormatRelation(
     val numColumns = columns.length
     val rowBufferColumns = if (numColumns < requiredColumns.length) {
       val newColumns = java.util.Arrays.copyOf(columns, numColumns + 1)
-      newColumns(numColumns) = StoreUtils.SHADOW_COLUMN_NAME
+      newColumns(numColumns) = StoreUtils.ROWID_COLUMN_NAME
       newColumns
     } else columns
     val zipped = buildRowBufferRDD(partitionEvaluator, rowBufferColumns, filters,
@@ -254,7 +254,10 @@ abstract class BaseColumnFormatRelation(
       this, externalColumnTableName)
   }
 
-  override def getKeyColumns: Seq[String] = ColumnDelta.mutableKeyNames
+  override def getKeyColumns: Seq[String] = {
+    // add partitioning columns for row buffer updates
+    partitioningColumns ++ ColumnDelta.mutableKeyNames
+  }
 
   /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
@@ -520,7 +523,7 @@ class ColumnFormatRelation(
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     // keyColumns should match the key fields required for update/delete
-    if (keyColumns != ColumnDelta.mutableKeyNames) {
+    if (keyColumns.takeRight(3) != ColumnDelta.mutableKeyNames) {
       throw new IllegalStateException(s"Unexpected keyColumns=$keyColumns, " +
           s"required=${ColumnDelta.mutableKeyNames}")
     }
@@ -701,7 +704,8 @@ class IndexColumnFormatRelation(
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     relation.copy(relation = new IndexColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable, cr.origOptions,
-      cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName))
+      cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName),
+      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
   }
 
   def getBaseTableRelation: ColumnFormatRelation = {
@@ -798,7 +802,7 @@ final class DefaultSource extends SchemaRelationProvider
       connProperties.dialect)
     val schemaExtension = if (schemaString.length > 0) {
       val temp = schemaString.substring(0, schemaString.length - 1).
-          concat(s", ${StoreUtils.SHADOW_COLUMN}, $primaryKeyClause )")
+          concat(s", ${StoreUtils.ROWID_COLUMN_DEFINITION}, $primaryKeyClause )")
       s"$temp $ddlExtension"
     } else {
       s"$schemaString $ddlExtension"

@@ -58,10 +58,8 @@ trait RowExec extends TableExec {
       val utilsClass = ExternalStoreUtils.getClass.getName
       ctx.addMutableState(connectionClass, connTerm, "")
       val props = ctx.addReferenceObj("connectionProperties", connProps)
-      val failure = ctx.freshName("failure")
       val initCode =
         s"""
-           |java.io.IOException $failure = null;
            |$connTerm = $utilsClass.MODULE$$.getConnection(
            |    "$resolvedName", $props, true);""".stripMargin
       val endCode =
@@ -69,10 +67,9 @@ trait RowExec extends TableExec {
            |  try {
            |    $connTerm.close();
            |  } catch (java.sql.SQLException sqle) {
-           |    $failure = new java.io.IOException(sqle.toString(), sqle);
+           |    // ignore exception in close
            |  }
-           |}
-           |if ($failure != null) throw $failure;""".stripMargin
+           |}""".stripMargin
       (initCode, s"$connTerm.commit();", endCode)
     }
   }
@@ -110,8 +107,8 @@ trait RowExec extends TableExec {
          |  if ($rowCount > 0) {
          |    ${executeBatchCode(numOperations, numOpRowsMetric)}
          |    $stmt.close();
-         |    $commitCode
-         |  }${produceAddonCode()}
+         |  }
+         |  $commitCode${produceAddonCode()}
          |}
       """.stripMargin)
     s"""
