@@ -33,6 +33,8 @@ case class RowInsertExec(child: SparkPlan, putInto: Boolean,
 
   override def opType: String = if (putInto) "Put" else "Inserted"
 
+  override protected def isInsert: Boolean = true
+
   override def nodeName: String = if (putInto) "RowPut" else "RowInsert"
 
   override protected def doProduce(ctx: CodegenContext): String = {

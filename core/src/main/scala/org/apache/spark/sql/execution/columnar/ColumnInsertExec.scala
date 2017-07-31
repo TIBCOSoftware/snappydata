@@ -82,6 +82,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   override protected def opType: String = "Inserted"
 
+  override protected def isInsert: Boolean = true
+
   /** Frequency of rows to check for total size exceeding batch size. */
   private val (checkFrequency, checkMask) = {
     val batchSize = columnBatchSize

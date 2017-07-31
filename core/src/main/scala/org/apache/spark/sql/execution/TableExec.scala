@@ -51,6 +51,10 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 
   def numBuckets: Int
 
+  protected def opType: String
+
+  protected def isInsert: Boolean = false
+
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil
 
@@ -75,13 +79,16 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       // For partitionColumns find the matching child columns
       val schema = tableSchema
       val childOutput = child.output
+      // for inserts the column names can be different and need to match
+      // by index else search in child output by name
       val childPartitioningAttributes = partitionColumns.map(partColumn =>
-        childOutput(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
+        if (isInsert) childOutput(schema.indexWhere(_.name.equalsIgnoreCase(partColumn)))
+        else childOutput.find(_.name.equalsIgnoreCase(partColumn)).getOrElse(
+          throw new IllegalStateException("Cannot find partitioning column " +
+              s"$partColumn in child output for $toString")))
       ClusteredDistribution(childPartitioningAttributes) :: Nil
     } else UnspecifiedDistribution :: Nil
   }
-
-  protected def opType: String
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty

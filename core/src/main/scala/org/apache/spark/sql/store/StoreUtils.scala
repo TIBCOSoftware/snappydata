@@ -285,12 +285,12 @@ object StoreUtils {
     }
   }
 
-  val pkDisallowdTypes = Seq(StringType, BinaryType,
-    ArrayType, MapType, StructType)
+  val pkDisallowdTypes = Seq(BinaryType, ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
-      schema: StructType, context: SQLContext): String = {
+      schema: StructType, context: SQLContext): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
+    val stringPKCols = new mutable.ArrayBuffer[StructField](1)
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
         v match {
@@ -307,10 +307,14 @@ object StoreUtils {
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
               normalizedCols)
 
-            val b = for (field <- prunedSchema.fields)
-              yield !pkDisallowdTypes.contains(field.dataType)
-
-            val includeInPK = b.forall(identity)
+            var includeInPK = true
+            for (field <- prunedSchema.fields if includeInPK) {
+              if (pkDisallowdTypes.contains(field.dataType)) {
+                includeInPK = false
+              } else if (field.dataType == StringType) {
+                stringPKCols += field
+              }
+            }
             if (includeInPK) {
               s"$PRIMARY_KEY ($v, $ROWID_COLUMN_NAME)"
             } else {
@@ -320,7 +324,7 @@ object StoreUtils {
       }
       primaryKey
     }).getOrElse(s"$PRIMARY_KEY ($ROWID_COLUMN_NAME)"))
-    sb.toString()
+    (sb.toString(), stringPKCols)
   }
 
   def ddlExtensionString(parameters: mutable.Map[String, String],

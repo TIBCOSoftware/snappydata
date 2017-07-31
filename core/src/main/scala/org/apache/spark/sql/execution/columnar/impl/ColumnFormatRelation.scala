@@ -256,7 +256,10 @@ abstract class BaseColumnFormatRelation(
 
   override def getKeyColumns: Seq[String] = {
     // add partitioning columns for row buffer updates
-    partitioningColumns ++ ColumnDelta.mutableKeyNames
+
+    // always use case-insensitive analysis for partitioning columns
+    // since table creation can use case-insensitive in creation
+    partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
   }
 
   /**
@@ -775,7 +778,7 @@ final class DefaultSource extends SchemaRelationProvider
     with CreatableRelationProvider {
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
+      options: Map[String, String], specifiedSchema: StructType): JDBCAppendableRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
@@ -785,7 +788,20 @@ final class DefaultSource extends SchemaRelationProvider
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)
-    val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters, schema, sqlContext)
+    // change the schema to use VARCHAR for StringType for partitioning columns
+    // so that the row buffer table can use it as part of primary key
+    val (primaryKeyClause, stringPKCols) = StoreUtils.getPrimaryKeyClause(
+      parameters, specifiedSchema, sqlContext)
+    val schema = if (stringPKCols.isEmpty) specifiedSchema
+    else {
+      StructType(specifiedSchema.map { field =>
+        if (stringPKCols.contains(field)) {
+          field.copy(metadata = Utils.varcharMetadata(Constant.MAX_VARCHAR_SIZE,
+            field.metadata))
+        } else field
+      })
+    }
+
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = false, isShadowTable = false)
 

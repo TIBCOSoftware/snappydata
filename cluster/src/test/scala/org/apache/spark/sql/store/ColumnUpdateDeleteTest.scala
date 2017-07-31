@@ -19,27 +19,10 @@ package org.apache.spark.sql.store
 
 import io.snappydata.Property
 
-import org.apache.spark.SparkConf
-
 /**
  * Tests for updates/deletes on column table.
  */
 class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    stopAll()
-  }
-
-  override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
-    val conf = new SparkConf().
-        setIfMissing("spark.master", "local[1]").
-        setAppName(getClass.getName)
-    if (addOn != null) {
-      addOn(conf)
-    }
-    conf
-  }
 
   test("basic update") {
     val session = this.snc.snappySession
@@ -169,7 +152,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     val numElements = 50000
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '5', partition_by 'addr')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
         "using column options(buckets '3')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
