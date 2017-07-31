@@ -19,8 +19,6 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
-import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
-import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -1935,7 +1933,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public synchronized void executeSnappyJob(Vector jobClassNames, String logFileName, String
+  public void executeSnappyJob(Vector jobClassNames, String logFileName, String
       userAppJar, String jarPath, String appName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;

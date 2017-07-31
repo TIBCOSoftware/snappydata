@@ -30,9 +30,9 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long dmlTables;
 
-  public static long createSchemas;
+  public static Long createSchemas;
 
-  public static long createTablesStatements;
+  public static Long createTablesStatements;
 
   public static Long snappyDDLExtn;
 

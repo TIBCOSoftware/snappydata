@@ -93,7 +93,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
 "delete from app.orders where orderid IN (SELECT max(orderID) from orders where tid=$tid)"
-"delete from app.customers where custId IN (SELECT min(custID) from customers where tid=$tid)"
+"delete from app.customers where CustomerID IN (SELECT min(CustomerID) from customers where tid=$tid)"
 "delete from app.employees where EmployeeID = 6"
 "delete from app.employees where EmployeeID < 5"
 "delete from app.employees where FIRSTNAME LIKE '%2'"

@@ -46,7 +46,6 @@ import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.snapshotIsolation.SnapshotIsolationDMLOpsBB;
 import org.apache.commons.lang.ArrayUtils;
 import sql.SQLHelper;
-import sql.SQLPrms;
 import sql.sqlutil.GFXDStructImpl;
 import sql.sqlutil.ResultSetHelper;
 import util.TestException;
@@ -227,7 +226,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   protected void createSchemas(Connection conn, boolean isDerby) {
-    String[] schemas = SQLPrms.getSchemas();
+    String[] schemas = SnappySchemaPrms.getSchemas();
     StringBuffer aStr = new StringBuffer("Created schemas \n");
     try {
       Statement s = conn.createStatement();
