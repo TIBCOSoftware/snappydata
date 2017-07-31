@@ -32,7 +32,7 @@ import org.apache.spark.sql.internal.SnappySessionState
  * an exchange for simple aggregates.
  */
 case class CollectAggregateExec(
-    @transient basePlan: SnappyHashAggregateExec,
+    basePlan: SnappyHashAggregateExec,
     child: SparkPlan) extends UnaryExecNode {
 
   override def nodeName: String = "CollectAggregate"
