@@ -840,6 +840,15 @@ private[sql] final case class ColumnTableScan(
            |}
         """.stripMargin
       }
+    } else if (isWideSchema) {
+      ctx.addMutableState("boolean", mutatedVar, "")
+      s"""
+         |$moveNext
+         |$mutatedVar = $mutatedDecoder != null && $mutatedDecoder.mutated($batchOrdinal);
+         |if ($mutatedVar) {
+         |  $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
+         |}
+      """.stripMargin
     } else {
       s"""
          |$moveNext
