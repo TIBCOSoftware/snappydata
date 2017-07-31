@@ -1018,9 +1018,9 @@ object TPCH_Queries {
         "         SUPPLIER, revenue" +
         " where" +
         "         s_suppkey = supplier_no" +
-        "         and total_revenue = (" +
+        "         and floor(total_revenue) = (" +
         "                       select" +
-        "                             max(total_revenue)" +
+        "                             floor(max(total_revenue))" +
         "                       from" +
         "                             revenue" +
         "   ) " +
