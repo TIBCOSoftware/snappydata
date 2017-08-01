@@ -22,6 +22,7 @@ import java.util.Properties
 import scala.language.postfixOps
 import scala.sys.process._
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata._
@@ -49,7 +50,7 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
   // Easier to switch ON traces. thats why added this.
-  // bootProps.setProperty("gemfirexd.debug.true",
+  //bootProps.setProperty("gemfirexd.debug.true",
   //   "QueryDistribution,TraceExecution,TraceActivation,TraceTran")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores",
@@ -120,10 +121,7 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    vm0.invoke(startNode)
-    vm1.invoke(startNode)
-    vm2.invoke(startNode)
-
+    Array(vm0, vm1, vm2).foreach(_.invoke(startNode))
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
@@ -202,6 +200,9 @@ abstract class ClusterManagerTestBase(s: String)
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
   }
+
+
+
 }
 
 /**
@@ -316,5 +317,18 @@ object ClusterManagerTestBase extends Logging {
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
+  }
+
+  def validateNoActiveSnapshotTX(): Unit = {
+    val cache = Misc.getGemFireCache
+    val txMgr = cache.getCacheTransactionManager
+    if (txMgr != null) {
+      val itr = txMgr.getHostedTransactionsInProgress.iterator()
+      while (itr.hasNext) {
+        val tx = itr.next()
+        if (tx.isSnapshot)
+          assert(tx.isClosed, s"${tx} is not closed. ")
+      }
+    }
   }
 }
