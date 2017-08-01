@@ -39,7 +39,7 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
-import org.apache.spark.sql.execution.RDDKryo
+import org.apache.spark.sql.execution.{ConnectionPool, RDDKryo}
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext}
 
@@ -292,9 +292,16 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (parts != null && parts.length > 0) {
       return parts
     }
+
+    // To be removed by SNAP-1872
+    val redundantConn = ConnectionPool.getPoolConnection(tableName,
+      connProperties.dialect, connProperties.poolProps,
+      connProperties.connProps, connProperties.hikariCP)
+    redundantConn.commit()
+    redundantConn.close()
+
     Misc.getRegionForTable(tableName, true).asInstanceOf[CacheDistributionAdvisee] match {
-      case pr: PartitionedRegion =>
-        session.sessionState.getTablePartitions(pr)
+      case pr: PartitionedRegion => session.sessionState.getTablePartitions(pr)
       case dr => session.sessionState.getTablePartitions(dr)
     }
   }
