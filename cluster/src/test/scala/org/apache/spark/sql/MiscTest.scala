@@ -16,19 +16,17 @@
  */
 package org.apache.spark.sql
 
-import java.util.Properties
+import scala.util.control.NonFatal
 
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.Data
+
+import org.apache.spark.Logging
 import org.apache.spark.scheduler._
-import org.apache.spark.{Logging, SparkConf, SparkContext}
-import org.scalatest.BeforeAndAfter
 
 /**
  * Tests that don't fall under any other category
  */
-class MiscTest extends SnappyFunSuite
-  with Logging {
+class MiscTest extends SnappyFunSuite with Logging {
 
   test("Pool test") {
     // create a dummy pool
@@ -36,19 +34,16 @@ class MiscTest extends SnappyFunSuite
     sc.taskScheduler.rootPool.addSchedulable(rootPool)
 
     try {
-      snc.sql("set snappydata.scheduler.pool=xyz");
-      assert(false, "unknown spark scheduler cannot be set")
+      snc.sql("set snappydata.scheduler.pool=xyz")
+      fail("unknown spark scheduler cannot be set")
     } catch {
-      case a: IllegalArgumentException => // do nothing
-      case e => assert(false, "setting unknown spark scheduler with a different error " + e)
+      case _: IllegalArgumentException => // do nothing
+      case NonFatal(e) =>
+        fail("setting unknown spark scheduler with a different error", e)
     }
 
-    snc.sql("set snappydata.scheduler.pool=lowlatency");
+    snc.sql("set snappydata.scheduler.pool=lowlatency")
     snc.sql("select 1").count
-    val x = sc.getLocalProperty("spark.scheduler.pool")
-    assert(sc.getLocalProperty("spark.scheduler.pool").equals("lowlatency"),
-      "the Pool is not set as lowlatency");
-
+    assert(sc.getLocalProperty("spark.scheduler.pool") === "lowlatency")
   }
-
 }
