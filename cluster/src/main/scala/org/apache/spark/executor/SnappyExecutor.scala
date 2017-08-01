@@ -17,13 +17,11 @@
 package org.apache.spark.executor
 
 import java.io.File
-import java.net.{URL, URLClassLoader}
+import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-
-import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SnappyContextURLLoader, SparkExitCode, Utils}
@@ -46,7 +44,7 @@ class SnappyExecutor(
   }
 
   // appName -> comma separated jarFiles
-  private val allJars = new ConcurrentHashMap[(String, String), SnappyContextURLLoader]().asScala
+  private val allJars = new ConcurrentHashMap[(String, String), MutableURLClassLoader]().asScala
 
 
   def getName(path: String): String = new File(path).getName
@@ -77,8 +75,7 @@ class SnappyExecutor(
               val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
               url
             })
-            val newClassLoader = new SnappyContextURLLoader(replClassLoader)
-            urls.foreach(url => newClassLoader.addURL(url))
+            val newClassLoader = new MutableURLClassLoader(urls.toArray, replClassLoader)
             allJars.putIfAbsent((appName, appTime), newClassLoader)
             newClassLoader
           })
@@ -86,79 +83,6 @@ class SnappyExecutor(
         }
       }
     }
-  }
-}
-
-class SnappyMutableURLClassLoader(urls: Array[URL],
-    parent: ClassLoader,
-    val jobJars: scala.collection.mutable.Map[String, URLClassLoader])
-    extends MutableURLClassLoader(urls, parent) with Logging {
-
-
-  protected def getJobName: String = {
-    var jobFile = ""
-    val taskDeserializationProps = Executor.taskDeserializationProps.get()
-    if (null != taskDeserializationProps) {
-      jobFile = taskDeserializationProps.getProperty(io.snappydata.Constant
-          .CHANGEABLE_JAR_NAME, "")
-    }
-    new File(jobFile).getName
-  }
-
-
-  override def addURL(url: URL): Unit = {
-    val jobName = getJobName
-    logInfo(s"Adding $url to snappy classloader with jobName = $jobName")
-    if (jobName.isEmpty) {
-      super.addURL(url)
-    }
-    else {
-      jobJars.put(jobName, new URLClassLoader(Array(url)))
-    }
-  }
-
-  def getAddedURLs: Array[String] = {
-    jobJars.keys.toArray
-  }
-
-  def removeURL(jar: String): Unit = {
-    if (jobJars.contains(jar)) {
-      val urlLoader = jobJars.get(jar)
-      if (urlLoader.isDefined) {
-        val file = new File(SparkFiles.getRootDirectory(), jar)
-        jobJars.remove(jar)
-        if (file.exists()) {
-          logInfo(s"Removing $jar from Spark root directory")
-          file.delete()
-        }
-      }
-    }
-  }
-
-  override def loadClass(name: String, resolve: Boolean): Class[_] = {
-    loadJar(() => super.loadClass(name, resolve)).
-        getOrElse(loadJar(() => Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name))
-            .getOrElse(loadJar(() => loadClassFromJobJar(name), throwException = true).get))
-  }
-
-  def loadJar(f: () => Class[_], throwException: Boolean = false): Option[Class[_]] = {
-    try {
-      Option(f())
-    } catch {
-      case cnfe: ClassNotFoundException => if (throwException) throw cnfe
-      else None
-    }
-  }
-
-  def loadClassFromJobJar(className: String): Class[_] = {
-    val jobName = getJobName
-    if (!jobName.isEmpty) {
-      jobJars.get(jobName) match {
-        case Some(loader) => loader.loadClass(className)
-        case _ => throw new ClassNotFoundException(className)
-      }
-    }
-    else throw new ClassNotFoundException(className)
   }
 }
 
