@@ -85,6 +85,8 @@ public class SnappyTest implements Serializable {
   public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
   public static boolean forceStart = TestConfig.tab().booleanAt(SnappyPrms.forceStart,
       false);  //default to false
+  public static boolean forceCopy = TestConfig.tab().booleanAt(SnappyPrms.forceCopy,
+      false);  //default to false
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
@@ -872,7 +874,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void copyConfigData(String fileName) {
-    if (doneCopying) return;
+    if (doneCopying && !forceCopy) return;
     String filePath = productConfDirPath + fileName;
     File srcFile = new File(filePath);
     try {
@@ -2763,37 +2765,22 @@ public class SnappyTest implements Serializable {
   }
 
   protected void killVM(String vmDir, String clientName, String vmName) {
-    File log = null, logFile = null;
-    ProcessBuilder pb = null;
+    if (vmName.equalsIgnoreCase("lead")) {
+      regenerateConfigData(vmDir, "leads", clientName, vmName);
+      HydraTask_stopSnappyLeader();
+    } else if (vmName.equalsIgnoreCase("server")) {
+      regenerateConfigData(vmDir, "servers", clientName, vmName);
+      HydraTask_stopSnappyServers();
+    } else if (vmName.equalsIgnoreCase("locator")) {
+      regenerateConfigData(vmDir, "locators", clientName, vmName);
+      HydraTask_stopSnappyLocator();
+    }
     try {
-      if (vmName.equalsIgnoreCase("lead")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-lead.sh"), "stop",
-            "-dir=" + vmDir);
-        log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
-        logFile = new File(dest);
-      } else if (vmName.equalsIgnoreCase("server")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "stop",
-            "-dir=" + vmDir);
-        log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
-        logFile = new File(dest);
-      } else if (vmName.equalsIgnoreCase("locator")) {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locator.sh"), "stop",
-            "-dir=" + vmDir);
-        log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
-        logFile = new File(dest);
-      }
-      snappyTest.executeProcess(pb, logFile);
       Thread.sleep(60000);
       boolean serverStopFailed = snappyTest.waitForMemberStop(vmDir, clientName, vmName);
       if (serverStopFailed) {
         snappyTest.threadDumpForAllServers();
       }
-    } catch (IOException e) {
-      String s = "problem occurred while retriving logFile path " + log;
-      throw new TestException(s, e);
     } catch (InterruptedException e) {
       String s = "Exception occurred while waiting for the kill " + clientName + "process " +
           "execution..";
@@ -2951,13 +2938,13 @@ public class SnappyTest implements Serializable {
 
   protected void startVM(String vmDir, String clientName, String vmName) {
     if (vmName.equalsIgnoreCase("lead")) {
-      regenerateConfigData(vmDir, "leads", clientName, vmName);
+      //regenerateConfigData(vmDir, "leads", clientName, vmName);
       startSnappyLead();
     } else if (vmName.equalsIgnoreCase("server")) {
-      regenerateConfigData(vmDir, "servers", clientName, vmName);
+      //regenerateConfigData(vmDir, "servers", clientName, vmName);
       startSnappyServer();
     } else if (vmName.equalsIgnoreCase("locator")) {
-      regenerateConfigData(vmDir, "locators", clientName, vmName);
+      //regenerateConfigData(vmDir, "locators", clientName, vmName);
       startSnappyLocator();
     }
     Log.getLogWriter().info(clientName + " restarted successfully...");
