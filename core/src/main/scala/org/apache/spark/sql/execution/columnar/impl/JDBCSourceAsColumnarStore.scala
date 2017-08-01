@@ -18,18 +18,25 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.UUID
+import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
 
+import scala.annotation.meta.param
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 import scala.util.control.NonFatal
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.catalyst.InternalRow
@@ -43,19 +50,22 @@ import org.apache.spark.sql.sources.{ConnectionProperties, Filter, JdbcExtendedU
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
-import org.apache.spark.{Partition, TaskContext}
-
+import org.apache.spark.{Logging, Partition, TaskContext}
 import scala.annotation.meta.param
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+
+import com.pivotal.gemfirexd.Attribute
+
+import org.apache.spark.sql.jdbc.JdbcDialect
 
 /**
  * Column Store implementation for GemFireXD.
  */
 class JDBCSourceAsColumnarStore(override val connProperties: ConnectionProperties,
     numPartitions: Int, val tableName: String, val schema: StructType)
-    extends ExternalStore {
+    extends ExternalStore with Logging {
 
   self =>
   @transient
@@ -65,12 +75,125 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     connProperties.dialect)
 
   override def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: Option[String], maxDeltaRows: Int): Unit = {
+      partitionId: Int, batchId: Option[String], maxDeltaRows: Int)
+      (implicit conn: Option[Connection] = None): Unit = {
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, doInsert(tableName, batch, batchId,
-      getPartitionID(tableName, partitionId), maxDeltaRows),
-      closeOnSuccess = true, onExecutor = true)
+    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true)(doInsert(tableName, batch, batchId,
+      getPartitionID(conn, tableName, partitionId), maxDeltaRows))(implicitly, conn)
   }
+
+  // begin should decide the connection which will be used by insert/commit/rollback
+  def beginTx(): Array[_ <: Object] = {
+    implicit val conn = self.getConnection(tableName, onExecutor = true)
+
+    assert(!conn.isClosed)
+    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) {
+      (conn: Connection) => {
+        connectionType match {
+          case ConnectionType.Embedded =>
+            val txMgr = Misc.getGemFireCache().getCacheTransactionManager()
+            if (TXManagerImpl.snapshotTxState.get() == null && (txMgr.getTXState == null)) {
+              txMgr.begin(com.gemstone.gemfire.cache.IsolationLevel.SNAPSHOT, null)
+              Array(conn, txMgr.getTransactionId().stringFormat())
+            } else {
+              Array(conn, null)
+            }
+          case _ =>
+            val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
+            if (txId == null) {
+              logDebug("Going to start the transaction on server ")
+              val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID (?)")
+              startAndGetSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
+              startAndGetSnapshotTXId.execute()
+              val txid: String = startAndGetSnapshotTXId.getString(1)
+              startAndGetSnapshotTXId.close()
+              SparkShellRDDHelper.snapshotTxIdForWrite.set(txid)
+              logDebug(s"The snapshot tx id is ${txid} and tablename is ${tableName}")
+              Array(conn, txid)
+            } else {
+              // it should always be not null.
+              if (!txId.equals("null")) {
+                val statement = conn.createStatement()
+                statement.execute(
+                  s"call sys.USE_SNAPSHOT_TXID('$txId')")
+              }
+              Array(conn, null)
+            }
+        }
+      }
+    } (implicitly, Some(conn))
+  }
+
+  def commitTx(txId: String)(implicit conn: Option[Connection]): Unit = {
+    tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
+      (conn: Connection) => {
+        connectionType match {
+          case ConnectionType.Embedded =>
+            //if(SparkShellRDDHelper.snapshotTxIdForRead.get)
+            Misc.getGemFireCache().getCacheTransactionManager().commit()
+          case _ =>
+            logDebug(s"Going to commit ${txId} the transaction on server ")
+            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
+            ps.setString(1, if (txId == null) "null" else txId)
+            ps.executeUpdate()
+            logDebug(s"The txid being committed is $txId")
+            ps.close()
+            SparkShellRDDHelper.snapshotTxIdForWrite.set(null)
+            logDebug(s"Committed ${txId} the transaction on server ")
+        }
+      }
+    }(implicitly, conn)
+  }
+
+
+  def rollbackTx(txId: String)(implicit conn: Option[Connection]): Unit = {
+    tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
+      (conn: Connection) => {
+        connectionType match {
+          case ConnectionType.Embedded =>
+            Misc.getGemFireCache().getCacheTransactionManager().rollback()
+          case _ =>
+            logDebug(s"Going to rollback ${txId} the transaction on server ")
+            val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
+            ps.setString(1, if (txId == null) "null" else txId)
+            ps.executeUpdate()
+            logDebug(s"The txid being rolledback is $txId")
+            ps.close()
+            SparkShellRDDHelper.snapshotTxIdForWrite.set(null)
+            logDebug(s"Rolled back ${txId} the transaction on server ")
+        }
+      }
+    }(implicitly, conn)
+  }
+
+
+  def closeConnection(conn: Option[Connection]): Unit = {
+    conn match {
+      case Some(conn) if !conn.isClosed =>
+        conn match {
+          case ConnectionType.Embedded =>
+            // conn commit removed txState from the conn context.
+            conn.commit()
+            conn.close()
+          case _ =>
+            // it should always be not null.
+            // get clears the state from connection
+            // the tx would have been committed earlier
+            // or it will be committed later
+            val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
+            if (txId != null && !txId.equals("null")) {
+              val statement = conn.createStatement()
+              statement.execute(
+                s"call sys.GET_SNAPSHOT_TXID('$txId')")
+            }
+            // conn commit removed txState from the conn context.
+            conn.commit()
+            conn.close()
+        }
+      case None => //Do nothing
+    }
+  }
+
 
   private def createStatsBuffer(statsData: Array[Byte],
       allocator: BufferAllocator): ByteBuffer = {
@@ -88,7 +211,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  protected def doSnappyInsert(tableName: String, batch: ColumnBatch,
+  private def doSnappyInsert(tableName: String, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int, maxDeltaRows: Int): Unit = {
     val region = Misc.getRegionForTable[ColumnFormatKey,
         ColumnFormatValue](tableName, true)
@@ -116,6 +239,7 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
       region.putAll(keyValues)
     } catch {
       // TODO: test this code
+      // should be rolled back. so no need to delete.
       case NonFatal(e) =>
         // delete the base entry first
         val key = new ColumnFormatKey(partitionId,
@@ -144,11 +268,12 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  protected def doGFXDInsert(tableName: String, batch: ColumnBatch,
+  private def doGFXDInsert(tableName: String, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int,
       maxDeltaRows: Int): (Connection => Any) = {
     {
       (connection: Connection) => {
+        // we are using the same connection on which tx was started.
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         var columnIndex = 1
@@ -179,6 +304,10 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
           stmt.close()
         } catch {
           // TODO: test this code
+          //TODO:Suranjan This code is no needed now.
+          // Need to rollback.
+          // we can't do this for only this cachedbatch
+          // all the inserts in this partitionId will be rolled back.
           case NonFatal(e) =>
             val deletestmt = connection.prepareStatement(
               s"delete from $tableName where partitionId = $partitionId " +
@@ -251,8 +380,41 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
     val connProps = if (onExecutor) connProperties.executorConnProps
     else connProperties.connProps
-    ConnectionPool.getPoolConnection(id, connProperties.dialect,
+    getPoolConnection(id, connProperties.dialect,
       connProperties.poolProps, connProps, connProperties.hikariCP)
+  }
+
+  private lazy val bootProperties = Option(Misc.getMemStoreBootingNoThrow).map(_.getBootProperties)
+
+  def getPoolConnection(id: String, dialect: JdbcDialect, poolProps: Map[String, String],
+      connProps: Properties, hikariCP: Boolean): Connection = {
+    // Handle security at remote VM in cases like insert
+    bootProperties match {
+      case Some(p) if p.containsKey(Attribute.USERNAME_ATTR) &&
+          p.containsKey(Attribute.PASSWORD_ATTR) =>
+        def secureProps(props: Properties): Properties = {
+          if (Option(props.getProperty(Attribute.USERNAME_ATTR)).isEmpty &&
+              Option(props.getProperty(Attribute.PASSWORD_ATTR)).isEmpty) {
+            props.setProperty(Attribute.USERNAME_ATTR, p.get(Attribute.USERNAME_ATTR).toString)
+            props.setProperty(Attribute.PASSWORD_ATTR, p.get(Attribute.PASSWORD_ATTR).toString)
+          }
+          props
+        }
+
+        // Hikari only take 'username'. So does Tomcat
+        def securePoolProps(props: Map[String, String]): Map[String, String] = {
+          if (props.get(Attribute.USERNAME_ALT_ATTR.toLowerCase).isEmpty &&
+              props.get(Attribute.PASSWORD_ATTR).isEmpty) {
+            props + (Attribute.USERNAME_ALT_ATTR.toLowerCase ->
+                p.get(Attribute.USERNAME_ATTR).toString) +
+                (Attribute.PASSWORD_ATTR -> p.get(Attribute.PASSWORD_ATTR).toString)
+          } else props
+        }
+
+        ConnectionPool.getPoolConnection(id, dialect, securePoolProps(poolProps),
+          secureProps(connProps), hikariCP)
+      case _ => ConnectionPool.getPoolConnection(id, dialect, poolProps, connProps, hikariCP)
+    }
   }
 
   override def getConnectedExternalStore(table: String,
@@ -298,11 +460,12 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
     }
   }
 
-  protected def doInsert(columnTableName: String, batch: ColumnBatch,
+  private def doInsert(columnTableName: String, batch: ColumnBatch,
       batchId: Option[String], partitionId: Int,
       maxDeltaRows: Int): (Connection => Any) = {
     (connection: Connection) => {
       // split the batch and put into row buffer if it is small
+
       if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
         GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
         // the lookup key depends only on schema and not on the table
@@ -370,42 +533,41 @@ class JDBCSourceAsColumnarStore(override val connProperties: ConnectionPropertie
      }
   }
 
-  protected def getPartitionID(tableName: String,
+  // use the same saved connection for all operation
+  private def getPartitionID(conn: Option[Connection], tableName: String,
       partitionId: Int = -1): Int = {
-    val connection = getConnection(tableName, onExecutor = true)
-    try {
-      connectionType match {
-        case ConnectionType.Embedded =>
-          val resolvedName = ExternalStoreUtils.lookupName(tableName,
-            connection.getSchema)
-          val region = Misc.getRegionForTable(resolvedName, true)
-              .asInstanceOf[LocalRegion]
-          region match {
-            case pr: PartitionedRegion =>
-              if (partitionId == -1) {
-                val primaryBucketIds = pr.getDataStore.
-                    getAllLocalPrimaryBucketIdArray
-                // TODO: do load-balancing among partitions instead
-                // of random selection
-                val numPrimaries = primaryBucketIds.size()
-                // if no local primary bucket, then select some other
-                if (numPrimaries > 0) {
-                  primaryBucketIds.getQuick(rand.nextInt(numPrimaries))
-                } else {
-                  rand.nextInt(pr.getTotalNumberOfBuckets)
-                }
+    val connection = conn match {
+      case Some(conn) => conn
+      case None => getConnection(tableName, onExecutor = true)
+    }
+    connectionType match {
+      case ConnectionType.Embedded =>
+        val resolvedName = ExternalStoreUtils.lookupName(tableName,
+          connection.getSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
+            .asInstanceOf[LocalRegion]
+        region match {
+          case pr: PartitionedRegion =>
+            if (partitionId == -1) {
+              val primaryBucketIds = pr.getDataStore.
+                  getAllLocalPrimaryBucketIdArray
+              // TODO: do load-balancing among partitions instead
+              // of random selection
+              val numPrimaries = primaryBucketIds.size()
+              // if no local primary bucket, then select some other
+              if (numPrimaries > 0) {
+                primaryBucketIds.getQuick(rand.nextInt(numPrimaries))
               } else {
-                partitionId
+                rand.nextInt(pr.getTotalNumberOfBuckets)
               }
-            case _ => partitionId
-          }
-        // TODO: SW: for split mode, get connection to one of the
-        // local servers and a bucket ID for only one of those
-        case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
-      }
-    } finally {
-      connection.commit()
-      connection.close()
+            } else {
+              partitionId
+            }
+          case _ => partitionId
+        }
+      // TODO: SW: for split mode, get connection to one of the
+      // local servers and a bucket ID for only one of those
+      case _ => if (partitionId < 0) rand.nextInt(numPartitions) else partitionId
     }
   }
 }
@@ -420,7 +582,7 @@ final class ColumnarStorePartitionedRDD(
 
   private[this] var allPartitions: Array[Partition] = _
   private val evaluatePartitions: () => Array[Partition] = () => {
-    store.tryExecute(tableName, conn => {
+    store.tryExecute(tableName) { conn =>
       val resolvedName = ExternalStoreUtils.lookupName(tableName,
         conn.getSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
@@ -448,7 +610,7 @@ final class ColumnarStorePartitionedRDD(
               pr.getTotalNumberOfBuckets, prefNodes.toSeq))
           }
       }
-    })
+    }
   }
 
   override def compute(part: Partition, context: TaskContext): Iterator[Any] = {
@@ -539,7 +701,7 @@ final class SmartConnectorColumnRDD(
           ps.executeUpdate()
           logDebug(s"The txid being committed is $txId")
           ps.close()
-          SparkShellRDDHelper.snapshotTxId.set(null)
+          SparkShellRDDHelper.snapshotTxIdForRead.set(null)
         // }
       }
     }
@@ -555,7 +717,7 @@ final class SmartConnectorColumnRDD(
     if (parts != null && parts.length > 0) {
       return parts
     }
-    store.tryExecute(tableName, SparkShellRDDHelper.getPartitions(tableName, _))
+    store.tryExecute(tableName)(SparkShellRDDHelper.getPartitions(tableName, _))
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
@@ -597,7 +759,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
       context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      val txId = SparkShellRDDHelper.snapshotTxId.get
+      val txId = SparkShellRDDHelper.snapshotTxIdForRead.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
       // if ((txId ne null) && !txId.equals("null")) {
         val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
@@ -605,7 +767,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
-        SparkShellRDDHelper.snapshotTxId.set(null)
+        SparkShellRDDHelper.snapshotTxIdForRead.set(null)
       // }
     }))
   }
@@ -643,7 +805,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       stmt.setFetchSize(fetchSize.toInt)
     }
 
-    val txId = SparkShellRDDHelper.snapshotTxId.get
+    val txId = SparkShellRDDHelper.snapshotTxIdForRead.get
     if (txId != null) {
       if (!txId.equals("null")) {
         val statement = conn.createStatement()
@@ -661,7 +823,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       getSnapshotTXId.execute()
       val txid: String = getSnapshotTXId.getString(1)
       getSnapshotTXId.close()
-      SparkShellRDDHelper.snapshotTxId.set(txid)
+      SparkShellRDDHelper.snapshotTxIdForRead.set(txid)
       logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
     }
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
