@@ -289,7 +289,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private var currentUUID: String = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
-  private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] = _
+  private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
+    new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
   def getColumnLob(columnIndex: Int): ByteBuffer = {
