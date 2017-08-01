@@ -507,7 +507,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           // TODO: SW: temporarily made close=true for updates
           // noinspection RedundantDefaultArgument
           tryExecute(tableName, closeOnSuccessOrFailure = batch.deltaIndexes ne null,
-            onExecutor = true)(doGFXDInsertOrPut(tableName, batch, batchId, partitionId,
+            onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
             maxDeltaRows))(implicitly, conn)
       }
     }
