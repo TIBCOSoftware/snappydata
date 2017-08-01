@@ -412,8 +412,11 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
       s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
           s"col3 < 1.0",
-      s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
+      s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0",
+      s"select count(*) from $jdbcUser1.$embeddedColTab1",
+      s"select count(*) from $jdbcUser1.$embeddedRowTab1"
     )
+
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
@@ -441,7 +444,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       sqls.foreach(s => executeSQL(adminStmt, s))
     }
 
-    verifyGrantRevoke("select", List(sqls(0), sqls(1)))
+    verifyGrantRevoke("select", List(sqls(0), sqls(1), sqls(6), sqls(7)))
     verifyGrantRevoke("insert", List(sqls(2), sqls(3)))
     // No update on column tables
     verifyGrantRevoke("update", List(sqls(4)))
@@ -499,14 +502,14 @@ class SplitClusterDUnitSecurityTest(s: String)
     val sns = snc.snappySession
 
     val rdd = sns.sparkContext.parallelize(
-      (1 to 113999).map(i => Data2(i, s"name_$i", s"address_$i")))
+      (1 to 113999).map(i => Data2(i, s"my_name_$i", s"my_work_address_$i")))
     val dataDF = sns.createDataFrame(rdd)
     val col1 = "COL1"
     val col2 = "COL2"
     val col3 = "COL3"
     val col4 = "COL4"
 
-    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "50"), false)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "5"), false)
     sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
     sns.catalog.refreshTable(smartColTab1)
     sns.catalog.refreshTable(smartRowTab1)
@@ -527,6 +530,8 @@ class SplitClusterDUnitSecurityTest(s: String)
       "Update failed")
 
     assert(sns.delete(smartRowTab1, s"$col1 = 1000") == 1, "Delete failed")
+
+    dataDF.write.insertInto(smartColTab1)
 
     sns.sqlContext.alterTable(smartRowTab1, true, StructField(col4, IntegerType, true))
 
