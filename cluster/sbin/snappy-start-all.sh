@@ -32,10 +32,10 @@ if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
 
-# Check for background start
-BACKGROUND=
-if [ "$1" = "-bg" -o "$1" = "--background" ]; then
-  BACKGROUND="$1"
+# Check for foreground start
+BACKGROUND=-bg
+if [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
+  BACKGROUND=""
   shift
 fi
   
