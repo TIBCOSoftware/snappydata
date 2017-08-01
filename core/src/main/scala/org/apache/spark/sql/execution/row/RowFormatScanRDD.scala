@@ -292,21 +292,17 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (parts != null && parts.length > 0) {
       return parts
     }
-    val conn = ConnectionPool.getPoolConnection(tableName,
+
+    // To be removed by SNAP-1872
+    val redundantConn = ConnectionPool.getPoolConnection(tableName,
       connProperties.dialect, connProperties.poolProps,
       connProperties.connProps, connProperties.hikariCP)
-    try {
-      val tableSchema = conn.getSchema
-      val resolvedName = ExternalStoreUtils.lookupName(tableName, tableSchema)
-      Misc.getRegionForTable(resolvedName, true)
-          .asInstanceOf[CacheDistributionAdvisee] match {
-        case pr: PartitionedRegion =>
-          session.sessionState.getTablePartitions(pr)
-        case dr => session.sessionState.getTablePartitions(dr)
-      }
-    } finally {
-      conn.commit()
-      conn.close()
+    redundantConn.commit()
+    redundantConn.close()
+
+    Misc.getRegionForTable(tableName, true).asInstanceOf[CacheDistributionAdvisee] match {
+      case pr: PartitionedRegion => session.sessionState.getTablePartitions(pr)
+      case dr => session.sessionState.getTablePartitions(dr)
     }
   }
 
