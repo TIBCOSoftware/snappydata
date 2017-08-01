@@ -285,7 +285,7 @@ object StoreUtils {
     }
   }
 
-  val pkDisallowdTypes = Seq(BinaryType, ArrayType, MapType, StructType)
+  val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
       schema: StructType, context: SQLContext): (String, Seq[StructField]) = {
@@ -311,9 +311,12 @@ object StoreUtils {
             for (field <- prunedSchema.fields if includeInPK) {
               if (pkDisallowdTypes.contains(field.dataType)) {
                 includeInPK = false
-              } else if (field.dataType == StringType) {
+              }
+              /* (string type handling excluded for now due to possible regression impact)
+              else if (field.dataType == StringType) {
                 stringPKCols += field
               }
+              */
             }
             if (includeInPK) {
               s"$PRIMARY_KEY ($v, $ROWID_COLUMN_NAME)"
