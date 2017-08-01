@@ -36,13 +36,13 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
   override def tearDown2(): Unit = {
     val snSession = new SnappySession(sc)
-    snSession.sessionCatalog.reset()
     super.tearDown2()
+    snSession.sessionCatalog.reset()
   }
 
   def testDriverHA(): Unit = {
     // Stop the lead node
-    ClusterManagerTestBase.stopSpark()
+    ClusterManagerTestBase.stopSparkWithoutCleanup()
 
     // Start the lead node in another JVM. The executors should
     // connect with this new lead.
@@ -52,13 +52,13 @@ class UserDefinedFunctionsDUnitTest(val s: String)
       vm3.invoke(getClass, "startSnappyLead", startArgs)
       vm3.invoke(getClass, "createTables")
       vm3.invoke(getClass, "simpleUDFTest", true)
-      vm3.invoke(getClass, "stopSpark")
+      vm3.invoke(getClass, "stopSparkWithoutCleanup")
       //Again start the lead node
       vm3.invoke(getClass, "startSnappyLead", startArgs)
       vm3.invoke(getClass, "createTables") // as stop Spark deletes tables.
 
       vm3.invoke(getClass, "simpleUDFTest", false)
-      vm3.invoke(getClass, "stopSpark")
+      vm3.invoke(getClass, "stopSparkWithoutCleanup")
     } catch {
       case  e: Throwable => throw new Exception(e)
     } finally {

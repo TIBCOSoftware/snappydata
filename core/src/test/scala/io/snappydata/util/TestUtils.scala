@@ -16,6 +16,9 @@
  */
 package io.snappydata.util
 
+import io.snappydata.Constant
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
+
 import scala.collection.mutable
 
 import _root_.com.gemstone.gemfire.cache.Region
@@ -74,6 +77,31 @@ object TestUtils {
     }
   }
 
+  def dropAllFunctions(snc: => SnappyContext): Unit = {
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      val snc = SnappyContext(sc)
+      try {
+
+        val catalog = snc.sessionState.catalog
+
+        catalog.listFunctions(Constant.DEFAULT_SCHEMA).map(_._1).foreach { func =>
+          if (func.database.isDefined) {
+            catalog.dropFunction(func, ignoreIfNotExists = false)
+          } else {
+            catalog.dropTempFunction(func.funcName, ignoreIfNotExists = false)
+          }
+        }
+
+        catalog.clearTempTables()
+        catalog.destroyAndRegisterBuiltInFunctions()
+
+      } catch {
+        case t: Throwable => t.printStackTrace()
+      }
+
+    }
+  }
   private def checkColocatedByList(colocated: java.util.List[PartitionedRegion],
       allRegions: mutable.Set[String]): Boolean = {
     val itr = colocated.iterator()

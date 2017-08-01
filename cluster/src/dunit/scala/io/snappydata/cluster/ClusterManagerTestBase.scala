@@ -254,6 +254,7 @@ object ClusterManagerTestBase extends Logging {
     val snc = SnappyContext()
     if (snc != null) {
       TestUtils.dropAllTables(snc)
+      TestUtils.dropAllFunctions(snc)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
@@ -263,6 +264,17 @@ object ClusterManagerTestBase extends Logging {
   def stopSpark(): Unit = {
     // cleanup metastore
     cleanupTestData(null, null)
+    val service = ServiceManager.currentFabricServiceInstance
+    if (service != null) {
+      service.stop(null)
+    }
+  }
+
+  /**
+   * This method is used to test HA scenarios without doing cleanup of testdata
+   */
+  def stopSparkWithoutCleanup(): Unit = {
+
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stop(null)
