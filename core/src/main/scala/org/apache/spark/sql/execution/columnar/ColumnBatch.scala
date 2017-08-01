@@ -162,8 +162,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 
   def getCurrentBucketId: Int = currentKeyPartitionId
 
-  private def getColumnBuffer(columnIndex: Int, throwIfMissing: Boolean): ByteBuffer = {
-    val key = new ColumnFormatKey(currentKeyPartitionId, columnIndex,
+  private def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
+    val key = new ColumnFormatKey(currentKeyPartitionId, columnPosition,
       currentKeyUUID)
     val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
     else region.get(key)
@@ -177,16 +177,16 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
     if (throwIfMissing) {
       // empty buffer indicates value removed from region
-      throw new EntryDestroyedException(s"Iteration on column=$columnIndex " +
+      throw new EntryDestroyedException(s"Iteration on column=$columnPosition " +
           s"partition=$currentKeyPartitionId key=$key failed due to missing value")
     } else null
   }
 
-  def getColumnLob(bufferPosition: Int): ByteBuffer = {
+  def getColumnLob(columnIndex: Int): ByteBuffer = {
     if (region ne null) {
-      getColumnBuffer(bufferPosition, throwIfMissing = true)
+      getColumnBuffer(columnIndex + 1, throwIfMissing = true)
     } else {
-      batch.buffers(bufferPosition - 1)
+      batch.buffers(columnIndex)
     }
   }
 
@@ -195,10 +195,10 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     if (currentDeltaStats eq null) null
     else {
       // TODO: SW: check for actual delta stats to see if there are updates
-      val deltaIndex = ColumnDelta.deltaColumnIndex(columnIndex, 0)
-      val delta1 = getColumnBuffer(deltaIndex, throwIfMissing = false)
-      val delta2 = getColumnBuffer(deltaIndex - 1, throwIfMissing = false)
-      val delta3 = getColumnBuffer(deltaIndex - 2, throwIfMissing = false)
+      val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
+      val delta1 = getColumnBuffer(deltaPosition, throwIfMissing = false)
+      val delta2 = getColumnBuffer(deltaPosition - 1, throwIfMissing = false)
+      val delta3 = getColumnBuffer(deltaPosition - 2, throwIfMissing = false)
       val delete = if (skipDelete) null
       else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX, throwIfMissing = false)
       if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
@@ -288,14 +288,14 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
   private var currentUUID: String = _
   // upto three deltas for each column and a deleted mask
-  private val totalColumns = (requiredColumns.length << 2) + 1
-  private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
-    new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
+  private val totalColumns = (requiredColumns.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
+  private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] = _
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
 
-  def getColumnLob(bufferPosition: Int): ByteBuffer = {
+  def getColumnLob(columnIndex: Int): ByteBuffer = {
+    val columnPosition = columnIndex + 1
     colBuffers match {
-      case buffers if buffers.size() > 1 => buffers.get(bufferPosition)
+      case buffers if buffers.size() > 1 => buffers.get(columnPosition)
       case buffers =>
         for (i <- 1 to totalColumns) {
           ps.setString(i, currentUUID)
@@ -303,34 +303,30 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         val colIter = ps.executeQuery()
         while (colIter.next()) {
           val colBlob = colIter.getBlob(1)
-          val index = colIter.getInt(2)
+          val position = colIter.getInt(2)
           val colBuffer = colBlob match {
             case blob: BufferedBlob => blob.getAsLastChunk.chunk
             case blob => ByteBuffer.wrap(blob.getBytes(
               1, blob.length().asInstanceOf[Int]))
           }
           colBlob.free()
-          buffers.put(index, colBuffer)
+          buffers.put(position, colBuffer)
         }
-        buffers.get(bufferPosition)
+        buffers.get(columnPosition)
     }
   }
 
   def getMutatedColumnDecoderIfRequired(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int, skipDelete: Boolean): MutatedColumnDecoderBase = {
-    val deltaStats = colBuffers.get(ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
-    if (deltaStats eq null) null
-    else {
-      val deltaIndex = ColumnDelta.deltaColumnIndex(columnIndex, 0)
-      val delta1 = colBuffers.get(deltaIndex)
-      val delta2 = colBuffers.get(deltaIndex - 1)
-      val delta3 = colBuffers.get(deltaIndex - 2)
-      val delete = if (skipDelete) null
-      else colBuffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
-      if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
-        MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
-      } else null
-    }
+    val buffers = colBuffers
+    val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
+    val delta1 = buffers.get(deltaPosition)
+    val delta2 = buffers.get(deltaPosition - 1)
+    val delta3 = buffers.get(deltaPosition - 2)
+    val delete = if (skipDelete) null else buffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
+    if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
+      MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
+    } else null
   }
 
   def getDeletedRowCount: Int = {
@@ -359,7 +355,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     currentUUID = rs.getString(2)
     releaseColumns()
     // create a new map instead of clearing old one to help young gen GC
-    colBuffers = new Int2ObjectOpenHashMap[ByteBuffer](requiredColumns.length + 1)
+    colBuffers = new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
     val statsBlob = rs.getBlob(1)
     val statsBuffer = statsBlob match {
       case blob: BufferedBlob => blob.getAsLastChunk.chunk
@@ -367,8 +363,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         1, blob.length().asInstanceOf[Int]))
     }
     statsBlob.free()
-    // 0th index is the stats buffer to free on next() or close()
-    colBuffers.put(0, statsBuffer)
+    // put the stats buffer to free on next() or close()
+    colBuffers.put(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, statsBuffer)
     statsBuffer
   }
 

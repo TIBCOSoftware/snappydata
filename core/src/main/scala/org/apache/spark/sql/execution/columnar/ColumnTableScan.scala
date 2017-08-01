@@ -467,8 +467,7 @@ private[sql] final case class ColumnTableScan(
       }
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
-      val bufferPosition = if (isEmbedded) baseIndex + 1 else index + 1
-      val rsPosition = bufferPosition
+      val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
       val incrementMutatedColumnCount = if (mutatedColumnsSeen eq null) ""
       else s"\nif ($mutatedDecoder != null) $mutatedColumnsSeen.${metricAdd("1")};"
 
@@ -500,12 +499,12 @@ private[sql] final case class ColumnTableScan(
       ctx.addNewFunction(initBufferFunction,
         s"""
            |private void $initBufferFunction() {
-           |  $buffer = $colInput.getColumnLob($bufferPosition);
+           |  $buffer = $colInput.getColumnLob($baseIndex);
            |  $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
            |      $planSchema.apply($index));
            |  // check for mutated column
            |  $mutatedDecoder = $colInput.getMutatedColumnDecoderIfRequired(
-           |      $decoder, $planSchema.apply($index), ${bufferPosition - 1}, ${index != 0});
+           |      $decoder, $planSchema.apply($index), $baseIndex, ${index != 0});
            |  if ($mutatedDecoder != null) {
            |    $mutatedDecoder.updateNextMutatedPosition();$incrementMutatedColumnCount
            |  }

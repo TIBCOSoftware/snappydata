@@ -269,12 +269,21 @@ class SnappySessionState(snappySession: SnappySession)
         // if this is a row table with no PK, then fallback to direct execution
         if (keyAttrs.isEmpty) newChild
         else {
+          // check that partitioning or key columns should not be updated
+          val nonUpdatableColumns = (relation.relation.asInstanceOf[MutableRelation]
+              .partitionColumns.map(Utils.toUpperCase) ++
+              keyAttrs.map(k => Utils.toUpperCase(k.name))).toSet
           // resolve the columns being updated and cast the expressions if required
           val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
             val attr = analysis.withPosition(relation) {
               newChild.resolveChildren(
                 c.name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
+            }
+            val colName = Utils.toUpperCase(c.name)
+            if (nonUpdatableColumns.contains(colName)) {
+              throw new AnalysisException("Cannot update partitioning/key column " +
+                  s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
             }
             // cast the update expressions if required
             val newExpr = if (attr.dataType.sameType(expr.dataType)) {

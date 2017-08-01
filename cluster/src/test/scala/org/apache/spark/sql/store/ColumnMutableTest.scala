@@ -18,6 +18,8 @@ package org.apache.spark.sql.store
 
 import io.snappydata.SnappyFunSuite
 
+import org.apache.spark.sql.AnalysisException
+
 /**
  * Update, delete tests for column tables.
  */
@@ -26,8 +28,24 @@ class ColumnMutableTest extends SnappyFunSuite {
   def singleRowUpdates(provider: String): Unit = {
     val session = snc.snappySession
 
-    session.sql("CREATE TABLE TableUpdate(CODE INT, " +
-        s"DESCRIPTION varchar(100)) USING $provider options (partition_by 'CODE')")
+    val pk = if (provider == "row") " primary key" else ""
+
+    // check that partitioning column cannot be updated
+    session.sql(s"CREATE TABLE TableUpdate(CODE INT$pk, " +
+        s"DESCRIPTION varchar(100)) USING $provider " +
+        s"options (partition_by 'DESCRIPTION')")
+    try {
+      session.sql("update TableUpdate set DESCRIPTION ='No#complaints' " +
+          "where CODE = 5")
+      fail("Expected update on partitioning column to fail")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    session.sql("drop table TableUpdate")
+
+    session.sql(s"CREATE TABLE TableUpdate(CODE INT$pk, " +
+        s"DESCRIPTION varchar(100)) USING $provider " +
+        s"options (partition_by 'CODE')")
 
     session.sql("insert into TableUpdate values (5,'test')")
     session.sql("insert into TableUpdate values (6,'test1')")

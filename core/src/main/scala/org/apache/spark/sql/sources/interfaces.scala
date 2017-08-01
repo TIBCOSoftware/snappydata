@@ -95,6 +95,9 @@ trait MutableRelation extends DestroyRelation {
    */
   def getKeyColumns: Seq[String]
 
+  /** Get the partitioning columns for the table, if any. */
+  def partitionColumns: Seq[String]
+
   /**
    * If required inject the key columns in the original relation.
    */
