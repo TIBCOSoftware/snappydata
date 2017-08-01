@@ -38,26 +38,12 @@ object CreateAndLoadTablesSparkApp {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesSparkApp.out"),
       true));
    val dataFilesLocation = args(0)
-    // snc.sql("set spark.sql.shuffle.partitions=6")
     snc.setConf("dataFilesLocation", dataFilesLocation)
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
-   // val tableType = args(1)
-
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     NWTestUtil.dropTables(snc)
-  // pw.println(s"Create and load ${tableType} tables Test started at : " +
-    // System.currentTimeMillis)
     createColRowTables(snc)
-  /*  tableType match {
-      case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
-      case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc)
-      case "Column" => NWTestUtil.createAndLoadColumnTables(snc)
-      case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
-      case _ => // the default, catch-all
-    } */
-    // pw.println(s"Create and load ${tableType} tables Test completed successfully at : " + System
-      //  .currentTimeMillis)
     println("Getting users arguments")
     val queryFile = args(1)
     val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")
@@ -75,16 +61,8 @@ object CreateAndLoadTablesSparkApp {
     userSchema(0) = userSchema1;
     userSchema(1) = userSchema2;
 
-   // val splitStr = userSchema.split(" ")
-   // val currentUser = args(7)
-    // if(isGrant){
-     /* val qry1 = "SELECT count(*) from " + userSchema(0)
-       snc.sql(qry1).show
-      val qry2 = "select * from user2.suppliers"
-       snc.sql(qry2).show */
-      SecurityTestUtil.runQueries(snc, queryArray, expectedExcptCnt, unExpectedExcptCnt,
+   SecurityTestUtil.runQueries(snc, queryArray, expectedExcptCnt, unExpectedExcptCnt,
         isGrant, userSchema, pw)
-    // }
     pw.close()
   }
 
