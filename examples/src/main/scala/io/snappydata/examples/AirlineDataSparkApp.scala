@@ -38,7 +38,8 @@ import org.apache.spark.{SparkContext, SparkConf}
  * Create tables
  *
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
- * --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
+ * --app-name CreateAndLoadAirlineDataJob \
+ * --class io.snappydata.examples.CreateAndLoadAirlineDataJob \
  * --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar`
  *
  * <p/>

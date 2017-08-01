@@ -734,7 +734,7 @@ object SplitSnappyClusterDUnitTest
     val rowTable = "rowTable"
     val colTable = "colTable"
 
-    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30")
     val rdd = sc.parallelize(
       (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -764,7 +764,7 @@ object SplitSnappyClusterDUnitTest
 
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
-    Property.ColumnBatchSize.set(snc.sessionState.conf, 30)
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30")
     val rdd = sc.parallelize(
       (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)
