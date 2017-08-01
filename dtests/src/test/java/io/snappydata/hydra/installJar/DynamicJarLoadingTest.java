@@ -82,6 +82,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     public static void HydraTask_executeSnappyJobWithDynamicJarLoading_installJar() {
         String appJar = createJarFile(3, "1");
+        Log.getLogWriter().info("SS - appJar is :: " + appJar);
         executeSnappyJobWithDynamicJarLoading(appJar, "snappyJobInstallJarResult_thread_", null);
     }
 
@@ -92,6 +93,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
 
     protected static void executeSnappyJobWithDynamicJarLoading(String appJar, String logFileName, String appName) {
         int currentThread = snappyTest.getMyTid();
+        Log.getLogWriter().info("SS - appJar is ::: " + appJar);
         String logFile = logFileName + currentThread + "_" + System.currentTimeMillis() + ".log";
         snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, appJar, getTempDir(), appName);
     }
@@ -126,7 +128,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
                 "            pw.println(\"****** DynamicJarLoadingJob started ******\");\n" +
                 "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
-                "            io.snappydata.hydra.installJar.TestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
+                "            io.snappydata.hydra.installJar.InstallJarTestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
                 "            pw.println(\"****** DynamicJarLoadingJob finished ******\");" +
                 "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
                 "        } catch (Exception e) {\n" +
@@ -170,7 +172,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
                 "            pw.println(\"****** Started DynamicJarLoadingJob With having Identical name but different functionality ******\");\n" +
                 "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
-                "            io.snappydata.hydra.installJar.TestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
+                "            io.snappydata.hydra.installJar.InstallJarTestUtils.verify(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
                 "            pw.println(\"****** Finished DynamicJarLoadingJob With having Identical name but different functionality ******\");" +
                 "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
                 "        } catch (Exception e) {\n" +
@@ -214,7 +216,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
                 "            boolean expectedException = Boolean.parseBoolean(jobConfig.getString(\"expectedException\"));\n" +
                 "            pw.println(\"****** Started DynamicJarLoadingJob accessing class loaded through previous job execution ******\");\n" +
                 "            String currentDirectory = new File(\".\").getCanonicalPath();\n" +
-                "            io.snappydata.hydra.installJar.TestUtils.verifyClassFromPreviousJobExecution(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
+                "            io.snappydata.hydra.installJar.InstallJarTestUtils.verifyClassFromPreviousJobExecution(snc, jobConfig.getString(\"classVersion\"), pw, numServers,expectedException);\n" +
                 "            pw.println(\"****** Finished DynamicJarLoadingJob accessing class loaded through previous job execution ******\");" +
                 "            return String.format(\"See %s/\" + jobConfig.getString(\"logFileName\"), currentDirectory);\n" +
                 "        } catch (Exception e) {\n" +
@@ -276,7 +278,7 @@ public class DynamicJarLoadingTest extends SnappyTest {
      */
     public static synchronized void HydraTask_executeSnappyJob_DynamicJarLoading() {
         String jarName = createJarFileWithOnlyJobClass(getTempDir());
-        String appName = "myApp_" + System.currentTimeMillis();
+        String appName = "DynamicJarLoading_" + System.currentTimeMillis();
         executeSnappyJobWithDynamicJarLoading(jarName, "snappyJobResult_thread_", appName);
     }
 

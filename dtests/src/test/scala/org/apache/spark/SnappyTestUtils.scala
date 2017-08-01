@@ -25,7 +25,7 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.{Utils => Utility}
 
 
-object SnappyTestUtils {
+object SnappyTestUtils extends Logging {
 
   private val SOURCE = JavaFileObject.Kind.SOURCE
 
@@ -67,16 +67,26 @@ object SnappyTestUtils {
                 version: String = ""): Boolean = {
     val catchExpectedException: Boolean = version.isEmpty
     val loader = Thread.currentThread().getContextClassLoader
+    log.info("SS - loader : " + loader)
     assert(loader != null)
     try {
       val fakeClass = loader.loadClass(className).newInstance()
+      log.info("SS - fakeClass : " + fakeClass)
       assert(fakeClass != null)
+      log.info("SS - fakeClass loading successful.. : " + fakeClass)
       assert(fakeClass.toString.equals(version))
+      log.info("SS - fakeClass version is as expected.. : " + version)
       true
     } catch {
       case cnfe: ClassNotFoundException =>
-        if (!catchExpectedException) throw cnfe
-        else false
+        if (!catchExpectedException) {
+          log.info("SS - fakeClass loading unsuccessful..  " + className + version)
+          throw cnfe
+        }
+        else {
+          log.info("SS - in else loop..  " + className + version)
+          false
+        }
     }
   }
 
