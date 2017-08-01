@@ -70,9 +70,7 @@ abstract case class JDBCAppendableRelation(
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 
-  val resolvedName: String = externalStore.tryExecute(table) { conn =>
-    ExternalStoreUtils.lookupName(table, conn.getSchema)
-  }
+  val resolvedName: String = table
 
   def numBuckets: Int = -1
 
