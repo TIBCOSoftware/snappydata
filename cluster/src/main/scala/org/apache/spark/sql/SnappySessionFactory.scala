@@ -16,9 +16,9 @@
  */
 package org.apache.spark.sql
 
-import scala.util.Try
 
-import com.typesafe.config.Config
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.Constant
 import io.snappydata.impl.LeadImpl
 import org.joda.time.DateTime
@@ -27,7 +27,7 @@ import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.util.{SnappyContextLoader, SnappyContextURLLoader, SnappyUtils}
+import org.apache.spark.util.{SnappyContextURLLoader, SnappyUtils}
 
 
 class SnappySessionFactory extends SparkContextFactory {
@@ -72,7 +72,7 @@ trait SnappySQLJob extends SparkJobBase {
   type C = Any
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
-    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], config))
+    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], cleanJobConfig(config)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
@@ -88,6 +88,33 @@ trait SnappySQLJob extends SparkJobBase {
     } finally {
       sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, null)
     }
+  }
+
+  private def updateCredentials(snc: SnappySession, jobConfig: Config): Config = {
+    if (Misc.isSecurityEnabled) {
+      try {
+        // Pass job credentials to snappy session
+        val username = jobConfig.getString("snappydata.user")
+        val password = jobConfig.getString("snappydata.password")
+        snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, username)
+        snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, password)
+        // Clear admin user/password from jobConfig before passing it to user job.
+        cleanJobConfig(jobConfig)
+      } catch {
+        case m: ConfigException.Missing => jobConfig // Config not found
+      }
+    } else {
+      jobConfig
+    }
+  }
+
+  private def cleanJobConfig(c: Config): Config = {
+    // TODO Remove snappydata properties path when available
+    var sJobConfig = c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
+      .Attribute.USERNAME_ATTR)
+    sJobConfig = sJobConfig.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal
+      .gemfirexd.Attribute.PASSWORD_ATTR)
+    sJobConfig
   }
 
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation

@@ -103,7 +103,7 @@ final class SparkShellRDDHelper {
 //      }
     }
 
-    val txId = SparkShellRDDHelper.snapshotTxId.get()
+    val txId = SparkShellRDDHelper.snapshotTxIdForRead.get()
     if (!txId.equals("null")) {
       statement.execute(
         s"call sys.USE_SNAPSHOT_TXID('$txId')")
@@ -158,7 +158,8 @@ final class SparkShellRDDHelper {
 
 object SparkShellRDDHelper {
 
-  var snapshotTxId: ThreadLocal[String] = new ThreadLocal[String]
+  var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
+  var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
 
   def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
     val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)

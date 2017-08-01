@@ -136,43 +136,48 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
   override def fillAggregatedMemberStatsOnDemand(): Unit = {
 
-    val existingMembers = membersInfo.keys.toArray
-    val collector = new GfxdListResultCollector(null, true)
-    val msg = new MemberStatisticsMessage(collector)
+    try {
+      val existingMembers = membersInfo.keys.toArray
+      val collector = new GfxdListResultCollector(null, true)
+      val msg = new MemberStatisticsMessage(collector)
 
-    msg.executeFunction()
+      msg.executeFunction()
 
-    val memStats = collector.getResult
+      val memStats = collector.getResult
 
-    val itr = memStats.iterator()
+      val itr = memStats.iterator()
 
-    val members = mutable.Map.empty[String, mutable.Map[String, Any]]
-    while (itr.hasNext) {
-      val o = itr.next().asInstanceOf[ListResultCollectorValue]
-      val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
-      val map = mutable.HashMap.empty[String, Any]
-      val keyItr = memMap.keySet().iterator()
+      val members = mutable.Map.empty[String, mutable.Map[String, Any]]
+      while (itr.hasNext) {
+        val o = itr.next().asInstanceOf[ListResultCollectorValue]
+        val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
+        val map = mutable.HashMap.empty[String, Any]
+        val keyItr = memMap.keySet().iterator()
 
-      while (keyItr.hasNext) {
-        val key = keyItr.next()
-        map.put(key, memMap.get(key))
+        while (keyItr.hasNext) {
+          val key = keyItr.next()
+          map.put(key, memMap.get(key))
+        }
+        map.put("status", "Running")
+
+        val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
+        if (dssUUID != null) {
+          members.put(dssUUID.toString, map)
+        } else {
+          members.put(memMap.get("id").asInstanceOf[String], map)
+        }
       }
-      map.put("status", "Running")
-
-      val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
-      if (dssUUID != null) {
-        members.put(dssUUID.toString, map)
-      } else {
-        members.put(memMap.get("id").asInstanceOf[String], map)
-      }
+      membersInfo ++= members
+      // mark members no longer running as stopped
+      existingMembers.filterNot(members.contains).foreach(m =>
+        membersInfo(m).put("status", "Stopped"))
+    } catch {
+      case e: Exception => logWarning(e.getMessage, e)
     }
-    membersInfo ++= members
-    // mark members no longer running as stopped
-    existingMembers.filterNot(members.contains).foreach(m =>
-      membersInfo(m).put("status", "Stopped"))
   }
 
-  override def getStatsFromAllServers: (Seq[SnappyRegionStats], Seq[SnappyIndexStats]) = {
+  override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
+      Seq[SnappyIndexStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
     try {

@@ -148,7 +148,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val pageContent = pageTitleNode ++ keyStatsSection ++ membersStatsDetails ++
                       sparkConnectorsStatsDetails ++ tablesStatsDetails ++ indexStatsDetails
 
-    UIUtils.simpleSparkPageWithTabs_2(pageHeaderText, pageContent, parent, Some(500))
+    UIUtils.simpleSparkPageWithTabs(pageHeaderText, pageContent, parent, Some(500))
 
   }
 
