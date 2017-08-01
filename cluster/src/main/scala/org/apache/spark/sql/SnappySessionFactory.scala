@@ -16,15 +16,18 @@
  */
 package org.apache.spark.sql
 
+import scala.util.Try
+
 import com.typesafe.config.Config
 import io.snappydata.Constant
 import io.snappydata.impl.LeadImpl
+import org.joda.time.DateTime
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.util.SnappyUtils
+import org.apache.spark.util.{SnappyContextLoader, SnappyContextURLLoader, SnappyUtils}
 
 
 class SnappySessionFactory extends SparkContextFactory {
@@ -69,23 +72,20 @@ trait SnappySQLJob extends SparkJobBase {
   type C = Any
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
-    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
-    Thread.currentThread().setContextClassLoader(currentLoader)
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], config))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
+    val appName = this.getClass.getCanonicalName
+    val dependentJars =
+      Thread.currentThread().getContextClassLoader.asInstanceOf[SnappyContextURLLoader].getURLs
+    val localProperty = (Seq(appName, DateTime.now) ++ dependentJars.toSeq).mkString(",")
     val snSession = sc.asInstanceOf[SnappySession]
     val sparkContext = snSession.sparkContext
-    val jobJarPath = snSession.getContextObject[String](SnappySessionFactory.job_jar_path).get
     try {
-      sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, jobJarPath)
+      sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
       runSnappyJob(snSession, jobConfig)
-    }
-    finally {
-      SnappyUtils.removeJobJar(sparkContext, jobJarPath)
-      snSession.removeContextObject(SnappySessionFactory.job_jar_path)
+    } finally {
       sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, null)
     }
   }
