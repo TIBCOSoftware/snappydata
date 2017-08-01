@@ -18,7 +18,7 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.SystemFailure
-import io.snappydata.Property
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -118,9 +118,9 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   // override private[sql] def metadata = child.metadata
 
-  override def subqueries: Seq[SparkPlan] = child.subqueries
+  // override def subqueries: Seq[SparkPlan] = child.subqueries
 
-  override def nodeName: String = child.nodeName
+  override def nodeName: String = "CollectResults"
 
-  override def simpleString: String = child.simpleString
+  override def simpleString: String = "CollectResults"
 }

@@ -117,7 +117,7 @@ Use the EXPIRE clause with tables to control the SnappyStore memory usage. It ex
 
 `COLUMN_BATCH_SIZE`</br>
 The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
-   
+
 `COLUMN_MAX_DELTA_ROWS`</br>
 The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by COLUMN_BATCH_SIZE (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. 
 
