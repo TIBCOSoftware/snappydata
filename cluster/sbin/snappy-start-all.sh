@@ -34,6 +34,9 @@ fi
 
 # Check for foreground start
 BACKGROUND=-bg
+if [ "$1" = "-bg" -o "$1" = "--background" ]; then
+  shift
+fi
 if [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
   BACKGROUND=""
   shift
