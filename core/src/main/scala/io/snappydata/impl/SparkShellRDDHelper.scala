@@ -31,10 +31,12 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
+
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorMultiBucketLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -58,13 +60,20 @@ final class SparkShellRDDHelper {
     // An OR query like the following results in a bulk table scan
     // select data, columnIndex from table where partitionId = 1 and
     //  (columnIndex = 1 or columnIndex = 7)
-    val fetchColString = requiredColumns.map(col => {
+    val fetchCols = requiredColumns.toSeq.map(col => {
       schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
-    }).map(i => s"(select data, columnIndex from $resolvedTableName where " +
-        s"partitionId = $partitionId and uuid = ? and columnIndex = $i)").mkString(" union all ")
+    })
+    val fetchColString = (fetchCols.flatMap { col =>
+      val deltaCol = ColumnDelta.deltaColumnIndex(col, 0)
+      (col +: (deltaCol until (deltaCol - ColumnDelta.MAX_DEPTH, -1))).map(
+        i => s"(select data, columnIndex from $resolvedTableName where " +
+            s"partitionId = $partitionId and uuid = ? and columnIndex = $i)")
+    } :+ s"select data, columnIndex from $resolvedTableName where " +
+        s"partitionId = $partitionId and uuid = ? and columnIndex = " +
+        s"${ColumnFormatEntry.DELETE_MASK_COL_INDEX}").mkString(" union all ")
     // fetch stats query and fetch columns query
-    (s"select data, uuid from $resolvedTableName where columnIndex = -1",
-        fetchColString)
+    (s"select data, uuid from $resolvedTableName where columnIndex = " +
+        s"${ColumnFormatEntry.STATROW_COL_INDEX}", fetchColString)
   }
 
   def executeQuery(conn: Connection, tableName: String,
@@ -196,10 +205,10 @@ object SparkShellRDDHelper {
     }
   }
 
-  /*
-  * Called when using smart connector mode that uses accessor
-  * to get SnappyData cluster info
-  **/
+  /**
+   * Called when using smart connector mode that uses accessor
+   * to get SnappyData cluster info.
+   */
   private def getBucketToServerMapping(
       resolvedName: String): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
@@ -256,7 +265,7 @@ object SparkShellRDDHelper {
   }
 
   def setBucketToServerMappingInfo(
-      bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]]  = {
+      bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
@@ -265,7 +274,7 @@ object SparkShellRDDHelper {
       val arr: Array[String] = bucketToServerMappingStr.split(":")
       val orphanBuckets = ArrayBuffer.empty[Int]
       val noOfBuckets = arr(0).toInt
-//    val redundancy = arr(1).toInt
+      // val redundancy = arr(1).toInt
       val allNetUrls = new Array[ArrayBuffer[(String, String)]](noOfBuckets)
       val bucketsServers: String = arr(2)
       val newarr: Array[String] = bucketsServers.split("\\|")
@@ -312,7 +321,7 @@ object SparkShellRDDHelper {
       netUrls += hostAddressPort._1 ->
           (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
     }
-    return Array(netUrls)
+    Array(netUrls)
   }
 
   /*
@@ -334,12 +343,10 @@ object SparkShellRDDHelper {
       (null, null, null)
     } else {
       val host: String = matcher.group(1)
-      val address: String = matcher.group(2)
+      // val address: String = matcher.group(2)
       val portStr: String = matcher.group(3)
-//      (address, host, portStr)
+      // (address, host, portStr)
       (host, host, portStr)
     }
   }
-
-
 }

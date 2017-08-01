@@ -1778,6 +1778,7 @@ object SnappySession extends Logging {
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
+        df.queryExecution.toRdd // evaluate the plan upfront
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         val childRDD = if (withFallback ne null) withFallback.execute(plan.child)
