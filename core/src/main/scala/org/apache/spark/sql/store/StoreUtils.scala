@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.store
 
+import java.util.regex.Pattern
+
 import scala.collection.JavaConverters._
 import scala.collection.generic.Growable
 import scala.collection.mutable
@@ -95,9 +97,14 @@ object StoreUtils {
   val EMPTY_STRING = ""
   val NONE = "NONE"
 
-  val SHADOW_COLUMN_NAME = "snappydata_internal_rowid"
+  val ROWID_COLUMN_NAME = "SNAPPYDATA_INTERNAL_ROWID"
 
-  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
+  val ROWID_COLUMN_FIELD = StructField("SNAPPYDATA_INTERNAL_ROWID", LongType, nullable = false)
+
+  val ROWID_COLUMN_DEFINITION = s"$ROWID_COLUMN_NAME bigint generated always as identity"
+
+  val PRIMARY_KEY_PATTERN: Pattern = Pattern.compile("\\WPRIMARY\\s+KEY\\W",
+    Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
 
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
@@ -278,12 +285,12 @@ object StoreUtils {
     }
   }
 
-  val pkDisallowdTypes = Seq(StringType, BinaryType,
-    ArrayType, MapType, StructType)
+  val pkDisallowdTypes = Seq(BinaryType, ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: mutable.Map[String, String],
-      schema: StructType, context: SQLContext): String = {
+      schema: StructType, context: SQLContext): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
+    val stringPKCols = new mutable.ArrayBuffer[StructField](1)
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
         v match {
@@ -300,20 +307,24 @@ object StoreUtils {
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
               normalizedCols)
 
-            val b = for (field <- prunedSchema.fields)
-              yield !pkDisallowdTypes.contains(field.dataType)
-
-            val includeInPK = b.forall(identity)
+            var includeInPK = true
+            for (field <- prunedSchema.fields if includeInPK) {
+              if (pkDisallowdTypes.contains(field.dataType)) {
+                includeInPK = false
+              } else if (field.dataType == StringType) {
+                stringPKCols += field
+              }
+            }
             if (includeInPK) {
-              s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
+              s"$PRIMARY_KEY ($v, $ROWID_COLUMN_NAME)"
             } else {
-              s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"
+              s"$PRIMARY_KEY ($ROWID_COLUMN_NAME)"
             }
         }
       }
       primaryKey
-    }).getOrElse(s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"))
-    sb.toString()
+    }).getOrElse(s"$PRIMARY_KEY ($ROWID_COLUMN_NAME)"))
+    (sb.toString(), stringPKCols)
   }
 
   def ddlExtensionString(parameters: mutable.Map[String, String],
@@ -336,7 +347,7 @@ object StoreUtils {
         }
         s"$GEM_PARTITION_BY $parClause "
       }).getOrElse(if (isRowTable) EMPTY_STRING
-      else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
+      else s"$GEM_PARTITION_BY COLUMN ($ROWID_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
         case PRIMARY_KEY => throw Utils.analysisException("Column table " +

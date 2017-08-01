@@ -32,12 +32,12 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
   override def supports(dataType: DataType): Boolean = true
 
   // nulls can be present so always return true
-  override protected def hasNulls: Boolean = true
+  override protected[sql] def hasNulls: Boolean = true
 
-  override protected def initializeNulls(columnBytes: AnyRef,
+  override protected[sql] def initializeNulls(columnBytes: AnyRef,
       cursor: Long, field: StructField): Long = 0L
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = 0L
 
   override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
@@ -64,8 +64,8 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def nextBinary(columnBytes: AnyRef, cursor: Long): Long = 0L
 
-  override def notNull(columnBytes: AnyRef, ordinal: Int): Int =
-    if (holder.row.isNullAt(columnIndex)) 0 else 1
+  override def isNull(columnBytes: AnyRef, ordinal: Int): Int =
+    if (holder.row.isNullAt(columnIndex)) 1 else 0
 
   override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
     holder.row.getBoolean(columnIndex)

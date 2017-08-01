@@ -398,7 +398,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val entryVar = ctx.freshName("entry")
     val localValueVar = ctx.freshName("value")
     val checkNullObj = joinType match {
-      case LeftOuter | RightOuter | FullOuter => true
+      case LeftOuter | RightOuter | FullOuter | LeftAnti => true
       case _ => false
     }
     val (initCode, keyValueVars, nullMaskVars) = mapAccessor.getColumnVars(
