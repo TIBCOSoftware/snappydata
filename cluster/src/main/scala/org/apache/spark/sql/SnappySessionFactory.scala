@@ -21,13 +21,12 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.Constant
 import io.snappydata.impl.LeadImpl
-import org.joda.time.DateTime
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.util.{SnappyContextURLLoader, SnappyUtils}
+import org.apache.spark.util.SnappyUtils
 
 
 class SnappySessionFactory extends SparkContextFactory {
@@ -76,17 +75,15 @@ trait SnappySQLJob extends SparkJobBase {
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
-    val appName = this.getClass.getCanonicalName
-    val dependentJars =
-      Thread.currentThread().getContextClassLoader.asInstanceOf[SnappyContextURLLoader].getURLs
-    val localProperty = (Seq(appName, DateTime.now) ++ dependentJars.toSeq).mkString(",")
     val snSession = sc.asInstanceOf[SnappySession]
     val sparkContext = snSession.sparkContext
     try {
-      sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
+      SnappyUtils.setSessionDependencies(sparkContext,
+        appName = this.getClass.getCanonicalName,
+        classLoader = Thread.currentThread().getContextClassLoader)
       runSnappyJob(snSession, jobConfig)
     } finally {
-      sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, null)
+      SnappyUtils.clearSessionDependencies(sparkContext)
     }
   }
 

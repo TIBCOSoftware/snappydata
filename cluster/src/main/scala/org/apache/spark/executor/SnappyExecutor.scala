@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SnappyContextURLLoader, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
@@ -57,19 +59,19 @@ class SnappyExecutor(
       if (null != taskDeserializationProps) {
         val appDetails = taskDeserializationProps.getProperty(io.snappydata.Constant
             .CHANGEABLE_JAR_NAME, "")
-        logInfo(s"AppDetails $appDetails")
+        Misc.getCacheLogWriter.info(s"Submitted Application Details $appDetails")
         if (!appDetails.isEmpty) {
           val appNameAndJars = appDetails.split(",")
           val appName = appNameAndJars(0)
           val appTime = appNameAndJars(1)
-          logInfo(s"appName $appName appTime $appTime allJars ${allJars.size}")
+          Misc.getCacheLogWriter.info(s"AppName=$appName,AppTime=$appTime,AllJars ${allJars.size}")
           val threadClassLoader = allJars.get((appName, appTime)).getOrElse({
             lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
             val appDependencies = appNameAndJars.drop(2).toSeq
-            logInfo(s"appDependencies $appDependencies")
+            Misc.getCacheLogWriter.info(s"appDependencies $appDependencies")
             val urls = appDependencies.map(name => {
               val localName = name.split("/").last
-              logInfo(s"Fetching file $name")
+              Misc.getCacheLogWriter.info(s"Fetching file $name")
               Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
                 env.securityManager, hadoopConf, -1L, useCache = !isLocal)
               val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
