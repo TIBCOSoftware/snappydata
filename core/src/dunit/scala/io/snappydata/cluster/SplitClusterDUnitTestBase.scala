@@ -150,7 +150,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     doTestRowTableCreation()
   }
 
-  def _testComplexTypesForColumnTables_SNAP643(): Unit = {
+  def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
@@ -337,6 +337,8 @@ trait SplitClusterDUnitTestObject extends Logging {
     val context = snc.sparkContext
     val dec1 = Array(Decimal("4.92"), Decimal("51.98"))
     val dec2 = Array(Decimal("95.27"), Decimal("17.25"), Decimal("7583.2956"))
+    val dbl1 = Array(4.92, 51.98)
+    val dbl2 = Array(95.27, 17.25, 7583.2956)
     val time = System.currentTimeMillis()
     val ts = Array(new Timestamp(time), new Timestamp(time + 123456L),
       new Timestamp(0L), new Timestamp(time - 12246L), new Timestamp(-1L))
@@ -349,15 +351,15 @@ trait SplitClusterDUnitTestObject extends Logging {
       ts(0) -> Data(7, "5", Decimal("7.5")),
       ts(4) -> Data(4, "8", Decimal("4.9")))
     val data = ArrayBuffer[ComplexData]()
-    data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, "8", Decimal("3.2")),
+    data += ComplexData(1, dbl1, "3", m2, 7.56, Data(2, "8", Decimal("3.2")),
       dec1(0), ts(0))
-    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, "4", Decimal("4.9")),
+    data += ComplexData(7, dbl2, "8", m1, 8.45, Data(7, "4", Decimal("4.9")),
       dec2(0), ts(1))
-    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, "1", Decimal("1.7")),
+    data += ComplexData(9, dbl2, "2", m2, 12.33, Data(3, "1", Decimal("1.7")),
       dec1(1), ts(2))
-    data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, "3", Decimal("9.4")),
+    data += ComplexData(4, dbl2, "2", m1, 92.85, Data(9, "3", Decimal("9.4")),
       dec2(1), ts(3))
-    data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, "8", Decimal("1.8")),
+    data += ComplexData(5, dbl2, "7", m1, 5.28, Data(4, "8", Decimal("1.8")),
       dec2(2), ts(4))
     for (_ <- 1 to 1000) {
       var rnd: Long = 0L
@@ -372,8 +374,9 @@ trait SplitClusterDUnitTestObject extends Logging {
       val drnd1 = drnd & 0xff
       val drnd2 = (drnd >>> 8) & 0xff
       val dec = if ((rnd1 % 2) == 0) dec1 else dec2
+      val dbl = if ((rnd1 % 2) == 0) dbl1 else dbl2
       val map = if ((rnd2 % 2) == 0) m1 else m2
-      data += ComplexData(rnd1, dec, rnd2.toString, map, Random.nextDouble(),
+      data += ComplexData(rnd1, dbl, rnd2.toString, map, Random.nextDouble(),
         Data(rnd1, Integer.toString(rnd2), Decimal(drnd1.toString + '.' +
             drnd2)), dec(1), ts(math.abs(rnd1) % 5))
     }
@@ -399,6 +402,6 @@ case class IndexData(col1: Int, col2: Int, col3: Decimal)
 
 case class Data(col1: Int, col2: String, col3: Decimal)
 
-case class ComplexData(col1: Int, col2: Array[Decimal], col3: String,
+case class ComplexData(col1: Int, col2: Array[Double], col3: String,
     col4: Map[Timestamp, Data], col5: Double, col6: Data, col7: Decimal,
     col8: Timestamp)

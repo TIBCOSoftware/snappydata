@@ -21,17 +21,16 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
-import org.scalatest.Assertions
-
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.types.{Decimal, DecimalType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.scalatest.Assertions
 
 class TAQTest extends SnappyFunSuite {
 
@@ -79,6 +78,23 @@ class TAQTest extends SnappyFunSuite {
       tradeSize, numDays, queryNumber = 2, numIters, doInit = false)
     TAQTest.benchmarkRandomizedKeys(sc, quoteSize, tradeSize,
       tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
+  }
+
+  test("SNAP-1787"){
+    val tableName = "complexTypeTable"
+    val arr1 = Array(Decimal("4.92"), Decimal("51.98"))
+    val arr2 = Array(4.92f, 51.98f)
+    val arr3 = Array(4921212121L, 5198121212L)
+    val arr4 = Array(true, false)
+    val arr5 = Array(4.92, 51.98)
+    val data = scala.collection.mutable.ArrayBuffer[ComplexTypeData]()
+    data +=  new ComplexTypeData(arr1, arr2, arr3, arr4, arr5)
+    val rdd = snc.sparkContext.parallelize(data, 8)
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(s"$tableName", "column", dataDF.schema, Map.empty[String, String])
+    dataDF.write.insertInto(s"$tableName")
+    assert(snc.sql(s"select * from $tableName").count() == 1)
+    snc.dropTable(s"$tableName", true)
   }
 
   ignore("basic query performance with JDBC") {
@@ -537,3 +553,6 @@ object TAQTest extends Logging with Assertions {
     benchmark.run()
   }
 }
+
+case class ComplexTypeData (arr1: Array[Decimal], arr2: Array[Float],
+  arr3: Array[Long], arr4: Array[Boolean], arr5: Array[Double])
