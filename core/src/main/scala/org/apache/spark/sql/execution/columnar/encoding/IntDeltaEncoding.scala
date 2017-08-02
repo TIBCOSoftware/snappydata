@@ -40,7 +40,7 @@ abstract class IntDeltaDecoderBase
 
   private[this] final var prev: Int = 0
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = cursor
 
   override final def nextInt(columnBytes: AnyRef, cursor: Long): Long = {

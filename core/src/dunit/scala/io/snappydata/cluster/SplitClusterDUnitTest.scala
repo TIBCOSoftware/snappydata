@@ -17,10 +17,15 @@
 package io.snappydata.cluster
 
 import java.io.PrintWriter
-import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
 import java.util.Properties
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
+import scala.language.{implicitConversions, postfixOps}
+import scala.sys.process._
+import scala.util.Random
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
@@ -28,17 +33,11 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
-import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{SnappyContext, SnappySession}
-import org.apache.spark.util.collection.OpenHashSet
-import org.apache.spark.{SparkConf, SparkContext}
 import org.junit.Assert
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
-import scala.language.{implicitConversions, postfixOps}
-import scala.sys.process._
-import scala.util.Random
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.types.Decimal
+import org.apache.spark.util.collection.OpenHashSet
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -169,8 +168,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   private val locatorPort = AvailablePortHelper.getRandomAvailableTCPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
-  def getConnection(netPort: Int, props: Properties = new Properties()) = DriverManager
-      .getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort", props)
+  def getConnection(netPort: Int, props: Properties = new Properties()): Connection =
+    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort", props)
 
   override def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
   }
@@ -628,9 +627,9 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   }
 
   private def checkValidJsonString(s: String): Unit = {
+    logInfo(s"Checking valid JSON for $s")
     try {
-      val parser = new ObjectMapper().getFactory()
-          .createParser(s)
+      val parser = new ObjectMapper().getFactory.createParser(s)
       while (parser.nextToken() != null) {
       }
       return
