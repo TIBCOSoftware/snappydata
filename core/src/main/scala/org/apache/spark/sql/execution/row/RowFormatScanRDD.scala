@@ -165,7 +165,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append('"').append(s).append('"')
       }
       sb.toString()
-    } else "1"
+    } else "*"
   }
 
   def computeResultSet(

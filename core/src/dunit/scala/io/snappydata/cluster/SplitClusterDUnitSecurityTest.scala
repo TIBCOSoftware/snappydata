@@ -532,6 +532,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     assert(sns.delete(smartRowTab1, s"$col1 = 1000") == 1, "Delete failed")
 
     dataDF.write.insertInto(smartColTab1)
+    dataDF.write.insertInto(smartRowTab1)
 
     sns.sqlContext.alterTable(smartRowTab1, true, StructField(col4, IntegerType, true))
 
