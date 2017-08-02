@@ -80,7 +80,7 @@ class TAQTest extends SnappyFunSuite {
       tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
   }
 
-  test("SNAP-1787"){
+  test("SNAP-1787") {
     val tableName = "complexTypeTable"
     val arr1 = Array(Decimal("4.92"), Decimal("51.98"))
     val arr2 = Array(4.92f, 51.98f)
