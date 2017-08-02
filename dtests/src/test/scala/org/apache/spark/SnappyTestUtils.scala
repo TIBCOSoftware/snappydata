@@ -70,7 +70,7 @@ object SnappyTestUtils extends Logging {
                 version: String = ""): Boolean = {
     val catchExpectedException: Boolean = version.isEmpty
     val loader = Thread.currentThread().getContextClassLoader
-    log.info("SS - loader : " + loader)
+    log.info("loader : " + loader)
     assert(loader != null)
     try {
       val fakeClass = loader.loadClass(className).newInstance()
