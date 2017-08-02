@@ -1,7 +1,9 @@
 package org.apache.spark.executor
 
+import com.gemstone.gemfire.GemFireException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import org.apache.spark.{SparkCallBackFactory, SnappySparkCallback}
 
 /**
@@ -17,6 +19,15 @@ object SnappySparkCallbacksImpl extends SnappySparkCallback {
       case _ => false
     }
     return false;
+  }
+
+  override def checkRuntimeOrGemfireException(t: Throwable): Boolean = {
+
+      if(t.isInstanceOf[GemFireException] || t.isInstanceOf[GemFireXDRuntimeException]) {
+        return true;
+      } else {
+        return false;
+      }
   }
 }
 
