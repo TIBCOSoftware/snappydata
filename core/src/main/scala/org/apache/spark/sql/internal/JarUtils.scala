@@ -70,7 +70,7 @@ object ContextJarUtils extends Logging {
     val changedFileName = s"${prefix}-${localName}"
     logInfo(s"Fetching jar $path to driver local directory $jarDir")
     val changedFile = new File(jarDir, changedFileName)
-    if(!changedFile.exists()){
+    if (!changedFile.exists()) {
       callbacks.doFetchFile(path, jarDir, changedFileName)
     }
     new File(jarDir, changedFileName).toURI.toURL

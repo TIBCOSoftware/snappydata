@@ -18,15 +18,15 @@ package org.apache.spark.executor
 
 import java.io.File
 import java.net.URL
-import java.util.concurrent.ConcurrentHashMap
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SnappyContextURLLoader, SparkExitCode, Utils}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
+import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
 class SnappyExecutor(
@@ -45,11 +45,47 @@ class SnappyExecutor(
     Thread.setDefaultUncaughtExceptionHandler(exceptionHandler)
   }
 
-  // appName -> comma separated jarFiles
-  private val allJars = new ConcurrentHashMap[(String, String), MutableURLClassLoader]().asScala
+  val classLoaderCache = {
+    val loader = new CacheLoader[ClassLoaderKey, SnappyMutableURLClassLoader]() {
+      override def load(key: ClassLoaderKey): SnappyMutableURLClassLoader = {
+        val appName = key.appName
+        val appNameAndJars = key.appNameAndJars
+        lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
+        val appDependencies = appNameAndJars.drop(2).toSeq
+        Misc.getCacheLogWriter.info(s"Creating ClassLoader for $appName" +
+            s" with dependencies $appDependencies")
+        val urls = appDependencies.map(name => {
+          val localName = name.split("/").last
+          Misc.getCacheLogWriter.info(s"Fetching file $name for App[$appName]")
+          Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
+            env.securityManager, hadoopConf, -1L, useCache = !isLocal)
+          val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
+          url
+        })
+        val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)
+        env.serializer.setDefaultClassLoader(replClassLoader)
+        env.closureSerializer.setDefaultClassLoader(replClassLoader)
+        newClassLoader
+      }
+    }
+    // Keeping 500 as cache size. Can revisit the number
+    CacheBuilder.newBuilder().maximumSize(500).build(loader)
+  }
 
+  class ClassLoaderKey(val appName: String,
+      val appTime: String,
+      val appNameAndJars: Array[String]) {
 
-  def getName(path: String): String = new File(path).getName
+    override def hashCode(): Int = (appName, appTime).hashCode()
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case x: ClassLoaderKey =>
+          (x.appName, x.appTime).equals(appName, appTime)
+        case _ => false
+      }
+    }
+  }
 
   override def updateDependencies(newFiles: mutable.HashMap[String, Long],
       newJars: mutable.HashMap[String, Long]): Unit = {
@@ -64,26 +100,37 @@ class SnappyExecutor(
           val appNameAndJars = appDetails.split(",")
           val appName = appNameAndJars(0)
           val appTime = appNameAndJars(1)
-          Misc.getCacheLogWriter.info(s"AppName=$appName,AppTime=$appTime,AllJars ${allJars.size}")
-          val threadClassLoader = allJars.get((appName, appTime)).getOrElse({
-            lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
-            val appDependencies = appNameAndJars.drop(2).toSeq
-            Misc.getCacheLogWriter.info(s"appDependencies $appDependencies")
-            val urls = appDependencies.map(name => {
-              val localName = name.split("/").last
-              Misc.getCacheLogWriter.info(s"Fetching file $name")
-              Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
-                env.securityManager, hadoopConf, -1L, useCache = !isLocal)
-              val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
-              url
-            })
-            val newClassLoader = new MutableURLClassLoader(urls.toArray, replClassLoader)
-            allJars.putIfAbsent((appName, appTime), newClassLoader)
-            newClassLoader
-          })
+          val threadClassLoader =
+            classLoaderCache.getUnchecked(new ClassLoaderKey(appName, appTime, appNameAndJars))
+          Misc.getCacheLogWriter.info(s"Setting thread classloader  $threadClassLoader")
           Thread.currentThread().setContextClassLoader(threadClassLoader)
         }
       }
+    }
+  }
+}
+
+class SnappyMutableURLClassLoader(urls: Array[URL],
+    parent: ClassLoader)
+    extends MutableURLClassLoader(urls, parent) with Logging {
+
+
+  override def loadClass(name: String, resolve: Boolean): Class[_] = {
+    if (name.contains("StreamMessageRegionObject")) {
+      Thread.dumpStack()
+      Misc.getCacheLogWriter.info(s"StreamMessageRegionObject classloader is  ${this}")
+    }
+    loadJar(() => super.loadClass(name, resolve)).
+        getOrElse(loadJar(() => Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name),
+          throwException = true).get)
+  }
+
+  def loadJar(f: () => Class[_], throwException: Boolean = false): Option[Class[_]] = {
+    try {
+      Option(f())
+    } catch {
+      case cnfe: ClassNotFoundException => if (throwException) throw cnfe
+      else None
     }
   }
 }

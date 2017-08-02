@@ -820,9 +820,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       ContextJarUtils.addDriverJar(qualifiedName.unquotedString, newClassLoader)
       newClassLoader
     })
-    callbacks.setSessionDependencies(snappySession.sparkContext,
-      qualifiedName.unquotedString,
-      newClassLoader)
+
+    if (callbacks == null || snappySession.sparkContext.isLocal) {
+      newClassLoader.getURLs.map(url =>
+        snappySession.sparkContext.addJar(url.getFile))
+    } else {
+      callbacks.setSessionDependencies(snappySession.sparkContext,
+        qualifiedName.unquotedString,
+        newClassLoader)
+    }
   }
 
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
