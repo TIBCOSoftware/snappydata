@@ -19,27 +19,26 @@ package org.apache.spark.sql.store
 import java.sql.PreparedStatement
 import java.util.Collections
 
+import scala.util.hashing.MurmurHash3
+
 import com.gemstone.gemfire.internal.InternalDataSerializer
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
+import org.codehaus.janino.CompilerFactory
+
 import org.apache.spark.Logging
 import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.row.GemFireXDDialect
-import org.codehaus.janino.CompilerFactory
-
-import scala.collection.JavaConverters._
-import scala.util.hashing.MurmurHash3
-// import org.apache.spark.sql.catalyst.expressions.MutableRow
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -53,6 +52,10 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  * (and using some other lookup key than the code string)
  */
 object CodeGeneration extends Logging {
+
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logDebug(msg: => String): Unit = super.logDebug(msg)
 
   /**
    * A loading cache of generated <code>GeneratedStatement</code>s.
@@ -123,7 +126,7 @@ object CodeGeneration extends Logging {
       }
     })
 
-  private[this] def getColumnSetterFragment(col: Int, dataType: DataType,
+  def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ev: ExprCode, stmt: String, schema: String,
       ctx: CodegenContext): String = {
     val timeUtilsClass = DateTimeUtils.getClass.getName.replace("$", "")
@@ -409,12 +412,6 @@ object CodeGeneration extends Logging {
     val result = cache.get(new ExecuteKey(name, schema, dialect))
     result.executeStatement(stmt, multipleRows, rows, batchSize, schema)
   }
-
-  def executeUpdate(name: String, stmt: PreparedStatement,
-      rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int =
-    executeUpdate(name, stmt, rows.asJava, multipleRows, batchSize,
-      schema, dialect)
 
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],

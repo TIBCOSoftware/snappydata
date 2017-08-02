@@ -230,15 +230,31 @@ class RowFormatScanRDD(@transient val session: SnappySession,
    */
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[Any] = {
+
     if (pushProjections || useResultSet) {
+      if (!pushProjections) {
+        val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
+        if (txManagerImpl.getTXState == null) {
+          txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
+          //if (commitTx)
+            commitTxBeforeTaskCompletion(None, context)
+        }
+      }
       // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
       val itr = new ResultSetTraversal(conn, stmt, rs, context)
-      if (commitTx) {
+      if (commitTx && pushProjections) {
         commitTxBeforeTaskCompletion(Option(conn), context)
       }
       itr
     } else {
+      val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
+      if (txManagerImpl.getTXState == null) {
+        txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
+        //if (commitTx) {
+          commitTxBeforeTaskCompletion(None, context)
+        //}
+      }
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
       // or direct code generation as appropriate
@@ -248,16 +264,10 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
-        val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
-        if (txManagerImpl.getTXState == null) {
-          txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
-        }
 
         val txId = txManagerImpl.getTransactionId
         val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId)
-        if (commitTx) {
-          commitTxBeforeTaskCompletion(None, context)
-        }
+
         itr
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
@@ -267,9 +277,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
             resultSetField.get(p).asInstanceOf[EmbedResultSet]
         }
         val itr = new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
-        if (commitTx) {
-          commitTxBeforeTaskCompletion(Option(conn), context)
-        }
         itr
       }
     }
@@ -285,21 +292,17 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (parts != null && parts.length > 0) {
       return parts
     }
-    val conn = ConnectionPool.getPoolConnection(tableName,
+
+    // To be removed by SNAP-1872
+    val redundantConn = ConnectionPool.getPoolConnection(tableName,
       connProperties.dialect, connProperties.poolProps,
       connProperties.connProps, connProperties.hikariCP)
-    try {
-      val tableSchema = conn.getSchema
-      val resolvedName = ExternalStoreUtils.lookupName(tableName, tableSchema)
-      Misc.getRegionForTable(resolvedName, true)
-          .asInstanceOf[CacheDistributionAdvisee] match {
-        case pr: PartitionedRegion =>
-          session.sessionState.getTablePartitions(pr)
-        case dr => session.sessionState.getTablePartitions(dr)
-      }
-    } finally {
-      conn.commit()
-      conn.close()
+    redundantConn.commit()
+    redundantConn.close()
+
+    Misc.getRegionForTable(tableName, true).asInstanceOf[CacheDistributionAdvisee] match {
+      case pr: PartitionedRegion => session.sessionState.getTablePartitions(pr)
+      case dr => session.sessionState.getTablePartitions(dr)
     }
   }
 

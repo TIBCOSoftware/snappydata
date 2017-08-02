@@ -40,6 +40,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
     startSparkJob()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testTableCreationWithHA(): Unit = {
@@ -62,30 +63,37 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     verifyTableData(snc , tableName)
     dropTable(snc, tableName)
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
     startSparkJob2()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableProjectionQuery(): Unit = {
     startSparkJob3()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableWithPartition(): Unit = {
     startSparkJob4()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAPI(): Unit = {
     startSparkJob5()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndSingleInsertAPI(): Unit = {
     startSparkJob6()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndInsertCLOB(): Unit = {
     startSparkJob7()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
 
@@ -255,6 +263,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1008, s"Unexpected elements ${r.length}, expected=1008")
 
     snc.dropTable(tableName, ifExists = true)
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
     getLogWriter.info("Successful")
   }
 

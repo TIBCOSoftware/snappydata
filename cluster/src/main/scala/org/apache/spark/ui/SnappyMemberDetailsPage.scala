@@ -361,7 +361,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
 
     PageContent = pageTitleNode ++ memberStats ++ memberLogTitle ++ content
 
-    UIUtils.simpleSparkPageWithTabs_2(pageHeaderText, PageContent, parent, Some(500))
+    UIUtils.simpleSparkPageWithTabs(pageHeaderText, PageContent, parent, Some(500))
   }
 
   def renderLog(request: HttpServletRequest): String = {

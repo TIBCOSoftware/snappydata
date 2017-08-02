@@ -17,12 +17,11 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{ExecutorMultiBucketLocalShellPartition, Utils}
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -34,15 +33,27 @@ import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
 
 /**
- * Common methods for bulk inserts into column and row tables.
+ * Base class for bulk insert/mutation operations for column and row tables.
  */
-abstract class TableExec(override val child: SparkPlan,
-    partitionColumns: Seq[String], val partitionExpressions: Seq[Expression],
-    val numBuckets: Int, relationSchema: StructType,
-    relation: Option[DestroyRelation], onExecutor: Boolean)
-    extends UnaryExecNode with CodegenSupportOnExecutor {
+trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 
-  @transient protected lazy val (metricAdd, _) = Utils.metricMethods
+  def partitionColumns: Seq[String]
+
+  def tableSchema: StructType
+
+  def relation: Option[DestroyRelation]
+
+  def onExecutor: Boolean
+
+  @transient protected lazy val (metricAdd, metricValue) = Utils.metricMethods
+
+  def partitionExpressions: Seq[Expression]
+
+  def numBuckets: Int
+
+  protected def opType: String
+
+  protected def isInsert: Boolean = false
 
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil
@@ -66,14 +77,18 @@ abstract class TableExec(override val child: SparkPlan,
   override def requiredChildDistribution: Seq[Distribution] = {
     if (partitioned) {
       // For partitionColumns find the matching child columns
-      val schema = relationSchema
+      val schema = tableSchema
+      val childOutput = child.output
+      // for inserts the column names can be different and need to match
+      // by index else search in child output by name
       val childPartitioningAttributes = partitionColumns.map(partColumn =>
-        child.output(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
+        if (isInsert) childOutput(schema.indexWhere(_.name.equalsIgnoreCase(partColumn)))
+        else childOutput.find(_.name.equalsIgnoreCase(partColumn)).getOrElse(
+          throw new IllegalStateException("Cannot find partitioning column " +
+              s"$partColumn in child output for $toString")))
       ClusteredDistribution(childPartitioningAttributes) :: Nil
     } else UnspecifiedDistribution :: Nil
   }
-
-  protected def opType: String = "Inserted"
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
@@ -138,32 +153,23 @@ abstract class TableExec(override val child: SparkPlan,
   }
 
   protected def doChildProduce(ctx: CodegenContext): String = {
-    child match {
+    val childProduce = child match {
       case c: CodegenSupportOnExecutor if onExecutor =>
         c.produceOnExecutor(ctx, this)
       case c: CodegenSupport => c.produce(ctx, this)
       case _ => throw new UnsupportedOperationException(
         s"Expected a child supporting code generation. Got: $child")
     }
-  }
-}
-
-/**
- * Allow invoking produce/consume calls on executor without requiring
- * a SparkContext.
- */
-trait CodegenSupportOnExecutor extends CodegenSupport {
-
-  /**
-   * Returns Java source code to process the rows from input RDD that
-   * will work on executors too (assuming no sub-query processing required).
-   */
-  def produceOnExecutor(ctx: CodegenContext, parent: CodegenSupport): String = {
-    this.parent = parent
-    ctx.freshNamePrefix = nodeName.toLowerCase
-    s"""
-       |${ctx.registerComment(s"PRODUCE ON EXECUTOR: ${this.simpleString}")}
-       |${doProduce(ctx)}
-     """.stripMargin
+    if (!ctx.addedFunctions.contains("shouldStop")) {
+      // no need to stop in iteration at any point
+      ctx.addNewFunction("shouldStop",
+        s"""
+           |@Override
+           |protected final boolean shouldStop() {
+           |  return false;
+           |}
+        """.stripMargin)
+    }
+    childProduce
   }
 }

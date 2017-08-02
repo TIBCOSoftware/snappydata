@@ -19,14 +19,19 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
-import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
+
+import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.collection.Utils
@@ -39,15 +44,12 @@ import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.{Logging, SparkContext}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
+import org.apache.spark.util.{Utils => SparkUtils}
 
 /**
  * Utility methods used by external storage layers.
  */
-object ExternalStoreUtils extends Logging {
+object ExternalStoreUtils {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS = "79"
@@ -261,7 +263,7 @@ object ExternalStoreUtils extends Logging {
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
           case Some(s) => Integer.parseInt(s)
           case None => session.map(defaultColumnBatchSize).getOrElse(
-            Property.ColumnBatchSize.defaultValue.get)
+            sizeAsBytes(Property.ColumnBatchSize.defaultValue.get, Property.ColumnBatchSize.name))
         }
         val columnBatchSize = math.max((batchSize << 2) / 3,
           snappydataConstants.DEFAULT_LOB_CHUNKSIZE)
@@ -275,8 +277,54 @@ object ExternalStoreUtils extends Logging {
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP, isEmbedded)
-    ConnectionProperties(url, driver, dialect, allPoolProps,
+    getConnectionProperties(session, url, driver, dialect, allPoolProps,
       connProps, executorConnProps, hikariCP)
+  }
+
+  def getConnectionProperties(session: Option[SparkSession], url: String, driver: String,
+      dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
+      executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
+    session match {
+      case Some(s) => getConnProps(session.get, url, driver, dialect, poolProps, connProps,
+        executorConnProps, hikariCP)
+      case None => ConnectionProperties(url, driver, dialect, poolProps, connProps,
+        executorConnProps, hikariCP)
+    }
+  }
+
+  def getConnProps(session: SparkSession, url: String, driver: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties, executorConnProps: Properties,
+      hikariCP: Boolean):ConnectionProperties = {
+    val (user, password) = getCredentials(session)
+
+    if (!user.isEmpty && !password.isEmpty) {
+      def secureProps(props: Properties): Properties = {
+        props.setProperty(Attribute.USERNAME_ATTR, user)
+        props.setProperty(Attribute.PASSWORD_ATTR, password)
+        props
+      }
+
+      // Hikari only take 'username'. So does Tomcat
+      def securePoolProps(props: Map[String, String]): Map[String, String] = {
+        props + (Attribute.USERNAME_ALT_ATTR.toLowerCase -> user) + (Attribute.PASSWORD_ATTR ->
+            password)
+      }
+
+      ConnectionProperties(url, driver, dialect, securePoolProps(poolProps),
+        secureProps(connProps), secureProps(executorConnProps), hikariCP)
+    } else {
+      ConnectionProperties(url, driver, dialect, poolProps, connProps, executorConnProps,
+        hikariCP)
+    }
+  }
+
+  def getCredentials(session: SparkSession, prefix: String = ""): (String, String) = {
+    val prefix = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => Constant.SPARK_STORE_PREFIX
+      case _ => ""
+    }
+    (session.conf.get(prefix + Attribute.USERNAME_ATTR, ""),
+        session.conf.get(prefix + Attribute.PASSWORD_ATTR, ""))
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,
@@ -526,7 +574,7 @@ object ExternalStoreUtils extends Logging {
       new CodeAndComment(CodeFormatter.stripExtraNewLines(source),
         ctx.getPlaceHolderToComments()))
 
-    logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
+    CodeGeneration.logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
     (ctx, cleanedSource)
   }
 
@@ -601,8 +649,18 @@ object ExternalStoreUtils extends Logging {
     }
   }
 
+  def sizeAsBytes(str: String, propertyName: String): Int = {
+    val size = SparkUtils.byteStringAsBytes(str)
+    if (size > 0 && size <= Int.MaxValue) size.toInt
+    else {
+      throw new IllegalArgumentException(
+        s"$propertyName should be > 0 and < 2GB (provided = $str)")
+    }
+  }
+
   def defaultColumnBatchSize(session: SparkSession): Int = {
-    Property.ColumnBatchSize.get(session.sessionState.conf)
+    sizeAsBytes(Property.ColumnBatchSize.get(session.sessionState.conf),
+      Property.ColumnBatchSize.name)
   }
 
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {

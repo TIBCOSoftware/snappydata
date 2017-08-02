@@ -35,7 +35,7 @@ public class DynamicJarLoadingJob extends JavaSnappySQLJob {
             pw.println("****** DynamicJarLoadingJob started ******");
             pw.println("numServers in test : " + numServers);
             String currentDirectory = new File(".").getCanonicalPath();
-            TestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers,expectedException);
+            InstallJarTestUtils.verify(snc, jobConfig.getString("classVersion"), pw, numServers,expectedException);
             pw.println("****** DynamicJarLoadingJob finished ******");
             return String.format("See %s/" + jobConfig.getString("logFileName"), currentDirectory);
         } catch (Exception e) {
