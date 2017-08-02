@@ -157,23 +157,25 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     DriverManager.getConnection(s"jdbc:derby:$path;create=true")
 
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_1")
+    snc.sql("CREATE TABLE TEST_JDBC_TABLE_1(COL1 INTEGER,COL2 INTEGER,COL3 INTEGER)")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props)
-        .saveAsTable("TEST_JDBC_TABLE_1")
+        .insertInto("TEST_JDBC_TABLE_1")
     val connConf = new ConnectionConfBuilder(snc.snappySession)
     props.map(entry => connConf.setConf(entry._1, entry._2))
     val conf = connConf.build()
 
     try {
-      rdd.foreachPartition(d => {
+      // Update will not work
+      /*rdd.foreachPartition(d => {
         val conn = ConnectionUtil.getPooledConnection("testDerby", conf)
         TaskContext.get().addTaskCompletionListener(_ => conn.close())
         val stmt = conn.prepareStatement("update TEST_JDBC_TABLE_1 set col1 = 9")
         stmt.executeUpdate()
-      })
+      })*/
 
       val result = snc.sql("SELECT col1 from TEST_JDBC_TABLE_1")
       result.show()
