@@ -1778,6 +1778,7 @@ object SnappySession extends Logging {
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
+        df.queryExecution.toRdd // evaluate the plan upfront
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         val childRDD = if (withFallback ne null) withFallback.execute(plan.child)
@@ -1891,10 +1892,12 @@ object SnappySession extends Logging {
         evaluatePlan(df, session, key.sqlText, key)
       }
     }
-    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
-      case Some(size) => size.toInt
-      case None => Property.PlanCacheSize.defaultValue.get
-    }
+    val cacheSize = if (SnappyContext.globalSparkContext != null) {
+      Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
+        case Some(size) => size.toInt
+        case None => Property.PlanCacheSize.defaultValue.get
+      }
+    } else Property.PlanCacheSize.defaultValue.get
     CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
 
