@@ -19,7 +19,7 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
@@ -50,7 +50,7 @@ trait PlanInsertableRelation extends InsertableRelation with DestroyRelation {
   def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
-trait RowPutRelation extends SingleRowInsertableRelation with DestroyRelation {
+trait RowPutRelation extends DestroyRelation {
 
   /**
    * If the row is already present, it gets updated otherwise it gets
@@ -76,6 +76,48 @@ trait SingleRowInsertableRelation {
    * Execute a DML SQL and return the number of rows affected.
    */
   def executeUpdate(sql: String): Int
+}
+
+/**
+ * ::DeveloperApi
+ *
+ * API for updates and deletes to a relation.
+ */
+@DeveloperApi
+trait MutableRelation extends DestroyRelation {
+
+  /** Name of this mutable table as stored in catalog. */
+  def table: String
+
+  /**
+   * Get the "key" columns for the table that need to be projected out by
+   * UPDATE and DELETE operations for affecting the selected rows.
+   */
+  def getKeyColumns: Seq[String]
+
+  /** Get the partitioning columns for the table, if any. */
+  def partitionColumns: Seq[String]
+
+  /**
+   * If required inject the key columns in the original relation.
+   */
+  def withKeyColumns(relation: LogicalRelation,
+      keyColumns: Seq[String]): LogicalRelation = relation
+
+  /**
+   * Get a spark plan to update rows in the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
+      updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
+      keyColumns: Seq[Attribute]): SparkPlan
+
+  /**
+   * Get a spark plan to delete rows the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
+      keyColumns: Seq[Attribute]): SparkPlan
 }
 
 /**
@@ -171,7 +213,7 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
 }
 
 @DeveloperApi
-trait UpdatableRelation extends SingleRowInsertableRelation {
+trait UpdatableRelation extends SingleRowInsertableRelation with MutableRelation {
 
   /**
    * Update a set of rows matching given criteria.
@@ -188,7 +230,7 @@ trait UpdatableRelation extends SingleRowInsertableRelation {
 }
 
 @DeveloperApi
-trait DeletableRelation {
+trait DeletableRelation extends MutableRelation {
 
   /**
    * Delete a set of row matching given criteria.
@@ -198,13 +240,6 @@ trait DeletableRelation {
    * @return number of rows deleted
    */
   def delete(filterExpr: String): Int
-
-  /**
-   * Get a spark plan for puts. If the row is already present, it gets updated
-   * otherwise it gets inserted into the table represented by this relation.
-   * The result of SparkPlan execution should be a count of number of rows put.
-   */
-  def getDeletePlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
 @DeveloperApi
