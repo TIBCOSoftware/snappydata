@@ -39,7 +39,10 @@ object SnappyTestUtils extends Logging {
       }).count
 
     assert(countInstances == count)
-    pw.println("Class is available on all executors : numExecutors (" + countInstances + ") having the class " + className + " loaded, is same as numServers (" + count + ") in test" + " and the class version is: " + version);
+    // scalastyle:off println
+    pw.println("Class is available on all executors : numExecutors (" + countInstances + ") " +
+        "having  the class " + className + " loaded, is same as numServers (" + count + ") in " +
+        "test" + " and the class version is: " + version);
   }
 
   def getJavaSourceFromString(name: String, code: String): JavaSourceFromString = {
@@ -56,7 +59,7 @@ object SnappyTestUtils extends Logging {
 
   def createJarFile(files: Seq[File],
                     tempDir: String
-                     ) = {
+                   ) = {
     val jarFile = new File(tempDir, "testJar-%s.jar".format(System.currentTimeMillis()))
     TestUtils.createJar(files, jarFile)
     jarFile.getName
@@ -71,20 +74,20 @@ object SnappyTestUtils extends Logging {
     assert(loader != null)
     try {
       val fakeClass = loader.loadClass(className).newInstance()
-      log.info("SS - fakeClass : " + fakeClass)
+      log.info("fakeClass : " + fakeClass)
       assert(fakeClass != null)
-      log.info("SS - fakeClass loading successful.. : " + fakeClass)
+      log.info("fakeClass loading successful.. : " + fakeClass)
       assert(fakeClass.toString.equals(version))
-      log.info("SS - fakeClass version is as expected.. : " + version)
+      log.info("fakeClass version is as expected.. : " + version)
       true
     } catch {
       case cnfe: ClassNotFoundException =>
         if (!catchExpectedException) {
-          log.info("SS - fakeClass loading unsuccessful..  " + className + version)
+          log.info("fakeClass loading unsuccessful..  " + className + version)
           throw cnfe
         }
         else {
-          log.info("SS - in else loop..  " + className + version)
+          log.info("In else loop..  " + className + version)
           false
         }
     }
