@@ -35,6 +35,8 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long isRevoke;
 
+  public static Long isJoinQuery;
+
   public static Long isPublicAccess;
 
   public static Long onSchema;
@@ -68,6 +70,12 @@ public class SnappySecurityPrms extends SnappyPrms{
     Long key = isRevoke;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
+
+  public static boolean getIsJoinQuery() {
+    Long key = isJoinQuery;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
 
   public static boolean getIsPublic() {
     Long key = isPublicAccess;

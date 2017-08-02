@@ -30,6 +30,7 @@ public class SnappySecurityTest extends SnappyTest {
   public static String adminUser = "user1";
   public static String unAuthUser = "user5";
 
+
   public static void HydraTask_runQuery() throws SQLException {
     runQuery();
   }
@@ -211,25 +212,69 @@ public class SnappySecurityTest extends SnappyTest {
     conn = getSecuredLocatorConnection(usr, pass);
     String fileName = SnappySecurityPrms.getDataLocation();
     ArrayList queryArray = getQueryArr(fileName, usr);
+    // ArrayList<String> patternMatch = new ArrayList<String>();
+    Vector patternMatch = null;
+    Boolean isJoinQuery = SnappySecurityPrms.getIsJoinQuery();
 
     for (int q = 0; q < queryArray.size(); q++) {
       String queryStr = (String)queryArray.get(q);
       try {
         if (!usr.equals(adminUser) && !usr.equals(schemaOwner) && isGrant) {
-          for (int s = 0; s < schemaToTest.size(); s++) {
-            String str = schemaToTest.elementAt(s).toString();
-            Log.getLogWriter().info("Find " + str + " in query " + queryStr);
-            if (!queryStr.contains(str)) {
-              isAuth = false;
-              Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
-              execute(queryStr, conn);
-            } else {
-              if(usr.equals(unAuthUser))
+          Log.getLogWriter().info("SP1 and isJoinQuery is " + isJoinQuery);
+          if (isJoinQuery) {
+            Log.getLogWriter().info("Inside joinQueyr");
+            String pattern = "user2";
+            Log.getLogWriter().info("SP2 query is " + queryStr + " Pattern to match is " + pattern);
+            for (String st : queryStr.split("\\s")) {
+              Log.getLogWriter().info("SP3");
+              if (st.matches(pattern + "\\w+")) {
+                Log.getLogWriter().info("SP4");
+                Log.getLogWriter().info("Matched " + st);
+                Log.getLogWriter().info("SP5");
+                patternMatch.add(st); // = st;
+                Log.getLogWriter().info("SP6");
+              }
+              if (patternMatch.size() > 1) {
+                if(patternMatch.size() >= schemaToTest.size()) {
+                  if (patternMatch.containsAll(schemaToTest)) {
+                    isAuth = true;
+                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
+                    execute(queryStr, conn);
+                  } else {
+                    isAuth = false;
+                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
+                    execute(queryStr, conn);
+                  }
+                }
+                else {
+                  if (schemaToTest.containsAll(patternMatch)) {
+                    isAuth = true;
+                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
+                    execute(queryStr, conn);
+                  } else {
+                    isAuth = false;
+                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
+                    execute(queryStr, conn);
+                  }
+                }
+              }
+            }
+          } else {
+            for (int s = 0; s < schemaToTest.size(); s++) {
+              String str = schemaToTest.elementAt(s).toString();
+              Log.getLogWriter().info("Find " + str + " in query " + queryStr);
+              if (!queryStr.contains(str)) {
                 isAuth = false;
-              else
-                isAuth = true;
-              Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
-              execute(queryStr, conn);
+                Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
+                execute(queryStr, conn);
+              } else {
+                if (usr.equals(unAuthUser))
+                  isAuth = false;
+                else
+                  isAuth = true;
+                Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
+                execute(queryStr, conn);
+              }
             }
           }
         } else {
