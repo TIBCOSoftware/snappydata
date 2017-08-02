@@ -56,7 +56,6 @@ final class DictionaryEncoderNullable
 abstract class DictionaryDecoderBase
     extends ColumnDecoder with DictionaryEncoding {
 
-  protected[this] final var stringDictionary: Array[UTF8String] = _
   protected[this] final var intDictionary: Array[Int] = _
   protected[this] final var longDictionary: Array[Long] = _
 
@@ -87,11 +86,11 @@ abstract class DictionaryDecoderBase
     var index = 0
     Utils.getSQLDataType(dataType) match {
       case StringType =>
-        stringDictionary = new Array[UTF8String](dictionaryLen)
+        longDictionary = new Array[Long](numElements)
         while (index < numElements) {
-          val s = ColumnEncoding.readUTF8String(columnBytes, position)
-          stringDictionary(index) = s
-          position += (4 + s.numBytes())
+          longDictionary(index) = position
+          val size = ColumnEncoding.readInt(columnBytes, position)
+          position += size + 4
           index += 1
         }
       case IntegerType | DateType =>
@@ -132,11 +131,12 @@ abstract class DictionaryDecoderBase
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 1)
   }
 
-  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
-    stringDictionary(ColumnEncoding.readShort(columnBytes, cursor))
+  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String = {
+    ColumnEncoding.readUTF8StringFromDictionary(longDictionary, columnBytes,
+      ColumnEncoding.readShort(columnBytes, cursor))
+  }
 
-  override final def getStringDictionary: Array[UTF8String] =
-    stringDictionary
+  override final def getStringDictionary: Array[Long] = longDictionary
 
   override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
     if (ColumnEncoding.littleEndian) {
@@ -183,8 +183,10 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 2)
   }
 
-  override final def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
-    stringDictionary(ColumnEncoding.readInt(columnBytes, cursor))
+  override final def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String = {
+    ColumnEncoding.readUTF8StringFromDictionary(longDictionary, columnBytes,
+      ColumnEncoding.readInt(columnBytes, cursor))
+  }
 
   override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
     if (ColumnEncoding.littleEndian) {

@@ -72,6 +72,12 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
 
   override def nextBinary(columnBytes: AnyRef, cursor: Long): Long = 0L
 
+  override def nextArray(columnBytes: AnyRef, cursor: Long): Long = 0L
+
+  override def nextMap(columnBytes: AnyRef, cursor: Long): Long = 0L
+
+  override def nextStruct(columnBytes: AnyRef, cursor: Long): Long = 0L
+
   override def isNull(columnBytes: AnyRef, ordinal: Int): Int = -1
 
   override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =

@@ -64,6 +64,12 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def nextBinary(columnBytes: AnyRef, cursor: Long): Long = 0L
 
+  override def nextArray(columnBytes: AnyRef, cursor: Long): Long = 0L
+
+  override def nextMap(columnBytes: AnyRef, cursor: Long): Long = 0L
+
+  override def nextStruct(columnBytes: AnyRef, cursor: Long): Long = 0L
+
   override def isNull(columnBytes: AnyRef, ordinal: Int): Int =
     if (holder.row.isNullAt(columnIndex)) 1 else 0
 

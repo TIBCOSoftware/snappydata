@@ -20,7 +20,6 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.nio.ByteBuffer
 
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * Decodes a column of a batch that has seen some changes (updates or deletes) by
@@ -194,7 +193,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
 
   // TODO: SW: need to create a combined delta+full value dictionary for this to work
 
-  final def getStringDictionary: Array[UTF8String] = null
+  final def getStringDictionary: Array[Long] = null
 
   final def readDictionaryIndex: Int = -1
 }

@@ -373,7 +373,7 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
 
     ctx.currentVars = null
-    val encodingClass = classOf[ColumnEncoding].getName
+    val encodingClass = ColumnEncoding.encodingClassName
     val decoderClass = classOf[ColumnDecoder].getName
     val mutatedDecoderClass = classOf[MutatedColumnDecoderBase].getName
     val rsDecoderClass = classOf[ResultSetDecoder].getName
@@ -500,7 +500,7 @@ private[sql] final case class ColumnTableScan(
         s"""
            |private void $initBufferFunction() {
            |  $buffer = $colInput.getColumnLob($baseIndex);
-           |  $decoder = $encodingClass$$.MODULE$$.getColumnDecoder($buffer,
+           |  $decoder = $encodingClass.getColumnDecoder($buffer,
            |      $planSchema.apply($index));
            |  // check for mutated column
            |  $mutatedDecoder = $colInput.getMutatedColumnDecoderIfRequired(
@@ -885,7 +885,7 @@ private[sql] final case class ColumnTableScan(
         dictionary = ctx.freshName("dictionary")
         dictionaryLen = ctx.freshName("dictionaryLength")
         dictIndex = ctx.freshName("dictionaryIndex")
-        ctx.addMutableState("UTF8String[]", dictionary, "")
+        ctx.addMutableState("long[]", dictionary, "")
         ctx.addMutableState("int", dictionaryLen, "")
         if (wideTable) {
           ctx.addMutableState("int", dictIndex, "")
@@ -910,7 +910,8 @@ private[sql] final case class ColumnTableScan(
           if (isNullVar != null) s"if ($isNullVar < 0) $nullVar = $col == null;\n"
           else ""
         stringAssignCode =
-            s"($dictionary != null ? $dictionary[$dictIndex] " +
+            s"($dictionary != null" +
+                s"? ${ColumnEncoding.stringFromDictionaryCode(dictionary, buffer, dictIndex)} " +
                 s": $decoder.readUTF8String($buffer, $cursorVar));\n"
         assignCode = stringAssignCode + nullCheckAddon
 
@@ -989,14 +990,14 @@ private[sql] final case class ColumnTableScan(
             }
           """
         session.foreach(_.addDictionaryCode(ctx, col, DictionaryCode(
-          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen)))
+          dictionaryCode, buffer, assignCode, dictionary, dictIndex, dictionaryLen)))
       }
       (ExprCode(code, nullVar, col), bufferInit)
     } else {
       if (!dictionary.isEmpty) {
         val dictionaryCode = jtDecl + '\n' + dictionaryAssignCode
         session.foreach(_.addDictionaryCode(ctx, col, DictionaryCode(
-          dictionaryCode, assignCode, dictionary, dictIndex, dictionaryLen)))
+          dictionaryCode, buffer, assignCode, dictionary, dictIndex, dictionaryLen)))
       }
       var code =
         s"""

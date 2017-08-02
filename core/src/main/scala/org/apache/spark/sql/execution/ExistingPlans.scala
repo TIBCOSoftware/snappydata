@@ -420,7 +420,7 @@ trait BatchConsumer extends CodegenSupport {
  * Extended information for ExprCode variable to also hold the variable having
  * dictionary reference and its index when dictionary encoding is being used.
  */
-case class DictionaryCode(private var dictionaryCode: String,
+case class DictionaryCode(private var dictionaryCode: String, bufferVar: String,
     valueAssignCode: String, dictionary: String, dictionaryIndex: String,
     dictionaryLen: String) {
 

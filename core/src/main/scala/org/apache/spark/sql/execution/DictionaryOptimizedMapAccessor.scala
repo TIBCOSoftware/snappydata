@@ -21,6 +21,7 @@ import io.snappydata.collection.ObjectHashSet
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types.StringType
 
 /**
@@ -78,7 +79,7 @@ object DictionaryOptimizedMapAccessor {
       session: SnappySession): Option[DictionaryCode] = {
     if (canHaveSingleKeyCase(keyExpressions)) {
       session.getDictionaryCode(ctx, keyVars.head.value) match {
-        case e@Some(DictionaryCode(_, _, dict, _, _)) if dict.nonEmpty => e
+        case e@Some(DictionaryCode(_, _, _, dict, _, _)) if dict.nonEmpty => e
         case _ => None
       }
     } else None
@@ -128,16 +129,18 @@ object DictionaryOptimizedMapAccessor {
     // has already been assigned and likewise the key itself
     val keyAssign = if (keyVar.code.isEmpty) ""
     else {
+      val stringAssignCode = ColumnEncoding.stringFromDictionaryCode(
+        keyDictVar.dictionary, keyDictVar.bufferVar, keyIndex)
       // in this case replace the keyVar code to skip dictionary index get
       if (keyVar.isNull.isEmpty || keyVar.isNull == "false") {
         keyVar.code = s"$key = ${keyDictVar.valueAssignCode};"
-        s"$key = ${keyDictVar.dictionary}[$keyIndex];"
+        s"$key = $stringAssignCode;"
       } else {
         keyVar.code =
             s"""if ($key == null) {
                |  $key = ${keyVar.isNull} ? null : ${keyDictVar.valueAssignCode};
                |}""".stripMargin
-        s"$key = ${keyDictVar.dictionary}[$keyIndex];"
+        s"$key = $stringAssignCode;"
       }
     }
     s"""if ($arrayVar != null) {

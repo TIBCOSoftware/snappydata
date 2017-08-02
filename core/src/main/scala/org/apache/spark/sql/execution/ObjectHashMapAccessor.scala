@@ -689,7 +689,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       keyExpressions, getExpressionVars(keyExpressions, input.map(_.copy()),
         output), ctx, session)
     dictionaryKey match {
-      case Some(DictionaryCode(_, _, dictionary, _, dictionaryLen)) =>
+      case Some(DictionaryCode(_, _, _, dictionary, _, dictionaryLen)) =>
         // initialize or reuse the array at batch level for join
         // null key will be placed at the last index of dictionary
         // and dictionary index will be initialized to that by ColumnTableScan
