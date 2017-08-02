@@ -42,7 +42,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
 
   def testDriverHA(): Unit = {
     // Stop the lead node
-    ClusterManagerTestBase.stopSparkWithoutCleanup()
+    ClusterManagerTestBase.stopAny()
 
     // Start the lead node in another JVM. The executors should
     // connect with this new lead.
@@ -52,13 +52,13 @@ class UserDefinedFunctionsDUnitTest(val s: String)
       vm3.invoke(getClass, "startSnappyLead", startArgs)
       vm3.invoke(getClass, "createTables")
       vm3.invoke(getClass, "simpleUDFTest", true)
-      vm3.invoke(getClass, "stopSparkWithoutCleanup")
+      vm3.invoke(getClass, "stopAny")
       //Again start the lead node
       vm3.invoke(getClass, "startSnappyLead", startArgs)
       vm3.invoke(getClass, "createTables") // as stop Spark deletes tables.
 
       vm3.invoke(getClass, "simpleUDFTest", false)
-      vm3.invoke(getClass, "stopSparkWithoutCleanup")
+      vm3.invoke(getClass, "stopAny")
     } catch {
       case  e: Throwable => throw new Exception(e)
     } finally {

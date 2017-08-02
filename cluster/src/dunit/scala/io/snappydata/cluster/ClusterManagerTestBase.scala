@@ -160,6 +160,7 @@ abstract class ClusterManagerTestBase(s: String)
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
     }
+    
     bootProps.clear()
   }
 
@@ -264,17 +265,6 @@ object ClusterManagerTestBase extends Logging {
   def stopSpark(): Unit = {
     // cleanup metastore
     cleanupTestData(null, null)
-    val service = ServiceManager.currentFabricServiceInstance
-    if (service != null) {
-      service.stop(null)
-    }
-  }
-
-  /**
-   * This method is used to test HA scenarios without doing cleanup of testdata
-   */
-  def stopSparkWithoutCleanup(): Unit = {
-
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stop(null)
