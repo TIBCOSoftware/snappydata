@@ -130,7 +130,6 @@ class SplitClusterDUnitSecurityTest(s: String)
     writeToFile(s"localhost  -locators=localhost[$port] $ldapConf", s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $ldapConf
-          |localhost  -locators=localhost[$port] -client-port=$netPort2 $ldapConf
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
@@ -451,6 +450,31 @@ class SplitClusterDUnitSecurityTest(s: String)
     // SNAPPY_HIVE_METASTORE should not be modifiable by users.
     val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
     assertFailure(() => {user1Stmt.execute(sql)}, sql)
+
+    executeSQL(user1Stmt, s"grant select on table $embeddedColTab1 to $jdbcUser2")
+    executeSQL(user1Stmt, s"revoke select on table $embeddedColTab1 from $jdbcUser2")
+    executeSQL(user1Stmt, s"grant select on table $embeddedRowTab1 to $jdbcUser2")
+    executeSQL(user1Stmt, s"grant insert on table $embeddedRowTab1 to $jdbcUser2")
+
+    user1Conn.close()
+    user2Conn.close()
+    adminConn.close()
+    snc.sparkContext.stop()
+    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
+    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+    Thread.sleep(10000) // Not sure if this is needed
+    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
+    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    Thread.sleep(10000)
+
+    user2Conn = getConn(jdbcUser2, true)
+    user2Stmt = user2Conn.createStatement()
+    assertFailure(() => {executeSQL(user2Stmt, sqls(0))}, sqls(0)) // select on embeddedColTab1
+    assertFailure(() => {snc.sql(sqls(0))}, sqls(0)) // select on embeddedColTab1
+    executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
+    snc.sql(sqls(3)) // insert into embeddedRowTab1
+    assertFailure(() => {executeSQL(user2Stmt, sqls(5))}, sqls(5)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(5))}, sqls(5)) // delete on embeddedRowTab1
   }
 
   /**
