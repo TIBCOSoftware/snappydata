@@ -1745,6 +1745,21 @@ object SnappySession extends Logging {
     }
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
+
+  /**
+   * Snappy's execution happens in two phases. First phase the plan is executed
+   * to create a rdd which is then used to create a CachedDataFrame.
+   * In second phase, the CachedDataFrame is then used for further actions.
+   * For accumulating the metrics for first phase,
+   * SparkListenerSQLPlanExecutionStart is fired. This keeps the current
+   * executionID in _executionIdToData but does not add it to the active
+   * executions. This ensures that query is not shown in the UI but the
+   * new jobs that are run while the plan is being executed are tracked
+   * against this executionID. In the second phase, when the query is
+   * actually executed, SparkListenerSQLPlanExecutionStart adds the execution
+   * data to the active executions. SparkListenerSQLPlanExecutionEnd is
+   * then sent with the accumulated time of both the phases.
+   */
   private def planExecution(df: DataFrame, session: SnappySession, sqlText: String,
     executedPlan: SparkPlan, allLiterals: Array[LiteralValue])
     (f: => RDD[InternalRow]): (Long, Long, RDD[InternalRow]) = {

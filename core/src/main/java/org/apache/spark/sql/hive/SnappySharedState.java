@@ -54,6 +54,9 @@ public final class SnappySharedState extends SharedState {
 
   private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
 
+  /**
+   *  Create Snappy's SQL Listener instead of SQLListener
+   */
   private static SQLListener createListenerAndUI(SparkContext sc) {
     if (ExternalStoreUtils.getSQLListener().get() == null) {
       SnappySQLListener listener = new SnappySQLListener(sc.conf());

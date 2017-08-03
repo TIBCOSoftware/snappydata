@@ -578,11 +578,11 @@ object CachedDataFrame
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
     if (oldExecutionId == null) {
-      val (postNeeded, executionId) = currentExecutionId match {
-        case Some(exId) => (false, exId)
-        case None =>
-          val exId = nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
-          (true, exId)
+      // If the execution ID is set in the CDF that means the plan execution has already
+      // been done. Use the same execution ID to link this execution to the previous one.
+      val executionId = currentExecutionId match {
+        case Some(exId) => exId
+        case None => nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
       }
       val r = try {
         sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
@@ -592,6 +592,7 @@ object CachedDataFrame
         try {
           body
         } finally {
+          // add the time of plan execution to the end time.
           sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionEnd(
             executionId, System.currentTimeMillis() + planProcessingTime))
         }
