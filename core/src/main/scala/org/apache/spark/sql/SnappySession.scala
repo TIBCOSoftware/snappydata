@@ -1747,7 +1747,7 @@ object SnappySession extends Logging {
   }
   private def planExecution(df: DataFrame, session: SnappySession, sqlText: String,
     executedPlan: SparkPlan, allLiterals: Array[LiteralValue])
-    (f: SparkPlan => RDD[InternalRow]): (Long, Long, RDD[InternalRow]) = {
+    (f: => RDD[InternalRow]): (Long, Long, RDD[InternalRow]) = {
     // Right now the CachedDataFrame is not getting used across SnappySessions
     val executionId = CachedDataFrame.nextExecutionIdMethod.
       invoke(SQLExecution).asInstanceOf[Long]
@@ -1760,7 +1760,7 @@ object SnappySession extends Logging {
         sqlText, df.queryExecution.toString,
         CachedDataFrame.queryPlanInfo(executedPlan, allLiterals),
         start))
-      f (executedPlan)
+      f
     } finally {
       session.sparkContext.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, null)
     }
@@ -1808,7 +1808,7 @@ object SnappySession extends Logging {
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         val (executionTime, executionId, childRDD) = planExecution(
-        df, session, sqlText, executedPlan, allLiterals)((exPlan: SparkPlan) => {
+        df, session, sqlText, plan, allLiterals)({
             if (withFallback ne null) withFallback.execute(plan.child)
             else plan.childRDD
           })
@@ -1820,13 +1820,13 @@ object SnappySession extends Logging {
         // (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
         val (executionTime, executionId, rdd) = planExecution(
-          df, session, sqlText, executedPlan, allLiterals)((exPlan: SparkPlan) =>
-          exPlan match {
+          df, session, sqlText, executedPlan, allLiterals)({
+          executedPlan match {
             case plan: CollectLimitExec =>
               if (withFallback ne null) withFallback.execute(plan.child)
               else plan.child.execute()
             case _ => df.queryExecution.executedPlan.execute()
-          })
+          }})
         // TODO: Skipping the adding of profile listener in case of
         // ThinClientConnectorMode, confirm with Sumedh whether something
         // more needs to be done
