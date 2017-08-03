@@ -663,6 +663,28 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     FileUtils.deleteDirectory(new File(tempPath))
   }
 
+
+
+  def testSNAP1878(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    snc.sql(s"create table t1 (c1 integer,c2 string)")
+    snc.sql(s"insert into t1 values(1,'test1')")
+    snc.sql(s"insert into t1 values(2,'test2')")
+    snc.sql(s"insert into t1 values(3,'test3')")
+    val df=snc.sql("select * from t1")
+    df.show
+    val tempPath = "/tmp/" + System.currentTimeMillis()
+
+    assert(df.count()==3)
+    df.write.option("header","true").csv(tempPath)
+    snc.createExternalTable("TEST_EXTERNAL","csv",Map("path" -> tempPath,"header" -> "true"))
+    val dataDF=snc.sql("select * from TEST_EXTERNAL")
+    assert(dataDF.count==3)
+    FileUtils.deleteDirectory(new File(tempPath))
+  }
+
+
 }
 
 case class TData(Key1: Int, Value: Int)
