@@ -23,8 +23,13 @@ import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
+import org.apache.spark.sql.execution.ui.SQLListener;
+import org.apache.spark.sql.execution.ui.SQLTab;
+import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.client.HiveClient;
 import org.apache.spark.sql.internal.SharedState;
+import org.apache.spark.ui.SparkUI;
 
 /**
  * Overrides Spark's SharedState to enable setting up own ExternalCatalog.
@@ -49,6 +54,20 @@ public final class SnappySharedState extends SharedState {
 
   private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
 
+  private static SQLListener createListenerAndUI(SparkContext sc) {
+    if (ExternalStoreUtils.getSQLListener().get() == null) {
+      SnappySQLListener listener = new SnappySQLListener(sc.conf());
+      if (ExternalStoreUtils.getSQLListener().compareAndSet(null, listener)) {
+        sc.addSparkListener(listener);
+        SparkUI ui = sc.ui().getOrElse(null);
+        if (ui != null) {
+          new SQLTab(listener, ui);
+        }
+      }
+    }
+    return ExternalStoreUtils.getSQLListener().get();
+  }
+
   private SnappySharedState(SparkContext sparkContext) {
     super(sparkContext);
     this.initialized = true;
@@ -62,6 +81,8 @@ public final class SnappySharedState extends SharedState {
     // then former can land up with in-memory catalog too
     sparkContext.conf().set(CATALOG_IMPLEMENTATION, "in-memory");
 
+    createListenerAndUI(sparkContext);
+
     final SnappySharedState sharedState = new SnappySharedState(sparkContext);
 
     // reset the catalog implementation to original
@@ -70,7 +91,6 @@ public final class SnappySharedState extends SharedState {
     } else {
       sparkContext.conf().remove(CATALOG_IMPLEMENTATION);
     }
-
     return sharedState;
   }
 

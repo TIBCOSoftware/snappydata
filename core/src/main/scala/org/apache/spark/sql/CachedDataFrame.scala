@@ -18,7 +18,6 @@ package org.apache.spark.sql
 
 import java.nio.ByteBuffer
 import java.sql.SQLException
-
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -48,7 +47,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
-import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
+import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
@@ -59,7 +58,9 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
     val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty,
-    val queryHints: Map[String, String] = Map.empty)
+    val queryHints: Map[String, String] = Map.empty,
+    var endTime: Long = 0,
+    var currentExecutionId: Option[Long] = None)
     extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
 
   /**
@@ -199,6 +200,22 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     collectInternal().map(boundEnc.fromRow).toArray
   }
 
+  override def withNewExecutionId[T](body: => T): T = queryExecution.executedPlan match {
+    // don't create a new executionId for ExecutePlan since it has already done so
+    case _: ExecutePlan => body
+    case _ =>
+      try {
+        CachedDataFrame.withNewExecutionId(
+          sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
+          queryExecutionString, CachedDataFrame.queryPlanInfo(
+            queryExecution.executedPlan, allLiterals),
+          currentExecutionId, endTime)(body)
+      } finally {
+        currentExecutionId = None
+        endTime = 0
+      }
+  }
+
   override def count(): Long = withCallback("count") { df =>
     df.groupBy().count().collect().head.getLong(0)
   }
@@ -261,9 +278,16 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     def withNewExecutionId[T](body: => T): T = executedPlan match {
       // don't create a new executionId for ExecutePlan since it has already done so
       case _: ExecutePlan => body
-      case _ => CachedDataFrame.withNewExecutionId(
-        sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
-        queryExecutionString, CachedDataFrame.queryPlanInfo(sparkPlan, allLiterals))(body)
+      case _ =>
+        try {
+          CachedDataFrame.withNewExecutionId(
+            sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
+            queryExecutionString, CachedDataFrame.queryPlanInfo(sparkPlan, allLiterals),
+            currentExecutionId, endTime)(body)
+        } finally {
+          currentExecutionId = None
+          endTime = 0
+        }
     }
 
     def execute(): Iterator[R] = withNewExecutionId {
@@ -531,7 +555,7 @@ object CachedDataFrame
         data.arrayOffset() + data.position(), data.remaining())
   }
 
-  @transient private val nextExecutionIdMethod = {
+  @transient val nextExecutionIdMethod = {
     val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
     m.setAccessible(true)
     m
@@ -564,13 +588,19 @@ object CachedDataFrame
    */
   def withNewExecutionId[T](sparkSession: SparkSession,
       queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
-      queryPlanInfo: SparkPlanInfo)(body: => T): T = {
+      queryPlanInfo: SparkPlanInfo, currentExecutionId: Option[Long] = None,
+      endTime: Long = 0)(body: => T): T = {
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
     if (oldExecutionId == null) {
-      val executionId = nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
-      sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
+      val (postNeeded, executionId) = currentExecutionId match {
+        case Some(exId) => (false, exId)
+        case None =>
+          val exId = nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
+          (true, exId)
+      }
       val r = try {
+        sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
         sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
           executionId, queryShortForm, queryLongForm, queryExecutionStr,
           queryPlanInfo, System.currentTimeMillis()))
@@ -578,7 +608,7 @@ object CachedDataFrame
           body
         } finally {
           sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionEnd(
-            executionId, System.currentTimeMillis()))
+            executionId, System.currentTimeMillis() + endTime))
         }
       } finally {
         sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, null)
