@@ -80,23 +80,6 @@ class TAQTest extends SnappyFunSuite {
       tradeSize, numDays, queryNumber = 3, numIters, doInit = false)
   }
 
-  test("SNAP-1787") {
-    val tableName = "complexTypeTable"
-    val arr1 = Array(Decimal("4.92"), Decimal("51.98"))
-    val arr2 = Array(4.92f, 51.98f)
-    val arr3 = Array(4921212121L, 5198121212L)
-    val arr4 = Array(true, false)
-    val arr5 = Array(4.92, 51.98)
-    val data = scala.collection.mutable.ArrayBuffer[ComplexTypeData]()
-    data +=  new ComplexTypeData(arr1, arr2, arr3, arr4, arr5)
-    val rdd = snc.sparkContext.parallelize(data, 8)
-    val dataDF = snc.createDataFrame(rdd)
-    snc.createTable(s"$tableName", "column", dataDF.schema, Map.empty[String, String])
-    dataDF.write.insertInto(s"$tableName")
-    assert(snc.sql(s"select * from $tableName").count() == 1)
-    snc.dropTable(s"$tableName", true)
-  }
-
   ignore("basic query performance with JDBC") {
     val numRuns = 1000
     val numIters = 1000
@@ -553,6 +536,3 @@ object TAQTest extends Logging with Assertions {
     benchmark.run()
   }
 }
-
-case class ComplexTypeData (arr1: Array[Decimal], arr2: Array[Float],
-  arr3: Array[Long], arr4: Array[Boolean], arr5: Array[Double])
