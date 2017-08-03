@@ -21,16 +21,17 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
+import org.scalatest.Assertions
+
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{Decimal, DecimalType, StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Logging, SparkConf, SparkContext}
-import org.scalatest.Assertions
 
 class TAQTest extends SnappyFunSuite {
 
