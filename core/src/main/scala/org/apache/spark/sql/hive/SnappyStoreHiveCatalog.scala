@@ -821,13 +821,16 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       newClassLoader
     })
 
-    if (callbacks == null || snappySession.sparkContext.isLocal) {
-      newClassLoader.getURLs.map(url =>
-        snappySession.sparkContext.addJar(url.getFile))
-    } else {
-      callbacks.setSessionDependencies(snappySession.sparkContext,
-        qualifiedName.unquotedString,
-        newClassLoader)
+    SnappyContext.getClusterMode(snappySession.sparkContext) match {
+      case SnappyEmbeddedMode(_, _) => {
+        callbacks.setSessionDependencies(snappySession.sparkContext,
+          qualifiedName.unquotedString,
+          newClassLoader)
+      }
+      case _ => {
+        newClassLoader.getURLs.map(url =>
+          snappySession.sparkContext.addJar(url.getFile))
+      }
     }
   }
 
