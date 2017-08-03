@@ -78,16 +78,12 @@ case class JDBCMutableRelation(
 
   protected final def dialect: JdbcDialect = connProperties.dialect
 
-  // create table in external store once upfront
-  var tableSchema: String = _
-
   import scala.collection.JavaConverters._
 
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
     new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
-  private[sql] lazy val resolvedName = ExternalStoreUtils.lookupName(table,
-    tableSchema)
+  private[sql] val resolvedName = table
 
   var tableExists: Boolean = _
 
@@ -109,19 +105,17 @@ case class JDBCMutableRelation(
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
-    var tableSchema: String = ""
       try {
       conn = connFactory()
       tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
 //        dialect match {
 //          case d: JdbcExtendedDialect => d.initializeTable(table,
 //            sqlContext.conf.caseSensitiveAnalysis, conn)
 //          case _ => // Do Nothing
 //        }
-        return tableSchema
+        return resolvedName
       }
 
       // We should not throw table already exists from here. This is expected
@@ -171,7 +165,7 @@ case class JDBCMutableRelation(
         conn.close()
       }
     }
-    tableSchema
+    resolvedName
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
