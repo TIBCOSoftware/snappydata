@@ -33,13 +33,7 @@ case class OrderData(ref: Int, description: String, amount: Long)
 
 class UserDefinedFunctionsDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
-
-  override def tearDown2(): Unit = {
-    val snSession = new SnappySession(sc)
-    super.tearDown2()
-    snSession.sessionCatalog.reset()
-  }
-
+  
   def testDriverHA(): Unit = {
     // Stop the lead node
     ClusterManagerTestBase.stopAny()
