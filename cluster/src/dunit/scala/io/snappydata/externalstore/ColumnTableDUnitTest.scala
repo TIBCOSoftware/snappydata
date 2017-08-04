@@ -681,6 +681,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.createExternalTable("TEST_EXTERNAL","csv",Map("path" -> tempPath,"header" -> "true"))
     val dataDF=snc.sql("select * from TEST_EXTERNAL")
     assert(dataDF.count==3)
+    snc.sql("drop table if exists TEST_EXTERNAL")
     FileUtils.deleteDirectory(new File(tempPath))
   }
 
