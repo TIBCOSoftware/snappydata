@@ -825,8 +825,9 @@ final class DefaultSource extends SchemaRelationProvider
     }
 
     var success = false
-    val tableName = SnappyStoreHiveCatalog.processTableIdentifier(table,
-      sqlContext.conf)
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
+    val qualifiedTableName = catalog.newQualifiedTableName(table)
+    val tableName = qualifiedTableName.toString
     val externalStore = new JDBCSourceAsColumnarStore(connProperties,
       partitions, tableName, schema)
 
@@ -863,9 +864,7 @@ final class DefaultSource extends SchemaRelationProvider
     try {
       relation.createTable(mode)
       if (!isRelationforSample) {
-        val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
-        catalog.registerDataSourceTable(
-          catalog.newQualifiedTableName(tableName), Some(relation.schema),
+        catalog.registerDataSourceTable(qualifiedTableName, Some(relation.schema),
           partitioningColumns.toArray,
           classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
           options, relation)
