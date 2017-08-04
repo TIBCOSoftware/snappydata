@@ -57,30 +57,8 @@ object SnappySessionFactory {
         SnappyUtils.getSnappyContextURLClassLoader(parent)
       }
     }
-}
 
-
-trait SnappySQLJob extends SparkJobBase {
-  type C = Any
-
-  final override def validate(sc: C, config: Config): SparkJobValidation = {
-    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
-    Thread.currentThread().setContextClassLoader(currentLoader)
-    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], cleanJobConfig(config)))
-  }
-
-  final override def runJob(sc: C, jobConfig: Config): Any = {
-    val snc = sc.asInstanceOf[SnappySession]
-    try {
-      runSnappyJob(snc, updateCredentials(snc, jobConfig))
-    }
-    finally {
-      SnappyUtils.removeJobJar(snc.sparkContext)
-    }
-  }
-
-  private def updateCredentials(snc: SnappySession, jobConfig: Config): Config = {
+  def updateCredentials(snc: SnappySession, jobConfig: Config): Config = {
     if (Misc.isSecurityEnabled) {
       try {
         // Pass job credentials to snappy session
@@ -98,13 +76,36 @@ trait SnappySQLJob extends SparkJobBase {
     }
   }
 
-  private def cleanJobConfig(c: Config): Config = {
+  def cleanJobConfig(c: Config): Config = {
     // TODO Remove snappydata properties path when available
     var sJobConfig = c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-      .Attribute.USERNAME_ATTR)
+        .Attribute.USERNAME_ATTR)
     sJobConfig = sJobConfig.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal
-      .gemfirexd.Attribute.PASSWORD_ATTR)
+        .gemfirexd.Attribute.PASSWORD_ATTR)
     sJobConfig
+  }
+}
+
+
+trait SnappySQLJob extends SparkJobBase {
+  type C = Any
+
+  final override def validate(sc: C, config: Config): SparkJobValidation = {
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
+    Thread.currentThread().setContextClassLoader(currentLoader)
+    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession], SnappySessionFactory
+        .cleanJobConfig(config)))
+  }
+
+  final override def runJob(sc: C, jobConfig: Config): Any = {
+    val snc = sc.asInstanceOf[SnappySession]
+    try {
+      runSnappyJob(snc, SnappySessionFactory.updateCredentials(snc, jobConfig))
+    }
+    finally {
+      SnappyUtils.removeJobJar(snc.sparkContext)
+    }
   }
 
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
