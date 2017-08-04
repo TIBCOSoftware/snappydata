@@ -470,11 +470,11 @@ class SplitClusterDUnitSecurityTest(s: String)
     user2Conn = getConn(jdbcUser2, true)
     user2Stmt = user2Conn.createStatement()
     assertFailure(() => {executeSQL(user2Stmt, sqls(0))}, sqls(0)) // select on embeddedColTab1
-    assertFailure(() => {snc.sql(sqls(0))}, sqls(0)) // select on embeddedColTab1
+    assertFailure(() => {snc.sql(sqls(0)).collect()}, sqls(0)) // select on embeddedColTab1
     executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
-    snc.sql(sqls(3)) // insert into embeddedRowTab1
+    snc.sql(sqls(3)).collect() // insert into embeddedRowTab1
     assertFailure(() => {executeSQL(user2Stmt, sqls(5))}, sqls(5)) // delete on embeddedRowTab1
-    assertFailure(() => {snc.sql(sqls(5))}, sqls(5)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(5)).collect()}, sqls(5)) // delete on embeddedRowTab1
   }
 
   /**
