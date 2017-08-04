@@ -58,7 +58,8 @@ public final class SnappySharedState extends SharedState {
    *  Create Snappy's SQL Listener instead of SQLListener
    */
   private static SQLListener createListenerAndUI(SparkContext sc) {
-    if (ExternalStoreUtils.getSQLListener().get() == null) {
+    SQLListener initListener = ExternalStoreUtils.getSQLListener().get();
+    if (initListener == null) {
       SnappySQLListener listener = new SnappySQLListener(sc.conf());
       if (ExternalStoreUtils.getSQLListener().compareAndSet(null, listener)) {
         sc.addSparkListener(listener);
@@ -67,8 +68,11 @@ public final class SnappySharedState extends SharedState {
           new SQLTab(listener, ui);
         }
       }
+      return ExternalStoreUtils.getSQLListener().get();
     }
-    return ExternalStoreUtils.getSQLListener().get();
+    else {
+      return initListener;
+    }
   }
 
   private SnappySharedState(SparkContext sparkContext) {

@@ -572,9 +572,9 @@ object CachedDataFrame
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
   def withNewExecutionId[T](sparkSession: SparkSession,
-    queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
-    queryPlanInfo: SparkPlanInfo, currentExecutionId: Option[Long] = None,
-    planProcessingTime: Long = 0)(body: => T): T = {
+      queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
+      queryPlanInfo: SparkPlanInfo, currentExecutionId: Option[Long] = None,
+      planProcessingTime: Long = 0)(body: => T): T = {
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
     if (oldExecutionId == null) {
