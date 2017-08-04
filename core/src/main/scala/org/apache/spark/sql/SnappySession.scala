@@ -1811,11 +1811,6 @@ object SnappySession extends Logging {
     val allBroadcastPlans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
-
-    // keep references as well
-    // filter unvisited literals. If the query is on a view for example the
-    // modified tpch query no 15, It even picks those literal which we don't want.
-    val allLiterals = session.getAllLiterals(key)
     val (cachedRDD, shuffleDeps, rddId, localCollect, executionId, executionTime) =
       executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
@@ -1823,7 +1818,7 @@ object SnappySession extends Logging {
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
         val (executionTime, executionId, childRDD) = planExecution(
-        df, session, sqlText, plan, allLiterals)({
+        df, session, sqlText, plan, Array.empty[LiteralValue])({
             if (withFallback ne null) withFallback.execute(plan.child)
             else plan.childRDD
           })
@@ -1835,7 +1830,7 @@ object SnappySession extends Logging {
         // (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
         val (executionTime, executionId, rdd) = planExecution(
-          df, session, sqlText, executedPlan, allLiterals)({
+          df, session, sqlText, executedPlan, Array.empty[LiteralValue])({
           executedPlan match {
             case plan: CollectLimitExec =>
               if (withFallback ne null) withFallback.execute(plan.child)
@@ -1866,6 +1861,11 @@ object SnappySession extends Logging {
     */
 
     logDebug(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
+
+    // keep references as well
+    // filter unvisited literals. If the query is on a view for example the
+    // modified tpch query no 15, It even picks those literal which we don't want.
+    val allLiterals = session.getAllLiterals(key)
 
     // This part is the defensive coding for all those cases where Tokenization
     // support is not smart enough to deal with cases where the execution plan
