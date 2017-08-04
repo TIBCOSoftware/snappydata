@@ -4,7 +4,7 @@ CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMe
 
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/nw_schema.inc;
 
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/replicatedRowExtn.inc; //change this as per table type
+INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/columnTableExtn.inc; //change this as per table type
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/startDualModeCluster.conf;
 
