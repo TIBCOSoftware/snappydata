@@ -344,7 +344,7 @@ final class DefaultSource extends MutableRelationProvider {
       options,
       sqlContext)
     try {
-      relation.tableSchema = relation.createTable(mode)
+      relation.createTable(mode)
 
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
