@@ -160,6 +160,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
 
   }
@@ -412,9 +413,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
       s"update $jdbcUser1.$embeddedRowTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
           s"col3 < 1.0",
-      s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0",
-      s"select count(*) from $jdbcUser1.$embeddedColTab1",
-      s"select count(*) from $jdbcUser1.$embeddedRowTab1"
+      s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
     )
 
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
@@ -444,7 +443,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       sqls.foreach(s => executeSQL(adminStmt, s))
     }
 
-    verifyGrantRevoke("select", List(sqls(0), sqls(1), sqls(6), sqls(7)))
+    verifyGrantRevoke("select", List(sqls(0), sqls(1)))
     verifyGrantRevoke("insert", List(sqls(2), sqls(3)))
     // No update on column tables
     verifyGrantRevoke("update", List(sqls(4)))
@@ -540,6 +539,44 @@ class SplitClusterDUnitSecurityTest(s: String)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartColTab1)}, smartColTab1)
     sns.dropTable(smartRowTab1, false)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
+  }
+
+  def testSnappyJob(): Unit = {
+    // Create config file with credentials
+    val jobConfigFile = s"$snappyProductDir/conf/job.config"
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    // Run snappy job with credentials in a config file
+    val job = s"$snappyProductDir/bin/snappy-job.sh submit --app-name CreatePartitionedRowTable " +
+        s"--class org.apache.spark.examples.snappydata.CreatePartitionedRowTable " +
+        s"--app-jar $snappyProductDir/examples/jars/quickstart.jar  " +
+        s"--passfile $jobConfigFile"
+    logInfo(s"Submitting job $job")
+    job !!
+
+    // Assert table partsupp, created within the job, exists
+    val table = "PARTSUPP"
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    Thread.sleep(2000)
+    logInfo(s"Checking for $table")
+    assert(snc.snappySession.catalog.tableExists(table), s"Table $table does not exist. SnappyJob" +
+        s" probably failed.")
+
+    // Drop table partsupp
+    logInfo(s"Dropping table $table")
+    snc.sql(s"drop table $table").collect()
+
+    // Submit the same job with invalid credentials
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
+    writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
+    logInfo(s"Re-submitting job $job with invalid credentials.")
+    job !!
+
+    // assert table does not exist
+    assert(!snc.snappySession.catalog.tableExists(table), s"Table $table exists.")
   }
 
   def _testUDFAndProcs(): Unit = {

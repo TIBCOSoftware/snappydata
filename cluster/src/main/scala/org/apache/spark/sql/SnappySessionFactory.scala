@@ -79,9 +79,9 @@ object SnappySessionFactory {
   def cleanJobConfig(c: Config): Config = {
     // TODO Remove snappydata properties path when available
     var sJobConfig = c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-        .Attribute.USERNAME_ATTR)
+      .Attribute.USERNAME_ATTR)
     sJobConfig = sJobConfig.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal
-        .gemfirexd.Attribute.PASSWORD_ATTR)
+      .gemfirexd.Attribute.PASSWORD_ATTR)
     sJobConfig
   }
 }
