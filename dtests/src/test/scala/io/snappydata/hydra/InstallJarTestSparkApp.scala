@@ -18,7 +18,7 @@ package io.snappydata.hydra
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import io.snappydata.hydra.installJar.TestUtils
+import io.snappydata.hydra.installJar.InstallJarTestUtils
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -47,7 +47,7 @@ object InstallJarTestSparkApp {
       pw.flush()
       val numServers: Int = args(1).toInt
       val expectedException: Boolean = args(2).toBoolean
-      TestUtils.verify(snc, args(0), pw, numServers, expectedException)
+      InstallJarTestUtils.verify(snc, args(0), pw, numServers, expectedException)
       pw.println("****** DynamicJarLoadingJob finished ******")
     } match {
       case Success(v) => pw.close()

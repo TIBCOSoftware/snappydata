@@ -40,7 +40,6 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 
 final class SparkShellRDDHelper {
@@ -80,14 +79,12 @@ final class SparkShellRDDHelper {
   def executeQuery(conn: Connection, tableName: String,
       split: Partition, query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
-    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-
     val partition = split.asInstanceOf[ExecutorMultiBucketLocalShellPartition]
     val statement = conn.createStatement()
     if (!useLocatorURL) {
       val buckets = partition.buckets.mkString(",")
-      statement.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
-          s"'$resolvedName', '$buckets', $relDestroyVersion)")
+      statement.execute(
+        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$tableName', '$buckets', $relDestroyVersion)")
       // TODO: currently clientStmt.setLocalExecutionBucketIds is not taking effect probably
       // due to a bug. Need to be looked into before enabling the code below.
 
@@ -167,9 +164,8 @@ object SparkShellRDDHelper {
   var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
   var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
 
-  def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
-    val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
-    val bucketToServerList = getBucketToServerMapping(resolvedName)
+  def getPartitions(tableName: String): Array[Partition] = {
+    val bucketToServerList = getBucketToServerMapping(tableName)
     getPartitions(bucketToServerList)
   }
 

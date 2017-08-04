@@ -21,7 +21,7 @@ import org.apache.spark.sql.SnappyContext;
 
 import java.io.PrintWriter;
 
-public class TestUtils {
+public class InstallJarTestUtils {
 
     public static void verify(SnappyContext snc, String version, PrintWriter pw, int numServers, boolean expectedException) {
         try {

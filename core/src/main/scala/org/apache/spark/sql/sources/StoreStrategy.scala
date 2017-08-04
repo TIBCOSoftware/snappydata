@@ -35,10 +35,13 @@ object StoreStrategy extends Strategy {
       val userSpecifiedSchema = SparkSession.getActiveSession.get
         .asInstanceOf[SnappySession].normalizeSchema(tableDesc.schema)
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
+
+      val optionsWithPath: Map[String,String] = if(tableDesc.storage.locationUri.isDefined)
+        options +("path"-> tableDesc.storage.locationUri.get) else options
       val cmd =
         CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
           None, SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
-          mode != SaveMode.ErrorIfExists, options, isBuiltIn = false)
+          mode != SaveMode.ErrorIfExists, optionsWithPath, isBuiltIn = false)
       ExecutedCommandExec(cmd) :: Nil
 
     case CreateTable(tableDesc, mode, Some(query)) =>
