@@ -64,6 +64,14 @@ class TokenizationTest
     snc.dropTable(s"$colTableName", ifExists = true)
   }
 
+  test("sql range operator") {
+    snc.sql(s"create table target (id int not null, symbol string not null) using column options()")
+    var r = snc.sql(s"insert into target (select id, concat('sym', cast((id) as STRING)) as" +
+        s" sym from range(0, 100))").collect()
+    r = snc.sql(s"select count(*) from target").collect()
+    assert(r.head.get(0) == 100)
+  }
+
   test("like queries") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
     val numRows = 100

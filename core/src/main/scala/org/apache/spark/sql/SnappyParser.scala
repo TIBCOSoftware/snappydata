@@ -499,6 +499,12 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
+    identifier ~ ws ~ '(' ~ ws ~ (expression * commaSep) ~ ws ~ ')' ~>
+        ((fnname: String, e: Any) =>
+          e match {
+            case ve: Vector[Expression] => UnresolvedTableValuedFunction(fnname.toLowerCase(), ve)
+            case _ => UnresolvedTableValuedFunction(fnname, Seq.empty)
+          }) |
     tableIdentifier ~ streamWindowOptions.? ~
         (AS ~ identifier | strictIdentifier).? ~>
         ((tableIdent: TableIdentifier,
@@ -527,13 +533,7 @@ class SnappyParser(session: SnappySession)
               s"${QueryHint.Index} cannot be applied to derived table $alias")
             WindowLogicalPlan(win._1, win._2,
               SubqueryAlias(alias, child, None))
-        }) |
-    identifier ~ ws ~ '(' ~ ws ~ (expression * commaSep) ~ ws ~ ')' ~>
-        ((fnname: String, e: Any) =>
-        e.asInstanceOf[Option[Seq[Expression]]] match {
-        case Some(seq) => UnresolvedTableValuedFunction(fnname, seq)
-        case None => UnresolvedTableValuedFunction(fnname, Seq.empty)
-      })
+        })
     }
 
   /*
