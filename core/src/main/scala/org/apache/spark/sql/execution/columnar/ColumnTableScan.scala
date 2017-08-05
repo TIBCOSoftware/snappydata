@@ -181,7 +181,21 @@ private[sql] final case class ColumnTableScan(
     // This code is picked up from InMemoryTableScanExec
     val columnBatchStatFilters: Seq[Expression] = {
       if (relation.isInstanceOf[BaseColumnFormatRelation]) {
-        allFilters.flatMap { p =>
+        // first group the filters by the expression types (keeping the original operator order)
+        // and then order each group on underlying reference names to give a consistent
+        // ordering (else two different runs can generate different code)
+        val orderedFilters = new ArrayBuffer[(Class[_], ArrayBuffer[Expression])](2)
+        allFilters.foreach { f =>
+          orderedFilters.collectFirst {
+            case p if p._1 == f.getClass => p._2
+          }.getOrElse {
+            val newBuffer = new ArrayBuffer[Expression](2)
+            orderedFilters += f.getClass -> newBuffer
+            newBuffer
+          } += f
+        }
+        orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
+            .sorted.mkString(","))).flatMap { p =>
           val filter = buildFilter.lift(p)
           val boundFilter = filter.map(BindReferences.bindReference(
             _, columnBatchStats, allowFailures = true))
