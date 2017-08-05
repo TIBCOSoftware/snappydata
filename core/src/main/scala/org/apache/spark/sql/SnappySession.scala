@@ -1778,8 +1778,17 @@ object SnappySession extends Logging {
 
     val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
-        df.queryExecution.toRdd // evaluate the plan upfront
-        throw new EntryExistsException("uncached plan", df) // don't cache
+        // create new LogicalRDD plan so that plan does not get re-executed
+        // (e.g. just toRdd is not enough since further operators like show will pass
+        //   around the LogicalPlan and not the executedPlan; it works for plans using
+        //   ExecutedCommandExec though because Spark layer has special check for it in
+        //   Dataset hasSideEffects)
+        // TODO: plan caching for point inserts/updates/deletes
+        val newPlan = LogicalRDD(df.queryExecution.analyzed.output,
+          df.queryExecution.toRdd)(session)
+        val cdf = new CachedDataFrame(session, session.sessionState.executePlan(newPlan),
+          df.exprEnc, sqlText, null, Array.empty, -1, false)
+        throw new EntryExistsException("uncached plan", cdf) // don't cache
       case plan: CollectAggregateExec =>
         val childRDD = if (withFallback ne null) withFallback.execute(plan.child)
         else plan.childRDD
@@ -1796,9 +1805,6 @@ object SnappySession extends Logging {
           case _ => df.queryExecution.executedPlan.execute()
         }
 
-        // TODO: Skipping the adding of profile listener in case of
-        // ThinClientConnectorMode, confirm with Sumedh whether something
-        // more needs to be done
         SnappyContext.getClusterMode(session.sparkContext) match {
           case ThinClientConnectorMode(_, _) =>
           case _ =>
@@ -1886,10 +1892,10 @@ object SnappySession extends Logging {
         var df: DataFrame = null
         try {
           df = session.executeSQL(key.sqlText)
+          evaluatePlan(df, session, key.sqlText, key)
         } finally {
           session.currentKey = null
         }
-        evaluatePlan(df, session, key.sqlText, key)
       }
     }
     val cacheSize = if (SnappyContext.globalSparkContext != null) {
@@ -1911,18 +1917,18 @@ object SnappySession extends Logging {
     }
   }
 
-  class CachedKey(
+  final class CachedKey(
       val session: SnappySession, val lp: LogicalPlan,
       val sqlText: String, val hintHashcode: Int, val pls: Array[ParamLiteral]) {
 
-    override def hashCode(): Int = {
+    override lazy val hashCode: Int = {
       (session, lp, hintHashcode).hashCode()
     }
 
     override def equals(obj: Any): Boolean = {
       obj match {
         case x: CachedKey =>
-          (x.session, x.lp, x.hintHashcode).equals(session, lp, hintHashcode)
+          x.hintHashcode == hintHashcode && x.session == session && x.lp == lp
         case _ => false
       }
     }
@@ -2006,20 +2012,14 @@ object SnappySession extends Logging {
       handleCachedDataFrame(cachedDF, key, lp, currentWrappedConstants, session, sqlText)
     } catch {
       case e: UncheckedExecutionException => e.getCause match {
-        case ee: EntryExistsException => ee.getOldValue match {
-          case cdf: CachedDataFrame =>
-            handleCachedDataFrame(cdf, key, lp, currentWrappedConstants, session, sqlText)
-          case _ => new CachedDataFrame(ee.getOldValue.asInstanceOf[DataFrame],
-            sqlText, null, Array.empty, -1, false)
-        }
+        case ee: EntryExistsException =>
+          handleCachedDataFrame(ee.getOldValue.asInstanceOf[CachedDataFrame],
+            key, lp, currentWrappedConstants, session, sqlText)
         case t => throw t
       }
-      case ee: EntryExistsException => ee.getOldValue match {
-        case cdf: CachedDataFrame =>
-          handleCachedDataFrame(cdf, key, lp, currentWrappedConstants, session, sqlText)
-        case _ => new CachedDataFrame(ee.getOldValue.asInstanceOf[DataFrame],
-          sqlText, null, Array.empty, -1, false)
-      }
+      case ee: EntryExistsException =>
+        handleCachedDataFrame(ee.getOldValue.asInstanceOf[CachedDataFrame],
+          key, lp, currentWrappedConstants, session, sqlText)
     }
   }
 

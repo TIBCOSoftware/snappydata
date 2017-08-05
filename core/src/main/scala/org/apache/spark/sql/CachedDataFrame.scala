@@ -54,13 +54,24 @@ import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
 
-class CachedDataFrame(df: Dataset[Row], var queryString: String,
+class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
+    encoder: Encoder[Row], var queryString: String,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
     val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty,
     val queryHints: Map[String, String] = Map.empty)
-    extends Dataset[Row](df.sparkSession, df.queryExecution, df.exprEnc) with Logging {
+    extends Dataset[Row](session, queryExecution, encoder) with Logging {
+
+  def this(ds: Dataset[Row], queryString: String,
+      cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
+      rddId: Int, hasLocalCollectProcessing: Boolean,
+      allLiterals: Array[LiteralValue],
+      allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]],
+      queryHints: Map[String, String]) = {
+    this(ds.sparkSession, ds.queryExecution, ds.exprEnc, queryString, cachedRDD,
+      shuffleDependencies, rddId, hasLocalCollectProcessing, allLiterals, allbcplans, queryHints)
+  }
 
   /**
    * Return true if [[collectWithHandler]] supports partition-wise separate
@@ -125,14 +136,14 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     clearPartitions(children)
   }
 
-  private def setPoolForExecution : Unit = {
+  private def setPoolForExecution(): Unit = {
     var pool = sparkSession.asInstanceOf[SnappySession].
       sessionState.conf.activeSchedulerPool
 
     // Check if it is pruned query, execute it automatically on the low latency pool
     if ((cachedRDD ne null) && cachedRDD.getNumPartitions <= 2 /* some small number */ &&
       shuffleDependencies.length == 0 && pool == "default") {
-      if (sparkSession.sparkContext.getAllPools.exists(_.name.equals("lowlatency"))) {
+      if (sparkSession.sparkContext.getAllPools.exists(_.name == "lowlatency")) {
         pool = "lowlatency"
       }
     }
@@ -145,10 +156,10 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
    */
   private def withCallback[U](name: String)(action: DataFrame => U) = {
     try {
-      setPoolForExecution
+      setPoolForExecution()
       // This is needed for cases when collect is called twice on the same DF.
       // The getPlan won't be called and hence the wait has to be done here.
-      waitForLastShuffleCleanup
+      waitForLastShuffleCleanup()
       queryExecution.executedPlan.foreach { plan =>
         plan.resetMetrics()
       }
@@ -267,7 +278,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
     }
 
     def execute(): Iterator[R] = withNewExecutionId {
-      session.addContextObject(SnappySession.ExecutionKey, () => df.queryExecution)
+      session.addContextObject(SnappySession.ExecutionKey, () => queryExecution)
       def executeCollect(): Array[InternalRow] = {
         if (withFallback ne null) withFallback.executeCollect()
         else executedPlan.executeCollect()
@@ -317,7 +328,7 @@ class CachedDataFrame(df: Dataset[Row], var queryString: String,
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
             val rdd = if (cachedRDD ne null) cachedRDD
-            else df.queryExecution.executedPlan.execute()
+            else queryExecution.executedPlan.execute()
             val numPartitions = rdd.getNumPartitions
             val results = new Array[R](numPartitions)
             sc.runJob(rdd, processPartition, 0 until numPartitions,
@@ -469,7 +480,7 @@ object CachedDataFrame
           // TODO Remove the 4 times check once SNAP-1759 is fixed
           val required = 4L * memSize
           val granted = memoryConsumer.acquireMemory(4L * memSize)
-          context.addTaskCompletionListener(context => {
+          context.addTaskCompletionListener(_ => {
             memoryConsumer.freeMemory(granted)
           })
           if (granted < required) {
@@ -485,7 +496,7 @@ object CachedDataFrame
         new PartitionResult(Array.empty, 0)
       }
     } catch {
-      case oom: OutOfMemoryError if (oom.getMessage.contains("Direct buffer")) =>
+      case oom: OutOfMemoryError if oom.getMessage.contains("Direct buffer") =>
         throw new LowMemoryException(s"Could not allocate Direct buffer for" +
             s" result data. Please check -XX:MaxDirectMemorySize while starting the server",
           java.util.Collections.emptySet())

@@ -600,7 +600,7 @@ private[sql] final case class ColumnTableScan(
 
     if (deletedCheck.isEmpty) {
       // no columns in a count(.) query
-      deletedCountCheck = s" - $colInput.getDeletedRowCount();"
+      deletedCountCheck = s" - $colInput.getDeletedRowCount()"
     }
 
     if (isWideSchema) {
@@ -645,7 +645,7 @@ private[sql] final case class ColumnTableScan(
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
         UnsafeRow $unsafeRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
+        $numBatchRows = $unsafeRow.getInt($countIndexInSchema)$deletedCountCheck;
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -751,7 +751,7 @@ private[sql] final case class ColumnTableScan(
        |    $bufferInitCodeStr
        |    $assignBatchId
        |    $batchConsume
-       |    final int $numRows = $numBatchRows$deletedCountCheck;
+       |    final int $numRows = $numBatchRows;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      $assignOrdinalId
