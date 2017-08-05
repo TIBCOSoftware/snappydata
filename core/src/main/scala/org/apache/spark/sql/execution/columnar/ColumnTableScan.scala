@@ -929,7 +929,9 @@ private[sql] final case class ColumnTableScan(
                 s": $decoder.readUTF8String($buffer, $cursorVar));\n"
         assignCode = stringAssignCode + nullCheckAddon
 
-        colAssign = s"$dictionaryAssignCode\n$col = $assignCode;"
+        // colAssign = s"$dictionaryAssignCode\n$col = $assignCode;"
+        bufferInit = ""
+        dictionary = ""
         "UTF8String"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         colAssign = s"$col = $decoder.readLongDecimal($buffer, ${d.precision}, " +
