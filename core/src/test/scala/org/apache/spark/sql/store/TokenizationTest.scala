@@ -37,7 +37,7 @@ class TokenizationTest
         with BeforeAndAfter
         with BeforeAndAfterAll {
 
-  val table  = "my_table"
+  val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
 

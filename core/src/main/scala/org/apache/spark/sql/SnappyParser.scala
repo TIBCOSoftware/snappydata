@@ -527,8 +527,14 @@ class SnappyParser(session: SnappySession)
               s"${QueryHint.Index} cannot be applied to derived table $alias")
             WindowLogicalPlan(win._1, win._2,
               SubqueryAlias(alias, child, None))
-        })
-  }
+        }) |
+    identifier ~ ws ~ '(' ~ ws ~ (expression * commaSep) ~ ws ~ ')' ~>
+        ((fnname: String, e: Any) =>
+        e.asInstanceOf[Option[Seq[Expression]]] match {
+        case Some(seq) => UnresolvedTableValuedFunction(fnname, seq)
+        case None => UnresolvedTableValuedFunction(fnname, Seq.empty)
+      })
+    }
 
   /*
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
