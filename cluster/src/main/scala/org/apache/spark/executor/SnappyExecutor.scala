@@ -116,10 +116,6 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
 
 
   override def loadClass(name: String, resolve: Boolean): Class[_] = {
-    if (name.contains("StreamMessageRegionObject")) {
-      Thread.dumpStack()
-      Misc.getCacheLogWriter.info(s"StreamMessageRegionObject classloader is  ${this}")
-    }
     loadJar(() => super.loadClass(name, resolve)).
         getOrElse(loadJar(() => Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name),
           throwException = true).get)
