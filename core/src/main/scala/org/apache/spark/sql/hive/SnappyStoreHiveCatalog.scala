@@ -960,7 +960,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   /**
    * Drop all existing databases (except "default"), tables, partitions and functions,
    * and set the current database to "default".
-   *
+   * This method will only remove tables from hive catalog.Don't use this method if you want to
+   * delete physical tables
    * This is mainly used for tests.
    */
   override def reset(): Unit = synchronized {
@@ -982,6 +983,21 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       }
     }
     tempTables.clear()
+    functionRegistry.clear()
+    // restore built-in functions
+    FunctionRegistry.builtin.listFunction().foreach { f =>
+      val expressionInfo = FunctionRegistry.builtin.lookupFunction(f)
+      val functionBuilder = FunctionRegistry.builtin.lookupFunctionBuilder(f)
+      require(expressionInfo.isDefined, s"built-in function '$f' is missing expression info")
+      require(functionBuilder.isDefined, s"built-in function '$f' is missing function builder")
+      functionRegistry.registerFunction(f, expressionInfo.get, functionBuilder.get)
+    }
+  }
+
+  /**
+   * Test only method
+   */
+  def destroyAndRegisterBuiltInFunctions(): Unit = {
     functionRegistry.clear()
     // restore built-in functions
     FunctionRegistry.builtin.listFunction().foreach { f =>

@@ -25,6 +25,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
@@ -89,7 +90,8 @@ private[sql] final case class RowTableScan(
     val compactRowClass = classOf[AbstractCompactExecRow].getName
     val baseSchemaOutput = baseSchema.toAttributes
     val columnsRowInput = output.map(a => genCodeCompactRowColumn(ctx,
-      row, holder, fieldIndex(baseSchemaOutput, a.name), a.dataType, a.nullable))
+      row, holder, Utils.fieldIndex(baseSchemaOutput, a.name, caseSensitive),
+      a.dataType, a.nullable))
     s"""
        |final scala.collection.Iterator $iterator = $input;
        |final $holderClass $holder = new $holderClass();

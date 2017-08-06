@@ -29,9 +29,10 @@ import io.snappydata.Property
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
+import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, DynamicFoldableExpression, Literal, ParamLiteral, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
@@ -75,7 +76,7 @@ class SnappySessionState(snappySession: SnappySession)
           new FindDataSourceTable(snappySession) ::
           DataSourceAnalysis(conf) ::
           ResolveRelationsExtended ::
-          AnalyzeChildQuery(snappySession) ::
+          AnalyzeMutableOperations(snappySession, this) ::
           ResolveQueryHints(snappySession) ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
@@ -167,7 +168,7 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !JoinStrategy.isLocalJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
-        case _: InsertIntoTable | _: PutIntoTable =>
+        case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
         case PhysicalOperation(_, _, LogicalRelation(
@@ -209,10 +210,113 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeChildQuery(sparkSession: SparkSession) extends Rule[LogicalPlan] {
+  case class AnalyzeMutableOperations(sparkSession: SparkSession,
+      analyzer: Analyzer) extends Rule[LogicalPlan] {
+
+    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
+        plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
+      var tableName = ""
+      val keyColumns = table.collectFirst {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+          val ks = mutable.getKeyColumns
+          if (ks.isEmpty) {
+            val currentKey = snappySession.currentKey
+            // if this is a row table, then fallback to direct execution
+            mutable match {
+              case _: UpdatableRelation if currentKey ne null =>
+                return (Seq.empty, DMLExternalTable(catalog.newQualifiedTableName(
+                  mutable.table), lr, currentKey.sqlText), lr)
+              case _ =>
+                throw new AnalysisException(
+                  s"Empty key columns for update/delete on $mutable")
+            }
+          }
+          tableName = mutable.table
+          ks
+      }.getOrElse(throw new AnalysisException(
+        s"Update/Delete requires a MutableRelation but got $table"))
+      // resolve key columns right away
+      var mutablePlan: Option[LogicalRelation] = None
+      val newChild = child.transformDown {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _)
+          if mutable.table.equalsIgnoreCase(tableName) =>
+          mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
+          mutablePlan.get
+      }
+      mutablePlan match {
+        case Some(sourcePlan) =>
+          val keyAttrs = keyColumns.map { name =>
+            analysis.withPosition(sourcePlan) {
+              newChild.resolveChildren(
+                name.split('.'), analyzer.resolver).getOrElse(
+                throw new AnalysisException(s"Could not resolve key column $name"))
+            }
+          }
+          (keyAttrs, newChild, sourcePlan)
+        case _ => throw new AnalysisException(
+          s"Could not find any scan from the table '$tableName' to be updated in $plan")
+      }
+    }
+
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
+
+      case u@Update(table, child, keyColumns, updateCols, updateExprs)
+        if keyColumns.isEmpty && u.resolved && child.resolved =>
+        // add the key columns to the plan
+        val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)
+        // if this is a row table with no PK, then fallback to direct execution
+        if (keyAttrs.isEmpty) newChild
+        else {
+          // check that partitioning or key columns should not be updated
+          val nonUpdatableColumns = (relation.relation.asInstanceOf[MutableRelation]
+              .partitionColumns.map(Utils.toUpperCase) ++
+              keyAttrs.map(k => Utils.toUpperCase(k.name))).toSet
+          // resolve the columns being updated and cast the expressions if required
+          val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
+            val attr = analysis.withPosition(relation) {
+              newChild.resolveChildren(
+                c.name.split('.'), analyzer.resolver).getOrElse(
+                throw new AnalysisException(s"Could not resolve update column ${c.name}"))
+            }
+            val colName = Utils.toUpperCase(c.name)
+            if (nonUpdatableColumns.contains(colName)) {
+              throw new AnalysisException("Cannot update partitioning/key column " +
+                  s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
+            }
+            // cast the update expressions if required
+            val newExpr = if (attr.dataType.sameType(expr.dataType)) {
+              expr
+            } else {
+              // avoid unnecessary copy+cast when inserting DECIMAL types
+              // into column table
+              expr.dataType match {
+                case _: DecimalType
+                  if attr.dataType.isInstanceOf[DecimalType] => expr
+                case _ => Alias(Cast(expr, attr.dataType), attr.name)()
+              }
+            }
+            (attr, newExpr)
+          }.unzip
+          // collect all references and project on them to explicitly eliminate
+          // any extra columns
+          val allReferences = newChild.references ++
+              AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
+          u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
+            keyColumns = keyAttrs.map(_.toAttribute),
+            updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
+        }
+
+      case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
+        // add and project only the key columns
+        val (keyAttrs, newChild, _) = getKeyAttributes(table, child, d)
+        // if this is a row table with no PK, then fallback to direct execution
+        if (keyAttrs.isEmpty) newChild
+        else {
+          d.copy(child = Project(keyAttrs, newChild),
+            keyColumns = keyAttrs.map(_.toAttribute))
+        }
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {

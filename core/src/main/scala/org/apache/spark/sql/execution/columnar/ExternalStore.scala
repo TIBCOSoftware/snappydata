@@ -16,23 +16,37 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.nio.ByteBuffer
 import java.sql.Connection
 
 import scala.reflect.ClassTag
 
-import org.apache.spark.Logging
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.unsafe.types.UTF8String
 
-trait ExternalStore extends Serializable with Logging {
+trait ExternalStore extends Serializable {
 
   final val columnPrefix = "COL_"
 
-  def storeColumnBatch (tableName: String, batch: ColumnBatch,
+  def tableName: String
+
+  def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Option[String], maxDeltaRows: Int)
       (implicit c: Option[Connection] = None): Unit
+
+  def storeColumnBatch(tableName: String, batch: ColumnBatch,
+      partitionId: Int, batchId: UTF8String, maxDeltaRows: Int): Unit = {
+    storeColumnBatch(tableName, batch, partitionId,
+      if (batchId ne null) Some(batchId.toString) else None, maxDeltaRows)
+  }
+
+  def storeDelete(tableName: String, buffer: ByteBuffer,
+      statsData: Array[Byte], partitionId: Int, batchId: String): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]
@@ -44,8 +58,8 @@ trait ExternalStore extends Serializable with Logging {
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String, closeOnSuccessOrFailure: Boolean = true, onExecutor: Boolean = false)
-      (f: Connection => T)
+  def tryExecute[T: ClassTag](tableName: String, closeOnSuccessOrFailure: Boolean = true,
+      onExecutor: Boolean = false)(f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
     var success = false
     val conn = c.getOrElse(getConnection(tableName, onExecutor))
@@ -54,11 +68,9 @@ trait ExternalStore extends Serializable with Logging {
       success = true
       ret
     } finally {
-      if (closeOnSuccessOrFailure) {
-        if(success)
-          conn.commit()
-        else
-          conn.rollback()
+      if (closeOnSuccessOrFailure && !conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
+        if (success) conn.commit()
+        else conn.rollback()
         conn.close()
       }
     }
@@ -78,14 +90,15 @@ trait ConnectedExternalStore extends ExternalStore {
 
   def commitAndClose(isSuccess: Boolean): Unit = {
     // ideally shouldn't check for isClosed.it means some bug!
-    if (!connectedInstance.isClosed) {
+    val conn = connectedInstance
+    if (!conn.isInstanceOf[EmbedConnection] && !conn.isClosed) {
       if (isSuccess) {
-        connectedInstance.commit()
+        conn.commit()
       } else {
-        connectedInstance.rollback()
+        conn.rollback()
       }
+      conn.close()
     }
-    connectedInstance.close()
   }
 
   override def tryExecute[T: ClassTag](tableName: String,

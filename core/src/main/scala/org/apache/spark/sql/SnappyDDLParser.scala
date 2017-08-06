@@ -20,7 +20,12 @@ package org.apache.spark.sql
 
 import java.io.File
 
+import scala.util.Try
+
 import io.snappydata.Constant
+import org.parboiled2._
+import shapeless.{::, HNil}
+
 import org.apache.spark.sql.SnappyParserConsts.{falseFn, trueFn}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -37,10 +42,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import org.parboiled2._
-import shapeless.{::, HNil}
-
-import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
     extends SnappyBaseParser(session) {
@@ -98,16 +99,21 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
 
   // non-reserved keywords
+  final def ADD: Rule0 = rule { keyword(Consts.ADD) }
+  final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
+  final def FIRST: Rule0 = rule { keyword(Consts.FIRST) }
+  final def FN: Rule0 = rule { keyword(Consts.FN) }
   final def FULL: Rule0 = rule { keyword(Consts.FULL) }
   final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
   final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
@@ -117,15 +123,18 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
   final def INIT: Rule0 = rule { keyword(Consts.INIT) }
   final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
+  final def LAST: Rule0 = rule { keyword(Consts.LAST) }
   final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
+  final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
   final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
   final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
+  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
@@ -139,11 +148,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
-  final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
-  final def FN: Rule0 = rule { keyword(Consts.FN) }
-  final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
-  final def ADD: Rule0 = rule { keyword(Consts.ADD) }
-  final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
+  final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -352,14 +357,14 @@ abstract class SnappyDDLParser(session: SnappySession)
       resourceType match {
         case "jar" =>
           FunctionResource(FunctionResourceType.fromString(resourceType), path)
-        case other =>
+        case _ =>
           throw Utils.analysisException(s"CREATE FUNCTION with resource type '$resourceType'")
       }
     }
   }
 
-  def checkExists(resource: FunctionResource) = {
-    if(!new File(resource.uri).exists()){
+  def checkExists(resource: FunctionResource): Unit = {
+    if (!new File(resource.uri).exists()) {
       throw new AnalysisException(s"No file named ${resource.uri} exists")
     }
   }
@@ -381,8 +386,8 @@ abstract class SnappyDDLParser(session: SnappySession)
 
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
-          funcResources.foreach(checkExists(_))
-          val classNameWithType  = className + "__"+ t.catalogString
+          funcResources.foreach(checkExists)
+          val classNameWithType = className + "__" + t.catalogString
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,
@@ -402,14 +407,14 @@ abstract class SnappyDDLParser(session: SnappySession)
    * }}}
    */
   protected def dropFunction: Rule1[LogicalPlan] = rule {
-    DROP ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ (IF ~ EXISTS ~> trueFn).? ~ functionIdentifier ~>
-        ((te: Any, ifExists: Any, functionIdent: FunctionIdentifier) =>  DropFunctionCommand(
+    DROP ~ optional(TEMPORARY ~> falseFn) ~ FUNCTION ~ (IF ~ EXISTS ~> trueFn).? ~
+        functionIdentifier ~>
+        ((te: Any, ifExists: Any, functionIdent: FunctionIdentifier) => DropFunctionCommand(
           functionIdent.database,
           functionIdent.funcName,
           ifExists = ifExists.asInstanceOf[Option[Boolean]].isDefined,
           isTemp = te.asInstanceOf[Option[Boolean]].isDefined))
   }
-
 
   protected def streamContext: Rule1[LogicalPlan] = rule {
     STREAMING ~ (
@@ -802,7 +807,7 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
       case 0 =>
         val ssc = SnappyStreamingContext.getInstance()
         ssc match {
-          case Some(x) => // TODO .We should create a named Streaming
+          case Some(_) => // TODO .We should create a named Streaming
           // Context and check if the configurations match
           case None => SnappyStreamingContext.getActiveOrCreate(creatingFunc)
         }

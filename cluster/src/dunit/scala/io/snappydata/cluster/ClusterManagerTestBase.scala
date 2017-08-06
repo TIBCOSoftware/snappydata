@@ -160,6 +160,7 @@ abstract class ClusterManagerTestBase(s: String)
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
     }
+    
     bootProps.clear()
   }
 
@@ -254,6 +255,7 @@ object ClusterManagerTestBase extends Logging {
     val snc = SnappyContext()
     if (snc != null) {
       TestUtils.dropAllTables(snc)
+      TestUtils.dropAllFunctions(snc)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
