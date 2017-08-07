@@ -171,20 +171,19 @@ object ExternalStoreUtils {
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
-      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
-          "skip-constraint-checks=true"
+      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+
       case Some(sc) =>
         SnappyContext.getClusterMode(sc) match {
           case SnappyEmbeddedMode(_, _) =>
             // Already connected to SnappyData in embedded mode.
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0;" +
-                "skip-constraint-checks=true"
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
           case ThinClientConnectorMode(_, url) =>
-            url + ";route-query=false;skip-constraint-checks=true"
+            url + ";route-query=false"
           case ExternalEmbeddedMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;skip-constraint-checks=true;" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
           case LocalMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";skip-constraint-checks=true;" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";" + url
           case ExternalClusterMode(_, url) =>
             throw new AnalysisException("Option 'url' not specified for cluster " +
                 url)
@@ -194,6 +193,7 @@ object ExternalStoreUtils {
 
   def isLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
+
       case LocalMode(_, _) => true
       case _ => false
     }
@@ -257,7 +257,6 @@ object ExternalStoreUtils {
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
-        connProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
