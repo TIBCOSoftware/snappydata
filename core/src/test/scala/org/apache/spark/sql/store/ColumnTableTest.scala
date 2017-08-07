@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 import java.sql.{DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
+import org.apache.commons.io.FileUtils
 
 import scala.util.{Failure, Success, Try}
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
@@ -1140,6 +1141,26 @@ class ColumnTableTest
     assert(rows(0) =="{\"NAME\":\"Yin\",\"CITY\":\"Columbus\",\"STATE\":\"Ohio\",\"DISTRICT\":\"Pune\"}")
     assert(rows(1) == "{\"NAME\":\"Michael\",\"STATE\":\"California\",\"LANE\":\"15\"}")
 
+  }
+
+  test("Test for SNAP-1878 create external table using api") {
+
+
+    snc.sql(s"create table t1 (c1 integer,c2 string)")
+    snc.sql(s"insert into t1 values(1,'test1')")
+    snc.sql(s"insert into t1 values(2,'test2')")
+    snc.sql(s"insert into t1 values(3,'test3')")
+    val df = snc.sql("select * from t1")
+    df.show
+    val tempPath = "/tmp/" + System.currentTimeMillis()
+
+    assert(df.count() == 3)
+    df.write.option("header", "true").csv(tempPath)
+    snc.createExternalTable("TEST_EXTERNAL", "csv", Map("path" -> tempPath, "header" -> "true"))
+    val dataDF = snc.sql("select * from TEST_EXTERNAL")
+    assert(dataDF.count == 3)
+    snc.sql("drop table if exists TEST_EXTERNAL")
+    FileUtils.deleteDirectory(new java.io.File(tempPath))
   }
 
 }
