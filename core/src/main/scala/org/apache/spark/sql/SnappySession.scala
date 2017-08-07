@@ -36,7 +36,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, functions => snappydataFunctions}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -57,6 +56,7 @@ import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.joins.BroadcastHashJoinExec
+import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -1746,6 +1746,42 @@ object SnappySession extends Logging {
     res.toSet[ParamLiteral].toArray.sortBy(_.pos)
   }
 
+  /**
+   * Snappy's execution happens in two phases. First phase the plan is executed
+   * to create a rdd which is then used to create a CachedDataFrame.
+   * In second phase, the CachedDataFrame is then used for further actions.
+   * For accumulating the metrics for first phase,
+   * SparkListenerSQLPlanExecutionStart is fired. This keeps the current
+   * executionID in _executionIdToData but does not add it to the active
+   * executions. This ensures that query is not shown in the UI but the
+   * new jobs that are run while the plan is being executed are tracked
+   * against this executionID. In the second phase, when the query is
+   * actually executed, SparkListenerSQLPlanExecutionStart adds the execution
+   * data to the active executions. SparkListenerSQLPlanExecutionEnd is
+   * then sent with the accumulated time of both the phases.
+   */
+  private def planExecution(df: DataFrame, session: SnappySession, sqlText: String,
+    executedPlan: SparkPlan, allLiterals: Array[LiteralValue])
+    (f: => RDD[InternalRow]): (Long, Long, RDD[InternalRow]) = {
+    // Right now the CachedDataFrame is not getting used across SnappySessions
+    val executionId = CachedDataFrame.nextExecutionIdMethod.
+      invoke(SQLExecution).asInstanceOf[Long]
+    session.sparkContext.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
+    val start = System.currentTimeMillis()
+
+    val rdd = try {
+      session.sparkContext.listenerBus.post(SparkListenerSQLPlanExecutionStart(
+        executionId, CachedDataFrame.queryStringShortForm(sqlText),
+        sqlText, df.queryExecution.toString,
+        CachedDataFrame.queryPlanInfo(executedPlan, allLiterals),
+        start))
+      f
+    } finally {
+      session.sparkContext.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, null)
+    }
+    val executionTime = System.currentTimeMillis() - start
+    (executionTime, executionId, rdd)
+  }
   private def evaluatePlan(df: DataFrame,
       session: SnappySession, sqlText: String,
       key: CachedKey = null): CachedDataFrame = {
@@ -1775,27 +1811,32 @@ object SnappySession extends Logging {
     val allBroadcastPlans = session.getContextObject[mutable.Map[BroadcastHashJoinExec,
         ArrayBuffer[Any]]](CachedPlanHelperExec.BROADCASTS_KEY).getOrElse(
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
-
-    val (cachedRDD, shuffleDeps, rddId, localCollect) = executedPlan match {
+    val (cachedRDD, shuffleDeps, rddId, localCollect, executionId, executionTime) =
+      executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
         df.queryExecution.toRdd // evaluate the plan upfront
         throw new EntryExistsException("uncached plan", df) // don't cache
       case plan: CollectAggregateExec =>
-        val childRDD = if (withFallback ne null) withFallback.execute(plan.child)
-        else plan.childRDD
-        (null, findShuffleDependencies(childRDD).toArray, childRDD.id, true)
+        val (executionTime, executionId, childRDD) = planExecution(
+        df, session, sqlText, plan, Array.empty[LiteralValue])({
+            if (withFallback ne null) withFallback.execute(plan.child)
+            else plan.childRDD
+          })
+        (null, findShuffleDependencies(childRDD).toArray, childRDD.id, true,
+          Some(executionId), executionTime)
       case _: LocalTableScanExec =>
-        (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
+        (null, Array.empty[Int], -1, false, None, 0L) // cache plan but no cached RDD
       // case _ if allbroadcastplans.nonEmpty =>
         // (null, Array.empty[Int], -1, false) // cache plan but no cached RDD
       case _ =>
-        val rdd = executedPlan match {
-          case plan: CollectLimitExec =>
-            if (withFallback ne null) withFallback.execute(plan.child)
-            else plan.child.execute()
-          case _ => df.queryExecution.executedPlan.execute()
-        }
-
+        val (executionTime, executionId, rdd) = planExecution(
+          df, session, sqlText, executedPlan, Array.empty[LiteralValue])({
+          executedPlan match {
+            case plan: CollectLimitExec =>
+              if (withFallback ne null) withFallback.execute(plan.child)
+              else plan.child.execute()
+            case _ => df.queryExecution.executedPlan.execute()
+          }})
         // TODO: Skipping the adding of profile listener in case of
         // ThinClientConnectorMode, confirm with Sumedh whether something
         // more needs to be done
@@ -1809,7 +1850,8 @@ object SnappySession extends Logging {
                 addBucketProfileListener)
             }
         }
-        (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false)
+        (rdd, findShuffleDependencies(rdd).toArray, rdd.id, false,
+          Some(executionId), executionTime)
     }
 
     /*
@@ -1818,12 +1860,12 @@ object SnappySession extends Logging {
       mutable.Map.empty[BroadcastHashJoinExec, ArrayBuffer[Any]])
     */
 
+    logDebug(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
+
     // keep references as well
     // filter unvisited literals. If the query is on a view for example the
     // modified tpch query no 15, It even picks those literal which we don't want.
     val allLiterals = session.getAllLiterals(key)
-
-    logDebug(s"qe.executedPlan = ${df.queryExecution.executedPlan}")
 
     // This part is the defensive coding for all those cases where Tokenization
     // support is not smart enough to deal with cases where the execution plan
@@ -1868,7 +1910,7 @@ object SnappySession extends Logging {
     }
 
     val cdf = new CachedDataFrame(df, sqlText, cachedRDD, shuffleDeps, rddId,
-      localCollect, allLiterals, allBroadcastPlans, queryHints)
+      localCollect, allLiterals, allBroadcastPlans, queryHints, executionTime, executionId)
 
     // if this has in-memory caching then don't cache since plan can change
     // dynamically after caching due to unpersist etc
@@ -1892,10 +1934,12 @@ object SnappySession extends Logging {
         evaluatePlan(df, session, key.sqlText, key)
       }
     }
-    val cacheSize = Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
-      case Some(size) => size.toInt
-      case None => Property.PlanCacheSize.defaultValue.get
-    }
+    val cacheSize = if (SnappyContext.globalSparkContext != null) {
+      Property.PlanCacheSize.getOption(SnappyContext.globalSparkContext.conf) match {
+        case Some(size) => size.toInt
+        case None => Property.PlanCacheSize.defaultValue.get
+      }
+    } else Property.PlanCacheSize.defaultValue.get
     CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader)
   }
 

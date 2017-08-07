@@ -34,6 +34,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
+    conn.commit()
+    conn.close()
   }
 
   test("test tomcat conf") {
@@ -42,6 +44,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
+    conn.commit()
+    conn.close()
   }
 
   test("test Additional hikari conf") {
@@ -52,6 +56,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
+    conn.commit()
+    conn.close()
   }
 
   test("test multiple hikari conf") {
@@ -65,6 +71,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
+    conn.commit()
+    conn.close()
   }
 
   test("test multiple hikari conf by map") {
@@ -78,6 +86,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
+    conn.commit()
+    conn.close()
   }
 
   test("test multiple tomcat conf by map") {
@@ -92,6 +102,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
     assert(conn.getSchema != null)
+    conn.commit()
+    conn.close()
   }
 
   test("test serializibility") {
@@ -105,7 +117,10 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getPooledConnection("test", conf)
-      TaskContext.get().addTaskCompletionListener(_ => conn.close())
+      TaskContext.get().addTaskCompletionListener(_ => {
+        conn.commit()
+        conn.close()
+      })
       val stmt = conn.prepareStatement("update MY_SCHEMA.MY_TABLE set col1 = 9")
       stmt.executeUpdate()
     })
@@ -129,7 +144,10 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     rdd.foreachPartition(d => {
       val conn = ConnectionUtil.getConnection(conf)
-      TaskContext.get().addTaskCompletionListener(_ => conn.close())
+      TaskContext.get().addTaskCompletionListener(_ => {
+        conn.commit()
+        conn.close()
+      })
       val stmt = conn.prepareStatement("update MY_SCHEMA.MY_TABLE set col1 = 9")
       stmt.executeUpdate()
     })
@@ -170,7 +188,10 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     try {
       rdd.foreachPartition(d => {
         val conn = ConnectionUtil.getPooledConnection("testDerby", conf)
-        TaskContext.get().addTaskCompletionListener(_ => conn.close())
+        TaskContext.get().addTaskCompletionListener(_ => {
+          conn.commit()
+          conn.close()
+        })
         val stmt = conn.prepareStatement("update TEST_JDBC_TABLE_1 set col1 = 9")
         stmt.executeUpdate()
       })

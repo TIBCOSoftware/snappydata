@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -37,6 +38,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFo
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -668,6 +670,10 @@ object ExternalStoreUtils {
 
   def defaultCompressionCodec(session: SparkSession): String = {
     Property.CompressionCodec.get(session.sessionState.conf)
+  }
+
+  def getSQLListener(): AtomicReference[SQLListener] = {
+    SparkSession.sqlListener
   }
 }
 
