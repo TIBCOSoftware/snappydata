@@ -23,7 +23,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
-import org.apache.spark.sql.types.{DataType, LongType}
+import org.apache.spark.sql.types.{StructType, DataType, LongType}
 
 /**
  * Support for DML and other operations on external tables.
@@ -32,14 +32,16 @@ object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTable(tableDesc, mode, None) =>
-      val userSpecifiedSchema = SparkSession.getActiveSession.get
-        .asInstanceOf[SnappySession].normalizeSchema(tableDesc.schema)
+      val userSpecifiedSchema: Option[StructType] = if (tableDesc.schema.isEmpty) None
+      else
+        Some(SparkSession.getActiveSession.get.asInstanceOf[SnappySession].normalizeSchema
+        (tableDesc.schema))
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
 
       val optionsWithPath: Map[String,String] = if(tableDesc.storage.locationUri.isDefined)
         options +("path"-> tableDesc.storage.locationUri.get) else options
       val cmd =
-        CreateMetastoreTableUsing(tableDesc.identifier, None, Some(userSpecifiedSchema),
+        CreateMetastoreTableUsing(tableDesc.identifier, None, userSpecifiedSchema,
           None, SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
           mode != SaveMode.ErrorIfExists, optionsWithPath, isBuiltIn = false)
       ExecutedCommandExec(cmd) :: Nil
