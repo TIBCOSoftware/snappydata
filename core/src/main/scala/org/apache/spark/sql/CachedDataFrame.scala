@@ -60,17 +60,23 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
     val allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]] = mutable.Map.empty,
-    val queryHints: Map[String, String] = Map.empty)
+    val queryHints: Map[String, String] = Map.empty,
+    var planProcessingTime: Long = 0,
+    var currentExecutionId: Option[Long] = None)
     extends Dataset[Row](session, queryExecution, encoder) with Logging {
 
+  // scalastyle:off
   def this(ds: Dataset[Row], queryString: String,
       cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
       rddId: Int, hasLocalCollectProcessing: Boolean,
       allLiterals: Array[LiteralValue],
       allbcplans: mutable.Map[BroadcastHashJoinExec, ArrayBuffer[Any]],
-      queryHints: Map[String, String]) = {
+      queryHints: Map[String, String],
+      planProcessingTime: Long, currentExecutionId: Option[Long]) = {
+    // scalastyle:on
     this(ds.sparkSession, ds.queryExecution, ds.exprEnc, queryString, cachedRDD,
-      shuffleDependencies, rddId, hasLocalCollectProcessing, allLiterals, allbcplans, queryHints)
+      shuffleDependencies, rddId, hasLocalCollectProcessing, allLiterals, allbcplans,
+      queryHints, planProcessingTime, currentExecutionId)
   }
 
   /**
@@ -210,6 +216,22 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     collectInternal().map(boundEnc.fromRow).toArray
   }
 
+  override def withNewExecutionId[T](body: => T): T = queryExecution.executedPlan match {
+    // don't create a new executionId for ExecutePlan since it has already done so
+    case _: ExecutePlan => body
+    case _ =>
+      try {
+        CachedDataFrame.withNewExecutionId(
+          sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
+          queryExecutionString, CachedDataFrame.queryPlanInfo(
+            queryExecution.executedPlan, allLiterals),
+          currentExecutionId, planProcessingTime)(body)
+      } finally {
+        currentExecutionId = None
+        planProcessingTime = 0
+      }
+  }
+
   override def count(): Long = withCallback("count") { df =>
     df.groupBy().count().collect().head.getLong(0)
   }
@@ -267,14 +289,6 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       case cg@CodegenSparkFallback(plan) => withFallback = cg; plan
       case WholeStageCodegenExec(CachedPlanHelperExec(plan)) => plan
       case plan => plan
-    }
-
-    def withNewExecutionId[T](body: => T): T = executedPlan match {
-      // don't create a new executionId for ExecutePlan since it has already done so
-      case _: ExecutePlan => body
-      case _ => CachedDataFrame.withNewExecutionId(
-        sparkSession, CachedDataFrame.queryStringShortForm(queryString), queryString,
-        queryExecutionString, CachedDataFrame.queryPlanInfo(sparkPlan, allLiterals))(body)
     }
 
     def execute(): Iterator[R] = withNewExecutionId {
@@ -542,7 +556,7 @@ object CachedDataFrame
         data.arrayOffset() + data.position(), data.remaining())
   }
 
-  @transient private val nextExecutionIdMethod = {
+  @transient private[sql] val nextExecutionIdMethod = {
     val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
     m.setAccessible(true)
     m
@@ -575,21 +589,28 @@ object CachedDataFrame
    */
   def withNewExecutionId[T](sparkSession: SparkSession,
       queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
-      queryPlanInfo: SparkPlanInfo)(body: => T): T = {
+      queryPlanInfo: SparkPlanInfo, currentExecutionId: Option[Long] = None,
+      planProcessingTime: Long = 0)(body: => T): T = {
     val sc = sparkSession.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
     if (oldExecutionId == null) {
-      val executionId = nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
-      sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
+      // If the execution ID is set in the CDF that means the plan execution has already
+      // been done. Use the same execution ID to link this execution to the previous one.
+      val executionId = currentExecutionId match {
+        case Some(exId) => exId
+        case None => nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
+      }
       val r = try {
+        sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
         sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
           executionId, queryShortForm, queryLongForm, queryExecutionStr,
           queryPlanInfo, System.currentTimeMillis()))
         try {
           body
         } finally {
+          // add the time of plan execution to the end time.
           sparkSession.sparkContext.listenerBus.post(SparkListenerSQLExecutionEnd(
-            executionId, System.currentTimeMillis()))
+            executionId, System.currentTimeMillis() + planProcessingTime))
         }
       } finally {
         sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, null)
