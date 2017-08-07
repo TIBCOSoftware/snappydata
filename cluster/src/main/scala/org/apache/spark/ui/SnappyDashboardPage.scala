@@ -409,6 +409,29 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   }
 
   private def memberStats(membersBuf: mutable.Map[String, mutable.Map[String, Any]]): Seq[Node] = {
+
+    val locators = mutable.Map.empty[String, mutable.Map[String, Any]]
+    val leads = mutable.Map.empty[String, mutable.Map[String, Any]]
+    val dataServers = mutable.Map.empty[String, mutable.Map[String, Any]]
+
+    membersBuf.foreach(mb => {
+      val m = mb._2
+
+      if(m("lead").toString.toBoolean || m("activeLead").toString.toBoolean){
+        leads.put(mb._1, mb._2)
+      }
+      if(m("locator").toString.toBoolean){
+        locators.put(mb._1, mb._2)
+      }
+      if(m("dataServer").toString.toBoolean
+          && !m("activeLead").toString.toBoolean
+          && !m("lead").toString.toBoolean
+          && !m("locator").toString.toBoolean){
+        dataServers.put(mb._1, mb._2)
+      }
+
+    })
+
     <div>
       <table class="table table-bordered table-condensed table-striped">
         <thead>
@@ -479,7 +502,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
           </tr>
         </thead>
         <tbody>
-          {membersBuf.map(mb => memberRow(mb._2))}
+          {locators.map(mb => memberRow(mb._2))}
+          {leads.map(mb => memberRow(mb._2))}
+          {dataServers.map(mb => memberRow(mb._2))}
         </tbody>
       </table>
     </div>
