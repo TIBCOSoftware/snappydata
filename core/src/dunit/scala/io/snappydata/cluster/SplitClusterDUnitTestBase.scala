@@ -145,7 +145,6 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   def testColumnTableCreation(): Unit = {
     doTestColumnTableCreation()
-    Array(vm0,vm1,vm2).foreach(_.invoke(getClass, "validateNoActiveSnapshotTX"))
   }
 
   def testRowTableCreation(): Unit = {
