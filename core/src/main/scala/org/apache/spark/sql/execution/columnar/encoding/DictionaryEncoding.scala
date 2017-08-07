@@ -139,11 +139,7 @@ abstract class DictionaryDecoderBase
   override final def getStringDictionary: Array[Long] = longDictionary
 
   override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
-    if (ColumnEncoding.littleEndian) {
-      Platform.getShort(columnBytes, cursor)
-    } else {
-      java.lang.Short.reverseBytes(Platform.getShort(columnBytes, cursor))
-    }
+    ColumnEncoding.readShort(columnBytes, cursor)
 
   override def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 2
@@ -189,11 +185,7 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
   }
 
   override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
-    if (ColumnEncoding.littleEndian) {
-      Platform.getInt(columnBytes, cursor)
-    } else {
-      java.lang.Integer.reverseBytes(Platform.getInt(columnBytes, cursor))
-    }
+    ColumnEncoding.readInt(columnBytes, cursor)
 
   override final def nextInt(columnBytes: AnyRef, cursor: Long): Long =
     cursor + 4

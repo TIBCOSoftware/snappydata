@@ -16,9 +16,8 @@
  */
 package org.apache.spark.sql.execution.row
 
-import java.sql.ResultSet
-
 import com.gemstone.gemfire.internal.shared.ClientSharedData
+import io.snappydata.ResultSetWithNull
 
 import org.apache.spark.sql.catalyst.util.{DateTimeUtils, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder
@@ -30,7 +29,7 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  * An adapter for a ResultSet to pose as ColumnEncoding so that the same
  * generated code can be used for both row buffer and column data access.
  */
-final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
+final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
     extends ColumnDecoder {
 
   private[this] val defaultCal = ClientSharedData.getDefaultCleanCalendar
@@ -78,7 +77,8 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
 
   override def nextStruct(columnBytes: AnyRef, cursor: Long): Long = 0L
 
-  override def isNull(columnBytes: AnyRef, ordinal: Int): Int = -1
+  override def isNull(columnBytes: AnyRef, ordinal: Int): Boolean =
+    rs.isNull(columnPosition)
 
   override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
     rs.getBoolean(columnPosition)
@@ -165,6 +165,4 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
       result
     } else null
   }
-
-  override def wasNull(): Boolean = rs.wasNull()
 }

@@ -277,7 +277,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     assert(doWrite || decoderAbsolutePosition < 0)
     if (realEncoder.isNullable) {
       val isNull = if (decoderAbsolutePosition < 0) {
-        decoder.isNull(decoderBytes, decoderOrdinal) == 1
+        decoder.isNull(decoderBytes, decoderOrdinal)
       } else decoder.isNullAt(decoderBytes, decoderAbsolutePosition)
       if (isNull) {
         if (doWrite) realEncoder.writeIsNull(encoderOrdinal)

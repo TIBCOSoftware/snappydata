@@ -84,7 +84,7 @@ final class ColumnDeltaDecoder(realDecoder: ColumnDecoder) {
 
   @inline def hasNulls: Boolean = realDecoder.hasNulls
 
-  @inline def isNull: Int = realDecoder.isNull(deltaBytes, positionOrdinal)
+  @inline def isNull: Boolean = realDecoder.isNull(deltaBytes, positionOrdinal)
 
   @inline def nextBoolean(): Unit = {
     deltaCursor = realDecoder.nextBoolean(deltaBytes, deltaCursor)

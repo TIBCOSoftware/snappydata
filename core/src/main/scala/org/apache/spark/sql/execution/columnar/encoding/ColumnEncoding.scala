@@ -59,8 +59,8 @@ trait ColumnEncoding {
   def supports(dataType: DataType): Boolean
 }
 
-// TODO: SW: check perf after removing the columnBytes argument to decoders
-// if its same, then remove since it will help free up many registers
+// Removing the columnBytes argument to decoders (and storing within)
+// results in significant deterioration in basic ColumnCacheBenchmark.
 abstract class ColumnDecoder extends ColumnEncoding {
 
   protected final var baseCursor: Long = _
@@ -98,12 +98,10 @@ abstract class ColumnDecoder extends ColumnEncoding {
       columnBytes: AnyRef, cursor: Long, numNullBytes: Int): Unit = {}
 
   /**
-   * Returns 1 to indicate that column value was not-null,
-   * 0 to indicate that it was null and -1 to indicate that
-   * <code>wasNull()</code> needs to be invoked after the
-   * appropriate read method.
+   * Sequential null check for a value which should be invoked for all
+   * values of ordinal from 0 until maximum in order.
    */
-  def isNull(columnBytes: AnyRef, ordinal: Int): Int
+  def isNull(columnBytes: AnyRef, ordinal: Int): Boolean
 
   /** Absolute ordinal null check for random access. */
   def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
@@ -263,13 +261,6 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def readStruct(columnBytes: AnyRef, numFields: Int,
       cursor: Long): InternalRow =
     throw new UnsupportedOperationException(s"readStruct for $toString")
-
-  /**
-   * Only to be used for implementations (ResultSet adapter) that need to check
-   * for null after having invoked the appropriate read method.
-   * The <code>isNull</code> method should return -1 for such implementations.
-   */
-  def wasNull(): Boolean = false
 
   /**
    * Get the number of null values till given 0-based position (exclusive)
@@ -1148,9 +1139,9 @@ trait NotNullDecoder extends ColumnDecoder {
     cursor + 8 // skip typeId and nullValuesSize
   }
 
-  override final def isNull(columnBytes: AnyRef, ordinal: Int): Int = 0
+  override final def isNull(columnBytes: AnyRef, ordinal: Int): Boolean = false
 
-  override def isNullAt(columnBytes: AnyRef, position: Int): Boolean = false
+  override final def isNullAt(columnBytes: AnyRef, position: Int): Boolean = false
 
   override protected def numNullsUntilPosition(columnBytes: AnyRef,
       position: Int): Int = 0
@@ -1192,11 +1183,11 @@ trait NullableDecoder extends ColumnDecoder {
     updateNextNullOrdinal(columnBytes)
   }
 
-  override final def isNull(columnBytes: AnyRef, ordinal: Int): Int = {
-    if (ordinal != nextNullOrdinal) 0
+  override final def isNull(columnBytes: AnyRef, ordinal: Int): Boolean = {
+    if (ordinal != nextNullOrdinal) false
     else {
       updateNextNullOrdinal(columnBytes)
-      1
+      true
     }
   }
 

@@ -42,7 +42,7 @@ final class MutatedColumnDecoder(decoder: ColumnDecoder,
     extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
-  def isNull: Int = if (currentDeltaBuffer ne null) 0 else 1
+  def isNull: Boolean = currentDeltaBuffer eq null
 }
 
 /**
@@ -55,7 +55,7 @@ final class MutatedColumnDecoderNullable(decoder: ColumnDecoder,
     extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
 
-  def isNull: Int = if (currentDeltaBuffer ne null) currentDeltaBuffer.isNull else 1
+  def isNull: Boolean = (currentDeltaBuffer eq null) || currentDeltaBuffer.isNull
 }
 
 object MutatedColumnDecoder {
@@ -189,7 +189,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     }
   }
 
-  def isNull: Int
+  def isNull: Boolean
 
   // TODO: SW: need to create a combined delta+full value dictionary for this to work
 

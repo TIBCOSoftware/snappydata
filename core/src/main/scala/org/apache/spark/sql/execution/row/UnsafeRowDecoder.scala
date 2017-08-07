@@ -70,8 +70,11 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
 
   override def nextStruct(columnBytes: AnyRef, cursor: Long): Long = 0L
 
-  override def isNull(columnBytes: AnyRef, ordinal: Int): Int =
-    if (holder.row.isNullAt(columnIndex)) 1 else 0
+  override def isNull(columnBytes: AnyRef, ordinal: Int): Boolean =
+    holder.row.isNullAt(columnIndex)
+
+  override def isNullAt(columnBytes: AnyRef, ordinal: Int): Boolean =
+    holder.row.isNullAt(columnIndex)
 
   override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
     holder.row.getBoolean(columnIndex)
