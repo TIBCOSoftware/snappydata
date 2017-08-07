@@ -1156,11 +1156,19 @@ class ColumnTableTest
 
     assert(df.count() == 3)
     df.write.option("header", "true").csv(tempPath)
-    snc.createExternalTable("TEST_EXTERNAL", "csv", Map("path" -> tempPath, "header" -> "true"))
-    val dataDF = snc.sql("select * from TEST_EXTERNAL")
+    snc.createExternalTable("TEST_EXTERNAL", "csv",
+      Map("path" -> tempPath, "header" -> "true", "inferSchema"-> "true"))
+    val dataDF = snc.sql("select * from TEST_EXTERNAL order by c1")
+
+    snc.sql("select * from TEST_EXTERNAL").show
+
     assert(dataDF.count == 3)
+
+    val rows=dataDF.collect()
+
+    for(i<- 0 to 2) assert(rows(i)(0)==i+1)
+
     snc.sql("drop table if exists TEST_EXTERNAL")
     FileUtils.deleteDirectory(new java.io.File(tempPath))
   }
-
 }
