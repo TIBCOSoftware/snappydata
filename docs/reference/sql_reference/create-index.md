@@ -1,7 +1,5 @@
 # CREATE INDEX
 
-Creates an index on one or more columns of a table.
-
 ``` pre
 CREATE INDEX index_name
     ON table-name (

@@ -5,11 +5,9 @@ The following topics are covered in this section:
 
 * [Concurrency and Management of Cores](#manage-cores)
 
-* [Memory Management: Heap and Off-Heap](#heap)
-
 * [HA Considerations](#ha-consideration)
 
-* [Important Settings](#buckets)
+* [Important Settings](#important-settings)
 
 * [Operating System Settings](#os_setting)
 
@@ -88,27 +86,6 @@ When you add more servers to SnappyData, the processing capacity of the system i
 
 ![Concurrency](../Images/core_concurrency.png)
 
-
-<a id="heap"></a>
-## Memory Management: Heap and Off-Heap 
-
-SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (eg, columns stored as byte arrays).
-
-It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The [memory-size and heap-size](../configuring_cluster/property_description.md) properties control the off-heap and on-heap sizes of the SnappyData server process. 
-
-![On-Heap and Off-Heap](../Images/on-off-heap.png)
-
-The memory pool (off-heap and on-heap) available in SnappyData's cluster is divided into two parts – Execution and Storage memory pool. The storage memory pool as the name indicates is for the table storage. 
-
-The amount of memory that is available for storage is 50% of the total memory but it can grow to 90% (or `eviction-heap-percentage` store property for heap memory if set) if the execution memory is unused.
-This can be altered by specifying the `spark.memory.storageFraction` property. But, it is recommended to not change this setting. 
-
-A certain fraction of heap memory is reserved for JVM objects outside of SnappyData storage and eviction. If the `critical-heap-percentage` store property is set then SnappyData uses memory only until that limit is reached and the remaining memory is reserved. If no critical-heap-percentage has been specified then it defaults to 90%. There is no reserved memory for off-heap.
-
-SnappyData tables are by default configured for eviction which means, when there is memory pressure, the tables are evicted to disk. This impacts performance to some degree and hence it is recommended to size your VM before you begin. 
-
-<!-- Default values for sizing the VM <mark> Sumedh</mark>-->
-
 <a id="ha-consideration"></a>
 ## HA Considerations
 
@@ -127,6 +104,7 @@ With multiple locators, clients notice nothing and the failover recovery is comp
 SnappyData supports redundant copies of data for fault tolerance. A table can be configured to store redundant copies of the data.  So, if a server is unavailable, and if there is a redundant copy available on some other server, the tasks are automatically retried on those servers. This is totally transparent to the user. 
 However, the redundant copies double the memory requirements. If there are no redundant copies and a server with some data goes down, the execution of the queries fail and PartitionOfflineException is reported. The execution does not begin until that server is available again. 
 
+<a id="important-settings"></a>
 ##  Important Settings 
 <a id="buckets"></a>
 ### Buckets
@@ -147,11 +125,12 @@ The default `member-timeout` in SnappyData cluster is 30 seconds. The default `s
 If applications require node failure detection to be faster, then these properties should be reduced accordingly (`spark.executor.heartbeatInterval` but must always be much lower than `spark.network.timeout` as specified in the Spark Documents). </br>
 However, note that this can cause spurious node failures to be reported due to GC pauses. For example, the applications with reduced settings need to be resistant to job failures due to GC settings.
 
+<a id="spark-local-dir"></a>
 ### spark.local.dir  
 
 SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using `-dir` option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
-To achieve better performance, it is recommended to store temporary data on a different disk than the table data. This can be done by setting the `spark.local.dir` parameter.
+To achieve better performance, it is recommended to store temporary data on a different disk (SSD) than the table data. This can be done by setting the `spark.local.dir` parameter.
 
 <a id="os_setting"></a>
 ##  Operating System Settings 

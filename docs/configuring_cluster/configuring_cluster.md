@@ -122,7 +122,7 @@ SERVER_STARTUP_OPTIONS="-heap-size=4096m"
 LEAD_STARTUP_OPTIONS="-heap-size=2048m"
 ```
 <a id="command-line"></a>
-## SnappyData Command Line Utility
+## Snappy Command Line Utility
 
 Instead of starting SnappyData members using SSH scripts, they can be individually configured and started using the command line. 
 

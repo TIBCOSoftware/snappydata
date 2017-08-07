@@ -10,6 +10,25 @@ Data in tables is primarily managed in-memory with one or more consistent copies
 <a id="snappysession"></a>
 ## SnappySession and SnappyStreamingContext
 
+[Spark Context](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster, and can be used to create RDDs, accumulators and broadcast variables on that cluster.
+
+[Spark Session](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/sql/SparkSession.html) is the entry point to programming Spark with the Dataset and DataFrame API.
+In environments that this has been created upfront (e.g. REPL, notebooks), use the builder to get an existing session:
+
+```
+SparkSession.builder().getOrCreate()
+```
+ 
+The builder can also be used to create a new session:
+
+```
+SparkSession.builder()
+     .master("local")
+     .appName("Word Count")
+     .config("spark.some.config.option", "some-value")
+     .getOrCreate()   
+```
+
 [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
 Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
 [Streaming Context](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext).

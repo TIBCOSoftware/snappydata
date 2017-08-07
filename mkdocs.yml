@@ -164,10 +164,15 @@ pages:
     - 'API Documentation': 'apidocsintro.md'
     - 'Supported Data Types': 'reference/misc/supported-datatypes.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
+- 'Troubleshooting': 'troubleshooting/troubleshooting.md'
+- 'Troubleshooting':
+    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
 - Additional Information: additional_docs.md
 #- About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
+- Open Source Components: open_source_components.md
+- License Model: license_model.md
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 

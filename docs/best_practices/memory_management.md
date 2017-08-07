@@ -16,7 +16,6 @@ Spark and SnappyData also need room for execution. This includes memory for sort
 SnappyData uses JVM heap memory for most of its allocations. Only column tables can use off-heap storage (if configured). We suggest going through the following options and configuring them appropriately based on the sizing estimates from above. 
 
 <a id="heap"></a>
-
 ## SnappyData Heap Memory
 
 SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (eg, columns stored as byte arrays).
@@ -56,6 +55,9 @@ In most cases, the heap objects are long lived and survive young generation coll
 For example, when a row is inserted into a table or deleted, this pool accounts the memory size of that row. 
 Objects that are temporary and die young are not considered here. As mentioned before, it is difficult and costly to do a precise estimation. Hence, this pool is an approximation of heap memory for objects that are going to be long lived.
 Since precise estimation of heap memory is difficult, there is a heap monitor thread running in the background. If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds `critical-heap-percentage` the database engine starts canceling jobs and queries and a LowMemoryException is reported. This is also an indication of heap pressure on the system.
+
+!!! Note:
+	Servers need at least 4GB-8GB of heap to work comfortably. When using Parquet imports/writes, a minimum of 8GB is recommended, especially if the schema has a large number of columns (> 100 or so)
 
 ### Heap Execution Pool:
 During query execution or while running a Spark job, all temporary object allocations come out of this pool. For instance, queries like HashJoin and aggregate queries creates expensive in memory maps. This pool is used to allocate such memory.

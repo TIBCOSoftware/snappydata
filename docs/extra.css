@@ -137,7 +137,7 @@ mark {
 
 /* Formatting for TroubleShooting */
 
-question {
+problem {
     color: black;
     font-size: 18px;
     font-style: bold;
