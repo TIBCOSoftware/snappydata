@@ -40,7 +40,7 @@ abstract class SnappyStreamingJob extends SparkJobBase {
         classLoader = Thread.currentThread().getContextClassLoader)
       runSnappyJob(snc, jobConfig)
     } finally {
-      SnappyUtils.clearSessionDependencies(snc.sparkContext)
+
     }
   }
 
@@ -69,6 +69,8 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
           stop(stopSparkContext = false, stopGracefully = stopGracefully)
         } catch {
           case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
+        } finally {
+          SnappyUtils.clearSessionDependencies(sparkContext)
         }
       }
 

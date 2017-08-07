@@ -47,7 +47,6 @@ public abstract class JavaSnappyStreamingJob implements SparkJobBase {
           Thread.currentThread().getContextClassLoader());
       return runSnappyJob(context, jobConfig);
     } finally {
-      SnappyUtils.clearSessionDependencies(context.snappySession().sparkContext());
     }
   }
 

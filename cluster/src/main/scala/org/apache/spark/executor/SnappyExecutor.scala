@@ -25,6 +25,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
@@ -63,8 +64,7 @@ class SnappyExecutor(
           url
         })
         val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)
-        env.serializer.setDefaultClassLoader(replClassLoader)
-        env.closureSerializer.setDefaultClassLoader(replClassLoader)
+        KryoSerializerPool.clear()
         newClassLoader
       }
     }
