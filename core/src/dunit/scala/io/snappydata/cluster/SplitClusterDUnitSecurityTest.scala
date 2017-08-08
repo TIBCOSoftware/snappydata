@@ -26,6 +26,7 @@ import com.pivotal.gemfirexd.security.LdapTestServer
 import com.pivotal.gemfirexd.security.SecurityTestUtils
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
@@ -186,6 +187,8 @@ class SplitClusterDUnitSecurityTest(s: String)
   override def testRowTableCreation(): Unit = {}
 
   override def testTableFormChanges(): Unit = {}
+
+  override def testComplexTypesForColumnTables_SNAP643(): Unit = {}
 
   // Test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
@@ -453,6 +456,58 @@ class SplitClusterDUnitSecurityTest(s: String)
     // SNAPPY_HIVE_METASTORE should not be modifiable by users.
     val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
     assertFailure(() => {user1Stmt.execute(sql)}, sql)
+
+    // SNAP-1876 Verify grant/revoke are retained after cluster restart
+    executeSQL(user1Stmt, s"grant select on table $embeddedColTab1 to $jdbcUser2")
+    executeSQL(user1Stmt, s"revoke select on table $embeddedColTab1 from $jdbcUser2")
+    executeSQL(user1Stmt, s"grant select on table $embeddedRowTab1 to $jdbcUser2")
+    executeSQL(user1Stmt, s"grant insert on table $embeddedRowTab1 to $jdbcUser2")
+
+    restartCluster()
+    user2Conn = getConn(jdbcUser2, true)
+    user2Stmt = user2Conn.createStatement()
+    assertFailure(() => {executeSQL(user2Stmt, sqls(0))}, sqls(0)) // select on embeddedColTab1
+    assertFailure(() => {snc.sql(sqls(0)).collect()}, sqls(0)) // select on embeddedColTab1
+    executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
+    snc.sql(sqls(3)).collect() // insert into embeddedRowTab1
+    assertFailure(() => {executeSQL(user2Stmt, sqls(5))}, sqls(5)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(5)).collect()}, sqls(5)) // delete on embeddedRowTab1
+  }
+
+  def restartCluster(): Unit = {
+    user1Conn.close()
+    user2Conn.close()
+    adminConn.close()
+    snc.sparkContext.stop()
+    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
+    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+    var waitSeconds = 30
+    var status = "stopped"
+
+    val wc = new WaitCriterion {
+      override def done() = {
+        val output = (snappyProductDir + "/sbin/snappy-status-all.sh").!!
+        logInfo(s"Status output: \n$output")
+        getCount(output, status) == 4
+      }
+      override def description(): String = s"All nodes not in $status state after " +
+        s"$waitSeconds seconds."
+    }
+    DistributedTestBase.waitForCriterion(wc, waitSeconds * 1000, 1000, true)
+
+    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
+    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    waitSeconds = 60
+    status = "running"
+    DistributedTestBase.waitForCriterion(wc, waitSeconds * 1000, 1000, true)
+  }
+
+  def getCount(source: String, token: String): Int = {
+    if (source.contains(token)) {
+      1 + getCount(source.substring(source.indexOf(token) + 1), token)
+    } else {
+      0
+    }
   }
 
   /**
