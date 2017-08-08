@@ -46,6 +46,7 @@ import org.apache.spark.sql.types.StructField
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
+import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 // import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
@@ -338,6 +339,15 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     createApproxTSTopK(topKName, Option(baseTable), keyColumnName,
       topkOptions.asScala.toMap, allowExisting)
   }
+
+   /**
+    * :: Experimental ::
+    * Creates a [[DataFrame]] from an RDD of Product (e.g. case classes, tuples).
+    * This method handles generic array datatype like Array[Decimal]
+    */
+   def createDataFrameUsingRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+     snappySession.createDataFrameUsingRDD(rdd)
+   }
 
   /**
    * Creates a SnappyData managed table. Any relation providers

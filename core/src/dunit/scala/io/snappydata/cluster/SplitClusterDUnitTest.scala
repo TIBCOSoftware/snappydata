@@ -325,7 +325,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       dec2(1), ts(3))
     data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, "8", Decimal("1.0")),
       dec2(2), ts(4))
-    for (i <- 1 to 1000) {
+    for (_ <- 1 to 1000) {
       var rnd: Long = 0L
       var rnd1 = 0
       do {
