@@ -166,8 +166,9 @@ class SnappySession(@transient private val sc: SparkContext,
  /**
   * :: Experimental ::
   * Creates a [[DataFrame]] from an RDD of Product (e.g. case classes, tuples).
+  * This method handles generic array datatype like Array[Decimal]
   */
-  def createDataFrameFromRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+  def createDataFrameUsingRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
     SparkSession.setActiveSession(this)
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes

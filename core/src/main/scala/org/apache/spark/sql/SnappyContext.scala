@@ -343,9 +343,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    /**
     * :: Experimental ::
     * Creates a [[DataFrame]] from an RDD of Product (e.g. case classes, tuples).
+    * This method handles generic array datatype like Array[Decimal]
     */
-   def createDataFrameFromRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
-     snappySession.createDataFrameFromRDD(rdd)
+   def createDataFrameUsingRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+     snappySession.createDataFrameUsingRDD(rdd)
    }
 
   /**
