@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-  package org.apache.spark.sql
+package org.apache.spark.sql
 
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
@@ -163,7 +163,11 @@ class SnappySession(@transient private val sc: SparkContext,
     new SnappySession(sparkContext, Some(sharedState))
   }
 
-  override def createDataFrame[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+ /**
+  * :: Experimental ::
+  * Creates a [[DataFrame]] from an RDD of Product (e.g. case classes, tuples).
+  */
+  def createDataFrameFromRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
     SparkSession.setActiveSession(this)
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
