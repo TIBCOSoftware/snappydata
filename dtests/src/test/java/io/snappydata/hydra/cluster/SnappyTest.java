@@ -121,6 +121,11 @@ public class SnappyTest implements Serializable {
   private Connection connection = null;
   private static HydraThreadLocal localconnection = new HydraThreadLocal();
 
+  /**
+   * (String) APP_PROPS to set dynamically
+   */
+  public Map<Integer,String> dynamicAppProps = new HashMap<>();
+
   public enum SnappyNode {
     LOCATOR, SERVER, LEAD, WORKER
   }
@@ -1930,7 +1935,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public synchronized void executeSnappyJob(Vector jobClassNames, String logFileName, String
+  public void executeSnappyJob(Vector jobClassNames, String logFileName, String
       userAppJar, String jarPath, String appName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;
@@ -1950,8 +1955,12 @@ public class SnappyTest implements Serializable {
         } else {
           APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
         }
+        if(SnappyPrms.hasDynamicAppProps()){
+          APP_PROPS = "\"" + APP_PROPS +  "," + dynamicAppProps.get(getMyTid()) + "\"" ;
+        }
         String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
         String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + leadPort + "/jobs?appName=" + appName + "&classPath=" + userJob + "'";
+
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -1978,7 +1987,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected void executeSparkJob(Vector jobClassNames, String logFileName) {
+  public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
     ProcessBuilder pb = null;
     File log = null, logFile = null;
@@ -1993,6 +2002,10 @@ public class SnappyTest implements Serializable {
         String command = null;
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
+        String userAppJars =  SnappyPrms.getUserAppArgs();
+        if(SnappyPrms.hasDynamicAppProps()){
+          userAppJars = userAppJars +  " " + dynamicAppProps.get(getMyTid());
+        }
         command = snappyJobScript + " --class " + userJob +
             " --master spark://" + masterHost + ":" + masterPort + " " +
             SnappyPrms.getExecutorMemory() + " " +
@@ -2000,7 +2013,7 @@ public class SnappyTest implements Serializable {
             " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
             " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-            SnappyPrms.getUserAppArgs() + " " + primaryLocatorHost + ":" + primaryLocatorPort;
+            userAppJars + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         Log.getLogWriter().info("spark-submit command is : " + command);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;

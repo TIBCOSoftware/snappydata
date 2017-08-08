@@ -463,6 +463,11 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long executorMemory;
 
+  /**
+   * (Boolean) parameter to have dynamic APP_PROPS, other than setting using taskTab.
+   */
+  public static Long hasDynamicAppProps;
+
   public static int getRetryCountForJob() {
     Long key = numTimesToRetry;
     return tasktab().intAt(key, tab().intAt(key, 5));
@@ -791,6 +796,11 @@ public class SnappyPrms extends BasePrms {
     }
     executorMem = " --executor-memory " + heapSize;
     return executorMem;
+  }
+
+  public static boolean hasDynamicAppProps(){
+    Long key = hasDynamicAppProps;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static Vector getKafkaTopic() {
