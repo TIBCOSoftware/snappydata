@@ -613,7 +613,7 @@ class SnappyParser(session: SnappySession)
         RepartitionByExpression(e, l)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
         ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
-    (LIMIT ~ expression).? ~> { (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
+    (LIMIT ~ TOKENIZE_END ~ expression).? ~> { (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
       val withOrder = o.asInstanceOf[Option[LogicalPlan => LogicalPlan]]
           .map(_ (l)).getOrElse(l)
       val window = w.asInstanceOf[Option[Seq[(String, WindowSpec)]]].map { ws =>
