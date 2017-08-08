@@ -32,7 +32,7 @@ object SnappyDataVersion {
   // currently version in SNAPPYDATA_VERSION_PROPERTIES is used for column store version and
   // SnappyData platform version. If these 2 are to be given different versions separate
   // properties file can be created for column store
-  private val SNAPPYDATA_VERSION_PROPERTIES = "io/snappydata/SnappyDataVersion.properties"
+  val SNAPPYDATA_VERSION_PROPERTIES = "io/snappydata/SnappyDataVersion.properties"
 
   private val AQP_VERSION_PROPERTIES = "io/snappydata/SnappyAQPVersion.properties"
 
