@@ -409,11 +409,34 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   }
 
   private def memberStats(membersBuf: mutable.Map[String, mutable.Map[String, Any]]): Seq[Node] = {
+
+    val locators = mutable.Map.empty[String, mutable.Map[String, Any]]
+    val leads = mutable.Map.empty[String, mutable.Map[String, Any]]
+    val dataServers = mutable.Map.empty[String, mutable.Map[String, Any]]
+
+    membersBuf.foreach(mb => {
+      val m = mb._2
+
+      if(m("lead").toString.toBoolean || m("activeLead").toString.toBoolean){
+        leads.put(mb._1, mb._2)
+      }
+      if(m("locator").toString.toBoolean){
+        locators.put(mb._1, mb._2)
+      }
+      if(m("dataServer").toString.toBoolean
+          && !m("activeLead").toString.toBoolean
+          && !m("lead").toString.toBoolean
+          && !m("locator").toString.toBoolean){
+        dataServers.put(mb._1, mb._2)
+      }
+
+    })
+
     <div>
       <table class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center; width: 150px; vertical-align: middle;">
+            <th style="text-align:center; width: 60px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("statusTooltip")
@@ -431,7 +454,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("description")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; min-width: 100px;">
+            <th style="text-align:center; vertical-align: middle; width: 100px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")
@@ -440,7 +463,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memberType")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("cpuUsageTooltip")
@@ -449,7 +472,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("cpuUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("memoryUsageTooltip")
@@ -458,28 +481,30 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("heapMemoryTooltip")
                     }
                     style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("heapMemory")}
+                Heap Memory<br/>(Used / Total)
               </span>
             </th>
-            <th style="text-align:center; width: 250px; vertical-align: middle;">
+            <th style="text-align:center; width: 200px; vertical-align: middle;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("offHeapMemoryTooltip")
                     }
                     style="font-size: 17px;">
-                {SnappyDashboardPage.memberStatsColumn("offHeapMemory")}
+                Off-Heap Memory<br/>(Used / Total)
               </span>
             </th>
           </tr>
         </thead>
         <tbody>
-          {membersBuf.map(mb => memberRow(mb._2))}
+          {dataServers.map(mb => memberRow(mb._2))}
+          {leads.map(mb => memberRow(mb._2))}
+          {locators.map(mb => memberRow(mb._2))}
         </tbody>
       </table>
     </div>
@@ -777,11 +802,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     <tr>
       <td>
-        <div style="float: left; border-right: thin inset; height: 24px; padding: 0 5px;">
-          <img src={statusImgUri} />
-        </div><div style="float: left; height: 24px; padding-left: 15px; "><b>{
-          memberDetails.getOrElse("status","NA")
-        }</b></div>
+        <div style="float: left; height: 24px; padding: 0 20px;" >
+          <img src={statusImgUri} data-toggle="tooltip" title=""
+               data-original-title={status.toString} />
+        </div>
       </td>
       <td>
         <div style="width: 80%; float: left; padding-left: 10px; font-weight: bold;">
@@ -954,7 +978,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val completeWidth = "width: %s%%".format(completed)
 
     <div style="width:100%;">
-      <div style="float: left; width: 80%;">
+      <div style="float: left; width: 75%;">
         <div class="progressBar">
           <div class="completedProgress" style={completeWidth}>&nbsp;</div>
         </div>
