@@ -978,7 +978,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     val completeWidth = "width: %s%%".format(completed)
 
     <div style="width:100%;">
-      <div style="float: left; width: 78%;">
+      <div style="float: left; width: 75%;">
         <div class="progressBar">
           <div class="completedProgress" style={completeWidth}>&nbsp;</div>
         </div>
