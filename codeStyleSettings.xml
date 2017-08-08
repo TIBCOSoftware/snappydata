@@ -27,6 +27,7 @@
             <package name="" withSubpackages="true" static="true" />
           </value>
         </option>
+        <option name="JD_ADD_BLANK_AFTER_PARM_COMMENTS" value="true" />
         <ScalaCodeStyleSettings>
           <option name="classCountToUseImportOnDemand" value="8" />
           <option name="importLayout">
@@ -41,6 +42,7 @@
               <option value="org.apache.spark" />
             </array>
           </option>
+          <option name="USE_SCALADOC2_FORMATTING" value="false" />
         </ScalaCodeStyleSettings>
         <XML>
           <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />

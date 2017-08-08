@@ -140,7 +140,6 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
 
 compileJava.dependsOn createVersionPropertiesFile
 
-
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
   classifier = 'javadoc'
   from scaladoc
@@ -154,7 +153,6 @@ if (rootProject.hasProperty('enablePublish')) {
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
 }
-
 
 def copyDirs(def srcDir, def destDir) {
   mkdir(destDir)
@@ -176,6 +174,5 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest, dunitTest
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion
-

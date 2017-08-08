@@ -203,6 +203,14 @@ task cleanDUnit << {
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
 }
+task cleanSecurityDUnit << {
+  String workingDir = "${testResultsBase}/dunit-security"
+  delete workingDir
+  file(workingDir).mkdirs()
+  // clean spark cluster directories
+  delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
+  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+}
 task cleanAllReports << {
   String workingDir = "${testResultsBase}/combined-reports"
   delete workingDir
@@ -213,7 +221,6 @@ task cleanQuickstart << {
   delete workingDir
   file(workingDir).mkdirs()
 }
-
 
 subprojects {
   // the run task for a selected sub-project
@@ -286,6 +293,7 @@ subprojects {
 
     include '**/*.class'
     exclude '**/*DUnitTest.class'
+    exclude '**/*DUnitSecurityTest.class'
     exclude '**/*DUnitSingleTest.class'
     exclude '**/*TestBase.class'
 
@@ -315,16 +323,18 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
-    def dunitTests = fileTree(dir: testClassesDir, include: '**/*DUnitTest.class')
-    FileTree includeTestFiles = dunitTests
     def single = rootProject.hasProperty('dunit.single') ?
         rootProject.property('dunit.single') : null
-    int dunitFrom = rootProject.hasProperty('dunit.from') ?
+    if (single == null || single.length() == 0) {
+      def dunitTests = fileTree(dir: testClassesDir,
+          includes: ['**/*DUnitTest.class'],
+          excludes: ['**/*DUnitSecurityTest.class'])
+      FileTree includeTestFiles = dunitTests
+      int dunitFrom = rootProject.hasProperty('dunit.from') ?
           getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-    int dunitTo = rootProject.hasProperty('dunit.to') ?
+      int dunitTo = rootProject.hasProperty('dunit.to') ?
           getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
 
-    if (single == null || single.length() == 0) {
       int begin = dunitFrom != -1 ? dunitFrom : 0
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
       def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
@@ -337,6 +347,7 @@ subprojects {
       include single
     }
     exclude '**/*Suite.class'
+    exclude '**/*DUnitSecurityTest.class'
 
     workingDir = "${testResultsBase}/dunit"
 
@@ -352,6 +363,62 @@ subprojects {
       String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
       def progress = new File(workingDir, 'progress.txt')
       progress << "${eol}${now} ========== STARTING DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
+    }
+  }
+
+  task dunitSecurityTest(type: Test) {
+    dependsOn ':cleanSecurityDUnit'
+    dependsOn ':product'
+    dependsOn ':copyShadowJars'
+    maxParallelForks = 1
+    minHeapSize '1536m'
+    maxHeapSize '1536m'
+
+    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
+               '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
+               '-XX:CMSInitiatingOccupancyFraction=50',
+               '-XX:+CMSClassUnloadingEnabled', '-ea']
+
+    def single = rootProject.hasProperty('dunitSecurity.single') ?
+        rootProject.property('dunitSecurity.single') : null
+    if (single == null || single.length() == 0) {
+      def dunitSecurityTests = fileTree(dir: testClassesDir,
+          includes: ['**/*DUnitSecurityTest.class'],
+          excludes: ['**/*DUnitTest.class'])
+      FileTree includeTestFiles = dunitSecurityTests
+      int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
+          getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
+      int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
+          getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
+
+      int begin = dunitFrom != -1 ? dunitFrom : 0
+      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+      if (begin != 0 || end != includeTestFiles.size()) {
+        println("Picking tests :")
+        filteredSet.each { a -> println(a) }
+      }
+      include filteredSet
+    } else {
+      include single
+    }
+    exclude '**/*Suite.class'
+    exclude '**/*DUnitTest.class'
+
+    workingDir = "${testResultsBase}/dunit-security"
+
+    binResultsDir = file("${workingDir}/binary/${project.name}")
+    reports.html.destination = file("${workingDir}/html/${project.name}")
+    reports.junitXml.destination = file(workingDir)
+
+    systemProperties 'java.net.preferIPv4Stack': 'true',
+                     'SNAPPY_HOME': snappyProductDir
+
+    doFirst {
+      String eol = System.getProperty('line.separator')
+      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      def progress = new File(workingDir, 'progress.txt')
+      progress << "${eol}${now} ========== STARTING SECURITY DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
     }
   }
 
@@ -587,7 +654,6 @@ task publishMaven {
       it.getTasksByName('uploadArchives', false).collect { it.path }
   }
 }
-
 
 task generateSources {
   dependsOn ':snappy-spark:generateSources'
@@ -873,19 +939,19 @@ task buildDtests {
 }
 task checkAll {
   dependsOn ':snappy-spark:scalaStyle'
-  if (project.hasProperty('store')) {
+  if (rootProject.hasProperty('store')) {
     dependsOn ':snappy-store:check'
   }
   dependsOn ":snappy-core_${scalaBinaryVersion}:check"
-  if (project.hasProperty('spark')) {
+  if (rootProject.hasProperty('spark')) {
     dependsOn ':snappy-spark:check'
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
-  if (!project.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!rootProject.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (!project.hasProperty('smoke.skip')) {
+  if (!rootProject.hasProperty('smoke.skip')) {
     dependsOn ":buildDtests"
     dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
@@ -986,8 +1052,6 @@ distTar.mustRunAfter clean, cleanAll
 distZip.mustRunAfter clean, cleanAll
 distProduct.mustRunAfter clean, cleanAll
 
-
-
 task deleteDocsDir(type: Delete) {
   delete "${rootProject.buildDir}/docs"
 }
@@ -1025,7 +1089,7 @@ task docs(type: ScalaDoc) {
   }
   source = allSource
   classpath = files(docProjects.collect { project ->
-   project.sourceSets.main.compileClasspath   
+   project.sourceSets.main.compileClasspath
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
@@ -1035,12 +1099,11 @@ task publishDocs(type:Exec) {
   commandLine './publish-site.sh'
 }
 
-
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports, docs
 }
 
-if (project.hasProperty('trackBuildTime') ) {
+if (rootProject.hasProperty('trackBuildTime') ) {
   buildtimetracker {
     reporters {
       summary {

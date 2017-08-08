@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
+import com.pivotal.gemfirexd.Attribute;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
@@ -61,8 +62,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   public static final ThreadLocal<Boolean> SKIP_HIVE_TABLE_CALLS =
       new ThreadLocal<>();
-
-  private final ThreadLocal<HMSQuery> queries = new ThreadLocal<>();
 
   private final ExecutorService hmsQueriesExecutorService;
 
@@ -181,12 +180,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   private HMSQuery getHMSQuery() {
-    HMSQuery q = this.queries.get();
-    if (q == null) {
-      q = new HMSQuery();
-      this.queries.set(q);
-    }
-    return q;
+    return new HMSQuery();
   }
 
   private <T> T handleFutureResult(Future<T> f) {
@@ -375,11 +369,30 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver");
       DriverRegistry.register("io.snappydata.jdbc.ClientDriver");
 
-      String url = "jdbc:snappydata:;user=" +
-          SnappyStoreHiveCatalog.HIVE_METASTORE() +
-          ";disable-streaming=true;default-persistent=true";
       HiveConf metadataConf = new HiveConf();
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
+      String urlSecure = "jdbc:snappydata:" +
+          ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
+          ";disable-streaming=true;default-persistent=true";
+      final Map<Object, Object> bootProperties = Misc.getMemStore().getBootProperties();
+      if (bootProperties.containsKey(Attribute.USERNAME_ATTR) && bootProperties.containsKey
+          (Attribute.PASSWORD_ATTR)) {
+        urlSecure = "jdbc:snappydata:" +
+            ";user=" + bootProperties.get(Attribute.USERNAME_ATTR) +
+            ";password=" + bootProperties.get(Attribute.PASSWORD_ATTR) +
+            ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
+            ";disable-streaming=true;default-persistent=true";
+        /*
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+            bootProperties.get("user").toString());
+        metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD,
+            bootProperties.get("password").toString());
+        */
+      } else {
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+            Misc.SNAPPY_HIVE_METASTORE);
+      }
+      metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE);
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");
 

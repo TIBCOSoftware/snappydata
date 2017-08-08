@@ -19,21 +19,22 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.JavaConverters._
+
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, OverwriteOptions}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{StructField, StructType}
-
-import scala.collection.JavaConverters._
+import org.apache.spark.sql.types.StructType
 
 
 /**
@@ -69,9 +70,7 @@ abstract case class JDBCAppendableRelation(
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 
-  val resolvedName: String = externalStore.tryExecute(table, conn => {
-    ExternalStoreUtils.lookupName(table, conn.getSchema)
-  })
+  val resolvedName: String = table
 
   def numBuckets: Int = -1
 
@@ -83,8 +82,6 @@ abstract case class JDBCAppendableRelation(
   }
 
   protected final def dialect: JdbcDialect = connProperties.dialect
-
-  val schemaFields: Map[String, StructField] = Utils.getSchemaFields(schema)
 
   private val bufferLock = new ReentrantReadWriteLock()
 
@@ -134,10 +131,15 @@ abstract case class JDBCAppendableRelation(
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    // use the normal DataFrameWriter which will create an InsertIntoTable plan
+    // use the InsertIntoTable plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
-    data.write.mode(if (overwrite) SaveMode.Overwrite else SaveMode.Append)
-        .insertInto(table)
+    sqlContext.sessionState.executePlan(
+      InsertIntoTable(
+        table = LogicalRelation(this),
+        partition = Map.empty[String, Option[String]],
+        child = data.logicalPlan,
+        OverwriteOptions(overwrite),
+        ifNotExists = false)).toRdd
   }
 
   def getColumnBatchParams: (Int, Int, String) = {
@@ -162,9 +164,9 @@ abstract case class JDBCAppendableRelation(
 
   // truncate both actual and shadow table
   def truncate(): Unit = writeLock {
-    externalStore.tryExecute(table, conn => {
+    externalStore.tryExecute(table) { conn =>
       JdbcExtendedUtils.truncateTable(conn, table, dialect)
-    })
+    }
   }
 
   def createTable(mode: SaveMode): Unit = {
@@ -215,8 +217,8 @@ abstract case class JDBCAppendableRelation(
   def createTable(externalStore: ExternalStore, tableStr: String,
       tableName: String, dropIfExists: Boolean): Unit = {
 
-    externalStore.tryExecute(tableName,
-      conn => {
+    externalStore.tryExecute(tableName)
+      { conn =>
         if (dropIfExists) {
           JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
             ifExists = true)
@@ -233,7 +235,7 @@ abstract case class JDBCAppendableRelation(
             case _ => // do nothing
           }
         }
-      })
+      }
   }
 
   /**

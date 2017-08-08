@@ -20,6 +20,9 @@ import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Properties
 
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 import io.snappydata.test.dunit.VM
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
@@ -140,20 +143,20 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def skewNetworkServers: Boolean = false
 
-  final def testColumnTableCreation(): Unit = {
+  def testColumnTableCreation(): Unit = {
     doTestColumnTableCreation()
+    Array(vm0,vm1,vm2).foreach(_.invoke(getClass, "validateNoActiveSnapshotTX"))
   }
 
-  final def testRowTableCreation(): Unit = {
+  def testRowTableCreation(): Unit = {
     doTestRowTableCreation()
   }
 
-  final def _testComplexTypesForColumnTables_SNAP643(): Unit = {
+  def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
-  // SNAP-1680 is filed to enable this
-  final def DISABLEDtestTableFormChanges(): Unit = {
+  def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
 
@@ -191,8 +194,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       props: Map[String, String],
       locatorClientPort: Int): Unit = {
 
-    val snc: SnappyContext = getSnappyContextForConnector(locatorPort,
-      locatorClientPort)
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
     // try to create the table already created in embedded mode.
     // it should throw the table exist exception.
@@ -240,8 +242,8 @@ trait SplitClusterDUnitTestObject extends Logging {
    * Returns the SnappyContext for external(connector) Spark cluster connected to
    * SnappyData cluster
    */
-  def getSnappyContextForConnector(locatorPort: Int,
-      locatorClientPort: Int): SnappyContext = {
+  def getSnappyContextForConnector(locatorClientPort: Int, props: Properties = null):
+  SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
@@ -252,6 +254,16 @@ trait SplitClusterDUnitTestObject extends Logging {
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
           .set("snappydata.connection", connectionURL)
+
+    if (props != null) {
+      val user = props.getProperty(Attribute.USERNAME_ATTR, "")
+      val pass = props.getProperty(Attribute.PASSWORD_ATTR, "")
+      if (!user.isEmpty && !pass.isEmpty) {
+        conf.set(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, user)
+        conf.set(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, pass)
+        logInfo(s"Getting context with $user credentials")
+      }
+    }
 
       val sc = SparkContext.getOrCreate(conf)
 //      sc.setLogLevel("DEBUG")
@@ -368,7 +380,7 @@ trait SplitClusterDUnitTestObject extends Logging {
             drnd2)), dec(1), ts(math.abs(rnd1) % 5))
     }
     val rdd = context.parallelize(data, 8)
-    val dataDF = snc.createDataFrame(rdd)
+    val dataDF = snc.createDataFrameUsingRDD(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, props)
     dataDF.write.insertInto(tableName)
@@ -382,6 +394,18 @@ trait SplitClusterDUnitTestObject extends Logging {
       throw new TestException(s"Environment variable $env is not defined")
     }
     value
+  }
+  def validateNoActiveSnapshotTX(): Unit = {
+    val cache = Misc.getGemFireCache
+    val txMgr = cache.getCacheTransactionManager
+    if (txMgr != null) {
+      val itr = txMgr.getHostedTransactionsInProgress.iterator()
+      while (itr.hasNext) {
+        val tx = itr.next()
+        if (tx.isSnapshot)
+          assert(tx.isClosed, s"${tx} is not closed. ")
+      }
+    }
   }
 }
 

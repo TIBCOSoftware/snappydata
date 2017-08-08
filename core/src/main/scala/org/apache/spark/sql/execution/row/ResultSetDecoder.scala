@@ -40,12 +40,12 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
   override def supports(dataType: DataType): Boolean = true
 
   // nulls can be present so always return true
-  override protected def hasNulls: Boolean = true
+  override protected[sql] def hasNulls: Boolean = true
 
-  override protected def initializeNulls(columnBytes: AnyRef,
+  override protected[sql] def initializeNulls(columnBytes: AnyRef,
       cursor: Long, field: StructField): Long = 0L
 
-  override protected def initializeCursor(columnBytes: AnyRef, cursor: Long,
+  override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       field: StructField): Long = 0L
 
   override def nextBoolean(columnBytes: AnyRef, cursor: Long): Long = 0L
@@ -72,7 +72,7 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
 
   override def nextBinary(columnBytes: AnyRef, cursor: Long): Long = 0L
 
-  override def notNull(columnBytes: AnyRef, ordinal: Int): Int = -1
+  override def isNull(columnBytes: AnyRef, ordinal: Int): Int = -1
 
   override def readBoolean(columnBytes: AnyRef, cursor: Long): Boolean =
     rs.getBoolean(columnPosition)
@@ -106,8 +106,7 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
   }
 
   override def readDecimal(columnBytes: AnyRef, precision: Int, scale: Int,
-      cursor: Long): Decimal =
-    readLongDecimal(columnBytes, precision, scale, cursor)
+      cursor: Long): Decimal = readLongDecimal(columnBytes, precision, scale, cursor)
 
   override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     UTF8String.fromString(rs.getString(columnPosition))
@@ -115,21 +114,23 @@ final class ResultSetDecoder(rs: ResultSet, columnPosition: Int)
   override def readDate(columnBytes: AnyRef, cursor: Long): Int = {
     defaultCal.clear()
     val date = rs.getDate(columnPosition, defaultCal)
-    DateTimeUtils.fromJavaDate(date)
+    if (date ne null) DateTimeUtils.fromJavaDate(date) else -1
   }
 
   override def readTimestamp(columnBytes: AnyRef, cursor: Long): Long = {
     defaultCal.clear()
     val timestamp = rs.getTimestamp(columnPosition, defaultCal)
-    DateTimeUtils.fromJavaTimestamp(timestamp)
+    if (timestamp ne null) DateTimeUtils.fromJavaTimestamp(timestamp) else -1L
   }
 
   override def readBinary(columnBytes: AnyRef, cursor: Long): Array[Byte] =
     rs.getBytes(columnPosition)
 
   override def readInterval(columnBytes: AnyRef,
-      cursor: Long): CalendarInterval =
-    new CalendarInterval(0, rs.getLong(columnPosition))
+      cursor: Long): CalendarInterval = {
+    val micros = rs.getLong(columnPosition)
+    if (rs.wasNull()) null else new CalendarInterval(0, micros)
+  }
 
   override def readArray(columnBytes: AnyRef, cursor: Long): SerializedArray = {
     val b = rs.getBytes(columnPosition)
