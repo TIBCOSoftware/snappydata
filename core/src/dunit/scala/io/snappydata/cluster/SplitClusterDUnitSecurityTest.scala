@@ -161,6 +161,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
 
   }
@@ -417,6 +418,7 @@ class SplitClusterDUnitSecurityTest(s: String)
           s"col3 < 1.0",
       s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
     )
+
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
@@ -554,14 +556,14 @@ class SplitClusterDUnitSecurityTest(s: String)
     val sns = snc.snappySession
 
     val rdd = sns.sparkContext.parallelize(
-      (1 to 113999).map(i => Data2(i, s"name_$i", s"address_$i")))
+      (1 to 113999).map(i => Data2(i, s"my_name_$i", s"my_work_address_$i")))
     val dataDF = sns.createDataFrame(rdd)
     val col1 = "COL1"
     val col2 = "COL2"
     val col3 = "COL3"
     val col4 = "COL4"
 
-    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "50"), false)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "5"), false)
     sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
     sns.catalog.refreshTable(smartColTab1)
     sns.catalog.refreshTable(smartRowTab1)
@@ -583,12 +585,53 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     assert(sns.delete(smartRowTab1, s"$col1 = 1000") == 1, "Delete failed")
 
+    dataDF.write.insertInto(smartColTab1)
+    dataDF.write.insertInto(smartRowTab1)
+
     sns.sqlContext.alterTable(smartRowTab1, true, StructField(col4, IntegerType, true))
 
     sns.dropTable(smartColTab1, false)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartColTab1)}, smartColTab1)
     sns.dropTable(smartRowTab1, false)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
+  }
+
+  def testSnappyJob(): Unit = {
+    // Create config file with credentials
+    val jobConfigFile = s"$snappyProductDir/conf/job.config"
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    // Run snappy job with credentials in a config file
+    val job = s"$snappyProductDir/bin/snappy-job.sh submit --app-name CreatePartitionedRowTable " +
+        s"--class org.apache.spark.examples.snappydata.CreatePartitionedRowTable " +
+        s"--app-jar $snappyProductDir/examples/jars/quickstart.jar  " +
+        s"--passfile $jobConfigFile"
+    logInfo(s"Submitting job $job")
+    job !!
+
+    // Assert table partsupp, created within the job, exists
+    val table = "PARTSUPP"
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    Thread.sleep(2000)
+    logInfo(s"Checking for $table")
+    assert(snc.snappySession.catalog.tableExists(table), s"Table $table does not exist. SnappyJob" +
+        s" probably failed.")
+
+    // Drop table partsupp
+    logInfo(s"Dropping table $table")
+    snc.sql(s"drop table $table").collect()
+
+    // Submit the same job with invalid credentials
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
+    writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
+    logInfo(s"Re-submitting job $job with invalid credentials.")
+    job !!
+
+    // assert table does not exist
+    assert(!snc.snappySession.catalog.tableExists(table), s"Table $table exists.")
   }
 
   def _testUDFAndProcs(): Unit = {
