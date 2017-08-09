@@ -26,6 +26,7 @@ import com.pivotal.gemfirexd.security.LdapTestServer
 import com.pivotal.gemfirexd.security.SecurityTestUtils
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
@@ -160,6 +161,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
 
   }
@@ -185,6 +187,8 @@ class SplitClusterDUnitSecurityTest(s: String)
   override def testRowTableCreation(): Unit = {}
 
   override def testTableFormChanges(): Unit = {}
+
+  override def testComplexTypesForColumnTables_SNAP643(): Unit = {}
 
   // Test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
@@ -414,6 +418,7 @@ class SplitClusterDUnitSecurityTest(s: String)
           s"col3 < 1.0",
       s"delete from $jdbcUser1.$embeddedRowTab1 where col1 = 0"
     )
+
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
@@ -451,6 +456,58 @@ class SplitClusterDUnitSecurityTest(s: String)
     // SNAPPY_HIVE_METASTORE should not be modifiable by users.
     val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
     assertFailure(() => {user1Stmt.execute(sql)}, sql)
+
+    // SNAP-1876 Verify grant/revoke are retained after cluster restart
+    executeSQL(user1Stmt, s"grant select on table $embeddedColTab1 to $jdbcUser2")
+    executeSQL(user1Stmt, s"revoke select on table $embeddedColTab1 from $jdbcUser2")
+    executeSQL(user1Stmt, s"grant select on table $embeddedRowTab1 to $jdbcUser2")
+    executeSQL(user1Stmt, s"grant insert on table $embeddedRowTab1 to $jdbcUser2")
+
+    restartCluster()
+    user2Conn = getConn(jdbcUser2, true)
+    user2Stmt = user2Conn.createStatement()
+    assertFailure(() => {executeSQL(user2Stmt, sqls(0))}, sqls(0)) // select on embeddedColTab1
+    assertFailure(() => {snc.sql(sqls(0)).collect()}, sqls(0)) // select on embeddedColTab1
+    executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
+    snc.sql(sqls(3)).collect() // insert into embeddedRowTab1
+    assertFailure(() => {executeSQL(user2Stmt, sqls(5))}, sqls(5)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(5)).collect()}, sqls(5)) // delete on embeddedRowTab1
+  }
+
+  def restartCluster(): Unit = {
+    user1Conn.close()
+    user2Conn.close()
+    adminConn.close()
+    snc.sparkContext.stop()
+    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
+    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+    var waitSeconds = 30
+    var status = "stopped"
+
+    val wc = new WaitCriterion {
+      override def done() = {
+        val output = (snappyProductDir + "/sbin/snappy-status-all.sh").!!
+        logInfo(s"Status output: \n$output")
+        getCount(output, status) == 4
+      }
+      override def description(): String = s"All nodes not in $status state after " +
+        s"$waitSeconds seconds."
+    }
+    DistributedTestBase.waitForCriterion(wc, waitSeconds * 1000, 1000, true)
+
+    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
+    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    waitSeconds = 60
+    status = "running"
+    DistributedTestBase.waitForCriterion(wc, waitSeconds * 1000, 1000, true)
+  }
+
+  def getCount(source: String, token: String): Int = {
+    if (source.contains(token)) {
+      1 + getCount(source.substring(source.indexOf(token) + 1), token)
+    } else {
+      0
+    }
   }
 
   /**
@@ -499,14 +556,14 @@ class SplitClusterDUnitSecurityTest(s: String)
     val sns = snc.snappySession
 
     val rdd = sns.sparkContext.parallelize(
-      (1 to 113999).map(i => Data2(i, s"name_$i", s"address_$i")))
+      (1 to 113999).map(i => Data2(i, s"my_name_$i", s"my_work_address_$i")))
     val dataDF = sns.createDataFrame(rdd)
     val col1 = "COL1"
     val col2 = "COL2"
     val col3 = "COL3"
     val col4 = "COL4"
 
-    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "50"), false)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "5"), false)
     sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
     sns.catalog.refreshTable(smartColTab1)
     sns.catalog.refreshTable(smartRowTab1)
@@ -528,12 +585,53 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     assert(sns.delete(smartRowTab1, s"$col1 = 1000") == 1, "Delete failed")
 
+    dataDF.write.insertInto(smartColTab1)
+    dataDF.write.insertInto(smartRowTab1)
+
     sns.sqlContext.alterTable(smartRowTab1, true, StructField(col4, IntegerType, true))
 
     sns.dropTable(smartColTab1, false)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartColTab1)}, smartColTab1)
     sns.dropTable(smartRowTab1, false)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
+  }
+
+  def testSnappyJob(): Unit = {
+    // Create config file with credentials
+    val jobConfigFile = s"$snappyProductDir/conf/job.config"
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    // Run snappy job with credentials in a config file
+    val job = s"$snappyProductDir/bin/snappy-job.sh submit --app-name CreatePartitionedRowTable " +
+        s"--class org.apache.spark.examples.snappydata.CreatePartitionedRowTable " +
+        s"--app-jar $snappyProductDir/examples/jars/quickstart.jar  " +
+        s"--passfile $jobConfigFile"
+    logInfo(s"Submitting job $job")
+    job !!
+
+    // Assert table partsupp, created within the job, exists
+    val table = "PARTSUPP"
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    Thread.sleep(2000)
+    logInfo(s"Checking for $table")
+    assert(snc.snappySession.catalog.tableExists(table), s"Table $table does not exist. SnappyJob" +
+        s" probably failed.")
+
+    // Drop table partsupp
+    logInfo(s"Dropping table $table")
+    snc.sql(s"drop table $table").collect()
+
+    // Submit the same job with invalid credentials
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
+    writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
+    logInfo(s"Re-submitting job $job with invalid credentials.")
+    job !!
+
+    // assert table does not exist
+    assert(!snc.snappySession.catalog.tableExists(table), s"Table $table exists.")
   }
 
   def _testUDFAndProcs(): Unit = {
