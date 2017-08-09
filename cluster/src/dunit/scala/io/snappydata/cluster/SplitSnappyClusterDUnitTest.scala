@@ -34,6 +34,7 @@ import org.junit.Assert
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.store.ColumnUpdateDeleteTest
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -253,6 +254,10 @@ class SplitSnappyClusterDUnitTest(s: String)
       startArgs :+ Int.box(locatorClientPort))
   }
 
+  def testUpdateDeleteOnColumnTables(): Unit = {
+    val snc = SnappyContext(sc)
+    ColumnUpdateDeleteTest.testBasicUpdate(snc.snappySession)
+  }
 }
 
 object SplitSnappyClusterDUnitTest

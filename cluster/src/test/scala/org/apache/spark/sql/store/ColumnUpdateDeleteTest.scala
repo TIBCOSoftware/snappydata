@@ -18,35 +18,43 @@
 package org.apache.spark.sql.store
 
 import io.snappydata.Property
+import org.scalatest.Assertions
 
-import org.apache.spark.SparkConf
+import org.apache.spark.sql.SnappySession
 
 /**
  * Tests for updates/deletes on column table.
  */
 class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    stopAll()
-  }
-
-  override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
-    val conf = new SparkConf().
-        setIfMissing("spark.master", "local[1]").
-        setAppName(getClass.getName)
-    if (addOn != null) {
-      addOn(conf)
-    }
-    conf
-  }
-
   test("basic update") {
+    ColumnUpdateDeleteTest.testBasicUpdate(this.snc.snappySession)
+  }
+
+  test("basic delete") {
+    ColumnUpdateDeleteTest.testBasicDelete(this.snc.snappySession)
+  }
+
+  ignore("test update for all types") {
     val session = this.snc.snappySession
+    // reduced size to ensure both column table and row buffer have data
+    session.conf.set(Property.ColumnBatchSize.name, "100k")
+    runAllTypesTest(session)
+  }
+}
+
+object ColumnUpdateDeleteTest extends Assertions {
+
+  def testBasicUpdate(session: SnappySession): Unit = {
     session.conf.set(Property.ColumnBatchSize.name, "10k")
     // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
 
     val numElements = 50000
+
+    session.sql("drop table if exists updateTable")
+    session.sql("drop table if exists checkTable1")
+    session.sql("drop table if exists checkTable2")
+    session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
         "using column options(buckets '5')")
@@ -161,12 +169,14 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     session.sql("drop table checkTable3")
   }
 
-  test("basic delete") {
-    val session = this.snc.snappySession
+  def testBasicDelete(session: SnappySession): Unit = {
     session.conf.set(Property.ColumnBatchSize.name, "10k")
     // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
 
-    val numElements = 50000
+    session.sql("drop table if exists updateTable")
+    session.sql("drop table if exists checkTable1")
+    session.sql("drop table if exists checkTable2")
+    session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
         "using column options(buckets '5', partition_by 'addr')")
@@ -174,6 +184,27 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
         "using column options(buckets '3')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
         "using column options(buckets '7')")
+    session.sql("create table checkTable3 (id int, addr string, status boolean) " +
+        "using column options(buckets '3')")
+
+    for (_ <- 1 to 6) {
+      testBasicDeleteIter(session)
+
+      session.sql("truncate table updateTable")
+      session.sql("truncate table checkTable1")
+      session.sql("truncate table checkTable2")
+      session.sql("truncate table checkTable3")
+    }
+
+    session.sql("drop table updateTable")
+    session.sql("drop table checkTable1")
+    session.sql("drop table checkTable2")
+    session.sql("drop table checkTable3")
+  }
+
+  def testBasicDeleteIter(session: SnappySession): Unit = {
+
+    val numElements = 50000
 
     session.range(numElements).selectExpr("id",
       "concat('addr', cast(id as string))",
@@ -228,34 +259,20 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     assert(res(0).getInt(0) === 73)
     assert(res(0).getString(1) === "addr73")
 
-    /* TODO: SW: check numbers below
-    // more deletes
+    // more deletes on the same rows as updates
 
-    session.sql(s"delete from updateTable where (id % 5) = 0")
+    session.range(numElements).filter("(id % 5) <> 0").selectExpr(s"id + $numElements",
+      "concat('addr', cast(id as string))",
+      "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable3")
+
+    session.sql(s"delete from updateTable where (cast(substr(addr, 5) as int) % 5) = 0")
 
     assert(session.table("updateTable").count() === (numElements * 8) / 10)
     assert(session.table("updateTable").collect().length === (numElements * 8) / 10)
 
-    res = session.sql("select * from updateTable EXCEPT select * from checkTable2").collect()
-    assert(res.length === (numElements * 9) / 10 + 1)
-
-    session.sql(s"delete from checkTable2 where (id % 5) = 0")
-
-    res = session.sql("select * from updateTable EXCEPT select * from checkTable2").collect()
+    res = session.sql("select * from updateTable EXCEPT select * from checkTable3").collect()
     assert(res.length === 1)
     assert(res(0).getInt(0) === 73)
     assert(res(0).getString(1) === "addr73")
-    */
-
-    session.sql("drop table updateTable")
-    session.sql("drop table checkTable1")
-    session.sql("drop table checkTable2")
-  }
-
-  ignore("test update for all types") {
-    val session = this.snc.snappySession
-    // reduced size to ensure both column table and row buffer have data
-    session.conf.set(Property.ColumnBatchSize.name, "100k")
-    runAllTypesTest(session)
   }
 }

@@ -284,6 +284,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     requiredColumns: Array[String],
     stmt: Statement, rs: ResultSet,
     context: TaskContext,
+    partitionId: Int,
     fetchColQuery: String)
     extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
   private var currentUUID: String = _
@@ -292,6 +293,10 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] =
     new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
   private val ps: PreparedStatement = conn.prepareStatement(fetchColQuery)
+
+  def getCurrentBatchId: String = currentUUID
+
+  def getCurrentBucketId: Int = partitionId
 
   def getColumnLob(columnIndex: Int): ByteBuffer = {
     val columnPosition = columnIndex + 1
