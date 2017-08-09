@@ -1,0 +1,54 @@
+io/snappydata/hydra/longRun/nwTest.conf
+  A=snappy snappyHosts=2 snappyVMsPerHost=1 snappyThreadsPerVM=4
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
+  tableType="Column"
+  numRowsValidation = false
+  fullResultSetValidation = true
+  isSmokeRun = true
+  numVMsToStop=1
+
+io/snappydata/hydra/longRun/addServerWithRebalance.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+
+/*io/snappydata/hydra/longRun/clusterRestart.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4*/
+
+io/snappydata/hydra/longRun/airlineTest.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+  redundantCopies=1
+
+io/snappydata/hydra/longRun/addServerWithRebalance.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+
+io/snappydata/hydra/longRun/concurrency.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+  dataFilesLocation="/export/shared/QA_DATA/northWind_1GB/"
+  tableType="Column"
+  numRowsValidation = false
+  fullResultSetValidation = true
+  isSmokeRun = true
+
+io/snappydata/hydra/longRun/addServerWithRebalance.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+
+io/snappydata/hydra/longRun/rcore.conf
+  A=snappy snappyHosts=2 snappyVMsPerHost=1 snappyThreadsPerVM=4
+  dataLocation="/export/shared/QA_DATA/RCORE_DATA/"
+
+io/snappydata/hydra/longRun/clusterRestart.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
+
+io/snappydata/hydra/longRun/dmlOps.conf
+  A=snappy snappyHosts=2 snappyVMsPerHost=1 snappyThreadsPerVM=8
+  persistenceMode="sync" redundantCopies=1
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/longRun/ctTest.conf
+  A=snappy snappyHosts=2 snappyVMsPerHost=1 snappyThreadsPerVM=4
+  redundantCopies=0,1  persistenceMode="sync"
+  dataFilesLocation="/export/shared/QA_DATA/ct"
+  tableType="Column"
+  fullResultSetValidation= true
+
+io/snappydata/hydra/longRun/clusterRestart.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
