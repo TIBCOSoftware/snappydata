@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.hydra.security;
 
 import hydra.BasePrms;
@@ -10,16 +26,7 @@ import java.util.Vector;
 
 public class SnappySecurityPrms extends SnappyPrms{
 
-  /**
-   * Parameter used to get the user list of pointLookUP queries to execute concurrently using
-   * jdbc clients.
-   * (VectorsetValues of Strings) A list of values for pointLookUp queries.
-   */
   public static Long queryList;
-
-  /**
-   * (boolean) for testing security
-   */
 
   public static Long userName;
 
@@ -44,7 +51,6 @@ public class SnappySecurityPrms extends SnappyPrms{
   public static Long dmlOperations;
 
   public static Vector getDmlOps() {
-   // Log.getLogWriter().info("SPInside getDmlOps");
     Long key = dmlOperations;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
@@ -57,7 +63,6 @@ public class SnappySecurityPrms extends SnappyPrms{
   }
 
   public static Vector getSchema() {
-   // Log.getLogWriter().info("SPInside getSchema");
     Long key = onSchema;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
@@ -93,21 +98,15 @@ public class SnappySecurityPrms extends SnappyPrms{
   }
 
   public static Vector getUserName() {
-   // Log.getLogWriter().info("SPInside getUserName");
     Long key = userName;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
   public static Vector getPassWord() {
-  //  Log.getLogWriter().info("SPInside getPassewd");
     Long key = passWord;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
-  /*public static Vector getSQLScriptNames() {
-    Long key = sqlScriptNames;
-    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
-  }*/
   public static Vector getQueryList() {
     Long key = queryList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));

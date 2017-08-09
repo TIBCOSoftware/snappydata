@@ -43,7 +43,7 @@ object CreateAndLoadTablesSparkApp {
     NWQueries.dataFilesLocation = dataFilesLocation
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     NWTestUtil.dropTables(snc)
-    createColRowTables(snc)
+    SecurityTestUtil.createColRowTables(snc)
     println("Getting users arguments")
     val queryFile = args(1)
     val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")
@@ -66,39 +66,5 @@ object CreateAndLoadTablesSparkApp {
     pw.close()
   }
 
-  def createColRowTables(snc: SnappyContext) : Unit = {
-    println("Inside createColAndRow tables")
-    snc.sql(NWQueries.categories_table)
-    NWQueries.categories(snc).write.insertInto("categories")
 
-    snc.sql(NWQueries.regions_table)
-    NWQueries.regions(snc).write.insertInto("regions")
-
-    snc.sql(NWQueries.employees_table + " using column options(partition_by 'City,Country', " +
-        "redundancy '1')")
-    NWQueries.employees(snc).write.insertInto("employees")
-
-    snc.sql(NWQueries.customers_table +
-        " using row options( partition_by 'PostalCode,Region', buckets '19', colocate_with " +
-        "'employees', redundancy '1')")
-    NWQueries.customers(snc).write.insertInto("customers")
-
-    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets " +
-        "'13', redundancy '1')")
-    NWQueries.orders(snc).write.insertInto("orders")
-
-    snc.sql(NWQueries.order_details_table +
-        " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
-        "redundancy '1')")
-    NWQueries.order_details(snc).write.insertInto("order_details")
-
-    snc.sql(NWQueries.products_table +
-        " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
-    NWQueries.products(snc).write.insertInto("products")
-
-    snc.sql(NWQueries.suppliers_table +
-        " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1')")
-    NWQueries.suppliers(snc).write.insertInto("suppliers")
-
-  }
 }

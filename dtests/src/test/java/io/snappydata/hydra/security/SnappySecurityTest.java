@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.hydra.security;
 
 import hydra.Log;
@@ -18,10 +34,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-
-/**
- * Created by supriya on 7/7/17.
- */
 public class SnappySecurityTest extends SnappyTest {
 
   private static Integer expectedExceptionCnt = 0;
@@ -37,26 +49,28 @@ public class SnappySecurityTest extends SnappyTest {
 
   public static void HydraTask_getClientConnection() throws SQLException {
     Connection conn = null;
-    String queryStr1 = "CREATE TABLE userTable(r1 Integer, r2 Integer) USING COLUMN";
-    String queryStr2 = "insert into userTable VALUES(1,1)";
-    String queryStr3 = "DROP TABLE IF EXISTS userTable";
     Vector userVector = SnappySecurityPrms.getUserName();
     Vector passVector = SnappySecurityPrms.getPassWord();
     String user = userVector.elementAt(0).toString();
     String pass = passVector.elementAt(0).toString();
     conn = getSecuredLocatorConnection(user, pass);
+    String queryStr1 = "CREATE TABLE " + user + "Table(r1 Integer, r2 Integer) USING COLUMN";
+    String queryStr2 = "insert into " + user + "Table VALUES(1,1)";
+    String queryStr3 = "DROP TABLE IF EXISTS  " + user + "Table";
     conn.createStatement().execute(queryStr3);
     conn.createStatement().execute(queryStr1);
     conn.createStatement().executeUpdate(queryStr2);
-    validateCreateTable(conn);
+    verifyTableData(conn,user);
+
   }
 
-  public static void validateCreateTable(Connection conn) throws SQLException {
-    String queryStr = "SELECT count(*) from userTable";
+  public static void verifyTableData(Connection conn,String user) throws SQLException {
+    String queryStr = "SELECT count(*) from  " + user + "Table";
     ResultSet rs = conn.createStatement().executeQuery(queryStr);
     while (rs.next()) {
       Log.getLogWriter().info("Query executed successfully and query result is ::" + rs.getInt(1));
     }
+
   }
 
   public static void grantRevokeOps(Boolean isGrant, Boolean isRevoke, Boolean isPublic) {
@@ -198,22 +212,24 @@ public class SnappySecurityTest extends SnappyTest {
       }
 
     }
-    validate(expectedExcptCnt, unExpectedExcptCnt);
+   validate(expectedExcptCnt, unExpectedExcptCnt);
   }
 
   public static void runQuery(String usr, String pass, Boolean isAuth) throws SQLException {
     Log.getLogWriter().info("Inside runQuery with args ");
     Connection conn = null;
+    Log.getLogWriter().info("SP1");
     Vector schemaToTest = SnappySecurityPrms.getSchema();
+    Log.getLogWriter().info("schemaToTest " + schemaToTest.size());
     String schemaStr = schemaToTest.elementAt(0).toString();
+    Log.getLogWriter().info("schemaStr = " + schemaStr);
     String schemaOwner = schemaStr.split("\\.")[0];
+    Log.getLogWriter().info(" SchemaOwner is " + schemaOwner);
     Boolean isGrant = SnappySecurityPrms.getIsGrant();
     Log.getLogWriter().info("User = " + usr + " with passwd = " + pass + " with  authorization = " + isAuth + " and grant permisison is " + isGrant + "with schemaOwner = " + schemaOwner + "  will execute the below query \n");
     conn = getSecuredLocatorConnection(usr, pass);
     String fileName = SnappySecurityPrms.getDataLocation();
     ArrayList queryArray = getQueryArr(fileName, usr);
-    // ArrayList<String> patternMatch = new ArrayList<String>();
-    Vector patternMatch = null;
     Boolean isJoinQuery = SnappySecurityPrms.getIsJoinQuery();
 
     for (int q = 0; q < queryArray.size(); q++) {
@@ -221,45 +237,7 @@ public class SnappySecurityTest extends SnappyTest {
       try {
         if (!usr.equals(adminUser) && !usr.equals(schemaOwner) && isGrant) {
           Log.getLogWriter().info("SP1 and isJoinQuery is " + isJoinQuery);
-          if (isJoinQuery) {
-            Log.getLogWriter().info("Inside joinQueyr");
-            String pattern = "user2";
-            Log.getLogWriter().info("SP2 query is " + queryStr + " Pattern to match is " + pattern);
-            for (String st : queryStr.split("\\s")) {
-              Log.getLogWriter().info("SP3");
-              if (st.matches(pattern + "\\w+")) {
-                Log.getLogWriter().info("SP4");
-                Log.getLogWriter().info("Matched " + st);
-                Log.getLogWriter().info("SP5");
-                patternMatch.add(st); // = st;
-                Log.getLogWriter().info("SP6");
-              }
-              if (patternMatch.size() > 1) {
-                if(patternMatch.size() >= schemaToTest.size()) {
-                  if (patternMatch.containsAll(schemaToTest)) {
-                    isAuth = true;
-                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
-                    execute(queryStr, conn);
-                  } else {
-                    isAuth = false;
-                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
-                    execute(queryStr, conn);
-                  }
-                }
-                else {
-                  if (schemaToTest.containsAll(patternMatch)) {
-                    isAuth = true;
-                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
-                    execute(queryStr, conn);
-                  } else {
-                    isAuth = false;
-                    Log.getLogWriter().info("The user " + usr + "will execute the Join/Sub query   " + queryStr + " with new authorization = " + isAuth);
-                    execute(queryStr, conn);
-                  }
-                }
-              }
-            }
-          } else {
+
             for (int s = 0; s < schemaToTest.size(); s++) {
               String str = schemaToTest.elementAt(s).toString();
               Log.getLogWriter().info("Find " + str + " in query " + queryStr);
@@ -276,20 +254,26 @@ public class SnappySecurityTest extends SnappyTest {
                 execute(queryStr, conn);
               }
             }
-          }
+
         } else {
           Log.getLogWriter().info("The query to be executed is  " + queryStr + " with new authorization = " + isAuth);
           execute(queryStr, conn);
         }
       } catch (SQLException e) {
-        if (isAuth) {
-          unExpectedExceptionCnt = unExpectedExceptionCnt + 1;
-          Log.getLogWriter().info(" unExpectedExceptionCnt Count is " + unExpectedExceptionCnt);
-          Log.getLogWriter().info("Got UnExpected Exception " + e.getMessage());
-        } else {
-          expectedExceptionCnt = expectedExceptionCnt + 1;
-          Log.getLogWriter().info("Got Expected Exception " + e.getMessage());
-        }
+       // if(e.toString().contains("SQLState=425")) {
+          if (isAuth) {
+            unExpectedExceptionCnt = unExpectedExceptionCnt + 1;
+            Log.getLogWriter().info(" unExpectedExceptionCnt Count is " + unExpectedExceptionCnt);
+            Log.getLogWriter().info("Got UnExpected Exception " + e.getMessage());
+          } else {
+            expectedExceptionCnt = expectedExceptionCnt + 1;
+            Log.getLogWriter().info("Got Expected Exception " + e.getMessage());
+          }
+      //  }
+      /*  else {
+          Log.getLogWriter().info("CAUGHT EXCEPTION : " + e.getMessage());
+          throw e;
+        } */
       }
     }
     closeConnection(conn);
@@ -452,7 +436,7 @@ public class SnappySecurityTest extends SnappyTest {
               + evictionByOption, "-client-port=" + primaryLocatorPort,
               "-client-bind-address=" + primaryLocatorHost, "-user=" + user, "-password=" + pass);
 
-          Log.getLogWriter().info("SP cmd " + pb.command());
+          Log.getLogWriter().info(" cmd " + pb.command());
           snappyTest.executeProcess(pb, logFile);
         }
       }

@@ -1,13 +1,4 @@
- io/snappydata/hydra/security/clusterAuthnGrantRevokeOpsWithJdbcClientTest.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
-  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
-  dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
-  dataLocationSubquery = "$GEMFIRE/../../../dtests/src/resources/scripts/security/subQueryJoinQuery.sql"
-
-  /*io/snappydata/hydra/security/clusterAuthnOpsAuthzWithJdbcClientTest.conf
+  io/snappydata/hydra/security/clusterAuthnOpsAuthzWithJdbcClientTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -43,7 +34,6 @@
   dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
   numVMsToStop=1
 
-
   io/snappydata/hydra/security/userAuthnAuthzWithSmartConnTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -52,11 +42,17 @@
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
 
-  io/snappydata/hydra/security/clusterAndSnappyJobAuthnTest.conf
+/*io/snappydata/hydra/security/userAuthnAuthzWithSnappyJob.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=1
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
-  dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
+  queryFile="$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
+  schema1="user2.employees"
+  schema2="user2.categories"
+  isGrant=true
+  expectedCntWithGrant=11
+  unExpectedCntWithGrant=0
+  passfile1="$GEMFIRE/../../../dtests/src/resources/scripts/security/user3Credentials.txt"
 */
