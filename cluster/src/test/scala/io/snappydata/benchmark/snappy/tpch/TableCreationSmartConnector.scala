@@ -57,7 +57,18 @@ object TableCreationSmartConnector {
     val loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
 
     val snSession = new SnappySession(sc.sparkContext)
-    snSession.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000");
+    snSession.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000")
+
+    snSession.dropTable("NATION", ifExists = true)
+    snSession.dropTable("REGION", ifExists = true)
+    snSession.dropTable("SUPPLIER", ifExists = true)
+    snSession.dropTable("PARTSUPP", ifExists = true)
+    snSession.dropTable("LINEITEM_PART", ifExists = true)
+    snSession.dropTable("PART", ifExists = true)
+    snSession.dropTable("ORDERS_CUST", ifExists = true)
+    snSession.dropTable("CUSTOMER", ifExists = true)
+    snSession.dropTable("LINEITEM", ifExists = true)
+    snSession.dropTable("ORDERS", ifExists = true)
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(snSession.sqlContext, tpchDataPath, true,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_Type,
