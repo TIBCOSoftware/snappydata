@@ -274,7 +274,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   // TODO: SW: need to create a combined delta+full value dictionary for this to work
 
-  final def getStringDictionary: Array[Long] = null
+  final def getStringDictionary: StringDictionary = null
 
   final def readDictionaryIndex: Int = -1
 }

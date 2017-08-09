@@ -56,6 +56,7 @@ final class DictionaryEncoderNullable
 abstract class DictionaryDecoderBase
     extends ColumnDecoder with DictionaryEncoding {
 
+  protected[this] final var stringDictionary: StringDictionary = _
   protected[this] final var intDictionary: Array[Int] = _
   protected[this] final var longDictionary: Array[Long] = _
 
@@ -86,13 +87,8 @@ abstract class DictionaryDecoderBase
     var index = 0
     Utils.getSQLDataType(dataType) match {
       case StringType =>
-        longDictionary = new Array[Long](numElements)
-        while (index < numElements) {
-          longDictionary(index) = position
-          val size = ColumnEncoding.readInt(columnBytes, position)
-          position += size + 4
-          index += 1
-        }
+        stringDictionary = new StringDictionary(cursor, numElements)
+        position = stringDictionary.initialize(columnBytes)
       case IntegerType | DateType =>
         intDictionary = new Array[Int](dictionaryLen)
         while (index < numElements) {
@@ -131,12 +127,10 @@ abstract class DictionaryDecoderBase
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 1)
   }
 
-  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String = {
-    ColumnEncoding.readUTF8StringFromDictionary(longDictionary, columnBytes,
-      ColumnEncoding.readShort(columnBytes, cursor))
-  }
+  override def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
+    stringDictionary.getString(columnBytes, ColumnEncoding.readShort(columnBytes, cursor))
 
-  override final def getStringDictionary: Array[Long] = longDictionary
+  override final def getStringDictionary: StringDictionary = stringDictionary
 
   override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
     ColumnEncoding.readShort(columnBytes, cursor)
@@ -179,10 +173,8 @@ abstract class BigDictionaryDecoderBase extends DictionaryDecoderBase {
     baseCursor + ((position - numNullsUntilPosition(columnBytes, position)) << 2)
   }
 
-  override final def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String = {
-    ColumnEncoding.readUTF8StringFromDictionary(longDictionary, columnBytes,
-      ColumnEncoding.readInt(columnBytes, cursor))
-  }
+  override final def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
+    stringDictionary.getString(columnBytes, ColumnEncoding.readInt(columnBytes, cursor))
 
   override def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int =
     ColumnEncoding.readInt(columnBytes, cursor)
@@ -508,6 +500,59 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     longMap = null
     longArray = null
   }
+}
+
+final class StringDictionary(baseCursor: Long, positions: Array[Int],
+    strings: Array[UTF8String], numElements: Int) {
+
+  def this(cursor: Long, numElements: Int) = {
+    // for medium/large dictionaries, create objects on the fly rather than store
+    // in dictionary to avoid GC issues with long-lived objects (SNAP-1877)
+    this(cursor, if (numElements > 1000) new Array[Int](numElements + 1) else null,
+      if (numElements <= 1000) new Array[UTF8String](numElements + 1) else null, numElements)
+  }
+
+  def initialize(columnBytes: AnyRef): Long = {
+    var intPos = 0
+    var index = 0
+    if (strings ne null) {
+      var cursor = baseCursor
+      while (index < numElements) {
+        val size = ColumnEncoding.readInt(columnBytes, cursor)
+        strings(index) = UTF8String.fromAddress(columnBytes, cursor + 4, size)
+        cursor += size + 4
+        index += 1
+      }
+      cursor
+    } else {
+      val cursor = baseCursor
+      while (index < numElements) {
+        positions(index) = intPos + 4
+        val size = ColumnEncoding.readInt(columnBytes, cursor + intPos)
+        intPos += size + 4
+        index += 1
+      }
+      cursor + intPos
+    }
+  }
+
+  @inline def getString(columnBytes: AnyRef, index: Int): UTF8String = {
+    // create objects on the fly rather than store in dictionary to avoid
+    // GC issues with long-lived objects (SNAP-1877)
+    if (strings ne null) {
+      strings(index)
+    } else {
+      val dictionaryPosition = positions(index)
+      // last uninitialized cursor indicates null value
+      if (dictionaryPosition != 0) {
+        val cursor = baseCursor + dictionaryPosition
+        val size = ColumnEncoding.readInt(columnBytes, cursor - 4)
+        UTF8String.fromAddress(columnBytes, cursor, size)
+      } else null
+    }
+  }
+
+  def size(): Int = numElements
 }
 
 private final class LongIndexKey(_l: Long, var index: Int)

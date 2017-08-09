@@ -200,7 +200,7 @@ abstract class ColumnDecoder extends ColumnEncoding {
   def readUTF8String(columnBytes: AnyRef, cursor: Long): UTF8String =
     throw new UnsupportedOperationException(s"readUTF8String for $toString")
 
-  def getStringDictionary: Array[Long] = null
+  def getStringDictionary: StringDictionary = null
 
   def readDictionaryIndex(columnBytes: AnyRef, cursor: Long): Int = -1
 
@@ -1057,21 +1057,8 @@ object ColumnEncoding {
     UTF8String.fromAddress(columnBytes, cursor + 4, size)
   }
 
-  @inline final def readUTF8StringFromDictionary(dictionary: Array[Long],
-      columnBytes: AnyRef, index: Int): UTF8String = {
-    // create objects on the fly rather than store in dictionary to avoid
-    // GC issues with long-lived objects (SNAP-1877)
-    val dictionaryCursor = dictionary(index)
-    // last uninitialized cursor indicates null value
-    if (dictionaryCursor != 0) {
-      val size = ColumnEncoding.readInt(columnBytes, dictionaryCursor)
-      UTF8String.fromAddress(columnBytes, dictionaryCursor + 4, size)
-    } else null
-  }
-
-  def stringFromDictionaryCode(dictVar: String,
-      bufferVar: String, indexVar: String): String =
-    s"$encodingClassName.readUTF8StringFromDictionary($dictVar, $bufferVar, $indexVar)"
+  def stringFromDictionaryCode(dictVar: String, bufferVar: String, indexVar: String): String =
+    s"$dictVar.getString($bufferVar, $indexVar)"
 
   @inline final def writeShort(columnBytes: AnyRef,
       cursor: Long, value: Short): Unit = if (littleEndian) {
