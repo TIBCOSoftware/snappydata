@@ -33,7 +33,8 @@ class SnappyExecutor(
     userClassPath: Seq[URL] = Nil,
     exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
-    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
+    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) with
+    SparkCallBack {
 
   if (!isLocal) {
     // Setup an uncaught exception handler for non-local mode.
