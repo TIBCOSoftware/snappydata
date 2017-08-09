@@ -33,6 +33,7 @@ import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -257,7 +258,7 @@ class LeadImpl extends ServerImpl with Lead
 
   private def isEnterpriseEdition(): Boolean = {
     GemFireVersion.getInstance(classOf[SnappyDataVersion],
-      SnappyDataVersion.SNAPPYDATA_VERSION_PROPERTIES)
+      SharedUtils.GFXD_VERSION_PROPERTIES)
     GemFireVersion.isEnterpriseEdition
   }
 
