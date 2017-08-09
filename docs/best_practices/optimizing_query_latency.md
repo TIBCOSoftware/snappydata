@@ -33,9 +33,6 @@ Column tables are not suitable for OLTP scenarios. In this case, row tables are 
 
 **Create Index**: Row tables also allow the creation of an index on certain columns of the table which improves  performance.
 
-!!! Note
-	In the current release of SnappyData, updates and deletes are not supported on column tables. This feature will be added in a future release.
-
 <a id="partition-replicate"></a>
 ## Using Partitioned vs Replicated Row Table
 
@@ -63,7 +60,7 @@ For an example on collocated joins, refer to [How to collocate tables for doing 
 The total number of partitions is fixed for a table by the BUCKETS option. By default, there are 113 buckets. The value should be increased for a large amount of data that also determines the number of Spark RDD partitions that are created for the scan. For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.</br>
 Unit of data movement is a bucket, and buckets of collocated tables move together. When a new server joins, the  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
 There is also a system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) that can be used to trigger rebalance.
-For more information on BUCKETS, refer to [BUCKETS](capacity_planning.md#buckets).
+For more information on BUCKETS, refer to [BUCKETS](setup_cluster.md#buckets).
 
 <a id="dimension"></a>
 **Criteria for Column Partitioning**</br>

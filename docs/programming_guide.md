@@ -301,11 +301,11 @@ $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
 
 SnappyData provides system procedures that you can use to install and manage JAR files from a client connection. These can be used to install your custom code (for example code shared across multiple jobs) in SnappyData cluster.
 
-**Installing a JAR** 
+### Installing a JAR
 
-Use SQLJ.INSTALL_JAR procedure to install a JAR file
+Related jobs may require some common libraries. These libraries can be made available to jobs by installing them. Use the SQLJ.INSTALL_JAR procedure to install a JAR file as mentioned below:
 
-Syntax:
+**Syntax:**
 
 ```bash
 SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
@@ -316,17 +316,17 @@ SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(
 
 * DEPLOY: This argument is currently ignored.
 
-*Example: Installing a JAR*
+**Example:**
 
 ```bash
 snappy> call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
 ```
 
-**Replacing a JAR** 
+### Replacing a JAR
 
 Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file
 
-Syntax:
+**Syntax:**
 ```bash
 SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
 ```
@@ -334,17 +334,17 @@ SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(
 
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
 
-*Example: Replacing a JAR*
+**Example:**
 
 ```bash
 CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 ```
 
-**Removing a JAR** 
+### Removing a JAR
 
 Use SQLJ.REMOVE_JAR  procedure to remove a JAR file
 
-Syntax:
+**Syntax:**
 ```bash
 SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 ```
@@ -352,7 +352,7 @@ SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 
 * UNDEPLOY: This argument is currently ignored.
 
-*Example: Removing a JAR*
+**Example:**
 
 ```bash
 CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
@@ -1149,7 +1149,11 @@ class StringLengthUDF extends UDF1[String, Int] {
 }
 ```
 <a id= create_udf> </a>
-#### Create the UDF Function
+#### Create UDF Function
+
+!!! Note:
+	Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.
+    
 After defining an UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
 
 ```

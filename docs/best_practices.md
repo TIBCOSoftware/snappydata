@@ -4,6 +4,6 @@ The best practices section provides you guidelines for setting up your cluster a
 
 The following topics are covered in this section:
 
-* [Setting up the Cluster](best_practices/capacity_planning.md)
+* [Setting up the Cluster](best_practices/setup_cluster.md)
 
 * [ Optimizing Query Latency: Partitioning and Replication Strategies](best_practices/design_schema.md)

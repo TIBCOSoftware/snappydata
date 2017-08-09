@@ -64,8 +64,6 @@ During query execution or while running a Spark job, all temporary object alloca
 
 At the start, each of the two pools is assigned a fraction of the available memory. While this fraction is allocated, SnappyData allows each pool to "balloon" into the other if capacity is available subject to following rules:
 
-TODO: review these rules. Correct the verbiage - Jags
-
 * The storage pool can grow to the execution pool if the execution pool has some capacity, but not beyond the `max_storage_size`.
 
 * If the storage pool cannot borrow from the executor pool, it can evict some of its own blocks to make space for incoming blocks.

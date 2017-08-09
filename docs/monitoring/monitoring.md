@@ -126,6 +126,6 @@ The Dashboard offers the following capabilities and benefits:
 
 * Shuffle reads and writes: Shuffles are written to disk and take lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high performance SSD drives for temporary storage (spark.local.dir) to improve shuffle times.  
 
-* Number of parallel tasks: Due to concurrency, multiple queries may take cores and a particular query may take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](/best_practices/capacity_planning.md).
+* Number of parallel tasks: Due to concurrency, multiple queries may take cores and a particular query may take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](/best_practices/setup_cluster.md).
 
 * GC time: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables).

@@ -26,7 +26,7 @@ pages:
 - Affinity Modes: deployment.md
 - 'Best Practices': 'best_practices.md'
 - 'Best Practices':
-    - 'Setting up your Cluster': 'best_practices/capacity_planning.md'
+    - 'Setting up your Cluster': 'best_practices/setup_cluster.md'
 #    - 'Setting up your Cluster':    
 #        - 'Concurrency and Management of Cores' : 'best_practices/setting_up_cluster/core_management.md'
 #        - 'Memory Management: Heap and Off-Heap' : 'best_practices/setting_up_cluster/heap_off_heap.md'
@@ -35,6 +35,8 @@ pages:
 #        - 'Operating System Settings' : 'best_practices/setting_up_cluster/operating_system_setting.md'
 #        - 'Table Memory Requirements' : 'best_practices/setting_up_cluster/table_memory_req.md'
 #        - 'JVM Settings for SnappyData Smart Connector mode and Local mode' : 'best_practices/setting_up_cluster/jvm_setting.md'
+    - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/important_settings.md'
+    - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/ha_considerations.md'    
     - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
     - 'Memory Management': 'best_practices/memory_management.md'      
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
@@ -75,8 +77,10 @@ pages:
             - 'DROP FUNCTION': 'reference/sql_reference/drop-function.md'
             - 'DROP INDEX': 'reference/sql_reference/drop-index.md'
             - 'DROP TABLE': 'reference/sql_reference/drop-table.md'
+        - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
+        - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
