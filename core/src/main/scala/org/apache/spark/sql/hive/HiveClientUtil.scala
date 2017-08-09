@@ -308,10 +308,10 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
       case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
            LocalMode(_, _) =>
         (ExternalStoreUtils.defaultStoreURL(Some(sparkContext)) +
-            ";disable-streaming=true;default-persistent=true",
+            ";disable-streaming=true;default-persistent=true;skip-constraint-checks=true;",
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
-        (url + ";route-query=false;", Constant.JDBC_CLIENT_DRIVER)
+        (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
       case ExternalClusterMode(_, _) =>
         (null, null)
     }
