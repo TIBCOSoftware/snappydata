@@ -57,4 +57,9 @@ trait ToolsCallback {
       url: String,
       targetDir: File,
       filename: String) : File
+
+  def setSessionDependencies(sparkContext: SparkContext,
+      appName : String,
+      classLoader: ClassLoader): Unit = {
+  }
 }

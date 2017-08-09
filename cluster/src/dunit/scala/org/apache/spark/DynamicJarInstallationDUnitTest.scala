@@ -23,8 +23,7 @@ import java.net.URL
 import java.sql.{Connection, DriverManager}
 
 import _root_.io.snappydata.cluster.ClusterManagerTestBase
-import _root_.io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
-import org.apache.commons.io.FilenameUtils
+import org.joda.time.DateTime
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.{Utils => Utility}
@@ -36,6 +35,7 @@ class DynamicJarInstallationDUnitTest(val s: String)
   val currentLocatorPort = ClusterManagerTestBase.locPort
 
   override def tearDown2(): Unit = {
+    sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", null)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     bootProps.clear()
   }
@@ -58,7 +58,8 @@ class DynamicJarInstallationDUnitTest(val s: String)
         } else Iterator.empty
       }).count
 
-    assert(countInstances == count, s"Assertion failed as countInstances=$countInstances and count=$count did not match")
+    assert(countInstances == count,
+      s"Assertion failed as countInstances=$countInstances and count=$count did not match")
   }
 
 
@@ -71,14 +72,15 @@ class DynamicJarInstallationDUnitTest(val s: String)
 
     var jobCompleted = false
 
-    sc.addJar(testJar.getFile)
-    sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", FilenameUtils.getName(testJar.getFile))
+    var localProperty = (Seq("app1", DateTime.now) ++ Array[URL](testJar)).mkString(",")
+    sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", localProperty)
     // verify that jar is loaded at executors
     val rdd = sc.parallelize(1 to 10, 2)
 
     sc.runJob(rdd, { iter: Iterator[Int] => {
       val currentLoader = Thread.currentThread().getContextClassLoader
-      println("Current classLoader is"+currentLoader)
+      // scalastyle:off println
+      println("Current classLoader is" + currentLoader)
       val fakeClass =
       Class.forName("FakeJobClass", false, currentLoader).newInstance()
       assert(fakeClass.toString == "1")
@@ -87,21 +89,19 @@ class DynamicJarInstallationDUnitTest(val s: String)
     })
 
     // removeJar
-    var jarToDelete = sc.addedJars.keySet.filter(
-      FilenameUtils.getName(_).equals(FilenameUtils.getName(testJar.getFile))).head
-    sc.addedJars.remove(jarToDelete)
+    sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", null)
 
     sc.runJob(rdd, { iter: Iterator[Int] => {
       org.scalatest.Assertions.intercept[ClassNotFoundException] {
       val currentLoader = Thread.currentThread().getContextClassLoader
-      println("Current classLoader is"+currentLoader)
+      println("Current classLoader is" + currentLoader)
         Class.forName("FakeJobClass", false, currentLoader).newInstance()
       }
       1
     }
     })
 
-    //Again add the same jar with a different name
+    // Again add the same jar with a different name
 
     testJar = DynamicJarInstallationDUnitTest.createJarWithClasses(
       classNames = Seq("FakeJobClass", "FakeJobClass1"),
@@ -109,14 +109,14 @@ class DynamicJarInstallationDUnitTest(val s: String)
       Seq.empty, Seq.empty,
       "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
 
-    sc.addJar(testJar.getFile)
-    sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", FilenameUtils.getName(testJar.getFile))
+    localProperty = (Seq("app1", DateTime.now) ++ Array[URL](testJar)).mkString(",")
+    sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", localProperty)
     // verify that jar is loaded at executors
 
 
     sc.runJob(rdd, { iter: Iterator[Int] => {
       val currentLoader = Thread.currentThread().getContextClassLoader
-      println("Current classLoader is"+currentLoader)
+      println("Current classLoader is" + currentLoader)
       val fakeClass =
         Class.forName("FakeJobClass", false, currentLoader).newInstance()
       assert(fakeClass.toString == "2")
@@ -124,75 +124,6 @@ class DynamicJarInstallationDUnitTest(val s: String)
     }
     })
 
-  }
-
-  //@TODO this test is invalid now. For backward compatibility we need to put a hook from replace jars to change the classloader in executors
-  def _testJarDeployementWithThinClient(): Unit = {
-    val snc = SnappyContext(sc)
-    val sqlJars = DynamicJarInstallationDUnitTest.createJarWithClasses(
-      classNames = Seq("FakeClass1", "FakeClass2", "FakeClass3"),
-      toStringValue = "1",
-      Seq.empty, Seq.empty,
-      "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
-
-
-    val replaceJars = DynamicJarInstallationDUnitTest.createJarWithClasses(
-      classNames = Seq("FakeClass1", "FakeClass2", "FakeClass4"),
-      toStringValue = "2",
-      Seq.empty, Seq.empty,
-      "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
-
-    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
-
-    val conn = getANetConnection(netPort1)
-
-    val stmt = conn.createStatement()
-
-    stmt.executeUpdate("call sqlj.install_jar('" + sqlJars.getPath + "', 'app.sqlJars', 0)")
-     println("Rishi verifying classes in controller")
-    // look for jar inside the executors
-    verifyClassOnExecutors(snc, "FakeClass1", "1", 3)
-    verifyClassOnExecutors(snc, "FakeClass2", "1", 3)
-    verifyClassOnExecutors(snc, "FakeClass3", "1", 3)
-
-
-    // replace  the jar and check again
-    stmt.executeUpdate("call sqlj.replace_jar('" + replaceJars.getPath + "', 'app.sqlJars')")
-
-    // look for jar inside the executors
-    verifyClassOnExecutors(snc, "FakeClass1", "2", 3)
-    verifyClassOnExecutors(snc, "FakeClass2", "2", 3)
-    verifyClassOnExecutors(snc, "FakeClass4", "2", 3)
-    verifyClassOnExecutors(snc, "FakeClass3", "", 0)
-
-    /*vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
-
-    val props = bootProps
-    val port = currentLocatorPort
-
-    val restartServer = new SerializableRunnable() {
-      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
-    }
-
-    vm1.invoke(restartServer)
-
-    // verify jar after restart
-    verifyClassOnExecutors(snc, "FakeClass1", "2", 3)
-    verifyClassOnExecutors(snc, "FakeClass2", "2", 3)
-    verifyClassOnExecutors(snc, "FakeClass4", "2", 3)
-    verifyClassOnExecutors(snc, "FakeClass3", "", 0)
-
-
-    // remove the jar and check
-
-    stmt.executeUpdate("call sqlj.remove_jar('app.sqlJars', 0)")
-
-    verifyClassOnExecutors(snc, "FakeClass1", "", 0)
-    verifyClassOnExecutors(snc, "FakeClass2", "", 0)
-    verifyClassOnExecutors(snc, "FakeClass3", "", 0)
-    verifyClassOnExecutors(snc, "FakeClass4", "", 0)*/
-    conn.close()
   }
 }
 
