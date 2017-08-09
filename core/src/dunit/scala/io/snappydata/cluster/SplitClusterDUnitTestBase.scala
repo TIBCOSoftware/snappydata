@@ -396,7 +396,8 @@ trait SplitClusterDUnitTestObject extends Logging {
     value
   }
   def validateNoActiveSnapshotTX(): Unit = {
-    val cache = Misc.getGemFireCache
+    val cache = Misc.getGemFireCacheNoThrow
+    if (cache eq null) return
     val txMgr = cache.getCacheTransactionManager
     if (txMgr != null) {
       val itr = txMgr.getHostedTransactionsInProgress.iterator()

@@ -232,33 +232,28 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       context: TaskContext): Iterator[Any] = {
 
     if (pushProjections || useResultSet) {
-      var tx: TXStateInterface = null
       if (!pushProjections) {
         val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
-        tx = txManagerImpl.getTXState
-        if (tx eq null) {
+        if (txManagerImpl.getTXState eq null) {
           txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
+          // if (commitTx)
+          commitTxBeforeTaskCompletion(None, context)
         }
       }
       // we always iterate here for column table
       val (conn, stmt, rs) = computeResultSet(thePart)
       val itr = new ResultSetTraversal(conn, stmt, rs, context)
-      // add the listener after the close listener added by iterator
-      // so its invoked just before it
-      if (!pushProjections) {
-        if (tx eq null) {
-          // if (commitTx)
-          commitTxBeforeTaskCompletion(None, context)
-        }
-      } else if (commitTx && pushProjections) {
+      if (commitTx && pushProjections) {
         commitTxBeforeTaskCompletion(Option(conn), context)
       }
       itr
     } else {
       val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
-      val tx = txManagerImpl.getTXState
-      if (tx eq null) {
-        txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
+      var tx = txManagerImpl.getTXState
+      val startTX = tx eq null
+      if (startTX) {
+        tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
+          IsolationLevel.SNAPSHOT, null, null)
       }
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
@@ -283,7 +278,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       }
       // add the listener after the close listener added by iterator
       // so its invoked just before it
-      if (tx eq null) {
+      if (startTX) {
         // if (commitTx) {
         commitTxBeforeTaskCompletion(None, context)
         // }
