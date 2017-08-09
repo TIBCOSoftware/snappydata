@@ -127,7 +127,7 @@ while (( "$#" )); do
         echo "The netrc file $passwordfile not found."
         exit 1
       fi
-      securePart=" --netrc-file ${passwordfile}"
+      securePart=" --config ${passwordfile}"
     ;;
     *)
       showUsage $1

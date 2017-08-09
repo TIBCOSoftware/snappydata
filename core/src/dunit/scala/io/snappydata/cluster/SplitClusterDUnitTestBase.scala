@@ -151,7 +151,7 @@ trait SplitClusterDUnitTestBase extends Logging {
     doTestRowTableCreation()
   }
 
-  def _testComplexTypesForColumnTables_SNAP643(): Unit = {
+  def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
@@ -379,7 +379,7 @@ trait SplitClusterDUnitTestObject extends Logging {
             drnd2)), dec(1), ts(math.abs(rnd1) % 5))
     }
     val rdd = context.parallelize(data, 8)
-    val dataDF = snc.createDataFrame(rdd)
+    val dataDF = snc.createDataFrameUsingRDD(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, props)
     dataDF.write.insertInto(tableName)
