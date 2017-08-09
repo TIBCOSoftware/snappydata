@@ -46,6 +46,7 @@ import org.apache.spark.sql.types.StructField
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
+import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 // import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
@@ -338,6 +339,15 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     createApproxTSTopK(topKName, Option(baseTable), keyColumnName,
       topkOptions.asScala.toMap, allowExisting)
   }
+
+   /**
+    * :: Experimental ::
+    * Creates a [[DataFrame]] from an RDD of Product (e.g. case classes, tuples).
+    * This method handles generic array datatype like Array[Decimal]
+    */
+   def createDataFrameUsingRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+     snappySession.createDataFrameUsingRDD(rdd)
+   }
 
   /**
    * Creates a SnappyData managed table. Any relation providers
@@ -826,7 +836,6 @@ object SnappyContext extends Logging {
     "org.apache.spark.sql.sampling.DefaultSource"
   )
   private val builtinSources = new CaseInsensitiveMap(Map(
-    "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
