@@ -33,9 +33,10 @@ object StoreStrategy extends Strategy {
 
     case CreateTable(tableDesc, mode, None) =>
       val userSpecifiedSchema: Option[StructType] = if (tableDesc.schema.isEmpty) None
-      else
+      else {
         Some(SparkSession.getActiveSession.get.asInstanceOf[SnappySession].normalizeSchema
         (tableDesc.schema))
+      }
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
 
       val optionsWithPath: Map[String,String] = if(tableDesc.storage.locationUri.isDefined)

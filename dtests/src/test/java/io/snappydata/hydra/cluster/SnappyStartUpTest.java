@@ -341,6 +341,23 @@ public class SnappyStartUpTest extends SnappyTest {
     snappyTest.writeConfigData("servers", "serverLogDir");
   }
 
+  /**
+   * Add new server configuration data in servers file under testLog directory location which is
+   * required to start the snappy server/s in servers including new node later in long running test.
+   */
+  public static void HydraTask_addNweServerConfigData() {
+    File file = null;
+    try {
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "servers";
+      file = new File(dest);
+    } catch (IOException e) {
+      String s = "Unable to create file: " + file.getAbsolutePath();
+      throw new TestException(s);
+    }
+    snappyTest.writeConfigData("servers", "serverLogDir");
+  }
+
   public static void HydraTask_OpsDuringServerHA_clusterRestart() {
     if (cycleVms) {
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);

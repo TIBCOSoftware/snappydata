@@ -1168,6 +1168,7 @@ class ColumnTableTest
     for(i<- 0 to 2) assert(rows(i)(0)==i+1)
 
     snc.sql("drop table if exists TEST_EXTERNAL")
+    snc.sql("drop table if exists t1")
     FileUtils.deleteDirectory(new java.io.File(tempPath))
   }
 }
