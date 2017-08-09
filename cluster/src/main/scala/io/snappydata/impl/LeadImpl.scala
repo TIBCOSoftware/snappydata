@@ -247,7 +247,8 @@ class LeadImpl extends ServerImpl with Lead
     }
     if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
       throw new IllegalArgumentException("LDAP is the only supported auth-provider currently.")
-    } else if (authP != null && !isEnterpriseEdition()) {
+    }
+    if (authP != null && !isEnterpriseEdition()) {
       throw new UnsupportedOperationException("Security feature is available in SnappyData " +
           "Enterprise Edition.")
     }
