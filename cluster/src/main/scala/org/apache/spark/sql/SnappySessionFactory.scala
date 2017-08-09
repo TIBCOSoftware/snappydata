@@ -40,7 +40,6 @@ class SnappySessionFactory extends SparkContextFactory {
 
 object SnappySessionFactory {
 
-  val job_jar_path = "JOB_JAR_PATH"
   private[this] val snappySession =
     new SnappySession(LeadImpl.getInitializingSparkContext)
 
@@ -58,10 +57,6 @@ object SnappySessionFactory {
       // by install_jars, this can help.
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
         SnappyUtils.getSnappyContextURLClassLoader(parent)
-      }
-
-      override def addJobJar(jarPath : String): Unit = {
-        addContextObject[String](job_jar_path, jarPath)
       }
     }
 }

@@ -53,11 +53,11 @@ class SnappyExecutor(
         val appNameAndJars = key.appNameAndJars
         lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
         val appDependencies = appNameAndJars.drop(2).toSeq
-        Misc.getCacheLogWriter.info(s"Creating ClassLoader for $appName" +
+        logInfo(s"Creating ClassLoader for $appName" +
             s" with dependencies $appDependencies")
         val urls = appDependencies.map(name => {
           val localName = name.split("/").last
-          Misc.getCacheLogWriter.info(s"Fetching file $name for App[$appName]")
+          logInfo(s"Fetching file $name for App[$appName]")
           Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
             env.securityManager, hadoopConf, -1L, useCache = !isLocal)
           val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
@@ -95,14 +95,13 @@ class SnappyExecutor(
       if (null != taskDeserializationProps) {
         val appDetails = taskDeserializationProps.getProperty(io.snappydata.Constant
             .CHANGEABLE_JAR_NAME, "")
-        Misc.getCacheLogWriter.info(s"Submitted Application Details $appDetails")
+        logInfo(s"Submitted Application Details $appDetails")
         if (!appDetails.isEmpty) {
           val appNameAndJars = appDetails.split(",")
-          val appName = appNameAndJars(0)
-          val appTime = appNameAndJars(1)
           val threadClassLoader =
-            classLoaderCache.getUnchecked(new ClassLoaderKey(appName, appTime, appNameAndJars))
-          Misc.getCacheLogWriter.info(s"Setting thread classloader  $threadClassLoader")
+            classLoaderCache.getUnchecked(new ClassLoaderKey(appNameAndJars(0),
+              appNameAndJars(1), appNameAndJars))
+          logInfo(s"Setting thread classloader  $threadClassLoader")
           Thread.currentThread().setContextClassLoader(threadClassLoader)
         }
       }
