@@ -124,7 +124,7 @@ public class SnappyTest implements Serializable {
   /**
    * (String) APP_PROPS to set dynamically
    */
-  public Map<Integer,String> dynamicAppProps = new HashMap<>();
+  public Map<Integer, String> dynamicAppProps = new HashMap<>();
 
   public enum SnappyNode {
     LOCATOR, SERVER, LEAD, WORKER
@@ -1068,6 +1068,7 @@ public class SnappyTest implements Serializable {
    */
   protected static void writeSparkMasterConnInfo() {
     String masterHost = getSparkMasterHost();
+    Log.getLogWriter().info("masterHost is : " + masterHost);
     snappyTest.writeNodeConfigData("masterHost", masterHost, false);
   }
 
@@ -1955,8 +1956,8 @@ public class SnappyTest implements Serializable {
         } else {
           APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
         }
-        if(SnappyPrms.hasDynamicAppProps()){
-          APP_PROPS = "\"" + APP_PROPS +  "," + dynamicAppProps.get(getMyTid()) + "\"" ;
+        if (SnappyPrms.hasDynamicAppProps()) {
+          APP_PROPS = "\"" + APP_PROPS + "," + dynamicAppProps.get(getMyTid()) + "\"";
         }
         String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
         String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + leadPort + "/jobs?appName=" + appName + "&classPath=" + userJob + "'";
@@ -2002,9 +2003,9 @@ public class SnappyTest implements Serializable {
         String command = null;
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
-        String userAppJars =  SnappyPrms.getUserAppArgs();
-        if(SnappyPrms.hasDynamicAppProps()){
-          userAppJars = userAppJars +  " " + dynamicAppProps.get(getMyTid());
+        String userAppJars = SnappyPrms.getUserAppArgs();
+        if (SnappyPrms.hasDynamicAppProps()) {
+          userAppJars = userAppJars + " " + dynamicAppProps.get(getMyTid());
         }
         command = snappyJobScript + " --class " + userJob +
             " --master spark://" + masterHost + ":" + masterPort + " " +
@@ -3088,6 +3089,7 @@ public class SnappyTest implements Serializable {
       masterHost = getDataFromFile("masterHost");
       if (masterHost == null) {
         masterHost = getMasterHost();
+        Log.getLogWriter().info("masterHost is : " + masterHost);
         snappyTest.writeNodeConfigData("masterHost", masterHost, false);
       }
     } else masterHost = getMasterHost();
