@@ -469,7 +469,7 @@ private[sql] final case class ColumnTableScan(
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
       val incrementMutatedColumnCount = if (mutatedColumnsSeen eq null) ""
-      else s"\nif ($mutatedDecoder != null) $mutatedColumnsSeen.${metricAdd("1")};"
+      else s"\n$mutatedColumnsSeen.${metricAdd("1")};"
 
       ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
 
@@ -506,7 +506,7 @@ private[sql] final case class ColumnTableScan(
            |  $mutatedDecoder = $colInput.getMutatedColumnDecoderIfRequired(
            |      $decoder, $planSchema.apply($index), $baseIndex, ${index != 0});
            |  if ($mutatedDecoder != null) {
-           |    $mutatedDecoder.updateNextMutatedPosition();$incrementMutatedColumnCount
+           |    $mutatedDecoder.initialize();$incrementMutatedColumnCount
            |  }
            |  // initialize the decoder and store the starting cursor position
            |  $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
