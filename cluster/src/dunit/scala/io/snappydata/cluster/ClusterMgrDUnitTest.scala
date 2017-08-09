@@ -118,22 +118,23 @@ object ClusterMgrDUnitTest {
         "DepTime INT," +
         "ArrTime INT," +
         "UniqueCarrier CHAR(6) NOT NULL"
-
+    snContext.sql("drop table if exists airline")
+    snContext.sql(s"create table airline ($ddlStr)")
     if (new Random().nextBoolean()) {
-      snContext.sql("drop table if exists airline")
-      snContext.sql(s"create table airline ($ddlStr) " +
+
+      snContext.sql(s"create external table airline1 " +
           s" using jdbc options (URL '$externalUrl'," +
-          "  Driver 'io.snappydata.jdbc.EmbeddedDriver')").collect()
+          "  Driver 'io.snappydata.jdbc.EmbeddedDriver', dbtable 'APP.AIRLINE')").collect()
     } else {
-      snContext.sql(s"create table if not exists airline ($ddlStr) " +
+      snContext.sql(s"create external table if not exists airline1 " +
           s" using jdbc options (URL '$externalUrl'," +
-          "  Driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver')").collect()
+          "  Driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver',dbtable 'APP.AIRLINE')").collect()
     }
 
     snContext.sql("insert into airline values(2015, 2, 15, 1002, 1803, 'AA')")
     snContext.sql("insert into airline values(2014, 4, 15, 1324, 1500, 'UT')")
 
-    val result = snContext.sql("select * from airline")
+    val result = snContext.sql("select * from airline1")
     val expected = Set[Row](Row(2015, 2, 15, 1002, 1803, "AA    "),
         Row(2014, 4, 15, 1324, 1500, "UT    "))
     val returnedRows = result.collect()
@@ -144,6 +145,7 @@ object ClusterMgrDUnitTest {
     assert(returnedRows.toSet == expected)
 
     snContext.sql("drop table if exists airline")
+    snContext.sql("drop table if exists airline1")
   }
 
   def startExternalSparkApp(locatorPort: Int): Unit = {
