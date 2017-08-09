@@ -242,7 +242,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       case Some(conn) if !conn.isClosed =>
         connectionType match {
           case ConnectionType.Embedded =>
-            if(!conn.isInstanceOf[EmbedConnection]){
+            if (!conn.isInstanceOf[EmbedConnection]) {
               conn.commit()
               conn.close()
             }
@@ -700,13 +700,14 @@ final class SmartConnectorColumnRDD(
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
+    val partitionId = split.index
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
-      split.index, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
+      partitionId, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
     // fetch the stats
     val (statement, rs, txId) = helper.executeQuery(conn, tableName, split,
       fetchStatsQuery, relDestroyVersion)
     val itr = new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs,
-      context, fetchColQuery)
+      context, partitionId, fetchColQuery)
 
     if (context ne null) {
       context.addTaskCompletionListener { _ =>
