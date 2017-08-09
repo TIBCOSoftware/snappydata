@@ -244,15 +244,17 @@ class LeadImpl extends ServerImpl with Lead
   }
 
   private def checkAuthProvider(props: Properties): Unit = {
-    var authP = props.getProperty(Attribute.AUTH_PROVIDER)
-    if (authP == null) {
-      authP = props.getProperty(Attribute.SERVER_AUTH_PROVIDER)
-    }
-    if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
-      throw new IllegalArgumentException("LDAP is the only supported auth-provider currently.")
-    } else if (authP != null && !isEnterpriseEdition()) {
-      throw new UnsupportedOperationException("Security feature is available in SnappyData " +
-        "Enterprise Edition.")
+    doCheck(props.getProperty(Attribute.AUTH_PROVIDER))
+    doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
+
+    def doCheck(authP: String): Unit = {
+      if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
+        throw new UnsupportedOperationException("LDAP is the only supported auth-provider currently.")
+      }
+      if (authP != null && !isEnterpriseEdition()) {
+        throw new UnsupportedOperationException("Security feature is available in SnappyData " +
+            "Enterprise Edition.")
+      }
     }
   }
 

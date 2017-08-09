@@ -18,6 +18,8 @@ package io.snappydata.gemxd
 
 import java.io.{InputStream, PrintWriter, PrintStream}
 
+import scala.collection.mutable.HashMap
+
 import com.gemstone.gemfire.internal.{ClassPathLoader, SharedLibrary, GemFireVersion}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.NativeCalls
@@ -120,8 +122,17 @@ object SnappyDataVersion {
     GemFireVersion.createVersionFile
   }
 
-  def getSnappyDataProductVersion: String ={
+  def getSnappyDataProductVersion: HashMap[String, String] = {
     GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
-    GemFireVersion.getProductVersion
+    val versionDetails = HashMap.empty[String, String]
+    versionDetails.put("productName", GemFireVersion.getProductName)
+    versionDetails.put("productVersion", GemFireVersion.getProductVersion)
+    versionDetails.put("buildId", GemFireVersion.getBuildId)
+    versionDetails.put("buildDate", GemFireVersion.getBuildDate)
+    versionDetails.put("buildPlatform", GemFireVersion.getBuildPlatform)
+    versionDetails.put("nativeCodeVersion", GemFireVersion.getNativeCodeVersion)
+    versionDetails.put("sourceRevision", GemFireVersion.getSourceRevision)
+
+    versionDetails
   }
 }

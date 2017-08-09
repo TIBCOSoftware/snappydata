@@ -166,26 +166,23 @@ class QueryRoutingDUnitTest(val s: String)
     assert(expectedResult.sorted.sameElements(actualResult))
     setDMLMaxChunkSize(default_chunk_size)
 
-    // Check that update and delete on column table returns exception
-    try {
-      s.executeUpdate("update TEST.ColumnTableQR set col1 = 10")
-      TestCase.fail("update on column table should have failed")
-    } catch {
-      case sqe: SQLException =>
-        if ("42Y62" != sqe.getSQLState) {
-          throw sqe
-        }
+    // Check that update and delete on column table works
+    val updated = s.executeUpdate("update TEST.ColumnTableQR set col1 = 10")
+    assert(updated == 5)
+    s.execute("select col1 from TEST.ColumnTableQR order by col1")
+    val rs2 = s.getResultSet
+    cnt = 0
+    while (rs2.next()) {
+      val row = rs2.getInt(1)
+      assert(row == 10)
+      cnt += 1
     }
+    assert(cnt == 5)
 
-    try {
-      s.executeUpdate("delete from TEST.ColumnTableQR")
-      TestCase.fail("delete on column table should have failed")
-    } catch {
-      case sqe: SQLException =>
-        if ("42Y62" != sqe.getSQLState) {
-          throw sqe
-        }
-    }
+    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR")
+    assert(deleted == 5)
+    s.execute("select col1 from TEST.ColumnTableQR order by col1")
+    assert(!s.getResultSet.next())
 
     conn.close()
   }

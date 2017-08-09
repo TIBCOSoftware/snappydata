@@ -172,15 +172,20 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     )
 
     // Start the database
-    DriverManager.getConnection(s"jdbc:derby:$path;create=true")
+    val conn = DriverManager.getConnection(s"jdbc:derby:$path;create=true")
+    conn.createStatement().execute("create table TEST_JDBC_TABLE_1(COL1 INTEGER,COL2 INTEGER,COL3 INTEGER)")
 
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_1")
+    snc.sql(s"CREATE external TABLE TEST_JDBC_TABLE_1  " +
+      s"USING jdbc " +
+      s"options(url 'jdbc:derby:$path',driver 'org.apache.derby.jdbc.EmbeddedDriver',poolImpl " +
+      s"'tomcat',user 'app',password 'app')")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props)
-        .saveAsTable("TEST_JDBC_TABLE_1")
+      .insertInto("TEST_JDBC_TABLE_1")
     val connConf = new ConnectionConfBuilder(snc.snappySession)
     props.map(entry => connConf.setConf(entry._1, entry._2))
     val conf = connConf.build()
