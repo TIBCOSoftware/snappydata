@@ -40,13 +40,13 @@ trait ExternalStore extends Serializable {
       (implicit c: Option[Connection] = None): Unit
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: UTF8String, maxDeltaRows: Int): Unit = {
+      partitionId: Int, batchId: UTF8String, maxDeltaRows: Int) (conn: Option[Connection]): Unit = {
     storeColumnBatch(tableName, batch, partitionId,
-      if (batchId ne null) Some(batchId.toString) else None, maxDeltaRows)
+      if (batchId ne null) Some(batchId.toString) else None, maxDeltaRows)(conn)
   }
 
   def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String): Unit
+      statsData: Array[Byte], partitionId: Int, batchId: String)(c: Option[Connection] = None): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]

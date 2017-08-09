@@ -17,6 +17,8 @@
 
 package org.apache.spark.sql.execution.columnar
 
+import java.sql.Connection
+
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
@@ -77,6 +79,63 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   @transient private var batchOrdinal: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
+  @transient protected var txId: String = _
+  @transient protected var success: String = _
+
+  override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
+    val connectionClass = classOf[Connection].getName
+    connTerm = ctx.freshName("connection")
+    txId = ctx.freshName("txId")
+    success = ctx.freshName("success")
+    ctx.addMutableState("boolean", success, "")
+    ctx.addMutableState("String", txId, "")
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+    ctx.addReferenceObj()
+
+    if (onExecutor) {
+      // actual connection will be filled into references before execution
+      connRef = ctx.references.length
+      // connObj position in the array is connRef
+      val connObj = ctx.addReferenceObj("conn", null, connectionClass)
+      (s"final $connectionClass $connTerm = $connObj;", "", "")
+    } else {
+      // This is at driver?
+      val utilsClass = ExternalStoreUtils.getClass.getName
+      ctx.addMutableState(connectionClass, connTerm, "")
+      val props = ctx.addReferenceObj("connectionProperties", connProps)
+      // For row table we don't need to start a
+      //$connTerm = $utilsClass.MODULE$$.getConnection(
+      //    "$resolvedName", $props, true);
+      val initCode =
+        s"""
+           | final Object[] connAndtxid = $externalStoreTerm.beginTx();
+           | $connTerm = (java.sql.Connection)connAndtxid[0];
+           | $txId = (String)connAndtxid[1];
+           | $success = false;
+           | """.stripMargin
+
+      val endCode =
+        s""" finally {
+           |  //try {
+           |    if ($txId != null) {
+           |      if ($success) {
+           |        $externalStoreTerm.commitTx($txId, new scala.Some($connTerm));
+           |      }
+           |      else {
+           |        $externalStoreTerm.rollbackTx($txId, new scala.Some($connTerm));
+           |      }
+           |    }
+           |    $externalStoreTerm.closeConnection(new scala.Some($connTerm));
+           |  //} catch (java.sql.SQLException sqle) {
+           |    // ignore exception in close
+           |  //}
+           |}""".stripMargin
+      val commitCode =
+        s"""
+           """.stripMargin
+      (initCode, commitCode, endCode)
+    }
+  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
@@ -97,6 +156,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |if ($batchOrdinal > 0) {
          |  $finishUpdate(null, -1); // force a finish
          |}
+         |$success = true;
       """.stripMargin)
   }
 
@@ -215,7 +275,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch,
-         |        $lastBucketId, $lastColumnBatchId, -1);
+         |        $lastBucketId, $lastColumnBatchId, -1, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();
