@@ -119,7 +119,7 @@ class QueryTest extends SnappyFunSuite {
   }
 
   test("SNAP-1714") {
-    val snc = this.snc
+    val snc = new SnappySession(this.sc)
     snc.sql("CREATE TABLE ColumnTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
         "USING column " +
         "options " +
@@ -140,7 +140,7 @@ class QueryTest extends SnappyFunSuite {
     snc.table("columnTable").select("COL3", "Col2", "`A/B`").show()
     snc.table("columnTable").select("COL3", "Col2", "`a/b`").show()
 
-    snc.setConf("spark.sql.caseSensitive", "true")
+    snc.conf.set("spark.sql.caseSensitive", "true")
     try {
       snc.table("columnTable").select("col3", "col2", "a/b").show()
       fail("expected to fail for case-sensitive=true")
@@ -208,6 +208,10 @@ class QueryTest extends SnappyFunSuite {
     import session.implicits._
 
     setupTestData(session)
+
+    session.dropTable("t1", ifExists = true)
+    session.dropTable("t2", ifExists = true)
+    session.dropTable("onerow", ifExists = true)
 
     Seq(1, 2).toDF("c1").write.format("column").saveAsTable("t1")
     Seq(1).toDF("c2").write.format("column").saveAsTable("t2")
