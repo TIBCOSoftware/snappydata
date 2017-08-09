@@ -483,7 +483,7 @@ private[sql] final case class ColumnTableScan(
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
       val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
       val incrementMutatedColumnCount = if (mutatedColumnsSeen eq null) ""
-      else s"\nif ($mutatedDecoder != null) $mutatedColumnsSeen.${metricAdd("1")};"
+      else s"\n$mutatedColumnsSeen.${metricAdd("1")};"
 
       ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
 
@@ -521,7 +521,7 @@ private[sql] final case class ColumnTableScan(
            |  $mutatedDecoder = $colInput.getMutatedColumnDecoderIfRequired(
            |      $decoder, $planSchema.apply($index), $baseIndex, ${index != 0});
            |  if ($mutatedDecoder != null) {
-           |    $mutatedDecoder.updateNextMutatedPosition();$incrementMutatedColumnCount
+           |    $mutatedDecoder.initialize();$incrementMutatedColumnCount
            |  }
            |  // initialize the decoder and store the starting cursor position
            |  $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
@@ -612,7 +612,7 @@ private[sql] final case class ColumnTableScan(
 
     if (deletedCheck.isEmpty) {
       // no columns in a count(.) query
-      deletedCountCheck = s" - $colInput.getDeletedRowCount();"
+      deletedCountCheck = s" - $colInput.getDeletedRowCount()"
     }
 
     if (isWideSchema) {
@@ -657,7 +657,7 @@ private[sql] final case class ColumnTableScan(
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
         UnsafeRow $unsafeRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
+        $numBatchRows = $unsafeRow.getInt($countIndexInSchema)$deletedCountCheck;
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -763,7 +763,7 @@ private[sql] final case class ColumnTableScan(
        |    $bufferInitCodeStr
        |    $assignBatchId
        |    $batchConsume
-       |    final int $numRows = $numBatchRows$deletedCountCheck;
+       |    final int $numRows = $numBatchRows;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      $assignOrdinalId

@@ -1181,7 +1181,7 @@ class ColumnTableTest
 
   test("Test for SNAP-1878 create external table using api") {
 
-
+    snc.sql("drop table if exists t1")
     snc.sql(s"create table t1 (c1 integer,c2 string)")
     snc.sql(s"insert into t1 values(1,'test1')")
     snc.sql(s"insert into t1 values(2,'test2')")
@@ -1205,6 +1205,7 @@ class ColumnTableTest
     for(i<- 0 to 2) assert(rows(i)(0)==i+1)
 
     snc.sql("drop table if exists TEST_EXTERNAL")
+    snc.sql("drop table if exists t1")
     FileUtils.deleteDirectory(new java.io.File(tempPath))
   }
 }

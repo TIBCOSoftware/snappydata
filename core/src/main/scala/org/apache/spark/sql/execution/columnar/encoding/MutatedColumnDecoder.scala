@@ -19,7 +19,9 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
-import org.apache.spark.sql.types.StructField
+import com.pivotal.gemfirexd.internal.shared.common.reference.JDBC40Translation
+
+import org.apache.spark.sql.types._
 
 /**
  * Decodes a column of a batch that has seen some changes (updates or deletes) by
@@ -35,12 +37,14 @@ import org.apache.spark.sql.types.StructField
  * To create an instance, use the companion class apply method which will create
  * a nullable or non-nullable version as appropriate.
  */
-final class MutatedColumnDecoder(decoder: ColumnDecoder,
+final class MutatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
     delta1Position: Int, delta1: ColumnDeltaDecoder,
     delta2Position: Int, delta2: ColumnDeltaDecoder,
     delta3Position: Int, delta3: ColumnDeltaDecoder, deleteBuffer: ByteBuffer)
-    extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
+    extends MutatedColumnDecoderBase(decoder, field, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
+
+  protected def nullable: Boolean = false
 
   def isNull: Boolean = currentDeltaBuffer eq null
 }
@@ -48,12 +52,14 @@ final class MutatedColumnDecoder(decoder: ColumnDecoder,
 /**
  * Nullable version of [[MutatedColumnDecoder]].
  */
-final class MutatedColumnDecoderNullable(decoder: ColumnDecoder,
+final class MutatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructField,
     delta1Position: Int, delta1: ColumnDeltaDecoder,
     delta2Position: Int, delta2: ColumnDeltaDecoder,
     delta3Position: Int, delta3: ColumnDeltaDecoder, deleteBuffer: ByteBuffer)
-    extends MutatedColumnDecoderBase(decoder, delta1Position, delta1,
+    extends MutatedColumnDecoderBase(decoder, field, delta1Position, delta1,
       delta2Position, delta2, delta3Position, delta3, deleteBuffer) {
+
+  protected def nullable: Boolean = true
 
   def isNull: Boolean = (currentDeltaBuffer eq null) || currentDeltaBuffer.isNull
 }
@@ -90,20 +96,46 @@ object MutatedColumnDecoder {
     // check if any of the deltas or full value have nulls
     if (field.nullable && (decoder.hasNulls || ((delta1 ne null) && delta1.hasNulls) ||
         ((delta2 ne null) && delta2.hasNulls) || ((delta3 ne null) && delta3.hasNulls))) {
-      new MutatedColumnDecoderNullable(decoder, delta1Position, delta1,
+      new MutatedColumnDecoderNullable(decoder, field, delta1Position, delta1,
         delta2Position, delta2, delta3Position, delta3, deleteBuffer)
     } else {
-      new MutatedColumnDecoder(decoder, delta1Position, delta1,
+      new MutatedColumnDecoder(decoder, field, delta1Position, delta1,
         delta2Position, delta2, delta3Position, delta3, deleteBuffer)
     }
   }
 }
 
-abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
+abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructField,
     private final var delta1Position: Int, delta1: ColumnDeltaDecoder,
     private final var delta2Position: Int, delta2: ColumnDeltaDecoder,
     private final var delta3Position: Int, delta3: ColumnDeltaDecoder,
     deleteBuffer: ByteBuffer) {
+
+  protected def nullable: Boolean
+
+  protected final def getSQLType(dataType: DataType): Int = dataType match {
+    case StringType => java.sql.Types.CLOB
+    case IntegerType => java.sql.Types.INTEGER
+    case LongType => java.sql.Types.BIGINT
+    case DoubleType => java.sql.Types.DOUBLE
+    case FloatType => java.sql.Types.FLOAT
+    case ShortType => java.sql.Types.SMALLINT
+    case ByteType => java.sql.Types.TINYINT
+    case BooleanType => java.sql.Types.BOOLEAN
+    case TimestampType => java.sql.Types.BIGINT // same width as long
+    case DateType => java.sql.Types.INTEGER // same width as int
+    case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS => java.sql.Types.NUMERIC
+    case _: DecimalType => java.sql.Types.DECIMAL
+    case BinaryType => java.sql.Types.BLOB
+    case _: ArrayType => java.sql.Types.ARRAY
+    case _: MapType => JDBC40Translation.MAP
+    case _: StructType => java.sql.Types.STRUCT
+    case udt: UserDefinedType[_] => getSQLType(udt.sqlType)
+    case _ => throw new IllegalArgumentException(
+      s"Can't translate to JDBC value for type $dataType")
+  }
+
+  protected final val dataType: Int = getSQLType(field.dataType)
 
   private final var deletePosition = Int.MaxValue
   private final var deleteCursor: Long = _
@@ -111,7 +143,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
   private final val deleteBytes = if (deleteBuffer ne null) {
     val allocator = ColumnEncoding.getAllocator(deleteBuffer)
     deleteCursor = allocator.baseOffset(deleteBuffer) + deleteBuffer.position()
-    deleteEndCursor = deleteCursor + deleteBuffer.limit()
+    deleteEndCursor = deleteCursor + deleteBuffer.remaining()
     // skip 8 bytes header
     deleteCursor += 8
     val bytes = allocator.baseObject(deleteBuffer)
@@ -125,8 +157,8 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
-  def initialize(): Unit = {
-    updateNextMutatedPosition()
+  final def initialize(): Unit = {
+    updateNextMutatedPosition(-1)
   }
 
   private def nextDeletedPosition(deleteBytes: AnyRef): Int = {
@@ -137,7 +169,26 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     } else Int.MaxValue
   }
 
-  protected final def updateNextMutatedPosition(): Unit = {
+  protected final def skipMutatedPosition(delta: ColumnDeltaDecoder): Unit = {
+    if (!nullable || !delta.isNull) dataType match {
+      case java.sql.Types.CLOB => delta.nextUTF8String()
+      case java.sql.Types.INTEGER => delta.nextInt()
+      case java.sql.Types.BIGINT => delta.nextLong()
+      case java.sql.Types.DOUBLE => delta.nextDouble()
+      case java.sql.Types.FLOAT => delta.nextFloat()
+      case java.sql.Types.SMALLINT => delta.nextShort()
+      case java.sql.Types.TINYINT => delta.nextByte()
+      case java.sql.Types.BOOLEAN => delta.nextBoolean()
+      case java.sql.Types.NUMERIC => delta.nextLongDecimal()
+      case java.sql.Types.DECIMAL => delta.nextDecimal()
+      case java.sql.Types.BLOB => delta.nextBinary()
+      case java.sql.Types.ARRAY => delta.nextArray()
+      case JDBC40Translation.MAP => delta.nextMap()
+      case java.sql.Types.STRUCT => delta.nextStruct()
+    }
+  }
+
+  protected final def updateNextMutatedPosition(ordinal: Int): Unit = {
     var next = Int.MaxValue
     var movedIndex = -1
 
@@ -148,18 +199,48 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     }
     // first delta is the lowest in hierarchy and overrides others
     if (delta1Position < next) {
-      next = delta1Position
-      movedIndex = 1
+      // skip on equality (result should be returned by one of the previous ones)
+      if (delta1Position <= ordinal) {
+        skipMutatedPosition(delta1)
+        delta1Position = delta1.moveToNextPosition()
+        if (delta1Position < next) {
+          next = delta1Position
+          movedIndex = 1
+        }
+      } else {
+        next = delta1Position
+        movedIndex = 1
+      }
     }
     // next delta in hierarchy
     if (delta2Position < next) {
-      next = delta2Position
-      movedIndex = 2
+      // skip on equality (result should be returned by one of the previous ones)
+      if (delta2Position <= ordinal) {
+        skipMutatedPosition(delta2)
+        delta2Position = delta2.moveToNextPosition()
+        if (delta2Position < next) {
+          next = delta2Position
+          movedIndex = 2
+        }
+      } else {
+        next = delta2Position
+        movedIndex = 2
+      }
     }
     // last delta in hierarchy
     if (delta3Position < next) {
-      next = delta3Position
-      movedIndex = 3
+      // skip on equality (result should be returned by one of the previous ones)
+      if (delta3Position <= ordinal) {
+        skipMutatedPosition(delta3)
+        delta3Position = delta3.moveToNextPosition()
+        if (delta3Position < next) {
+          next = delta3Position
+          movedIndex = 3
+        }
+      } else {
+        next = delta3Position
+        movedIndex = 3
+      }
     }
     movedIndex match {
       case 0 =>
@@ -183,7 +264,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder,
     if (nextMutatedPosition != ordinal) false
     else {
       currentDeltaBuffer = nextDeltaBuffer
-      updateNextMutatedPosition()
+      updateNextMutatedPosition(ordinal)
       // caller should check for deleted case with null check for currentDeltaBuffer
       true
     }

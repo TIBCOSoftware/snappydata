@@ -191,6 +191,7 @@ class LeadImpl extends ServerImpl with Lead
 
     val confProps = conf.getAll
     val storeProps = ServiceUtils.getStoreProperties(confProps)
+    checkAuthProvider(storeProps)
 
     logInfo("passing store properties as " + storeProps)
     super.start(storeProps, false)
@@ -238,6 +239,24 @@ class LeadImpl extends ServerImpl with Lead
         logWarning(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
     }
   }
+
+  private def checkAuthProvider(props: Properties): Unit = {
+    doCheck(props.getProperty(Attribute.AUTH_PROVIDER))
+    doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
+
+    def doCheck(authP: String): Unit = {
+      if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
+        throw new UnsupportedOperationException("LDAP is the only supported auth-provider currently.")
+      }
+      if (authP != null && !isEnterpriseEdition()) {
+        throw new UnsupportedOperationException("Security feature is available in SnappyData " +
+            "Enterprise Edition.")
+      }
+    }
+  }
+
+  // TODO Read the property from SnappyDataVersion.properties
+  private def isEnterpriseEdition(): Boolean = true
 
   @throws[SQLException]
   override def stop(shutdownCredentials: Properties): Unit = {
