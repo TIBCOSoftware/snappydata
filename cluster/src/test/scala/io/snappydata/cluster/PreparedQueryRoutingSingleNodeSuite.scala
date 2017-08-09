@@ -77,7 +77,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     try {
       var i = 1
       rows.foreach(d => {
-        stmt.addBatch(s"insert into $tableName values($i, $i, '$i')")
+        stmt.addBatch(s"insert into $tableName values($d, $d, '$d')")
         i += 1
         if (i % 1000 == 0) {
           stmt.executeBatch()
@@ -485,6 +485,97 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query3(tableName1, tableName2)
       query4(tableName1, tableName2)
       query5(tableName1, tableName2)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  def update_delete_query1(tableName1: String, cacheMapSize: Int): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement1: java.sql.PreparedStatement = null
+    var prepStatement2: java.sql.PreparedStatement = null
+    var prepStatement3: java.sql.PreparedStatement = null
+    var prepStatement4: java.sql.PreparedStatement = null
+    val s = conn.createStatement()
+    try {
+      prepStatement1 = conn.prepareStatement(s"delete from $tableName1 where ol_1_int2_id < ? ")
+      prepStatement1.setInt(1, 400)
+      val delete1 = prepStatement1.executeUpdate
+      assert(delete1 == 399, delete1)
+      prepStatement1.setInt(1, 500)
+      val delete2 = prepStatement1.executeUpdate
+      assert(delete2 == 100, delete2)
+
+      prepStatement2 = conn.prepareStatement(s"delete from $tableName1 where ol_1_int2_id > ? ")
+      prepStatement2.setInt(1, 502)
+      val delete3 = prepStatement2.executeUpdate
+      assert(delete3 == 498, delete3)
+
+      prepStatement3 =
+          conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id = ? ")
+      prepStatement3.setInt(1, 1000)
+      prepStatement3.setInt(2, 500)
+      val update1 = prepStatement3.executeUpdate
+      assert(update1 == 1, update1)
+
+      prepStatement4 =
+          conn.prepareStatement(s"update $tableName1 set ol_1_int_id = ? where ol_1_int2_id > ? ")
+      prepStatement4.setInt(1, 2000)
+      prepStatement4.setInt(2, 500)
+      val update2 = prepStatement4.executeUpdate
+      assert(update2 == 2, update2)
+
+      val selectQry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id from $tableName1 limit 20"
+      verifyResults("update_delete_query1-select1", s.executeQuery(selectQry),
+        Array(1000, 2000, 2000), cacheMapSize)
+
+      prepStatement3.setInt(1, 4000)
+      prepStatement3.setInt(2, 500)
+      val update3 = prepStatement3.executeUpdate
+      assert(update3 == 1, update3)
+
+      prepStatement4.setInt(1, 5000)
+      prepStatement4.setInt(2, 500)
+      val update4 = prepStatement4.executeUpdate
+      assert(update4 == 2, update4)
+
+      verifyResults("update_delete_query1-select2", s.executeQuery(selectQry),
+        Array(4000, 5000, 5000), cacheMapSize)
+
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement1 != null) prepStatement1.close()
+      if (prepStatement2 != null) prepStatement2.close()
+      if (prepStatement3 != null) prepStatement3.close()
+      if (prepStatement4 != null) prepStatement4.close()
+      s.close()
+      conn.close()
+    }
+  }
+
+  test("update delete on column table") {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val tableName1 = "order_line_1_col_ud"
+      val tableName2 = "order_line_2_row_ud"
+      snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      snc.sql(s"create table $tableName2 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      serverHostPort = TestUtil.startNetServer()
+      // println("network server started")
+      insertRows(tableName1, 1000)
+      insertRows(tableName2, 1000)
+      update_delete_query1(tableName1, 1)
+      update_delete_query1(tableName2, 2)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
