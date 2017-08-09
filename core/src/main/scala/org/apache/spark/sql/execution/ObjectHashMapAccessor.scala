@@ -1144,9 +1144,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         $declareLocalVars
 
         $mapKeyCodes
-        $inputCodes
         $breakLoop: while (true) {
           do { // single iteration loop meant for breaking out with "continue"
+            $inputCodes
             ${ev.code}
             // consume only one result
             if (!${ev.isNull} && ${ev.value}) {

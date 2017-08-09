@@ -495,4 +495,101 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       conn.close()
     }
   }
+
+  def insertRows(tableName: String, numRows: Int): Unit = {
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    val rows = (1 to numRows).toSeq
+    val stmt = conn.createStatement()
+    try {
+      var i = 1
+      rows.foreach(d => {
+        stmt.addBatch(s"insert into $tableName values($d, $d, '$d')")
+        i += 1
+        if (i % 1000 == 0) {
+          stmt.executeBatch()
+          i = 0
+        }
+      })
+      stmt.executeBatch()
+      // scalastyle:off println
+      println(s"committed $numRows rows")
+      // scalastyle:on println
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+  }
+
+  def update_delete_query1(tableName1: String, cacheMapSize: Int): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    val s = conn.createStatement()
+    try {
+      val delete1 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id < 400 ")
+      assert(delete1 == 399, delete1)
+      val delete2 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id < 500 ")
+      assert(delete2 == 100, delete2)
+
+      val delete3 = s.executeUpdate(s"delete from $tableName1 where ol_1_int2_id > 502 ")
+      assert(delete3 == 498, delete3)
+
+      val update1 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 1000 where ol_1_int2_id = 500 ")
+      assert(update1 == 1, update1)
+
+      val update2 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 2000 where ol_1_int2_id > 500 ")
+      assert(update2 == 2, update2)
+
+      val selectQry = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id from $tableName1 limit 20"
+      verifyResults("update_delete_query1-select1", s.executeQuery(selectQry),
+        Array(1000, 2000, 2000), cacheMapSize)
+
+      val update3 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 4000 where ol_1_int2_id = 500 ")
+      assert(update3 == 1, update3)
+
+      val update4 =
+        s.executeUpdate(s"update $tableName1 set ol_1_int_id = 5000 where ol_1_int2_id > 500 ")
+      assert(update4 == 2, update4)
+
+      verifyResults("update_delete_query1-select2", s.executeQuery(selectQry),
+        Array(4000, 5000, 5000), cacheMapSize)
+
+      // Thread.sleep(1000000)
+    } finally {
+      s.close()
+      conn.close()
+    }
+  }
+
+  test("update delete on column table") {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    try {
+      val tableName1 = "order_line_1_col_ud"
+      val tableName2 = "order_line_2_row_ud"
+      snc.sql(s"create table $tableName1 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      snc.sql(s"create table $tableName2 (ol_1_int_id  integer," +
+          s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
+          "options( partition_by 'ol_1_int2_id', buckets '2')")
+
+      serverHostPort = TestUtil.startNetServer()
+      // println("network server started")
+      insertRows(tableName1, 1000)
+      insertRows(tableName2, 1000)
+      update_delete_query1(tableName1, 1)
+      update_delete_query1(tableName2, 2)
+    } finally {
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
 }

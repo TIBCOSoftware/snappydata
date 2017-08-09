@@ -18,26 +18,25 @@ package org.apache.spark.sql.store
 
 import java.sql.{DriverManager, SQLException}
 
-import com.pivotal.gemfirexd.TestUtil
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedSQLException}
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
-import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite}
+import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
-import org.apache.spark.sql.collection.Utils
 
 /**
   * Tests for column tables in GFXD.
@@ -1178,5 +1177,34 @@ class ColumnTableTest
     assert(initCacheSize === cacheSize())
 
     session.sql("drop table t1")
+  }
+
+  test("Test for SNAP-1878 create external table using api") {
+
+
+    snc.sql(s"create table t1 (c1 integer,c2 string)")
+    snc.sql(s"insert into t1 values(1,'test1')")
+    snc.sql(s"insert into t1 values(2,'test2')")
+    snc.sql(s"insert into t1 values(3,'test3')")
+    val df = snc.sql("select * from t1")
+    df.show
+    val tempPath = "/tmp/" + System.currentTimeMillis()
+
+    assert(df.count() == 3)
+    df.write.option("header", "true").csv(tempPath)
+    snc.createExternalTable("TEST_EXTERNAL", "csv",
+      Map("path" -> tempPath, "header" -> "true", "inferSchema"-> "true"))
+    val dataDF = snc.sql("select * from TEST_EXTERNAL order by c1")
+
+    snc.sql("select * from TEST_EXTERNAL").show
+
+    assert(dataDF.count == 3)
+
+    val rows=dataDF.collect()
+
+    for(i<- 0 to 2) assert(rows(i)(0)==i+1)
+
+    snc.sql("drop table if exists TEST_EXTERNAL")
+    FileUtils.deleteDirectory(new java.io.File(tempPath))
   }
 }
