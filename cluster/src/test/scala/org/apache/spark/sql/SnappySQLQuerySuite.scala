@@ -21,7 +21,6 @@ import io.snappydata.SnappyFunSuite
 import org.apache.spark.sql.catalyst.util.stackTraceToString
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
-
 class SnappySQLQuerySuite extends SnappyFunSuite {
 
   // Ported test from Spark
@@ -71,7 +70,31 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
       case None =>
     }
   }
+  test("SNAP-1884 Join with temporary table not returning rows") {
+    val df = snc.createDataFrame(snc.sparkContext.parallelize(
+      LowerCaseData(1, "a") ::
+        LowerCaseData(2, "b") ::
+        LowerCaseData(3, "c") ::
+        LowerCaseData(4, "d") :: Nil))
+    df.write.format("row").saveAsTable("lowerCaseData")
+    snc.sql("SELECT DISTINCT n FROM lowerCaseData ORDER BY n DESC")
+      .limit(2)
+      .createOrReplaceTempView("subset1")
+    snc.sql("SELECT DISTINCT n FROM lowerCaseData ORDER BY n ASC")
+      .limit(2)
+      .createOrReplaceTempView("subset2")
+    checkAnswer(
+      snc.sql("SELECT * FROM lowerCaseData INNER JOIN subset1 ON " +
+        "subset1.n = lowerCaseData.n ORDER BY lowerCaseData.n"),
+      Row(3, "c", 3) ::
+        Row(4, "d", 4) :: Nil)
 
+    checkAnswer(
+      snc.sql("SELECT * FROM lowerCaseData INNER JOIN subset2 " +
+        "ON subset2.n = lowerCaseData.n ORDER BY lowerCaseData.n"),
+      Row(1, "a", 1) ::
+        Row(2, "b", 2) :: Nil)
+  }
   /**
     * Asserts that a given [[Dataset]] does not have missing inputs in all the analyzed plans.
     */
@@ -85,3 +108,5 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
   }
 
 }
+
+case class LowerCaseData(n: Int, l: String)
