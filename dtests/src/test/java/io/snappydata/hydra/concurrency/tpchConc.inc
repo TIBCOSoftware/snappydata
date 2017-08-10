@@ -81,23 +81,14 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             runMode = always
             threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads;
 
-/*INITTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
-           io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.benchmark.snappy.TPCH_Snappy_Tables
-           io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer =
-           "dataLocation=${dataLocation},Buckets_Order_Lineitem=${buckets_Order_Lineitem},Buckets_Cust_Part_PartSupp=${buckets_Cust_Part_PartSupp},useIndex=${useIndex}"
-           io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-cluster*tests.jar
-           threadGroups = snappyThreads
-           ;*/
-
 // create and load tables using snappyJob
-INITTASK
-  taskClass   = io.snappydata.hydra.cluster.SnappyTest
-  taskMethod  = HydraTask_executeSnappyJob
-  io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.benchmark.snappy.tpch.TableCreationJob
-  io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "dataLocation=${dataDir},Buckets_Order_Lineitem=${buckets_Order_Lineitem},Buckets_Cust_Part_PartSupp=${buckets_Cust_Part_PartSupp},Buckets_Nation_Region_Supp=${buckets_Nation_Region_Supp},Nation_Region_Supp_col=${Nation_Region_Supp_col},Redundancy=${Redundancy},Persistence=${Persistence},Persistence_Type=${Persistence_Type},NumberOfLoadStages=${NumberOfLoadStages},isParquet=${Parquet}"
-  io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-cluster*tests.jar
-  threadGroups = snappyThreads
-;
+INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest
+            taskMethod  = HydraTask_executeSnappyJob
+            io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.benchmark.snappy.tpch.TableCreationJob
+            io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "dataLocation=${dataDir},Buckets_Order_Lineitem=${buckets_Order_Lineitem},Buckets_Cust_Part_PartSupp=${buckets_Cust_Part_PartSupp},Buckets_Nation_Region_Supp=${buckets_Nation_Region_Supp},Nation_Region_Supp_col=${Nation_Region_Supp_col},Redundancy=${Redundancy},Persistence=${Persistence},Persistence_Type=${Persistence_Type},NumberOfLoadStages=${NumberOfLoadStages},isParquet=${Parquet}"
+            io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-cluster*tests.jar
+            threadGroups = snappyThreads
+            ;
 
 CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = validateNumQueriesExecuted
             threadGroups = snappyThreads;
@@ -133,8 +124,3 @@ hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
 hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";
 
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar;
-//io.snappydata.hydra.cluster.SnappyPrms-useSmartConnectorMode = true;
-//io.snappydata.hydra.cluster.SnappyPrms-enableFlightRecorder = true;
-/*io.snappydata.hydra.cluster.SnappyPrms-serverMemory = 30g;
-io.snappydata.hydra.cluster.SnappyPrms-leadMemory = 8G;
-io.snappydata.hydra.cluster.SnappyPrms-inMemoryColumnarStorageBatchSize = 100000;*/

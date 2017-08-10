@@ -4,8 +4,7 @@ io/snappydata/hydra/concurrency/tpchMixedConcTest.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=snappyClientP snappyClientPHosts=20 snappyClientPVMsPerHost=1 snappyClientPThreadsPerVM=1
   E=snappyClientA snappyClientAHosts=5 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
-  //dataDir="/home/kishor/SNAPPY/DATA/TPCH/1GB"
-  dataDir="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
+  dataDir="/export/shared/QA_DATA/TPCH/10GB"
   buckets_Order_Lineitem=113
   buckets_Cust_Part_PartSupp=113
   buckets_Nation_Region_Supp=113
@@ -15,10 +14,3 @@ io/snappydata/hydra/concurrency/tpchMixedConcTest.conf
   Persistence_Type=SYNCHRONOUS
   NumberOfLoadStages=1
   Parquet=false
-  /*queries="1-2-3-4-5"
-  sparkSqlProperties="null"
-  IsDynamic=false
-  ResultCollection=false
-  WarmupRuns=1
-  AverageRuns=2
-  threadNumber=1*/
