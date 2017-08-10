@@ -18,7 +18,7 @@
 package org.apache.spark.util
 
 import java.io.File
-import java.net.{URL, URLClassLoader}
+import java.net.{URI, URL, URLClassLoader}
 import java.security.SecureClassLoader
 
 import _root_.io.snappydata.Constant
@@ -73,7 +73,10 @@ object SnappyUtils {
       classLoader: ClassLoader): Unit = {
     assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
     val dependentJars = classLoader.asInstanceOf[URLClassLoader].getURLs
-    val localProperty = (Seq(appName, DateTime.now) ++ dependentJars.toSeq).mkString(",")
+    val sparkJars = dependentJars.map( url => {
+      sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))
+    })
+    val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.toSeq).mkString(",")
     sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
   }
 
