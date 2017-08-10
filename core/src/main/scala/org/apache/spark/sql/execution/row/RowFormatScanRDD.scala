@@ -234,10 +234,10 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (pushProjections || useResultSet) {
       if (!pushProjections) {
         val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
-        if (txManagerImpl.getTXState == null) {
+        if (txManagerImpl.getTXState eq null) {
           txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
-          //if (commitTx)
-            commitTxBeforeTaskCompletion(None, context)
+          // if (commitTx)
+          commitTxBeforeTaskCompletion(None, context)
         }
       }
       // we always iterate here for column table
@@ -249,26 +249,24 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       itr
     } else {
       val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
-      if (txManagerImpl.getTXState == null) {
-        txManagerImpl.begin(IsolationLevel.SNAPSHOT, null)
-        //if (commitTx) {
-          commitTxBeforeTaskCompletion(None, context)
-        //}
+      var tx = txManagerImpl.getTXState
+      val startTX = tx eq null
+      if (startTX) {
+        tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
+          IsolationLevel.SNAPSHOT, null, null)
       }
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
       // or direct code generation as appropriate
-      if (isPartitioned && filterWhereClause.isEmpty) {
+      val itr = if (isPartitioned && filterWhereClause.isEmpty) {
         val container = GemFireXDUtils.getGemFireContainer(tableName, true)
         val bucketIds = thePart match {
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => java.util.Collections.singleton(Int.box(thePart.index))
         }
 
-        val txId = txManagerImpl.getTransactionId
-        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId)
-
-        itr
+        val txId = if (tx ne null) tx.getTransactionId else null
+        new CompactExecRowIteratorOnScan(container, bucketIds, txId)
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart)
         val ers = rs match {
@@ -276,9 +274,16 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case p: ProxyResultSet =>
             resultSetField.get(p).asInstanceOf[EmbedResultSet]
         }
-        val itr = new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
-        itr
+        new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
       }
+      // add the listener after the close listener added by iterator
+      // so its invoked just before it
+      if (startTX) {
+        // if (commitTx) {
+        commitTxBeforeTaskCompletion(None, context)
+        // }
+      }
+      itr
     }
   }
 

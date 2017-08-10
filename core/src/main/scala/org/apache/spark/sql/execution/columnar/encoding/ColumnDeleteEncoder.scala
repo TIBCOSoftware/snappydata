@@ -118,16 +118,18 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 
     val allocator1 = ColumnEncoding.getAllocator(newValue)
     val columnBytes1 = allocator1.baseObject(newValue)
-    // skip 8 byte header
-    var cursor1 = allocator1.baseOffset(newValue) + newValue.position() + 8
+    var cursor1 = allocator1.baseOffset(newValue) + newValue.position()
     val endOffset1 = cursor1 + newValue.remaining()
+    // skip 8 byte header (4 byte + number of elements)
+    cursor1 += 8
     var position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
 
     val allocator2 = ColumnEncoding.getAllocator(existingValue)
     val columnBytes2 = allocator2.baseObject(existingValue)
-    // skip 8 byte header
-    var cursor2 = allocator2.baseOffset(existingValue) + existingValue.position() + 8
+    var cursor2 = allocator2.baseOffset(existingValue) + existingValue.position()
     val endOffset2 = cursor2 + existingValue.remaining()
+    // skip 8 byte header (4 byte + number of elements)
+    cursor2 += 8
     var position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
 
     // Simple two-way merge of deleted positions with duplicate elimination.

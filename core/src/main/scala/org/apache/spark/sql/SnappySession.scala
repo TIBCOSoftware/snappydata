@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-  package org.apache.spark.sql
+package org.apache.spark.sql
 
 import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
@@ -23,9 +23,9 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
+import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -36,6 +36,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, functions => snappydataFunctions}
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -46,7 +47,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
-import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, TableIdentifier}
+import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
@@ -162,6 +163,19 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   override def newSession(): SnappySession = {
     new SnappySession(sparkContext, Some(sharedState))
+  }
+
+ /**
+  * :: Experimental ::
+  * Creates a [[DataFrame]] from an RDD of Product (e.g. case classes, tuples).
+  * This method handles generic array datatype like Array[Decimal]
+  */
+  def createDataFrameUsingRDD[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
+    SparkSession.setActiveSession(this)
+    val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
+    val attributeSeq = schema.toAttributes
+    val rowRDD = RDDConversions.productToRowRdd(rdd, schema.map(_.dataType))
+    Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
   override def sql(sqlText: String): CachedDataFrame =
@@ -1814,8 +1828,17 @@ object SnappySession extends Logging {
     val (cachedRDD, shuffleDeps, rddId, localCollect, executionId, executionTime) =
       executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
-        df.queryExecution.toRdd // evaluate the plan upfront
-        throw new EntryExistsException("uncached plan", df) // don't cache
+        // create new LogicalRDD plan so that plan does not get re-executed
+        // (e.g. just toRdd is not enough since further operators like show will pass
+        //   around the LogicalPlan and not the executedPlan; it works for plans using
+        //   ExecutedCommandExec though because Spark layer has special check for it in
+        //   Dataset hasSideEffects)
+        // TODO: plan caching for point inserts/updates/deletes
+        val newPlan = LogicalRDD(df.queryExecution.analyzed.output,
+          df.queryExecution.toRdd)(session)
+        val cdf = new CachedDataFrame(session, session.sessionState.executePlan(newPlan),
+          df.exprEnc, sqlText, null, Array.empty, -1, false)
+        throw new EntryExistsException("uncached plan", cdf) // don't cache
       case plan: CollectAggregateExec =>
         val (executionTime, executionId, childRDD) = planExecution(
         df, session, sqlText, plan, Array.empty[LiteralValue])({
@@ -1837,9 +1860,6 @@ object SnappySession extends Logging {
               else plan.child.execute()
             case _ => df.queryExecution.executedPlan.execute()
           }})
-        // TODO: Skipping the adding of profile listener in case of
-        // ThinClientConnectorMode, confirm with Sumedh whether something
-        // more needs to be done
         SnappyContext.getClusterMode(session.sparkContext) match {
           case ThinClientConnectorMode(_, _) =>
           case _ =>
@@ -1928,10 +1948,10 @@ object SnappySession extends Logging {
         var df: DataFrame = null
         try {
           df = session.executeSQL(key.sqlText)
+          evaluatePlan(df, session, key.sqlText, key)
         } finally {
           session.currentKey = null
         }
-        evaluatePlan(df, session, key.sqlText, key)
       }
     }
     val cacheSize = if (SnappyContext.globalSparkContext != null) {
@@ -1953,18 +1973,18 @@ object SnappySession extends Logging {
     }
   }
 
-  class CachedKey(
+  final class CachedKey(
       val session: SnappySession, val lp: LogicalPlan,
       val sqlText: String, val hintHashcode: Int, val pls: Array[ParamLiteral]) {
 
-    override def hashCode(): Int = {
+    override lazy val hashCode: Int = {
       (session, lp, hintHashcode).hashCode()
     }
 
     override def equals(obj: Any): Boolean = {
       obj match {
         case x: CachedKey =>
-          (x.session, x.lp, x.hintHashcode).equals(session, lp, hintHashcode)
+          x.hintHashcode == hintHashcode && x.session == session && x.lp == lp
         case _ => false
       }
     }
@@ -2048,20 +2068,14 @@ object SnappySession extends Logging {
       handleCachedDataFrame(cachedDF, key, lp, currentWrappedConstants, session, sqlText)
     } catch {
       case e: UncheckedExecutionException => e.getCause match {
-        case ee: EntryExistsException => ee.getOldValue match {
-          case cdf: CachedDataFrame =>
-            handleCachedDataFrame(cdf, key, lp, currentWrappedConstants, session, sqlText)
-          case _ => new CachedDataFrame(ee.getOldValue.asInstanceOf[DataFrame],
-            sqlText, null, Array.empty, -1, false)
-        }
+        case ee: EntryExistsException =>
+          handleCachedDataFrame(ee.getOldValue.asInstanceOf[CachedDataFrame],
+            key, lp, currentWrappedConstants, session, sqlText)
         case t => throw t
       }
-      case ee: EntryExistsException => ee.getOldValue match {
-        case cdf: CachedDataFrame =>
-          handleCachedDataFrame(cdf, key, lp, currentWrappedConstants, session, sqlText)
-        case _ => new CachedDataFrame(ee.getOldValue.asInstanceOf[DataFrame],
-          sqlText, null, Array.empty, -1, false)
-      }
+      case ee: EntryExistsException =>
+        handleCachedDataFrame(ee.getOldValue.asInstanceOf[CachedDataFrame],
+          key, lp, currentWrappedConstants, session, sqlText)
     }
   }
 

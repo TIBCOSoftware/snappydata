@@ -432,6 +432,43 @@ class TokenizationTest
     logInfo("Successful")
   }
 
+  test("SNAP-1894") {
+
+    val snap = snc
+    val row = identity[(java.lang.Integer, java.lang.Double)](_)
+
+    import  snap.implicits._
+    lazy val l = Seq(
+      row(1, 2.0),
+      row(1, 2.0),
+      row(2, 1.0),
+      row(2, 1.0),
+      row(3, 3.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("a", "b")
+
+    lazy val r = Seq(
+      row(2, 3.0),
+      row(2, 3.0),
+      row(3, 2.0),
+      row(4, 1.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("c", "d")
+
+
+    l.write.format("row").saveAsTable("l")
+    r.write.format("row").saveAsTable("r")
+
+    assert(snc.sql("select l.a from l where (select count(*) as cnt" +
+      " from r where l.a = r.c) = 0").count == 4)
+    snc.sql("select case when count(*) = 1 then null else count(*) end as cnt" +
+      " from r, l where l.a = r.c").collect.foreach(r => assert(r.get(0) == 6))
+    assert(snc.sql("select l.a from l where (select case when count(*) = 1" +
+      " then null else count(*) end as cnt from r where l.a = r.c) = 0").count == 4)
+  }
+
   test("Test tokenize for nulls") {
     logInfo("Successful")
   }

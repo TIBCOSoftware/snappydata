@@ -195,6 +195,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
   }
 
   test("Test ShadowTable with 1 bucket, single insert") {
+    Property.ColumnMaxDeltaRows.set(snc.conf, 4)
     snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
     snc.dropTable("COLUMNTABLE7", ifExists = true)
     snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +

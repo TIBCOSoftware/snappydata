@@ -20,23 +20,24 @@ import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Properties
 
+import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
+import scala.util.Random
+
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.test.dunit.VM
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
+import org.junit.Assert
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Logging, SparkConf, SparkContext}
-import org.junit.Assert
-
-import scala.collection.mutable.ArrayBuffer
-import scala.language.postfixOps
-import scala.util.Random
 
 case class OrderData(ref: Int, description: String, amount: Long)
 /**
@@ -145,21 +146,19 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   def testColumnTableCreation(): Unit = {
     doTestColumnTableCreation()
-    Array(vm0,vm1,vm2).foreach(_.invoke(getClass, "validateNoActiveSnapshotTX"))
   }
 
   def testRowTableCreation(): Unit = {
     doTestRowTableCreation()
   }
 
-  def _testComplexTypesForColumnTables_SNAP643(): Unit = {
+  def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643()
   }
 
   def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
-
 }
 
 trait SplitClusterDUnitTestObject extends Logging {
@@ -380,7 +379,7 @@ trait SplitClusterDUnitTestObject extends Logging {
             drnd2)), dec(1), ts(math.abs(rnd1) % 5))
     }
     val rdd = context.parallelize(data, 8)
-    val dataDF = snc.createDataFrame(rdd)
+    val dataDF = snc.createDataFrameUsingRDD(rdd)
 
     snc.createTable(tableName, tableType, dataDF.schema, props)
     dataDF.write.insertInto(tableName)
@@ -396,14 +395,14 @@ trait SplitClusterDUnitTestObject extends Logging {
     value
   }
   def validateNoActiveSnapshotTX(): Unit = {
-    val cache = Misc.getGemFireCache
+    val cache = Misc.getGemFireCacheNoThrow
+    if (cache eq null) return
     val txMgr = cache.getCacheTransactionManager
     if (txMgr != null) {
       val itr = txMgr.getHostedTransactionsInProgress.iterator()
       while (itr.hasNext) {
         val tx = itr.next()
-        if (tx.isSnapshot)
-          assert(tx.isClosed, s"${tx} is not closed. ")
+        if (tx.isSnapshot) assert(tx.isClosed, s"${tx} is not closed. ")
       }
     }
   }
