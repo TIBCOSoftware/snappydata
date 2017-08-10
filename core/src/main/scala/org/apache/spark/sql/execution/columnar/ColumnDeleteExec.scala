@@ -19,11 +19,12 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
 
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{SnapshotConnectionListener, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
@@ -62,60 +63,39 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
   @transient private var deleteMetric: String = _
   @transient protected var txId: String = _
   @transient protected var success: String = _
+  @transient protected var taskListener: String = _
 
   override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
-    connTerm = ctx.freshName("connection")
-    txId = ctx.freshName("txId")
-    success = ctx.freshName("success")
-    ctx.addMutableState("boolean", success, "")
-    ctx.addMutableState("String", txId, "")
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    ctx.addReferenceObj()
+    val listenerClass = classOf[SnapshotConnectionListener].getName
+    taskListener = ctx.freshName("taskListener")
+    connTerm = ctx.freshName("connection")
 
-    if (onExecutor) {
-      // actual connection will be filled into references before execution
-      connRef = ctx.references.length
-      // connObj position in the array is connRef
-      val connObj = ctx.addReferenceObj("conn", null, connectionClass)
-      (s"final $connectionClass $connTerm = $connObj;", "", "")
-    } else {
-      // This is at driver?
-      val utilsClass = ExternalStoreUtils.getClass.getName
-      ctx.addMutableState(connectionClass, connTerm, "")
-      val props = ctx.addReferenceObj("connectionProperties", connProps)
-      // For row table we don't need to start a
-      //$connTerm = $utilsClass.MODULE$$.getConnection(
-      //    "$resolvedName", $props, true);
-      val initCode =
-        s"""
-           | final Object[] connAndtxid = $externalStoreTerm.beginTx();
-           | $connTerm = (java.sql.Connection)connAndtxid[0];
-           | $txId = (String)connAndtxid[1];
-           | $success = false;
-           | """.stripMargin
+    val contextClass = classOf[TaskContext].getName
+    val context = ctx.freshName("taskContext")
 
-      val endCode =
-        s""" finally {
-           |  //try {
-           |    if ($txId != null) {
-           |      if ($success) {
-           |        $externalStoreTerm.commitTx($txId, new scala.Some($connTerm));
-           |      }
-           |      else {
-           |        $externalStoreTerm.rollbackTx($txId, new scala.Some($connTerm));
-           |      }
-           |    }
-           |    $externalStoreTerm.closeConnection(new scala.Some($connTerm));
-           |  //} catch (java.sql.SQLException sqle) {
-           |    // ignore exception in close
-           |  //}
-           |}""".stripMargin
-      val commitCode =
-        s"""
-           """.stripMargin
-      (initCode, commitCode, endCode)
-    }
+    ctx.addMutableState(listenerClass, taskListener, "")
+    ctx.addMutableState(connectionClass, connTerm, "")
+
+    val initCode =
+      s"""
+         |$taskListener = new org.apache.spark.sql.execution.columnar.impl.SnapshotConnectionListener(
+         |(org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore)$externalStoreTerm);
+         |$connTerm = $taskListener.getConn();
+         |final $contextClass $context = $contextClass.get();
+         |if ($context != null) {
+         |   $context.addTaskCompletionListener($taskListener);
+         |}
+         | """.stripMargin
+
+    val endCode =
+      s"""
+         |""".stripMargin
+    val commitCode =
+      s"""
+       """.stripMargin
+    (initCode, commitCode, endCode)
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
@@ -134,7 +114,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |if ($batchOrdinal > 0) {
          |  $finishDelete(null, -1); // force a finish
          |}
-         |$success = true;
+         |$taskListener.setSuccess();
       """.stripMargin)
   }
 

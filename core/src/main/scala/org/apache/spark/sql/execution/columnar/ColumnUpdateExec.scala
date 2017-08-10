@@ -82,35 +82,38 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
-  @transient protected var success: String = _
   @transient protected var taskListener: String = _
 
   override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val listenerClass = classOf[SnapshotConnectionListener].getName
-    connTerm = ctx.freshName("connection")
     taskListener = ctx.freshName("taskListener")
-    ctx.addMutableState(connectionClass, connTerm, "")
-    ctx.addMutableState(listenerClass, taskListener, "")
+    connTerm = ctx.freshName("connection")
+
     val contextClass = classOf[TaskContext].getName
     val context = ctx.freshName("taskContext")
 
+    ctx.addMutableState(listenerClass, taskListener, "")
+    ctx.addMutableState(connectionClass, connTerm, "")
+
     val initCode =
       s"""
-         |$taskListener = new SnapshotConnectionListener((JDBCSourceAsColumnarStore)externalStore);
+         |$taskListener = new org.apache.spark.sql.execution.columnar.impl.SnapshotConnectionListener(
+         |(org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore)$externalStoreTerm);
          |$connTerm = $taskListener.getConn();
          |final $contextClass $context = $contextClass.get();
          |if ($context != null) {
-         |  $context.addTaskCompletionListener($taskListener);
+         |   $context.addTaskCompletionListener($taskListener);
          |}
          | """.stripMargin
 
     val endCode =
       s"""
-         |}""".stripMargin
+         |""".stripMargin
     val commitCode =
       s"""
-           """.stripMargin
+       """.stripMargin
     (initCode, commitCode, endCode)
   }
 
@@ -135,7 +138,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |  $finishUpdate(null, -1); // force a finish
          |}
          |$taskListener.setSuccess();
-         |$success = true;
       """.stripMargin)
   }
 

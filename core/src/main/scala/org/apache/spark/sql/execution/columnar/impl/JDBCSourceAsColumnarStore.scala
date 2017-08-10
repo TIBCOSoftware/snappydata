@@ -906,7 +906,4 @@ class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore) extends TaskC
 
   def getConn(): Connection = connAndTxId(0).asInstanceOf[Connection]
 
-  def getConnAndTXId() : Array[_ <:Object] = {
-    connAndTxId
-  }
 }
