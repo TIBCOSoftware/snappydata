@@ -501,7 +501,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def tableValuedFunctionExpressions: Rule1[
       Seq[Expression]] = rule {
-    '(' ~ ws ~ (expression + commaSep).? ~ ws ~ ')' ~ ws ~>
+    '(' ~ ws ~ (expression + commaSep).? ~ ')' ~ ws ~>
         ((e: Any) => e.asInstanceOf[Option[Vector[Expression]]] match {
           case Some(ve) => ve
           case _ => Seq.empty
@@ -521,7 +521,8 @@ class SnappyParser(session: SnappySession)
                 updatePerTableQueryHint(tableIdent, optAlias)
                 UnresolvedRelation(tableIdent, optAlias)
               case Some(exprs) =>
-                UnresolvedTableValuedFunction(tableIdent.identifier.toLowerCase(), exprs)
+                UnresolvedTableValuedFunction(org.apache.spark.sql.collection.Utils.toLowerCase(
+                  tableIdent.identifier), exprs)
             }
           case Some(win) =>
             val optAlias = alias.asInstanceOf[Option[String]]
