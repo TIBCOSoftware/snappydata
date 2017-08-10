@@ -29,7 +29,8 @@ import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
-import com.gemstone.gemfire.internal.cache.store.{ManagedDirectBufferAllocator, SerializedDiskBuffer}
+import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, HeapBufferAllocator, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
@@ -253,7 +254,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   def setBuffer(buffer: ByteBuffer,
       changeOwnerToStorage: Boolean = true): Unit = synchronized {
     val columnBuffer = GemFireCacheImpl.getCurrentBufferAllocator
-        .transfer(buffer, ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
+        .transfer(buffer, DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
     if (changeOwnerToStorage && columnBuffer.isDirect) {
       MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
         columnBuffer, allowNonAllocator = true)
@@ -341,7 +342,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
     val buffer = this.columnBuffer
     if (buffer.isDirect) {
       this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
-      ManagedDirectBufferAllocator.instance().release(buffer)
+      DirectBufferAllocator.instance().release(buffer)
     }
   }
 
@@ -439,7 +440,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
           // will take care not to release this buffer (if direct);
           // buffer is already positioned at start of data
           val buffer = allocator.transfer(din.getInternalBuffer,
-            ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
+            DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
           if (buffer.isDirect) {
             MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
               buffer, allowNonAllocator = true)
@@ -509,7 +510,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
     // (or retain/release) with capacity being valid even after releaseBuffer.
     val buffer = columnBuffer
     if (buffer.isDirect) {
-      buffer.capacity() + ManagedDirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
+      buffer.capacity() + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
     } else 0
   }
 

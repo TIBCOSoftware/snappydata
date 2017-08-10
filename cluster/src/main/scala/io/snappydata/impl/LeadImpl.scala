@@ -26,17 +26,20 @@ import scala.collection.JavaConverters._
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
+import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.gemxd.SnappyDataVersion
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
@@ -255,8 +258,11 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
-  // TODO Read the property from SnappyDataVersion.properties
-  private def isEnterpriseEdition(): Boolean = true
+  private def isEnterpriseEdition(): Boolean = {
+    GemFireVersion.getInstance(classOf[SnappyDataVersion],
+      SharedUtils.GFXD_VERSION_PROPERTIES)
+    GemFireVersion.isEnterpriseEdition
+  }
 
   @throws[SQLException]
   override def stop(shutdownCredentials: Properties): Unit = {
