@@ -1,25 +1,23 @@
 # Important Settings <a id="important-settings"></a>
 
-Resource allocation is an important for the execution of any job. If not configured correctly, the job can consume entire cluster resources and cause problems like the execution fails or memory related problems. This section provides guidelines for configuring the following important settings:
+Resource allocation is important for the execution of any job. If not configured correctly, the job can consume entire cluster resources and cause problems like the execution fails or memory related problems. This section provides guidelines for configuring the following important settings:
 
-* [Buckets] (#buckets)
+* [buckets](#buckets)
 
 * [member-timeout](#member-timeout)
 
 * [spark.local.dir](#spark-local-dir)
 
-* [executor-memory](#executor-memory)
-
 * [Operating System Settings](#os_setting)
 
 * [Table Memory Requirements](#table-memory)
 
-* [JVM Settings for SnappyData Smart Connector mode and Local mode](jvm-settings)
+* [SnappyData Smart Connector mode and Local mode Settings](#smartconnector-local-settings)
 
 <a id="buckets"></a>
-## Buckets
+## buckets
 
-A bucket is the unit of partitioning for SnappyData tables. The data is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, the buckets are moved around for rebalancing. 
+A bucket is a unit of partitioning for SnappyData tables. The data is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, the buckets are moved around for rebalancing. 
 
 The number of buckets should be set according to the table size. By default, there are 113 buckets for a table. 
 If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. 
@@ -28,6 +26,8 @@ Also, if the cluster is scaled at a later point of time rebalancing may not be o
 
 For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data.  
 
+This attribute is set when creating a table. Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) for examples.
+
 <a id="member-timeout"></a>
 ## member-timeout
 
@@ -35,12 +35,16 @@ The default [member-timeout](../configuring_cluster/property_description.md#memb
 If applications require node failure detection to be faster, then these properties should be reduced accordingly (`spark.executor.heartbeatInterval` but must always be much lower than `spark.network.timeout` as specified in the Spark Documents). </br>
 However, note that this can cause spurious node failures to be reported due to GC pauses. For example, the applications with reduced settings need to be resistant to job failures due to GC settings.
 
+This attribute is set in the [configuration files](../configuring_cluster/configuring_cluster.md) **conf/locators**, **conf/servers** and **conf/leads** files. 
+
 <a id="spark-local-dir"></a>
 ## spark.local.dir  
 
 SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using `-dir` option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
 To achieve better performance, it is recommended to store temporary data on a different disk (SSD) than the table data. This can be done by setting the `spark.local.dir` parameter.
+
+This attribute is set in the [leads configuration files](../configuring_cluster/configuring_cluster.md#lead) **conf/leads**.
 
 <a id="os_setting"></a>
 ##  Operating System Settings 
@@ -60,8 +64,7 @@ ec2-user          soft    nproc       524288
 ec2-user          hard    sigpending  unlimited
 ec2-user          soft    sigpending  524288
 ```
-* `ec2-user` is the user running SnappyData.	
-
+* `ec2-user` is the user running SnappyData.
 
 **OS Cache Size**</br> 
 When there is a lot of disk activity especially during table joins and during an eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
@@ -85,10 +88,28 @@ sudo chmod 600 /var/swapfile.1
 sudo mkswap /var/swapfile.1
 sudo swapon /var/swapfile.1
 ```
+
+<a id="smartconnector-local-settings"></a>
+## SnappyData Smart Connector mode and Local mode Settings
+
+### Managing Executor Memory
+For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. Further, to have better ingestion speed, small internal columnar storage structures are created in the Spark application's cluster itself, which is then directly inserted into the required buckets of the column table in the SnappyData cluster.
+These internal structures are in encoded form and for efficient encoding, some memory space is acquired upfront, which is independent of the amount of data to be loaded into the tables. </br>
+For example, if there are 32 cores for the Smart Connector application and the number of buckets of the column table is equal or more than that, then, each of the 32 executor threads can take around 32MB of memory. This indicates that 32MB * 32MB (1 GB) of memory is required. Thus, the default of 1GB for executor memory is not sufficient and therefore a default of at least 2 GB is recommended in this case.
+
+You can modify this setting in the `spark.executor.memory` property. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/configuration.html#available-properties).
+
+### JVM settings for optimal performance:
+The following JVM setting is recommended for optimal perforamance:
+
+```-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k```
+
+Set in the conf/locators, leads, servers
+
 <a id="table-memory"></a>
 ## Table Memory Requirements
 
-SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (i.e. off-heap is enabled), the entire column table is stored in off-heap memory. 
+SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (off-heap is enabled), the entire column table is stored in off-heap memory.
 
 SnappyData row tables memory requirements have to be calculated by taking into account row overheads. Row tables have different amounts of heap memory overhead per table and index entry, which depends on whether you persist table data or configure tables for overflow to disk.
 
@@ -109,13 +130,3 @@ SnappyData row tables memory requirements have to be calculated by taking into a
 |Subsequent non-unique index entry|8 bytes to 24 bytes*|
 
 If there are more than 100 entries for a single index entry, the heap overhead per entry increases from 8 bytes to approximately 24 bytes.
-
-<a id="jvm-settings"></a>
-## JVM Settings for SnappyData Smart Connector mode and Local mode 
-
-For SnappyData Smart Connector mode and local mode, we recommend the following JVM settings for optimal performance:
-
-```-XX:-DontCompileHugeMethods -XX:+UnlockDiagnosticVMOptions -XX:ParGCCardsPerStrideChunk=4k```
-
-!!! Note:
-	The `executor-memory` controls the amount of memory to use per executor process. The default value set by Spark is is 1g per executor. Set this property in the spark-defaults.conf

@@ -9,6 +9,8 @@ An LDAP directory service can quickly authenticate using the user’s authentica
 !!! Note:
 	* Currently only LDAP based authentication and authorization is supported.
 
-	* Ensure that the person launching the cluster is an user with administrative priviledges. 
+	* Ensure that user with administrative privileges launches the cluster. 
+
+	* All members of the cluster (locators, servers and leads) must be started by the same user (with administrative priviledges)
 
 ## Connecting to a Secure Cluster
