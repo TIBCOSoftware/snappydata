@@ -17,11 +17,14 @@
 
 package org.apache.spark.sql.execution.columnar
 
+import java.sql.Connection
+
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{SnapshotConnectionListener, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
@@ -44,6 +47,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
   override def nodeName: String = "ColumnDelete"
 
+
+
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
     else Map(
@@ -56,6 +61,42 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
   @transient private var batchOrdinal: String = _
   @transient private var finishDelete: String = _
   @transient private var deleteMetric: String = _
+  @transient protected var txId: String = _
+  @transient protected var success: String = _
+  @transient protected var taskListener: String = _
+
+  override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
+    val connectionClass = classOf[Connection].getName
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+    val listenerClass = classOf[SnapshotConnectionListener].getName
+    taskListener = ctx.freshName("taskListener")
+    connTerm = ctx.freshName("connection")
+
+    val contextClass = classOf[TaskContext].getName
+    val context = ctx.freshName("taskContext")
+
+    ctx.addMutableState(listenerClass, taskListener, "")
+    ctx.addMutableState(connectionClass, connTerm, "")
+
+    val initCode =
+      s"""
+         |$taskListener = new org.apache.spark.sql.execution.columnar.impl.SnapshotConnectionListener(
+         |(org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore)$externalStoreTerm);
+         |$connTerm = $taskListener.getConn();
+         |final $contextClass $context = $contextClass.get();
+         |if ($context != null) {
+         |   $context.addTaskCompletionListener($taskListener);
+         |}
+         | """.stripMargin
+
+    val endCode =
+      s"""
+         |""".stripMargin
+    val commitCode =
+      s"""
+       """.stripMargin
+    (initCode, commitCode, endCode)
+  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
@@ -73,6 +114,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |if ($batchOrdinal > 0) {
          |  $finishDelete(null, -1); // force a finish
          |}
+         |$taskListener.setSuccess();
       """.stripMargin)
   }
 
@@ -99,7 +141,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     ctx.addMutableState("int", batchOrdinal, "")
     ctx.addMutableState("UTF8String", lastColumnBatchId, "")
     ctx.addMutableState("int", lastBucketId, "")
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
 
     // last three columns in keyColumns should be internal ones
@@ -120,7 +162,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     val ordinalIdVar = keyVars.head.value
     val batchIdVar = keyVars(1).value
     val bucketVar = keyVars(2).value
-
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val keyVarsCode = evaluateVariables(keysInput)
     // row buffer needs to select the rowId and partitioning columns so drop last two
     val rowConsume = super.doConsume(ctx, keysInput.dropRight(2),
@@ -140,7 +182,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($cursor);
          |    // delete puts an empty stats row to denote that there are changes
          |    $externalStoreTerm.storeDelete($tableName, buffer,
-         |        new byte[] { 0, 0, 0, 0 }, $lastBucketId, $lastColumnBatchId.toString());
+         |        new byte[] { 0, 0, 0, 0 }, $lastBucketId, $lastColumnBatchId.toString(), new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoder
