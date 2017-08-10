@@ -696,4 +696,5 @@ class RowTableTest
     assert(cnt == 1000,s"Expceted count is 1000 but actual count is $cnt")
 
   }
+
 }
