@@ -160,7 +160,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     s.execute("DROP DISKSTORE d1")
   }
 
-  def testAlterRowTableRoutingFromXD(): Unit = {
+  def _testAlterRowTableRoutingFromXD(): Unit = {
     val tableName: String = "rowTableDDLRouting"
 
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
