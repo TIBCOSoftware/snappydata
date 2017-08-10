@@ -529,24 +529,25 @@ class SnappyParser(session: SnappySession)
             WindowLogicalPlan(win._1, win._2,
               UnresolvedRelation(tableIdent, optAlias))
         }) |
-        '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
-            (AS ~ identifier | strictIdentifier).? ~> { (child: LogicalPlan, w: Any, alias: Any) =>
-          val aliasPlan = alias.asInstanceOf[Option[String]] match {
-            case None => child
-            case Some(name) => SubqueryAlias(name, child, None)
-          }
-          w.asInstanceOf[Option[(Duration, Option[Duration])]] match {
-            case None =>
-              assertNoQueryHint(QueryHint.Index,
-                s"${QueryHint.Index} cannot be applied to derived table $alias")
-              aliasPlan
-            case Some(win) =>
-              assertNoQueryHint(QueryHint.Index,
-                s"${QueryHint.Index} cannot be applied to derived table $alias")
-              WindowLogicalPlan(win._1, win._2, aliasPlan)
-          }
-        }
+    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
+        (AS ~ identifier | strictIdentifier).? ~> { (child: LogicalPlan, w: Any, alias: Any) =>
+      val aliasPlan = alias.asInstanceOf[Option[String]] match {
+        case None => child
+        case Some(name) => SubqueryAlias(name, child, None)
+      }
+      w.asInstanceOf[Option[(Duration, Option[Duration])]] match {
+        case None =>
+          assertNoQueryHint(QueryHint.Index,
+            s"${QueryHint.Index} cannot be applied to derived table $alias")
+          aliasPlan
+        case Some(win) =>
+          assertNoQueryHint(QueryHint.Index,
+            s"${QueryHint.Index} cannot be applied to derived table $alias")
+          WindowLogicalPlan(win._1, win._2, aliasPlan)
+      }
+    }
   }
+  
   /*
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
     VALUES ~ (expression + commaSep) ~ AS.? ~ identifier.? ~
