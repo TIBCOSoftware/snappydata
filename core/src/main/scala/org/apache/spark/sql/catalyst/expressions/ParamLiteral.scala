@@ -176,8 +176,14 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
              |    : ((Long)$valueRef.value()).longValue();
            """.stripMargin, isNull, valueTerm)
       case NullType =>
+        val isNull = ctx.freshName("isNull")
         val valueTerm = ctx.freshName("value")
-        ev.copy(s"final Object $valueTerm = null")
+        val valueRef = lv(ctx)
+        ev.copy(
+          s"""
+             |final boolean $isNull = $valueRef.value() == null;
+             |final Object $valueTerm = null;
+             |""".stripMargin, isNull, valueTerm)
       case _ =>
         val valueRef = lv(ctx)
         val isNull = ctx.freshName("isNull")
