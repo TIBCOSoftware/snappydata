@@ -110,7 +110,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case _ =>
             val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
             if (txId == null) {
-              logDebug("Going to start the transaction on server ")
+              logDebug(s"Going to start the transaction on server on conn $conn ")
               val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID (?)")
               startAndGetSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
               startAndGetSnapshotTXId.execute()
@@ -142,7 +142,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             // if(SparkShellRDDHelper.snapshotTxIdForRead.get)
             Misc.getGemFireCache.getCacheTransactionManager.commit()
           case _ =>
-            logDebug(s"Going to commit $txId the transaction on server ")
+            logDebug(s"Going to commit $txId the transaction on server conn is $conn")
             val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
             ps.setString(1, if (txId == null) "null" else txId)
             ps.executeUpdate()
@@ -164,7 +164,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ConnectionType.Embedded =>
             Misc.getGemFireCache.getCacheTransactionManager.rollback()
           case _ =>
-            logDebug(s"Going to rollback $txId the transaction on server ")
+            logDebug(s"Going to rollback $txId the transaction on server on wconn $conn ")
             val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
             ps.setString(1, if (txId == null) "null" else txId)
             ps.executeUpdate()
@@ -178,7 +178,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String): Unit = {
+      statsData: Array[Byte], partitionId: Int, batchId: String)(conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
@@ -202,7 +202,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       case _ =>
         // TODO: SW: temporarily made close=true for delete
         // noinspection RedundantDefaultArgument
-        tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) { connection =>
+        tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) { connection =>
           val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
           val stmt = connection.prepareStatement(deleteStr)
           var blob: ClientBlob = null
@@ -233,7 +233,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               }
             }
           }
-        }
+        }(implicitly, conn)
     }
   }
 
@@ -497,7 +497,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
       // TODO: SW: temporarily made close=true for updates
       // noinspection RedundantDefaultArgument
-      tryExecute(tableName, closeOnSuccessOrFailure = batch.deltaIndexes ne null,
+      tryExecute(tableName, closeOnSuccessOrFailure = false/*batch.deltaIndexes ne null*/,
         onExecutor = true)(doInsertOrPutImpl(tableName, batch, batchId, partitionId,
         maxDeltaRows))(implicitly, conn)
     } else {
@@ -510,7 +510,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case _ =>
           // TODO: SW: temporarily made close=true for updates
           // noinspection RedundantDefaultArgument
-          tryExecute(tableName, closeOnSuccessOrFailure = batch.deltaIndexes ne null,
+          tryExecute(tableName, closeOnSuccessOrFailure = false/* batch.deltaIndexes ne null*/,
             onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
             maxDeltaRows))(implicitly, conn)
       }
