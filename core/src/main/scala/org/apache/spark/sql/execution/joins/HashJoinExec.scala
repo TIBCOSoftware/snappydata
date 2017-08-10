@@ -206,9 +206,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependecies to first stream-side RDD
-        val rdd = streamRDDs.head
-        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
-          preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+          preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
             rdd.sparkContext, rdd, preferredLocations))
       } else {
