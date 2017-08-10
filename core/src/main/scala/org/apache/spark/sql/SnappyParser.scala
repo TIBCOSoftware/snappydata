@@ -498,22 +498,30 @@ class SnappyParser(session: SnappySession)
         })
   }
 
+  protected final def tableValuedFunctionExpressions: Rule1[
+      Seq[Expression]] = rule {
+    '(' ~ ws ~ (expression * commaSep) ~ ws ~ ')' ~ ws ~>
+        ((e: Any) => e match {
+          case ve: Vector[Expression] => ve
+          case _ => Seq.empty
+  })
+  }
+
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
-    identifier ~ ws ~ '(' ~ ws ~ (expression * commaSep) ~ ws ~ ')' ~>
-        ((fnname: String, e: Any) =>
-          e match {
-            case ve: Vector[Expression] => UnresolvedTableValuedFunction(fnname.toLowerCase(), ve)
-            case _ => UnresolvedTableValuedFunction(fnname, Seq.empty)
-          }) |
     tableIdentifier ~ streamWindowOptions.? ~
-        (AS ~ identifier | strictIdentifier).? ~>
+        (AS ~ identifier | strictIdentifier).? ~ tableValuedFunctionExpressions.? ~>
         ((tableIdent: TableIdentifier,
-            window: Any, alias: Any) => window.asInstanceOf[Option[
+            window: Any, alias: Any, tvfe: Any) => window.asInstanceOf[Option[
             (Duration, Option[Duration])]] match {
           case None =>
-            val optAlias = alias.asInstanceOf[Option[String]]
-            updatePerTableQueryHint(tableIdent, optAlias)
-            UnresolvedRelation(tableIdent, optAlias)
+            tvfe.asInstanceOf[Option[Seq[Expression]]] match {
+              case None =>
+                val optAlias = alias.asInstanceOf[Option[String]]
+                updatePerTableQueryHint(tableIdent, optAlias)
+                UnresolvedRelation(tableIdent, optAlias)
+              case Some(exprs) =>
+                UnresolvedTableValuedFunction(tableIdent.identifier.toLowerCase(), exprs)
+            }
           case Some(win) =>
             val optAlias = alias.asInstanceOf[Option[String]]
             updatePerTableQueryHint(tableIdent, optAlias)
