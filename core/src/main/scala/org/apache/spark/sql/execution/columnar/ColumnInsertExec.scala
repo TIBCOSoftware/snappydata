@@ -231,7 +231,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
     s"""
        |$checkEnd; // already done
+       |
        |final Object[] $txIdConnArray = $beginSnapshotTx();
+       |
        |boolean success = false;
        |try {
        |$batchSizeDeclaration
