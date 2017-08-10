@@ -31,7 +31,7 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnectionContext
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
 
@@ -242,7 +242,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     c match {
       case Some(conn) if !conn.isClosed =>
         connectionType match {
-          case ConnectionType.Embedded => // Do nothing
+          case ConnectionType.Embedded =>
+            if (!conn.isInstanceOf[EmbedConnection]) {
+              conn.commit()
+              conn.close()
+            }
           case _ =>
             // it should always be not null.
             // get clears the state from connection
@@ -697,13 +701,14 @@ final class SmartConnectorColumnRDD(
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
+    val partitionId = split.index
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
-      split.index, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
+      partitionId, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
     // fetch the stats
     val (statement, rs, txId) = helper.executeQuery(conn, tableName, split,
       fetchStatsQuery, relDestroyVersion)
     val itr = new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs,
-      context, fetchColQuery)
+      context, partitionId, fetchColQuery)
 
     if (context ne null) {
       context.addTaskCompletionListener { _ =>

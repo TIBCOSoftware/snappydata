@@ -140,7 +140,6 @@ final class SparkShellRDDHelper {
     // enable direct ByteBuffers for best performance
     val executorProps = connProperties.executorConnProps
     executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
-    executorProps.setProperty(ClientAttribute.SKIP_CONSTRAINT_CHECKS, "true")
     // setup pool properties
     val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)

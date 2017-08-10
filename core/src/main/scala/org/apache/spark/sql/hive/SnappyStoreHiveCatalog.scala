@@ -32,6 +32,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
@@ -42,7 +43,7 @@ import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
@@ -55,7 +56,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -804,21 +804,40 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   private def addToFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
-    val urls = funcDefinition.resources.map { r =>
-      ContextJarUtils.addToSparkJars(funcDefinition.identifier.toString(), r.uri)
-      toUrl(r)
-    }
     val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    if(ContextJarUtils.getDriverJar(qualifiedName.unquotedString).isEmpty){
-      ContextJarUtils.addDriverJar(qualifiedName.unquotedString,
-        new MutableURLClassLoader(urls.toArray, parentLoader))
+    val callbacks = ToolsCallbackInit.toolsCallback
+    val newClassLoader = ContextJarUtils.getDriverJar(qualifiedName.unquotedString).getOrElse({
+      val urls = if (callbacks != null) {
+        funcDefinition.resources.map { r =>
+          ContextJarUtils.fetchFile(funcDefinition.identifier.toString(), r.uri)
+        }
+      } else {
+        funcDefinition.resources.map { r =>
+          toUrl(r)
+        }
+      }
+      val newClassLoader = new MutableURLClassLoader(urls.toArray, parentLoader)
+      ContextJarUtils.addDriverJar(qualifiedName.unquotedString, newClassLoader)
+      newClassLoader
+    })
+
+    SnappyContext.getClusterMode(snappySession.sparkContext) match {
+      case SnappyEmbeddedMode(_, _) => {
+        callbacks.setSessionDependencies(snappySession.sparkContext,
+          qualifiedName.unquotedString,
+          newClassLoader)
+      }
+      case _ => {
+        newClassLoader.getURLs.map(url =>
+          snappySession.sparkContext.addJar(url.getFile))
+      }
     }
   }
 
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     funcDefinition.resources.foreach { r =>
-      ContextJarUtils.removeFromSparkJars(funcDefinition.identifier.toString(), r.uri)
+      ContextJarUtils.deleteFile(funcDefinition.identifier.toString(), r.uri)
     }
     ContextJarUtils.removeDriverJar(qualifiedName.unquotedString)
   }

@@ -17,12 +17,16 @@
 package org.apache.spark.executor
 
 import java.io.File
-import java.net.{URL, URLClassLoader}
+import java.net.URL
 
 import scala.collection.mutable
 
+import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
+import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.serializer.KryoSerializerPool
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
@@ -43,102 +47,78 @@ class SnappyExecutor(
     Thread.setDefaultUncaughtExceptionHandler(exceptionHandler)
   }
 
-  override def createClassLoader(): MutableURLClassLoader = {
-    // Bootstrap the list of jars with the user class path.
-    val now = System.currentTimeMillis()
-    userClassPath.foreach { url =>
-      currentJars(url.getPath.split("/").last) = now
+  val classLoaderCache = {
+    val loader = new CacheLoader[ClassLoaderKey, SnappyMutableURLClassLoader]() {
+      override def load(key: ClassLoaderKey): SnappyMutableURLClassLoader = {
+        val appName = key.appName
+        val appNameAndJars = key.appNameAndJars
+        lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
+        val appDependencies = appNameAndJars.drop(2).toSeq
+        logInfo(s"Creating ClassLoader for $appName" +
+            s" with dependencies $appDependencies")
+        val urls = appDependencies.map(name => {
+          val localName = name.split("/").last
+          logInfo(s"Fetching file $name for App[$appName]")
+          Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
+            env.securityManager, hadoopConf, -1L, useCache = !isLocal)
+          val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
+          url
+        })
+        val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)
+        KryoSerializerPool.clear()
+        newClassLoader
+      }
     }
-
-    val currentLoader = Utils.getContextOrSparkClassLoader
-
-    // For each of the jars in the jarSet, add them to the class loader.
-    // We assume each of the files has already been fetched.
-    val urls = userClassPath.toArray ++ currentJars.keySet.map { uri =>
-      new File(uri.split("/").last).toURI.toURL
-    }
-    val jobJars = scala.collection.mutable.Map[String, URLClassLoader]()
-    new SnappyMutableURLClassLoader(urls, currentLoader, jobJars)
-
+    // Keeping 500 as cache size. Can revisit the number
+    CacheBuilder.newBuilder().maximumSize(500).build(loader)
   }
 
-  def getName(path: String): String = new File(path).getName
+  class ClassLoaderKey(val appName: String,
+      val appTime: String,
+      val appNameAndJars: Array[String]) {
+
+    override def hashCode(): Int = (appName, appTime).hashCode()
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case x: ClassLoaderKey =>
+          (x.appName, x.appTime).equals(appName, appTime)
+        case _ => false
+      }
+    }
+  }
 
   override def updateDependencies(newFiles: mutable.HashMap[String, Long],
       newJars: mutable.HashMap[String, Long]): Unit = {
+    super.updateDependencies(newFiles, newJars)
     synchronized {
-      val classloader = urlClassLoader.asInstanceOf[SnappyMutableURLClassLoader]
-      val addedJarFiles = classloader.getAddedURLs.toList
-      val newJarFiles = newJars.keys.map(getName).toList
-      val diffJars = addedJarFiles.diff(newJarFiles)
-      if (diffJars.nonEmpty) {
-        diffJars.foreach(classloader.removeURL)
-        logInfo("As some of the Jars have been deleted, setting up " +
-            "a new ClassLoader for subsequent Threads")
-        diffJars.foreach(d => logInfo(s"removed jar $d"))
-
-        this.urlClassLoader = new SnappyMutableURLClassLoader(classloader.getURLs(),
-          classloader.getParent, classloader.jobJars)
-        this.replClassLoader = addReplClassLoaderIfNeeded(urlClassLoader)
-        super.updateDependencies(newFiles, newJars)
-        env.serializer.setDefaultClassLoader(this.replClassLoader)
-        env.closureSerializer.setDefaultClassLoader(this.replClassLoader)
-        Thread.currentThread().setContextClassLoader(this.replClassLoader)
-      } else {
-        super.updateDependencies(newFiles, newJars)
+      val taskDeserializationProps = Executor.taskDeserializationProps.get()
+      if (null != taskDeserializationProps) {
+        val appDetails = taskDeserializationProps.getProperty(io.snappydata.Constant
+            .CHANGEABLE_JAR_NAME, "")
+        logInfo(s"Submitted Application Details $appDetails")
+        if (!appDetails.isEmpty) {
+          val appNameAndJars = appDetails.split(",")
+          val threadClassLoader =
+            classLoaderCache.getUnchecked(new ClassLoaderKey(appNameAndJars(0),
+              appNameAndJars(1), appNameAndJars))
+          logInfo(s"Setting thread classloader  $threadClassLoader")
+          Thread.currentThread().setContextClassLoader(threadClassLoader)
+        }
       }
     }
   }
 }
 
 class SnappyMutableURLClassLoader(urls: Array[URL],
-    parent: ClassLoader,
-    val jobJars: scala.collection.mutable.Map[String, URLClassLoader])
+    parent: ClassLoader)
     extends MutableURLClassLoader(urls, parent) with Logging {
 
 
-  protected def getJobName: String = {
-    var jobFile = ""
-    val taskDeserializationProps = Executor.taskDeserializationProps.get()
-    if (null != taskDeserializationProps) {
-      jobFile = taskDeserializationProps.getProperty(io.snappydata.Constant
-          .CHANGEABLE_JAR_NAME, "")
-    }
-    new File(jobFile).getName
-  }
-
-  override def addURL(url: URL): Unit = {
-    val jobName = getJobName
-    if (jobName.isEmpty) {
-      super.addURL(url)
-    }
-    else {
-      jobJars.put(jobName, new URLClassLoader(Array(url)))
-    }
-  }
-
-  def getAddedURLs: Array[String] = {
-    jobJars.keys.toArray
-  }
-
-  def removeURL(jar: String): Unit = {
-    if (jobJars.contains(jar)) {
-      val urlLoader = jobJars.get(jar)
-      if (urlLoader.isDefined) {
-        val file = new File(SparkFiles.getRootDirectory(), jar)
-        jobJars.remove(jar)
-        if (file.exists()) {
-          logInfo(s"Removing $jar from Spark root directory")
-          file.delete()
-        }
-      }
-    }
-  }
-
   override def loadClass(name: String, resolve: Boolean): Class[_] = {
     loadJar(() => super.loadClass(name, resolve)).
-        getOrElse(loadJar(() => Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name))
-            .getOrElse(loadJar(() => loadClassFromJobJar(name), throwException = true).get))
+        getOrElse(loadJar(() => Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name),
+          throwException = true).get)
   }
 
   def loadJar(f: () => Class[_], throwException: Boolean = false): Option[Class[_]] = {
@@ -148,17 +128,6 @@ class SnappyMutableURLClassLoader(urls: Array[URL],
       case cnfe: ClassNotFoundException => if (throwException) throw cnfe
       else None
     }
-  }
-
-  def loadClassFromJobJar(className: String): Class[_] = {
-    val jobName = getJobName
-    if (!jobName.isEmpty) {
-      jobJars.get(jobName) match {
-        case Some(loader) => loader.loadClass(className)
-        case _ => throw new ClassNotFoundException(className)
-      }
-    }
-    else throw new ClassNotFoundException(className)
   }
 }
 
