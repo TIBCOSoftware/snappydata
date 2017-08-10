@@ -671,12 +671,12 @@ task product(type: Zip) {
   def hasJdbcConnectorProject = new File(rootDir,
       'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 
-  if (hasAQPProject) {
+  if (hasAQPProject && rootProject.hasProperty('snappydata.enterprise')) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
     targetProject = project(":snappy-aqp_${scalaBinaryVersion}")
   }
 
-  if (hasJdbcConnectorProject) {
+  if (hasJdbcConnectorProject && rootProject.hasProperty('snappydata.enterprise')) {
     dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
   }
 
@@ -775,15 +775,6 @@ task product(type: Zip) {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
-      }
-    }
-    // copy AQP jar from maven repo if project not present
-    if (!hasAQPProject) {
-      copy {
-        from examplesProject.configurations.testRuntime.filter {
-          it.getName().contains('snappy-aqp')
-        }
-        into "${snappyProductDir}/jars"
       }
     }
     copy {
@@ -915,7 +906,7 @@ def runScript(def execName, def workDir, def param, env = null) {
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
     copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
 }
@@ -945,7 +936,8 @@ task checkAll {
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
-  if (!rootProject.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()) {
+  if (!rootProject.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()
+          && rootProject.hasProperty('snappydata.enterprise')) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
