@@ -555,7 +555,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     }
   }
 
-  test("update delete on column table") {
+  ignore("update delete on column table") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
