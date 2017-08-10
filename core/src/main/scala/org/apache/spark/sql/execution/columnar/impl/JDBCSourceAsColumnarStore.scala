@@ -49,6 +49,7 @@ import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
+import org.apache.spark.util.TaskCompletionListener
 import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Logging, Partition, TaskContext}
 
@@ -178,7 +179,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String)(conn: Option[Connection]): Unit = {
+      statsData: Array[Byte], partitionId: Int, batchId: String)(implicit conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
@@ -865,5 +866,42 @@ class SmartConnectorRowRDD(_session: SnappySession,
   def getSQLStatement(resolvedTableName: String,
       requiredColumns: Array[String], partitionId: Int): String = {
     "select " + requiredColumns.mkString(", ") + " from " + resolvedTableName
+  }
+
+}
+
+class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore) extends TaskCompletionListener {
+  val connAndTxId: Array[_ <: Object] = store.beginTx()
+  var isSuccess = false
+
+  override def onTaskCompletion(context: TaskContext): Unit = {
+    val txId = connAndTxId(1).asInstanceOf[String]
+    val conn = connAndTxId(0).asInstanceOf[Connection]
+    if (connAndTxId(1) != null) {
+      if (success()) {
+        store.commitTx(txId)(Some(conn))
+      }
+      else {
+        store.rollbackTx(txId)(Some(conn))
+      }
+    }
+    store.closeConnection(Some(conn))
+    //} catch (java.sql.SQLException sqle) {
+    // ignore exception in close
+    //}
+  }
+
+  def success(): Boolean = {
+    isSuccess
+  }
+
+  def setSuccess() = {
+    isSuccess = true
+  }
+
+  def getConn(): Connection = connAndTxId(0).asInstanceOf[Connection]
+
+  def getConnAndTXId() : Array[_ <:Object] = {
+    connAndTxId
   }
 }

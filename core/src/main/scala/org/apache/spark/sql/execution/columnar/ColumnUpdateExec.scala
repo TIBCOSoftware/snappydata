@@ -19,17 +19,19 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
 
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.util.TaskCompletionListener
 
 /**
  * Generated code plan for updates into a column table.
@@ -81,63 +83,39 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
   @transient protected var success: String = _
+  @transient protected var taskListener: String = _
 
   override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
+    val listenerClass = classOf[SnapshotConnectionListener].getName
     connTerm = ctx.freshName("connection")
-    txId = ctx.freshName("txId")
-    success = ctx.freshName("success")
-    ctx.addMutableState("boolean", success, "")
-    ctx.addMutableState("String", txId, "")
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    ctx.addReferenceObj()
+    taskListener = ctx.freshName("taskListener")
+    ctx.addMutableState(connectionClass, connTerm, "")
+    ctx.addMutableState(listenerClass, taskListener, "")
+    val contextClass = classOf[TaskContext].getName
+    val context = ctx.freshName("taskContext")
 
-    if (onExecutor) {
-      // actual connection will be filled into references before execution
-      connRef = ctx.references.length
-      // connObj position in the array is connRef
-      val connObj = ctx.addReferenceObj("conn", null, connectionClass)
-      (s"final $connectionClass $connTerm = $connObj;", "", "")
-    } else {
-      // This is at driver?
-      val utilsClass = ExternalStoreUtils.getClass.getName
-      ctx.addMutableState(connectionClass, connTerm, "")
-      val props = ctx.addReferenceObj("connectionProperties", connProps)
-      // For row table we don't need to start a
-      //$connTerm = $utilsClass.MODULE$$.getConnection(
-      //    "$resolvedName", $props, true);
-      val initCode =
-        s"""
-           | final Object[] connAndtxid = $externalStoreTerm.beginTx();
-           | $connTerm = (java.sql.Connection)connAndtxid[0];
-           | $txId = (String)connAndtxid[1];
-           | $success = false;
-           | """.stripMargin
+    val initCode =
+      s"""
+         |$taskListener = new SnapshotConnectionListener((JDBCSourceAsColumnarStore)externalStore);
+         |$connTerm = $taskListener.getConn();
+         |final $contextClass $context = $contextClass.get();
+         |if ($context != null) {
+         |  $context.addTaskCompletionListener($taskListener);
+         |}
+         | """.stripMargin
 
-      val endCode =
-        s""" finally {
-           |  //try {
-           |    if ($txId != null) {
-           |      if ($success) {
-           |        $externalStoreTerm.commitTx($txId, new scala.Some($connTerm));
-           |      }
-           |      else {
-           |        $externalStoreTerm.rollbackTx($txId, new scala.Some($connTerm));
-           |      }
-           |    }
-           |    $externalStoreTerm.closeConnection(new scala.Some($connTerm));
-           |  //} catch (java.sql.SQLException sqle) {
-           |    // ignore exception in close
-           |  //}
-           |}""".stripMargin
-      val commitCode =
-        s"""
+    val endCode =
+      s"""
+         |}""".stripMargin
+    val commitCode =
+      s"""
            """.stripMargin
-      (initCode, commitCode, endCode)
-    }
+    (initCode, commitCode, endCode)
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
+
     val sql = new StringBuilder
     sql.append("UPDATE ").append(resolvedName).append(" SET ")
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
@@ -156,6 +134,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |if ($batchOrdinal > 0) {
          |  $finishUpdate(null, -1); // force a finish
          |}
+         |$taskListener.setSuccess();
          |$success = true;
       """.stripMargin)
   }
