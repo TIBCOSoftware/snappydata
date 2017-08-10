@@ -43,9 +43,8 @@ You can set the following heap memory configuration parameters:
 |Parameter Name |Default Value|Description|
 |--------|--------|--------|
 |heap-size|4GB in Snappy embedded mode cluster|Max heap size which can be used by the JVM|
-|critical-heap-percentage|90%|(TODO: I don't understand this descrip- Jags) This value suggests how much heap memory one needs to reserve for miscellaneous usage like UDFs, temporary garbage data. Beyond this point, SnappyData starts canceling all jobs and queries. Critical percentage of 90 means, beyond 90% of heap usage jobs and queries will get canceled. |
+|critical-heap-percentage|90%|(TODO: I don't understand this descrip- Jags) The heap percent beyond which system considers itself in a critical state . This is to safeguard the system from crashing by OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries.  Critical percentage of 90 means, beyond 90% of heap usage jobs and queries will get cancelled.|
 |eviction-heap-percentage|81|This percent determined when in memory table data would be evicted to disk. Beyond this Table rows are evicted in LRU fashion.|
-|spark.memory.fraction|0.92|(TODO: I don't understand this descrip- Jags)A buffer area before critical heap memory is reached. |
 
 SnappyData heap memory regions are divided into two parts called pools. Sizes of each pool are determined by the config parameters provided at boot time to each server (TODO: I don't understand this descrip .. thought each will elastically expand into the other- Jags).
 The two pools are as below:
@@ -64,7 +63,7 @@ During query execution or while running a Spark job, all temporary object alloca
 
 At the start, each of the two pools is assigned a fraction of the available memory. While this fraction is allocated, SnappyData allows each pool to "balloon" into the other if capacity is available subject to following rules:
 
-* The storage pool can grow to the execution pool if the execution pool has some capacity, but not beyond the `max_storage_size`.
+* The storage pool can grow to the execution pool if the execution pool has some capacity, but not beyond the `eviction-heap-percentage`.
 
 * If the storage pool cannot borrow from the executor pool, it can evict some of its own blocks to make space for incoming blocks.
 
