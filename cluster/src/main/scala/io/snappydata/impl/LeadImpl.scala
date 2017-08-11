@@ -42,7 +42,7 @@ import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.{SparkCallbacks, Logging, SparkConf, SparkContext, SparkException}
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
@@ -165,6 +165,16 @@ class LeadImpl extends ServerImpl with Lead
             throw e;
         }
       }
+
+      // The auth service is not yet initialized at this point.
+      // So simply check the auth-provider property value.
+      if (checkAuthProvider(bootProperties)) {
+        logDebug(" LDAP Security is Enabled :: Setting authenticator for SnappyData Pulse")
+        SparkCallbacks.setAuthenticatorForJettyServer()
+      } else {
+        logInfo("LDAP Security is Not Enabled")
+      }
+
       sparkContext = new SparkContext(conf)
 
       checkAndStartZeppelinInterpreter(bootProperties)
@@ -178,6 +188,12 @@ class LeadImpl extends ServerImpl with Lead
     }
 
 
+  }
+
+  /* Returns true if LDAP Security is Enabled */
+  def checkAuthProvider(props: Properties): Boolean = {
+    "LDAP".equalsIgnoreCase(props.getProperty(Attribute.AUTH_PROVIDER, "")) ||
+        "LDAP".equalsIgnoreCase(props.getProperty(Attribute.SERVER_AUTH_PROVIDER, ""))
   }
 
   @throws[SparkException]
