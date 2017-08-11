@@ -836,22 +836,27 @@ class SnappyParser(session: SnappySession)
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~> trueFn).? ~
     (namedExpression + commaSep) ~
-    (FROM ~ ws ~ relations).? ~
+    (FROM ~ relations).? ~
     (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     groupBy.? ~
     (HAVING ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
-      val base = f.asInstanceOf[Option[LogicalPlan]].getOrElse(OneRowRelation)
-      val withFilter = w.asInstanceOf[Option[Expression]].map(Filter(_, base))
-          .getOrElse(base)
+      val base = f match {
+        case Some(plan) => plan.asInstanceOf[LogicalPlan]
+        case _ => OneRowRelation
+      }
+      val withFilter = w match {
+        case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
+        case _ => base
+      }
       val expressions = p.asInstanceOf[Seq[Expression]].map {
         case ne: NamedExpression => ne
         case e => UnresolvedAlias(e)
       }
       val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
-      val withProjection = gr.map(x => {
-        x._3 match {
+      val withProjection = gr match {
+        case Some(x) => x._3 match {
           // group by cols with rollup
           case "ROLLUP" => Aggregate(Seq(Rollup(x._1)), expressions, withFilter)
           // group by cols with cube
@@ -861,13 +866,16 @@ class SnappyParser(session: SnappySession)
           // just "group by cols"
           case _ => Aggregate(x._1, expressions, withFilter)
         }
-      }).getOrElse(Project(expressions, withFilter))
-      val withDistinct = d.asInstanceOf[Option[Boolean]] match {
+        case _ => Project(expressions, withFilter)
+      }
+      val withDistinct = d match {
         case None => withProjection
         case Some(_) => Distinct(withProjection)
       }
-      val withHaving = h.asInstanceOf[Option[Expression]]
-          .map(Filter(_, withDistinct)).getOrElse(withDistinct)
+      val withHaving = h match {
+        case Some(expr) => Filter(expr.asInstanceOf[Expression], withDistinct)
+        case _ => withDistinct
+      }
       q(withHaving)
     }
   }

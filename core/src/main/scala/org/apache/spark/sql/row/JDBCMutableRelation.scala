@@ -96,6 +96,8 @@ case class JDBCMutableRelation(
 
   def numBuckets: Int = -1
 
+  def isPartitioned: Boolean = false
+
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
@@ -188,7 +190,7 @@ case class JDBCMutableRelation(
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
     RowInsertExec(child, putInto = false, partitionColumns,
-      partitionExpressions(relation), numBuckets, schema, Some(this),
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, Some(this),
       onExecutor = false, table, connProperties)
   }
 
@@ -200,8 +202,8 @@ case class JDBCMutableRelation(
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
     RowUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
-      numBuckets, schema, Some(this), updateColumns, updateExpressions, keyColumns,
-      connProperties, onExecutor = false)
+      numBuckets, isPartitioned, schema, Some(this), updateColumns, updateExpressions,
+      keyColumns, connProperties, onExecutor = false)
   }
 
   /**
@@ -211,7 +213,8 @@ case class JDBCMutableRelation(
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
     RowDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
-      numBuckets, schema, Some(this), keyColumns, connProperties, onExecutor = false)
+      numBuckets, isPartitioned, schema, Some(this), keyColumns, connProperties,
+      onExecutor = false)
   }
 
   /**

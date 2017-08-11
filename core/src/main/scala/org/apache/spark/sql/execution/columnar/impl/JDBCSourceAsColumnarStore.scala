@@ -531,8 +531,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
             caseSensitive = true)
           val insertPlan = RowInsertExec(tableScan, putInto = true,
-            Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
-            tableName, connProperties)
+            Seq.empty, Seq.empty, numBuckets = -1, isPartitioned = false, schema,
+            None, onExecutor = true, tableName, connProperties)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD
           // semantics and related methods are all ignored
