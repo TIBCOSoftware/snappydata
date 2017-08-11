@@ -21,12 +21,13 @@ import java.net.URL
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
-import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
@@ -37,8 +38,7 @@ class SnappyExecutor(
     userClassPath: Seq[URL] = Nil,
     exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
-    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) with
-    SparkCallBack {
+    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
 
   if (!isLocal) {
     // Setup an uncaught exception handler for non-local mode.
@@ -106,6 +106,24 @@ class SnappyExecutor(
           Thread.currentThread().setContextClassLoader(threadClassLoader)
         }
       }
+    }
+  }
+
+  override def isStoreCloseException(t : Throwable) : Boolean = {
+    try {
+      Misc.checkIfCacheClosing(t)
+    } catch {
+      case ex: CacheClosedException => true
+      case _ => false
+    }
+    return false;
+  }
+
+  override def isStoreException(t: Throwable): Boolean = {
+    if (GemFireXDUtils.retryToBeDone(t)) {
+      return true;
+    } else {
+      return false;
     }
   }
 }
