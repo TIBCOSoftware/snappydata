@@ -37,7 +37,7 @@ class TokenizationTest
         with BeforeAndAfter
         with BeforeAndAfterAll {
 
-  val table  = "my_table"
+  val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
 
@@ -62,6 +62,20 @@ class TokenizationTest
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
     snc.dropTable(s"$colTableName", ifExists = true)
+  }
+
+  test("sql range operator") {
+    var r = snc.sql(s"select id, concat('sym', cast((id) as STRING)) as" +
+        s" sym from range(0, 100)").collect()
+    assert(r.size === 100)
+  }
+
+  test("sql range operator2") {
+    snc.sql(s"create table target (id int not null, symbol string not null) using column options()")
+    var r = snc.sql(s"insert into target (select id, concat('sym', cast((id) as STRING)) as" +
+        s" sym from range(0, 100))").collect()
+    r = snc.sql(s"select count(*) from target").collect()
+    assert(r.head.get(0) === 100)
   }
 
   test("like queries") {
@@ -416,6 +430,43 @@ class TokenizationTest
     assert(result1.length > 0)
     assert(result2.length > 0)
     logInfo("Successful")
+  }
+
+  test("SNAP-1894") {
+
+    val snap = snc
+    val row = identity[(java.lang.Integer, java.lang.Double)](_)
+
+    import  snap.implicits._
+    lazy val l = Seq(
+      row(1, 2.0),
+      row(1, 2.0),
+      row(2, 1.0),
+      row(2, 1.0),
+      row(3, 3.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("a", "b")
+
+    lazy val r = Seq(
+      row(2, 3.0),
+      row(2, 3.0),
+      row(3, 2.0),
+      row(4, 1.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("c", "d")
+
+
+    l.write.format("row").saveAsTable("l")
+    r.write.format("row").saveAsTable("r")
+
+    assert(snc.sql("select l.a from l where (select count(*) as cnt" +
+      " from r where l.a = r.c) = 0").count == 4)
+    snc.sql("select case when count(*) = 1 then null else count(*) end as cnt" +
+      " from r, l where l.a = r.c").collect.foreach(r => assert(r.get(0) == 6))
+    assert(snc.sql("select l.a from l where (select case when count(*) = 1" +
+      " then null else count(*) end as cnt from r where l.a = r.c) = 0").count == 4)
   }
 
   test("Test tokenize for nulls") {

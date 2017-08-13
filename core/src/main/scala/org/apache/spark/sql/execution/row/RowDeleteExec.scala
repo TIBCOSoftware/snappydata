@@ -27,9 +27,9 @@ import org.apache.spark.sql.types.StructType
  */
 case class RowDeleteExec(child: SparkPlan, resolvedName: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
-    numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
-    keyColumns: Seq[Attribute], connProps: ConnectionProperties, onExecutor: Boolean)
-    extends RowExec {
+    numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
+    relation: Option[DestroyRelation], keyColumns: Seq[Attribute],
+    connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
 
   override protected def opType: String = "Delete"
 

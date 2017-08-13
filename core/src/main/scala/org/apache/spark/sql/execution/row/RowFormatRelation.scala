@@ -133,7 +133,6 @@ class RowFormatRelation(
       filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.filter(ExternalStoreUtils
         .handledFilter(_, indexedColumns) eq ExternalStoreUtils.SOME_TRUE)
-    val isPartitioned = numBuckets != 1
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
@@ -171,22 +170,22 @@ class RowFormatRelation(
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-         RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+         RelationInfo(numBuckets, isPartitioned, partitionColumns, Array.empty[String],
            Array.empty[String], Array.empty[Partition], -1)
     }
   }
 
-  override lazy val (numBuckets, partitionColumns) = {
+  override lazy val (numBuckets, isPartitioned, partitionColumns) = {
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
-        (relInfo.numBuckets, relInfo.partitioningCols)
+        (relInfo.numBuckets, relInfo.isPartitioned, relInfo.partitioningCols)
       case _ => region match {
         case pr: PartitionedRegion =>
           val resolver = pr.getPartitionResolver
               .asInstanceOf[GfxdPartitionByExpressionResolver]
           val parColumn = resolver.getColumnNames
-          (pr.getTotalNumberOfBuckets, parColumn.toSeq)
-        case _ => (1, Seq.empty[String])
+          (pr.getTotalNumberOfBuckets, true, parColumn.toSeq)
+        case _ => (1, false, Seq.empty[String])
       }
     }
   }
@@ -203,7 +202,7 @@ class RowFormatRelation(
   override def getPutPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
     RowInsertExec(child, putInto = true, partitionColumns,
-      partitionExpressions(relation), numBuckets, schema, Some(this),
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, Some(this),
       onExecutor = false, resolvedName, connProperties)
   }
 
