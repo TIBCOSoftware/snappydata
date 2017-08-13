@@ -37,8 +37,8 @@ import org.apache.spark.sql.types.StructType
  */
 case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
-    numBuckets: Int, tableSchema: StructType, externalStore: ExternalStore,
-    relation: Option[DestroyRelation], keyColumns: Seq[Attribute],
+    numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
+    externalStore: ExternalStore, relation: Option[DestroyRelation], keyColumns: Seq[Attribute],
     connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
 
   override def resolvedName: String = externalStore.tableName
