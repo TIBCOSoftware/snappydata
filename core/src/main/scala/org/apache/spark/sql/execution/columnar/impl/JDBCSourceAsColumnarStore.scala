@@ -792,10 +792,23 @@ class SmartConnectorRowRDD(_session: SnappySession,
   }
 
   override def computeResultSet(
-      thePart: Partition): (Connection, Statement, ResultSet) = {
+      thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(
       connProperties, thePart)
+    if (context ne null) {
+      val partitionId = context.partitionId()
+      context.addTaskCompletionListener { _ =>
+        logDebug(s"closed connection for task from listener $partitionId")
+        try {
+          conn.commit()
+          conn.close()
+          logDebug("closed connection for task " + context.partitionId())
+        } catch {
+          case NonFatal(e) => logWarning("Exception closing connection", e)
+        }
+      }
+    }
     if (isPartitioned) {
       val ps = conn.prepareStatement(
         s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ${_relDestroyVersion})")
