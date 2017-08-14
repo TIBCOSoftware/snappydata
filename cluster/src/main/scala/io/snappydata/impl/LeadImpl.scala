@@ -249,6 +249,8 @@ class LeadImpl extends ServerImpl with Lead
   override def notifyRunning() {
     logDebug("Accepting RUNNING notification")
     serverstatus = State.RUNNING
+    // status file for CacheServerLauncher is updated in the LeadImpl.internalStart
+    // via callback of  notifyStatusChange
   }
 
   private def checkAuthProvider(props: Properties): Unit = {
