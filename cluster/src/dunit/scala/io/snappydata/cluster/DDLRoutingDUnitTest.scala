@@ -133,7 +133,9 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
           s"USING column $options")
     } catch {
       case sqle: SQLException => if (sqle.getSQLState != "38000" ||
-          !sqle.getMessage.contains("Disk store D1 not found")) throw sqle
+          !sqle.getMessage.contains("Disk store D1 not found")) {
+        throw sqle
+      }
     }
 
     // should succeed after creating diskstore
@@ -158,29 +160,47 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     s.execute("DROP DISKSTORE d1")
   }
 
-  def testAlterRowTableRoutingFromXD(): Unit = {
-    val tableName: String = "RowTableQR"
+  def _testAlterRowTableRoutingFromXD(): Unit = {
+    val tableName: String = "rowTableDDLRouting"
 
-    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
-    val conn = getANetConnection(netPort1)
+    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    val props = bootProps.clone().asInstanceOf[java.util.Properties]
+    props.put("distributed-system-id" , "1")
+    props.put("server-groups", "sg1")
 
-    val s = conn.createStatement()
+    val restartServer = new SerializableRunnable() {
+      override def run(): Unit = {
+        ClusterManagerTestBase.startSnappyServer(
+          ClusterManagerTestBase.locatorPort, props)
+      }
+    }
+
+    vm2.invoke(restartServer)
+    var netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
+
+    var conn = getANetConnection(netPort)
+    var s = conn.createStatement()
     s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
     insertDataXD(conn, tableName)
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+    var snc = org.apache.spark.sql.SnappyContext(sc)
     verifyResultAndSchema(snc, tableName, 3)
 
-    s.execute(s"ALTER TABLE $tableName ADD COLUMN Col4 INT")
+    s.execute(s"ALTER TABLE $tableName ADD Col4 INT")
     verifyResultAndSchema(snc, tableName, 4)
 
-    s.execute(s"ALTER TABLE $tableName DROP COLUMN Col3")
+    s.execute(s"ALTER TABLE $tableName DROP Col3")
     verifyResultAndSchema(snc, tableName, 3)
 
     s.execute(s"ALTER TABLE $tableName DROP COLUMN Col4")
     verifyResultAndSchema(snc, tableName, 2)
 
+    s.execute(s"ALTER TABLE $tableName ADD COLUMN Col4 INT")
+    verifyResultAndSchema(snc, tableName, 3)
+
     // execute at store level
+
+    // add constraints
     s.execute(s"insert into $tableName values (1,1)")
     s.execute(s"insert into $tableName values (1,1)")
     s.execute(s"ALTER TABLE $tableName add constraint emp_uk unique (Col1)")
@@ -194,22 +214,49 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
           throw sqle
         }
     }
-    // Commented due to SNAP-1818
-//    s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER ()")
-//    s.execute("CREATE ASYNCEVENTLISTENER myListener (" +
-//      " listenerclass 'com.pivotal.gemfirexd.callbacks.DBSynchronizer'" +
-//      " initparams 'org.apache.derby.jdbc.EmbeddedDriver,jdbc:derby:newDB;create=true')")
-//
-//    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER (myListener) ")
-//    var rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
-//    while (rs.next) {
-//      assert("MYLISTENER".equalsIgnoreCase(rs.getString(17)))
-//    }
-//    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER () ")
-//    rs = s.executeQuery("select * from SYS.SYSTABLES where tablename='TESTTABLE'")
-//    while (rs.next) {
-//      assert(rs.getString(17) == null)
-//    }
+
+    // asynceventlistener
+    s.execute("CREATE ASYNCEVENTLISTENER myListener (" +
+      " listenerclass 'com.pivotal.gemfirexd.callbacks.DBSynchronizer'" +
+      " initparams 'org.apache.derby.jdbc.EmbeddedDriver,jdbc:derby:newDB;create=true')" +
+      " server groups(sg1)")
+
+    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER (myListener) ")
+    var rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
+    while (rs.next) {
+      assert("MYLISTENER".equalsIgnoreCase(rs.getString(17)))
+    }
+
+    // gatewaysenders/receivers
+    s.execute("CREATE GATEWAYSENDER gwSender ( REMOTEDSID 2) SERVER GROUPS (sg1)")
+    s.execute("CREATE GATEWAYRECEIVER gwRcvr (startport 1111 endport 9999) SERVER GROUPS (sg1)")
+    s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER (gwSender) ")
+    rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
+    while (rs.next) {
+      assert("gwSender".equalsIgnoreCase(rs.getString(19)))
+    }
+
+    vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
+    vm2.invoke(restartServer)
+    netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
+
+    conn = getANetConnection(netPort)
+    s = conn.createStatement()
+
+    s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER () ")
+    rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
+    while (rs.next) {
+      assert(rs.getString(17) == null)
+    }
+    s.execute(s"drop ASYNCEVENTLISTENER myListener")
+
+    s.execute(s"ALTER TABLE $tableName SET GATEWAYSENDER () ")
+    rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
+    while (rs.next) {
+      assert(rs.getString(19) == null)
+    }
+    s.execute(s"drop GATEWAYSENDER gwSender")
 
     dropTableXD(conn, tableName)
   }
@@ -217,7 +264,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def verifyResultAndSchema(snc: SnappyContext, tableName: String, expectedColumns: Int): Unit = {
     val dataDF = snc.sql("Select * from " + tableName)
     assert(dataDF.count() == 5)
-    assert(dataDF.schema.fields.length == expectedColumns)
+    assert(dataDF.schema.fields.length == expectedColumns,
+      " Number of columns -> " + dataDF.schema.fields.length)
   }
 
   def testAlterRowTableFromXD_DifferentConnections(): Unit = {

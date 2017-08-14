@@ -176,7 +176,7 @@ public class SnapshotIsolationTest extends SnappyTest {
     } catch (SQLException se) {
       throw new TestException("Got exception while saving table metadata to BB. Exception is : ", se);
     } catch (ClassNotFoundException ce) {
-      throw new TestException("Got exception while saving table metadata to BB.. Exception is : " ,ce);
+      throw new TestException("Got exception while saving table metadata to BB. Exception is : ", ce);
     }
   }
 

@@ -18,17 +18,20 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import scala.collection.mutable
+
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, OverwriteOptions}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.execution.row.RowDMLExec
+import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -75,18 +78,25 @@ case class JDBCMutableRelation(
 
   protected final def dialect: JdbcDialect = connProperties.dialect
 
-  // create table in external store once upfront
-  var tableSchema: String = _
-
   import scala.collection.JavaConverters._
 
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
     new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
+  private[sql] val resolvedName = table
+
   var tableExists: Boolean = _
 
   final lazy val schemaFields: Map[String, StructField] =
     Utils.schemaFields(schema)
+
+  def partitionColumns: Seq[String] = Seq.empty
+
+  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Seq.empty
+
+  def numBuckets: Int = -1
+
+  def isPartitioned: Boolean = false
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
@@ -97,19 +107,17 @@ case class JDBCMutableRelation(
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
-    var tableSchema: String = ""
       try {
       conn = connFactory()
       tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
 //        dialect match {
 //          case d: JdbcExtendedDialect => d.initializeTable(table,
 //            sqlContext.conf.caseSensitiveAnalysis, conn)
 //          case _ => // Do Nothing
 //        }
-        return tableSchema
+        return resolvedName
       }
 
       // We should not throw table already exists from here. This is expected
@@ -159,7 +167,7 @@ case class JDBCMutableRelation(
         conn.close()
       }
     }
-    tableSchema
+    resolvedName
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
@@ -181,21 +189,77 @@ case class JDBCMutableRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    RowDMLExec(child, putInto = false, delete = false, Seq.empty, Seq.empty, -1,
-      schema, Some(this), onExecutor = false, table, connProperties)
+    RowInsertExec(child, putInto = false, partitionColumns,
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, Some(this),
+      onExecutor = false, table, connProperties)
   }
 
-  override def getDeletePlan(relation: LogicalRelation,
-      child: SparkPlan): SparkPlan = {
-    RowDMLExec(child, putInto = false, delete = true, Seq.empty, Seq.empty, -1,
-      schema, Some(this), onExecutor = false, table, connProperties)
+  /**
+   * Get a spark plan to update rows in the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
+      updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
+      keyColumns: Seq[Attribute]): SparkPlan = {
+    RowUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, isPartitioned, schema, Some(this), updateColumns, updateExpressions,
+      keyColumns, connProperties, onExecutor = false)
+  }
+
+  /**
+   * Get a spark plan to delete rows the relation. The result of SparkPlan
+   * execution should be a count of number of updated rows.
+   */
+  override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
+      keyColumns: Seq[Attribute]): SparkPlan = {
+    RowDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
+      numBuckets, isPartitioned, schema, Some(this), keyColumns, connProperties,
+      onExecutor = false)
+  }
+
+  /**
+   * Get the "key" columns for the table that need to be projected out by
+   * UPDATE and DELETE operations for affecting the selected rows.
+   */
+  override def getKeyColumns: Seq[String] = {
+    val conn = ConnectionPool.getPoolConnection(table, dialect,
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
+    try {
+      val metadata = conn.getMetaData
+      val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
+        table, conn)
+      val primaryKeys = metadata.getPrimaryKeys(null, schemaName, tableName)
+      val keyColumns = new mutable.ArrayBuffer[String](2)
+      while (primaryKeys.next()) {
+        keyColumns += primaryKeys.getString(4)
+      }
+      primaryKeys.close()
+      // if partitioning columns are different from primary key then add those
+      if (keyColumns.nonEmpty) {
+        partitionColumns.foreach { p =>
+          // always use case-insensitive analysis for partitioning columns
+          // since table creation can use case-insensitive in creation
+          val partCol = Utils.toUpperCase(p)
+          if (!keyColumns.contains(partCol)) keyColumns += partCol
+        }
+      }
+      keyColumns
+    } finally {
+      conn.close()
+    }
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    // use the normal DataFrameWriter which will create an InsertIntoTable plan
+    // use the InsertIntoTable plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
-    data.write.mode(if (overwrite) SaveMode.Overwrite else SaveMode.Append)
-        .insertInto(table)
+    sqlContext.sessionState.executePlan(
+      InsertIntoTable(
+        table = LogicalRelation(this),
+        partition = Map.empty[String, Option[String]],
+        child = data.logicalPlan,
+        OverwriteOptions(overwrite),
+        ifNotExists = false)).toRdd
   }
 
   override def insert(rows: Seq[Row]): Int = {
@@ -209,7 +273,7 @@ case class JDBCMutableRelation(
     // use bulk insert using insert plan for large number of rows
     if (numRows > (batchSize * 4)) {
       JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        table, upsert = false)
+        table, putInto = false)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
         connProperties.poolProps, connProps, connProperties.hikariCP)

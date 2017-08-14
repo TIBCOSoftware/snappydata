@@ -111,6 +111,19 @@ public class SnappyStartUpTest extends SnappyTest {
     return pidList;
   }
 
+  protected static synchronized Set<String> getLeaderPidList() {
+    Set<String> pidList = new HashSet<>();
+    Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+    for (String key : keys) {
+      if (key.startsWith("pid") && key.contains("_LeaderLauncher")) {
+        String pid = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
+        pidList.add(pid);
+      }
+    }
+    Log.getLogWriter().info("Returning leader pid list: " + pidList);
+    return pidList;
+  }
+
   /**
    * Mandatory to use this method in case of clusterRestartWithRandomOrderForServerStartUp test.
    * As per current implementation, for starting the server snappy-servers.sh script is used, which starts
@@ -321,6 +334,23 @@ public class SnappyStartUpTest extends SnappyTest {
         file.delete();
         file.createNewFile();
       }
+    } catch (IOException e) {
+      String s = "Unable to create file: " + file.getAbsolutePath();
+      throw new TestException(s);
+    }
+    snappyTest.writeConfigData("servers", "serverLogDir");
+  }
+
+  /**
+   * Add new server configuration data in servers file under testLog directory location which is
+   * required to start the snappy server/s in servers including new node later in long running test.
+   */
+  public static void HydraTask_addNweServerConfigData() {
+    File file = null;
+    try {
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "servers";
+      file = new File(dest);
     } catch (IOException e) {
       String s = "Unable to create file: " + file.getAbsolutePath();
       throw new TestException(s);

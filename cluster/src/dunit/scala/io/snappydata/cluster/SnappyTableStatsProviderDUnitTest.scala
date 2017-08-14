@@ -51,7 +51,7 @@ class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBas
 
   def newContext(): SnappyContext = {
     val snc = SnappyContext(sc).newSession()
-    io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, 5120)
+    io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "5120")
     snc
   }
 

@@ -21,7 +21,7 @@ import io.snappydata.Property
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Expression, NamedExpression, RowOrdering, SortOrder}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
@@ -30,6 +30,8 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
+import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.{ColumnDeleteExec, ColumnUpdateExec}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
@@ -158,7 +160,7 @@ private[sql] trait SnappyStrategies {
         case PhysicalOperation(_, _, r@LogicalRelation(
         scan: PartitionedDataSourceScan, _, _)) =>
           // send back numPartitions=1 for replicated table since collocated
-          if (scan.numBuckets == 1) return (Nil, Nil, 1)
+          if (!scan.isPartitioned) return (Nil, Nil, 1)
 
           // use case-insensitive resolution since partitioning columns during
           // creation could be using the same as opposed to during scan
@@ -290,8 +292,7 @@ private[sql] object JoinStrategy {
   def canLocalJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalOperation(_, _, LogicalRelation(
-      t: PartitionedDataSourceScan, _, _)) =>
-        t.numBuckets == 1
+      t: PartitionedDataSourceScan, _, _)) => !t.isPartitioned
       case PhysicalOperation(_, _, Join(left, right, _, _)) =>
         // If join is a result of join of replicated tables, this
         // join result should also be a local join with any other table
@@ -659,13 +660,33 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
       }
 
     case t: TableExec =>
-      if (t.partitioned &&
+      // For column update/delete add explicit per-partition sort on batchId
+      // if there was an exchange in the plan. This is because those plans
+      // will accumulate delta batches grouped by batchId else it will be
+      // too inefficient for bulk updates/deletes (e.g. for putInto).
+      // batchId attribute is always second last in the keyColumns
+      val sortAttribute = t match {
+        case u: ColumnUpdateExec => Some(u.keyColumns(u.keyColumns.length - 2))
+        case d: ColumnDeleteExec => Some(d.keyColumns(d.keyColumns.length - 2))
+        case _ => None
+      }
+      assert(sortAttribute.isEmpty ||
+          sortAttribute.get.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
+      var addSort = sortAttribute.isDefined
+      val plan = if (t.partitioned &&
           t.child.outputPartitioning.numPartitions != t.numBuckets) {
         // force shuffle when inserting into a table with different partitions
         t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
           t.requiredChildDistribution.head.asInstanceOf[ClusteredDistribution]
               .clustering, t.numBuckets), t.child)))
-      } else t
+      } else {
+        if (addSort) addSort = t.child.find(_.isInstanceOf[ShuffleExchange]).isDefined
+        t
+      }
+      if (addSort) {
+        plan.withNewChildren(Seq(SortExec(Seq(SortOrder(sortAttribute.get, Ascending)),
+          global = false, plan.children.head)))
+      } else plan
   }
 }
 

@@ -93,7 +93,7 @@ dependencies {
   compile 'org.objenesis:objenesis:2.4'
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
   provided 'com.rabbitmq:amqp-client:3.5.7'
-  
+
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
@@ -167,7 +167,8 @@ task getApacheSparkDist {
 
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
-check.dependsOn test, scalaTest, dunitTest
+dunitSecurityTest.dependsOn getApacheSparkDist
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 
 archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {
