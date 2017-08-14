@@ -2,31 +2,29 @@
 
 ## Launching the Cluster in Secure Mode
 
-SnappyData supports LDAP authentication which allows users to authenticate against an existing LDAP directory service in your organization. LDAP (lightweight directory access protocol) provides an open directory access protocol that runs over TCP/IP. </br>This feature provides a quick and secure way for users to use their existing login credentials (usernames and passwords) to access the cluster and data.
+In the current release, SnappyData only supports LDAP authentication which allows users to authenticate against an existing LDAP directory service in your organization. LDAP (lightweight directory access protocol) provides an open directory access protocol that runs over TCP/IP. </br>This feature provides a quick and secure way for users to use their existing login credentials (usernames and passwords) to access the cluster and data.
 
 !!! Note:
 	
 	* Currently, only LDAP based authentication and authorization is supported
 
-	* The user launching the cluster becomes the administrator/ system user of the cluster.
+	* The user launching the cluster becomes the admin user of the cluster.
 
-	* All members of the cluster (leads, locators, and servers) must be started by the same user (with administrative privileges)
+	* All members of the cluster (leads, locators, and servers) must be started by the same user
 
-	* The Snappy cluster and the Spark cluster (smart connector mode) must be secure
-
-	* Only the administrator or users with the required permissions can exectue in-built procedures (like INSTALL-JAR)
+<!--	* The Snappy cluster and the Spark cluster (smart connector mode) must be secure-->
 
 Authentication is the process of verifying someone's identity. When a user tries to log in, that request is forwarded to the specified LDAP directory to verify if the credentials are correct.
 
 To enable LDAP authentication, set the following LDAP authentication properties in the [configuration files](../configuring_cluster/configuring_cluster.md) **conf/locators**, **conf/servers**, and **conf/leads** files.
 
-* `auth-provider`: The authentication provider. The value should be set to `LDAP`. Set this property to “LDAP” when you start each locator and server in the SnappyData cluster. When you set the `auth-provider` property to `LDAP`, SnappyData uses LDAP for authenticating all distributed system members as well as clients to the distributed system. Therefore, you must supply the user and password properties at startup. If you omit a value for the password property when starting a SnappyData member, then the member prompts you for a password at the command line.
-
-* `J-Dgemfirexd.auth-ldap-server`: Set this property to the URL to the LDAP server.
+* `auth-provider`: The authentication provider. When you set the `auth-provider` property to `LDAP`, SnappyData uses LDAP for authenticating all distributed system members as well as clients to the distributed system. Therefore, you must supply the user and password properties at startup. <!--If you omit a value for the password property when starting a SnappyData member, then the member prompts you for a password at the command line.-->
 
 * `user`: The user name of the administrator starting the cluster
 
 * `password`: The password of the administrator starting the cluster
+
+* `J-Dgemfirexd.auth-ldap-server`: Set this property to the URL to the LDAP server.
 
 * `J-Dgemfirexd.auth-ldap-search-base`: Use this property to limit the search space used when SnappyData verifies a user login ID. Specify the name of the context or object to search, that is a parameter to `javax.naming.directory.DirContext.search()`. 
 
@@ -35,18 +33,16 @@ To enable LDAP authentication, set the following LDAP authentication properties 
 * `J-Dgemfirexd.auth-ldap-search-pw`: The password for the guest user DN, used for looking up the DN (see `Dgemfirexd.auth-ldap-search-dn`). 
 
 **Example**: 
+In the below example, we connect to LDAP server at localhost listening on port 389.
 ```
--auth-provider=LDAP 
--gemfirexd.auth-ldap-server=ldap://localhost:389/ 
--user=user1 
--password=user123
--ou=ldapTesting,dc=pivotal,dc=com
--uid=guest,o=pivotal.com
--guestPassword
+localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
+          -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com \
+          -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com \
+          -J-Dgemfirexd.auth-ldap-search-pw=user123
 ```
-
+<!--
 !!! Note: 
-	You must specify this property as a Java system property. For example, when you start a new SnappyData server with `snappy-shell`, use the command-line option `-J-Dsnappydata.auth-ldap-server=ldaps://server:port/` to specify the property.
+	You must specify this property as a Java system property. For example, when you start a new SnappyData server with `snappy-shell`, use the command-line option `-J-Dsnappydata.auth-ldap-server=ldaps://server:port/` to specify the property.-->
 
 ##  Authorization
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.
@@ -56,7 +52,10 @@ The administrator can manage user permissions in a secure cluster using the [GRA
 The [GRANT](../reference/sql_reference/grant.md) statement is used to grant specific permissions to users. The [REVOKE](../reference/sql_reference/revoke.md) statement is used to revoke permissions.
 
 !!!Note:
-	A user requiring [UPDATE](../reference/sql_reference/update.md) and [DELETE](../reference/sql_reference/delete.md) permissions may also require explicit [SELECT](../reference/sql_reference/select.md) permission on a table.
+
+	* A user requiring [UPDATE](../reference/sql_reference/update.md) and [DELETE](../reference/sql_reference/delete.md) permissions may also require explicit [SELECT](../reference/sql_reference/select.md) permission on a table.
+	
+	* Only the administrator or users with the required permissions can exectue in-built procedures (like INSTALL-JAR)
 
 ### LDAP Groups in SnappyData Authorization
 SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.
@@ -119,14 +118,9 @@ member: cn=group11,ou=group,dc=example,dc=com
 
 !!! NOTE:
 
-	1) There is NO multi-group support for users yet, so if a user has been
-granted access by two LDAP groups only the first one will take effect.
+	1) There is NO multi-group support for users yet, so if a user has been granted access by two LDAP groups only the first one will take effect.
 
-	2) If a user belongs to LDAP group as well as granted permissions
-separately as a user, then latter is given precedence. So even if LDAP
-group permission is later revoked (or user is removed from LDAP group),
-the user will continue to have permissions unless explicitly revoked
-as a user.
+	2) If a user belongs to LDAP group as well as granted permissions separately as a user, then latter is given precedence. So even if LDAP group permission is later revoked (or user is removed from LDAP group), the user will continue to have permissions unless explicitly revoked as a user.
 
 	3) LDAPGROUP is now a reserved word, so cannot be used for a user name.
 
@@ -144,7 +138,10 @@ connect client 'localhost:1527;user=user1;password=user123';
 
 ### Using Smart Connector Mode 
 
-In Smart Connector Mode, provide the user credentials as Spark configuration properties named 'spark.snappydata.store.user' and 'spark.snappydata.store.password'.
+In Smart Connector mode, provide the user credentials as Spark configuration properties named `spark.snappydata.store.user` and `spark.snappydata.store.password`.
+
+**Example**: 
+In the below example, these properties are set in the `SparkConf` which is user to create `SnappyContext`.
 
 ```
 val conf = new SparkConf()
@@ -159,7 +156,7 @@ val conf = new SparkConf()
 val sc = SparkContext.getOrCreate(conf)
 val snc = SnappyContext(sc)
 ```
-
+In the below example, to connect to the cluster via Spark shell use the `--conf` option to specify the properties. 
 ```
 $ bin/spark-shell  
     --master local[*] 
@@ -170,20 +167,24 @@ $ bin/spark-shell
 
 ### Using Snappy Jobs
 
-When using SnappyJobs, using `snappy-job.sh`, provide user credentials through a configuration file in below format:
+When submitting Snappy jobs, using `snappy-job.sh`, provide user credentials through a configuration file using the option `--passfile`. 
 
-* `--passfile /location_of_pass_file/`: Enter the location of the passfile which contains the user authentication credentials in the following format:`-u username:password`.</br> Ensure that this passfile is located at a secure location.
+For example: 
+
+```
+bash$ cat job.config 
+-u user:password
+```
 
 **Example**: 
 
 ```
-$ bin/snappy-job.sh submit 
-    --lead localhost:8090 
-    --app-name myapp 
-    --class io.snappydata.hydra.security.CreateAndLoadTablesSnappyJob 
-    --app-jar /home/user1/snappy/snappydata/dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar 
-    --conf dataLocation=/home/user1/snappy/snappydata/examples/quickstart/data/airlineParquetData 
-    --passfile /home/user1/snappy/snappydata/dtests/src/resources/scripts/security/user1Credentials.txt
+$ bin/snappy-job.sh submit  \
+    --lead hostNameOfLead:8090  \
+    --app-name airlineApp \
+    --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
+    --passfile /home/user1/snappy/job.config .txt
 ```
 !!! Note:
 
