@@ -74,6 +74,8 @@ abstract case class JDBCAppendableRelation(
 
   def numBuckets: Int = -1
 
+  def isPartitioned: Boolean = true
+
   override def sizeInBytes: Long = {
     SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
       case Some(s) => s.getTotalSize

@@ -248,6 +248,8 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 
   def numBuckets: Int
 
+  def isPartitioned: Boolean
+
   def partitionColumns: Seq[String]
 
   def connectionType: ConnectionType.Value
