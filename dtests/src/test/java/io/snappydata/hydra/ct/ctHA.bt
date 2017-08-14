@@ -26,7 +26,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppLeadHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=1  persistenceMode="null"
+  redundantCopies=1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedRow"
   numVMsToStop=1
@@ -37,7 +37,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithScriptLeadHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=1  persistenceMode="null"
+  redundantCopies=1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="ColocatedColumn"
   scriptName="ct_create_and_load_colocated_column_table.sql"
@@ -83,7 +83,7 @@ io/snappydata/hydra/ct/ctSplitModeCreateWithSparkAppServerHA.conf
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2  locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
-  redundantCopies=1  persistenceMode="null"
+  redundantCopies=1  persistenceMode="sync"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   tableType="Column"
   numVMsToStop=1
