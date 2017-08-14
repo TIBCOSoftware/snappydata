@@ -554,7 +554,6 @@ print("contents of column table are:")
 results1.select("col1", "col2", "col3"). show()
 ```
 
-
 The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster is expanded) a bucket is the smallest unit that can be moved around. 
 For more details about the properties ('props1' map in above example) and `createTable` API refer to the documentation for [row and column tables](#tables-in-snappydata).
 
@@ -834,6 +833,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
 
 #### Restrictions on Column Tables
+
 * Column tables cannot specify any primary key, unique key constraints
 
 * Index on column table is not supported
@@ -841,6 +841,8 @@ The below mentioned DDL extensions are required to configure a table based on us
 * Option EXPIRE is not applicable for column tables
 
 * Option EVICTION_BY with value LRUCOUNT is not applicable for column tables
+
+* READ_COMMITTED and REPEATABLE_READ isolation levels are not supported for column tables.
 
 
 #### DML Operations on Tables
@@ -853,6 +855,7 @@ The below mentioned DDL extensions are required to configure a table based on us
     DELETE FROM tablename1 [WHERE expression]
     TRUNCATE TABLE tablename1;
 ```
+
 #### API Extensions Provided in SnappyContext
 Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
 ```
@@ -979,8 +982,24 @@ Persistent Hive catalog for all meta data storage is used. All table, schema def
 
 Refer to the [SQL Reference Guide](sql_reference.md) for information on the syntax.
 
+### Using Distributed Transaction for Row Tables
+Transactions specify an isolation level that defines the degree to which one transaction must be isolated from resource or data modifications made by other transactions. The transaction isolation levels define the type of locks acquired on read operations. Only one of the isolation level options can be set at a time, and it remains set for that connection until it is explicitly changed.
 
-## Stream processing using SQL
+The following isolation levels are supported for row tables:
+
+| Isolation level | Description |
+|--------|--------|
+|NONE|Default isolation level. The Database Engine uses shared locks to prevent other transactions from modifying rows while the current transaction is running a read operation. |
+|READ_COMMITTED|SnappyData ensures that ongoing transactional as well as non-transactional (isolation-level NONE) operations never read uncommitted (dirty) data. SnappyData accomplishes this by maintaining transactional changes in a separate transaction state that is applied to the actual data-store for the table only at commit time. SnappyData detects only Write-Write conflicts while in READ_COMMITTED isolation level. </br>In READ COMMITTED, a read view is created at the start of each statement and lasts only as long as each statement execution.|
+|REPEATABLE_READ|In this isolation level, a lock-based concurrency control DBMS implementation keeps read and write locks (acquired on selected data) until the end of the transaction. In REPEATABLE READ every lock acquired during a transaction is held for the duration of the transaction.|
+
+For more information, see, [SET ISOLATION](./reference/sql_reference/set-isolation.md)
+
+### Using Snapshot Isolation for Column Tables
+Snapshot ensures that all queries in the transaction see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
+
+
+## Stream Processing using SQL
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
 Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
@@ -1013,7 +1032,6 @@ The following enhancements over Spark Streaming are provided:
 4. __OLAP optimizations__: By integrating and colocating stream processing with the hybrid in-memory storage engine, the product leverages the optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with RowStore.
 
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
-
 
 ### Working with Stream Tables
 SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.

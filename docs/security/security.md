@@ -17,7 +17,7 @@ Authentication is the process of verifying someone's identity. When a user tries
 
 To enable LDAP authentication, set the following LDAP authentication properties in the [configuration files](../configuring_cluster/configuring_cluster.md) **conf/locators**, **conf/servers**, and **conf/leads** files.
 
-* -auth-provider: The authentication provides. The value should be set to `LDAP`
+* -auth-provider: The authentication provider. The value should be set to `LDAP`
 
 * -J-Dsnappydata.auth-ldap-server: The location of the LDAP server
 
@@ -36,7 +36,7 @@ To enable LDAP authentication, set the following LDAP authentication properties 
 ##  Authorization
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.
 
-When the LDAP authorization mode is enabled, the [GRANT](../reference/sql_reference/grant.md) and [REVOKE](../reference/sql_reference/revoke.md) SQL statements to set the user's permission for specific database objects or for specific SQL actions. 
+When the LDAP authorization mode is enabled, the [GRANT](../reference/sql_reference/grant.md) and [REVOKE](../reference/sql_reference/revoke.md) SQL statements enables you to set the user's permission for specific database objects or for specific SQL actions. 
 
 The [GRANT](../reference/sql_reference/grant.md) statement is used to grant specific permissions to users. The [REVOKE](../reference/sql_reference/revoke.md) statement is used to revoke permissions.
 
@@ -48,7 +48,7 @@ There are a few different ways to connect to a secure cluster using either JDBC/
 
 ### Using JDBC/Thin Client
 
-When using the JDBC/Thin client, run the following command in the snappy shell to connect:
+When using the JDBC/Thin client, run the following command in the Snappy shell to connect:
 
 ```
 connect client 'localhost:1527;user=user1;password=user123';
@@ -56,7 +56,7 @@ connect client 'localhost:1527;user=user1;password=user123';
 
 ### Using Smart Connector Mode 
 
-When using the Smart Connector Mode, run the following command in the snappy shell to connect:
+When using the Smart Connector Mode, run the following command in the Spark shell to connect:
 
 ```
 $ bin/spark-shell  
@@ -68,11 +68,11 @@ $ bin/spark-shell
 
 ### Using Snappy Jobs
 
-When using SnappyJobs, run the following command can be submitted to the job server to connect:
+When using SnappyJobs, the following command can be submitted to the job server to connect:
 
 **Parameter**:
 
-* `--passfile (Username and password) -<username>:<password>`: Enter the username and password of the user
+* `--passfile /location_of_pass_file/`: Enter the location of the passfile which contains the user authentication credentials in the following format:`-u username:password`.</br> Ensure that this passfile is located at a secure location.
 
 **Example**: 
 
@@ -83,6 +83,6 @@ $ bin/snappy-job.sh submit
     --class io.snappydata.hydra.security.CreateAndLoadTablesSnappyJob 
     --app-jar /home/user1/snappy/snappydata/dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar 
     --conf dataLocation=/home/user1/snappy/snappydata/examples/quickstart/data/airlineParquetData 
-    --passfile /home/user1/snappy/snappydata/dtests/src/resources/scripts/security/user3Credentials.txt
+    --passfile /home/user1/snappy/snappydata/dtests/src/resources/scripts/security/user1Credentials.txt
 ```
 
