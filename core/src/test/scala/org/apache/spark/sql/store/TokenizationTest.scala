@@ -37,7 +37,7 @@ class TokenizationTest
         with BeforeAndAfter
         with BeforeAndAfterAll {
 
-  val table  = "my_table"
+  val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
 
@@ -62,6 +62,20 @@ class TokenizationTest
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
     snc.dropTable(s"$colTableName", ifExists = true)
+  }
+
+  test("sql range operator") {
+    var r = snc.sql(s"select id, concat('sym', cast((id) as STRING)) as" +
+        s" sym from range(0, 100)").collect()
+    assert(r.size === 100)
+  }
+
+  test("sql range operator2") {
+    snc.sql(s"create table target (id int not null, symbol string not null) using column options()")
+    var r = snc.sql(s"insert into target (select id, concat('sym', cast((id) as STRING)) as" +
+        s" sym from range(0, 100))").collect()
+    r = snc.sql(s"select count(*) from target").collect()
+    assert(r.head.get(0) === 100)
   }
 
   test("like queries") {

@@ -48,6 +48,7 @@ trait RowExec extends TableExec {
   protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
     connTerm = ctx.freshName("connection")
+    // onExecutor will never be true in case of ColumnDelete/Update
     if (onExecutor) {
       // actual connection will be filled into references before execution
       connRef = ctx.references.length
@@ -65,12 +66,13 @@ trait RowExec extends TableExec {
       val endCode =
         s""" finally {
            |  try {
+           |    $connTerm.commit();
            |    $connTerm.close();
            |  } catch (java.sql.SQLException sqle) {
            |    // ignore exception in close
            |  }
            |}""".stripMargin
-      (initCode, s"$connTerm.commit();", endCode)
+      (initCode, s"", endCode)
     }
   }
 
@@ -108,7 +110,7 @@ trait RowExec extends TableExec {
          |    ${executeBatchCode(numOperations, numOpRowsMetric)}
          |  }
          |  $stmt.close();
-         |  $commitCode${produceAddonCode()}
+         |  ${produceAddonCode()}
          |}
       """.stripMargin)
     s"""
@@ -121,7 +123,8 @@ trait RowExec extends TableExec {
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |} catch (java.sql.SQLException sqle) {
        |  throw new java.io.IOException(sqle.toString(), sqle);
-       |}$endCode
+       |}$commitCode
+       |$endCode
     """.stripMargin
   }
 

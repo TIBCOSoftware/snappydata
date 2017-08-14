@@ -207,7 +207,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
 
         (LogicalRelation(relation, catalogTable = Some(table)), table, RelationInfo(
-          0, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
+          0, isPartitioned = false, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
       }
     }
 

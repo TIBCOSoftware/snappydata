@@ -24,7 +24,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
-import org.apache.spark.sql.catalyst.catalog.CatalogDatabase
+
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -34,12 +34,10 @@ import org.apache.spark.{Logging, Partition}
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
-  import SmartConnectorHelper._
-
   private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
-  private var conn: Connection = null
-  private var connectionURL: String = null
+  private var conn: Connection = _
+  private var connectionURL: String = _
   private val createSnappyTblString = "call sys.CREATE_SNAPPY_TABLE(?, ?, ?, ?, ?, ?, ?)"
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
@@ -78,7 +76,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     alterTableStmt = conn.prepareCall(alterTableStmtString)
   }
 
-  private def getSecurePart(): String = {
+  private def getSecurePart: String = {
     var securePart = ""
     val user = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
         .USERNAME_ATTR, "")
@@ -241,19 +239,19 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
         val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, pkCols,
-          partitions, embdClusterRelDestroyVersion))
+        (t, RelationInfo(bucketCount, isPartitioned = true, partitionCols.toSeq,
+          indexCols, pkCols, partitions, embdClusterRelDestroyVersion))
       } else {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
         val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(1, Seq.empty[String], indexCols, pkCols,
+        (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], indexCols, pkCols,
           partitions, embdClusterRelDestroyVersion))
       }
     } else {
       // external tables (with source as csv, parquet etc.)
-      (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[String],
-        Array.empty[Partition], embdClusterRelDestroyVersion))
+      (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], Array.empty[String],
+        Array.empty[String], Array.empty[Partition], embdClusterRelDestroyVersion))
     }
   }
 
