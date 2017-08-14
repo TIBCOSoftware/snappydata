@@ -20,12 +20,13 @@ import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.app.Data1
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
-import io.snappydata.core.Data
+import io.snappydata.core.{Data, TestData2}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.ParamLiteral
 
 /**
   * Tests for column tables in GFXD.
@@ -36,7 +37,7 @@ class TokenizationTest
         with BeforeAndAfter
         with BeforeAndAfterAll {
 
-  val table  = "my_table"
+  val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
 
@@ -61,6 +62,20 @@ class TokenizationTest
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
     snc.dropTable(s"$colTableName", ifExists = true)
+  }
+
+  test("sql range operator") {
+    var r = snc.sql(s"select id, concat('sym', cast((id) as STRING)) as" +
+        s" sym from range(0, 100)").collect()
+    assert(r.size === 100)
+  }
+
+  test("sql range operator2") {
+    snc.sql(s"create table target (id int not null, symbol string not null) using column options()")
+    var r = snc.sql(s"insert into target (select id, concat('sym', cast((id) as STRING)) as" +
+        s" sym from range(0, 100))").collect()
+    r = snc.sql(s"select count(*) from target").collect()
+    assert(r.head.get(0) === 100)
   }
 
   test("like queries") {
@@ -116,6 +131,75 @@ class TokenizationTest
   def getAllValidKeys(): Int = {
     val cacheMap = SnappySession.getPlanCache.asMap()
     cacheMap.keySet().toArray().filter(_.asInstanceOf[CachedKey].valid).length
+  }
+
+  test("Test no tokenize for round functions") {
+    snc.sql(s"Drop Table if exists double_tab")
+    snc.sql(s"Create Table double_tab (a INT, d Double) " +
+        "using column options()")
+    snc.sql(s"insert into double_tab values(1, 1.111111), (2, 2.222222), (3, 3.33333)")
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    assert( cacheMap.size() == 0)
+    var res = snc.sql(s"select * from double_tab where round(d, 2) < round(3.3333, 2)").collect()
+    assert(res.length === 2)
+    res = snc.sql(s"select * from double_tab where round(d, 3) < round(3.3333, 3)").collect()
+    assert(res.length === 2)
+    assert(cacheMap.size() == 2)
+  }
+
+  test("Test some more foldable expressions and limit in where clause") {
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val numRows = 10
+    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    val cacheMap = SnappySession.getPlanCache.asMap()
+    assert(cacheMap.size() == 0)
+    var res = snc.sql(s"select * from $table where a in " +
+        s"( select b from $table where b < 5 limit 2 )").collect()
+    assert(res.length == 2)
+    // This should not be tokenized and so cachemap size should be 0
+    assert( cacheMap.size() == 0)
+    createSimpleTableWithAStringColumnAndPoupulateData(100, "tab_str", true)
+    res = snc.sql(s"select * from tab_str where b = 'aa12bb' and b like 'aa1%'").collect()
+    assert(res.length == 1)
+    // This should not be tokenized and so cachemap size should be 0
+    assert( cacheMap.size() == 0)
+
+    // An n-tile query ... but this is not affecting Tokenization as ntile is
+    // not in where clause but in from clause only.
+    res = snc.sql(s"select quartile, avg(c) as avgC, max(c) as maxC" +
+        s" from (select c, ntile(4) over (order by c) as quartile from $table ) x " +
+        s"group by quartile order by quartile").collect()
+    // res.foreach(println)
+
+    // Unix timestamp
+    val df = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01 12:00:00') > a")
+    var foundCount = 0
+    df.queryExecution.logical.transformAllExpressions {
+      case pl @ ParamLiteral(_, _, _) => {
+        foundCount += 1
+        pl
+      }
+    }
+    assert(foundCount == 1, "did not expect num ParamLiteral other than 1")
+
+    val df2 = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01', 'yyyy-mm-dd') > a")
+    foundCount = 0
+    df2.queryExecution.logical.transformAllExpressions {
+      case pl @ ParamLiteral(_, _, _) => {
+        foundCount += 1
+        pl
+      }
+    }
+    assert(foundCount == 1, "did not expect num ParamLiteral other than 1 in logical plan")
+
+    cacheMap.clear()
+    snc.sql("SELECT json_tuple('{\"f1\": \"value1\", \"f2\": \"value2\"}','f1')"
+    ).collect().foreach(println)
+
+    snc.sql("SELECT json_tuple('{\"f1\": \"value11\", \"f2\": \"value22\"}','f1')"
+    ).collect().foreach(println)
+
+    assert( cacheMap.size() == 2)
   }
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
@@ -348,12 +432,66 @@ class TokenizationTest
     logInfo("Successful")
   }
 
+  test("SNAP-1894") {
+
+    val snap = snc
+    val row = identity[(java.lang.Integer, java.lang.Double)](_)
+
+    import  snap.implicits._
+    lazy val l = Seq(
+      row(1, 2.0),
+      row(1, 2.0),
+      row(2, 1.0),
+      row(2, 1.0),
+      row(3, 3.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("a", "b")
+
+    lazy val r = Seq(
+      row(2, 3.0),
+      row(2, 3.0),
+      row(3, 2.0),
+      row(4, 1.0),
+      row(null, null),
+      row(null, 5.0),
+      row(6, null)).toDF("c", "d")
+
+
+    l.write.format("row").saveAsTable("l")
+    r.write.format("row").saveAsTable("r")
+
+    assert(snc.sql("select l.a from l where (select count(*) as cnt" +
+      " from r where l.a = r.c) = 0").count == 4)
+    snc.sql("select case when count(*) = 1 then null else count(*) end as cnt" +
+      " from r, l where l.a = r.c").collect.foreach(r => assert(r.get(0) == 6))
+    assert(snc.sql("select l.a from l where (select case when count(*) = 1" +
+      " then null else count(*) end as cnt from r where l.a = r.c) = 0").count == 4)
+  }
+
   test("Test tokenize for nulls") {
     logInfo("Successful")
   }
 
   test("Test tokenize for cast queries") {
     logInfo("Successful")
+  }
+
+  private def createSimpleTableWithAStringColumnAndPoupulateData(numRows: Int, name: String,
+      dosleep: Boolean = false) = {
+    val strs = (0 to numRows).map(i => s"aa${i}bb")
+    val data = ((0 to numRows), (0 to numRows), strs).zipped.toArray
+    val rdd = sc.parallelize(data, data.length)
+      .map(s => TestData2(s._1, s._3, s._2))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.sql(s"Drop Table if exists $name")
+    snc.sql(s"Create Table $name (a INT, b string, c INT) " +
+      "using column options()")
+    dataDF.write.insertInto(s"$name")
+    // This sleep was necessary as it has some dependency on the region size
+    // collector thread frequency. Can't remember right now.
+    if (dosleep) Thread.sleep(5000)
   }
 
   private def createSimpleTableAndPoupulateData(numRows: Int, name: String,

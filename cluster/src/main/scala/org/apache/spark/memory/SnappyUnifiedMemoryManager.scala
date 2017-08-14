@@ -24,8 +24,8 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
-import com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.BufferAllocator
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -255,8 +255,8 @@ class SnappyUnifiedMemoryManager private[memory](
       allowNonAllocator: Boolean): Unit = synchronized {
     val capacity = buffer.capacity()
     val mode = MemoryMode.OFF_HEAP
-    val totalSize = capacity + ManagedDirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
-    val toOwner = ManagedDirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER
+    val totalSize = capacity + DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
+    val toOwner = DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER
     val changeOwner = new Consumer[String] {
       override def accept(fromOwner: String): Unit = {
         if (fromOwner ne null) {
@@ -274,7 +274,7 @@ class SnappyUnifiedMemoryManager private[memory](
           // add to storage pool
           if (!askStoragePool(toOwner, MemoryManagerCallback.storageBlockId,
             totalSize, MemoryMode.OFF_HEAP, shouldEvict = true)) {
-            throw ManagedDirectBufferAllocator.instance().lowMemoryException(
+            throw DirectBufferAllocator.instance().lowMemoryException(
               "changeToStorage", totalSize)
           }
         } else throw new IllegalStateException(
@@ -282,7 +282,7 @@ class SnappyUnifiedMemoryManager private[memory](
       }
     }
     // change the owner to storage
-    ManagedDirectBufferAllocator.instance().changeOwnerToStorage(buffer,
+    DirectBufferAllocator.instance().changeOwnerToStorage(buffer,
       capacity, changeOwner)
   }
 

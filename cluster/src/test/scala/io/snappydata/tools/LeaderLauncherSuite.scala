@@ -96,7 +96,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
         Try {
           System.setOut(new PrintStream(stream))
           LeaderLauncher.main(Array(
-            "status",
+            "status", "verbose",
             "-dir=" + dirname))
         } map { _ =>
           val outputLines = stream.toString

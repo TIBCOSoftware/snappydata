@@ -40,6 +40,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
     startSparkJob()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testTableCreationWithHA(): Unit = {
@@ -62,30 +63,37 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     verifyTableData(snc , tableName)
     dropTable(snc, tableName)
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
     startSparkJob2()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableProjectionQuery(): Unit = {
     startSparkJob3()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableWithPartition(): Unit = {
     startSparkJob4()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAPI(): Unit = {
     startSparkJob5()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndSingleInsertAPI(): Unit = {
     startSparkJob6()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndInsertCLOB(): Unit = {
     startSparkJob7()
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
   }
 
 
@@ -255,6 +263,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1008, s"Unexpected elements ${r.length}, expected=1008")
 
     snc.dropTable(tableName, ifExists = true)
+    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
     getLogWriter.info("Successful")
   }
 
@@ -653,6 +662,29 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(snc.sql("select count(*) from t1").count() > 0)
     FileUtils.deleteDirectory(new File(tempPath))
   }
+
+
+
+  def testSNAP1878(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    snc.sql(s"create table t1 (c1 integer,c2 string)")
+    snc.sql(s"insert into t1 values(1,'test1')")
+    snc.sql(s"insert into t1 values(2,'test2')")
+    snc.sql(s"insert into t1 values(3,'test3')")
+    val df=snc.sql("select * from t1")
+    df.show
+    val tempPath = "/tmp/" + System.currentTimeMillis()
+
+    assert(df.count()==3)
+    df.write.option("header","true").csv(tempPath)
+    snc.createExternalTable("TEST_EXTERNAL","csv",Map("path" -> tempPath,"header" -> "true"))
+    val dataDF=snc.sql("select * from TEST_EXTERNAL")
+    assert(dataDF.count==3)
+    snc.sql("drop table if exists TEST_EXTERNAL")
+    FileUtils.deleteDirectory(new File(tempPath))
+  }
+
 
 }
 

@@ -18,8 +18,11 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.{Collections, UUID}
 
+import scala.collection.JavaConverters._
+
 import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -30,6 +33,7 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.FunctionIdentifier
@@ -42,8 +46,6 @@ import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.store.StoreHashFunction
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, SparkContext}
-
-import scala.collection.JavaConverters._
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -65,6 +67,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       // via a proper connection
       var conn: EmbedConnection = null
       var contextSet: Boolean = false
+      var txStateSet: Boolean = false
       try {
         var lcc: LanguageConnectionContext = Misc.getLanguageConnectionContext
         if (lcc == null) {
@@ -82,8 +85,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
         try {
           val state: TXStateInterface = TXManagerImpl.getCurrentTXState
-          if (state != null) {
+          if (tc.getCurrentTXStateProxy == null && state != null) {
             tc.setActiveTXState(state, true)
+            txStateSet = true
           }
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
@@ -114,8 +118,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID, dependents)
         } finally {
-          lcc.setExecuteLocally(null, null, false, null)
-          tc.clearActiveTXState(false, true)
+          lcc.clearExecuteLocally()
+          if (txStateSet) tc.clearActiveTXState(false, true)
         }
       } catch {
         case e: Throwable => throw e
@@ -167,9 +171,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
     val context = ctx.asInstanceOf[LeadNodeSmartConnectorOpContext]
 
+    val session = SnappyContext(null: SparkContext).snappySession
+    if (context.getUserName != null && !context.getUserName.isEmpty) {
+      session.conf.set(Attribute.USERNAME_ATTR, context.getUserName)
+      session.conf.set(Attribute.PASSWORD_ATTR, context.getAuthToken)
+    }
+
     context.getType match {
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_TABLE =>
-        val session = SnappyContext(null: SparkContext).snappySession
 
         val tableIdent = context.getTableIdentifier
         val userSpecifiedJsonSchema = Option(context.getUserSpecifiedJsonSchema)
@@ -190,7 +199,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           provider, userSpecifiedSchema, schemaDDL, mode, options, isBuiltIn)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_TABLE =>
-        val session = SnappyContext(null: SparkContext).snappySession
         val tableIdent = context.getTableIdentifier
         val ifExists = context.getIfExists
 
@@ -198,7 +206,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent), ifExists)
 
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_INDEX =>
-        val session = SnappyContext(null: SparkContext).snappySession
         val tableIdent = context.getTableIdentifier
         val indexIdent = context.getIndexIdentifier
         val indexColumns = SmartConnectorHelper
@@ -213,7 +220,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           indexColumns, options)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_INDEX =>
-        val session = SnappyContext(null: SparkContext).snappySession
         val indexIdent = context.getIndexIdentifier
         val ifExists = context.getIfExists
 
@@ -221,7 +227,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         session.dropIndex(session.sessionCatalog.newQualifiedTableName(indexIdent), ifExists)
 
       case LeadNodeSmartConnectorOpContext.OpType.CREATE_UDF =>
-        val session = SnappyContext(null: SparkContext).snappySession
         val db = context.getDb
         val className = context.getClassName
         val functionName = context.getFunctionName
@@ -234,7 +239,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         session.sharedState.externalCatalog.createFunction(db, functionDefinition)
 
       case LeadNodeSmartConnectorOpContext.OpType.DROP_UDF =>
-        val session = SnappyContext(null: SparkContext).snappySession
         val db = context.getDb
         val functionName = context.getFunctionName
 
@@ -242,7 +246,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         session.sharedState.externalCatalog.dropFunction(db, functionName)
 
       case LeadNodeSmartConnectorOpContext.OpType.ALTER_TABLE =>
-        val session = SnappyContext(null: SparkContext).snappySession
         val tableName = context.getTableIdentifier
         val addOrDropCol = context.getAddOrDropCol
         val columnName = context.getColumnName

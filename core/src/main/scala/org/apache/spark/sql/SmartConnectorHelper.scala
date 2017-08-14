@@ -19,9 +19,12 @@ package org.apache.spark.sql
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.sql.{CallableStatement, Connection, SQLException}
 
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.Constant
 import io.snappydata.impl.SparkShellRDDHelper
 import org.apache.hadoop.hive.metastore.api.Table
+
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -33,8 +36,8 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   private lazy val clusterMode = SnappyContext.getClusterMode(snappySession.sparkContext)
 
-  private var conn: Connection = null
-  private var connectionURL: String = null
+  private var conn: Connection = _
+  private var connectionURL: String = _
   private val createSnappyTblString = "call sys.CREATE_SNAPPY_TABLE(?, ?, ?, ?, ?, ?, ?)"
   private val dropSnappyTblString = "call sys.DROP_SNAPPY_TABLE(?, ?)"
   private val createSnappyIdxString = "call sys.CREATE_SNAPPY_INDEX(?, ?, ?, ?)"
@@ -60,7 +63,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def initializeConnection(): Unit = {
-    val jdbcOptions = new JDBCOptions(connectionURL + ";route-query=false;", "",
+    val jdbcOptions = new JDBCOptions(connectionURL + getSecurePart + ";route-query=false;", "",
       Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     createSnappyTblStmt = conn.prepareCall(createSnappyTblString)
@@ -71,6 +74,19 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
     alterTableStmt = conn.prepareCall(alterTableStmtString)
+  }
+
+  private def getSecurePart: String = {
+    var securePart = ""
+    val user = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+        .USERNAME_ATTR, "")
+    if (!user.isEmpty) {
+      val pass = snappySession.sqlContext.getConf(Constant.SPARK_STORE_PREFIX + Attribute
+          .PASSWORD_ATTR, "")
+      securePart = s";user=$user;password=$pass"
+      logInfo(s"Using $user credentials to securely connect to snappydata cluster")
+    }
+    securePart
   }
 
   private def runStmtWithExceptionHandling[T](function: => T): T = {
@@ -223,19 +239,19 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
         val allNetUrls = SparkShellRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingStr)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(bucketCount, partitionCols.toSeq, indexCols, pkCols,
-          partitions, embdClusterRelDestroyVersion))
+        (t, RelationInfo(bucketCount, isPartitioned = true, partitionCols.toSeq,
+          indexCols, pkCols, partitions, embdClusterRelDestroyVersion))
       } else {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
         val allNetUrls = SparkShellRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
         val partitions = SparkShellRDDHelper.getPartitions(allNetUrls)
-        (t, new RelationInfo(1, Seq.empty[String], indexCols, pkCols,
+        (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], indexCols, pkCols,
           partitions, embdClusterRelDestroyVersion))
       }
     } else {
       // external tables (with source as csv, parquet etc.)
-      (t, new RelationInfo(1, Seq.empty[String], Array.empty[String], Array.empty[String],
-        Array.empty[Partition], embdClusterRelDestroyVersion))
+      (t, RelationInfo(1, isPartitioned = false, Seq.empty[String], Array.empty[String],
+        Array.empty[String], Array.empty[Partition], embdClusterRelDestroyVersion))
     }
   }
 

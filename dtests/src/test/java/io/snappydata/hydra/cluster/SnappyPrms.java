@@ -201,6 +201,12 @@ public class SnappyPrms extends BasePrms {
   public static Long forceStart;
 
   /**
+   * (boolean) - whether to copy the config data forcefully.
+   * This is required in case of lead, locator and server member's HA in same test
+   */
+  public static Long forceCopy;
+
+  /**
    * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets
    * the gemfirexd.table-default-partitioned to false.
    */
@@ -456,6 +462,11 @@ public class SnappyPrms extends BasePrms {
    * 1GB if not provided.
    */
   public static Long executorMemory;
+
+  /**
+   * (Boolean) parameter to have dynamic APP_PROPS, other than setting using taskTab.
+   */
+  public static Long hasDynamicAppProps;
 
   public static int getRetryCountForJob() {
     Long key = numTimesToRetry;
@@ -785,6 +796,11 @@ public class SnappyPrms extends BasePrms {
     }
     executorMem = " --executor-memory " + heapSize;
     return executorMem;
+  }
+
+  public static boolean hasDynamicAppProps(){
+    Long key = hasDynamicAppProps;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static Vector getKafkaTopic() {

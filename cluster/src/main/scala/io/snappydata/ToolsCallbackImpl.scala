@@ -53,7 +53,8 @@ object ToolsCallbackImpl extends ToolsCallback {
     }
   }
 
-  override def removeAddedJar(sc: SparkContext, jarName: String) = sc.removeAddedJar(jarName)
+  override def removeAddedJar(sc: SparkContext, jarName: String) : Unit =
+    sc.removeAddedJar(jarName)
 
   /**
    * Callback to spark Utils to fetch file
@@ -61,7 +62,12 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def doFetchFile(
       url: String,
       targetDir: File,
-      filename: String): File ={
+      filename: String): File = {
      SnappyUtils.doFetchFile(url, targetDir, filename)
+  }
+
+  override def setSessionDependencies(sparkContext: SparkContext, appName: String,
+      classLoader: ClassLoader): Unit = {
+    SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
   }
 }

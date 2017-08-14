@@ -67,48 +67,48 @@ object NWTestUtil {
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => SnappyTestUtils.assertQuery(snc, NWQueries.Q1, 8, "Q1", pw)
-        case "Q2" => SnappyTestUtils.assertQuery(snc, NWQueries.Q2, 91, "Q2",  pw)
-        case "Q3" => SnappyTestUtils.assertQuery(snc, NWQueries.Q3, 830, "Q3",  pw)
-        case "Q4" => SnappyTestUtils.assertQuery(snc, NWQueries.Q4, 9, "Q4",  pw)
-        case "Q5" => SnappyTestUtils.assertQuery(snc, NWQueries.Q5, 9, "Q5",  pw)
-        case "Q6" => SnappyTestUtils.assertQuery(snc, NWQueries.Q6, 9, "Q6",  pw)
-        case "Q7" => SnappyTestUtils.assertQuery(snc, NWQueries.Q7, 9, "Q7",  pw)
-        case "Q8" => SnappyTestUtils.assertQuery(snc, NWQueries.Q8, 6, "Q8",  pw)
-        case "Q9" => SnappyTestUtils.assertQuery(snc, NWQueries.Q9, 3, "Q9",  pw)
-        case "Q10" => SnappyTestUtils.assertQuery(snc, NWQueries.Q10, 2, "Q10",  pw)
-        case "Q11" => SnappyTestUtils.assertQuery(snc, NWQueries.Q11, 4, "Q11",  pw)
-        case "Q12" => SnappyTestUtils.assertQuery(snc, NWQueries.Q12, 2, "Q12",  pw)
-        case "Q13" => SnappyTestUtils.assertQuery(snc, NWQueries.Q13, 2, "Q13",  pw)
-        case "Q14" => SnappyTestUtils.assertQuery(snc, NWQueries.Q14, 69, "Q14",  pw)
-        case "Q15" => SnappyTestUtils.assertQuery(snc, NWQueries.Q15, 5, "Q15",  pw)
-        case "Q16" => SnappyTestUtils.assertQuery(snc, NWQueries.Q16, 8, "Q16",  pw)
-        case "Q17" => SnappyTestUtils.assertQuery(snc, NWQueries.Q17, 3, "Q17",  pw)
-        case "Q18" => SnappyTestUtils.assertQuery(snc, NWQueries.Q18, 9, "Q18",  pw)
-        case "Q20" => SnappyTestUtils.assertQuery(snc, NWQueries.Q20, 1, "Q20",  pw)
-        case "Q21" => SnappyTestUtils.assertQuery(snc, NWQueries.Q21, 1, "Q21",  pw)
-        case "Q22" => SnappyTestUtils.assertQuery(snc, NWQueries.Q22, 1, "Q22",  pw)
-        case "Q23" => SnappyTestUtils.assertQuery(snc, NWQueries.Q23, 1, "Q23",  pw)
-        case "Q24" => SnappyTestUtils.assertQuery(snc, NWQueries.Q24, 4, "Q24",  pw)
-        case "Q25" => SnappyTestUtils.assertJoin(snc, NWQueries.Q25, 1, "Q25",  pw)
-        case "Q26" => SnappyTestUtils.assertJoin(snc, NWQueries.Q26, 86, "Q26",  pw)
-        case "Q27" => SnappyTestUtils.assertJoin(snc, NWQueries.Q27, 9, "Q27",  pw)
-        case "Q28" => SnappyTestUtils.assertJoin(snc, NWQueries.Q28, 12, "Q28",  pw)
-        case "Q29" => SnappyTestUtils.assertJoin(snc, NWQueries.Q29, 8, "Q29",  pw)
-        case "Q30" => SnappyTestUtils.assertJoin(snc, NWQueries.Q30, 8, "Q30",  pw)
-        case "Q31" => SnappyTestUtils.assertJoin(snc, NWQueries.Q31, 830, "Q31",  pw)
-        case "Q32" => SnappyTestUtils.assertJoin(snc, NWQueries.Q32, 8, "Q32",  pw)
-        case "Q33" => SnappyTestUtils.assertJoin(snc, NWQueries.Q33, 37, "Q33",  pw)
-        case "Q34" => SnappyTestUtils.assertJoin(snc, NWQueries.Q34, 5, "Q34",  pw)
-        case "Q35" => SnappyTestUtils.assertJoin(snc, NWQueries.Q35, 3, "Q35",  pw)
-        case "Q36" => SnappyTestUtils.assertJoin(snc, NWQueries.Q36, 290, "Q36",  pw)
-        case "Q37" => SnappyTestUtils.assertJoin(snc, NWQueries.Q37, 77, "Q37",  pw)
-        case "Q38" => SnappyTestUtils.assertJoin(snc, NWQueries.Q38, 2155, "Q38",  pw)
-        case "Q39" => SnappyTestUtils.assertJoin(snc, NWQueries.Q39, 9, "Q39",  pw)
-        case "Q40" => SnappyTestUtils.assertJoin(snc, NWQueries.Q40, 830, "Q40",  pw)
-        case "Q41" => SnappyTestUtils.assertJoin(snc, NWQueries.Q41, 2155, "Q41",  pw)
-        case "Q42" => SnappyTestUtils.assertJoin(snc, NWQueries.Q42, 22, "Q42",  pw)
-        case "Q43" => SnappyTestUtils.assertJoin(snc, NWQueries.Q43, 830, "Q43",  pw)
-        case "Q44" => SnappyTestUtils.assertJoin(snc, NWQueries.Q44, 830, "Q44", pw) //LeftSemiJoinHash
+        case "Q2" => SnappyTestUtils.assertQuery(snc, NWQueries.Q2, 91, "Q2", pw)
+        case "Q3" => SnappyTestUtils.assertQuery(snc, NWQueries.Q3, 830, "Q3", pw)
+        case "Q4" => SnappyTestUtils.assertQuery(snc, NWQueries.Q4, 9, "Q4", pw)
+        case "Q5" => SnappyTestUtils.assertQuery(snc, NWQueries.Q5, 9, "Q5", pw)
+        case "Q6" => SnappyTestUtils.assertQuery(snc, NWQueries.Q6, 9, "Q6", pw)
+        case "Q7" => SnappyTestUtils.assertQuery(snc, NWQueries.Q7, 9, "Q7", pw)
+        case "Q8" => SnappyTestUtils.assertQuery(snc, NWQueries.Q8, 6, "Q8", pw)
+        case "Q9" => SnappyTestUtils.assertQuery(snc, NWQueries.Q9, 3, "Q9", pw)
+        case "Q10" => SnappyTestUtils.assertQuery(snc, NWQueries.Q10, 2, "Q10", pw)
+        case "Q11" => SnappyTestUtils.assertQuery(snc, NWQueries.Q11, 4, "Q11", pw)
+        case "Q12" => SnappyTestUtils.assertQuery(snc, NWQueries.Q12, 2, "Q12", pw)
+        case "Q13" => SnappyTestUtils.assertQuery(snc, NWQueries.Q13, 2, "Q13", pw)
+        case "Q14" => SnappyTestUtils.assertQuery(snc, NWQueries.Q14, 69, "Q14", pw)
+        case "Q15" => SnappyTestUtils.assertQuery(snc, NWQueries.Q15, 5, "Q15", pw)
+        case "Q16" => SnappyTestUtils.assertQuery(snc, NWQueries.Q16, 8, "Q16", pw)
+        case "Q17" => SnappyTestUtils.assertQuery(snc, NWQueries.Q17, 3, "Q17", pw)
+        case "Q18" => SnappyTestUtils.assertQuery(snc, NWQueries.Q18, 9, "Q18", pw)
+        case "Q20" => SnappyTestUtils.assertQuery(snc, NWQueries.Q20, 1, "Q20", pw)
+        case "Q21" => SnappyTestUtils.assertQuery(snc, NWQueries.Q21, 1, "Q21", pw)
+        case "Q22" => SnappyTestUtils.assertQuery(snc, NWQueries.Q22, 1, "Q22", pw)
+        case "Q23" => SnappyTestUtils.assertQuery(snc, NWQueries.Q23, 1, "Q23", pw)
+        case "Q24" => SnappyTestUtils.assertQuery(snc, NWQueries.Q24, 4, "Q24", pw)
+        case "Q25" => SnappyTestUtils.assertJoin(snc, NWQueries.Q25, 1, "Q25", pw)
+        case "Q26" => SnappyTestUtils.assertJoin(snc, NWQueries.Q26, 86, "Q26", pw)
+        case "Q27" => SnappyTestUtils.assertJoin(snc, NWQueries.Q27, 9, "Q27", pw)
+        case "Q28" => SnappyTestUtils.assertJoin(snc, NWQueries.Q28, 12, "Q28", pw)
+        case "Q29" => SnappyTestUtils.assertJoin(snc, NWQueries.Q29, 8, "Q29", pw)
+        case "Q30" => SnappyTestUtils.assertJoin(snc, NWQueries.Q30, 8, "Q30", pw)
+        case "Q31" => SnappyTestUtils.assertJoin(snc, NWQueries.Q31, 830, "Q31", pw)
+        case "Q32" => SnappyTestUtils.assertJoin(snc, NWQueries.Q32, 8, "Q32", pw)
+        case "Q33" => SnappyTestUtils.assertJoin(snc, NWQueries.Q33, 37, "Q33", pw)
+        case "Q34" => SnappyTestUtils.assertJoin(snc, NWQueries.Q34, 5, "Q34", pw)
+        case "Q35" => SnappyTestUtils.assertJoin(snc, NWQueries.Q35, 3, "Q35", pw)
+        case "Q36" => SnappyTestUtils.assertJoin(snc, NWQueries.Q36, 290, "Q36", pw)
+        case "Q37" => SnappyTestUtils.assertJoin(snc, NWQueries.Q37, 77, "Q37", pw)
+        case "Q38" => SnappyTestUtils.assertJoin(snc, NWQueries.Q38, 2155, "Q38", pw)
+        case "Q39" => SnappyTestUtils.assertJoin(snc, NWQueries.Q39, 9, "Q39", pw)
+        case "Q40" => SnappyTestUtils.assertJoin(snc, NWQueries.Q40, 830, "Q40", pw)
+        case "Q41" => SnappyTestUtils.assertJoin(snc, NWQueries.Q41, 2155, "Q41", pw)
+        case "Q42" => SnappyTestUtils.assertJoin(snc, NWQueries.Q42, 22, "Q42", pw)
+        case "Q43" => SnappyTestUtils.assertJoin(snc, NWQueries.Q43, 830, "Q43", pw)
+        case "Q44" => SnappyTestUtils.assertJoin(snc, NWQueries.Q44, 830, "Q44", pw) // LeftSemiJoinHash
         case "Q45" => SnappyTestUtils.assertJoin(snc, NWQueries.Q45, 1788650, "Q45", pw)
         case "Q46" => SnappyTestUtils.assertJoin(snc, NWQueries.Q46, 1788650, "Q46", pw)
         case "Q47" => SnappyTestUtils.assertJoin(snc, NWQueries.Q47, 1788650, "Q47", pw)
@@ -323,10 +323,12 @@ object NWTestUtil {
         // scalastyle:off println
         case _ => println(s"Did not execute query ${q._1}")
       }
-      if(queryExecuted)
+      if(queryExecuted) {
         pw.println(s"Execution completed for query ${q._1}")
-      if (hasValidationFailed)
+      }
+      if (hasValidationFailed) {
         failedQueries = SnappyTestUtils.addToFailedQueryList(failedQueries, q._1)
+      }
     }
     return failedQueries;
   }
@@ -403,8 +405,8 @@ object NWTestUtil {
            pw, sqlContext)
         case "Q34" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q34, "Q34",
            pw, sqlContext)
-        case "Q35" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q35, "Q35",
-           pw, sqlContext)
+/*        case "Q35" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q35, "Q35",
+           pw, sqlContext) */
         case "Q36" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q36, "Q36",
            pw, sqlContext)
         case "Q37" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q37, "Q37",
@@ -421,10 +423,10 @@ object NWTestUtil {
            pw, sqlContext)
         case "Q43" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q43, "Q43",
            pw, sqlContext)
-        case "Q44" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q44, "Q44",
-           pw, sqlContext) // LeftSemiJoinHash
-        case "Q45" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q45, "Q45",
-           pw, sqlContext)
+        /* case "Q44" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q44, "Q44",
+            pw, sqlContext) */ // LeftSemiJoinHash
+        /* case "Q45" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q45, "Q45",
+           pw, sqlContext) */
         /* case "Q46" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q46, "Q46",
          pw, sqlContext)
         case "Q47" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q47, "Q47",
@@ -441,14 +443,14 @@ object NWTestUtil {
           pw, sqlContext)
         case "Q53" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q53, "Q53",
           pw, sqlContext) */
-        case "Q54" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q54, "Q54",
-           pw, sqlContext)
+        /* case "Q54" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q54, "Q54",
+           pw, sqlContext) */
         case "Q55" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q55, "Q55",
            pw, sqlContext)
         case "Q56" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56, "Q56",
            pw, sqlContext)
-        case "Q57" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q57, "Q57",
-           pw, sqlContext)
+/*        case "Q57" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q57, "Q57",
+           pw, sqlContext) */
         case "Q58" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q58, "Q58",
            pw, sqlContext)
         case "Q59" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q59, "Q59",

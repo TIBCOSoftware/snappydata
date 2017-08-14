@@ -54,7 +54,7 @@ class QueryRoutingDUnitTest(val s: String)
     super.tearDown2()
   }
 
-  def _testQueryRouting(): Unit = {
+  def testQueryRouting(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -166,26 +166,23 @@ class QueryRoutingDUnitTest(val s: String)
     assert(expectedResult.sorted.sameElements(actualResult))
     setDMLMaxChunkSize(default_chunk_size)
 
-    // Check that update and delete on column table returns exception
-    try {
-      s.executeUpdate("update TEST.ColumnTableQR set col1 = 10")
-      TestCase.fail("update on column table should have failed")
-    } catch {
-      case sqe: SQLException =>
-        if ("42Y62" != sqe.getSQLState) {
-          throw sqe
-        }
+    // Check that update and delete on column table works
+    val updated = s.executeUpdate("update TEST.ColumnTableQR set col1 = 10")
+    assert(updated == 5)
+    s.execute("select col1 from TEST.ColumnTableQR order by col1")
+    val rs2 = s.getResultSet
+    cnt = 0
+    while (rs2.next()) {
+      val row = rs2.getInt(1)
+      assert(row == 10)
+      cnt += 1
     }
+    assert(cnt == 5)
 
-    try {
-      s.executeUpdate("delete from TEST.ColumnTableQR")
-      TestCase.fail("delete on column table should have failed")
-    } catch {
-      case sqe: SQLException =>
-        if ("42Y62" != sqe.getSQLState) {
-          throw sqe
-        }
-    }
+    val deleted = s.executeUpdate("delete from TEST.ColumnTableQR")
+    assert(deleted == 5)
+    s.execute("select col1 from TEST.ColumnTableQR order by col1")
+    assert(!s.getResultSet.next())
 
     conn.close()
   }
@@ -251,7 +248,6 @@ class QueryRoutingDUnitTest(val s: String)
     assert(rs.next())
     assert(rs.getInt(1) == 1)
 
-
     // Unit test for DSID function
     val membersList = mutable.MutableList[String]()
     val members: java.util.Set[DistributedMember] = GemFireXDUtils.
@@ -273,7 +269,6 @@ class QueryRoutingDUnitTest(val s: String)
       assert(membersList.contains(rs.getString(1)))
     } while (rs.next())
 
-
     // truncate tables
     conn1.createStatement().executeUpdate(s" truncate table $columnTable")
     conn1.createStatement().executeUpdate(s" truncate table $rowTable")
@@ -287,15 +282,13 @@ class QueryRoutingDUnitTest(val s: String)
     // verify that all tables are empty
     rs = conn1.createStatement().executeQuery(s"select count(*) from APP.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST1.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
     rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$rowTable")
     assert(rs.next())
-    assert(rs.getInt(1) == 0)
-
-
+    assert(rs.getInt(1) == 0, s"Expected 0 but found ${rs.getInt(1)}")
 
     // drop all tables
     conn1.createStatement().executeUpdate(s" drop table $columnTable")

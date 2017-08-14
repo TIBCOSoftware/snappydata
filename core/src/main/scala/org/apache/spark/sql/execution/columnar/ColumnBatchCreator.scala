@@ -87,7 +87,7 @@ final class ColumnBatchCreator(
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
           val insertPlan = ColumnInsertExec(tableScan, Seq.empty, Seq.empty,
-            -1, None, (-bufferRegion.getColumnBatchSize, -1,
+            numBuckets = -1, isPartitioned = false, None, (-bufferRegion.getColumnBatchSize, -1,
                 Property.CompressionCodec.defaultValue.get), tableName,
             onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
@@ -139,7 +139,7 @@ final class ColumnBatchCreator(
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc
       val insertPlan = ColumnInsertExec(bufferPlan, Seq.empty, Seq.empty,
-        -1, None, (columnBatchSize, -1, compressionCodec),
+        numBuckets = -1, isPartitioned = false, None, (columnBatchSize, -1, compressionCodec),
         tableName, onExecutor = true, schema, externalStore,
         useMemberVariables = true)
       // now generate the code with the help of WholeStageCodegenExec
