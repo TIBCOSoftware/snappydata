@@ -21,7 +21,7 @@ import java.net.URL
 
 import scala.collection.mutable
 
-import com.gemstone.gemfire.cache.CacheClosedException
+import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -109,21 +109,25 @@ class SnappyExecutor(
     }
   }
 
-  override def isStoreCloseException(t : Throwable) : Boolean = {
+  override def isStoreCloseException(t: Throwable): Boolean = {
     try {
       Misc.checkIfCacheClosing(t)
+      false
     } catch {
-      case ex: CacheClosedException => true
+      case ex: CancelException => true
       case _ => false
     }
-    return false;
   }
 
   override def isStoreException(t: Throwable): Boolean = {
-    if (GemFireXDUtils.retryToBeDone(t)) {
-      return true;
+    GemFireXDUtils.retryToBeDone(t)
+  }
+
+  override def isFatalError(t: Throwable): Boolean = {
+    if (t.isInstanceOf[Error]) {
+      SystemFailure.isJVMFailureError(t.asInstanceOf[Error])
     } else {
-      return false;
+      false
     }
   }
 }
