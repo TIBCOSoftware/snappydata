@@ -70,6 +70,7 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
       case None =>
     }
   }
+
   test("SNAP-1884 Join with temporary table not returning rows") {
     val df = snc.createDataFrame(snc.sparkContext.parallelize(
       LowerCaseData(1, "a") ::
@@ -92,6 +93,27 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     checkAnswer(
       snc.sql("SELECT * FROM lowerCaseData INNER JOIN subset2 " +
         "ON subset2.n = lowerCaseData.n ORDER BY lowerCaseData.n"),
+      Row(1, "a", 1) ::
+        Row(2, "b", 2) :: Nil)
+
+    snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+    df.write.format("column").saveAsTable("collowerCaseData")
+
+    snc.sql("SELECT DISTINCT n FROM collowerCaseData ORDER BY n DESC")
+      .limit(2)
+      .createOrReplaceTempView("colsubset1")
+    snc.sql("SELECT DISTINCT n FROM collowerCaseData ORDER BY n ASC")
+      .limit(2)
+      .createOrReplaceTempView("colsubset2")
+    checkAnswer(
+      snc.sql("SELECT * FROM collowerCaseData INNER JOIN colsubset1 ON " +
+        "colsubset1.n = collowerCaseData.n ORDER BY collowerCaseData.n"),
+      Row(3, "c", 3) ::
+        Row(4, "d", 4) :: Nil)
+
+    checkAnswer(
+      snc.sql("SELECT * FROM collowerCaseData INNER JOIN colsubset2 " +
+        "ON colsubset2.n = collowerCaseData.n ORDER BY collowerCaseData.n"),
       Row(1, "a", 1) ::
         Row(2, "b", 2) :: Nil)
   }

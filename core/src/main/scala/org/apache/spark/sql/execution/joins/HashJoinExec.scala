@@ -181,15 +181,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
-  private def findShuffleDeps(buildRDDs: Seq[RDD[_]]) : Seq[Dependency[_]] = {
-    val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(_.dependencies
-      .filter(_.isInstanceOf[ShuffleDependency[_, _, _]]))
-    val oneToOneRdds = buildRDDs.flatMap(_.dependencies).
-      filter(_.isInstanceOf[OneToOneDependency[_]]).map(_.rdd)
-    if (oneToOneRdds.isEmpty) {
-      buildShuffleDeps
-    } else {
-      buildShuffleDeps ++ findShuffleDeps(oneToOneRdds)
+  private def findShuffleDependencies(rdd: RDD[_]): Seq[Dependency[_]] = {
+    rdd.dependencies.flatMap {
+      case s: ShuffleDependency[_, _, _] => s :: Nil
+      case d => findShuffleDependencies(d.rdd)
     }
   }
 
@@ -200,7 +195,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     if (replicatedTableJoin) {
       val streamRDD = streamRDDs.head
       val numParts = streamRDD.getNumPartitions
-      val buildShuffleDeps: Seq[Dependency[_]] = findShuffleDeps(buildRDDs)
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         streamRDD.preferredLocations(streamRDD.partitions(i))
       }
@@ -219,7 +214,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       // wrap in DelegateRDD for shuffle dependencies and preferred locations
 
       // Get the build side shuffle dependencies.
-      val buildShuffleDeps: Seq[Dependency[_]] = findShuffleDeps(buildRDDs)
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
       val hasStreamSideShuffle = streamRDDs.exists(_.dependencies
           .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
       // treat as a zip of all stream side RDDs and build side RDDs and
