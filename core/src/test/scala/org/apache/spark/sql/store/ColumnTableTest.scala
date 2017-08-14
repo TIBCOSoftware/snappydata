@@ -1178,9 +1178,9 @@ class ColumnTableTest
 
     val rawData=Seq(Seq(1,"emp1",1),Seq(2,"emp2",2),Seq(3,"emp3",3))
 
-    val rdd=sc.parallelize(rawData,1).map(s=> Record(s(0).asInstanceOf[Int],Employee(s(1)
+    val rdd = sc.parallelize(rawData,1).map(s=> Record(s(0).asInstanceOf[Int],Employee(s(1)
       .toString,s(2).asInstanceOf[Int])))
-    val df=snc.createDataFrame(rdd)
+    val df = snc.createDataFrame(rdd)
     df.write.format("column").saveAsTable("test")
 
     snc.sql("drop table if exists test")
