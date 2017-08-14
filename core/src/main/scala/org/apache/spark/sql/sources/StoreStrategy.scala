@@ -23,7 +23,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.execution.{EncoderPlan, EncoderScanExec, ExecutePlan, SparkPlan}
-import org.apache.spark.sql.types.{StructType, DataType, LongType}
+import org.apache.spark.sql.types.{DataType, LongType, StructType}
 
 /**
  * Support for DML and other operations on external tables.
@@ -39,8 +39,9 @@ object StoreStrategy extends Strategy {
       }
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
 
-      val optionsWithPath: Map[String,String] = if(tableDesc.storage.locationUri.isDefined)
-        options +("path"-> tableDesc.storage.locationUri.get) else options
+      val optionsWithPath: Map[String, String] = if (tableDesc.storage.locationUri.isDefined) {
+        options + ("path" -> tableDesc.storage.locationUri.get)
+      } else options
       val cmd =
         CreateMetastoreTableUsing(tableDesc.identifier, None, userSpecifiedSchema,
           None, SnappyContext.getProvider(tableDesc.provider.get, onlyBuiltIn = false),
