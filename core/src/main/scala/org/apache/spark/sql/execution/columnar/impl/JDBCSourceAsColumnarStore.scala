@@ -701,6 +701,7 @@ final class SmartConnectorColumnRDD(
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
+
     val partitionId = split.index
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
       partitionId, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
@@ -715,12 +716,20 @@ final class SmartConnectorColumnRDD(
         logDebug(s"The txid going to be committed is $txId " + tableName)
 
         // if ((txId ne null) && !txId.equals("null")) {
-          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
-          ps.setString(1, if (txId == null) "null" else txId)
-          ps.executeUpdate()
-          logDebug(s"The txid being committed is $txId")
-          ps.close()
-          SparkShellRDDHelper.snapshotTxIdForRead.set(null)
+        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
+        ps.setString(1, if (txId == null) "null" else txId)
+        ps.executeUpdate()
+        logDebug(s"The txid being committed is $txId")
+        ps.close()
+        SparkShellRDDHelper.snapshotTxIdForRead.set(null)
+        logDebug(s"closed connection for task from listener $partitionId")
+        try {
+          conn.commit()
+          conn.close()
+          logDebug("closed connection for task " + context.partitionId())
+        } catch {
+          case NonFatal(e) => logWarning("Exception closing connection", e)
+        }
         // }
       }
     }
