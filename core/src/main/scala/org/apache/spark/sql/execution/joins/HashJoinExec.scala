@@ -183,7 +183,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
   private def findShuffleDependencies(rdd: RDD[_]): Seq[Dependency[_]] = {
     rdd.dependencies.flatMap {
-      case s: ShuffleDependency[_, _, _] => s :: Nil
+      case s: ShuffleDependency[_, _, _] => if (s.rdd ne rdd) {
+        s +: findShuffleDependencies(s.rdd)
+      } else s :: Nil
       case d => findShuffleDependencies(d.rdd)
     }
   }
