@@ -1148,7 +1148,8 @@ class SnappySession(@transient private val sc: SparkContext,
                   + s"doesn't match the data schema[${data.schema}]'s")
             }
             s.zip(data.schema).
-                find(x => x._1.dataType != x._2.dataType) match {
+              find(x => !(compareDataTypeIgnoreNameAndNullability(x._1.dataType, x._2.dataType)))
+            match {
               case Some(_) => throw new AnalysisException(s"The column types " +
                   s"of the specified schema[$s] " +
                   s"doesn't match the data schema[${data.schema}]'s")
@@ -1192,6 +1193,30 @@ class SnappySession(@transient private val sc: SparkContext,
       snappyContextFunctions.postRelationCreation(relation, this)
     }
     LogicalRelation(relation, catalogTable = Some(tableIdent.getTable(this.sessionCatalog)))
+  }
+
+  /**
+   * Compares two types, ignoring nullability of ArrayType, MapType, StructType, and ignoring
+   * field names
+   */
+  private[sql] def compareDataTypeIgnoreNameAndNullability(from: DataType, to: DataType):
+  Boolean = {
+    (from, to) match {
+      case (ArrayType(fromElement, _), ArrayType(toElement, _)) =>
+        compareDataTypeIgnoreNameAndNullability(fromElement, toElement)
+
+      case (MapType(fromKey, fromValue, _), MapType(toKey, toValue, _)) =>
+        compareDataTypeIgnoreNameAndNullability(fromKey, toKey) &&
+          compareDataTypeIgnoreNameAndNullability(fromValue, toValue)
+
+      case (StructType(fromFields), StructType(toFields)) =>
+        fromFields.length == toFields.length &&
+          fromFields.zip(toFields).forall { case (l, r) =>
+              compareDataTypeIgnoreNameAndNullability(l.dataType, r.dataType)
+          }
+
+      case (fromDataType, toDataType) => fromDataType == toDataType
+    }
   }
 
   private[sql] def addBaseTableOption(baseTable: Option[_],
