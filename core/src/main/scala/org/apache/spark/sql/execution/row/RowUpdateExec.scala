@@ -27,10 +27,10 @@ import org.apache.spark.sql.types.StructType
  */
 case class RowUpdateExec(child: SparkPlan, resolvedName: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
-    numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
-    updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-    keyColumns: Seq[Attribute], connProps: ConnectionProperties, onExecutor: Boolean)
-    extends RowExec {
+    numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
+    relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
+    updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
+    connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
 
   assert(updateColumns.length == updateExpressions.length)
 

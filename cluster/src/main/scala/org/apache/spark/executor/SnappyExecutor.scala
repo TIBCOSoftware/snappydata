@@ -47,7 +47,7 @@ class SnappyExecutor(
     Thread.setDefaultUncaughtExceptionHandler(exceptionHandler)
   }
 
-  val classLoaderCache = {
+  private val classLoaderCache = {
     val loader = new CacheLoader[ClassLoaderKey, SnappyMutableURLClassLoader]() {
       override def load(key: ClassLoaderKey): SnappyMutableURLClassLoader = {
         val appName = key.appName
@@ -96,13 +96,13 @@ class SnappyExecutor(
       if (null != taskDeserializationProps) {
         val appDetails = taskDeserializationProps.getProperty(io.snappydata.Constant
             .CHANGEABLE_JAR_NAME, "")
-        logInfo(s"Submitted Application Details $appDetails")
+        logDebug(s"Submitted Application Details $appDetails")
         if (!appDetails.isEmpty) {
           val appNameAndJars = appDetails.split(",")
           val threadClassLoader =
             classLoaderCache.getUnchecked(new ClassLoaderKey(appNameAndJars(0),
               appNameAndJars(1), appNameAndJars))
-          logInfo(s"Setting thread classloader  $threadClassLoader")
+          logDebug(s"Setting thread classloader  $threadClassLoader")
           Thread.currentThread().setContextClassLoader(threadClassLoader)
         }
       }

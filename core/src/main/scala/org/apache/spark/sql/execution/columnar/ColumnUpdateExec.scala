@@ -39,10 +39,10 @@ import org.apache.spark.util.TaskCompletionListener
  */
 case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
-    tableSchema: StructType, externalStore: ExternalStore, relation: Option[DestroyRelation],
-    updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-    keyColumns: Seq[Attribute], connProps: ConnectionProperties, onExecutor: Boolean)
-    extends RowExec {
+    isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
+    relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
+    updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
+    connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
 
   assert(updateColumns.length == updateExpressions.length)
 

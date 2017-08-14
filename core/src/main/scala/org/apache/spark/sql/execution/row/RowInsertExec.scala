@@ -27,9 +27,9 @@ import org.apache.spark.sql.types.StructType
  */
 case class RowInsertExec(child: SparkPlan, putInto: Boolean,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
-    numBuckets: Int, tableSchema: StructType, relation: Option[DestroyRelation],
-    onExecutor: Boolean, resolvedName: String, connProps: ConnectionProperties)
-    extends RowExec {
+    numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
+    relation: Option[DestroyRelation], onExecutor: Boolean, resolvedName: String,
+    connProps: ConnectionProperties) extends RowExec {
 
   override def opType: String = if (putInto) "Put" else "Inserted"
 

@@ -34,7 +34,7 @@ import scala.collection.mutable.ArrayBuffer
  * Generated code plan for bulk insertion into a column table.
  */
 case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
-    partitionExpressions: Seq[Expression], numBuckets: Int,
+    partitionExpressions: Seq[Expression], numBuckets: Int, isPartitioned: Boolean,
     relation: Option[DestroyRelation], batchParams: (Int, Int, String),
     columnTable: String, onExecutor: Boolean, tableSchema: StructType,
     externalStore: ExternalStore, useMemberVariables: Boolean)
@@ -45,8 +45,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       relation: JDBCAppendableRelation, table: String) = {
     // TODO: add compression for binary/complex types
     this(child, partitionColumns, partitionExpressions, relation.numBuckets,
-      Some(relation), relation.getColumnBatchParams, table, onExecutor = false,
-      relation.schema, relation.externalStore, useMemberVariables = false)
+      relation.isPartitioned, Some(relation), relation.getColumnBatchParams, table,
+      onExecutor = false, relation.schema, relation.externalStore, useMemberVariables = false)
   }
 
   @transient private var encoderCursorTerms: Seq[(String, String)] = _
