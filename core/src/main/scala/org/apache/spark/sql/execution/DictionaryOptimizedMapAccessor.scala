@@ -128,8 +128,6 @@ object DictionaryOptimizedMapAccessor {
       val dictionaryVar = keyDictVar.dictionary.value
       val stringAssignCode = ColumnEncoding.stringFromDictionaryCode(
         dictionaryVar, keyDictVar.bufferVar, keyIndex)
-      // change key code to use dictionary directly
-      keyVar.code = s"final UTF8String ${keyVar.value} = $stringAssignCode;"
       s"final UTF8String $key = $stringAssignCode;"
     }
     s"""${keyDictVar.evaluateIndexCode()}
