@@ -994,9 +994,16 @@ The following isolation levels are supported for row tables:
 |REPEATABLE_READ|In this isolation level, a lock-based concurrency control DBMS implementation keeps read and write locks (acquired on selected data) until the end of the transaction. In REPEATABLE READ every lock acquired during a transaction is held for the duration of the transaction.|
 
 For more information, see, [SET ISOLATION](./reference/sql_reference/set-isolation.md)
+!!!Note: 
+	* Transactions is not supported on column tables
 
 ### Using Snapshot Isolation for Column Tables
-Snapshot ensures that all queries in the transaction see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
+Snapshot ensures that all queries see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
+
+Transactions are not supported on column tables. Instead, we provide snapshot isolation by default. Currently, only single statement snapshot isolation (that is, [autocommit](./reference/interactive_commands/autocommit.md) must be set to true) is supported.  Also, snapshots occur at a partition level, which means a snapshot is taken the moment the query is executed on the partition.
+
+!!! Note:
+	If READ_COMMITTED or REPEATABLE_READ isolation level is set and the query is executed on a column table an error UnSupportedOperationException is reported
 
 
 ## Stream Processing using SQL

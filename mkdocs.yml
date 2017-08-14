@@ -55,6 +55,7 @@ pages:
 - Using iSight-Cloud: aqp_aws.md
 - 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'
 # -- Topic - Reference Guide
+- 'Security': 'security/security.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
     - 'SQL Reference Guide': 'sql_reference.md'
@@ -83,6 +84,7 @@ pages:
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
+        - 'SET ISOLATION': 'reference/sql_reference/set-isolation.md'
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
@@ -110,6 +112,8 @@ pages:
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
     - 'Snappy-SQL Shell Interactive Commands':
+        - 'autocommit': 'reference/interactive_commands/autocommit.md'
+        - 'commit': 'reference/interactive_commands/commit.md'
         - 'connect client': 'reference/interactive_commands/connect_client.md'
         - 'connect': 'reference/interactive_commands/connect.md'
         - 'describe': 'reference/interactive_commands/describe.md'
@@ -117,6 +121,7 @@ pages:
         - 'elapsedtime': 'reference/interactive_commands/elapsedtime.md'
         - 'exit': 'reference/interactive_commands/exit.md'
         - 'MaximumDisplayWidth': 'reference/interactive_commands/maximumdisplaywidth.md'
+        - 'rollback': 'reference/interactive_commands/rollback.md'
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
