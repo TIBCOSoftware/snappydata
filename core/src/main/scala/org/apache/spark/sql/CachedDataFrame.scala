@@ -91,7 +91,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   private lazy val queryExecutionString: String = queryExecution.toString()
 
   private lazy val isLowLatencyQuery: Boolean =
-    cachedRDD.getNumPartitions <= 2 /* some small number */
+    (cachedRDD ne null) && cachedRDD.getNumPartitions <= 2 /* some small number */
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
@@ -149,8 +149,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       sessionState.conf.activeSchedulerPool
 
     // Check if it is pruned query, execute it automatically on the low latency pool
-    if ((cachedRDD ne null) && isLowLatencyQuery &&
-      shuffleDependencies.length == 0 && pool == "default") {
+    if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {
       if (sparkSession.sparkContext.getAllPools.exists(_.name == "lowlatency")) {
         pool = "lowlatency"
       }
