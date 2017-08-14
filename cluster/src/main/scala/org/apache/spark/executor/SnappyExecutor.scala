@@ -124,10 +124,9 @@ class SnappyExecutor(
   }
 
   override def isFatalError(t: Throwable): Boolean = {
-    if (t.isInstanceOf[Error]) {
-      SystemFailure.isJVMFailureError(t.asInstanceOf[Error])
-    } else {
-      false
+    t match {
+      case err: Error => SystemFailure.isJVMFailureError(err)
+      case _ => false
     }
   }
 }
