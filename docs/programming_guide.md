@@ -995,7 +995,7 @@ The following isolation levels are supported for row tables:
 
 For more information, see, [SET ISOLATION](./reference/sql_reference/set-isolation.md)
 !!!Note: 
-	* Transactions is not supported on column tables
+	* Transactions are not supported on column tables
 
 ### Using Snapshot Isolation for Column Tables
 
