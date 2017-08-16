@@ -109,6 +109,9 @@ dependencies {
   }
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
+  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+    testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
+  }
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 

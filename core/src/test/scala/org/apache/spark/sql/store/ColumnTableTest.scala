@@ -18,25 +18,24 @@ package org.apache.spark.sql.store
 
 import java.sql.{DriverManager, SQLException}
 
-import com.pivotal.gemfirexd.TestUtil
-import org.apache.commons.io.FileUtils
-
 import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedSQLException}
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
-import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite}
+import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
 import org.apache.spark.Logging
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql._
-import org.apache.spark.sql.collection.Utils
 
 /**
   * Tests for column tables in GFXD.
@@ -1145,7 +1144,7 @@ class ColumnTableTest
 
   test("Test for SNAP-1878 create external table using api") {
 
-
+    snc.sql("drop table if exists t1")
     snc.sql(s"create table t1 (c1 integer,c2 string)")
     snc.sql(s"insert into t1 values(1,'test1')")
     snc.sql(s"insert into t1 values(2,'test2')")
@@ -1169,6 +1168,23 @@ class ColumnTableTest
     for(i<- 0 to 2) assert(rows(i)(0)==i+1)
 
     snc.sql("drop table if exists TEST_EXTERNAL")
+    snc.sql("drop table if exists t1")
     FileUtils.deleteDirectory(new java.io.File(tempPath))
   }
+
+  test("Creating column table from dataframe with complex datatype ") {
+
+    snc.sql("drop table if exists test")
+
+    val rawData=Seq(Seq(1,"emp1",1),Seq(2,"emp2",2),Seq(3,"emp3",3))
+
+    val rdd = sc.parallelize(rawData,1).map(s=> Record(s(0).asInstanceOf[Int],Employee(s(1)
+      .toString,s(2).asInstanceOf[Int])))
+    val df = snc.createDataFrame(rdd)
+    df.write.format("column").saveAsTable("test")
+
+    snc.sql("drop table if exists test")
+  }
 }
+case class Record(id:Int, data: Employee)
+case class Employee(empName: String, empId: Int)

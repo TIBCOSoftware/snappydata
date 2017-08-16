@@ -104,16 +104,16 @@ abstract class BaseColumnFormatRelation(
         val catalog = _context.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
         catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
       case _ =>
-        RelationInfo(numBuckets, partitionColumns, Array.empty[String],
+        RelationInfo(numBuckets, isPartitioned, partitionColumns, Array.empty[String],
           Array.empty[String], Array.empty[Partition], -1)
     }
   }
 
   @transient
-  override lazy val numBuckets: Int = {
+  override lazy val (numBuckets, isPartitioned) = {
     clusterMode match {
-      case ThinClientConnectorMode(_, _) => relInfo.numBuckets
-      case _ => region.getTotalNumberOfBuckets
+      case ThinClientConnectorMode(_, _) => (relInfo.numBuckets, relInfo.isPartitioned)
+      case _ => (region.getTotalNumberOfBuckets, true)
     }
   }
 
@@ -199,15 +199,6 @@ abstract class BaseColumnFormatRelation(
   def buildRowBufferRDD(partitionEvaluator: () => Array[Partition],
       requiredColumns: Array[String], filters: Array[Filter],
       useResultSet: Boolean): RDD[Any] = {
-    // TODO: Suranjan scanning over column rdd before row will make sure
-    // that we don't have duplicates; we may miss some results though
-    // [sumedh] In the absence of snapshot isolation, one option is to
-    // use increasing column batch IDs and note the IDs at the start, then
-    // scan row buffer first and delay column batch creation till that is done,
-    // finally skipping any IDs greater than the noted ones.
-    // However, with plans for mutability in column store (via row buffer) need
-    // to re-think in any case and provide proper snapshot isolation in store.
-    val isPartitioned = numBuckets != 1
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
@@ -270,7 +261,7 @@ abstract class BaseColumnFormatRelation(
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, schema, externalStore, Some(this),
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, Some(this),
       updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
   }
 
@@ -281,7 +272,7 @@ abstract class BaseColumnFormatRelation(
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
     ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, schema, externalStore,
+      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
       Some(this), keyColumns, connProperties, onExecutor = false)
   }
 

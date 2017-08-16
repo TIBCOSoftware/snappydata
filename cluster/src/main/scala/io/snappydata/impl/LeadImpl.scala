@@ -26,17 +26,20 @@ import scala.collection.JavaConverters._
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
+import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.gemxd.SnappyDataVersion
 import io.snappydata.util.ServiceUtils
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
@@ -207,6 +210,7 @@ class LeadImpl extends ServerImpl with Lead
 
     val confProps = conf.getAll
     val storeProps = ServiceUtils.getStoreProperties(confProps)
+    checkAuthProvider(storeProps)
 
     logInfo("passing store properties as " + storeProps)
     super.start(storeProps, false)
@@ -253,6 +257,27 @@ class LeadImpl extends ServerImpl with Lead
       case _ =>
         logWarning(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
     }
+  }
+
+  private def checkAuthProvider(props: Properties): Unit = {
+    doCheck(props.getProperty(Attribute.AUTH_PROVIDER))
+    doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
+
+    def doCheck(authP: String): Unit = {
+      if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
+        throw new UnsupportedOperationException("LDAP is the only supported auth-provider currently.")
+      }
+      if (authP != null && !isEnterpriseEdition()) {
+        throw new UnsupportedOperationException("Security feature is available in SnappyData " +
+            "Enterprise Edition.")
+      }
+    }
+  }
+
+  private def isEnterpriseEdition(): Boolean = {
+    GemFireVersion.getInstance(classOf[SnappyDataVersion],
+      SharedUtils.GFXD_VERSION_PROPERTIES)
+    GemFireVersion.isEnterpriseEdition
   }
 
   @throws[SQLException]

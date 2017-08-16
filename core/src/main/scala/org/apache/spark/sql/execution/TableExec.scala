@@ -51,6 +51,8 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 
   def numBuckets: Int
 
+  def isPartitioned: Boolean
+
   protected def opType: String
 
   protected def isInsert: Boolean = false
@@ -58,7 +60,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil
 
-  val partitioned: Boolean = numBuckets > 1 && partitionExpressions.nonEmpty
+  val partitioned: Boolean = isPartitioned && partitionExpressions.nonEmpty
 
   // Enforce default shuffle partitions to match table buckets.
   // Only one insert plan possible in the plan tree, so no clashes.

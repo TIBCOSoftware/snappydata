@@ -71,10 +71,9 @@ final class ColumnDeltaDecoder(realDecoder: ColumnDecoder) {
   private[encoding] def moveToNextPosition(): Int = {
     val cursor = positionCursor
     if (cursor < positionEndCursor) {
-      val nextPosition = ColumnEncoding.readInt(deltaBytes, cursor)
       positionCursor += 4
       positionOrdinal += 1
-      nextPosition
+      ColumnEncoding.readInt(deltaBytes, cursor)
     } else {
       // convention used by MutableColumnDecoder to denote the end
       // which is greater than everything so will never get selected

@@ -31,7 +31,7 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnectionContext
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
 
@@ -49,6 +49,7 @@ import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
+import org.apache.spark.util.TaskCompletionListener
 import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Logging, Partition, TaskContext}
 
@@ -110,7 +111,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case _ =>
             val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
             if (txId == null) {
-              logDebug("Going to start the transaction on server ")
+              logDebug(s"Going to start the transaction on server on conn $conn ")
               val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID (?)")
               startAndGetSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
               startAndGetSnapshotTXId.execute()
@@ -142,7 +143,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             // if(SparkShellRDDHelper.snapshotTxIdForRead.get)
             Misc.getGemFireCache.getCacheTransactionManager.commit()
           case _ =>
-            logDebug(s"Going to commit $txId the transaction on server ")
+            logDebug(s"Going to commit $txId the transaction on server conn is $conn")
             val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
             ps.setString(1, if (txId == null) "null" else txId)
             ps.executeUpdate()
@@ -164,7 +165,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ConnectionType.Embedded =>
             Misc.getGemFireCache.getCacheTransactionManager.rollback()
           case _ =>
-            logDebug(s"Going to rollback $txId the transaction on server ")
+            logDebug(s"Going to rollback $txId the transaction on server on wconn $conn ")
             val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
             ps.setString(1, if (txId == null) "null" else txId)
             ps.executeUpdate()
@@ -178,7 +179,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String): Unit = {
+      statsData: Array[Byte], partitionId: Int, batchId: String)(implicit conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
@@ -202,7 +203,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       case _ =>
         // TODO: SW: temporarily made close=true for delete
         // noinspection RedundantDefaultArgument
-        tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) { connection =>
+        tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) { connection =>
           val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
           val stmt = connection.prepareStatement(deleteStr)
           var blob: ClientBlob = null
@@ -233,7 +234,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               }
             }
           }
-        }
+        }(implicitly, conn)
     }
   }
 
@@ -241,7 +242,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     c match {
       case Some(conn) if !conn.isClosed =>
         connectionType match {
-          case ConnectionType.Embedded => // Do nothing
+          case ConnectionType.Embedded =>
+            if (!conn.isInstanceOf[EmbedConnection]) {
+              conn.commit()
+              conn.close()
+            }
           case _ =>
             // it should always be not null.
             // get clears the state from connection
@@ -493,7 +498,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
       // TODO: SW: temporarily made close=true for updates
       // noinspection RedundantDefaultArgument
-      tryExecute(tableName, closeOnSuccessOrFailure = batch.deltaIndexes ne null,
+      tryExecute(tableName, closeOnSuccessOrFailure = false/*batch.deltaIndexes ne null*/,
         onExecutor = true)(doInsertOrPutImpl(tableName, batch, batchId, partitionId,
         maxDeltaRows))(implicitly, conn)
     } else {
@@ -506,7 +511,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case _ =>
           // TODO: SW: temporarily made close=true for updates
           // noinspection RedundantDefaultArgument
-          tryExecute(tableName, closeOnSuccessOrFailure = batch.deltaIndexes ne null,
+          tryExecute(tableName, closeOnSuccessOrFailure = false/* batch.deltaIndexes ne null*/,
             onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
             maxDeltaRows))(implicitly, conn)
       }
@@ -526,8 +531,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             baseRelation = null, schema, allFilters = Seq.empty, schemaAttrs,
             caseSensitive = true)
           val insertPlan = RowInsertExec(tableScan, putInto = true,
-            Seq.empty, Seq.empty, -1, schema, None, onExecutor = true,
-            tableName, connProperties)
+            Seq.empty, Seq.empty, numBuckets = -1, isPartitioned = false, schema,
+            None, onExecutor = true, tableName, connProperties)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD
           // semantics and related methods are all ignored
@@ -696,13 +701,14 @@ final class SmartConnectorColumnRDD(
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(connProperties, split)
+    val partitionId = split.index
     val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
-      split.index, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
+      partitionId, requiredColumns.map(_.replace(store.columnPrefix, "")), schema)
     // fetch the stats
     val (statement, rs, txId) = helper.executeQuery(conn, tableName, split,
       fetchStatsQuery, relDestroyVersion)
     val itr = new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs,
-      context, fetchColQuery)
+      context, partitionId, fetchColQuery)
 
     if (context ne null) {
       context.addTaskCompletionListener { _ =>
@@ -866,4 +872,38 @@ class SmartConnectorRowRDD(_session: SnappySession,
       requiredColumns: Array[String], partitionId: Int): String = {
     "select " + requiredColumns.mkString(", ") + " from " + resolvedTableName
   }
+
+}
+
+class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore) extends TaskCompletionListener {
+  val connAndTxId: Array[_ <: Object] = store.beginTx()
+  var isSuccess = false
+
+  override def onTaskCompletion(context: TaskContext): Unit = {
+    val txId = connAndTxId(1).asInstanceOf[String]
+    val conn = connAndTxId(0).asInstanceOf[Connection]
+    if (connAndTxId(1) != null) {
+      if (success()) {
+        store.commitTx(txId)(Some(conn))
+      }
+      else {
+        store.rollbackTx(txId)(Some(conn))
+      }
+    }
+    store.closeConnection(Some(conn))
+    //} catch (java.sql.SQLException sqle) {
+    // ignore exception in close
+    //}
+  }
+
+  def success(): Boolean = {
+    isSuccess
+  }
+
+  def setSuccess() = {
+    isSuccess = true
+  }
+
+  def getConn(): Connection = connAndTxId(0).asInstanceOf[Connection]
+
 }
