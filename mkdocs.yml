@@ -13,6 +13,7 @@ pages:
 # - Introduction: snappyIntroduction.md
 - Getting Started: quickstart.md
 - Download and Install: install.md
+- System Requirements: additional_files/system_requirements.md
 - 'Migration Guide': 'migration/migration.md'
 - 'Migration Guide':
     - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
@@ -35,11 +36,11 @@ pages:
 #        - 'Operating System Settings' : 'best_practices/setting_up_cluster/operating_system_setting.md'
 #        - 'Table Memory Requirements' : 'best_practices/setting_up_cluster/table_memory_req.md'
 #        - 'JVM Settings for SnappyData Smart Connector mode and Local mode' : 'best_practices/setting_up_cluster/jvm_setting.md'
-    - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/important_settings.md'
-    - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/ha_considerations.md'    
+    - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
     - 'Memory Management': 'best_practices/memory_management.md'      
     - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
+    - 'Important Settings': 'best_practices/important_settings.md'
 #    - 'Optimizing Query Latency: Partitioning and Replication Strategies':    
 #        - 'Using Column vs Row Table' : 'best_practices/design_schema/column_vs_row_table.md'
 #        - 'Using Partitioned vs Replicated Row Table' : 'best_practices/design_schema/partitioned_vs_replicated_row.md'
@@ -54,6 +55,7 @@ pages:
 - Using iSight-Cloud: aqp_aws.md
 - 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'
 # -- Topic - Reference Guide
+- 'Security': 'security/security.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
     - 'SQL Reference Guide': 'sql_reference.md'
@@ -82,6 +84,7 @@ pages:
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
+        - 'SET ISOLATION': 'reference/sql_reference/set-isolation.md'
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
@@ -109,6 +112,8 @@ pages:
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
     - 'Snappy-SQL Shell Interactive Commands':
+        - 'autocommit': 'reference/interactive_commands/autocommit.md'
+        - 'commit': 'reference/interactive_commands/commit.md'
         - 'connect client': 'reference/interactive_commands/connect_client.md'
         - 'connect': 'reference/interactive_commands/connect.md'
         - 'describe': 'reference/interactive_commands/describe.md'
@@ -116,6 +121,7 @@ pages:
         - 'elapsedtime': 'reference/interactive_commands/elapsedtime.md'
         - 'exit': 'reference/interactive_commands/exit.md'
         - 'MaximumDisplayWidth': 'reference/interactive_commands/maximumdisplaywidth.md'
+        - 'rollback': 'reference/interactive_commands/rollback.md'
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
@@ -171,12 +177,12 @@ pages:
 - 'Troubleshooting': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting':
     - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
-- Additional Information: additional_docs.md
+- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
-- Open Source Components: open_source_components.md
-- License Model: license_model.md
+- Open Source Components: additional_files/open_source_components.md
+- License Model: additional_files/license_model.md
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 

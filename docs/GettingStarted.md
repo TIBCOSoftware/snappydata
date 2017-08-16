@@ -1,18 +1,18 @@
 ## Introduction
-SnappyData fuses Apache Spark with an in-memory database to deliver a data engine capable of processing streams, transactions and interactive analytics in a single cluster. 
+SnappyData fuses Apache Spark with an in-memory database to deliver a compute+data engine capable of stream processing, transactions, interactive analytics and prediction in a single cluster.
 
 !!! Attention:
 	This document assumes that you have familiarity with Apache Spark and its concepts. If you are new to Spark, refer to the [Spark documentation](https://spark.apache.org/docs/2.1.0/) to learn more about using Spark.
 
 ## The Challenge with Spark and Remote Data Sources
-Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and can access disparate data sources in a highly parallelized manner for its distributed computations. Typically, data is fetched lazily as a result of SQL query or a Dataset (RDD) getting materialized. This can be quite inefficient and expensive if the data set has to be repeatedly processed. Caching within Spark is immutable and still requires the application to periodically refresh the data set, let alone having to bear the burden of duplicating the dataset. 
+Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and can access disparate data sources in a highly parallelized manner for its distributed computations. Typically, data is fetched lazily as a result of SQL query or a Dataset (RDD) getting materialized. This can be quite inefficient and expensive since most workload require the data set to be repeatedly processed. Caching within Spark is immutable and requires the application to periodically refresh the data set, let alone having to bear the burden of duplicating the dataset.
 
-Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance. For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. Caching within Spark is immutable and results in stale insight.
+Analytic processing requires large datasets to be repeatedly copied from external datasource like HDFS, into Spark. Copying data, reformatting it (into columnar format, depending on where the data is being copied from) and moving it across process and machine boundaries can be very expensive. As a result, we see that in several cases, applications using Spark with an external data source fail to deliver the promise of interactive analytic performance. For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. The alternative to working with a stateful store is to cache the data in Spark. This of course suffers from the problems associated with stale data.
 
 ## The SnappyData Approach
-At SnappyData, a very different approach is taken. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark. All query engine operators are more optimized through better vectorization and code generation. The net effect is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
+SnappyData fuses a low latency, highly available in-memory transactional database (GemFire) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark. Query engine operators are optimized through better vectorization and code generation. The net effect of these changes are, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
 
-Essentially, Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries.
+Essentially, Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams and running analytic SQL queries.
 
 ![SnappyData Architecture](Images/SnappyArchitecture.png)
 
@@ -25,9 +25,9 @@ By default, when the cluster is started, the data store is bootstrapped and when
 
 ## Key Features
 
-* **100% compatible with Spark**- Use SnappyData as a database, but also use any of the Spark APIs - ML, Graph, etc.
+* **100% compatible with Spark**- Use SnappyData as a database, and additionally use any of the Spark APIs - ML, Graph, etc.
 
-* **In-memory row and column stores**: Run the store colocated in Spark executors or in its own process space (i.e. a computational cluster and a data cluster)
+* **In-memory row and column stores**: Run the store colocated in Spark executors or in its own process space (that is, a computational cluster and a data cluster)
 
 * **SQL standard compliance**: Spark SQL + several SQL extensions: DML, DDL, indexing, constraints.
 
@@ -77,7 +77,7 @@ SnappyData extends Spark’s unified API:
 	-	Express their accuracy requirements as high-level accuracy contracts (HAC), without overwhelming them with numerous statistical concepts.
 
 ## Morphing Spark to support mixed workloads (OLTP, OLAP)
-Spark is designed as a computational engine for processing batch jobs. Each Spark application (for example, a Map-reduce job) runs as an independent set of processes (i.e., executor JVMs) on the cluster. These JVMs are re- used for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients requires an external storage tier, such as HDFS. SnappyData, on the other hand, targets a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database in the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and decoupled from individual applications.
+Spark is designed as a computational engine for processing batch jobs. Each Spark application (for example, a Map-reduce job) runs as an independent set of processes (that is, executor JVMs) on the cluster. These JVMs are re- used for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients requires an external storage tier, such as HDFS. SnappyData, on the other hand, targets a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database in the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and decoupled from individual applications.
 
 A second but related challenge is Spark’s design for how user requests (i.e., jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces:
 
@@ -85,6 +85,6 @@ A second but related challenge is Spark’s design for how user requests (i.e., 
 
 2. A barrier for achieving high availability (HA). Executors are shut down if the driver fails, requiring a full refresh of any cached state.
 
-Spark’s primary usage of memory is for caching RDDs and for shuffling blocks to other nodes. Data is managed in blocks and is immutable. On the other hand, more complex data structures  needs to be managed (along with indexes) for point access and updates. Therefore, another challenge is merging these two disparate storage systems with little impedance to the application. This challenge is exacerbated by current limitations of Spark SQL—mostly related to mutability characteristics and conformance to SQL.
+Spark’s primary usage of memory is for caching RDDs and for shuffling blocks to other nodes. Data is managed in blocks and is immutable. On the other hand, more complex data structure needs to be managed (along with indexes) for point access and updates. Therefore, another challenge is merging these two disparate storage systems with little impedance to the application. This challenge is exacerbated by current limitations of Spark SQL—mostly related to mutability characteristics and conformance to SQL.
 
 Finally, Spark’s strong and growing community has zero tolerance for incompatible forks. This means that no changes can be made to Spark’s execution model or its semantics for existing APIs. In other words, our changes have to be an extension.

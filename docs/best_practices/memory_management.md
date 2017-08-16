@@ -11,7 +11,7 @@ Given this above description, it is clear that it is not straightforward to comp
 
 ## Estimating Memory Size for Execution
 Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (e.g. a UDF allocating memory), etc. Most of these allocations will automatically overflow to disk. But, it is strongly recommend that you allocate at least 5GB per data server/lead node for production systems that runs large scale analytic queries. 
-(TODO: get more specific ??)
+<!-- (TODO: get more specific ??)-->
 
 SnappyData uses JVM heap memory for most of its allocations. Only column tables can use off-heap storage (if configured). We suggest going through the following options and configuring them appropriately based on the sizing estimates from above. 
 

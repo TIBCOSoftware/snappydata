@@ -1,8 +1,8 @@
 # Overview
 SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). 
 All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.</br>
-It is therefore recommend that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
-and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). You can also store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](#markdown_link_row_and_column_tables).
+It is therefore recommended that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
+and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). You can also store and manage arbitrary RDDs (or even Spark DataSets) through the implicit or explicit transformation to a DataFrame. While the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](#markdown_link_row_and_column_tables).
 
 In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
 Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but it can also be reliably managed on disk.
@@ -10,10 +10,10 @@ Data in tables is primarily managed in-memory with one or more consistent copies
 <a id="snappysession"></a>
 ## SnappySession and SnappyStreamingContext
 
-[Spark Context](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster, and can be used to create RDDs, accumulators and broadcast variables on that cluster.
+[Spark Context](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster and can be used to create RDDs, accumulators and broadcast variables on that cluster.
 
 [Spark Session](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/sql/SparkSession.html) is the entry point to programming Spark with the Dataset and DataFrame API.
-In environments that this has been created upfront (e.g. REPL, notebooks), use the builder to get an existing session:
+In environments that this has been created up front (e.g. REPL, notebooks), use the builder to get an existing session:
 
 ```
 SparkSession.builder().getOrCreate()
@@ -33,7 +33,7 @@ SparkSession.builder()
 Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
 [Streaming Context](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
-Also SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [SnappyData Spark Affinity modes](deployment.md).
+Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [SnappyData Spark Affinity modes](deployment.md).
 
 If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
 
@@ -118,7 +118,7 @@ A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applic
 
 The implementation of the _runSnappyJob_ function from SnappySQLJob uses a SnappySession to interact with the SnappyData store to process and store tables.
 The implementation of _runSnappyJob_ from SnappyStreamingJob uses a SnappyStreamingContext to create streams and manage the streaming context.
-The jobs are submitted to the lead node of SnappyData over REST API using a _spark-submit_ like utility.
+The jobs are submitted to the lead node of SnappyData over REST API using a utility like _spark-submit_ .
 
 <a id="snappydata-jobs"></a>
 ## SnappyData Jobs
@@ -175,10 +175,10 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 	The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
 * `runSnappyJob` contains the implementation of the Job.
-The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
+The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from configuration management that comes with the creation of a Spark job and allows the Job Server to manage and reuse contexts.
 
 * `isValidJob` allows for an initial validation of the context and any provided configuration.
-    If the context and configuration can run the job, returning `spark.jobserver.SnappyJobValid` allows the job to execute, otherwise returning `spark.jobserver.SnappyJobInvalid<reason>` prevents the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an "HTTP/1.1 400 Bad Request" status code. Validate helps you prevent running jobs that eventually fail due to a  missing or wrong configuration, and saves both time and resources.
+    If the context and configuration can run the job, returning `spark.jobserver.SnappyJobValid` allows the job to execute, otherwise returning `spark.jobserver.SnappyJobInvalid<reason>` prevents the job from running and provides means to convey the reason for failure. In this case, the call immediately returns an "HTTP/1.1 400 Bad Request" status code. Validate helps you prevent running jobs that eventually fail due to a  missing or wrong configuration, and saves both time and resources.
 
 See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for Spark and Spark streaming jobs. 
 
@@ -310,7 +310,7 @@ Related jobs may require some common libraries. These libraries can be made avai
 ```bash
 SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
 ```
-* JAR_FILE_PATH  is the full path for the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using a locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
+* JAR_FILE_PATH  is the full path to the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using a locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers
 
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
 
@@ -330,7 +330,7 @@ Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file
 ```bash
 SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
 ```
-* JAR_FILE_PATH  is full path for the JAR file. This path must be accessible to server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers.
+* JAR_FILE_PATH  is the full path to the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using the locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers.
 
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
 
@@ -360,7 +360,7 @@ CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 
 ## Using SnappyData Shell
 The SnappyData SQL Shell (_snappy-sql_) provides a simple command line interface to the SnappyData cluster.
-It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. 
+It allows you to run interactive queries on the row and column stores, run administrative operations and run status commands on the cluster. 
 Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 ```
 // from the SnappyData base directory  
@@ -393,9 +393,9 @@ The complete list of commands available through _snappy_shell_ can be found [her
 ## Using the Spark Shell and spark-submit
 
 SnappyData, out-of-the-box, colocates Spark executors and the SnappyData store for efficient data intensive computations. 
-You however may need to isolate the computational cluster for other reasons. For instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly.
+You, however, may need to isolate the computational cluster for other reasons. For instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly.
 
-To support such cases it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store the `spark.snappydata.connection` property should be provided while starting the Spark-shell. 
+To support such cases it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store the `spark.snappydata.connection` property should be provided while starting the Spark-shell. 
 
 To run all SnappyData functionalities you need to create a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
 
@@ -427,7 +427,7 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 ```
 
 ## Using JDBC with SnappyData
-SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information, and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. 
+SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. 
 
 ```java
 
@@ -451,7 +451,7 @@ To explicitly start a DRDA server in SnappyData, you can use the `-drda-server-a
 
 Refer to the following documents for information on support provided by SnappyData:</br>
 
- * [**About SnappyData Thrift**]( https://github.com/SnappyDataInc/snappydata/blob/branch-0.9/cluster/README-thrift.md): Contains detailed information about the feature and it's capabilities.
+ * [**About SnappyData Thrift**]( https://github.com/SnappyDataInc/snappydata/blob/branch-0.9/cluster/README-thrift.md): Contains detailed information about the feature and its capabilities.
 
  * [**The Thrift Interface Definition Language (IDL)**](https://github.com/SnappyDataInc/snappy-store/blob/branch-1.5.4/gemfirexd/shared/src/main/java/io/snappydata/thrift/common/snappydata.thrift): This is a Thrift interface definition file for the SnappyData service.
 
@@ -554,9 +554,8 @@ print("contents of column table are:")
 results1.select("col1", "col2", "col3"). show()
 ```
 
-
 The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster is expanded) a bucket is the smallest unit that can be moved around. 
-For more details about the properties ('props1' map in above example) and `createTable` API refer to documentation for [row and column tables](#tables-in-snappydata).
+For more details about the properties ('props1' map in above example) and `createTable` API refer to the documentation for [row and column tables](#tables-in-snappydata).
 
 ### Create Row Tables using API, Update the Contents of Row Table
 
@@ -706,7 +705,7 @@ snsc.sql("select count(*) from streamingExample").show()
 
 ## Tables in SnappyData
 ### Row and Column Tables
-Column tables organize and manage data in memory in compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
+Column tables organize and manage data in memory in a compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
 ![Column Table](Images/column_table.png)
 
@@ -794,16 +793,16 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * COLOCATE_WITH: The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
 
-   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
+   * PARTITION_BY: Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 113 in cluster mode for column and row tables, and 11 in local mode for the column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
    * BUCKETS: The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
 
    * REDUNDANCY: Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
 
-   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause. 
+   * EVICTION_BY: Use the EVICTION_BY clause to evict rows automatically from the in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause. 
 
 	!!! Note:
- 		For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables no such defaults are set. Row tables allow all the eviction settings.
+ 		For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.
 
    * OVERFLOW: If it is set to **false** the evicted rows are destroyed. If set to **true** it overflows to a local SnappyStore disk store.
 	When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
@@ -821,19 +820,20 @@ The below mentioned DDL extensions are required to configure a table based on us
 
    * COLUMN_BATCH_SIZE: The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
 
-   * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br> 
+   * COLUMN_MAX_DELTA_ROWS: The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by `COLUMN_BATCH_SIZE` (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br> 
 	 
     !!! Note: 
         The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): 
     	
 		* `snappydata.column.batchSize` - explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property. 
 
-    	* `snappydata.column.maxDeltaRows` - maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. 
+    	* `snappydata.column.maxDeltaRows` - the maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit `COLUMN_MAX_DELTA_ROWS` specification, then this is inherited for that table property. 
 
    Refer to the [SQL Reference Guide](sql_reference.md) for information on the extensions.
 
 
 #### Restrictions on Column Tables
+
 * Column tables cannot specify any primary key, unique key constraints
 
 * Index on column table is not supported
@@ -841,6 +841,8 @@ The below mentioned DDL extensions are required to configure a table based on us
 * Option EXPIRE is not applicable for column tables
 
 * Option EVICTION_BY with value LRUCOUNT is not applicable for column tables
+
+* READ_COMMITTED and REPEATABLE_READ isolation levels are not supported for column tables.
 
 
 #### DML Operations on Tables
@@ -853,8 +855,9 @@ The below mentioned DDL extensions are required to configure a table based on us
     DELETE FROM tablename1 [WHERE expression]
     TRUNCATE TABLE tablename1;
 ```
+
 #### API Extensions Provided in SnappyContext
-Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
+Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
 ```
     //  Applicable for both row and column tables
     def insert(tableName: String, rows: Row*): Int .
@@ -965,13 +968,13 @@ SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
 
 Generally, the column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.
 
-In SnappyData, the column table consists of two components, delta row buffer and column store. SnappyData tries to support individual insert of single row, as it is stored in a delta row buffer which is write optimized and highly available.
+In SnappyData, the column table consists of two components, delta row buffer and column store. SnappyData tries to support individual insert of a single row, as it is stored in a delta row buffer which is write optimized and highly available.
 
 Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
 Any query on column table also takes into account the row cached buffer. By doing this, it ensures that the query does not miss any data.
 
 #### Catalog in SnappyStore
-Persistent Hive catalog for all metadata storage is used. All table, schema definition are stored here in a reliable manner. The product intends to quickly recover from driver failover, using GemFireXD itself to store meta information. This gives the ability to query underlying GemFireXD to reconstruct the meta store in case of a driver failover.
+Persistent Hive catalog for all meta data storage is used. All table, schema definition are stored here in a reliable manner. The product intends to quickly recover from driver failover, using GemFireXD itself to store meta information. This gives the ability to query underlying GemFireXD to reconstruct the meta store in case of a driver failover.
 
 <!--<mark>There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. </mark>-->
 
@@ -979,8 +982,31 @@ Persistent Hive catalog for all metadata storage is used. All table, schema defi
 
 Refer to the [SQL Reference Guide](sql_reference.md) for information on the syntax.
 
+### Using Distributed Transaction for Row Tables
+Transactions specify an isolation level that defines the degree to which one transaction must be isolated from resource or data modifications made by other transactions. The transaction isolation levels define the type of locks acquired on read operations. Only one of the isolation level options can be set at a time, and it remains set for that connection until it is explicitly changed.
 
-## Stream processing using SQL
+The following isolation levels are supported for row tables:
+
+| Isolation level | Description |
+|--------|--------|
+|NONE|Default isolation level. The Database Engine uses shared locks to prevent other transactions from modifying rows while the current transaction is running a read operation. |
+|READ_COMMITTED|SnappyData ensures that ongoing transactional as well as non-transactional (isolation-level NONE) operations never read uncommitted (dirty) data. SnappyData accomplishes this by maintaining transactional changes in a separate transaction state that is applied to the actual data-store for the table only at commit time. SnappyData detects only Write-Write conflicts while in READ_COMMITTED isolation level. </br>In READ COMMITTED, a read view is created at the start of each statement and lasts only as long as each statement execution.|
+|REPEATABLE_READ|In this isolation level, a lock-based concurrency control DBMS implementation keeps read and write locks (acquired on selected data) until the end of the transaction. In REPEATABLE READ every lock acquired during a transaction is held for the duration of the transaction.|
+
+For more information, see, [SET ISOLATION](./reference/sql_reference/set-isolation.md)
+!!!Note: 
+	* Transactions are not supported on column tables
+
+### Using Snapshot Isolation for Column Tables
+
+Transactions are not supported on column tables. Instead, we provide snapshot isolation by default.  Snapshot ensures that all queries see the same version (snapshot), of the database, based on the state of the database at the moment in time when the query is executed. The snapshot is taken per statement for each partition, which means, the snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
+<!--Currently, only single statement snapshot isolation (that is, [autocommit](./reference/interactive_commands/autocommit.md) must be set to true) is supported.-->  
+
+!!! Note:
+	If READ_COMMITTED or REPEATABLE_READ isolation level is set and the query is executed on a column table, an error UnSupportedOperationException is reported.
+
+
+## Stream Processing using SQL
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
 Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
@@ -1002,7 +1028,7 @@ Internally, it works as follows. Spark Streaming receives live input data stream
 Additional details on the Spark Streaming concepts and programming is covered [here](http://spark.apache.org/docs/latest/streaming-programming-guide.html).
 
 ### SnappyData Streaming Extensions over Spark
-The following enhancements over Spark Streaming is provided: 
+The following enhancements over Spark Streaming are provided: 
 
 1. __Manage Streams declaratively__: Similar to SQL Tables, Streams can be defined declaratively from any SQL client and managed as Tables in the persistent system catalog of SnappyStore. The declarative language follows the SQL language and provides access to any of the Spark Streaming streaming adapters such as Kafka or file input streams. Raw tuples arriving can be transformed into a proper structure through pluggable transformers providing the desired flexibility for custom filtering or type conversions. 
 
@@ -1013,7 +1039,6 @@ The following enhancements over Spark Streaming is provided:
 4. __OLAP optimizations__: By integrating and colocating stream processing with the hybrid in-memory storage engine, the product leverages the optimizer and column store for expensive scans and aggregations, while providing fast key-based operations with RowStore.
 
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
-
 
 ### Working with Stream Tables
 SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
@@ -1126,7 +1151,7 @@ Users can define a function and completely customize how SnappyData evaluates da
 The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
 
 !!! Note: 
-	Support for UDFs is available in SnappyData version 0.8 and future releases.
+	Support for UDF is available from SnappyData version 0.8 and future versions.
 
 ### Create User Defined Function
 
@@ -1135,7 +1160,7 @@ These interfaces can be included in your client application by adding **snappy-s
 
 #### **Define a UDF class**
 
-The number in the interfaces (UDF1 to UDF22) signifies the number of parameters an UDF can take.
+The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.
 
 !!! Note: 
 	Currently, any UDF which can take more than 22 parameters is not supported.
@@ -1154,7 +1179,7 @@ class StringLengthUDF extends UDF1[String, Int] {
 !!! Note:
 	Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.
     
-After defining an UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
+After defining a UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
 
 ```
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'
@@ -1216,3 +1241,8 @@ DROP FUNCTION IF EXISTS app.strnglen
 ### Create User Defined Aggregate Functions
 
 SnappyData uses same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
+
+## Known Limitation
+In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or SnappySession (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. </br> 
+As a workaround, you can qualify the schemaname with tablename. 
+For example, to select all rows from table 't1' in schema 'schema1', use query- `select * from schema1.t1`
