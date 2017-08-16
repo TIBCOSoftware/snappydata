@@ -54,7 +54,6 @@ class SnappyBasicAuthenticator extends BasicAuthenticator with Logging {
       }
       null
     } else {
-      val roles = Array[String]("user")
       val principal = new UsernamePrincipal(username)
       val response = request match {
         case r: Request => r.getResponse
