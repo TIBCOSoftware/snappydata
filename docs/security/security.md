@@ -40,9 +40,9 @@ localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.aut
           -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com \
           -J-Dgemfirexd.auth-ldap-search-pw=user123
 ```
-<!--
+
 !!! Note: 
-	You must specify this property as a Java system property. For example, when you start a new SnappyData server with `snappy-shell`, use the command-line option `-J-Dsnappydata.auth-ldap-server=ldaps://server:port/` to specify the property.-->
+	You must specify `.auth-ldap-` properties as Java system properties.
 
 ##  Authorization
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.
@@ -53,7 +53,7 @@ The [GRANT](../reference/sql_reference/grant.md) statement is used to grant spec
 
 !!!Note:
 
-	* A user requiring [UPDATE](../reference/sql_reference/update.md) and [DELETE](../reference/sql_reference/delete.md) permissions may also require explicit [SELECT](../reference/sql_reference/select.md) permission on a table.
+	* A user requiring [UPDATE](../reference/sql_reference/update.md) or [DELETE](../reference/sql_reference/delete.md) permissions may also require explicit [SELECT](../reference/sql_reference/select.md) permission on a table
 	
 	* Only the administrator or users with the required permissions can execute built-in procedures (like INSTALL-JAR)
 
@@ -155,7 +155,9 @@ val conf = new SparkConf()
 val sc = SparkContext.getOrCreate(conf)
 val snc = SnappyContext(sc)
 ```
-In the below example, to connect to the cluster via Spark shell use the `--conf` option to specify the properties. 
+
+The below example demonstrates how to connect to the cluster via Spark shell using the `--conf` option to specify the properties. 
+
 ```
 $ bin/spark-shell  
     --master local[*] 
@@ -171,23 +173,20 @@ When submitting Snappy jobs, using `snappy-job.sh`, provide user credentials thr
 For example: 
 
 ```
-bash$ cat job.config 
--u user:password
-```
-
-**Example**: 
-
-```
+$ cat /home/user1/snappy/job.config 
+-u user1:password
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
-    --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
-    --passfile /home/user1/snappy/job.config .txt
+    --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar \
+    --passfile /home/user1/snappy/job.config
 ```
 !!! Note:
 
 	* Only trusted users should be allowed to submit jobs, as an untrusted user may be able to do harm through jobs by invoking internal APIs which can bypass the authorization checks. 
 	
 	* Currently, SparkJobServer UI may not be accessible when security is enabled, but you can use the `snappy-job.sh` script to access any information required using commands like `status`, `listcontexts`, etc. </br> Execute `./bin/snappy-job.sh` for more details.
+
+	* The configuration file should be in a secure location with read access only to an authorized user.
 
