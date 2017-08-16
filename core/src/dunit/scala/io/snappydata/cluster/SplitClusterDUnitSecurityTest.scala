@@ -229,6 +229,39 @@ class SplitClusterDUnitSecurityTest(s: String)
     assert(rs2.getInt(1) == 5)
   }
 
+  def testPreparedStatements(): Unit = {
+    def executePrepStmt(sql: String): Unit = {
+      val ps = user1Conn.prepareStatement(sql)
+      ps.setInt(1, 1000)
+      ps.execute
+      val rs = ps.getResultSet
+      if (rs != null) {
+        while (rs.next()) {}
+        rs.close()
+      }
+      ps.close()
+    }
+
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    val stmt = user1Conn.createStatement()
+
+    SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
+      Map("COLUMN_BATCH_SIZE" -> "50"), false)
+    SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
+      Map.empty, false)
+
+    executePrepStmt(s"insert into $embeddedColTab1 values (?, 'ten thousand', 1000.23)")
+    executePrepStmt(s"insert into $embeddedRowTab1 values (?, 'ten thousand', 1000.23)")
+    user1Conn.close()
+    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+
+    executePrepStmt(s"select * from $embeddedColTab1 where col1 = ? limit 20")
+    executePrepStmt(s"select * from $embeddedRowTab1 where col1 = ? limit 20")
+  }
+
   /**
     * Create row and column tables in embedded mode. Perform select, insert, update, delete and
     * drop from smart side and vice versa.
