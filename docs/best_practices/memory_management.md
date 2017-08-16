@@ -46,7 +46,7 @@ You can set the following heap memory configuration parameters:
 |critical-heap-percentage|90%|(TODO: I don't understand this descrip- Jags) The heap percent beyond which system considers itself in a critical state . This is to safeguard the system from crashing by OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries.  Critical percentage of 90 means, beyond 90% of heap usage jobs and queries will get cancelled.|
 |eviction-heap-percentage|81|This percent determined when in memory table data would be evicted to disk. Beyond this Table rows are evicted in LRU fashion.|
 
-SnappyData heap memory regions are divided into two parts called pools. Sizes of each pool are determined by the config parameters provided at boot time to each server (TODO: I don't understand this descrip .. thought each will elastically expand into the other- Jags).
+SnappyData heap memory regions are divided into two parts called pools. Sizes of each pool are determined by the config parameters provided at boot time to each server. These two regions are only tentative demarcation and can grow into each other based on some conditions. (TODO: I don't understand this descrip .. thought each will elastically expand into the other- Jags).
 The two pools are as below:
 
 ### Heap Storage Pool:
