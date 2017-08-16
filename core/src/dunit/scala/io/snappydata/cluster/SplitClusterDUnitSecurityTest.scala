@@ -246,7 +246,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
     user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-    val stmt = user1Conn.createStatement()
+    var stmt = user1Conn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
       Map("COLUMN_BATCH_SIZE" -> "50"), false)
@@ -260,6 +260,9 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     executePrepStmt(s"select * from $embeddedColTab1 where col1 = ? limit 20")
     executePrepStmt(s"select * from $embeddedRowTab1 where col1 = ? limit 20")
+    stmt = user1Conn.createStatement()
+    stmt.execute(s"drop table $embeddedColTab1")
+    stmt.execute(s"drop table $embeddedRowTab1")
   }
 
   /**
