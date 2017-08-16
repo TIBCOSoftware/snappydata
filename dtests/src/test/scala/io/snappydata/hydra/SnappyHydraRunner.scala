@@ -65,11 +65,15 @@ class SnappyHydraRunner extends SnappyTestRunner {
     val c14 = "grep -v java.lang.reflect.InvocationTargetException"
     val c15 = "grep -v org.apache.spark.storage.ShuffleBlockFetcherIterator." +
         "throwFetchFailedException"
-    val c16 = "grep -v java.lang.IllegalStateException"
+    val c16 = "grep \'status:[:space]stopping\'[:space]-e[:space]\'java.lang" +
+        ".IllegalStateException\'"
     val c17 = "grep -v com.gemstone.gemfire.distributed.LockServiceDestroyedException"
-    val c18 = "grep -v com.gemstone.gemfire.GemFireIOException"
+    val c18 = "grep GemFireIOException:[:space]Current[:space]operations[:space]did[:space]not" +
+        "[:space]distribute[:space]within"
+    val c19 = "grep SparkException:[:space]External[:space]scheduler[:space]cannot[:space]be" +
+        "[:space]instantiated"
     val command1 = c1 #| c2 #| c3 #| c4 #| c5 #| c6 #| c7 #| c8 #| c12 #| c13 #| c14 #| c15 #|
-        c16 #| c17 #| c18
+        c16 #| c17 #| c18 #| c19
     // TODO : handle case where the logDir path is incorrect or doesn't exists
     try {
       val output1: String = command1.!!
