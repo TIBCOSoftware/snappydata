@@ -33,6 +33,7 @@ import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.SparkContext
+import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.collection.Utils
@@ -53,10 +54,17 @@ import org.apache.spark.util.{Utils => SparkUtils}
  */
 object ExternalStoreUtils {
 
-  final val DEFAULT_TABLE_BUCKETS = "113"
-  final val DEFAULT_SAMPLE_TABLE_BUCKETS = "79"
-  final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "19"
-  final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "11"
+  private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) =
+    Option(SnappyContext.globalSparkContext).map(_.schedulerBackend) match {
+      case Some(local: LocalSchedulerBackend) =>
+        // apply a max limit of 64 in local mode since there is not much
+        // scaling to be had beyond that on most processors
+        val result = math.min(64, local.totalCores << 1).toString
+        // use same number of partitions for sample table in local mode
+        (result, result)
+      case _ => ("128", "64")
+    }
+
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
@@ -286,7 +294,7 @@ object ExternalStoreUtils {
       dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
       executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
     session match {
-      case Some(s) => getConnProps(session.get, url, driver, dialect, poolProps, connProps,
+      case Some(_) => getConnProps(session.get, url, driver, dialect, poolProps, connProps,
         executorConnProps, hikariCP)
       case None => ConnectionProperties(url, driver, dialect, poolProps, connProps,
         executorConnProps, hikariCP)
@@ -295,7 +303,7 @@ object ExternalStoreUtils {
 
   def getConnProps(session: SparkSession, url: String, driver: String, dialect: JdbcDialect,
       poolProps: Map[String, String], connProps: Properties, executorConnProps: Properties,
-      hikariCP: Boolean):ConnectionProperties = {
+      hikariCP: Boolean): ConnectionProperties = {
     val (user, password) = getCredentials(session)
 
     if (!user.isEmpty && !password.isEmpty) {
@@ -483,18 +491,7 @@ object ExternalStoreUtils {
       forSampleTable: Boolean = false): Int = {
 
     parameters.getOrElse(BUCKETS, {
-      val partitions = sparkContext match {
-        case Some(sc) =>
-          SnappyContext.getClusterMode(sc) match {
-            case LocalMode(_, _) =>
-              if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
-              else DEFAULT_TABLE_BUCKETS_LOCAL_MODE
-            case _ =>
-              if (forSampleTable) DEFAULT_SAMPLE_TABLE_BUCKETS
-              else DEFAULT_TABLE_BUCKETS
-          }
-        case None => DEFAULT_TABLE_BUCKETS
-      }
+      val partitions = if (forSampleTable) defaultSampleTableBuckets else defaultTableBuckets
       if (forManagedTable) {
         if (forColumnTable) {
           // column tables are always partitioned

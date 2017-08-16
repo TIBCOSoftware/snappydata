@@ -255,11 +255,11 @@ case class SnappyHashAggregateExec(
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
-    if (groupingExpressions.isEmpty) ""
+    if (groupingExpressions.isEmpty || !canConsume(plan)) ""
     else {
       // create an empty method to populate the dictionary array
       // which will be actually filled with code in consume if the dictionary
-      // optimization is possible using the incoming ExprCodeEx
+      // optimization is possible using the incoming DictionaryCode
       val className = keyBufferAccessor.getClassName
       // this array will be used at batch level for grouping if possible
       dictionaryArrayTerm = ctx.freshName("dictionaryArray")

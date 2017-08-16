@@ -368,7 +368,7 @@ object StoreUtils {
       if (v.toBoolean) sb.append(GEM_REPLICATE).append(' ')
       else if (!parameters.contains(BUCKETS)) {
         sb.append(GEM_BUCKETS).append(' ').append(
-          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' ')
+          ExternalStoreUtils.defaultTableBuckets).append(' ')
       })
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))

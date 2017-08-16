@@ -33,6 +33,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -1140,6 +1141,42 @@ class ColumnTableTest
     assert(rows(0) =="{\"NAME\":\"Yin\",\"CITY\":\"Columbus\",\"STATE\":\"Ohio\",\"DISTRICT\":\"Pune\"}")
     assert(rows(1) == "{\"NAME\":\"Michael\",\"STATE\":\"California\",\"LANE\":\"15\"}")
 
+  }
+
+  test("same generated code for multiple sessions (check statsPredicate ordering)") {
+    var session = new SnappySession(snc.sparkContext)
+    session.sql("drop table if exists t1")
+    session.sql("create table t1 (c1 varchar(100), c2 varchar(100), c3 int, " +
+        "c4 double, c5 varchar(100)) using column")
+
+    session.sql("select * from t1 where c5 = 'one' and c3 = 10 and c2 = 'one' and c1 = 'one'")
+        .collect()
+
+    session = new SnappySession(snc.sparkContext)
+
+    // expect no increase in compiled code cache after this point
+    val cacheField = CodeGenerator.getClass.getDeclaredFields.find(_.getName.endsWith("cache")).get
+    cacheField.setAccessible(true)
+    val cache = cacheField.get(CodeGenerator)
+    val sizeMethod = cache.getClass.getMethod("size")
+    sizeMethod.setAccessible(true)
+
+    def cacheSize(): Long = sizeMethod.invoke(cache).asInstanceOf[Long]
+
+    val initCacheSize = cacheSize()
+
+    session.sql("select * from t1 where c5 = 'one' and c3 = 10 and c2 = 'one' and c1 = 'one'")
+        .collect()
+
+    assert(initCacheSize === cacheSize())
+
+    session = new SnappySession(snc.sparkContext)
+    session.sql("select * from t1 where c5 = 'one' and c3 = 10 and c2 = 'one' and c1 = 'one'")
+        .collect()
+
+    assert(initCacheSize === cacheSize())
+
+    session.sql("drop table t1")
   }
 
   test("Test for SNAP-1878 create external table using api") {
