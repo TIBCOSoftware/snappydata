@@ -20,6 +20,7 @@ package io.snappydata
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.control.Breaks._
 
 import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
@@ -27,8 +28,6 @@ import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionS
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
-
-import scala.util.control.Breaks._
 
 trait TableStatsProviderService extends Logging {
 
@@ -61,7 +60,7 @@ trait TableStatsProviderService extends Logging {
             // update membersInfo
             fillAggregatedMemberStatsOnDemand()
           }
-        });
+        })
         Option(th)
       }
     }
@@ -129,16 +128,16 @@ trait TableStatsProviderService extends Logging {
     var infoToBeReturned: mutable.Map[String, mutable.Map[String, Any]] =
       TrieMap.empty[String, mutable.Map[String, Any]]
     val prevMembersInfo = membersInfo.synchronized{membersInfo}
-    val waitTime: Int = 500;
+    val waitTime: Int = 500
 
     // get member stats updater thread
-    val msUpdater = getMemberStatsUpdater;
+    val msUpdater = getMemberStatsUpdater
     if (!msUpdater.isAlive) {
       // start updater thread to update members stats
-      msUpdater.start();
+      msUpdater.start()
     }
 
-    val endTimeMillis = System.currentTimeMillis() + 5000;
+    val endTimeMillis = System.currentTimeMillis() + 5000
     if (msUpdater.isAlive) {
       breakable {
         while (msUpdater.isAlive) {
@@ -149,7 +148,7 @@ trait TableStatsProviderService extends Logging {
           }
           try {
             // Wait
-            logInfo("Obtaining updated Members Statistics in progress.." +
+            logDebug("Obtaining updated Members Statistics in progress.." +
                 "Waiting for " + waitTime + " ms")
             Thread.sleep(waitTime)
           } catch {

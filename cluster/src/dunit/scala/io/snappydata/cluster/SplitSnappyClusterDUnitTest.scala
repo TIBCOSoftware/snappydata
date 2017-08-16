@@ -17,14 +17,12 @@
 package io.snappydata.cluster
 
 import java.net.InetAddress
-import java.sql.SQLException
 import java.util.Properties
 
 import scala.language.postfixOps
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}

@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
+import org.apache.spark.sql.execution.columnar.encoding.StringDictionary
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.types._
@@ -689,15 +690,17 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       keyExpressions, getExpressionVars(keyExpressions, input.map(_.copy()),
         output), ctx, session)
     dictionaryKey match {
-      case Some(DictionaryCode(_, _, dictionary, _, dictionaryLen)) =>
+      case Some(d@DictionaryCode(dictionary, _, _)) =>
         // initialize or reuse the array at batch level for join
         // null key will be placed at the last index of dictionary
         // and dictionary index will be initialized to that by ColumnTableScan
+        ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
         ctx.addNewFunction(dictionaryArrayInit,
           s"""
              |public $className[] $dictionaryArrayInit() {
-             |  if ($dictionary != null) {
-             |    return new $className[$dictionaryLen];
+             |  ${d.evaluateDictionaryCode()}
+             |  if (${dictionary.value} != null) {
+             |    return new $className[${dictionary.value}.size()];
              |  } else {
              |    return null;
              |  }
@@ -728,7 +731,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         val keyVar = keyVars.head
         s"""
           $className $objVar;
-          ${dictKey.evaluateDictionaryCode(keyVar)}
           ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
             keyExpressions, keyVar, dictKey, dictArrayVar, objVar, valueInit,
             continueOnNull = false, this)} else {
@@ -866,7 +868,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       case _ => false
     }
     // optimized path for single key string column if dictionary is present
-    var dictionaryCode = ""
     val lookup = mapLookup(entryVar, hashVar(0), streamKeys, streamKeyVars,
       valueInit = null)
     val preEvalKeys = if (initFilterCode.isEmpty) ""
@@ -876,8 +877,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     var mapLookupCode = dictionaryKey match {
       case Some(dictKey) =>
         val keyVar = streamKeyVars.head
-        // insert dictionary index code if not already done
-        dictionaryCode = dictKey.evaluateDictionaryCode(keyVar)
         // don't call evaluateVariables for streamKeyVars for the else
         // part below because it is in else block and should be re-evaluated
         // if required outside the block
@@ -972,7 +971,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     s"""
       $className $entryVar = null;
       $hashInit
-      $dictionaryCode
       $mapLookupCode
       $entryConsume
     """
