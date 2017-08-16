@@ -21,6 +21,10 @@ The following topics are covered in this section:
 
 * [How to Start a SnappyData Cluster](#howto-startCluster)
 
+* [How to Check the Status of a SnappyData Cluster](#howto-startCluster)
+
+* [How to Stop a SnappyData Cluster](#howto-startCluster)
+
 * [How to Run Spark Job inside the Cluster](#howto-job)
 
 * [How to Access SnappyData Store from existing Spark Installation using Smart Connector](#howto-splitmode)
@@ -87,31 +91,6 @@ SnappyData Leader pid: 9699 status: running
   Distributed system now has 3 members.
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
-
-**Check Status**: You can check the status of a running cluster using the following command:
-
-```bash
-$ sbin/snappy-status-all.sh
-SnappyData Locator pid: 9368 status: running
-SnappyData Server pid: 9519 status: running
-  Distributed system now has 2 members.
-  Other members: localhost(9368:locator)<v0>:16944
-SnappyData Leader pid: 9699 status: running
-  Distributed system now has 3 members.
-  Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
-```
-
-You can check the SnappyData UI by opening `http://<leadHostname>:5050` in your browser, where `<leadHostname>` is the host name of your lead node. Use [Snappy SQL shell](howto.md#howto-snappyShell) to connect to the cluster and perform various SQL operations.
-
-**Shutdown Cluster**: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command:
-
-```
-$ sbin/snappy-stop-all.sh
-The SnappyData Leader has stopped.
-The SnappyData Server has stopped.
-The SnappyData Locator has stopped.
-```
-
 ### Start SnappyData Cluster on Multiple Hosts
 
 To start the cluster on multiple hosts:
@@ -126,6 +105,37 @@ To start the cluster on multiple hosts:
 !!! Note: 
 	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](install.md#install-on-premise) and [cluster configuration](configuring_cluster/configuring_cluster.md).
 
+<a id="howto-statuscluster"></a>
+## How to Check the Status of a SnappyData Cluster
+You can check the status of a running cluster using the following command:
+
+```bash
+$ sbin/snappy-status-all.sh
+SnappyData Locator pid: 9368 status: running
+SnappyData Server pid: 9519 status: running
+  Distributed system now has 2 members.
+  Other members: localhost(9368:locator)<v0>:16944
+SnappyData Leader pid: 9699 status: running
+  Distributed system now has 3 members.
+  Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
+```
+
+You can check the SnappyData UI by opening `http://<leadHostname>:5050` in your browser, where `<leadHostname>` is the host name of your lead node. Use [Snappy SQL shell](howto.md#howto-snappyShell) to connect to the cluster and perform various SQL operations.
+
+<a id="howto-stopcluster"></a>
+## How to Shut Down a SnappyData Cluster
+You can shut down the cluster using the `sbin/snappy-stop-all.sh` command:
+
+```
+$ sbin/snappy-stop-all.sh
+The SnappyData Leader has stopped.
+The SnappyData Server has stopped.
+The SnappyData Locator has stopped.
+```
+!!! Note:
+	Ensure that all write operations on column table have finished execution when you shut down a cluster, else, it can lead to the possible occurrence of a partial write.
+    
+    
 <a id="howto-job"></a>
 ## How to Run Spark Code inside the Cluster
 A Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.

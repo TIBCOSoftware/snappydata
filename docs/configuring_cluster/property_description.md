@@ -42,7 +42,7 @@ Set in the *conf/leads* file
 ```
 $ cat conf/leads
 # This goes to the default directory 
-node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=108080
 ```
 
 | Property | Description|
@@ -67,7 +67,7 @@ Set in the *conf/leads* file
 ```
 $ cat conf/leads
 # This goes to the default directory 
-node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 s-snappydata.column.batchSize=108080 -spark.sql.aqp.error=0.5
+node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=108080 -spark.sql.aqp.error=0.5
 ```
 This sets the property for the snappy SQL shell's session.
 
