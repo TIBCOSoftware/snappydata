@@ -82,7 +82,7 @@ private[sql] final case class ColumnTableScan(
 
   override val nodeName: String = "ColumnTableScan"
 
-  @transient private val MAX_CURSOR_DECLARATIONS = 30
+  @transient private val MAX_SCHEMA_LENGTH = 40
 
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
@@ -272,23 +272,6 @@ private[sql] final case class ColumnTableScan(
     functions.map(name => s"$name();").mkString("\n")
   }
 
-  def splitMoveNextMethods(ctx: CodegenContext, blocks: ArrayBuffer[String],
-      arg: String): String = {
-    val functions = blocks.map { body =>
-      val name = ctx.freshName("moveNext")
-      val code =
-        s"""
-           |private void $name(int $arg) {
-           |  $body
-           |}
-         """.stripMargin
-      ctx.addNewFunction(name, code)
-      name
-    }
-    functions.map(name => s"$name($arg);").mkString("\n")
-  }
-
-
   def convertExprToMethodCall(ctx: CodegenContext, expr: ExprCode,
       attr: Attribute, index: Int, batchOrdinal: String): ExprCode = {
     val retValName = ctx.freshName(s"col$index")
@@ -399,9 +382,9 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
 
-    ctx.addMutableState("java.nio.ByteBuffer", buffers, s"$buffers = null;")
-    ctx.addMutableState("int", numBatchRows, s"$numBatchRows = 0;")
-    ctx.addMutableState("int", batchIndex, s"$batchIndex = 0;")
+    ctx.addMutableState("java.nio.ByteBuffer", buffers, "")
+    ctx.addMutableState("int", numBatchRows, "")
+    ctx.addMutableState("int", batchIndex, "")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -409,9 +392,7 @@ private[sql] final case class ColumnTableScan(
       classOf[StructType].getName)
     val columnBufferInit = new StringBuilder
     val bufferInitCode = new StringBuilder
-    val moveNextMultCode = new StringBuilder
-    val cursorUpdateCode = new StringBuilder
-    val moveNextCode = new StringBuilder
+    val numNullsUpdateCode = new StringBuilder
     val reservoirRowFetch =
       s"""
          |$stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
@@ -455,9 +436,8 @@ private[sql] final case class ColumnTableScan(
 
     val initRowTableDecoders = new StringBuilder
     val bufferInitCodeBlocks = new ArrayBuffer[String]()
-    val moveNextCodeBlocks = new ArrayBuffer[String]()
 
-    val isWideSchema = output.length > MAX_CURSOR_DECLARATIONS
+    val isWideSchema = output.length > MAX_SCHEMA_LENGTH
     val batchConsumers = getBatchConsumers(parent)
     // "key" columns for update/delete with reserved names in ColumnDelta.mutableKeyNames
     var columnBatchIdTerm: String = null
@@ -468,16 +448,16 @@ private[sql] final case class ColumnTableScan(
     // this mapper is for the physical columns in the table
     val columnsInputMapper = (attr: Attribute, index: Int) => {
       val decoder = ctx.freshName("decoder")
-      val mutatedDecoder = s"mutated_$decoder"
-      val cursor = s"${decoder}Cursor"
+      val decoderLocal = s"${decoder}Local"
+      val mutatedDecoder = s"${decoder}Mutated"
+      val mutatedDecoderLocal = s"${decoder}MutatedLocal"
+      val numNullsVar = s"${decoder}NumNulls"
+      val numNullsLocal = s"${decoder}NumNullsLocal"
       val buffer = ctx.freshName("buffer")
-      val cursorVar = s"${buffer}Cursor"
-      val decoderVar = s"${buffer}Decoder"
-      val mutatedDecoderVar = s"${buffer}MutatedDecoder"
       val bufferVar = s"${buffer}Object"
       val initBufferFunction = s"${buffer}Init"
       if (isWideSchema) {
-        ctx.addMutableState("Object", bufferVar, s"$bufferVar = null;")
+        ctx.addMutableState("Object", bufferVar, "")
       }
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
@@ -485,7 +465,8 @@ private[sql] final case class ColumnTableScan(
       val incrementMutatedColumnCount = if (mutatedColumnsSeen eq null) ""
       else s"\n$mutatedColumnsSeen.${metricAdd("1")};"
 
-      ctx.addMutableState("java.nio.ByteBuffer", buffer, s"$buffer = null;")
+      ctx.addMutableState("java.nio.ByteBuffer", buffer, "")
+      ctx.addMutableState("int", numNullsVar, "")
 
       val rowDecoderCode =
         s"$decoder = new $rsDecoderClass((io.snappydata.ResultSetWithNull)$rs, $rsPosition);"
@@ -508,7 +489,6 @@ private[sql] final case class ColumnTableScan(
           """
         )
       }
-      ctx.addMutableState("long", cursor, s"$cursor = 0L;")
       ctx.addMutableState(mutatedDecoderClass, mutatedDecoder, "")
 
       ctx.addNewFunction(initBufferFunction,
@@ -521,10 +501,9 @@ private[sql] final case class ColumnTableScan(
            |  $mutatedDecoder = $colInput.getMutatedColumnDecoderIfRequired(
            |      $decoder, $planSchema.apply($index), $baseIndex, ${index != 0});
            |  if ($mutatedDecoder != null) {
-           |    $mutatedDecoder.initialize();$incrementMutatedColumnCount
+           |    $incrementMutatedColumnCount
            |  }
-           |  // initialize the decoder and store the starting cursor position
-           |  $cursor = $decoder.initialize($buffer, $planSchema.apply($index));
+           |  $numNullsVar = 0;
            |}
         """.stripMargin)
       columnBufferInit.append(s"$initBufferFunction();\n")
@@ -536,59 +515,39 @@ private[sql] final case class ColumnTableScan(
         }
 
         bufferInitCode.append(
-          s"""
-          final $decoderClass $decoderVar = $decoder;
-          final $mutatedDecoderClass $mutatedDecoderVar = $mutatedDecoder;
-          $bufferVar = ($buffer == null || $buffer.isDirect()) ? null
-              : $buffer.array();
-          long $cursorVar = $cursor;
-        """)
+          s"$bufferVar = ($buffer == null || $buffer.isDirect()) ? null : $buffer.array();\n")
       } else {
         bufferInitCode.append(
           s"""
-          final $decoderClass $decoderVar = $decoder;
-          final $mutatedDecoderClass $mutatedDecoderVar = $mutatedDecoder;
-          final Object $bufferVar = ($buffer == null || $buffer.isDirect()) ? null
-              : $buffer.array();
-          long $cursorVar = $cursor;
-        """)
+             |final $decoderClass $decoderLocal = $decoder;
+             |final $mutatedDecoderClass $mutatedDecoderLocal = $mutatedDecoder;
+             |final Object $bufferVar = ($buffer == null || $buffer.isDirect())
+             |    ? null : $buffer.array();
+             |int $numNullsLocal = $numNullsVar;
+          """.stripMargin)
+        numNullsUpdateCode.append(s"$numNullsVar = $numNullsLocal;\n")
       }
 
-      if (!isWideSchema) {
-        cursorUpdateCode.append(s"$cursor = $cursorVar;\n")
+      var unMutatedVar = ""
+      if (index == 0) {
+        unMutatedVar = ctx.freshName("unMutated")
+        val (decl, mdec) = if (isWideSchema) {
+          ctx.addMutableState("boolean", unMutatedVar, "")
+          ("", mutatedDecoder)
+        } else ("final boolean ", mutatedDecoderLocal)
+        deletedCheck =
+            s"""
+               |$decl$unMutatedVar = $mdec == null || $mdec.unMutated($batchOrdinal);
+               |if (!$unMutatedVar && $mdec.getCurrentDeltaBuffer() == null) continue;
+            """.stripMargin
       }
-
-      val isNullVar = if (attr.nullable) ctx.freshName("isNull") else "false"
-      val mutatedVar = ctx.freshName("mutated")
-
       if (!isWideSchema) {
-        if (index == 0) {
-          deletedCheck =
-              s"if ($mutatedVar && $mutatedDecoderVar.getCurrentDeltaBuffer() == null) continue;"
-        }
-        moveNextCode.append(genCodeColumnNext(ctx, decoderVar, mutatedDecoderVar, bufferVar,
-          cursorVar, batchOrdinal, attr.dataType, isNullVar, mutatedVar,
-          isWideSchema = false)).append('\n')
-        genCodeColumnBuffer(ctx, decoderVar, mutatedDecoderVar, decoder, mutatedDecoder,
-          bufferVar, cursorVar, attr, isNullVar, mutatedVar, weightVarName, wideTable = false)
+        genCodeColumnBuffer(ctx, decoderLocal, mutatedDecoderLocal, decoder, mutatedDecoder,
+          bufferVar, batchOrdinal, numNullsLocal, unMutatedVar, attr, weightVarName)
       } else {
-        if (index == 0) {
-          deletedCheck =
-              s"if ($mutatedVar && $mutatedDecoder.getCurrentDeltaBuffer() == null) continue;"
-        }
-        if (moveNextMultCode.length > 1024) {
-          moveNextCodeBlocks.append(moveNextMultCode.toString())
-          moveNextMultCode.clear()
-        }
-        val producedCode = genCodeColumnNext(ctx, decoder, mutatedDecoder, bufferVar,
-          cursor, batchOrdinal, attr.dataType, isNullVar, mutatedVar,
-          isWideSchema = true)
-        moveNextMultCode.append(producedCode)
-
         val ev = genCodeColumnBuffer(ctx, decoder, mutatedDecoder, decoder, mutatedDecoder,
-          bufferVar, cursor, attr, isNullVar, mutatedVar, weightVarName, wideTable = true)
-        val changedExpr = convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
-        changedExpr
+          bufferVar, batchOrdinal, numNullsVar, unMutatedVar, attr, weightVarName)
+        convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
     val columnsInput = output.zipWithIndex.map {
@@ -617,7 +576,6 @@ private[sql] final case class ColumnTableScan(
 
     if (isWideSchema) {
       bufferInitCodeBlocks.append(bufferInitCode.toString())
-      moveNextCodeBlocks.append(moveNextMultCode.toString())
     }
 
     val bufferInitCodeStr = if (isWideSchema) {
@@ -626,14 +584,6 @@ private[sql] final case class ColumnTableScan(
       bufferInitCode.toString()
     }
 
-    val moveNextCodeStr = if (isWideSchema) {
-      splitMoveNextMethods(ctx, moveNextCodeBlocks, batchOrdinal)
-    } else {
-      moveNextCode.toString()
-    }
-
-    // TODO: add filter function for non-embedded mode (using store layer
-    //   function that will invoke the above function in independent class)
     val filterFunction = generateStatPredicate(ctx, numBatchRows)
     val unsafeRow = ctx.freshName("unsafeRow")
     val colNextBytes = ctx.freshName("colNextBytes")
@@ -767,15 +717,14 @@ private[sql] final case class ColumnTableScan(
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      $assignOrdinalId
-       |      $moveNextCodeStr
        |      $deletedCheck
        |      $consumeCode
        |      if (shouldStop()) {
        |        $beforeStop
        |        // increment index for return
        |        $batchIndex = $batchOrdinal + 1;
-       |        // set the cursors
-       |        ${cursorUpdateCode.toString()}
+       |        // update the numNulls
+       |        ${numNullsUpdateCode.toString()}
        |        return;
        |      }
        |    }
@@ -803,79 +752,13 @@ private[sql] final case class ColumnTableScan(
     }
   }
 
-  private def genCodeColumnNext(ctx: CodegenContext, decoder: String,
-      mutatedDecoder: String, buffer: String, cursorVar: String, batchOrdinal: String,
-      dataType: DataType, isNullVar: String , mutatedVar: String,
-      isWideSchema: Boolean): String = {
-    val sqlType = Utils.getSQLDataType(dataType)
-    val jt = ctx.javaType(sqlType)
-    val typeName = sqlType match {
-      case _ if ctx.isPrimitiveType(jt) => ctx.primitiveTypeName(jt)
-      case StringType => "UTF8String"
-      case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS => "LongDecimal"
-      case _: DecimalType => "Decimal"
-      case CalendarIntervalType => "Interval"
-      case BinaryType => "Binary"
-      case _: ArrayType => "Array"
-      case _: MapType => "Map"
-      case _: StructType => "Struct"
-      case _ =>
-        throw new UnsupportedOperationException(s"unknown type $sqlType")
-    }
-    val moveNext = s"$cursorVar = $decoder.next$typeName($buffer, $cursorVar);"
-    if (isNullVar != "false") {
-      if (isWideSchema) {
-        ctx.addMutableState("boolean", mutatedVar, "")
-        ctx.addMutableState("boolean", isNullVar, "")
-        s"""
-           |$isNullVar = $decoder.isNull($buffer, $batchOrdinal);
-           |if (!$isNullVar) $moveNext
-           |$mutatedVar = $mutatedDecoder != null &&
-           |    $mutatedDecoder.mutated($batchOrdinal);
-           |if ($mutatedVar) {
-           |  $isNullVar = $mutatedDecoder.isNull();
-           |  if (!$isNullVar) $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
-           |}
-        """.stripMargin
-      } else {
-        s"""
-           |boolean $isNullVar = $decoder.isNull($buffer, $batchOrdinal);
-           |if (!$isNullVar) $moveNext
-           |final boolean $mutatedVar = $mutatedDecoder != null &&
-           |    $mutatedDecoder.mutated($batchOrdinal);
-           |if ($mutatedVar) {
-           |  $isNullVar = $mutatedDecoder.isNull();
-           |  if (!$isNullVar) $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
-           |}
-        """.stripMargin
-      }
-    } else if (isWideSchema) {
-      ctx.addMutableState("boolean", mutatedVar, "")
-      s"""
-         |$moveNext
-         |$mutatedVar = $mutatedDecoder != null && $mutatedDecoder.mutated($batchOrdinal);
-         |if ($mutatedVar) {
-         |  $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
-         |}
-      """.stripMargin
-    } else {
-      s"""
-         |$moveNext
-         |final boolean $mutatedVar = $mutatedDecoder != null &&
-         |    $mutatedDecoder.mutated($batchOrdinal);
-         |if ($mutatedVar) {
-         |  $mutatedDecoder.getCurrentDeltaBuffer().next$typeName();
-         |}
-      """.stripMargin
-    }
-  }
-
   // scalastyle:off
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String,
       mutableDecoder: String, decoderGlobal: String, mutableDecoderGlobal: String,
-      buffer: String, cursorVar: String, attr: Attribute, isNullVar: String,
-      mutatedVar: String, weightVar: String, wideTable : Boolean): ExprCode = {
+      buffer: String, batchOrdinal: String, numNullsVar: String, unMutatedVar: String,
+      attr: Attribute, weightVar: String): ExprCode = {
     // scalastyle:on
+    val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
@@ -897,7 +780,7 @@ private[sql] final case class ColumnTableScan(
         val dictionaryIndex = ExprCode(
           s"""
              |final int $dictionaryIndexVar = $mutableDecoder == null
-             |    ? $decoder.readDictionaryIndex($buffer, $cursorVar)
+             |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
              |    : $mutableDecoder.readDictionaryIndex();
           """.stripMargin, "false", dictionaryIndexVar)
         session.foreach(_.addDictionaryCode(ctx, col,
@@ -905,12 +788,12 @@ private[sql] final case class ColumnTableScan(
         "UTF8String"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         colAssign = s"$col = $decoder.readLongDecimal($buffer, ${d.precision}, " +
-            s"${d.scale}, $cursorVar);"
+            s"${d.scale}, $nonNullPosition);"
         mutatedAssign = s"readLongDecimal(${d.precision}, ${d.scale})"
         "LongDecimal"
       case d: DecimalType =>
         colAssign = s"$col = $decoder.readDecimal($buffer, ${d.precision}, " +
-            s"${d.scale}, $cursorVar);"
+            s"${d.scale}, $nonNullPosition);"
         mutatedAssign = s"readDecimal(${d.precision}, ${d.scale})"
         "Decimal"
       case BinaryType => "Binary"
@@ -918,35 +801,53 @@ private[sql] final case class ColumnTableScan(
       case _: ArrayType => "Array"
       case _: MapType => "Map"
       case t: StructType =>
-        colAssign = s"$col = $decoder.readStruct($buffer, ${t.size}, $cursorVar);"
+        colAssign = s"$col = $decoder.readStruct($buffer, ${t.size}, $nonNullPosition);"
         mutatedAssign = s"readStruct(${t.size})"
         "Struct"
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
     }
     if (colAssign.isEmpty) {
-      colAssign = s"$col = $decoder.read$typeName($buffer, $cursorVar);"
+      colAssign = s"$col = $decoder.read$typeName($buffer, $nonNullPosition);"
     }
     if (mutatedAssign.isEmpty) {
       mutatedAssign = s"read$typeName()"
     }
     mutatedAssign = s"$col = $mutableDecoder.getCurrentDeltaBuffer().$mutatedAssign;"
 
-    if (isNullVar != "false") {
+    val unMutatedCode = if (unMutatedVar.isEmpty) {
+      s"$mutableDecoder == null || $mutableDecoder.unMutated($batchOrdinal)"
+    } else unMutatedVar
+    if (attr.nullable) {
+      val isNullVar = ctx.freshName("isNull")
+      val defaultValue = ctx.defaultValue(jt)
       val code =
         s"""
            |final $jt $col;
-           |if ($isNullVar) $col = ${ctx.defaultValue(jt)};
-           |else if ($mutatedVar) $mutatedAssign
-           |else $colAssign
+           |boolean $isNullVar = false;
+           |if ($unMutatedCode) {
+           |  $numNullsVar = $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar);
+           |  if ($numNullsVar >= 0) $colAssign
+           |  else {
+           |    $col = $defaultValue;
+           |    $isNullVar = true;
+           |    $numNullsVar = -$numNullsVar;
+           |  }
+           |} else {
+           |  if ($mutableDecoder.notNull()) $mutatedAssign
+           |  else {
+           |    $col = $defaultValue;
+           |    $isNullVar = true;
+           |  }
+           |}
         """.stripMargin
       ExprCode(code, isNullVar, col)
     } else {
       var code =
         s"""
            |final $jt $col;
-           |if ($mutatedVar) $mutatedAssign
-           |else $colAssign
+           |if ($unMutatedCode) $colAssign
+           |else $mutatedAssign
         """.stripMargin
       if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {
         code += s"if ($col == 1) $col = $weightVar;\n"

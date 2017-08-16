@@ -19,8 +19,6 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
-import com.pivotal.gemfirexd.internal.shared.common.reference.JDBC40Translation
-
 import org.apache.spark.sql.types._
 
 /**
@@ -46,7 +44,7 @@ final class MutatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
 
   protected def nullable: Boolean = false
 
-  def isNull: Boolean = currentDeltaBuffer eq null
+  def notNull: Boolean = currentDeltaBuffer ne null
 }
 
 /**
@@ -61,7 +59,7 @@ final class MutatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructFi
 
   protected def nullable: Boolean = true
 
-  def isNull: Boolean = (currentDeltaBuffer eq null) || currentDeltaBuffer.isNull
+  def notNull: Boolean = (currentDeltaBuffer ne null) && currentDeltaBuffer.notNull
 }
 
 object MutatedColumnDecoder {
@@ -74,22 +72,22 @@ object MutatedColumnDecoder {
 
     var delta1Position = Int.MaxValue
     val delta1 = if (delta1Buffer ne null) {
-      val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta1Buffer, field))
-      delta1Position = d.initialize(delta1Buffer, field).toInt
+      val d = new ColumnDeltaDecoder(delta1Buffer, field)
+      delta1Position = d.moveToNextPosition()
       d
     } else null
 
     var delta2Position = Int.MaxValue
     val delta2 = if (delta2Buffer ne null) {
-      val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta2Buffer, field))
-      delta2Position = d.initialize(delta2Buffer, field).toInt
+      val d = new ColumnDeltaDecoder(delta2Buffer, field)
+      delta2Position = d.moveToNextPosition()
       d
     } else null
 
     var delta3Position = Int.MaxValue
     val delta3 = if (delta3Buffer ne null) {
-      val d = new ColumnDeltaDecoder(ColumnEncoding.getColumnDecoder(delta3Buffer, field))
-      delta3Position = d.initialize(delta3Buffer, field).toInt
+      val d = new ColumnDeltaDecoder(delta3Buffer, field)
+      delta3Position = d.moveToNextPosition()
       d
     } else null
 
@@ -113,30 +111,6 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   protected def nullable: Boolean
 
-  protected final def getSQLType(dataType: DataType): Int = dataType match {
-    case StringType => java.sql.Types.CLOB
-    case IntegerType => java.sql.Types.INTEGER
-    case LongType => java.sql.Types.BIGINT
-    case DoubleType => java.sql.Types.DOUBLE
-    case FloatType => java.sql.Types.FLOAT
-    case ShortType => java.sql.Types.SMALLINT
-    case ByteType => java.sql.Types.TINYINT
-    case BooleanType => java.sql.Types.BOOLEAN
-    case TimestampType => java.sql.Types.BIGINT // same width as long
-    case DateType => java.sql.Types.INTEGER // same width as int
-    case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS => java.sql.Types.NUMERIC
-    case _: DecimalType => java.sql.Types.DECIMAL
-    case BinaryType => java.sql.Types.BLOB
-    case _: ArrayType => java.sql.Types.ARRAY
-    case _: MapType => JDBC40Translation.MAP
-    case _: StructType => java.sql.Types.STRUCT
-    case udt: UserDefinedType[_] => getSQLType(udt.sqlType)
-    case _ => throw new IllegalArgumentException(
-      s"Can't translate to JDBC value for type $dataType")
-  }
-
-  protected final val dataType: Int = getSQLType(field.dataType)
-
   private final var deletePosition = Int.MaxValue
   private final var deleteCursor: Long = _
   private final var deleteEndCursor: Long = _
@@ -157,9 +131,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
 
   final def getCurrentDeltaBuffer: ColumnDeltaDecoder = currentDeltaBuffer
 
-  final def initialize(): Unit = {
-    updateNextMutatedPosition(-1)
-  }
+  updateNextMutatedPosition(-1)
 
   private def nextDeletedPosition(deleteBytes: AnyRef): Int = {
     val cursor = deleteCursor
@@ -170,22 +142,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def skipMutatedPosition(delta: ColumnDeltaDecoder): Unit = {
-    if (!nullable || !delta.isNull) dataType match {
-      case java.sql.Types.CLOB => delta.nextUTF8String()
-      case java.sql.Types.INTEGER => delta.nextInt()
-      case java.sql.Types.BIGINT => delta.nextLong()
-      case java.sql.Types.DOUBLE => delta.nextDouble()
-      case java.sql.Types.FLOAT => delta.nextFloat()
-      case java.sql.Types.SMALLINT => delta.nextShort()
-      case java.sql.Types.TINYINT => delta.nextByte()
-      case java.sql.Types.BOOLEAN => delta.nextBoolean()
-      case java.sql.Types.NUMERIC => delta.nextLongDecimal()
-      case java.sql.Types.DECIMAL => delta.nextDecimal()
-      case java.sql.Types.BLOB => delta.nextBinary()
-      case java.sql.Types.ARRAY => delta.nextArray()
-      case JDBC40Translation.MAP => delta.nextMap()
-      case java.sql.Types.STRUCT => delta.nextStruct()
-    }
+    if (!nullable || delta.notNull) delta.nextNonNullOrdinal()
   }
 
   protected final def updateNextMutatedPosition(ordinal: Int): Unit = {
@@ -260,17 +217,27 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     nextMutatedPosition = next
   }
 
-  final def mutated(ordinal: Int): Boolean = {
-    if (nextMutatedPosition != ordinal) false
-    else {
-      currentDeltaBuffer = nextDeltaBuffer
-      updateNextMutatedPosition(ordinal)
-      // caller should check for deleted case with null check for currentDeltaBuffer
-      true
+  private def updateMutated(ordinal: Int): Boolean = {
+    var nextMutated = nextMutatedPosition
+    if (nextMutated < ordinal) {
+      do {
+        updateNextMutatedPosition(nextMutated)
+        nextMutated = nextMutatedPosition
+      } while (nextMutated < ordinal)
+      if (nextMutated > ordinal) return true
     }
+    currentDeltaBuffer = nextDeltaBuffer
+    updateNextMutatedPosition(ordinal)
+    // caller should check for deleted case with null check for currentDeltaBuffer
+    false
   }
 
-  def isNull: Boolean
+  final def unMutated(ordinal: Int): Boolean = {
+    if (nextMutatedPosition > ordinal) true
+    else updateMutated(ordinal)
+  }
+
+  def notNull: Boolean
 
   // TODO: SW: need to create a combined delta+full value dictionary for this to work
 

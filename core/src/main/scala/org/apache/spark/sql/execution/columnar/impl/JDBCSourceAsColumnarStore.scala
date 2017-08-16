@@ -179,7 +179,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String)(implicit conn: Option[Connection]): Unit = {
+      statsData: Array[Byte], partitionId: Int,
+      batchId: String)(implicit conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
@@ -201,7 +202,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         region.putAll(keyValues)
 
       case _ =>
-        // TODO: SW: temporarily made close=true for delete
         // noinspection RedundantDefaultArgument
         tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) { connection =>
           val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
@@ -496,9 +496,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     // split the batch and put into row buffer if it is small
     if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
       GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
-      // TODO: SW: temporarily made close=true for updates
       // noinspection RedundantDefaultArgument
-      tryExecute(tableName, closeOnSuccessOrFailure = false/*batch.deltaIndexes ne null*/,
+      tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
         onExecutor = true)(doInsertOrPutImpl(tableName, batch, batchId, partitionId,
         maxDeltaRows))(implicitly, conn)
     } else {
@@ -509,9 +508,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           doSnappyInsertOrPut(columnTableName, region, batch, batchID, partitionId, maxDeltaRows)
 
         case _ =>
-          // TODO: SW: temporarily made close=true for updates
           // noinspection RedundantDefaultArgument
-          tryExecute(tableName, closeOnSuccessOrFailure = false/* batch.deltaIndexes ne null*/,
+          tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
             onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
             maxDeltaRows))(implicitly, conn)
       }
@@ -891,19 +889,15 @@ class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore) extends TaskC
       }
     }
     store.closeConnection(Some(conn))
-    //} catch (java.sql.SQLException sqle) {
-    // ignore exception in close
-    //}
   }
 
   def success(): Boolean = {
     isSuccess
   }
 
-  def setSuccess() = {
+  def setSuccess(): Unit = {
     isSuccess = true
   }
 
-  def getConn(): Connection = connAndTxId(0).asInstanceOf[Connection]
-
+  def getConn: Connection = connAndTxId(0).asInstanceOf[Connection]
 }

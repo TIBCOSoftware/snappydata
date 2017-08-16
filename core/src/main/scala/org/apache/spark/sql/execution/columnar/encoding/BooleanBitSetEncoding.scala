@@ -31,11 +31,17 @@ trait BooleanBitSetEncoding extends ColumnEncoding {
     dataType == BooleanType
 }
 
-final class BooleanBitSetDecoder
-    extends BooleanBitSetDecoderBase with NotNullDecoder
+final class BooleanBitSetDecoder(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends BooleanBitSetDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NotNullDecoder
 
-final class BooleanBitSetDecoderNullable
-    extends BooleanBitSetDecoderBase with NullableDecoder
+final class BooleanBitSetDecoderNullable(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends BooleanBitSetDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NullableDecoder
 
 final class BooleanBitSetEncoder
     extends NotNullEncoder with BooleanBitSetEncoderBase
@@ -43,44 +49,26 @@ final class BooleanBitSetEncoder
 final class BooleanBitSetEncoderNullable
     extends NullableEncoder with BooleanBitSetEncoderBase
 
-abstract class BooleanBitSetDecoderBase
-    extends ColumnDecoder with BooleanBitSetEncoding {
+abstract class BooleanBitSetDecoderBase(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
+    extends ColumnDecoder(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with BooleanBitSetEncoding {
 
-  private[this] var byteCursor = 0L
   private[this] var currentWord = 0L
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = {
-    // baseCursor should never change after initialization
-    baseCursor = cursor
-    byteCursor = cursor
-    // return current bit mask as the cursor so that is used and
-    // updated in the next call; the byte position will happen once
-    // every 64 calls so that is a member variable;
-    // return max mask to force reading word in first nextBoolean call
-    ColumnEncoding.MAX_BITMASK
-  }
+      dataType: DataType): Long = cursor
 
-  override final def nextBoolean(columnBytes: AnyRef, mask: Long): Long = {
-    val currentBitMask = mask << 1
-    if (currentBitMask != 0L) currentBitMask
-    else {
-      currentWord = ColumnEncoding.readLong(columnBytes, byteCursor)
-      byteCursor += 8
-      1L
+  override final def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean = {
+    val wordCursor = baseCursor + ((nonNullPosition >> 6) << 3)
+    // currentCursor is initialized to 0 so that it gets initialized on first call
+    if (wordCursor != currentCursor) {
+      currentWord = ColumnEncoding.readLong(columnBytes, wordCursor)
+      currentCursor = wordCursor
     }
+    // "mask" is mod 64 and shift
+    (currentWord & (1L << (nonNullPosition & 0x3f))) != 0
   }
-
-  override def absoluteBoolean(columnBytes: AnyRef, position: Int): Long = {
-    val getPosition = position - numNullsUntilPosition(columnBytes, position)
-    val wordCursor = baseCursor + ((getPosition >> 6) << 3)
-    currentWord = ColumnEncoding.readLong(columnBytes, wordCursor)
-    // "cursor" is mod 64 and shift which is what currentWord will be masked with
-    1L << (getPosition & 0x3f)
-  }
-
-  override final def readBoolean(columnBytes: AnyRef, mask: Long): Boolean =
-    (currentWord & mask) != 0
 }
 
 trait BooleanBitSetEncoderBase
@@ -116,9 +104,8 @@ trait BooleanBitSetEncoderBase
     flushWithoutFinish(mask)
     // can't depend on nullCount because even with zero count, it may have
     // allocated some null space at the start in advance
-    val decoder = if (isNullable) new BooleanBitSetDecoderNullable else new BooleanBitSetDecoder
-    decoder.initializeCursor(null, initializeNullsBeforeFinish(decoder), null)
-    decoder
+    if (isNullable) new BooleanBitSetDecoderNullable(null, 0L, null, fromUnfinishedEncoder = this)
+    else new BooleanBitSetDecoder(null, 0L, null, fromUnfinishedEncoder = this)
   }
 
   override def writeInternals(columnBytes: AnyRef, cursor: Long): Long = {

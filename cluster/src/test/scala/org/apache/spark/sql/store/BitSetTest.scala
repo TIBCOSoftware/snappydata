@@ -67,6 +67,9 @@ class BitSetTest extends SnappyFunSuite {
   private def nextSetBit(bitset: Array[Long], index: Int): Int =
     BitSet.nextSetBit(bitset, baseAddress, index, bitsetSize)
 
+  private def cardinality(bitset: Array[Long], index: Int): Int =
+    BitSet.cardinality(bitset, baseAddress, index, bitsetSize)
+
   test("basic set, get and clear") {
     val maxSetBit = 96
     val setBits = Seq(0, 9, 1, 10, 90, maxSetBit)
@@ -150,6 +153,25 @@ class BitSetTest extends SnappyFunSuite {
     assert(nextSetBit(bitset, 80) === 90)
     assert(nextSetBit(bitset, 91) === 96)
     assert(nextSetBit(bitset, 96) === 96)
-    assert(nextSetBit(bitset, 97) === -1)
+    assert(nextSetBit(bitset, 97) === Int.MaxValue)
+  }
+
+  test("cardinality") {
+    val setBits = Seq(0, 9, 1, 10, 90, 96)
+    val bitset = new Array[Long](4)
+    bitsetSize = 13
+
+    setBits.foreach(i => set(bitset, i))
+
+    assert(cardinality(bitset, 0) === 0)
+    assert(cardinality(bitset, 1) === 1)
+    assert(cardinality(bitset, 2) === 2)
+    assert(cardinality(bitset, 9) === 2)
+    assert(cardinality(bitset, 10) === 3)
+    assert(cardinality(bitset, 11) === 4)
+    assert(cardinality(bitset, 80) === 4)
+    assert(cardinality(bitset, 91) === 5)
+    assert(cardinality(bitset, 96) === 5)
+    assert(cardinality(bitset, 97) === 6)
   }
 }
