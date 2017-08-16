@@ -42,7 +42,7 @@ class SnappyBasicAuthenticator extends BasicAuthenticator with Logging {
 
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, username)
-    props.setProperty(Attribute.PASSWORD_ATTR, username)
+    props.setProperty(Attribute.PASSWORD_ATTR, password.toString)
 
     val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc
         .getMemStoreBooting.getDatabaseName, props)
@@ -63,7 +63,7 @@ class SnappyBasicAuthenticator extends BasicAuthenticator with Logging {
       this.renewSession(request.asInstanceOf[HttpServletRequest], response)
 
       new DefaultUserIdentity(new Subject(false, Set(principal).asJava, new util.HashSet(),
-        new util.HashSet()), principal, roles)
+        new util.HashSet()), principal, JettyUtils.snappyDataRoles)
     }
   }
 }

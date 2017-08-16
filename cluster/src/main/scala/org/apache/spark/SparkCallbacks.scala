@@ -83,7 +83,7 @@ object SparkCallbacks {
   }
 
   def setAuthenticatorForJettyServer(): Unit = {
-    if(JettyUtils.customAuthenticator.isEmpty) {
+    if (JettyUtils.customAuthenticator.isEmpty) {
       // create and set SnappyBasicAuthenticator
       JettyUtils.customAuthenticator = Some(new SnappyBasicAuthenticator)
     }
