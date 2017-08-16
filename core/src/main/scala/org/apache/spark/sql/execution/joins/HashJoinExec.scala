@@ -24,9 +24,7 @@ import scala.reflect.ClassTag
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
-
 import io.snappydata.collection.ObjectHashSet
-
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -39,7 +37,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-import org.apache.spark.{Dependency, Partition, ShuffleDependency, TaskContext}
+import org.apache.spark._
 
 /**
  * :: DeveloperApi ::
@@ -183,17 +181,42 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
+  private def findShuffleDependencies(rdd: RDD[_]): Seq[Dependency[_]] = {
+    rdd.dependencies.flatMap {
+      case s: ShuffleDependency[_, _, _] => if (s.rdd ne rdd) {
+        s +: findShuffleDependencies(s.rdd)
+      } else s :: Nil
+      case d => findShuffleDependencies(d.rdd)
+    }
+  }
+
   private lazy val (streamSideRDDs, buildSideRDDs) = {
     val streamRDDs = streamedPlan.asInstanceOf[CodegenSupport].inputRDDs()
     val buildRDDs = buildPlan.asInstanceOf[CodegenSupport].inputRDDs()
 
-    if (replicatedTableJoin) (streamRDDs, buildRDDs)
+    if (replicatedTableJoin) {
+      val streamRDD = streamRDDs.head
+      val numParts = streamRDD.getNumPartitions
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
+      val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
+        streamRDD.preferredLocations(streamRDD.partitions(i))
+      }
+      val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
+        // add the build-side shuffle dependecies to first stream-side RDD
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+          preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
+          streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
+            rdd.sparkContext, rdd, preferredLocations))
+      } else {
+        streamRDDs
+      }
+      (streamPlanRDDs, buildRDDs)
+    }
     else {
       // wrap in DelegateRDD for shuffle dependencies and preferred locations
 
       // Get the build side shuffle dependencies.
-      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(_.dependencies
-          .filter(_.isInstanceOf[ShuffleDependency[_, _, _]]))
+      val buildShuffleDeps: Seq[Dependency[_]] = buildRDDs.flatMap(findShuffleDependencies)
       val hasStreamSideShuffle = streamRDDs.exists(_.dependencies
           .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
       // treat as a zip of all stream side RDDs and build side RDDs and
