@@ -21,8 +21,10 @@ import java.net.URL
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
@@ -36,8 +38,7 @@ class SnappyExecutor(
     userClassPath: Seq[URL] = Nil,
     exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
-    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) with
-    SparkCallBack {
+    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
 
   if (!isLocal) {
     // Setup an uncaught exception handler for non-local mode.
@@ -105,6 +106,27 @@ class SnappyExecutor(
           Thread.currentThread().setContextClassLoader(threadClassLoader)
         }
       }
+    }
+  }
+
+  override def isStoreCloseException(t: Throwable): Boolean = {
+    try {
+      Misc.checkIfCacheClosing(t)
+      false
+    } catch {
+      case ex: CancelException => true
+      case _ => false
+    }
+  }
+
+  override def isStoreException(t: Throwable): Boolean = {
+    GemFireXDUtils.retryToBeDone(t)
+  }
+
+  override def isFatalError(t: Throwable): Boolean = {
+    t match {
+      case err: Error => SystemFailure.isJVMFailureError(err)
+      case _ => false
     }
   }
 }
