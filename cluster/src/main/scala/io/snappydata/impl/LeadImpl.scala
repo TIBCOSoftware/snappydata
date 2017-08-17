@@ -171,7 +171,7 @@ class LeadImpl extends ServerImpl with Lead
 
       // The auth service is not yet initialized at this point.
       // So simply check the auth-provider property value.
-      if (Misc.checkAuthProviderProps(bootProperties)) {
+      if (Misc.checkAuthProvider(bootProperties.asScala.asJava)) {
         logInfo("Enabling user authentication for SnappyData Pulse")
         SparkCallbacks.setAuthenticatorForJettyServer()
       }
