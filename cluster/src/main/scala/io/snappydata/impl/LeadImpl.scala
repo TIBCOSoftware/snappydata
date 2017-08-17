@@ -45,7 +45,7 @@ import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.{SparkCallbacks, Logging, SparkConf, SparkContext, SparkException}
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
@@ -168,6 +168,14 @@ class LeadImpl extends ServerImpl with Lead
             throw e;
         }
       }
+
+      // The auth service is not yet initialized at this point.
+      // So simply check the auth-provider property value.
+      if (Misc.checkAuthProvider(bootProperties.asScala.asJava)) {
+        logInfo("Enabling user authentication for SnappyData Pulse")
+        SparkCallbacks.setAuthenticatorForJettyServer()
+      }
+
       sparkContext = new SparkContext(conf)
 
       checkAndStartZeppelinInterpreter(bootProperties)
