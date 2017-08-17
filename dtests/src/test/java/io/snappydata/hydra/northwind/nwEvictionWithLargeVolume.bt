@@ -6,7 +6,7 @@ io/snappydata/hydra/northwind/nwPartitionedRowTablesWithEvictionAndLargeVolumeTe
   dataFilesLocation="/export/shared/QA_DATA/northWind_11G/"
   tableType="PartitionedRow"
   createLargeOrderTable = true
-  totalSecs = 900
+  totalSecs = 10800
 
 
 /*io/snappydata/hydra/northwind/nwColumnTablesWithEvictionAndLargeVolumeTest.conf
@@ -18,4 +18,4 @@ io/snappydata/hydra/northwind/nwPartitionedRowTablesWithEvictionAndLargeVolumeTe
   //dataFilesLocation="/export/shared/QA_DATA/northWind_11G/"
   tableType="Column"
   createLargeOrderTable = true
-  totalSecs = 900*/
+  totalSecs = 10800*/
