@@ -97,8 +97,6 @@ object Constant {
   // should be started
   val ZEPPELIN_INTERPRETER_PORT = "zeppelin.interpreter.port"
 
-  val DEFAULT_CACHE_TIMEOUT_SECS = 10
-
   val CHAR_TYPE_BASE_PROP = "base"
 
   val CHAR_TYPE_SIZE_PROP = "size"
@@ -106,6 +104,12 @@ object Constant {
   val MAX_VARCHAR_SIZE = 32672
 
   val MAX_CHAR_SIZE = 254
+
+  /**
+   * Limit the maximum number of rows in a column batch (applied before
+   * [[Property.ColumnBatchSize]] property).
+   */
+  val MAX_ROWS_IN_BATCH = 500000
 
   val DEFAULT_SERIALIZER = "org.apache.spark.serializer.PooledKryoSerializer"
 

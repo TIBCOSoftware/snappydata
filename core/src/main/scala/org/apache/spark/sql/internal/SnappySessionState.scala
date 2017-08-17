@@ -171,8 +171,7 @@ class SnappySessionState(snappySession: SnappySession)
         case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges
           snappySession.linkPartitionsToBuckets(flag = true)
-        case PhysicalOperation(_, _, LogicalRelation(
-        _: IndexColumnFormatRelation, _, _)) =>
+        case PhysicalOperation(_, _, LogicalRelation(_: IndexColumnFormatRelation, _, _)) =>
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }

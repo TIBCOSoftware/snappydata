@@ -22,7 +22,6 @@ import java.nio.ByteBuffer
 import com.pivotal.gemfirexd.internal.shared.common.reference.JDBC40Translation
 
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * Decodes a column of a batch that has seen some changes (updates or deletes) by
@@ -47,7 +46,7 @@ final class MutatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
 
   protected def nullable: Boolean = false
 
-  def isNull: Int = if (currentDeltaBuffer ne null) 0 else 1
+  def isNull: Boolean = currentDeltaBuffer eq null
 }
 
 /**
@@ -62,7 +61,7 @@ final class MutatedColumnDecoderNullable(decoder: ColumnDecoder, field: StructFi
 
   protected def nullable: Boolean = true
 
-  def isNull: Int = if (currentDeltaBuffer ne null) currentDeltaBuffer.isNull else 1
+  def isNull: Boolean = (currentDeltaBuffer eq null) || currentDeltaBuffer.isNull
 }
 
 object MutatedColumnDecoder {
@@ -171,7 +170,7 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   }
 
   protected final def skipMutatedPosition(delta: ColumnDeltaDecoder): Unit = {
-    if (!nullable || delta.isNull == 0) dataType match {
+    if (!nullable || !delta.isNull) dataType match {
       case java.sql.Types.CLOB => delta.nextUTF8String()
       case java.sql.Types.INTEGER => delta.nextInt()
       case java.sql.Types.BIGINT => delta.nextLong()
@@ -271,11 +270,11 @@ abstract class MutatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     }
   }
 
-  def isNull: Int
+  def isNull: Boolean
 
   // TODO: SW: need to create a combined delta+full value dictionary for this to work
 
-  final def getStringDictionary: Array[UTF8String] = null
+  final def getStringDictionary: StringDictionary = null
 
   final def readDictionaryIndex: Int = -1
 }
