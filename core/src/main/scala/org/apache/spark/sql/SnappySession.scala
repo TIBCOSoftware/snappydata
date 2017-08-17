@@ -217,6 +217,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
+  @transient
   private val contextObjects = new mutable.HashMap[Any, Any]
 
   @transient
