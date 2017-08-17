@@ -21,7 +21,6 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
-import org.apache.spark.unsafe.Platform
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
 
@@ -54,7 +53,7 @@ abstract class BooleanBitSetDecoderBase(columnBytes: AnyRef, startCursor: Long,
     extends ColumnDecoder(columnBytes, startCursor, field,
       initDelta, fromUnfinishedEncoder) with BooleanBitSetEncoding {
 
-  private[this] var currentWord = 0L
+  private[this] var currentWord: Long = _
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long = cursor
@@ -63,8 +62,8 @@ abstract class BooleanBitSetDecoderBase(columnBytes: AnyRef, startCursor: Long,
     val wordCursor = baseCursor + ((nonNullPosition >> 6) << 3)
     // currentCursor is initialized to 0 so that it gets initialized on first call
     if (wordCursor != currentCursor) {
-      currentWord = ColumnEncoding.readLong(columnBytes, wordCursor)
       currentCursor = wordCursor
+      currentWord = ColumnEncoding.readLong(columnBytes, wordCursor)
     }
     // "mask" is mod 64 and shift
     (currentWord & (1L << (nonNullPosition & 0x3f))) != 0
@@ -79,7 +78,7 @@ trait BooleanBitSetEncoderBase
    * is actually the current index into the currentWord for best performance.
    */
   private var byteCursor: Long = _
-  private var startByteCursor: Long = _
+  private var dataOffset: Long = _
   private var currentWord: Long = _
 
   override def initSizeInBytes(dataType: DataType,
@@ -92,9 +91,9 @@ trait BooleanBitSetEncoderBase
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long = {
-    startByteCursor = super.initialize(dataType, nullable, initSize,
+    byteCursor = super.initialize(dataType, nullable, initSize,
       withHeader, allocator)
-    byteCursor = startByteCursor
+    dataOffset = byteCursor - columnBeginPosition
     currentWord = 0L
     // returns the OR mask to use for currentWord
     1L
@@ -109,8 +108,8 @@ trait BooleanBitSetEncoderBase
   }
 
   override def writeInternals(columnBytes: AnyRef, cursor: Long): Long = {
-    startByteCursor = cursor
     byteCursor = cursor
+    dataOffset = cursor - columnBeginPosition
     // nothing extra to be written but clear the currentWord
     currentWord = 0L
     // return the initial OR mask as expected by writeBoolean
@@ -151,26 +150,6 @@ trait BooleanBitSetEncoderBase
     }
   }
 
-  /**
-   * Set the boolean at given position. Assumes withHeader was false in initialization.
-   */
-  final def writeBooleanAtPosition(position: Int, value: Boolean): Unit = {
-    if (((columnEndPosition - columnBeginPosition) << 3) > position) {
-      val bytePosition = columnBeginPosition + (position >>> 3)
-      // mod 8 and shift
-      val mask = 1 << (position & 0x7)
-      val currentByte = Platform.getByte(columnBytes, bytePosition)
-      if (value) {
-        Platform.putByte(columnBytes, bytePosition, (currentByte | mask).toByte)
-      } else {
-        Platform.putByte(columnBytes, bytePosition, (currentByte & ~mask).toByte)
-      }
-    } else {
-      throw new IndexOutOfBoundsException(s"Cannot write at position = $position " +
-          s"sizeInBytes=${columnEndPosition - columnBeginPosition}")
-    }
-  }
-
   override def flushWithoutFinish(mask: Long): Long = {
     if (mask != 1L) {
       // one more word required
@@ -184,7 +163,6 @@ trait BooleanBitSetEncoderBase
   }
 
   override def encodedSize(mask: Long, dataBeginPosition: Long): Long = {
-    if (mask != 1L) super.encodedSize(byteCursor + 8L, startByteCursor)
-    else super.encodedSize(byteCursor, startByteCursor)
+    super.encodedSize(byteCursor, columnBeginPosition + dataOffset)
   }
 }

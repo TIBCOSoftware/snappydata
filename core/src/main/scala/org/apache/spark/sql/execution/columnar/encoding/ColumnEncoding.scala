@@ -1102,7 +1102,9 @@ trait NullableDecoder extends ColumnDecoder {
    */
   override final protected[sql] def numNonNullsUntilPosition(
       columnBytes: AnyRef, position: Int): Int = {
-    position - BitSet.cardinality(columnBytes, baseNullOffset, position, numNullBytes)
+    val numBytes = numNullBytes
+    if (numBytes == 0) position
+    else position - BitSet.cardinality(columnBytes, baseNullOffset, position, numBytes)
   }
 }
 

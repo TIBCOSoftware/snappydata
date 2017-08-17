@@ -117,7 +117,7 @@ object BitSet {
       position: Int, sizeInBytes: Int): Int = {
     val posNumBytes = position >>> 3
     var pos = 0
-    val numBytesToCheck = if (sizeInBytes >= posNumBytes) {
+    val numBytesToCheck = if (sizeInBytes > posNumBytes) {
       pos = position & 0x3f
       (posNumBytes >>> 3) << 3
     } else {

@@ -27,7 +27,7 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 /**
  * Internal class to decode values from a single delta as obtained from
  * [[ColumnDeltaEncoder]]. Should not be used directly rather the combined
- * decoder [[MutatedColumnDecoder]] should be the one used.
+ * decoder [[UpdatedColumnDecoder]] should be the one used.
  */
 final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
 
@@ -123,13 +123,13 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     realDecoder.readDouble(deltaBytes, ordinal)
   }
 
-  @inline def readDate(): Int = {
+  @inline def readDate: Int = {
     val ordinal = nonNullOrdinal
     nonNullOrdinal = ordinal + 1
     realDecoder.readDate(deltaBytes, ordinal)
   }
 
-  @inline def readTimestamp(): Long = {
+  @inline def readTimestamp: Long = {
     val ordinal = nonNullOrdinal
     nonNullOrdinal = ordinal + 1
     realDecoder.readTimestamp(deltaBytes, ordinal)
