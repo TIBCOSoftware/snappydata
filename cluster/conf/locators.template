@@ -21,8 +21,9 @@
 # locator on multiple hosts. 
 #
 # Example configurations ....
-# I) Using bind address : By default, SnappyData binds to all interfaces. In Cloud environments 
-# with an internal IP and a different public IP address for clients, you should configure the bind-address
+# I) Using bind address : By default, SnappyData binds to all interfaces. 
+# In Cloud environments with an internal IP and a different public IP address for 
+# clients, you should configure the bind-address
 #
 # localhost -client-bind-address=<public IP for clients>
 # Use above line to start a locator on localhost with a specific bind-address
