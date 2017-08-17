@@ -14,15 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-# Specify the host name on which a Snappy lead will be started. Also
-# specify the startup directory where the logs and configuration files
-# for that lead instance are kept. Apart from these two things, snappy
-# specific properties can also be passed. If the directory and properties
-# are not specified a default directory is created inside the SPARK_HOME directory.
+# By default, SnappyData launch scripts will start a single locator on localhost
+# and uses <snappyData_dir>/work/localhost-locator-1/ as the directory for logs and 
+# statistics. 
+# Assuming your network is ssh enabled you can add hostnames (one line per host) to start
+# locator on multiple hosts. 
 #
-#     localhost    -dir=/tmp/data/locator (config args)
+# Example configurations ....
+# I) Using bind address : By default, SnappyData binds to all interfaces. In Cloud environments 
+# with an internal IP and a different public IP address for clients, you should configure the bind-address
+#
+# localhost -client-bind-address=<public IP for clients>
+# Use above line to start a locator on localhost with a specific bind-address
+#
+# II) Logging to different directory 
+# Specify the startup directory where the logs and configuration files
+# for that locator instance are managed. 
+#
+#     localhost    -dir=/tmp/data/locator -client-bind-address=<public IP for clients>
 # 
+# III) Configuring the internal IP address for cluster members to find the locator
+# (TODO: below description is not clear)
 # When a machine is not on any network, specify peer-discovery-address too along with hostname.
 # Also, if there are multiple locators in the cluster, specify hostname:port of other locators.
 # 
