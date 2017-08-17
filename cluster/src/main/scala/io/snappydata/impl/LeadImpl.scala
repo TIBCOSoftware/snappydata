@@ -216,7 +216,7 @@ class LeadImpl extends ServerImpl with Lead
               // cleanup before throwing exception
               internalStop(bootProperties)
               throw new SparkException("Primary Lead node (Spark Driver) is " +
-                  "already running in the system. You may use split cluster " +
+                  "already running in the system. You may use smart connector " +
                   "mode to connect to SnappyData cluster.")
             }
             serverstatus = State.STANDBY
@@ -243,13 +243,24 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
+  /**
+    * @inheritdoc
+    */
+  override def notifyRunning() {
+    logDebug("Accepting RUNNING notification")
+    serverstatus = State.RUNNING
+    // status file for CacheServerLauncher is updated in the LeadImpl.internalStart
+    // via callback of  notifyStatusChange
+  }
+
   private def checkAuthProvider(props: Properties): Unit = {
     doCheck(props.getProperty(Attribute.AUTH_PROVIDER))
     doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
 
     def doCheck(authP: String): Unit = {
       if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
-        throw new UnsupportedOperationException("LDAP is the only supported auth-provider currently.")
+        throw new UnsupportedOperationException(
+          "LDAP is the only supported auth-provider currently.")
       }
       if (authP != null && !isEnterpriseEdition()) {
         throw new UnsupportedOperationException("Security feature is available in SnappyData " +

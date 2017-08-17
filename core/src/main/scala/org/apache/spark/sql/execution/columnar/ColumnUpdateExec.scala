@@ -17,21 +17,17 @@
 
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.Connection
-
-import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener, ColumnDelta}
+import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.util.TaskCompletionListener
 
 /**
  * Generated code plan for updates into a column table.
@@ -42,11 +38,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
     relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
+    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
-
-  override def resolvedName: String = externalStore.tableName
 
   private lazy val schemaAttributes = tableSchema.toAttributes
   /**
@@ -82,40 +76,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
-  @transient protected var taskListener: String = _
-
-  override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
-    val connectionClass = classOf[Connection].getName
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    val listenerClass = classOf[SnapshotConnectionListener].getName
-    taskListener = ctx.freshName("taskListener")
-    connTerm = ctx.freshName("connection")
-
-    val contextClass = classOf[TaskContext].getName
-    val context = ctx.freshName("taskContext")
-
-    ctx.addMutableState(listenerClass, taskListener, "")
-    ctx.addMutableState(connectionClass, connTerm, "")
-
-    val initCode =
-      s"""
-         |$taskListener = new org.apache.spark.sql.execution.columnar.impl.SnapshotConnectionListener(
-         |(org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore)$externalStoreTerm);
-         |$connTerm = $taskListener.getConn();
-         |final $contextClass $context = $contextClass.get();
-         |if ($context != null) {
-         |   $context.addTaskCompletionListener($taskListener);
-         |}
-         | """.stripMargin
-
-    val endCode =
-      s"""
-         |""".stripMargin
-    val commitCode =
-      s"""
-       """.stripMargin
-    (initCode, commitCode, endCode)
-  }
 
   override protected def doProduce(ctx: CodegenContext): String = {
 
