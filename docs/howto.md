@@ -19,11 +19,11 @@ You can run the examples in any of the following ways:
 
 The following topics are covered in this section:
 
-* [How to Start a SnappyData Cluster](#howto-startCluster)
+* [How to Start a SnappyData Cluster](#howto-startcluster)
 
-* [How to Check the Status of a SnappyData Cluster](#howto-startCluster)
+* [How to Check the Status of a SnappyData Cluster](#howto-statuscluster)
 
-* [How to Stop a SnappyData Cluster](#howto-startCluster)
+* [How to Stop a SnappyData Cluster](#howto-stopcluster)
 
 * [How to Run Spark Job inside the Cluster](#howto-job)
 
@@ -58,7 +58,7 @@ The following topics are covered in this section:
 * [How to Use Apache Zeppelin with SnappyData](#howto-zeppelin)
 
 
-<a id="howto-startCluster"></a>
+<a id="howto-startcluster"></a>
 ## How to Start a SnappyData Cluster
 ### Start SnappyData Cluster on a Single Machine
 

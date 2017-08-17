@@ -21,7 +21,9 @@ PUT INTO uses a syntax similar to the INSERT statement, but SnappyData does not 
 The PUT INTO statement is similar to the "UPSERT" command or capability provided by other RDBMS to relax primary key checks. By default, the PUT INTO statement ignores only primary key constraints. <!--All other column constraints (unique, check, and foreign key) are honored unless you explicitly set the [skip-constraint-checks](../../reference/configuration_parameters/skip-constraint-checks.md) connection property.-->
 
 !!!Note: 
-	SnappyData does not support a PUT INTO with a subselect query if any subselect query requires aggregation.
+	* SnappyData does not support a PUT INTO with a subselect query if any subselect query requires aggregation.
+
+	* PUT INTO is not supported for column tables.
 
 ## Example
 

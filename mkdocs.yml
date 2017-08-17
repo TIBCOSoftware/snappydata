@@ -183,10 +183,10 @@ pages:
     - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
 - Additional Information: additional_files/additional_docs.md
 #- About:
-#   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
 - Open Source Components: additional_files/open_source_components.md
 - License Model: additional_files/license_model.md
+- Release Notes: release_notes/known_issues.md
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 

@@ -8,8 +8,11 @@ SnappyData can now be configured to use both off-heap and on-heap storage. The `
 
 Row tables are always stored on on-heap storage. You can now configure column tables to use off-heap storage. Off-heap storage is also recommended for production environments. Several artifacts in the product, however, require on-heap memory, and therefore minimum heap size is also required in such cases. 
 For example:
+
 * To use row tables: According to the row table size requirements, configure the heap size. Currently, row tables in SnappyData do not use off-heap memory.
+
 * To read-write Parquet and CSV: Parquet and CSV read-write are memory consuming activities, and still, use heap memory. Ensure that you provide sufficient heap memory in such cases.
+
 * When most of your data reside in column tables, use off-heap memory. They are faster and put less pressure on garbage collection threads.
 
 The following properties have been added for memory management:

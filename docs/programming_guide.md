@@ -8,12 +8,15 @@ In Spark SQL, all tables are temporary and cannot be shared across different app
 Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but it can also be reliably managed on disk.
 
 <a id="snappysession"></a>
-## SnappySession and SnappyStreamingContext
+## SparkSession, SnappySession and SnappyStreamingContext
 
+### Create a SparkSession
 [Spark Context](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster and can be used to create RDDs, accumulators and broadcast variables on that cluster.
 
 [Spark Session](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/sql/SparkSession.html) is the entry point to programming Spark with the Dataset and DataFrame API.
 In environments that this has been created up front (e.g. REPL, notebooks), use the builder to get an existing session:
+
+To create a SparkSession:
 
 ```
 SparkSession.builder().getOrCreate()
@@ -29,15 +32,10 @@ SparkSession.builder()
      .getOrCreate()   
 ```
 
+### Create a SnappySession
 [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
-Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
-[Streaming Context](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
-Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [SnappyData Spark Affinity modes](deployment.md).
-
-If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
-
-### To Create a SnappySession
+To create a SnappySession:
 
 **Scala**
 
@@ -73,8 +71,12 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
  sc = SparkContext(conf=conf)
  snappy = SnappySession(sc)
 ```
+### Create a SnappyStreamingContext
+[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
+[Streaming Context](http://spark.apache.org/docs/2.0.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
-### To Create a SnappyStreamingContext
+To create a SnappyStreamingContext:
+
 **Scala**
 
 ```scala
@@ -112,7 +114,10 @@ If you are using SnappyData in LocalMode or Connector mode, it is the responsibi
  snsc = SnappyStreamingContext(sc, duration)
 ```
 
-If you are in the Embedded Mode, applications typically submit Jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext. 
+Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [SnappyData Spark Affinity modes](deployment.md).
+
+If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
+If you are in the Embedded Mode, applications typically submit jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext.
 These jobs are the primary mechanism to interact with SnappyData using the Spark API. 
 A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait.
 
