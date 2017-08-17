@@ -171,7 +171,7 @@ class LeadImpl extends ServerImpl with Lead
 
       // The auth service is not yet initialized at this point.
       // So simply check the auth-provider property value.
-      if (checkAuthProviderProp(bootProperties)) {
+      if (Misc.checkAuthProviderProps(bootProperties)) {
         logInfo("Enabling user authentication for SnappyData Pulse")
         SparkCallbacks.setAuthenticatorForJettyServer()
       }
@@ -189,12 +189,6 @@ class LeadImpl extends ServerImpl with Lead
     }
 
 
-  }
-
-  /* Returns true if LDAP Security is Enabled */
-  def checkAuthProviderProp(props: Properties): Boolean = {
-    "LDAP".equalsIgnoreCase(props.getProperty(Attribute.AUTH_PROVIDER, "")) ||
-        "LDAP".equalsIgnoreCase(props.getProperty(Attribute.SERVER_AUTH_PROVIDER, ""))
   }
 
   @throws[SparkException]
