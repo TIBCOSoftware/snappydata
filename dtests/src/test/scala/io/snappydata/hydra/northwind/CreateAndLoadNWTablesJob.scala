@@ -39,6 +39,7 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
       pw.println(s"tableType : " + tableType)
       println(s"tableType : " + tableType)
       snc.setConf("dataFilesLocation", dataFilesLocation)
+      val createLargeOrderTable = jobConfig.getString("createLargeOrderTable").toBoolean
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
       NWTestUtil.dropTables(snc)
@@ -46,12 +47,19 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
           .currentTimeMillis)
       tableType match {
         case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
-        case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc)
-        case "Column" => NWTestUtil.createAndLoadColumnTables(snc)
+        case "PartitionedRow" =>
+          NWTestUtil.createAndLoadPartitionedTables(snc, createLargeOrderTable)
+        case "Column" => NWTestUtil.createAndLoadColumnTables(snc, createLargeOrderTable)
         case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
         case _ => // the default, catch-all
       }
       pw.println(s"Create and load ${tableType} tables Test completed successfully at : " +
+          System.currentTimeMillis)
+      pw.flush()
+      if (createLargeOrderTable) {
+        NWTestUtil.ingestMoreData(snc, 10)
+      }
+      pw.println(s"Loaded more data successfully at : " +
           System.currentTimeMillis)
       pw.close()
     } match {

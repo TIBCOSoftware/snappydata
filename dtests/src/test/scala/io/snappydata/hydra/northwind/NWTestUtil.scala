@@ -501,7 +501,8 @@ object NWTestUtil {
         case "Q43" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q43, "Q43",
           tableType, pw, sqlContext)
         /* case "Q44" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q44, "Q44",
-          tableType, pw, sqlContext) */  // LeftSemiJoinHash
+          tableType, pw, sqlContext) */
+        // LeftSemiJoinHash
         /* case "Q45" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q45, "Q45",
           tableType, pw, sqlContext) */
         /* case "Q46" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q46, "Q46",
@@ -541,7 +542,8 @@ object NWTestUtil {
     }
   }
 
-  def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
+  def createAndLoadPartitionedTables(snc: SnappyContext,
+                                     createLargeOrdertable: Boolean = false): Unit = {
 
     snc.sql(NWQueries.regions_table)
     NWQueries.regions(snc).write.insertInto("regions")
@@ -561,14 +563,34 @@ object NWTestUtil {
         "'employees', redundancy '1')")
     NWQueries.customers(snc).write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using row options (partition_by 'OrderId', buckets '13', " +
-        "redundancy '1')")
-    NWQueries.orders(snc).write.insertInto("orders")
+    if (createLargeOrdertable) {
+      snc.sql(NWQueries.large_orders_table +
+          " using row options (partition_by 'OrderId', buckets '13', " +
+          "redundancy '1')")
+      NWQueries.orders(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("orders")
 
-    snc.sql(NWQueries.order_details_table +
-        " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
-        "redundancy '1')")
-    NWQueries.order_details(snc).write.insertInto("order_details")
+    } else {
+      snc.sql(NWQueries.orders_table +
+          " using row options (partition_by 'OrderId', buckets '13', " +
+          "redundancy '1')")
+      NWQueries.orders(snc).write.insertInto("orders")
+
+    }
+
+    if (createLargeOrdertable) {
+      snc.sql(NWQueries.large_order_details_table +
+          " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1')")
+      NWQueries.order_details(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("order_details")
+
+    } else {
+      snc.sql(NWQueries.order_details_table +
+          " using row options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1')")
+      NWQueries.order_details(snc).write.insertInto("order_details")
+    }
 
     snc.sql(NWQueries.products_table +
         " using row options ( partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
@@ -588,7 +610,20 @@ object NWTestUtil {
 
   }
 
-  def createAndLoadColumnTables(snc: SnappyContext): Unit = {
+  def ingestMoreData(snc: SnappyContext, numTimes: Int): Unit = {
+    for (i <- 1 to numTimes) {
+      NWQueries.orders(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("orders")
+      NWQueries.order_details(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("order_details")
+    }
+  }
+
+  val bigcomment: String = "'bigcommentstart" + ("a" * 500) + "bigcommentend'"
+
+  def createAndLoadColumnTables(snc: SnappyContext,
+                                createLargeOrdertable: Boolean = false): Unit = {
+
     snc.sql(NWQueries.regions_table)
     NWQueries.regions(snc).write.insertInto("regions")
 
@@ -606,14 +641,31 @@ object NWTestUtil {
         "COLOCATE_WITH 'employees', redundancy '1')")
     NWQueries.customers(snc).write.insertInto("customers")
 
-    snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets " +
-        "'13', redundancy '1')")
-    NWQueries.orders(snc).write.insertInto("orders")
 
-    snc.sql(NWQueries.order_details_table +
-        " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
-        "redundancy '1')")
-    NWQueries.order_details(snc).write.insertInto("order_details")
+    if (createLargeOrdertable) {
+      snc.sql(NWQueries.large_orders_table +
+          " using column options (partition_by 'OrderId', buckets " +
+          "'13', redundancy '1')")
+      NWQueries.orders(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("orders")
+    } else {
+      snc.sql(NWQueries.orders_table + " using column options (partition_by 'OrderId', buckets " +
+          "'13', redundancy '1')")
+      NWQueries.orders(snc).write.insertInto("orders")
+    }
+
+    if (createLargeOrdertable) {
+      snc.sql(NWQueries.large_order_details_table +
+          " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1')")
+      NWQueries.order_details(snc).selectExpr("*", s" $bigcomment as bigComment").
+          write.insertInto("order_details")
+    } else {
+      snc.sql(NWQueries.order_details_table +
+          " using column options (partition_by 'OrderId', buckets '13', COLOCATE_WITH 'orders', " +
+          "redundancy '1')")
+      NWQueries.order_details(snc).write.insertInto("order_details")
+    }
 
     snc.sql(NWQueries.products_table +
         " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy '1')")
