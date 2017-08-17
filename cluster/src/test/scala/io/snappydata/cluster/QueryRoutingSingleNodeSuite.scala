@@ -657,7 +657,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       snc.sql(s"create table $tableName (ol_1_int_id  integer primary key," +
         s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
           "options( partition_by 'ol_1_int_id', buckets '2')" +
-          // This leads to  duplicate key value error
+          // TODO SNAP-1945: This leads to  duplicate key value error
           // "options( partition_by 'ol_1_int2_id', buckets '2')" +
           "")
 
