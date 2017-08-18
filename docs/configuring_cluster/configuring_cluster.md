@@ -20,9 +20,10 @@ In this file, you can specify:
 
 * SnappyData specific properties that can be passed.
 
-<TODO> provide link to all the rest of the properties that can be specified. 
-<TODO> Provide configuration examples ... especially the ones that are prominently used. See Locators.template
-<TODO> Shyja, we need someone like Hemant to refactor this whole section. Essentially, all the prominent properties should be described in each Locator, lead, server config. It is ok to repeat even if there are common properties. Move some of the examples from section below into each of these sections. Leave advanced properties in the "list of all config properties" section. 
+-- TODO 
+* provide link to all the rest of the properties that can be specified. 
+* Provide configuration examples ... especially the ones that are prominently used. See Locators.template
+* Shyja, we need someone like Hemant to refactor this whole section. Essentially, all the prominent properties should be described in each Locator, lead, server config. It is ok to repeat even if there are common properties. Move some of the examples from section below into each of these sections. Leave advanced properties in the "list of all config properties" section. 
 
 Create the configuration file (**locators**) for locators in the *SnappyData_home/conf* directory.
 
@@ -33,9 +34,10 @@ Lead Nodes primarily runs the SnappyData managed Spark driver. There is one prim
 
 Create the configuration file (**leads**) for leads in the *SnappyData_home/conf* directory.
 
-<TODO> provide link to all the rest of the properties that can be specified. 
-<TODO> Provide configuration examples ... especially the ones that are prominently used. See Leads.template
-<TODO> Include the prominent Spark properties and provide examples. Especially important for Lead config. 
+TODO
+* provide link to all the rest of the properties that can be specified. 
+* Provide configuration examples ... especially the ones that are prominently used. See Leads.template
+* Include the prominent Spark properties and provide examples. Especially important for Lead config. 
 
 
 <a id="dataserver"></a>
@@ -44,15 +46,16 @@ Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine
 
 Create the configuration file (**servers**) for data servers in the *SnappyData_home/conf* directory.
 
-<TODO> provide link to all the rest of the properties that can be specified. 
-<TODO> Provide configuration examples ... especially the ones that are prominently used. See Leads.template
+TODO
+* provide link to all the rest of the properties that can be specified. 
+* Provide configuration examples ... especially the ones that are prominently used. See Leads.template
 
 <a id="properties"></a>
 ## SnappyData Specific Properties
 
 The following are the few important SnappyData properties that you can configure:
 
-<TODO> Do we need this section anymore? Simply incorporate into the above sections..
+TODO: Do we need this section anymore? Simply incorporate into the above sections..
 
 * **-peer-discovery-port**: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334.
 
@@ -85,7 +88,7 @@ Substitute the actual path for `</path/to/>` above
 <a id="multi-host"></a>
 ## Example for Multiple-Host Configuration
 
-<TODO> move these into relevant sections above. 
+TODO: move these into relevant sections above. 
 
 Let's say you want to:
 
@@ -119,7 +122,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 Any Spark or SnappyData specific environment settings can be done by creating a snappy-env.sh or spark-env.sh in _SNAPPY_HOME/conf_. 
 
-<TODO> we need to figure out how/where we describe these various files. All this will be quite confusing to the user.  
+TODO: we need to figure out how/where we describe these various files. All this will be quite confusing to the user.  
 
 <a id="hadoop-setting"></a>
 ## Hadoop Provided Settings
