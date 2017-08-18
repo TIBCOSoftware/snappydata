@@ -313,8 +313,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       region.putAll(keyValues)
     } catch {
       case NonFatal(e) =>
-        // nothing needs to be done with snapshot
-        logWarning("Region insert/put failed with exception", e)
+        // no explicit rollback needs to be done with snapshot
+        logInfo(s"Region insert/put failed with exception $e")
+        throw e
     }
   }
 
@@ -364,8 +365,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.close()
         } catch {
           case NonFatal(e) =>
-            // nothing needs to be done with snapshot
-            logWarning("Connector insert/put failed with exception", e)
+            // no explicit rollback needs to be done with snapshot
+            logInfo(s"Connector insert/put failed with exception $e")
+            throw e
         } finally {
           // free the blobs
           if (blobs != null) {
