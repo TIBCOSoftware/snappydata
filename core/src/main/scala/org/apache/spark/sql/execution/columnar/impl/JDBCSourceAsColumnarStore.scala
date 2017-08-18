@@ -20,10 +20,6 @@ import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
 
-import scala.annotation.meta.param
-import scala.collection.mutable.ArrayBuffer
-import scala.util.control.NonFatal
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
@@ -34,7 +30,6 @@ import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SparkShellRDDHelper
 import io.snappydata.thrift.internal.ClientBlob
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -52,6 +47,10 @@ import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinCli
 import org.apache.spark.util.TaskCompletionListener
 import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Logging, Partition, TaskContext}
+
+import scala.annotation.meta.param
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 /**
  * Column Store implementation for GemFireXD.
@@ -121,6 +120,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
               Array(conn, txid)
             } else {
+              logDebug(s"Going to use the transaction $txId on server on conn $conn ")
               // it should always be not null.
               if (!txId.equals("null")) {
                 val statement = conn.createStatement()
@@ -146,11 +146,13 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
             val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?)")
             ps.setString(1, if (txId == null) "null" else txId)
-            ps.executeUpdate()
-            logDebug(s"The txid being committed is $txId")
-            ps.close()
-            SparkShellRDDHelper.snapshotTxIdForWrite.set(null)
-            logDebug(s"Committed $txId the transaction on server ")
+            try {
+              ps.executeUpdate()
+            }
+            finally {
+              ps.close()
+              SparkShellRDDHelper.snapshotTxIdForWrite.set(null)
+            }
         }
       }
     }(implicitly, conn)
@@ -168,11 +170,13 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             logDebug(s"Going to rollback $txId the transaction on server on wconn $conn ")
             val ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
             ps.setString(1, if (txId == null) "null" else txId)
-            ps.executeUpdate()
-            logDebug(s"The txid being rolledback is $txId")
-            ps.close()
-            SparkShellRDDHelper.snapshotTxIdForWrite.set(null)
-            logDebug(s"Rolled back $txId the transaction on server ")
+            try {
+              ps.executeUpdate()
+            }
+            finally {
+              ps.close()
+              SparkShellRDDHelper.snapshotTxIdForWrite.set(null)
+            }
         }
       }
     }(implicitly, conn)
