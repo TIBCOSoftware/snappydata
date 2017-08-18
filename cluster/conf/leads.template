@@ -28,7 +28,7 @@
 # 
 #     localhost   -dir=/tmp/data/server -locators=locator1:9988,locator2:8899 -heap-size=64g
 # 
-# Another example which shows how to specify a JVM parameter and Spark properties.
+# Another example which shows how to specify Spark properties.
 # 
 #     localhost   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16
 #
