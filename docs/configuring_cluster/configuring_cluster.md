@@ -1,4 +1,4 @@
-# Configuration Files
+# SnappyData Configuration Files
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
 
@@ -9,7 +9,8 @@ These files contain the hostnames of the nodes (one per line) where you intend t
 <a id="locator"></a>
 ## Configuring Locators
 
-Locators provide discovery service for the cluster. It informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
+Locators provide discovery service for the cluster. Clients (e.g. JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster  members (Data servers, Lead nodes) also discover each other using the locator. It is further described [here | provide link to architecture or concepts section] 
+It is recommended to configure two locators (for HA) in production using conf/locators file. The locators.template file provides some examples. 
 
 In this file, you can specify:
 
@@ -19,14 +20,23 @@ In this file, you can specify:
 
 * SnappyData specific properties that can be passed.
 
+<TODO> provide link to all the rest of the properties that can be specified. 
+<TODO> Provide configuration examples ... especially the ones that are prominently used. See Locators.template
+<TODO> Shyja, we need someone like Hemant to refactor this whole section. Essentially, all the prominent properties should be described in each Locator, lead, server config. It is ok to repeat even if there are common properties. Move some of the examples from section below into each of these sections. Leave advanced properties in the "list of all config properties" section. 
+
 Create the configuration file (**locators**) for locators in the *SnappyData_home/conf* directory.
 
 <a id="lead"></a>
 ## Configuring Leads
 
-Lead Nodes act as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
+Lead Nodes primarily runs the SnappyData managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. 
 
 Create the configuration file (**leads**) for leads in the *SnappyData_home/conf* directory.
+
+<TODO> provide link to all the rest of the properties that can be specified. 
+<TODO> Provide configuration examples ... especially the ones that are prominently used. See Leads.template
+<TODO> Include the prominent Spark properties and provide examples. Especially important for Lead config. 
+
 
 <a id="dataserver"></a>
 ## Configuring Data Servers
@@ -34,10 +44,15 @@ Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine
 
 Create the configuration file (**servers**) for data servers in the *SnappyData_home/conf* directory.
 
+<TODO> provide link to all the rest of the properties that can be specified. 
+<TODO> Provide configuration examples ... especially the ones that are prominently used. See Leads.template
+
 <a id="properties"></a>
 ## SnappyData Specific Properties
 
 The following are the few important SnappyData properties that you can configure:
+
+<TODO> Do we need this section anymore? Simply incorporate into the above sections..
 
 * **-peer-discovery-port**: This is a locator specific property. This is the port on which locator listens for member discovery. It defaults to 10334.
 
@@ -70,6 +85,8 @@ Substitute the actual path for `</path/to/>` above
 <a id="multi-host"></a>
 ## Example for Multiple-Host Configuration
 
+<TODO> move these into relevant sections above. 
+
 Let's say you want to:
 
 * Start two Locators (on node-a:9999 and node-b:8888), two servers (node-c and node-c) and a lead (node-l).
@@ -101,6 +118,8 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 ## Environment Settings
 
 Any Spark or SnappyData specific environment settings can be done by creating a snappy-env.sh or spark-env.sh in _SNAPPY_HOME/conf_. 
+
+<TODO> we need to figure out how/where we describe these various files. All this will be quite confusing to the user.  
 
 <a id="hadoop-setting"></a>
 ## Hadoop Provided Settings
@@ -155,6 +174,9 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 
 <a id="ssh"></a>
 ## Configuring SSH Login without Password
+
+<TODO> Shouldn't be the first thing we mention before configuring Locators, leads ....?
+
 By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.
 This setting needs to be modified to allow you to login to the remote host through the SSH protocol, without having to enter your SSH password multiple times when working with SnappyData.
 
@@ -175,6 +197,8 @@ To install and configure SSH, do the following:
 
 <a id="ssl"></a>
 ## SSL Setup for Client-Server
+<TODO> is this section in the right place? is there a JDBC/ODBC section? Some section for security ?
+
 SnappyData store now has support for Thrift protocol that provides functionality equivalent to JDBC/ODBC protocols and can be used to access the store from other languages that are not yet supported directly by SnappyData. In the command-line, SnappyData locators and servers accept the `-thrift-server-address` and -`thrift-server-port` arguments to start a Thrift server.
 
 The thrift servers use the Thrift Compact Protocol by default which is not SSL enabled. When using the snappy-start-all.sh script, these properties can be specified in the *conf/locators* and *conf/servers* files in the product directory like any other locator/server properties.
