@@ -22,11 +22,7 @@ SnappyData uses JVM heap memory for most of its allocations. Only column tables 
 
 <a id="heap"></a>
 ## SnappyData Heap Memory
-
-SnappyData tables are by default configured for eviction, which means, when there is memory pressure, the tables are evicted to disk( TODO After SNAP-1947). This impacts performance to some degree and hence it is recommended to size your VM before you begin.
-
 <!-- Default values for sizing the VM <mark> Sumedh</mark>-->
-This can be altered by specifying the `spark.memory.storageFraction` property. It is recommended that you do not change this setting
 
 SnappyData heap memory regions are divided into two parts called `Heap Storage Pool` and `Heap Execution Pool`. Sizes of each pool are determined by the config parameters provided at boot time to each server. The config parameters are described below. These two regions are only tentative demarcation and can grow into each other based on some conditions..
 
@@ -73,9 +69,6 @@ Heap_Execution_Pool_Size => 16.5 * (0.5) = 8.25
 Heap_Max_Storage_pool_Size => 16.5 * 0.81 = 13.4 ( 0.81 derived from eviction_heap_percentage)
 ```
 
-!!! Note:
-	Servers need at least 4GB-8GB of heap to work comfortably. When using Parquet imports/writes, a minimum of 8GB is recommended, especially if the schema has a large number of columns (> 100 or so)
-
 ## SnappyData Off-Heap Memory 
 In addition to heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, the off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.
 
@@ -106,3 +99,10 @@ Off-Heap Storage_Pool_Size => 16g * (0.5) = 8g
 Heap Execution_Pool_Size => 16g * (0.5) = 8g
 Max_Off_Heap_Storage_pool_Size => 16g * 0.9 = 14.4 ( 0.9 System default)
 ```
+
+## Memory Settings , Points to note
+* When you intend to use row tables:  According to your row table size requirements configure heap size. Row tables in SnappyData does not use off-heap memory for now.
+* When you intend to read write parquet & csv :  Parquet and CSV read write are memory consuming activities ,and they still use heap memory to do so. Hence provision sufficient heap memory to do so.
+* When most of your data reside in column tables: Use off-heap memory, as they are faster and put less pressure on garbage collection threads.
+* When configuring eviction : The tables are evicted to disk( TODO After SNAP-1947) by default. This impacts performance to some degree and hence it is recommended to size your VM before you begin.
+
