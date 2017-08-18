@@ -13,38 +13,28 @@ Given this above description, it is clear that it is not straightforward to comp
 Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (e.g. a UDF allocating memory), etc. Most of these allocations will automatically overflow to disk. But, it is strongly recommend that you allocate at least 5GB per data server/lead node for production systems that runs large scale analytic queries. 
 <!-- (TODO: get more specific ??)-->
 
+SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (eg, columns stored as byte arrays).
+It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The [memory-size and heap-size](../configuring_cluster/property_description.md) properties control the off-heap and on-heap sizes of the SnappyData server process.
+
+![On-Heap and Off-Heap](../Images/on-off-heap.png)
+
 SnappyData uses JVM heap memory for most of its allocations. Only column tables can use off-heap storage (if configured). We suggest going through the following options and configuring them appropriately based on the sizing estimates from above. 
 
 <a id="heap"></a>
 ## SnappyData Heap Memory
 
-SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (eg, columns stored as byte arrays).
-
-It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The [memory-size and heap-size](../configuring_cluster/property_description.md) properties control the off-heap and on-heap sizes of the SnappyData server process. 
-
-![On-Heap and Off-Heap](../Images/on-off-heap.png)
-
-The memory pool (off-heap and on-heap) available in SnappyData's cluster is divided into two parts – Execution and Storage memory pool. The storage memory pool as the name indicates is for the table storage. 
-
-The amount of memory that is available for storage is 50% of the total memory but it can grow to 90% (or `eviction-heap-percentage` store property for heap memory, if set) if the execution memory is unused.
-This can be altered by specifying the `spark.memory.storageFraction` property. It is recommended that you do not change this setting. 
-
-A certain fraction of heap memory is reserved for JVM objects outside of SnappyData storage and eviction. If the `critical-heap-percentage` store property is set then SnappyData uses memory only until that limit is reached and the remaining memory is reserved. If no critical-heap-percentage has been specified then it defaults to 90%. There is no reserved memory for off-heap.
-
-SnappyData tables are by default configured for eviction, which means, when there is memory pressure, the tables are evicted to disk. This impacts performance to some degree and hence it is recommended to size your VM before you begin. 
+SnappyData tables are by default configured for eviction, which means, when there is memory pressure, the tables are evicted to disk( TODO After SNAP-1947). This impacts performance to some degree and hence it is recommended to size your VM before you begin.
 
 <!-- Default values for sizing the VM <mark> Sumedh</mark>-->
 
-!!! Note: 
-	**SnappyUnifiedMemoryManager** is used only in the embedded mode. Spark’s default memory manager is used for local mode and Smart Connector mode.
- 
+
 You can set the following heap memory configuration parameters:
 
 |Parameter Name |Default Value|Description|
 |--------|--------|--------|
 |heap-size|4GB in Snappy embedded mode cluster|Max heap size which can be used by the JVM|
-|critical-heap-percentage|90%|(TODO: I don't understand this descrip- Jags) The heap percent beyond which system considers itself in a critical state . This is to safeguard the system from crashing by OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries.  Critical percentage of 90 means, beyond 90% of heap usage jobs and queries will get cancelled.|
-|eviction-heap-percentage|81|This percent determined when in memory table data would be evicted to disk. Beyond this Table rows are evicted in LRU fashion.|
+|critical-heap-percentage|90%| The heap percent beyond which system considers itself in a critical state. This is to safeguard the system from crashing by OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries with LowMemoryException.  Critical percentage of 90 means, beyond 90% of heap usage jobs and queries will get cancelled.|
+|eviction-heap-percentage|81|The amount of memory that is available for storage is 50% of the total heap memory but it can grow upto `eviction-heap-percentage`(default 81%). Storage pool can grow only if execution pool is unused, else it will start evicting table data as per the eviction cluase given while creating the table. This can be altered by specifying the `spark.memory.storageFraction` property. It is recommended that you do not change this setting.|
 
 SnappyData heap memory regions are divided into two parts called pools. Sizes of each pool are determined by the config parameters provided at boot time to each server. These two regions are only tentative demarcation and can grow into each other based on some conditions. (TODO: I don't understand this descrip .. thought each will elastically expand into the other- Jags).
 The two pools are as below:
