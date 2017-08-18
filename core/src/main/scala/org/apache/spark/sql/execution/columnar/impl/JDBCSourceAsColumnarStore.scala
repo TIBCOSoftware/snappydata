@@ -179,7 +179,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String)(implicit conn: Option[Connection]): Unit = {
+      statsData: Array[Byte], partitionId: Int,
+      batchId: String)(implicit conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
@@ -201,7 +202,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         region.putAll(keyValues)
 
       case _ =>
-        // TODO: SW: temporarily made close=true for delete
         // noinspection RedundantDefaultArgument
         tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) { connection =>
           val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
@@ -221,6 +221,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setInt(3, ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
             blob = new ClientBlob(statsBuffer, true)
             stmt.setBlob(4, blob)
+            stmt.addBatch()
 
             stmt.executeBatch()
             stmt.close()
@@ -254,9 +255,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             // or it will be committed later
             val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
             if (txId != null && !txId.equals("null")) {
-              val statement = conn.createStatement()
-              statement.execute(
-                s"call sys.GET_SNAPSHOT_TXID('$txId')")
+              val statement = conn.prepareCall("call sys.GET_SNAPSHOT_TXID(?)")
+              statement.registerOutParameter(1, java.sql.Types.VARCHAR)
+              statement.execute()
             }
             // conn commit removed txState from the conn context.
             conn.commit()

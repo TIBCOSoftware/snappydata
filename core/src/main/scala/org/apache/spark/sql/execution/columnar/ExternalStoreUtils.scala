@@ -69,14 +69,17 @@ object ExternalStoreUtils {
   final val INDEX_NAME = "INDEX_NAME"
   final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
+  final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
+  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
   final val COMPRESSION_CODEC = "COMPRESSION_CODEC"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
-    COLUMN_MAX_DELTA_ROWS, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
+    COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
+    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE)
 
   def lookupName(tableName: String, schema: String): String = {
     if (tableName.indexOf('.') <= 0) {
@@ -669,7 +672,7 @@ object ExternalStoreUtils {
     Property.CompressionCodec.get(session.sessionState.conf)
   }
 
-  def getSQLListener(): AtomicReference[SQLListener] = {
+  def getSQLListener: AtomicReference[SQLListener] = {
     SparkSession.sqlListener
   }
 }

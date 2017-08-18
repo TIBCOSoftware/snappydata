@@ -212,7 +212,7 @@ object ColumnUpdateDeleteTest extends Assertions {
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
         "using column options(buckets '3')")
 
-    for (_ <- 1 to 4) {
+    for (_ <- 1 to 3) {
       testBasicDeleteIter(session)
 
       session.sql("truncate table updateTable")
@@ -312,7 +312,7 @@ object ColumnUpdateDeleteTest extends Assertions {
     session.sql("drop table if exists order_details")
     session.sql("create table order_details (OrderID int, ProductID int," +
         "UnitPrice double, Quantity smallint, Discount double, tid int) " +
-        "using column options(partition_by 'OrderID')")
+        "using column options(partition_by 'OrderID', buckets '8')")
 
     session.range(numElements).selectExpr("id", "id + 2", "1.0", "2", "rand()", "id + 1")
         .write.insertInto("order_details")
@@ -367,7 +367,7 @@ object ColumnUpdateDeleteTest extends Assertions {
         "CONTACTNAME VARCHAR(100), CONTACTTITLE VARCHAR(100), ADDRESS VARCHAR(100), " +
         "CITY VARCHAR(100), REGION VARCHAR(100), POSTALCODE VARCHAR(100), " +
         "COUNTRY VARCHAR(100), PHONE VARCHAR(100), FAX VARCHAR(100), TID INTEGER) " +
-        "using column options(partition_by 'City,Country')")
+        "using column options(partition_by 'City,Country', buckets '8')")
 
     session.range(numElements).selectExpr("id", "id + 1", "id + 2", "id + 3", "id + 4",
       "id + 5", "id + 6", "id + 7", "id + 8", "id + 9", "id + 10", "id % 20")
