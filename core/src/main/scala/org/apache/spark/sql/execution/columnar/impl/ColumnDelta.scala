@@ -162,10 +162,17 @@ object ColumnDelta {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) % MAX_DEPTH
   } else -1
 
+  /**
+   * Returns 0 based table column index (which that stored in region is 1 based).
+   */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH
   } else deltaColumnIndex
 
+  /**
+   * Returns the delta column index as store in region key given the 0 based
+   * table column index (table column index stored in region key is 1 based).
+   */
   def deltaColumnIndex(tableColumnIndex: Int, hierarchyDepth: Int): Int =
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
 }

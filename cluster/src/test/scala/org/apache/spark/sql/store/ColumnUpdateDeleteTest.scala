@@ -27,6 +27,20 @@ import org.apache.spark.sql.SnappySession
  */
 class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
+  /*
+  override protected def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+    val conf = new SparkConf()
+    conf.setIfMissing("spark.master", "local[1]")
+        .setAppName(getClass.getName)
+    conf.set("snappydata.store.critical-heap-percentage", "95")
+    conf.set("snappydata.store.memory-size", "1200m")
+    conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
+    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf
+  }
+  */
+
   test("basic update") {
     ColumnUpdateDeleteTest.testBasicUpdate(this.snc.snappySession)
   }
@@ -35,11 +49,20 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     ColumnUpdateDeleteTest.testBasicDelete(this.snc.snappySession)
   }
 
+  test("SNAP-1925") {
+    ColumnUpdateDeleteTest.testSNAP1925(this.snc.snappySession)
+  }
+
+  test("SNAP-1926") {
+    ColumnUpdateDeleteTest.testSNAP1926(this.snc.snappySession)
+  }
+
   ignore("test update for all types") {
     val session = this.snc.snappySession
     // reduced size to ensure both column table and row buffer have data
     session.conf.set(Property.ColumnBatchSize.name, "100k")
     runAllTypesTest(session)
+    session.conf.unset(Property.ColumnBatchSize.name)
   }
 }
 
@@ -167,6 +190,8 @@ object ColumnUpdateDeleteTest extends Assertions {
     session.sql("drop table checkTable1")
     session.sql("drop table checkTable2")
     session.sql("drop table checkTable3")
+
+    session.conf.unset(Property.ColumnBatchSize.name)
   }
 
   def testBasicDelete(session: SnappySession): Unit = {
@@ -187,7 +212,7 @@ object ColumnUpdateDeleteTest extends Assertions {
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
         "using column options(buckets '3')")
 
-    for (_ <- 1 to 6) {
+    for (_ <- 1 to 4) {
       testBasicDeleteIter(session)
 
       session.sql("truncate table updateTable")
@@ -200,6 +225,8 @@ object ColumnUpdateDeleteTest extends Assertions {
     session.sql("drop table checkTable1")
     session.sql("drop table checkTable2")
     session.sql("drop table checkTable3")
+
+    session.conf.unset(Property.ColumnBatchSize.name)
   }
 
   def testBasicDeleteIter(session: SnappySession): Unit = {
@@ -274,5 +301,87 @@ object ColumnUpdateDeleteTest extends Assertions {
     assert(res.length === 1)
     assert(res(0).getInt(0) === 73)
     assert(res(0).getString(1) === "addr73")
+  }
+
+  def testSNAP1925(session: SnappySession): Unit = {
+    // reduced size to ensure both column table and row buffer have data
+    session.conf.set(Property.ColumnBatchSize.name, "10k")
+
+    val numElements = 50000
+
+    session.sql("drop table if exists order_details")
+    session.sql("create table order_details (OrderID int, ProductID int," +
+        "UnitPrice double, Quantity smallint, Discount double, tid int) " +
+        "using column options(partition_by 'OrderID')")
+
+    session.range(numElements).selectExpr("id", "id + 2", "1.0", "2", "rand()", "id + 1")
+        .write.insertInto("order_details")
+
+    session.sql("UPDATE order_details SET UnitPrice = UnitPrice * 1.1 WHERE tid = 6")
+
+    var result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
+    assert(result.length === numElements - 1)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.0) === Seq.empty)
+
+    result = session.sql("select UnitPrice from order_details where tid = 6").collect()
+    assert(result.length === 1)
+    assert(result(0).getDouble(0) == 1.1)
+
+    session.sql("UPDATE order_details SET UnitPrice = UnitPrice * 1.1 WHERE tid <> 6")
+
+    result = session.sql("select UnitPrice from order_details where tid = 6").collect()
+    assert(result.length === 1)
+    assert(result(0).getDouble(0) == 1.1)
+    result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
+    assert(result.length === numElements - 1)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    result = session.sql("select UnitPrice, tid from order_details").collect()
+    assert(result.length === numElements)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+
+
+    session.sql("UPDATE order_details SET UnitPrice = 1.1 WHERE tid <> 11")
+
+    result = session.sql("select UnitPrice from order_details where tid = 11").collect()
+    assert(result.length === 1)
+    assert(result(0).getDouble(0) == 1.1)
+    result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
+    assert(result.length === numElements - 1)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    result = session.sql("select UnitPrice, tid from order_details").collect()
+    assert(result.length === numElements)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+
+    session.sql("drop table order_details")
+    session.conf.unset(Property.ColumnBatchSize.name)
+  }
+
+  def testSNAP1926(session: SnappySession): Unit = {
+    // reduced size to ensure both column table and row buffer have data
+    session.conf.set(Property.ColumnBatchSize.name, "10k")
+
+    val numElements = 50000
+
+    session.sql("drop table if exists customers")
+    session.sql("CREATE TABLE CUSTOMERS (CUSTOMERID VARCHAR(100), COMPANYNAME VARCHAR(100), " +
+        "CONTACTNAME VARCHAR(100), CONTACTTITLE VARCHAR(100), ADDRESS VARCHAR(100), " +
+        "CITY VARCHAR(100), REGION VARCHAR(100), POSTALCODE VARCHAR(100), " +
+        "COUNTRY VARCHAR(100), PHONE VARCHAR(100), FAX VARCHAR(100), TID INTEGER) " +
+        "using column options(partition_by 'City,Country')")
+
+    session.range(numElements).selectExpr("id", "id + 1", "id + 2", "id + 3", "id + 4",
+      "id + 5", "id + 6", "id + 7", "id + 8", "id + 9", "id + 10", "id % 20")
+        .write.insertInto("customers")
+
+    session.sql("delete from customers where CustomerID IN (SELECT min(CustomerID) " +
+        "from customers where tid=10) AND tid=10")
+
+    var result = session.sql("select CustomerID, tid from customers where tid = 10").collect()
+    assert(result.length === (numElements / 20) - 1)
+    result = session.sql("select CustomerID, tid from customers").collect()
+    assert(result.length === numElements - 1)
+
+    session.sql("drop table customers")
+    session.conf.unset(Property.ColumnBatchSize.name)
   }
 }

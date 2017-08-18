@@ -311,27 +311,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       // do a putAll of the key-value map
       region.putAll(keyValues)
     } catch {
-      // TODO: test this code
-      // should be rolled back. so no need to delete.
       case NonFatal(e) =>
-        // delete the base entry first
-        val key = new ColumnFormatKey(partitionId, statRowIndex, uuid)
-        try {
-          region.destroy(key)
-        } catch {
-          case NonFatal(_) => // ignore
-        }
-        // delete the column entries
-        batch.buffers.indices.foreach { index =>
-          val columnIndex = if (deltaUpdate) batch.deltaIndexes(index) else index + 1
-          val key = new ColumnFormatKey(partitionId, columnIndex, uuid)
-          try {
-            region.destroy(key)
-          } catch {
-            case NonFatal(_) => // ignore
-          }
-        }
-        throw e
+        // nothing needs to be done with snapshot
+        logWarning("Region insert/put failed with exception", e)
     }
   }
 
@@ -380,36 +362,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.executeBatch()
           stmt.close()
         } catch {
-          // TODO: test this code
-          // TODO:Suranjan This code is no needed now.
-          // Need to rollback.
-          // we can't do this for only this cachedbatch
-          // all the inserts in this partitionId will be rolled back.
           case NonFatal(e) =>
-            val deletestmt = connection.prepareStatement(
-              s"delete from $tableName where partitionId = $partitionId " +
-                  s" and uuid = ? and columnIndex = ? ")
-            // delete the base entry
-            try {
-              deletestmt.setString(1, uuid)
-              deletestmt.setInt(2, statRowIndex)
-              deletestmt.executeUpdate()
-            } catch {
-              case NonFatal(_) => // Do nothing
-            }
-
-            for (idx <- 1 to batch.buffers.length) {
-              try {
-                val columnIndex = if (deltaUpdate) batch.deltaIndexes(idx - 1) else idx
-                deletestmt.setString(1, uuid)
-                deletestmt.setInt(2, columnIndex)
-                deletestmt.executeUpdate()
-              } catch {
-                case NonFatal(_) => // Do nothing
-              }
-            }
-            deletestmt.close()
-            throw e
+            // nothing needs to be done with snapshot
+            logWarning("Connector insert/put failed with exception", e)
         } finally {
           // free the blobs
           if (blobs != null) {

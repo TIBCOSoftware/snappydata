@@ -253,8 +253,23 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testUpdateDeleteOnColumnTables(): Unit = {
-    val snc = SnappyContext(sc)
-    ColumnUpdateDeleteTest.testBasicUpdate(snc.snappySession)
+    // check in the connector mode
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val snc = testObject.getSnappyContextForConnector(locatorClientPort)
+        val session = snc.snappySession
+        ColumnUpdateDeleteTest.testBasicUpdate(session)
+        ColumnUpdateDeleteTest.testBasicDelete(session)
+        ColumnUpdateDeleteTest.testSNAP1925(session)
+        ColumnUpdateDeleteTest.testSNAP1926(session)
+      }
+    })
+    // check in embedded mode
+    val session = new SnappySession(sc)
+    ColumnUpdateDeleteTest.testBasicUpdate(session)
+    ColumnUpdateDeleteTest.testBasicDelete(session)
+    ColumnUpdateDeleteTest.testSNAP1925(session)
+    ColumnUpdateDeleteTest.testSNAP1926(session)
   }
 }
 
