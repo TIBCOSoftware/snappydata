@@ -726,8 +726,8 @@ private[sql] final case class ColumnTableScan(
        |    final int $numRows = $numBatchRows;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
-       |      $assignOrdinalId
        |      $deletedCheck
+       |      $assignOrdinalId
        |      $consumeCode
        |      if (shouldStop()) {
        |        $beforeStop
