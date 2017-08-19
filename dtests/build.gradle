@@ -127,7 +127,7 @@ if (rootProject.hasProperty('enablePublish')) {
 archivesBaseName = 'snappydata-store-scala-tests'
 
 scalaTest {
-    dependsOn ':cleanScalaTest'
+    dependsOn ':cleanScalaTest', 'packageTests'
     doFirst {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)
@@ -149,7 +149,7 @@ testClasses.doLast {
           include '**/*.inc'
           include '**/*.sql'
       }
-          into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+      into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
     }
   }
 }

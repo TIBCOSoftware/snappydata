@@ -88,8 +88,6 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
 
-  private val maxHeapExecutionSize = (maxHeapMemory * evictionFraction).toLong
-
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
 
