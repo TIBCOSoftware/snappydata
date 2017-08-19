@@ -788,7 +788,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
     snc.sql(s"CREATE TABLE " + tempRowTableName + s" using row options($tempRowTableOptions)  AS" +
         s" (SELECT col1 ,col2  FROM " + rowTable + ")")
-    val testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
+    val testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect()
     assert(testResults1.length == 113999, s"Expected row count is 113999 while actual count is " +
         s"${testResults1.length}")
 
@@ -804,7 +804,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
         s"AS (SELECT col1 ,col2 FROM " + rowTable + ")")
 
-    val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    val testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect()
     assert(testResults3.length == 113999, s"Expected row count is 113999 while actual count is " +
         s"${testResults3.length}")
 
@@ -812,7 +812,7 @@ object SplitSnappyClusterDUnitTest
     snc.sql("CREATE TABLE " + tempColTableName + s" USING COLUMN OPTIONS($tempColTableOptions) " +
         s"AS (SELECT col1 ,col2 FROM " + colTable + ")")
 
-    val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    val testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect()
     assert(testResults4.length == 113999, s"Expected row count is 113999 while actual count is" +
         s"${testResults4.length}")
 
@@ -822,7 +822,7 @@ object SplitSnappyClusterDUnitTest
         s"AS (SELECT t1.col1 ,t1.col2 FROM " + colTable + " t1," + rowTable +
         " t2 where t1.col1=t2.col2)")
     // Expected count will be 113998 as first row will not match
-    val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect
+    val testResults5 = snc.sql("SELECT * FROM " + tempColTableName).collect()
 
     assert(testResults5.length == 113998, s"Expected row count is 113998 while actual count is" +
         s"${testResults5.length}")

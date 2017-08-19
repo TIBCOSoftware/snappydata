@@ -19,15 +19,22 @@ package org.apache.spark.sql.store
 
 import io.snappydata.{ColumnUpdateDeleteTests, Property}
 
+import org.apache.spark.SparkConf
+import org.apache.spark.memory.SnappyUnifiedMemoryManager
+
 /**
  * Tests for updates/deletes on column table.
  */
 class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
-  /*
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    stopAll()
+  }
+
   override protected def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val conf = new SparkConf()
-    conf.setIfMissing("spark.master", "local[1]")
+    conf.setIfMissing("spark.master", "local[*]")
         .setAppName(getClass.getName)
     conf.set("snappydata.store.critical-heap-percentage", "95")
     conf.set("snappydata.store.memory-size", "1200m")
@@ -36,7 +43,6 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf
   }
-  */
 
   test("basic update") {
     ColumnUpdateDeleteTests.testBasicUpdate(this.snc.snappySession)

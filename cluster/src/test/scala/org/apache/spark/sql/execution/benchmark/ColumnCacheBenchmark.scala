@@ -55,6 +55,11 @@ import org.apache.spark.util.random.XORShiftRandom
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    stopAll()
+  }
+
   override protected def newSparkConf(
       addOn: SparkConf => SparkConf = null): SparkConf = {
     val cores = math.min(8, Runtime.getRuntime.availableProcessors())
