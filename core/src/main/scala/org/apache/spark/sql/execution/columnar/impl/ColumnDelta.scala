@@ -163,7 +163,7 @@ object ColumnDelta {
   } else -1
 
   /**
-   * Returns 0 based table column index (which that stored in region is 1 based).
+   * Returns 0 based table column index (while that stored in region is 1 based).
    */
   def tableColumnIndex(deltaColumnIndex: Int): Int = if (deltaColumnIndex < 0) {
     (-deltaColumnIndex + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1) / MAX_DEPTH

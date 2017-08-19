@@ -255,9 +255,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             // or it will be committed later
             val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
             if (txId != null && !txId.equals("null")) {
-              val statement = conn.prepareCall("call sys.GET_SNAPSHOT_TXID(?)")
-              statement.registerOutParameter(1, java.sql.Types.VARCHAR)
-              statement.execute()
+              val statement = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID()")
+              statement.executeQuery()
+              statement.close()
             }
             // conn commit removed txState from the conn context.
             conn.commit()
@@ -793,13 +793,14 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
     // get the txid which was used to take the snapshot.
     if (!_commitTx) {
-      val getSnapshotTXId = conn.prepareCall(s"call sys.GET_SNAPSHOT_TXID (?)")
-      getSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
-      getSnapshotTXId.execute()
-      val txid: String = getSnapshotTXId.getString(1)
+      val getSnapshotTXId = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID()")
+      val rs = getSnapshotTXId.executeQuery()
+      rs.next()
+      val txId = rs.getString(1)
+      rs.close()
       getSnapshotTXId.close()
-      SparkShellRDDHelper.snapshotTxIdForRead.set(txid)
-      logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
+      SparkShellRDDHelper.snapshotTxIdForRead.set(txId)
+      logDebug(s"The snapshot tx id is $txId and tablename is $tableName")
     }
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)
