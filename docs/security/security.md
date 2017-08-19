@@ -1,3 +1,50 @@
+
+## Use these Resources
+1) Current Row store docs : though the flow there is incorrect and is very difficult to understand. Some of the nuanced information like 'user names converted to Identifiers' might be important but should be more like a footnote. 
+2) Current SnappyData security section below (everything here to be included; but, not sufficient)
+3) Security spec for 1.0
+
+- Can Amogh/Vivek take a cut at producing all the content.
+
+## Proposed Outline
+
+### Security features
+#### Features only available in the Enterprise version
+
+### Securing cluster startup
+#### Built-in system user
+#### How members authenticate each other
+#### configuration properties and examples
+
+### Authentication
+#### Authenticating user connections from JDBC, ODBC
+####  Using built in authentication
+#### Using LDAP for authentication
+#### Smart connector authentication
+#### Submitting jobs
+#### (provide examples as much as possible)
+
+### Authorization
+#### Az using JDBC, ODBC
+####  Using built-in Az  (GRANT to individual users)
+####  Best practice: Configure roles using 'create user ...' and grant privileges. 
+####  Using LDAP based Az. 
+####  Anything to say for Smart connector apps ?
+####  Authorizing Jobs submitted to Snappydata cluster
+####  Running user code in Snappydata ?  (UDFs, procedures ... any way to secure? )
+
+### Configuring Network encryption and authentication using SSL, PKCS
+(use Row store documentation)
+
+### Cloud security
+(Lets explore what we can tell users when running in AWS ... Content from redshift docs, Snowflake.... )
+
+
+
+-----
+
+
+
 # Managing Security
 
 ## Launching the Cluster in Secure Mode
