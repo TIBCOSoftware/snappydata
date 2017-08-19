@@ -129,7 +129,6 @@ class ParamLiteral(_value: Any, _dataType: DataType, val pos: Int)
       case t@(TimestampType | LongType) =>
         assert(value.isInstanceOf[Long], s"unexpected type $dataType instead of $t")
         ".longValue()"
-      case NullType => ""
       case _ => ""
     }
     ctx.addMutableState("boolean", isNull, "")

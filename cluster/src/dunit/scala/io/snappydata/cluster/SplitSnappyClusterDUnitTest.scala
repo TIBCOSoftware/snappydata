@@ -27,12 +27,11 @@ import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
-import io.snappydata.{Property, SnappyTableStatsProviderService}
+import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.store.ColumnUpdateDeleteTest
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -252,24 +251,14 @@ class SplitSnappyClusterDUnitTest(s: String)
       startArgs :+ Int.box(locatorClientPort))
   }
 
-  def testUpdateDeleteOnColumnTables(): Unit = {
-    // check in the connector mode
-    vm3.invoke(new SerializableRunnable() {
-      override def run(): Unit = {
-        val snc = testObject.getSnappyContextForConnector(locatorClientPort)
-        val session = snc.snappySession
-        ColumnUpdateDeleteTest.testBasicUpdate(session)
-        ColumnUpdateDeleteTest.testBasicDelete(session)
-        ColumnUpdateDeleteTest.testSNAP1925(session)
-        ColumnUpdateDeleteTest.testSNAP1926(session)
-      }
-    })
-    // check in embedded mode
+  override def testUpdateDeleteOnColumnTables(): Unit = {
+    super.testUpdateDeleteOnColumnTables()
+    // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
     val session = new SnappySession(sc)
-    ColumnUpdateDeleteTest.testBasicUpdate(session)
-    ColumnUpdateDeleteTest.testBasicDelete(session)
-    ColumnUpdateDeleteTest.testSNAP1925(session)
-    ColumnUpdateDeleteTest.testSNAP1926(session)
+    ColumnUpdateDeleteTests.testBasicUpdate(session)
+    ColumnUpdateDeleteTests.testBasicDelete(session)
+    ColumnUpdateDeleteTests.testSNAP1925(session)
+    ColumnUpdateDeleteTests.testSNAP1926(session)
   }
 }
 

@@ -81,13 +81,15 @@ class SplitClusterDUnitTest(s: String)
   override def beforeClass(): Unit = {
     super.beforeClass()
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
     val port = SplitClusterDUnitTest.locatorPort
     val netPort = SplitClusterDUnitTest.locatorNetPort
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
+
+    logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
+
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")

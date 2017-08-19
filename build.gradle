@@ -941,8 +941,7 @@ task checkAll {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
-    dependsOn ":buildDtests"
-    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+    dependsOn ':buildDtests', ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
   mustRunAfter buildAll
 }
