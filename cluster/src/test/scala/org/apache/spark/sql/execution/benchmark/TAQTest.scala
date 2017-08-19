@@ -21,6 +21,7 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
+import io.snappydata.gemxd.SnappyDataVersion
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -284,7 +285,9 @@ object TAQTest extends Logging with Assertions {
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
     conf.set("snappydata.store.critical-heap-percentage", "95")
-    conf.set("snappydata.store.memory-size", "1200m")
+    if (SnappyDataVersion.isEnterpriseEdition) {
+      conf.set("snappydata.store.memory-size", "1200m")
+    }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
