@@ -26,8 +26,8 @@ import scala.util.Random
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.Constant
-import io.snappydata.test.dunit.VM
+import io.snappydata.{ColumnUpdateDeleteTests, Constant}
+import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
 import org.junit.Assert
@@ -158,6 +158,22 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
+  }
+
+  def testUpdateDeleteOnColumnTables(): Unit = {
+    val testObject = this.testObject
+    val netPort = this.locatorClientPort
+    // check update/delete in the connector mode
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val snc = testObject.getSnappyContextForConnector(netPort)
+        val session = snc.snappySession
+        ColumnUpdateDeleteTests.testBasicUpdate(session)
+        ColumnUpdateDeleteTests.testBasicDelete(session)
+        ColumnUpdateDeleteTests.testSNAP1925(session)
+        ColumnUpdateDeleteTests.testSNAP1926(session)
+      }
+    })
   }
 }
 

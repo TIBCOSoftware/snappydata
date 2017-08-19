@@ -27,12 +27,11 @@ import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
-import io.snappydata.{Property, SnappyTableStatsProviderService}
+import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.store.ColumnUpdateDeleteTest
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -252,9 +251,13 @@ class SplitSnappyClusterDUnitTest(s: String)
       startArgs :+ Int.box(locatorClientPort))
   }
 
-  def testUpdateDeleteOnColumnTables(): Unit = {
-    val snc = SnappyContext(sc)
-    ColumnUpdateDeleteTest.testBasicUpdate(snc.snappySession)
+  override def testUpdateDeleteOnColumnTables(): Unit = {
+    // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
+    val session = new SnappySession(sc)
+    ColumnUpdateDeleteTests.testBasicUpdate(session)
+    ColumnUpdateDeleteTests.testBasicDelete(session)
+    ColumnUpdateDeleteTests.testSNAP1925(session)
+    ColumnUpdateDeleteTests.testSNAP1926(session)
   }
 }
 
@@ -737,7 +740,7 @@ object SplitSnappyClusterDUnitTest
     val rowTable = "rowTable"
     val colTable = "colTable"
 
-    Property.ColumnBatchSize.set(snc.sessionState.conf, "30")
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30k")
     val rdd = sc.parallelize(
       (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -767,7 +770,7 @@ object SplitSnappyClusterDUnitTest
 
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
-    Property.ColumnBatchSize.set(snc.sessionState.conf, "30")
+    Property.ColumnBatchSize.set(snc.sessionState.conf, "30k")
     val rdd = sc.parallelize(
       (1 to 113999).map(i => new TestRecord(i, i + 1, i + 2)))
     val dataDF = snc.createDataFrame(rdd)

@@ -454,6 +454,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     }
     // consume any remaining (slight inefficiency of reading first positions again
     //   but doing that for code clarity)
+    positionCursor1 -= 4
     while (relativePosition1 < numPositions1) {
       encoderOrdinal += 1
       // set next update position to be from first
@@ -465,6 +466,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
         columnBytes1, writer, cursor, encoderOrdinal, forMerge = true)
       relativePosition1 += 1
     }
+    positionCursor2 -= 4
     while (relativePosition2 < numPositions2) {
       encoderOrdinal += 1
       // set next update position to be from second

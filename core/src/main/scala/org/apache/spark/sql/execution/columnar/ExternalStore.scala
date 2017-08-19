@@ -46,7 +46,8 @@ trait ExternalStore extends Serializable {
   }
 
   def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String)(implicit c: Option[Connection] = None): Unit
+      statsData: Array[Byte], partitionId: Int, batchId: String)
+      (implicit c: Option[Connection] = None): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]
