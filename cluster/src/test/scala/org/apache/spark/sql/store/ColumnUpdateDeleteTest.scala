@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql.store
 
+import io.snappydata.gemxd.SnappyDataVersion
 import io.snappydata.{ColumnUpdateDeleteTests, Property}
 
 import org.apache.spark.SparkConf
@@ -37,7 +38,9 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     conf.setIfMissing("spark.master", "local[*]")
         .setAppName(getClass.getName)
     conf.set("snappydata.store.critical-heap-percentage", "95")
-    conf.set("snappydata.store.memory-size", "1200m")
+    if (SnappyDataVersion.isEnterpriseEdition) {
+      conf.set("snappydata.store.memory-size", "1200m")
+    }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
