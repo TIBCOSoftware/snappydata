@@ -110,6 +110,11 @@ dependencies {
 
 }
 
+task buildDtests {
+  delete buildDir
+  dependsOn ':cleanScalaTest', ':snappy-store:storeProduct', ':product', packageTests
+}
+
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
     classifier = 'javadoc'
     from scaladoc
@@ -127,7 +132,7 @@ if (rootProject.hasProperty('enablePublish')) {
 archivesBaseName = 'snappydata-store-scala-tests'
 
 scalaTest {
-    dependsOn ':cleanScalaTest', 'packageTests'
+    dependsOn buildDtests
     doFirst {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)

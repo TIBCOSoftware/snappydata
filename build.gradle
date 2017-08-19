@@ -922,8 +922,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task buildDtests {
-  delete "${snappyProductDir}/dtests/build-artifacts/scala-${scalaBinaryVersion}/"
-  dependsOn "snappy-dtests_${scalaBinaryVersion}:packageTests"
+  dependsOn "snappy-dtests_${scalaBinaryVersion}:buildDtests"
 }
 task checkAll {
   dependsOn ':snappy-spark:scalaStyle'
