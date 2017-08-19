@@ -16,6 +16,9 @@ Release 1.0
   
   [Snap-1890] Snappy Monitoring UI displays new Pulse logo. Also product and it's build details are shown under version 
   in pop up window.
+  
+  [Snap-1813] Pulse (Snappy Monitoring UI) users need to provide valid user name and password if SnappyData cluster is
+  running in secure mode.
 
 
 Release 0.9

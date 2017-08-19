@@ -304,10 +304,9 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   def getCurrentBucketId: Int = partitionId
 
-  def getColumnLob(columnIndex: Int): ByteBuffer = {
-    val columnPosition = columnIndex + 1
+  private def fillBuffers(): Unit = {
     colBuffers match {
-      case buffers if buffers.size() > 1 => buffers.get(columnPosition)
+      case buffers if buffers.size() > 1 => // already filled in
       case buffers =>
         for (i <- 1 to totalColumns) {
           ps.setString(i, currentUUID)
@@ -324,8 +323,11 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           colBlob.free()
           buffers.put(position, colBuffer)
         }
-        buffers.get(columnPosition)
     }
+  }
+
+  def getColumnLob(columnIndex: Int): ByteBuffer = {
+    colBuffers.get(columnIndex + 1)
   }
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
@@ -348,6 +350,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   }
 
   def getDeletedRowCount: Int = {
+    fillBuffers()
     val delete = colBuffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
     if (delete eq null) 0
     else {

@@ -38,7 +38,8 @@ package org.apache.spark.sql.execution.columnar
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
-import org.apache.spark._
+import io.snappydata.ResultSetWithNull
+
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -55,6 +56,7 @@ import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -303,7 +305,7 @@ private[sql] final case class ColumnTableScan(
     val numRowsBuffer = metricTerm(ctx, "numRowsBuffer")
     val numRowsOther =
       if (otherRDDs.isEmpty) null else metricTerm(ctx, "numRowsOtherRDDs")
-    val isEmbedded = (baseRelation eq null) ||
+    val embedded = (baseRelation eq null) ||
       (baseRelation.connectionType == ConnectionType.Embedded)
     // PartitionedPhysicalRDD always has one input.
     // It returns an iterator of iterators (row + column)
@@ -338,7 +340,7 @@ private[sql] final case class ColumnTableScan(
     } else ("", "")
 
     val iteratorClass = "scala.collection.Iterator"
-    val colIteratorClass = if (isEmbedded) classOf[ColumnBatchIterator].getName
+    val colIteratorClass = if (embedded) classOf[ColumnBatchIterator].getName
     else classOf[ColumnBatchIteratorOnRS].getName
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
@@ -377,6 +379,7 @@ private[sql] final case class ColumnTableScan(
     val decoderClass = classOf[ColumnDecoder].getName
     val updatedDecoderClass = classOf[UpdatedColumnDecoderBase].getName
     val rsDecoderClass = classOf[ResultSetDecoder].getName
+    val rsWithNullClass = classOf[ResultSetWithNull].getName
     val rowDecoderClass = classOf[UnsafeRowDecoder].getName
     val deletedDecoderClass = classOf[DeletedColumnDecoder].getName
     val batch = ctx.freshName("batch")
@@ -389,12 +392,14 @@ private[sql] final case class ColumnTableScan(
     val deletedDecoderLocal = s"${deletedDecoder}Local"
     var deletedDeclaration = ""
     var deletedCheck = ""
+    val deletedCount = ctx.freshName("deletedCount")
     var deletedCountCheck = ""
 
     ctx.addMutableState("java.nio.ByteBuffer", buffers, "")
     ctx.addMutableState("int", numBatchRows, "")
     ctx.addMutableState("int", batchIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
+    ctx.addMutableState("int", deletedCount, "")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -453,8 +458,9 @@ private[sql] final case class ColumnTableScan(
     var columnBatchIdTerm: String = null
     var ordinalIdTerm: String = null
     var bucketIdTerm: String = null
+
     // this mapper is for the physical columns in the table
-    val columnsInputMapper = (attr: Attribute, index: Int) => {
+    val columnsInputMapper = (attr: Attribute, index: Int, rsIndex: Int) => {
       val decoder = ctx.freshName("decoder")
       val decoderLocal = s"${decoder}Local"
       val updatedDecoder = s"${decoder}Updated"
@@ -469,7 +475,7 @@ private[sql] final case class ColumnTableScan(
       }
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
-      val rsPosition = if (isEmbedded) baseIndex + 1 else index + 1
+      val rsPosition = if (embedded) baseIndex + 1 else rsIndex + 1
       val incrementUpdatedColumnCount = if (updatedColumnCount eq null) ""
       else s"\n$updatedColumnCount.${metricAdd("1")};"
 
@@ -477,7 +483,7 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState("int", numNullsVar, "")
 
       val rowDecoderCode =
-        s"$decoder = new $rsDecoderClass((io.snappydata.ResultSetWithNull)$rs, $rsPosition);"
+        s"$decoder = new $rsDecoderClass(($rsWithNullClass)$rs, $rsPosition);"
       if (otherRDDs.isEmpty) {
         if (isForSampleReservoirAsRegion) {
           ctx.addMutableState(decoderClass, decoder,
@@ -559,6 +565,7 @@ private[sql] final case class ColumnTableScan(
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
+    var rsIndex = -1
     val columnsInput = output.zipWithIndex.map {
       case (attr, _) if attr.name.startsWith(ColumnDelta.mutableKeyNamePrefix) =>
         ColumnDelta.mutableKeyNames.indexOf(attr.name) match {
@@ -575,12 +582,12 @@ private[sql] final case class ColumnTableScan(
             ExprCode("", "false", bucketIdTerm)
           case _ => throw new IllegalStateException(s"Unexpected internal attribute $attr")
         }
-      case (attr, index) => columnsInputMapper(attr, index)
+      case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
     }
 
     if (deletedCheck.isEmpty) {
       // no columns in a count(.) query
-      deletedCountCheck = s" - $colInput.getDeletedRowCount()"
+      deletedCountCheck = s" - ($inputIsRow ? 0 : $deletedCount)"
     }
 
     if (isWideSchema) {
@@ -600,7 +607,7 @@ private[sql] final case class ColumnTableScan(
       relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
-      s"$numOutputRows.${metricAdd(numBatchRows)};"
+      s"$numOutputRows.${metricAdd(s"$numBatchRows - $deletedCount")};"
     } else ""
     val incrementBufferOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(metricValue(numRowsBuffer))};"
@@ -616,7 +623,8 @@ private[sql] final case class ColumnTableScan(
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
         UnsafeRow $unsafeRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        $numBatchRows = $unsafeRow.getInt($countIndexInSchema)$deletedCountCheck;
+        $deletedCount = $colInput.getDeletedRowCount();
+        $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -696,10 +704,10 @@ private[sql] final case class ColumnTableScan(
            |  $bucketIdTerm = $colInput.getCurrentBucketId();
            |}
         """.stripMargin,
-        // ordinalId is the last column in the row buffer table (exclude 3 virtual columns)
+        // ordinalId is the last column in the row buffer table (exclude virtual columns)
         s"""
-           |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(${relationSchema.length - 2})
-           |    : $batchOrdinal;
+           |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(
+           |    ${if (embedded) relationSchema.length - 2 else output.length - 2}) : $batchOrdinal;
         """.stripMargin)
     else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
@@ -723,7 +731,7 @@ private[sql] final case class ColumnTableScan(
        |    $assignBatchId
        |    $batchConsume
        |    $deletedDeclaration
-       |    final int $numRows = $numBatchRows;
+       |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      $deletedCheck

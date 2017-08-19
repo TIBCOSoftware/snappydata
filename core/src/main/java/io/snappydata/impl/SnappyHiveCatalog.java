@@ -402,6 +402,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         try {
           HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
           SnappyHiveCatalog.this.hmClients.set(hmc);
+          // a dummy table query to pre-initialize most of hive metastore tables
+          try {
+            getTable(hmc, "APP", "DUMMY");
+          } catch (SQLException ignored) {
+          }
           return;
         } catch (Exception ex) {
           Throwable t = ex;
