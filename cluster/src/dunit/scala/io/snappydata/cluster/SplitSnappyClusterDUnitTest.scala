@@ -252,7 +252,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   override def testUpdateDeleteOnColumnTables(): Unit = {
-    super.testUpdateDeleteOnColumnTables()
     // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
     val session = new SnappySession(sc)
     ColumnUpdateDeleteTests.testBasicUpdate(session)
