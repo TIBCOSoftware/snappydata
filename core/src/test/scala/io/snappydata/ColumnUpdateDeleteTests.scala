@@ -131,11 +131,13 @@ object ColumnUpdateDeleteTests extends Assertions {
     assert(res.length === 1)
     assert(res(0).getInt(0) === 87)
     assert(res(0).getString(1) === "addr87_update")
+    assert(res(0).getBoolean(2) === false)
 
     res = session.sql("select * from updateTable where status <> ((id % 2) = 1)").collect()
     assert(res.length === 1)
     assert(res(0).getInt(0) === 87)
     assert(res(0).getString(1) === "addr87_update")
+    assert(res(0).getBoolean(2) === false)
 
     res = session.sql("select * from updateTable EXCEPT select * from checkTable3").collect()
     assert(res.length === 2)

@@ -205,7 +205,7 @@ class LeadImpl extends ServerImpl with Lead
     checkAuthProvider(storeProps)
 
     logInfo("passing store properties as " + storeProps)
-    super.start(storeProps, false)
+    super.start(storeProps, ignoreIfStarted = false)
 
     status() match {
       case State.RUNNING =>
@@ -270,17 +270,11 @@ class LeadImpl extends ServerImpl with Lead
         throw new UnsupportedOperationException(
           "LDAP is the only supported auth-provider currently.")
       }
-      if (authP != null && !isEnterpriseEdition()) {
+      if (authP != null && !SnappyDataVersion.isEnterpriseEdition) {
         throw new UnsupportedOperationException("Security feature is available in SnappyData " +
             "Enterprise Edition.")
       }
     }
-  }
-
-  private def isEnterpriseEdition(): Boolean = {
-    GemFireVersion.getInstance(classOf[SnappyDataVersion],
-      SharedUtils.GFXD_VERSION_PROPERTIES)
-    GemFireVersion.isEnterpriseEdition
   }
 
   @throws[SQLException]
@@ -432,7 +426,7 @@ class LeadImpl extends ServerImpl with Lead
 
         def checkCredentials(userPass: Option[UserPass]): Option[AuthInfo] = {
           userPass match {
-            case Some(u) => {
+            case Some(u) =>
               try {
                 val props = new Properties()
                 props.setProperty(Attribute.USERNAME_ATTR, u.user)
@@ -447,13 +441,12 @@ class LeadImpl extends ServerImpl with Lead
                   logInfo(msg)
                   None
                 } else {
-                  Option(new AuthInfo(new User(u.user, u.pass)))
+                  Option(new AuthInfo(User(u.user, u.pass)))
                 }
               } catch {
                 case t: Throwable => logWarning(s"Failed to authenticate the snappy job. $t")
                   None
               }
-            }
             case None => None
           }
         }

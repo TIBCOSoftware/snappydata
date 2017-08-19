@@ -73,7 +73,7 @@ class SplitClusterDUnitTest(s: String)
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
-  override protected val productDir =
+  override protected val productDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
   override protected def locatorClientPort = { testObject.locatorNetPort }
@@ -283,7 +283,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val data = ArrayBuffer(Data(1, "2", Decimal("3.2")),
       Data(7, "8", Decimal("9.8")), Data(9, "2", Decimal("3.9")),
       Data(4, "2", Decimal("2.4")), Data(5, "6", Decimal("7.6")))
-    for (i <- 1 to 1000) {
+    for (_ <- 1 to 1000) {
       data += Data(Random.nextInt(), Integer.toString(Random.nextInt()),
         Decimal(Random.nextInt(100).toString + '.' + Random.nextInt(100)))
     }
