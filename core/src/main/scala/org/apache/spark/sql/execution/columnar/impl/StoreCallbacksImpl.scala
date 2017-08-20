@@ -320,6 +320,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def shouldStopRecovery(): Boolean =
     MemoryManagerCallback.memoryManager.shouldStopRecovery()
+
+  override def isEnterpriseEdition: Boolean =
+    SnappySession.isEnterpriseEdition
 }
 
 trait StoreCallback extends Serializable {
