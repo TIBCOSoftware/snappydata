@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.io.{File, PrintWriter}
+import java.io.{File, FileFilter, PrintWriter}
 import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
@@ -30,12 +30,12 @@ import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
+import org.apache.spark.TestPackageUtils
 import org.apache.spark.sql.types.{IntegerType, StructField}
 import org.apache.spark.sql.{Row, SnappyContext, TableNotFoundException}
 
 import scala.language.{implicitConversions, postfixOps}
-import scala.sys.process.Process
-import scala.sys.process._
+import scala.sys.process.{Process, _}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -71,6 +71,12 @@ class SplitClusterDUnitSecurityTest(s: String)
   val jdbcUser2 = "gemfire2"
   val jdbcUser3 = "gemfire3"
   val adminUser1 = "gemfire4"
+
+  // Job config names
+  val outputFile = "output.file"
+  val opCode = "op.code"
+  val otherColTabName = "other.columntable"
+  val otherRowTabName = "other.rowtable"
 
   override def setUp(): Unit = {
     super.setUp()
@@ -163,7 +169,6 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
-
   }
 
   def stopLdapTestServer(): Unit = {
@@ -272,13 +277,9 @@ class SplitClusterDUnitSecurityTest(s: String)
     * drop from smart side and vice versa.
     */
   def testSQLOpsWithValidCredentials(): Unit = {
-    val props = new Properties()
-    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
-    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    user1Conn = SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+    user1Conn = getConn(jdbcUser1, true)
     val stmt = user1Conn.createStatement()
     val value = "brought up to zero"
-    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
 
     try {
       // Create row and column tables in embedded mode
@@ -389,6 +390,26 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
   }
 
+  def getConn(u: String, setSNC: Boolean = false): Connection = {
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, u)
+    props.setProperty(Attribute.PASSWORD_ATTR, u)
+    if (setSNC) snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    SplitClusterDUnitTest.getConnection(locatorClientPort, props)
+  }
+
+  def permit(stmt: Statement, permit: String, op: String, t1: String, t2: String, user: String):
+  Unit = {
+    val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
+    stmt.execute(s"$permit $op on table $t1 $toFrom $user")
+    stmt.execute(s"$permit $op on table $t2 $toFrom $user")
+    if (op.equalsIgnoreCase("update") || op.equalsIgnoreCase("delete")) {
+      // We need select permission for update and delete operation
+      stmt.execute(s"$permit select on table $t1 $toFrom $user")
+      stmt.execute(s"$permit select on table $t2 $toFrom $user")
+    }
+  }
+
   /**
     * Grant and revoke select, insert, update and delete operations and verify from smart and
     * embedded side.
@@ -396,13 +417,6 @@ class SplitClusterDUnitSecurityTest(s: String)
     * Attempt to modify hive metastore via a thin connection should fail.
     */
   def testGrantRevokeAndHiveModification(): Unit = {
-    def getConn(u: String, setSNC: Boolean = false): Connection = {
-      val props = new Properties()
-      props.setProperty(Attribute.USERNAME_ATTR, u)
-      props.setProperty(Attribute.PASSWORD_ATTR, u)
-      if (setSNC) snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
-      SplitClusterDUnitTest.getConnection(locatorClientPort, props)
-    }
     user1Conn = getConn(jdbcUser1)
     val user1Stmt = user1Conn.createStatement()
     val value = "brought up to zero"
@@ -460,25 +474,14 @@ class SplitClusterDUnitSecurityTest(s: String)
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
-    def exe(permit: String, op: String): Unit = {
-      val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
-      user1Stmt.execute(s"$permit $op on table $embeddedColTab1 $toFrom $jdbcUser2")
-      user1Stmt.execute(s"$permit $op on table $embeddedRowTab1 $toFrom $jdbcUser2")
-      if (!op.equalsIgnoreCase("select")) {
-        // We need select permission for insert, update or delete operation
-        user1Stmt.execute(s"$permit select on table $embeddedColTab1 $toFrom $jdbcUser2")
-        user1Stmt.execute(s"$permit select on table $embeddedRowTab1 $toFrom $jdbcUser2")
-      }
-    }
-
     def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
       // grant
-      exe("grant", op)
+      permit(user1Stmt, "grant", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
       sqls.foreach(s => executeSQL(user2Stmt, s))
       sqls.foreach(s => snc.sql(s).collect())
 
       // revoke
-      exe("revoke", op)
+      permit(user1Stmt, "revoke", op, embeddedColTab1, embeddedRowTab1, jdbcUser2)
       sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
       sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
       sqls.foreach(s => executeSQL(adminStmt, s))
@@ -634,7 +637,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
   }
 
-  def testSnappyJob(): Unit = {
+  def _testSnappyJob(): Unit = {
     // Create config file with credentials
     val jobConfigFile = s"$snappyProductDir/conf/job.config"
     writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
@@ -645,7 +648,8 @@ class SplitClusterDUnitSecurityTest(s: String)
         s"--app-jar $snappyProductDir/examples/jars/quickstart.jar  " +
         s"--passfile $jobConfigFile"
     logInfo(s"Submitting job $job")
-    job !!
+    var submit = job.!!
+    assert(submit.contains("STARTED"), "Job not started")
 
     // Assert table partsupp, created within the job, exists
     val table = "PARTSUPP"
@@ -666,10 +670,107 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
     logInfo(s"Re-submitting job $job with invalid credentials.")
-    job !!
+    submit = job.!!
+    assert(!submit.contains("STARTED"), "Job should have failed")
 
     // assert table does not exist
     assert(!snc.snappySession.catalog.tableExists(table), s"Table $table exists.")
+  }
+
+  def testSnappyNewJob(): Unit = {
+    // Create config file with credentials
+    val jobConfigFile = s"$snappyProductDir/conf/job.config"
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    val packageStr = "io/snappydata/cluster/"
+    val className = "SnappySecureJob"
+    val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
+        + s"test/$packageStr")
+    assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
+        s"not found: $dir")
+    val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains(className)
+      }
+    }).toList, Some(packageStr))
+    assert(!jar.isEmpty, s"No class files found for $className")
+
+    // Run snappy job with credentials in a config file
+    val jobBaseStr = s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className " +
+        s"--class io.snappydata.cluster.SnappySecureJob " +
+        s"--app-jar $jar  " +
+        s"--passfile $jobConfigFile"
+
+    var job = s"$jobBaseStr --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out"
+    logInfo(s"Submitting job $job")
+    var consoleLog = job.!!
+    logInfo(consoleLog)
+    var jobId = getJobId(consoleLog)
+    assert(consoleLog.contains("STARTED"), "Job not started")
+    var jobOp = "sqlOps"
+
+    val wc = new WaitCriterion {
+      override def done() = {
+        consoleLog = (s"$snappyProductDir/bin/snappy-job.sh status --job-id $jobId " +
+            s" --passfile $jobConfigFile").!!
+        if (consoleLog.contains("FINISHED")) logInfo(s"$jobOp completed. $consoleLog")
+        consoleLog.contains("FINISHED")
+      }
+      override def description() = {
+        logInfo(consoleLog)
+        s"$jobOp job $jobId did not complete in time."
+      }
+    }
+    DistributedTestBase.waitForCriterion(wc, 60000, 1000, true)
+
+    /* val colTab = "JOB_COLTAB"
+    val rowTab = "JOB_ROWTAB"
+    def submitJob(op: String): Unit = {
+      job = s"$jobBaseStr --conf $opCode=$op --conf $otherColTabName=$jdbcUser2.$colTab" +
+          s" --conf $otherRowTabName=$jdbcUser2.$rowTab --conf $outputFile=Snappy${op}Job.out"
+      logInfo(s"Submitting job $job")
+      consoleLog = job.!!
+      logInfo(consoleLog)
+      jobId = getJobId(consoleLog)
+      assert(consoleLog.contains("STARTED"), "Job not started")
+      jobOp = op
+      DistributedTestBase.waitForCriterion(wc, 15000, 1000, true)
+    }
+
+    user2Conn = getConn(jdbcUser2)
+    val stmt = user2Conn.createStatement()
+    SplitClusterDUnitTest.createTableUsingJDBC(colTab, "column", user2Conn, stmt,
+      Map("COLUMN_BATCH_SIZE" -> "50"))
+    SplitClusterDUnitTest.createTableUsingJDBC(rowTab, "row", user2Conn, stmt)
+
+    submitJob("nogrant")
+    permit(stmt, "grant", "select", colTab, rowTab, jdbcUser1)
+    submitJob("select")
+
+    permit(stmt, "revoke", "select", colTab, rowTab, jdbcUser1)
+    permit(stmt, "grant", "insert", colTab, rowTab, jdbcUser1)
+    submitJob("insert")
+
+    permit(stmt, "revoke", "insert", colTab, rowTab, jdbcUser1)
+    permit(stmt, "grant", "update", colTab, rowTab, jdbcUser1)
+    submitJob("update")
+
+    permit(stmt, "revoke", "update", colTab, rowTab, jdbcUser1)
+    permit(stmt, "grant", "delete", colTab, rowTab, jdbcUser1)
+    submitJob("delete")*/
+
+    // Submit the same job with invalid credentials
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
+    writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
+    logInfo(s"Re-submitting job $jobBaseStr with invalid credentials.")
+    consoleLog = s"$jobBaseStr --conf $outputFile=SnappyInvalidJob.out".!!
+    logInfo(consoleLog)
+    assert(consoleLog.contains("The supplied authentication is invalid"), "Job should have failed")
+  }
+
+  private def getJobId(str: String): String = {
+    val idx = str.indexOf("jobId")
+    str.substring(idx + 9, idx + 45)
   }
 
   def _testUDFAndProcs(): Unit = {

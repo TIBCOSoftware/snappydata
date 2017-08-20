@@ -31,7 +31,8 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyStreamingContext],
-      SnappySessionFactory.cleanJobConfig(config)))
+      SnappySessionFactory.updateCredentials(sc.asInstanceOf[SnappyStreamingContext]
+          .snappySession, config)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
@@ -42,7 +43,7 @@ abstract class SnappyStreamingJob extends SparkJobBase {
         appName = this.getClass.getCanonicalName,
         classLoader = Thread.currentThread().getContextClassLoader)
 
-      runSnappyJob(snc, SnappySessionFactory.cleanJobConfig(jobConfig))
+      runSnappyJob(snc, SnappySessionFactory.updateCredentials(snc.snappySession, jobConfig))
     } finally {
     }
   }

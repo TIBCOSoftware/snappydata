@@ -37,7 +37,8 @@ public abstract class JavaSnappyStreamingJob implements SparkJobBase {
   @Override
   final public SparkJobValidation validate(Object sc, Config config) {
     return SnappyJobValidate.validate(isValidJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc),
-        SnappySessionFactory.cleanJobConfig(config)));
+        SnappySessionFactory.updateCredentials(((SnappyStreamingContext)sc).snappySession(),
+            config)));
   }
 
   @Override
@@ -47,7 +48,8 @@ public abstract class JavaSnappyStreamingJob implements SparkJobBase {
       SnappyUtils.setSessionDependencies(context.snappySession().sparkContext(),
           this.getClass().getCanonicalName(),
           Thread.currentThread().getContextClassLoader());
-      return runSnappyJob(context, SnappySessionFactory.cleanJobConfig(jobConfig));
+      return runSnappyJob(context, SnappySessionFactory.updateCredentials(context.snappySession()
+          , jobConfig));
     } finally {
     }
   }
