@@ -197,14 +197,20 @@ class LeadImpl extends ServerImpl with Lead
     val conf = sc.getConf // this will get you a cloned copy
     initStartupArgs(conf, sc)
 
+    val password = conf.getOption(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
+    if (password.isDefined) conf.remove(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
     logInfo("cluster configuration after overriding certain properties \n"
         + conf.toDebugString)
+    if (password.isDefined) conf.set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR,
+      password.get)
 
     val confProps = conf.getAll
     val storeProps = ServiceUtils.getStoreProperties(confProps)
     checkAuthProvider(storeProps)
 
+    val pass = storeProps.remove(Attribute.PASSWORD_ATTR)
     logInfo("passing store properties as " + storeProps)
+    if (pass != null) storeProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
     super.start(storeProps, ignoreIfStarted = false)
 
     status() match {
