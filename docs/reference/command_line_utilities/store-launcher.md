@@ -20,7 +20,7 @@ With no arguments, `snappy` starts an [interactive SQL command shell](../../refe
 snappy
 ```
 
-To specify a system property for an interactive `snappy` session, you must define the JAVA_ARGS environment variable before starting `snappy`. For example, `snappy` uses the `gfxd.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA_ARGS variable:
+To specify a system property for an interactive `snappy` session, you must define the JAVA_ARGS environment variable before starting `snappy`. For example, `snappy` uses the `snappy.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA_ARGS variable:
 
 ``` pre
 $ export JAVA_ARGS="-Dgfxd.history=/Users/user1/snappystore-history.sql" 

@@ -1221,8 +1221,6 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private[sql] def addBaseTableOption(baseTable: Option[_],
       options: Map[String, String]): Map[String, String] = baseTable match {
-    // TODO: SW: proper schema handling here and everywhere else in our query
-    // processing rules as well as of Catalyst
     case Some(t: TableIdentifier) => options + (JdbcExtendedUtils
         .BASETABLE_PROPERTY -> sessionCatalog.formatTableName(t.table))
     case Some(s: String) => options + (JdbcExtendedUtils
@@ -1441,9 +1439,8 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private[sql] def getIndexTable(
       indexIdent: QualifiedTableName): QualifiedTableName = {
-    // TODO: SW: proper schema handling required here
-    new QualifiedTableName(indexIdent.schemaName, Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
-      indexIdent.table)
+    new QualifiedTableName(indexIdent.schemaName,
+      Constant.COLUMN_TABLE_INDEX_PREFIX + indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,

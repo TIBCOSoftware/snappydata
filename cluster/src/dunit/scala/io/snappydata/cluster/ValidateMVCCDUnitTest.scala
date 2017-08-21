@@ -39,7 +39,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) with Logging {
 
   // set default batch size for this test
-  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "4")
+  bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "100")
   var errorInThread: Throwable = null
 
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
@@ -389,13 +389,13 @@ object ValidateMVCCDUnitTest {
 
     override def waitOnTestLock(): Unit = {
       lockForTest.synchronized {
-        lockForTest.wait(300000)
+        lockForTest.wait(60000)
       }
     }
 
     override def waitOnOperationLock(): Unit = {
       operationLock.synchronized {
-        operationLock.wait(300000)
+        operationLock.wait(60000)
       }
     }
   }

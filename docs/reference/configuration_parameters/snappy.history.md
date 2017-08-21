@@ -1,4 +1,4 @@
-# gfxd.history
+# snappy.history
 
 
 ## Description
@@ -7,9 +7,9 @@ The path and filename in which the `snappy` utility stores a list of the command
 
 ## Default Value
 
-%UserProfile%\\.gfxd.history (Windows)
+%UserProfile%\\.snappy.history (Windows)
 
-$HOME/.gfxd.history (Linux)
+$HOME/.snappy.history (Linux)
 
 ## Property Type
 

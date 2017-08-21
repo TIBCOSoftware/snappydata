@@ -148,13 +148,15 @@ abstract case class JDBCAppendableRelation(
     val session = sqlContext.sparkSession
     val columnBatchSize = origOptions.get(
       ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
-      case Some(cb) => Integer.parseInt(cb)
-      case None => ExternalStoreUtils.defaultColumnBatchSize(session)
+      case Some(cb) if !origOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT) =>
+        Integer.parseInt(cb)
+      case _ => ExternalStoreUtils.defaultColumnBatchSize(session)
     }
     val columnMaxDeltaRows = origOptions.get(
       ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
-      case Some(cd) => Integer.parseInt(cd)
-      case None => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
+      case Some(cd) if !origOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT) =>
+        Integer.parseInt(cd)
+      case _ => ExternalStoreUtils.defaultColumnMaxDeltaRows(session)
     }
     val compressionCodec = origOptions.get(
       ExternalStoreUtils.COMPRESSION_CODEC) match {

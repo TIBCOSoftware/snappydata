@@ -44,9 +44,11 @@ import org.apache.spark.{Logging, SparkConf}
   * If the critical and eviction events are not set, it asks the UnifiedMemoryManager
   * to allocate the space.
   *
-  * @param conf
-  * @param maxHeapMemory
-  * @param numCores
+  * @param conf          the SparkConf from the SparkEnv to use for initialization
+  * @param maxHeapMemory the maximum heap memory that is available for use by MemoryManager;
+  *                      callers should leave out some amount of "reserved memory" for
+  *                      unaccounted object allocations
+  * @param numCores      number of cores available in the cluster
   */
 class SnappyUnifiedMemoryManager private[memory](
     conf: SparkConf,
@@ -87,8 +89,6 @@ class SnappyUnifiedMemoryManager private[memory](
   private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
   private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
-
-  private val maxHeapExecutionSize = (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)

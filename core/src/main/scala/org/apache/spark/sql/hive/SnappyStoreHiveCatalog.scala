@@ -21,6 +21,11 @@ import java.net.URL
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
+
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.Attribute
@@ -56,10 +61,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.control.NonFatal
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -109,13 +110,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
-      case _ => {
+      case _ =>
         // Initialize default database if it doesn't already exist
         val defaultDbDefinition =
           CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
         externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
         client.setCurrentDatabase(defaultName)
-      }
     }
     defaultName
   }
@@ -578,11 +578,20 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case Some(_) =>
           case None => newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
               ExternalStoreUtils.defaultColumnBatchSize(snappySession).toString)
+            // mark this as transient since can change as per session configuration later
+            newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE_TRANSIENT -> "true")
         }
         options.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS) match {
           case Some(_) =>
           case None => newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
               ExternalStoreUtils.defaultColumnMaxDeltaRows(snappySession).toString)
+            // mark this as transient since can change as per session configuration later
+            newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS_TRANSIENT -> "true")
+        }
+        options.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
+          case Some(_) =>
+          case None => newOptions += (ExternalStoreUtils.COMPRESSION_CODEC ->
+              ExternalStoreUtils.defaultCompressionCodec(snappySession).toString)
         }
         // invalidate any cached plan for the table
         tableIdent.invalidate()
@@ -822,15 +831,13 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     })
 
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
-      case SnappyEmbeddedMode(_, _) => {
+      case SnappyEmbeddedMode(_, _) =>
         callbacks.setSessionDependencies(snappySession.sparkContext,
           qualifiedName.unquotedString,
           newClassLoader)
-      }
-      case _ => {
-        newClassLoader.getURLs.map(url =>
+      case _ =>
+        newClassLoader.getURLs.foreach(url =>
           snappySession.sparkContext.addJar(url.getFile))
-      }
     }
   }
 

@@ -179,7 +179,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   override def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String)(implicit conn: Option[Connection]): Unit = {
+      statsData: Array[Byte], partitionId: Int,
+      batchId: String)(implicit conn: Option[Connection]): Unit = {
     val allocator = GemFireCacheImpl.getCurrentBufferAllocator
     val statsBuffer = createStatsBuffer(statsData, allocator)
     connectionType match {
@@ -201,7 +202,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         region.putAll(keyValues)
 
       case _ =>
-        // TODO: SW: temporarily made close=true for delete
         // noinspection RedundantDefaultArgument
         tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) { connection =>
           val deleteStr = getRowInsertOrPutStr(tableName, isPut = true)
@@ -221,6 +221,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             stmt.setInt(3, ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
             blob = new ClientBlob(statsBuffer, true)
             stmt.setBlob(4, blob)
+            stmt.addBatch()
 
             stmt.executeBatch()
             stmt.close()
@@ -254,9 +255,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             // or it will be committed later
             val txId = SparkShellRDDHelper.snapshotTxIdForWrite.get
             if (txId != null && !txId.equals("null")) {
-              val statement = conn.createStatement()
-              statement.execute(
-                s"call sys.GET_SNAPSHOT_TXID('$txId')")
+              val statement = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID()")
+              statement.executeQuery()
+              statement.close()
             }
             // conn commit removed txState from the conn context.
             conn.commit()
@@ -311,26 +312,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       // do a putAll of the key-value map
       region.putAll(keyValues)
     } catch {
-      // TODO: test this code
-      // should be rolled back. so no need to delete.
       case NonFatal(e) =>
-        // delete the base entry first
-        val key = new ColumnFormatKey(partitionId, statRowIndex, uuid)
-        try {
-          region.destroy(key)
-        } catch {
-          case NonFatal(_) => // ignore
-        }
-        // delete the column entries
-        batch.buffers.indices.foreach { index =>
-          val columnIndex = if (deltaUpdate) batch.deltaIndexes(index) else index + 1
-          val key = new ColumnFormatKey(partitionId, columnIndex, uuid)
-          try {
-            region.destroy(key)
-          } catch {
-            case NonFatal(_) => // ignore
-          }
-        }
+        // no explicit rollback needs to be done with snapshot
+        logInfo(s"Region insert/put failed with exception $e")
         throw e
     }
   }
@@ -380,35 +364,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.executeBatch()
           stmt.close()
         } catch {
-          // TODO: test this code
-          // TODO:Suranjan This code is no needed now.
-          // Need to rollback.
-          // we can't do this for only this cachedbatch
-          // all the inserts in this partitionId will be rolled back.
           case NonFatal(e) =>
-            val deletestmt = connection.prepareStatement(
-              s"delete from $tableName where partitionId = $partitionId " +
-                  s" and uuid = ? and columnIndex = ? ")
-            // delete the base entry
-            try {
-              deletestmt.setString(1, uuid)
-              deletestmt.setInt(2, statRowIndex)
-              deletestmt.executeUpdate()
-            } catch {
-              case NonFatal(_) => // Do nothing
-            }
-
-            for (idx <- 1 to batch.buffers.length) {
-              try {
-                val columnIndex = if (deltaUpdate) batch.deltaIndexes(idx - 1) else idx
-                deletestmt.setString(1, uuid)
-                deletestmt.setInt(2, columnIndex)
-                deletestmt.executeUpdate()
-              } catch {
-                case NonFatal(_) => // Do nothing
-              }
-            }
-            deletestmt.close()
+            // no explicit rollback needs to be done with snapshot
+            logInfo(s"Connector insert/put failed with exception $e")
             throw e
         } finally {
           // free the blobs
@@ -496,9 +454,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     // split the batch and put into row buffer if it is small
     if (maxDeltaRows > 0 && batch.numRows < math.max(maxDeltaRows / 10,
       GfxdConstants.SNAPPY_MIN_COLUMN_DELTA_ROWS)) {
-      // TODO: SW: temporarily made close=true for updates
       // noinspection RedundantDefaultArgument
-      tryExecute(tableName, closeOnSuccessOrFailure = false/*batch.deltaIndexes ne null*/,
+      tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
         onExecutor = true)(doInsertOrPutImpl(tableName, batch, batchId, partitionId,
         maxDeltaRows))(implicitly, conn)
     } else {
@@ -509,9 +466,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           doSnappyInsertOrPut(columnTableName, region, batch, batchID, partitionId, maxDeltaRows)
 
         case _ =>
-          // TODO: SW: temporarily made close=true for updates
           // noinspection RedundantDefaultArgument
-          tryExecute(tableName, closeOnSuccessOrFailure = false/* batch.deltaIndexes ne null*/,
+          tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
             onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
             maxDeltaRows))(implicitly, conn)
       }
@@ -835,13 +791,14 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
     // get the txid which was used to take the snapshot.
     if (!_commitTx) {
-      val getSnapshotTXId = conn.prepareCall(s"call sys.GET_SNAPSHOT_TXID (?)")
-      getSnapshotTXId.registerOutParameter(1, java.sql.Types.VARCHAR)
-      getSnapshotTXId.execute()
-      val txid: String = getSnapshotTXId.getString(1)
+      val getSnapshotTXId = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID()")
+      val rs = getSnapshotTXId.executeQuery()
+      rs.next()
+      val txId = rs.getString(1)
+      rs.close()
       getSnapshotTXId.close()
-      SparkShellRDDHelper.snapshotTxIdForRead.set(txid)
-      logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
+      SparkShellRDDHelper.snapshotTxIdForRead.set(txId)
+      logDebug(s"The snapshot tx id is $txId and tablename is $tableName")
     }
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)
@@ -891,19 +848,15 @@ class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore) extends TaskC
       }
     }
     store.closeConnection(Some(conn))
-    //} catch (java.sql.SQLException sqle) {
-    // ignore exception in close
-    //}
   }
 
   def success(): Boolean = {
     isSuccess
   }
 
-  def setSuccess() = {
+  def setSuccess(): Unit = {
     isSuccess = true
   }
 
-  def getConn(): Connection = connAndTxId(0).asInstanceOf[Connection]
-
+  def getConn: Connection = connAndTxId(0).asInstanceOf[Connection]
 }
