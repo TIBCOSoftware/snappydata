@@ -189,32 +189,34 @@ class SnappySecureJob extends SnappySQLJob {
     val grantedOp = config.getString(opCode)
 
     val selects = Seq(s"SELECT * FROM $otherColTab", s"SELECT * FROM $otherRowTab")
-    val inserts = Seq(s"INSERT INTO $otherColTab VALUES (1, 'ONE', 1.1)",
-      s"INSERT INTO $otherRowTab VALUES (1, 'ONE', 1.1)")
+    val inserts = Seq(s"INSERT INTO $otherColTab VALUES (-100, '-ONE HUNDRED', 100.1)",
+      s"INSERT INTO $otherRowTab VALUES (-100, '-ONE HUNDRED', 100.1)")
     val updates = Seq(s"UPDATE $otherColTab SET COL1 = 100 WHERE COL1 = 1",
       s"UPDATE $otherRowTab SET COL1 = 100 WHERE COL1 = 1")
-    val deletes = Seq(s"DELETE FROM $otherColTab WHERE COL1 = 100",
-      s"DELETE FROM $otherRowTab WHERE COL1 = 100")
+    val deletes = Seq(s"DELETE FROM $otherColTab WHERE COL1 = -100",
+      s"DELETE FROM $otherRowTab WHERE COL1 = -100")
 
-    var msg = "User 'GEMFIRE1' does not have SELECT permission on column 'COL1' of table 'GEMFIRE2'"
-//    selects.foreach(s => assertGrantRevoke(s, grantedOp.equalsIgnoreCase("select")))
-//    msg = s"User 'GEMFIRE1' does not have INSERT permission on table 'GEMFIRE2'"
-//    inserts.foreach(s => assertGrantRevoke(s, grantedOp.equalsIgnoreCase("insert")))
-//    if (grantedOp.equalsIgnoreCase("select") || grantedOp.equalsIgnoreCase("delete")) {
-      msg = s"User 'GEMFIRE1' does not have UPDATE permission on column 'COL1' of table 'GEMFIRE2'"
-//    } else {
-//      msg = s"User 'GEMFIRE1' does not have SELECT permission on column 'COL1' of table 'GEMFIRE2'"
-//    }
-    updates.foreach(s => assertGrantRevoke(s, grantedOp.equalsIgnoreCase("update")))
-//    if (grantedOp.equalsIgnoreCase("select") || grantedOp.equalsIgnoreCase("update")) {
-      msg = s"User 'GEMFIRE1' does not have DELETE permission on table 'GEMFIRE2'"
-//    } else {
-//      msg = s"User 'GEMFIRE1' does not have SELECT permission on column 'COL1' of table 'GEMFIRE2'"
-//    }
-    deletes.foreach(s => assertGrantRevoke(s, grantedOp.equalsIgnoreCase("delete")))
+    // If dml is SELECT or UPDATE on any table or DELETE on column table, we check for below
+    // error message.
+    // s"User 'GEMFIRE1' does not have SELECT permission on column 'COL1' of table 'GEMFIRE2'"
 
-    def assertGrantRevoke(s: String, granted: Boolean = false): Unit = {
-      if (granted) {
+    // If dml is DELETE on row table or INSERT on any table, we check for below error message.
+    // s"User 'GEMFIRE1' does not have <DML> permission on table 'GEMFIRE2'"
+
+    val columnErrorMsgAffix = "column 'COL1' of table 'GEMFIRE2'"
+    val tableErrorMsgAffix = "table 'GEMFIRE2'"
+
+    selects.foreach(s => assertGrantRevoke(s, grantedOp, dml = "select", columnErrorMsgAffix))
+    inserts.foreach(s => assertGrantRevoke(s, grantedOp, dml = "insert", tableErrorMsgAffix))
+    updates.foreach(s => assertGrantRevoke(s, grantedOp, dml = "update", columnErrorMsgAffix))
+    deletes.foreach(s => assertGrantRevoke(s, grantedOp, dml = "delete", tableErrorMsgAffix))
+    pw.println("****Done****")
+
+    def assertGrantRevoke(s: String, grantedOp: String, dml: String, affix: String): Unit = {
+      pw.println()
+      if (grantedOp.equalsIgnoreCase(dml) || (dml.equalsIgnoreCase("select") && (grantedOp
+          .equalsIgnoreCase("update") || grantedOp.equalsIgnoreCase("delete")))) {
+        pw.println(s"Executing: $s")
         sns.sql(s).collect()
         pw.println(s"Success for $s")
       } else {
@@ -222,17 +224,36 @@ class SnappySecureJob extends SnappySQLJob {
           sns.sql(s).collect()
           assert(false, s"Should have failed $s")
         } catch {
-          case t: Throwable if (t.getMessage.contains(msg))
-          => pw.println(s"Expected exception for $s: [${t.getMessage}]")
-            t.getStackTrace.foreach(s => pw.println(s"  ${s.toString}"))
-          case t: Throwable => pw.println(s"UNEXPECTED ERROR FOR $s:\n[${t.getMessage}]")
-            t.getStackTrace.foreach(s => pw.println(s"  ${s.toString}"))
-            throw t
+          case t: Throwable =>
+            if (t.getMessage.contains(getErrorMessageToCheck(s, grantedOp, dml, affix))) {
+              val msg = if (t.getMessage.contains("at ")) t.getMessage.substring(0, t.getMessage
+                  .indexOf("at ")) else t.getMessage
+              pw.println(s"Expected exception for $s: [$msg]")
+              // t.getStackTrace.foreach(s => pw.println(s"  ${s.toString}"))
+            } else {
+              pw.println(s"UNEXPECTED ERROR FOR $s:\n[${t.getMessage}]")
+              // t.getStackTrace.foreach(s => pw.println(s"  ${s.toString}"))
+              throw t
+            }
         }
       }
     }
 
-    pw.println("****Done****")
+    def getErrorMessageToCheck(sql: String, grantedOp: String, dml: String, affix: String): String
+    = {
+      var missingOp = dml.toUpperCase
+      var append = affix
+      if (grantedOp.equalsIgnoreCase("nogrant") || grantedOp.equalsIgnoreCase("insert")) {
+        if (dml.equalsIgnoreCase("update") || (dml.equalsIgnoreCase("delete") && sql.contains
+        (otherColTab))) {
+          missingOp = "SELECT"
+          if (dml.equalsIgnoreCase("delete") && sql.contains(otherColTab)) {
+            append = columnErrorMsgAffix
+          }
+        }
+      }
+      s"User 'GEMFIRE1' does not have $missingOp permission on $append"
+    }
   }
 
 }

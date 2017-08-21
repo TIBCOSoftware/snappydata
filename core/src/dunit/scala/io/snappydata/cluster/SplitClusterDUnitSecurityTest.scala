@@ -401,12 +401,10 @@ class SplitClusterDUnitSecurityTest(s: String)
   def permit(stmt: Statement, permit: String, op: String, t1: String, t2: String, user: String):
   Unit = {
     val toFrom = if (permit.equalsIgnoreCase("grant")) "to" else "from"
-    stmt.execute(s"$permit $op on table $t1 $toFrom $user")
-    stmt.execute(s"$permit $op on table $t2 $toFrom $user")
+    Seq(t1, t2).foreach(t => stmt.execute(s"$permit $op on table $t $toFrom $user"))
     if (op.equalsIgnoreCase("update") || op.equalsIgnoreCase("delete")) {
       // We need select permission for update and delete operation
-      stmt.execute(s"$permit select on table $t1 $toFrom $user")
-      stmt.execute(s"$permit select on table $t2 $toFrom $user")
+      Seq(t1, t2).foreach(t => stmt.execute(s"$permit select on table $t $toFrom $user"))
     }
   }
 
@@ -637,53 +635,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
   }
 
-  def _testSnappyJob(): Unit = {
-    // Create config file with credentials
-    val jobConfigFile = s"$snappyProductDir/conf/job.config"
-    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
-
-    // Run snappy job with credentials in a config file
-    val job = s"$snappyProductDir/bin/snappy-job.sh submit --app-name CreatePartitionedRowTable " +
-        s"--class org.apache.spark.examples.snappydata.CreatePartitionedRowTable " +
-        s"--app-jar $snappyProductDir/examples/jars/quickstart.jar  " +
-        s"--passfile $jobConfigFile"
-    logInfo(s"Submitting job $job")
-    var submit = job.!!
-    assert(submit.contains("STARTED"), "Job not started")
-
-    // Assert table partsupp, created within the job, exists
-    val table = "PARTSUPP"
-    val props = new Properties()
-    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
-    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
-    Thread.sleep(2000)
-    logInfo(s"Checking for $table")
-    assert(snc.snappySession.catalog.tableExists(table), s"Table $table does not exist. SnappyJob" +
-        s" probably failed.")
-
-    // Drop table partsupp
-    logInfo(s"Dropping table $table")
-    snc.sql(s"drop table $table").collect()
-
-    // Submit the same job with invalid credentials
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
-    writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
-    logInfo(s"Re-submitting job $job with invalid credentials.")
-    submit = job.!!
-    assert(!submit.contains("STARTED"), "Job should have failed")
-
-    // assert table does not exist
-    assert(!snc.snappySession.catalog.tableExists(table), s"Table $table exists.")
-  }
-
-  def testSnappyNewJob(): Unit = {
-    // Create config file with credentials
-    val jobConfigFile = s"$snappyProductDir/conf/job.config"
-    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
-
+  def getJobJar(className: String): String = {
     val packageStr = "io/snappydata/cluster/"
-    val className = "SnappySecureJob"
     val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
         + s"test/$packageStr")
     assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
@@ -694,20 +647,27 @@ class SplitClusterDUnitSecurityTest(s: String)
       }
     }).toList, Some(packageStr))
     assert(!jar.isEmpty, s"No class files found for $className")
+    jar
+  }
 
-    // Run snappy job with credentials in a config file
+  def testSnappyJob(): Unit = {
+    // Create config file with credentials to be passed as --passfile to the job script.
+    val jobConfigFile = s"$snappyProductDir/conf/job.config"
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    val className = "SnappySecureJob"
     val jobBaseStr = s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className " +
         s"--class io.snappydata.cluster.SnappySecureJob " +
-        s"--app-jar $jar  " +
+        s"--app-jar ${getJobJar(className)} " +
         s"--passfile $jobConfigFile"
 
-    var job = s"$jobBaseStr --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out"
+    var jobOp = "sqlOps" // tells job to verify DDL and DMLs
+    var job = s"$jobBaseStr --conf $opCode=$jobOp --conf $outputFile=SnappyValidJob.out"
     logInfo(s"Submitting job $job")
     var consoleLog = job.!!
     logInfo(consoleLog)
     var jobId = getJobId(consoleLog)
     assert(consoleLog.contains("STARTED"), "Job not started")
-    var jobOp = "sqlOps"
 
     val wc = new WaitCriterion {
       override def done() = {
@@ -723,8 +683,9 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
     DistributedTestBase.waitForCriterion(wc, 60000, 1000, true)
 
-    /* val colTab = "JOB_COLTAB"
+    val colTab = "JOB_COLTAB"
     val rowTab = "JOB_ROWTAB"
+
     def submitJob(op: String): Unit = {
       job = s"$jobBaseStr --conf $opCode=$op --conf $otherColTabName=$jdbcUser2.$colTab" +
           s" --conf $otherRowTabName=$jdbcUser2.$rowTab --conf $outputFile=Snappy${op}Job.out"
@@ -743,23 +704,24 @@ class SplitClusterDUnitSecurityTest(s: String)
       Map("COLUMN_BATCH_SIZE" -> "50"))
     SplitClusterDUnitTest.createTableUsingJDBC(rowTab, "row", user2Conn, stmt)
 
-    submitJob("nogrant")
+    submitJob("nogrant") // tells job to verify DMLs without any explicit grant
+
     permit(stmt, "grant", "select", colTab, rowTab, jdbcUser1)
-    submitJob("select")
+    submitJob("select") // tells job to verify DMLs with only select granted
 
     permit(stmt, "revoke", "select", colTab, rowTab, jdbcUser1)
     permit(stmt, "grant", "insert", colTab, rowTab, jdbcUser1)
-    submitJob("insert")
+    submitJob("insert") // tells job to verify DMLs with only insert granted
 
     permit(stmt, "revoke", "insert", colTab, rowTab, jdbcUser1)
     permit(stmt, "grant", "update", colTab, rowTab, jdbcUser1)
-    submitJob("update")
+    submitJob("update") // tells job to verify DMLs with only select and update granted
 
     permit(stmt, "revoke", "update", colTab, rowTab, jdbcUser1)
     permit(stmt, "grant", "delete", colTab, rowTab, jdbcUser1)
-    submitJob("delete")*/
+    submitJob("delete") // tells job to verify DMLs with only select and delete granted
 
-    // Submit the same job with invalid credentials
+    // Create a config file with invalid credentials
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
     logInfo(s"Re-submitting job $jobBaseStr with invalid credentials.")
