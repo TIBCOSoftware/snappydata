@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS staging_employees;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_employees
     USING com.databricks.spark.csv OPTIONS(path ':dataLocation/employees.csv', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE employees USING row OPTIONS(PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT EmployeeID, LastName,  FirstName, Title,
+CREATE TABLE employees USING row OPTIONS(PERSISTENT ':persistenceMode') AS (SELECT EmployeeID, LastName,  FirstName, Title,
  TitleOfCourtesy, BirthDate, HireDate, Address, City, Region, PostalCode, Country, HomePhone, Extension, Photo,
  Notes, ReportsTo, PhotoPath FROM staging_employees);
 

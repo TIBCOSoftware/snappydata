@@ -19,6 +19,7 @@ io/snappydata/hydra/northwind/nwPartitionedRowTablesTest.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
+  createLargeOrderTable = true
 
 io/snappydata/hydra/northwind/nwColumnTablesTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -41,6 +42,7 @@ io/snappydata/hydra/northwind/nwColocatedTablesTest.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
+  createLargeOrderTable = true
 
 io/snappydata/hydra/northwind/nwPersistentReplicatedRowTablesTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
