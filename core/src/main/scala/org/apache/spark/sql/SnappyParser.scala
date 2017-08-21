@@ -498,32 +498,16 @@ class SnappyParser(session: SnappySession)
         })
   }
 
-
-  protected final def tableValuedFunctionExpressions: Rule1[
-      Seq[Expression]] = rule {
-    '(' ~ ws ~ (expression + commaSep).? ~ ')' ~ ws ~>
-        ((e: Any) => e.asInstanceOf[Option[Vector[Expression]]] match {
-          case Some(ve) => ve
-          case _ => Seq.empty
-        })
-  }
-
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ streamWindowOptions.? ~
-    (AS ~ identifier | strictIdentifier).? ~ tableValuedFunctionExpressions.? ~>
+    (AS ~ identifier | strictIdentifier).? ~>
         ((tableIdent: TableIdentifier,
-            window: Any, alias: Any, tvfe: Any) => window.asInstanceOf[Option[
+            window: Any, alias: Any) => window.asInstanceOf[Option[
             (Duration, Option[Duration])]] match {
           case None =>
-            tvfe.asInstanceOf[Option[Seq[Expression]]] match {
-              case None =>
-                val optAlias = alias.asInstanceOf[Option[String]]
-                updatePerTableQueryHint(tableIdent, optAlias)
-                UnresolvedRelation(tableIdent, optAlias)
-              case Some(exprs) =>
-                UnresolvedTableValuedFunction(org.apache.spark.sql.collection.Utils.toLowerCase(
-                  tableIdent.identifier), exprs)
-            }
+            val optAlias = alias.asInstanceOf[Option[String]]
+            updatePerTableQueryHint(tableIdent, optAlias)
+            UnresolvedRelation(tableIdent, optAlias)
           case Some(win) =>
             val optAlias = alias.asInstanceOf[Option[String]]
             updatePerTableQueryHint(tableIdent, optAlias)
@@ -548,7 +532,7 @@ class SnappyParser(session: SnappySession)
       }
     }
   }
-  
+
   /*
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
     VALUES ~ (expression + commaSep) ~ AS.? ~ identifier.? ~
@@ -689,14 +673,43 @@ class SnappyParser(session: SnappySession)
     )
   }
 
+  protected final def tableValuedFunctionExpressions: Rule1[Seq[Expression]] = rule {
+    '(' ~ ws ~ (expression + commaSep).? ~ ')' ~>
+      ((e: Any) => e.asInstanceOf[Option[Vector[Expression]]] match {
+        case Some(ve) => ve
+        case _ => Seq.empty
+      })
+  }
+
+
   protected final def relation: Rule1[LogicalPlan] = rule {
-    relationFactor ~ (
+    ((relationFactor ~ (tableValuedFunctionExpressions).?) ~> ((lp: LogicalPlan, se: Any) => {
+      se.asInstanceOf[Option[Seq[Expression]]] match {
+        case None => lp
+        case Some(exprs) => {
+          val ur = lp.asInstanceOf[UnresolvedRelation]
+          val fname = org.apache.spark.sql.collection.Utils.toLowerCase(
+            ur.tableIdentifier.identifier)
+          UnresolvedTableValuedFunction(fname, exprs)
+        }
+      }
+    })) ~ (
         join. + ~> ((r1: LogicalPlan, joins: Any) => joins.asInstanceOf[
             Seq[JoinRuleType]].foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
           Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
         }) |
         MATCH.asInstanceOf[Rule[LogicalPlan :: HNil, LogicalPlan :: HNil]]
     )
+  }
+
+  protected final def relationPut: Rule1[LogicalPlan] = rule {
+    relationFactor ~ (
+        join. + ~> ((r1: LogicalPlan, joins: Any) => joins.asInstanceOf[
+            Seq[JoinRuleType]].foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
+          Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
+        }) |
+            MATCH.asInstanceOf[Rule[LogicalPlan :: HNil, LogicalPlan :: HNil]]
+        )
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
@@ -907,7 +920,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE.? ~ relation ~ query ~> PutIntoTable
+    PUT ~ INTO ~ TABLE.? ~ relationPut ~ query ~> PutIntoTable
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
