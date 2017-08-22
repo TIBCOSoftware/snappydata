@@ -20,7 +20,7 @@
 # Starts a server on the machine this script is executed on.
 #
 
-usage="Usage: snappy-server.sh (start|stop|status) -dir=directory"
+usage="Usage: snappy-server.sh (start|stop|status) -locators=locatorhost:port[,locatorhostN:portN] -dir=directory"
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
