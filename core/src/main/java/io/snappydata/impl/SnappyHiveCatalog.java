@@ -101,8 +101,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // every session has own hive client, so a small pool
     metadataConf.set("datanucleus.connectionPool.maxPoolSize", "4");
     metadataConf.set("datanucleus.connectionPool.minPoolSize", "0");
-    // below value is maximum idle age in minutes for BoneCP and not number of connections
-    metadataConf.set("datanucleus.connectionPool.maxIdle", "5");
     String warehouse = metadataConf.get(HiveConf.ConfVars.METASTOREWAREHOUSE.varname);
     if (warehouse == null || warehouse.isEmpty() ||
         warehouse.equals(HiveConf.ConfVars.METASTOREWAREHOUSE.getDefaultExpr())) {
