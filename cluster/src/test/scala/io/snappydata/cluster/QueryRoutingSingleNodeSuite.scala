@@ -123,10 +123,12 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       rs = conn.getMetaData.getTablePrivileges(null, null, "%")
       ncols = rs.getMetaData.getColumnCount
       // println(s"KN: priv ncols = $ncols")
-      for (i <- (1 to ncols)) {
-        // 3rd index the table name
-        assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
-        // println(s"KN: priv ncols[$i] = ${rs.getMetaData.getColumnName(i)}")
+      while(rs.next()) {
+        for (i <- (1 to ncols)) {
+          // 3rd index the table name
+          assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+          // println(s"KN: priv ncols[$i] = ${rs.getMetaData.getColumnName(i)}")
+        }
       }
       while(rs.next()) {
         // 3rd index the table name
