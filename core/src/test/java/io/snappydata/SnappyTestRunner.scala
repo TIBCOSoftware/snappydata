@@ -18,13 +18,14 @@ package io.snappydata
 
 // scalastyle:off
 import java.io._
+import java.util.regex.Pattern
 
 import com.gemstone.gemfire.internal.AvailablePort
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.output.TeeOutputStream
+
 import org.apache.spark.Logging
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Retries}
-
 import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.parsing.json.JSON
@@ -115,10 +116,15 @@ with Logging with Retries {
       workDir.mkdir()
     }
 
-    Process(command, workDir, "SNAPPY_HOME" -> snappyHome,
-      "PYTHONPATH" -> s"${snappyHome}/python/lib/py4j-0.10.4-src.zip:${snappyHome}/python") !
+    val code = Process(command, workDir, "SNAPPY_HOME" -> snappyHome,
+      "PYTHONPATH" -> s"$snappyHome/python/lib/py4j-0.10.4-src.zip:$snappyHome/python") !
       ProcessLogger(stdoutWriter.println, stderrWriter.println)
-    (stdoutStream.toString, stderrStream.toString)
+    var stdoutStr = stdoutStream.toString
+    if (code != 0) {
+      // add an exception to the output to force failure
+      stdoutStr += s"\n***** Exit with Exception code = $code\n"
+    }
+    (stdoutStr, stderrStream.toString)
   }
 
 
@@ -126,7 +132,7 @@ with Logging with Retries {
     sqlCommand pipe snappyShell foreach (s => {
       println(s)
       if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
-        throw new Exception(s"Failed to run Query")
+        throw new Exception(s"Failed to run Query: $s")
       }
     })
   }
@@ -183,6 +189,21 @@ with Logging with Retries {
     }
   }
 
+  private val exceptionPattern = Pattern.compile("[a-zA-Z0-9_]*exception",
+    Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
+
+  private def checkException(output: String): Boolean = {
+    val matcher = exceptionPattern.matcher(output)
+    while (matcher.find()) {
+      val exceptionStr = matcher.group()
+      if (!exceptionStr.equals("NoSuchObjectException")) {
+        println(s"***** FAIL due to $exceptionStr")
+        return true
+      }
+    }
+    false
+  }
+
   def SparkSubmit(name: String, appClass: String,
                   master: Option[String],
                   confs: Seq[String] = Seq.empty[String],
@@ -194,7 +215,7 @@ with Logging with Retries {
     val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $masterStr $confStr $appJar"
     val (out, err) = executeProcess(name, sparkSubmit)
 
-    if (out.toLowerCase().contains("exception")) {
+    if (checkException(out) || checkException(err)) {
       throw new Exception(s"Failed to submit $appClass")
     }
   }
@@ -205,7 +226,7 @@ with Logging with Retries {
     val runExample = s"$snappyHome/bin/run-example $exampleClas $argsStr"
     val (out, err) = executeProcess(name, runExample)
 
-    if (out.toLowerCase().contains("exception")) {
+    if (checkException(out) || checkException(err)) {
       throw new Exception(s"Failed to run $exampleClas")
     }
   }
@@ -214,7 +235,7 @@ with Logging with Retries {
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val shell = s"$sparkShell $confStr $options -i $scriptFile"
     val (out, err) = executeProcess("snappyCluster", shell)
-    if (out.toLowerCase().contains("exception")) {
+    if (checkException(out) || checkException(err)) {
       throw new Exception(s"Failed to run $shell")
     }
   }

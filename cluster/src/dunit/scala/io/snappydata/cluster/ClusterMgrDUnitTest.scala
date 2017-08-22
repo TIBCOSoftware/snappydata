@@ -44,11 +44,15 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // connect with this new lead.
     // In this case servers are already running and a lead comes
     // and join
-    vm3.invoke(getClass, "startSnappyLead", startArgs)
-    vm3.invoke(getClass, "startSparkJob")
-    vm3.invoke(getClass, "startGemJob")
-    vm3.invoke(getClass, "stopSpark")
-    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    try {
+      vm3.invoke(getClass, "stopAny")
+      vm3.invoke(getClass, "startSnappyLead", startArgs)
+      vm3.invoke(getClass, "startSparkJob")
+      vm3.invoke(getClass, "startGemJob")
+    } finally {
+      vm3.invoke(getClass, "stopSpark")
+      ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    }
   }
 
   def testUncaughtExceptionInExecutor(): Unit = {

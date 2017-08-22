@@ -137,6 +137,8 @@ public class SnappySecurityTest extends SnappyTest {
 
   public static ArrayList getQueryArr(String fileName, String user) {
     Log.getLogWriter().info("Inide getQueryArray");
+    Log.getLogWriter().info("User = " + user);
+    Log.getLogWriter().info("File Name = " + fileName);
     ArrayList<String> queries = new ArrayList<String>();
     Vector schemaToTest = SnappySecurityPrms.getSchema();
     String str = schemaToTest.elementAt(0).toString();
@@ -145,12 +147,16 @@ public class SnappySecurityTest extends SnappyTest {
     try {
       BufferedReader br = new BufferedReader(new FileReader(fileName));
       String line = null;
-
+      Log.getLogWriter().info("SS");
       while ((line = br.readLine()) != null) {
         String[] splitData = line.split(";");
+        Log.getLogWriter().info("splitData length is " + splitData.length);
         for (int i = 0; i < splitData.length; i++) {
+          Log.getLogWriter().info("SP1");
           if (!(splitData[i] == null) || !(splitData[i].length() == 0)) {
+            Log.getLogWriter().info("SP2");
             String qry = splitData[i].replace("user2", schemaOwner);
+            Log.getLogWriter().info("SP3");
               queries.add(qry);
           }
         }
@@ -218,7 +224,6 @@ public class SnappySecurityTest extends SnappyTest {
   public static void runQuery(String usr, String pass, Boolean isAuth) throws SQLException {
     Log.getLogWriter().info("Inside runQuery with args ");
     Connection conn = null;
-    Log.getLogWriter().info("SP1");
     Vector schemaToTest = SnappySecurityPrms.getSchema();
     Log.getLogWriter().info("schemaToTest " + schemaToTest.size());
     String schemaStr = schemaToTest.elementAt(0).toString();
@@ -230,21 +235,53 @@ public class SnappySecurityTest extends SnappyTest {
     conn = getSecuredLocatorConnection(usr, pass);
     String fileName = SnappySecurityPrms.getDataLocation();
     ArrayList queryArray = getQueryArr(fileName, usr);
-    Boolean isJoinQuery = SnappySecurityPrms.getIsJoinQuery();
-
+    Boolean isSelect = true;
+    Vector dmlOps = SnappySecurityPrms.getDmlOps();
+    if (!(dmlOps.contains("SELECT")))
+      isSelect = false;
     for (int q = 0; q < queryArray.size(); q++) {
       String queryStr = (String)queryArray.get(q);
+      Boolean opAuth = false;
+      Boolean schemaAuth = false;
       try {
         if (!usr.equals(adminUser) && !usr.equals(schemaOwner) && isGrant) {
-          Log.getLogWriter().info("SP1 and isJoinQuery is " + isJoinQuery);
-
-            for (int s = 0; s < schemaToTest.size(); s++) {
+          for (int d = 0; d < dmlOps.size(); d++) {
+            String dmlOp = dmlOps.elementAt(d).toString();
+            Log.getLogWriter().info("Find " + dmlOp + " in query " + queryStr);
+            if (queryStr.contains(dmlOp)) {
+              if (!isSelect) {
+                if (dmlOp.equals("INSERT"))
+                  opAuth = true;
+              } else
+                opAuth = true;
+            }
+          }
+          for (int s = 0; s < schemaToTest.size(); s++) {
+            String str = schemaToTest.elementAt(s).toString();
+            Log.getLogWriter().info("Find " + str + " in query " + queryStr);
+            if (queryStr.contains(str))
+              schemaAuth = true;
+          }
+          if ((!opAuth || !schemaAuth) || (!opAuth && !schemaAuth)) {
+            isAuth = false;
+            Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
+            execute(queryStr, conn);
+          } else {
+            if (usr.equals(unAuthUser))
+              isAuth = false;
+            else
+              isAuth = true;
+            Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
+            execute(queryStr, conn);
+          }
+          //   }
+             /*for (int s = 0; s < schemaToTest.size(); s++) {
               String str = schemaToTest.elementAt(s).toString();
               Log.getLogWriter().info("Find " + str + " in query " + queryStr);
               if (!queryStr.contains(str)) {
                 isAuth = false;
                 Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
-                execute(queryStr, conn);
+                 execute(queryStr, conn);
               } else {
                 if (usr.equals(unAuthUser))
                   isAuth = false;
@@ -253,14 +290,14 @@ public class SnappySecurityTest extends SnappyTest {
                 Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
                 execute(queryStr, conn);
               }
-            }
+            }*/
 
         } else {
           Log.getLogWriter().info("The query to be executed is  " + queryStr + " with new authorization = " + isAuth);
           execute(queryStr, conn);
         }
       } catch (SQLException e) {
-       // if(e.toString().contains("SQLState=425")) {
+        if (e.toString().contains("SQLState=425")) {
           if (isAuth) {
             unExpectedExceptionCnt = unExpectedExceptionCnt + 1;
             Log.getLogWriter().info(" unExpectedExceptionCnt Count is " + unExpectedExceptionCnt);
@@ -269,11 +306,10 @@ public class SnappySecurityTest extends SnappyTest {
             expectedExceptionCnt = expectedExceptionCnt + 1;
             Log.getLogWriter().info("Got Expected Exception " + e.getMessage());
           }
-      //  }
-      /*  else {
+        } else {
           Log.getLogWriter().info("CAUGHT EXCEPTION : " + e.getMessage());
-          throw e;
-        } */
+          // throw e;
+        }
       }
     }
     closeConnection(conn);
