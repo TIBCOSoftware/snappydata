@@ -42,7 +42,6 @@ import java.util.UUID
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import io.snappydata.SnappyFunSuite
-import io.snappydata.gemxd.SnappyDataVersion
 
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -62,6 +61,11 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     stopAll()
   }
 
+  override def afterAll(): Unit = {
+    super.afterAll()
+    stopAll()
+  }
+
   override protected def newSparkConf(
       addOn: SparkConf => SparkConf = null): SparkConf = {
     val cores = math.min(8, Runtime.getRuntime.availableProcessors())
@@ -69,7 +73,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
     conf.set("snappydata.store.critical-heap-percentage", "95")
-    if (SnappyDataVersion.isEnterpriseEdition) {
+    if (SnappySession.isEnterpriseEdition) {
       conf.set("snappydata.store.memory-size", "1200m")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)

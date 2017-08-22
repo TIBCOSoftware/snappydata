@@ -14,6 +14,7 @@ project/plugins/project/
 
 # gradle specific
 .gradle/
+buildOutput.log
 
 # Scala-IDE specific
 .scala_dependencies

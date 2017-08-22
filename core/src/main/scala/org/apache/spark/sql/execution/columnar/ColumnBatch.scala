@@ -112,13 +112,6 @@ abstract class ResultSetIterator[A](conn: Connection,
     } catch {
       case NonFatal(e) => logWarning("Exception closing statement", e)
     }
-    try {
-      conn.commit()
-      conn.close()
-      logDebug("closed connection for task " + context.partitionId())
-    } catch {
-      case NonFatal(e) => logWarning("Exception closing connection", e)
-    }
     hasNextValue = false
   }
 }

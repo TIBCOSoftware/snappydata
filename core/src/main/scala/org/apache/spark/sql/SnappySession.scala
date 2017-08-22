@@ -29,14 +29,14 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
+import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, functions => snappydataFunctions}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -108,13 +108,14 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sessionState: SnappySessionState = {
-    try {
+    if (SnappySession.isEnterpriseEdition) {
+      // Let the user know if it failed to load AQP classes.
       val clazz = org.apache.spark.util.Utils.classForName(
         "org.apache.spark.sql.internal.SnappyAQPSessionState")
       clazz.getConstructor(classOf[SnappySession]).
           newInstance(self).asInstanceOf[SnappySessionState]
-    } catch {
-      case NonFatal(_) => new SnappySessionState(this)
+    } else {
+      new SnappySessionState(this)
     }
   }
 
@@ -1746,6 +1747,12 @@ object SnappySession extends Logging {
   private[spark] val INVALID_ID = -1
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
+
+  lazy val isEnterpriseEdition: Boolean = {
+    GemFireVersion.getInstance(Class.forName("io.snappydata.gemxd.SnappyDataVersion"),
+      SharedUtils.GFXD_VERSION_PROPERTIES)
+    GemFireVersion.isEnterpriseEdition
+  }
 
   private[this] val bucketProfileListener = new ProfileListener {
 
