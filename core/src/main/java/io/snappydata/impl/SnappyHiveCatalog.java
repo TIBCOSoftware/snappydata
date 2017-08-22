@@ -83,13 +83,33 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // just run a task to initialize the HMC for the thread.
     // Assumption is that this should be outside any lock
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.INIT, null, null, true);
+    q.resetValues(HMSQuery.INIT, null, null, false);
     Future<Object> ret = hmsQueriesExecutorService.submit(q);
     try {
       ret.get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static String setCommonHiveMetastoreProperties(HiveConf metadataConf) {
+    metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE);
+    // Tomcat pool has been shown to work best but does not work in split mode
+    // because upstream spark does not ship with it (and the one in snappydata-core
+    //   cannot be loaded by datanucleus which should apparently be in its CLASSPATH)
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_POOLING_TYPE, "BONECP");
+    // every session has own hive client, so a small pool
+    metadataConf.set("datanucleus.connectionPool.maxPoolSize", "4");
+    metadataConf.set("datanucleus.connectionPool.minPoolSize", "0");
+    String warehouse = metadataConf.get(HiveConf.ConfVars.METASTOREWAREHOUSE.varname);
+    if (warehouse == null || warehouse.isEmpty() ||
+        warehouse.equals(HiveConf.ConfVars.METASTOREWAREHOUSE.getDefaultExpr())) {
+      // append warehouse to current directory
+      warehouse = new java.io.File("./warehouse").getAbsolutePath();
+      metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse);
+    }
+    metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///");
+    return warehouse;
   }
 
   public Table getTable(String schema, String tableName, boolean skipLocks) {
@@ -216,7 +236,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     HMSQuery() {
     }
 
-    public void resetValues(int queryType, String tableName,
+    private void resetValues(int queryType, String tableName,
         String dbName, boolean skipLocks) {
       this.qType = queryType;
       this.tableName = tableName;
@@ -309,6 +329,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         case GET_COL_TABLE:
           hmc = SnappyHiveCatalog.this.hmClients.get();
           Table table = getTableWithRetry(hmc);
+          if (table == null) return null;
           String fullyQualifiedName = Utils.toUpperCase(table.getDbName()) +
               "." + Utils.toUpperCase(table.getTableName());
           StructType schema = ExternalStoreUtils.getTableSchema(
@@ -372,7 +393,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       HiveConf metadataConf = new HiveConf();
       String urlSecure = "jdbc:snappydata:" +
           ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
-          ";disable-streaming=true;default-persistent=true";
+          ";disable-streaming=true;default-persistent=true;internal-connection=true";
       final Map<Object, Object> bootProperties = Misc.getMemStore().getBootProperties();
       if (bootProperties.containsKey(Attribute.USERNAME_ATTR) && bootProperties.containsKey
           (Attribute.PASSWORD_ATTR)) {
@@ -380,7 +401,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             ";user=" + bootProperties.get(Attribute.USERNAME_ATTR) +
             ";password=" + bootProperties.get(Attribute.PASSWORD_ATTR) +
             ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
-            ";disable-streaming=true;default-persistent=true";
+            ";disable-streaming=true;default-persistent=true;internal-connection=true";
         /*
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
             bootProperties.get("user").toString());
@@ -391,7 +412,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
             Misc.SNAPPY_HIVE_METASTORE);
       }
-      metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE);
+      setCommonHiveMetastoreProperties(metadataConf);
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "io.snappydata.jdbc.EmbeddedDriver");

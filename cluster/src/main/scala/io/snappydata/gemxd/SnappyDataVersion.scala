@@ -59,12 +59,6 @@ object SnappyDataVersion {
     isNativeLibLoaded
   }
 
-  def isEnterpriseEdition: Boolean = {
-    GemFireVersion.getInstance(classOf[SnappyDataVersion],
-      SharedUtils.GFXD_VERSION_PROPERTIES)
-    GemFireVersion.isEnterpriseEdition
-  }
-
   def loadProperties(): Unit = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
