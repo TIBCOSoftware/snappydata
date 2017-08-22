@@ -390,7 +390,7 @@ object StoreUtils {
     val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v =>
-        if (v == NONE) EMPTY_STRING else s"$GEM_EVICTION_BY $v ")
+        if (v == NONE) EMPTY_STRING else s"$GEM_EVICTION_BY $v $GEM_OVERFLOW ")
           .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
@@ -400,14 +400,9 @@ object StoreUtils {
         } else if (v == NONE) {
           EMPTY_STRING
         } else {
-          s"$GEM_EVICTION_BY $v "
+          s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
         }
       }).getOrElse(defaultEviction))
-    }
-
-    if (hasOverflow) {
-      parameters.remove(OVERFLOW)
-      sb.append(s"$GEM_OVERFLOW ")
     }
 
     // default is sync persistence for all snappydata tables
