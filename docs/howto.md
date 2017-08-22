@@ -1284,26 +1284,21 @@ Once you have installed SnappyData ODBC Driver, you can connect to SnappyData cl
 Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver and Tableau Desktop](setting_up_odbc_driver-tableau_desktop.md).  
 
 <a id="howto-external-client"></a>
-## How to Connect to the Cluster from External Clients
+## How to Connect to the Cluster from an External Network
 
-You can also connect to the SnappyData cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, you can connect to the cluster on AWS when connecting as a client from your local machine.
+You can also connect to the SnappyData cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, to connect to a cluster on AWS from your local machine, set the following properties in the *conf/locators* and *conf/servers* files:
 
-When [starting the locator and server](configuring_cluster/configuring_cluster.md) set the following properties in the *conf/locators* and *conf/servers* files:
+* `client-bind-address`: Set the hostname or IP address to which the locator or server binds. 
 
-* `-hostname-for-clients`: The public IP address of the locator or server. 
-
-* `-client-bind-address`: IP address of the locator or server. </br>For example, add `-hostname-for-clients=192.168.20.208` </br> 
+* `hostname-for-clients`: Set the IP address or host name that this server/locator listens on, for client connections. Setting a specific `hostname-for-clients` will cause locators to use this value when telling clients how to connect to this server. The default value causes the `bind-address` to be given to clients.
 
 	!!! Note: 
-    	By default, the locator or server binds to localhost. If the IP address is not set, the connection may fail.
+    	By default, the locator or server binds to localhost. You may need to set either or both these properties to enable connection from external clients. If not set, external client connections may fail.
 
-* **Port Settings**: The client, by default, connects to the locator or server at the default port 1527. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the `-client-port` property.
+* Port Settings: Locator or server listens on the default port 1527 for client connections. Ensure that this port is open in your firewall settings. <br> You can also change the default port by setting the `client-port` property in the *conf/locators* and *conf/servers*.
 
 !!! Note: 
-
-	* If the above properties are not set, when a client tries to connect to the cluster from a different network, the connection may fail and an error may be reported. 
-
-	* For ODBC clients, you must use the host and port details of the server and not the locator.
+	For ODBC clients, you must use the host and port details of the server and not the locator.
 
 <a id="howto-zeppelin"></a>
 ## How to Use Apache Zeppelin with SnappyData

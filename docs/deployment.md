@@ -103,7 +103,7 @@ Having the Spark computation embedded in the same JVM allows us to do a number o
 
 <a id="connectormode"></a>
 ## SnappyData Smart Connector Mode
-In certain cases, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program).
+Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program).
 
 Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
 
@@ -111,17 +111,17 @@ Specifically, to run on a cluster, the SparkContext can connect to several types
 
 **Key Points:**
 
-* Can work with SnappyData store from any compatible Spark distribution
+* Can work with SnappyData store from a compatible Spark distribution
 
-* Spark Cluster executes in its own independent JVM processes
+* Spark application executes in its own independent JVM processes
 
-* The Spark cluster connects to SnappyData as a Spark Data source
+* The Spark application connects to SnappyData as a Spark Data source
 
 * Supports any of the Spark supported resource managers (for example, Spark Standalone Manager, YARN or Mesos)
 
 Some of the advantages of this mode are:
 
-**Performance**: When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the cluster are operating as independent clusters.
+**Performance**: When Spark partitions store data in **column tables**, the connector automatically attempts to localize the partitions into SnappyData store buckets on the local node. The connector uses the same column store format as well as compression techniques in Spark avoiding all data formatting related inefficiencies or unnecessary serialization costs. This is the fastest way to ingest data when Spark and the SnappyData cluster are operating as independent clusters.
 
 When storing to **Row tables** or when the partitioning in Spark is different than the partitioning configured on the table, data batches could be shuffled across nodes. Whenever Spark applications are writing to SnappyData tables, the data is always batched for the highest possible throughput.
 
@@ -139,19 +139,6 @@ When queries are executed, while the entire query planning and execution is coor
 
 **Step 1: Start the SnappyData cluster**:
 You can either start SnappyData members using the `_snappy_start_all_` script or you can start them individually.
-
-```bash
-# start members using the ssh scripts
-$ sbin/snappy-start-all.sh
-```
-OR
-
-```
-# start members individually
-$ bin/snappy locator start  -dir=/node-a/locator1
-$ bin/snappy server start  -dir=/node-b/server1  -locators:localhost:10334
-bin/snappy leader start  -dir=/node-c/lead1  -locators:localhost:10334
-```
 
 **Step 2: Launch the Apache Spark program**
 

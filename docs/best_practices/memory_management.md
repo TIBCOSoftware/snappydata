@@ -7,10 +7,10 @@ SnappyData also monitors the JVM memory pools and avoids running into out-of-mem
 Column tables use compression by default and the amount of compression is dependent on the data itself. While we commonly see compression of 50%, it is also possible to achieve much higher compression ratios when the data has many repeated strings or text.</br>
 Row tables, on the other hand, consume more space than the original data size. There is a per row overhead in SnappyData. While this overhead varies and is dependent on the options configured on the Row table, as a simple guideline we suggest you assume 100 bytes per row as overhead.
 
-Given this above description, it is clear that it is not straightforward to compute the memory requirements. It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the table. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Pulse dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.
+Given this above description, it is clear that it is not straightforward to compute the memory requirements. It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the tables. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Pulse dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.
 
 ## Estimating Memory Size for Execution
-Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (e.g. a UDF allocating memory), etc. Most of these allocations will automatically overflow to disk. But, it is strongly recommend that you allocate at least 5GB per data server/lead node for production systems that runs large scale analytic queries. 
+Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (e.g. a UDF allocating memory), etc. Most of these allocations will automatically overflow to disk. But, it is strongly recommended that you allocate at least 5GB per data server/lead node for production systems that run large scale analytic queries. 
 <!-- (TODO: get more specific ??)-->
 
 SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (eg, columns stored as byte arrays).
@@ -24,10 +24,10 @@ SnappyData uses JVM heap memory for most of its allocations. Only column tables 
 ## SnappyData Heap Memory
 <!-- Default values for sizing the VM <mark> Sumedh</mark>-->
 
-SnappyData heap memory regions are divided into two parts called `Heap Storage Pool` and `Heap Execution Pool`. Sizes of each pool are determined by the config parameters provided at boot time to each server. The config parameters are described below. These two regions are only tentative demarcation and can grow into each other based on some conditions..
+SnappyData heap memory regions are divided into two parts called `Heap Storage Pool` and `Heap Execution Pool`. Sizes of each pool are determined by the config parameters provided at boot time to each server. The config parameters are described below. These two regions are only tentative demarcation and can grow into each other based on some conditions.
 
 #### Heap Storage Pool:
-The heap objects which belong to SnappyData storage of Spark storage are accounted here. For example, when a row is inserted into a table or deleted, this pool accounts the memory size of that row. Objects that are temporary and die young are not considered here. As mentioned before, it is difficult and costly to do a precise estimation. Hence, this pool is an approximation of heap memory for objects that are going to be long lived. Since precise estimation of heap memory is difficult, there is a heap monitor thread running in the background. If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds `critical-heap-percentage` the database engine starts canceling jobs and queries and a LowMemoryException is reported. This is also an indication of heap pressure on the system.
+The heap objects which belong to SnappyData storage of Spark storage are accounted here. For example, when a row is inserted into a table or deleted, this pool accounts the memory size of that row. Objects that are temporary and die young are not considered here. As mentioned before, it is difficult and costly to do a precise estimation. Hence, this pool is an approximation of heap memory for objects that are going to be long-lived. Since precise estimation of heap memory is difficult, there is a heap monitor thread running in the background. If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds `critical-heap-percentage` the database engine starts canceling jobs and queries and a LowMemoryException is reported. This is also an indication of heap pressure on the system.
 
 #### Heap Execution Pool:
 During query execution or while running a Spark job, all temporary object allocations are done from this pool. For instance, queries like HashJoin and aggregate queries creates expensive in memory maps. This pool is used to allocate such memory.
@@ -39,8 +39,8 @@ You can set the following configuration parameters to control the pools:
 |heap-size|4GB in Snappy embedded mode cluster|Max heap size which can be used by the JVM|
 |spark.memory.storageFraction|50|Fraction of workable memory allocated for storage pool and hence the remaining to execution pool. It is recommended that you do not change this setting unless you are absolutely sure|
 |critical-heap-percentage|90| The heap percent beyond which system considers itself in a critical state. This is to safeguard the system from crashing by OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries with LowMemoryException. So (100 -critical-heap-percent) memory is not allocated to any pool and kept reserved|
-|eviction-heap-percentage|81|Initially the amount of memory that is available for storage pool is 50% of the total workable memory but it can grow upto `eviction-heap-percentage`(default 81%). After reaching this threshold it will start evicting table data as per the eviction cluase given while creating the table.|
-|spark.memory.fraction|0.92|Total workable memory for execution & storage. This fraction is applied after removing reserved memory ( 100 - critical-heap-percentage). This gives a cushion before system reaches a critical state. It is recommended that you do not change this setting unless you are absolutely sure|
+|eviction-heap-percentage|81|Initially the amount of memory that is available for storage pool is 50% of the total workable memory but it can grow up to `eviction-heap-percentage`(default 81%). After reaching this threshold it starts evicting table data as per the eviction clause that was given, when creating the table.|
+|spark.memory.fraction|0.92|Total workable memory for execution and storage. This fraction is applied after removing reserved memory ( 100 - critical-heap-percentage). This gives a cushion before the system reaches a critical state. It is recommended that you do not change this setting unless you are absolutely sure|
 
 At the start, each of the two pools is assigned a portion of the available memory. This is driven by `spark.memory.storageFraction` property (default 50%). However, SnappyData allows each pool to "balloon" into the other if capacity is available subject to following rules:
 
@@ -100,9 +100,13 @@ Heap Execution_Pool_Size => 16g * (0.5) = 8g
 Max_Off_Heap_Storage_pool_Size => 16g * 0.9 = 14.4 ( 0.9 System default)
 ```
 
-## Points to note
-* When you intend to use row tables:  According to your row table size requirements configure heap size. Row tables in SnappyData does not use off-heap memory for now.
-* When you intend to read write parquet & csv :  Parquet and CSV read write are memory consuming activities ,and they still use heap memory to do so. Hence provision sufficient heap memory to do so.
-* When most of your data reside in column tables: Use off-heap memory, as they are faster and put less pressure on garbage collection threads.
-* When configuring eviction : The tables are evicted to disk( TODO After SNAP-1947) by default. This impacts performance to some degree and hence it is recommended to size your VM before you begin.
+!!! Note:
+
+	* When you intend to use row tables: According to your row table size requirements configure heap size. Row tables in SnappyData do not use off-heap memory for now.
+
+	* When you intend to read write Parquet and CSV: Parquet and CSV read-write are memory consuming activities, and they still use heap memory to do so. Hence, provision sufficient heap memory to do so.
+
+	* When most of your data reside in column tables: Use off-heap memory, as they are faster and puts less pressure on garbage collection threads.
+
+	* When configuring eviction: The tables are evicted to disk (TODO After SNAP-1947) by default. This impacts performance to some degree and hence it is recommended to size your VM before you begin.
 

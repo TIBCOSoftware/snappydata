@@ -4,7 +4,7 @@ The DSID function returns the string form of the distributed member process iden
 
 !!! Note:
 
-	* This function is not in the Smart Connector mode. It is only supported for embedded mode, JDBC and ODBC.
+	* This function is not supported in the Smart Connector mode. It is only supported for embedded mode, JDBC and ODBC.
 
 	*  In some rare cases, if the bucket has just moved while the query was being scheduled, then remote bucket fetch cannot be performed by the query partition but it still displays the DSID() of the node where the partition was executed.
 

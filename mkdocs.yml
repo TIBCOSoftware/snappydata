@@ -22,6 +22,7 @@ pages:
 - 'Configuring the Cluster': 'configuration.md'
 - 'Configuring the Cluster':
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
+    - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'SnappyData Properties': 'configuring_cluster/property_description.md'
 - Programming Guide: programming_guide.md
 - Affinity Modes: deployment.md
@@ -95,7 +96,7 @@ pages:
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
 #        - 'SET_EVICTION_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_eviction_heap_percentage.md'
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
-        - 'DSDI': 'reference/inbuilt_system_procedures/dsdi.md'
+        - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
@@ -157,7 +158,7 @@ pages:
 #        - 'socket-lease-time': 'reference/configuration_parameters/socket-lease-time.md'
 #        - 'snappydata.datadictionary.allow-startup-errors': 'reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md'
 #        - 'snappydata.default-startup-recovery-delay': 'reference/configuration_parameters/snappydata.default-startup-recovery-delay.md'
-#        - 'gfxd.history': 'reference/configuration_parameters/gfxd.history.md'
+#        - 'snappy.history': 'reference/configuration_parameters/snappy.history.md'
 #        - 'snappydata.max-lock-wait': 'reference/configuration_parameters/snappydata.max-lock-wait.md'
 #        - 'gemfirexd.properties': 'reference/configuration_parameters/gemfirexd.properties.md'
 #        - 'snappydata.query-cancellation-interval': 'reference/configuration_parameters/snappydata.query-cancellation-interval.md'
@@ -172,7 +173,8 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
-    - 'Supported Data Types': 'reference/misc/supported-datatypes.md'
+    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
+    - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - 'Troubleshooting': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting':

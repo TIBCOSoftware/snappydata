@@ -463,7 +463,6 @@ Refer to the following documents for information on support provided by SnappyDa
  * [**Example**](https://github.com/SnappyDataInc/snappy-store/blob/branch-1.5.4/gemfirexd/tools/src/test/java/io/snappydata/app/TestThrift.java):
  Example of the Thrift definitions using the SnappyData Thrift IDL.
 
-
 ## Building SnappyData Applications using Spark API
 
 ### SnappySession Usage
