@@ -40,9 +40,16 @@ import org.apache.spark.sql.collection.Utils
  */
 class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  // SNAP-1800 Disabled all tests in this dunit
+  private val disabled = true
+
   val tablesToDrop = new ListBuffer[String]
   val indexesToDrop = new ListBuffer[String]
   override def tearDown2(): Unit = {
+    if (disabled) {
+      super.tearDown2()
+      return
+    }
     try {
       val snContext = SnappyContext(sc)
       if (snContext != null) {
@@ -81,11 +88,9 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     tablesToDrop += tableName
   }
 
-  def testDummy(): Unit = {
-  }
+  def testPartitionedSingleColumnTable(): Unit = {
+    if (disabled) return
 
-  // SNAP-1800 Disabled all tests in this dunit
-  def _testPartitionedSingleColumnTable(): Unit = {
     val tableName = "tabOne"
 
     val snContext = SnappyContext(sc)
@@ -128,7 +133,9 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def _testCreateDropColumnTable(): Unit = {
+  def testCreateDropColumnTable(): Unit = {
+    if (disabled) return
+
     val tableName = "tabOne"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
@@ -183,7 +190,9 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   // This is being commented out. This is because now even the replicated
   // table queries which are not pkbased or convertible to getAll are being routed
   // and the test below asserts on an index being used assuming store execution.
-  def _testCreateDropRowTable(): Unit = {
+  def testCreateDropRowTable(): Unit = {
+    if (disabled) return
+
     val tableName = "tabTwo"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)

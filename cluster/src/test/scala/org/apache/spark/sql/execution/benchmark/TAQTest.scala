@@ -41,18 +41,12 @@ class TAQTest extends SnappyFunSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val sc = SnappyContext.globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      sc.stop()
-    }
+    stopAll()
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    val sc = SnappyContext.globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      sc.stop()
-    }
+    stopAll()
   }
 
   test("select queries with random data (eviction) - insert") {

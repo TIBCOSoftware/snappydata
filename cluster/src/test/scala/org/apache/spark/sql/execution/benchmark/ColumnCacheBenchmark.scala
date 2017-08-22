@@ -61,6 +61,11 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     stopAll()
   }
 
+  override def afterAll(): Unit = {
+    super.afterAll()
+    stopAll()
+  }
+
   override protected def newSparkConf(
       addOn: SparkConf => SparkConf = null): SparkConf = {
     val cores = math.min(8, Runtime.getRuntime.availableProcessors())
