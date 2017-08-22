@@ -97,6 +97,49 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
+  def checkDBAPIsForNonInclusionOfInternalColTable(hp: String): Unit = {
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + hp)
+    try {
+      var rs = conn.getMetaData.getTables(null, null, "%", null)
+      var ncols = rs.getMetaData.getColumnCount
+      while(rs.next()) {
+        // 3rd index the table name
+        assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+      }
+      rs.close()
+      rs = conn.getMetaData.getColumns(null, null, "%", "%")
+      ncols = rs.getMetaData.getColumnCount
+      // println(s" [KN:] ncols = $ncols")
+      while(rs.next()) {
+        // 2nd index is the table name
+        for (i <- 1 to ncols) {
+          print(s"KN: ${rs.getString(i)}")
+          assert(!rs.getString(2).contains("SNAPPYSYS_INTERNAL____"))
+        }
+        // println
+      }
+      rs.close()
+      rs = conn.getMetaData.getTablePrivileges(null, null, "%")
+      ncols = rs.getMetaData.getColumnCount
+      // println(s"KN: priv ncols = $ncols")
+      for (i <- (1 to ncols)) {
+        // 3rd index the table name
+        assert(!rs.getString(3).contains("SNAPPYSYS_INTERNAL____"))
+        // println(s"KN: priv ncols[$i] = ${rs.getMetaData.getColumnName(i)}")
+      }
+      while(rs.next()) {
+        // 3rd index the table name
+        for (i <- 1 to ncols) {
+          print(s" [KN: priv] ${rs.getString(i)}")
+        }
+        // println
+      }
+    } finally {
+      conn.close()
+    }
+  }
+
   test("test serialization with lesser dml chunk size") {
 
     snc.sql("create table order_line_col (ol_w_id  integer,ol_d_id STRING) using column " +
@@ -287,6 +330,8 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
 
       val serverHostPort = TestUtil.startNetServer()
+      checkDBAPIsForNonInclusionOfInternalColTable(serverHostPort)
+
       // println("network server started")
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
