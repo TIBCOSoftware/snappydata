@@ -126,7 +126,7 @@ with Logging with Retries {
     sqlCommand pipe snappyShell foreach (s => {
       println(s)
       if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
-        throw new Exception(s"Failed to run Query")
+        throw new Exception(s"Failed to run Query: $s")
       }
     })
   }

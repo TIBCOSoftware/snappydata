@@ -184,13 +184,15 @@ object ExternalStoreUtils {
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
-      case None => Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+      case None => Constant.DEFAULT_EMBEDDED_URL +
+          ";host-data=false;mcast-port=0;internal-connection=true"
 
       case Some(sc) =>
         SnappyContext.getClusterMode(sc) match {
           case SnappyEmbeddedMode(_, _) =>
             // Already connected to SnappyData in embedded mode.
-            Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+            Constant.DEFAULT_EMBEDDED_URL +
+                ";host-data=false;mcast-port=0;internal-connection=true"
           case ThinClientConnectorMode(_, url) =>
             url + ";route-query=false"
           case ExternalEmbeddedMode(_, url) =>
