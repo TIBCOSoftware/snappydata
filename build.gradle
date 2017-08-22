@@ -1101,3 +1101,32 @@ if (rootProject.hasProperty('trackBuildTime') ) {
     }
   }
 }
+
+// log build output to buildOutput.log
+
+def buildOutput = new File("${rootDir}/buildOutput.log")
+
+// delete build output file if it has become large
+if (buildOutput.length() > 1000000) {
+  delete buildOutput
+}
+
+import org.gradle.logging.internal.*
+
+gradle.services.get(LoggingOutputInternal).addStandardOutputListener (new StandardOutputListener () {
+  void onOutput(CharSequence output) {
+    buildOutput << output
+  }
+})
+
+gradle.services.get(LoggingOutputInternal).addStandardErrorListener (new StandardOutputListener () {
+  void onOutput(CharSequence output) {
+    buildOutput << output
+  }
+})
+
+println()
+println('-------------------------------------------------')
+println("Starting new build on ${buildDate}")
+println('-------------------------------------------------')
+println()

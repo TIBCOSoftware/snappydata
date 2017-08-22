@@ -52,10 +52,10 @@ class UserDefinedFunctionsDUnitTest(val s: String)
       vm3.invoke(getClass, "createTables") // as stop Spark deletes tables.
 
       vm3.invoke(getClass, "simpleUDFTest", false)
-      vm3.invoke(getClass, "stopAny")
     } catch {
       case  e: Throwable => throw new Exception(e)
     } finally {
+      vm3.invoke(getClass, "stopAny")
       ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
       val snSession = new SnappySession(sc)
       snSession.sql("drop function if exists APP.intudf")
