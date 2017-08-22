@@ -556,7 +556,7 @@ class SnappyParser(session: SnappySession)
   */
 
   protected final def join: Rule1[JoinRuleType] = rule {
-    joinType.? ~ JOIN ~ relationFactor ~ (
+    joinType.? ~ JOIN ~ relationWithExternal ~ (
         ON ~ expression ~> ((t: Any, r: LogicalPlan, j: Expression) =>
           (t.asInstanceOf[Option[JoinType]], r, Some(j))) |
         USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
@@ -565,7 +565,7 @@ class SnappyParser(session: SnappySession)
                   .getOrElse(Inner), ids.asInstanceOf[Seq[String]])), r, None)) |
         MATCH ~> ((t: Option[JoinType], r: LogicalPlan) => (t, r, None))
     ) |
-    NATURAL ~ joinType.? ~ JOIN ~ relationFactor ~> ((t: Any,
+    NATURAL ~ joinType.? ~ JOIN ~ relationWithExternal ~> ((t: Any,
         r: LogicalPlan) => (Some(NaturalJoin(t.asInstanceOf[Option[JoinType]]
         .getOrElse(Inner))), r, None))
   }
@@ -681,9 +681,8 @@ class SnappyParser(session: SnappySession)
       })
   }
 
-
-  protected final def relation: Rule1[LogicalPlan] = rule {
-    ((relationFactor ~ (tableValuedFunctionExpressions).?) ~> ((lp: LogicalPlan, se: Any) => {
+  protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
+    (relationFactor ~ (tableValuedFunctionExpressions).?) ~> ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
         case Some(exprs) => {
@@ -693,23 +692,17 @@ class SnappyParser(session: SnappySession)
           UnresolvedTableValuedFunction(fname, exprs)
         }
       }
-    })) ~ (
+    })
+  }
+
+  protected final def relation: Rule1[LogicalPlan] = rule {
+    relationWithExternal ~ (
         join. + ~> ((r1: LogicalPlan, joins: Any) => joins.asInstanceOf[
             Seq[JoinRuleType]].foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
           Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
         }) |
         MATCH.asInstanceOf[Rule[LogicalPlan :: HNil, LogicalPlan :: HNil]]
     )
-  }
-
-  protected final def relationPut: Rule1[LogicalPlan] = rule {
-    relationFactor ~ (
-        join. + ~> ((r1: LogicalPlan, joins: Any) => joins.asInstanceOf[
-            Seq[JoinRuleType]].foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
-          Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
-        }) |
-            MATCH.asInstanceOf[Rule[LogicalPlan :: HNil, LogicalPlan :: HNil]]
-        )
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
@@ -920,7 +913,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE.? ~ relationPut ~ query ~> PutIntoTable
+    PUT ~ INTO ~ TABLE.? ~ relationFactor ~ query ~> PutIntoTable
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
