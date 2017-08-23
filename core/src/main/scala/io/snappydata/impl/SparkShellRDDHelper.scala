@@ -64,13 +64,13 @@ final class SparkShellRDDHelper {
       schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
     })
     val fetchColString = (fetchCols.flatMap { col =>
-      val deltaCol = ColumnDelta.deltaColumnIndex(col, 0)
+      val deltaCol = ColumnDelta.deltaColumnIndex(col - 1 /* zero based */, 0)
       (col +: (deltaCol until (deltaCol - ColumnDelta.MAX_DEPTH, -1))).map(
         i => s"(select data, columnIndex from $resolvedTableName where " +
             s"partitionId = $partitionId and uuid = ? and columnIndex = $i)")
-    } :+ s"select data, columnIndex from $resolvedTableName where " +
+    } :+ s"(select data, columnIndex from $resolvedTableName where " +
         s"partitionId = $partitionId and uuid = ? and columnIndex = " +
-        s"${ColumnFormatEntry.DELETE_MASK_COL_INDEX}").mkString(" union all ")
+        s"${ColumnFormatEntry.DELETE_MASK_COL_INDEX})").mkString(" union all ")
     // fetch stats query and fetch columns query
     (s"select data, uuid from $resolvedTableName where columnIndex = " +
         s"${ColumnFormatEntry.STATROW_COL_INDEX}", fetchColString)

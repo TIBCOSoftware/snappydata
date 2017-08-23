@@ -73,7 +73,7 @@ class SplitClusterDUnitTest(s: String)
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
-  override protected val productDir =
+  override protected val productDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
   override protected def locatorClientPort = { testObject.locatorNetPort }
@@ -81,13 +81,15 @@ class SplitClusterDUnitTest(s: String)
   override def beforeClass(): Unit = {
     super.beforeClass()
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
     val port = SplitClusterDUnitTest.locatorPort
     val netPort = SplitClusterDUnitTest.locatorNetPort
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
+
+    logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
+
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
@@ -281,7 +283,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val data = ArrayBuffer(Data(1, "2", Decimal("3.2")),
       Data(7, "8", Decimal("9.8")), Data(9, "2", Decimal("3.9")),
       Data(4, "2", Decimal("2.4")), Data(5, "6", Decimal("7.6")))
-    for (i <- 1 to 1000) {
+    for (_ <- 1 to 1000) {
       data += Data(Random.nextInt(), Integer.toString(Random.nextInt()),
         Decimal(Random.nextInt(100).toString + '.' + Random.nextInt(100)))
     }

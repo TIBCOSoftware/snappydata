@@ -173,7 +173,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             mappedProjects,
             scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
               ._1.asInstanceOf[RDD[InternalRow]],
-            relation.relation, UnknownPartitioning(0), metadata,
+            baseRelation, UnknownPartitioning(0), metadata,
             relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
@@ -203,7 +203,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             mappedProjects,
             scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
               ._1.asInstanceOf[RDD[InternalRow]],
-            relation.relation, UnknownPartitioning(0), metadata,
+            baseRelation, UnknownPartitioning(0), metadata,
             relation.catalogTable.map(_.identifier))
       }
       execution.ProjectExec(projects,

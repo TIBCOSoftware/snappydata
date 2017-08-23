@@ -429,8 +429,13 @@ abstract class BaseColumnFormatRelation(
       if (!tableExists) {
         val sql =
           s"CREATE TABLE $tableName $schemaExtensions ENABLE CONCURRENCY CHECKS"
+        val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
+        if (pass != null) {
+          connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+            pass.asInstanceOf[String])
+        }
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,

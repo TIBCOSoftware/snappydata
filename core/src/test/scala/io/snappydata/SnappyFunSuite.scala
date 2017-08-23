@@ -47,7 +47,7 @@ abstract class SnappyFunSuite
   InitializeRun.setUp()
 
   protected var testName: String = _
-  protected val dirList = ArrayBuffer[String]()
+  protected val dirList: ArrayBuffer[String] = ArrayBuffer[String]()
 
   protected def sc: SparkContext = {
     val ctx = SnappyContext.globalSparkContext
@@ -161,17 +161,18 @@ abstract class SnappyFunSuite
         check
       }
 
-      override def description() = desc
+      override def description(): String = desc
     }
     DistributedTestBase.waitForCriterion(criterion, ms, interval,
       throwOnTimeout)
   }
 
   def stopAll(): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo("Stopping spark context = " + sparkContext)
-    if (sparkContext != null) sparkContext.stop()
-    // GemFireXD stop for local mode is now done by SnappyContext.stop()
+    val sc = SnappyContext.globalSparkContext
+    logInfo("Stopping spark context = " + sc)
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
+    }
     cachedContext = null
   }
 
@@ -203,7 +204,7 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
    * Since attribute references are given globally unique ids during analysis,
    * we must normalize them to check if two different queries are identical.
    */
-  protected def normalizeExprIds(plan: LogicalPlan) = {
+  protected def normalizeExprIds(plan: LogicalPlan): LogicalPlan = {
     plan transformAllExpressions {
       case s: ScalarSubquery =>
         s.copy(exprId = ExprId(0))
@@ -217,29 +218,29 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
       case a: Alias =>
         Alias(a.child, a.name)(exprId = ExprId(0))
-//      case ae: AggregateExpression =>
-//        ae.copy(resultId = ExprId(0))
+      // case ae: AggregateExpression =>
+      // ae.copy(resultId = ExprId(0))
     }
   }
 
   /**
    * Normalizes plans:
    * - Filter the filter conditions that appear in a plan. For instance,
-   *   ((expr 1 && expr 2) && expr 3), (expr 1 && expr 2 && expr 3), (expr 3 && (expr 1 && expr 2)
+   * ((expr 1 && expr 2) && expr 3), (expr 1 && expr 2 && expr 3), (expr 3 && (expr 1 && expr 2)
    *   etc., will all now be equivalent.
    * - Sample the seed will replaced by 0L.
    * - Join conditions will be resorted by hashCode.
    */
   private def normalizePlan(plan: LogicalPlan): LogicalPlan = {
     plan transform {
-      case filter @ Filter(condition: Expression, child: LogicalPlan) =>
-        Filter(splitConjunctivePredicates(condition).map(rewriteEqual(_)).sortBy(_.hashCode())
+      case Filter(condition: Expression, child: LogicalPlan) =>
+        Filter(splitConjunctivePredicates(condition).map(rewriteEqual).sortBy(_.hashCode())
             .reduce(And), child)
       case sample: Sample =>
         sample.copy(seed = 0L)(true)
-      case join @ Join(left, right, joinType, condition) if condition.isDefined =>
+      case Join(left, right, joinType, condition) if condition.isDefined =>
         val newCondition =
-          splitConjunctivePredicates(condition.get).map(rewriteEqual(_)).sortBy(_.hashCode())
+          splitConjunctivePredicates(condition.get).map(rewriteEqual).sortBy(_.hashCode())
               .reduce(And)
         Join(left, right, joinType, Some(newCondition))
     }
@@ -252,9 +253,9 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
    * 2. (a <=> b), (b <=> a).
    */
   private def rewriteEqual(condition: Expression): Expression = condition match {
-    case eq @ EqualTo(l: Expression, r: Expression) =>
+    case EqualTo(l: Expression, r: Expression) =>
       Seq(l, r).sortBy(_.hashCode()).reduce(EqualTo)
-    case eq @ EqualNullSafe(l: Expression, r: Expression) =>
+    case EqualNullSafe(l: Expression, r: Expression) =>
       Seq(l, r).sortBy(_.hashCode()).reduce(EqualNullSafe)
     case _ => condition // Don't reorder.
   }

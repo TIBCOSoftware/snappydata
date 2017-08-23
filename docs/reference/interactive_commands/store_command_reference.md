@@ -8,14 +8,14 @@ Start the interactive `snappy` command prompt by using the snappy script without
 snappy
 ```
 
-The system property `gfxd.history` specifies a file in which to store all of the commands executed during an interactive `snappy` session. For example:
+The system property `snappy.history` specifies a file in which to store all of the commands executed during an interactive `snappy` session. For example:
 
 ``` pre
-$ export JAVA_ARGS="-Dgfxd.history=/Users/user1/snappydata-history.sql"
+$ export JAVA_ARGS="-Dsnappy.history=/Users/user1/snappydata-history.sql"
 $ snappy
 ```
 
-By default the history file is named .gfxd.history, and it is stored in the current user's home directory.
+By default the history file is named .snappy.history, and it is stored in the current user's home directory.
 
 `snappy` accepts several commands to control its use of JDBC. It recognizes a semicolon as the end of a `snappy` or SQL command. It treats semicolons within SQL comments, strings, and delimited identifiers as part of those constructs and not as the end of the command. Semicolons are required at the end of a `snappy` or SQL statement.
 
