@@ -633,21 +633,110 @@ class ColumnTableTest
   test("Test PR with EVICTION BY OVERFLOW") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) " +
-        "USING column " +
-        "options " +
-        "(" +
-        "PARTITION_BY 'OrderId'," +
-        "EVICTION_BY 'LRUMEMSIZE 200'," +
-        "OVERFLOW 'true')")
-
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
+    var region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
         .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
         EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
         EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.OVERFLOW_TO_DISK)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+    " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.LOCAL_DESTROY)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.LOCAL_DESTROY)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.LOCAL_DESTROY)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_MEMORY)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.LOCAL_DESTROY)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+      " (PARTITION_BY 'OrderId', OVERFLOW 'true')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+      " (PARTITION_BY 'OrderId', OVERFLOW 'true')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent', OVERFLOW 'true')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent', OVERFLOW 'true')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+      .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+      EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+      EvictionAction.OVERFLOW_TO_DISK)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
 
@@ -1024,40 +1113,40 @@ class ColumnTableTest
         "DATA_SNDG_SYS_NM VARCHAR(128)) " +
         "USING column OPTIONS(BUCKETS '13', " +
         "REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT'," +
-        " PERSISTENT 'ASYNCHRONOUS')");
+        " PERSISTENT 'ASYNCHRONOUS')")
 
     snc.sql("create table EXEC_DETAILS_COL(EXEC_DID BIGINT," +
         "SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64)," +
         "TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) " +
         "USING column OPTIONS(COLOCATE_WITH 'ORDER_DETAILS_COL', " +
         "BUCKETS '13', REDUNDANCY '1', " +
-        "EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS')");
+        "EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS')")
 
     try {
-      snc.sql("DROP TABLE ORDER_DETAILS_COL");
+      snc.sql("DROP TABLE ORDER_DETAILS_COL")
     } catch {
       case e: AnalysisException => {
         assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
             "dependent objects: APP.EXEC_DETAILS_COL;")
         // Execute second time to see we are getting same exception instead of table not found
         try {
-          snc.sql("DROP TABLE ORDER_DETAILS_COL");
+          snc.sql("DROP TABLE ORDER_DETAILS_COL")
         } catch {
           case e: AnalysisException => {
             assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
                 "dependent objects: APP.EXEC_DETAILS_COL;")
           }
-          case t: Throwable => throw new AssertionError(t.getMessage, t);
+          case t: Throwable => throw new AssertionError(t.getMessage, t)
         }
       } // Expected Exception hence ignore
-      case _: Throwable => throw new AssertionError;
+      case _: Throwable => throw new AssertionError
     }
 
     try {
       snc.sql("DROP TABLE EXEC_DETAILS_COL")
-      snc.sql("DROP TABLE ORDER_DETAILS_COL");
+      snc.sql("DROP TABLE ORDER_DETAILS_COL")
     } catch {
-      case t: Throwable => throw new AssertionError(t.getMessage, t);
+      case t: Throwable => throw new AssertionError(t.getMessage, t)
     }
   }
 
