@@ -18,10 +18,10 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+
 import scala.collection.mutable
-
 import io.snappydata.SnappyTableStatsProviderService
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -80,8 +80,25 @@ case class JDBCMutableRelation(
 
   import scala.collection.JavaConverters._
 
-  override final lazy val schema: StructType = JDBCRDD.resolveTable(
-    new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
+  override final lazy val schema: StructType = {
+    if (Misc.isSecurityEnabled) {
+      import com.pivotal.gemfirexd.Attribute
+      val bootUser = Misc.getMemStore.getBootProperty(Attribute.USERNAME_ATTR)
+      val bootPass = Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR)
+      val user = connProperties.connProps.setProperty(Attribute.USERNAME_ATTR, bootUser)
+      val pass = connProperties.connProps.setProperty(Attribute.PASSWORD_ATTR, bootPass)
+      try {
+        JDBCRDD.resolveTable(
+          new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
+      } finally {
+        connProperties.connProps.setProperty(Attribute.USERNAME_ATTR, user.toString)
+        connProperties.connProps.setProperty(Attribute.PASSWORD_ATTR, pass.toString)
+      }
+    } else {
+      JDBCRDD.resolveTable(
+        new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
+    }
+  }
 
   private[sql] val resolvedName = table
 
