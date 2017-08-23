@@ -173,8 +173,9 @@ public class SnappyStartUpTest extends SnappyTest {
     snappyTest.killVM(vmDir, clientName, vmName);
     Log.getLogWriter().info("snappy server stopped successfully...." + vmDir);
     executeOps();
-    HydraTask_AddServerNode_Rebalance();
-    //SnappyLocatorHATest.executeOps();
+    backUpServerConfigData();
+    HydraTask_AddServerNode_Rebalance(clientName, vmName);
+    new SnappyStartUpTest().regenerateConfigData(vmDir, "servers", clientName, vmName);
     snappyTest.startVM(vmDir, clientName, vmName);
     Log.getLogWriter().info("snappy server restarted successfully...." + vmDir);
     HydraTask_reWriteServerConfigData();
@@ -261,18 +262,23 @@ public class SnappyStartUpTest extends SnappyTest {
     }
   }
 
-  public static void HydraTask_AddServerNode_Rebalance() {
+  public static void HydraTask_AddServerNode_Rebalance(String clientName, String vmName) {
     HydraTask_generateSnappyServerConfig();
-    Set<String> logDirList = new HashSet<>();
     Set<String> newNodeLogDirs = getNewNodeLogDir();
     for (String nodeLogDir : newNodeLogDirs) {
       Log.getLogWriter().info("nodeLogDir is : " + nodeLogDir);
-      String newNodeLogDir = null;
+      nodeLogDir = nodeLogDir + " " + " -rebalance ";
+      SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + RemoteTestModule.getMyVmid() + "_" +
+          snappyTest.getMyTid(), nodeLogDir);
+      String newNodeLogDir;
       newNodeLogDir = nodeLogDir.substring(nodeLogDir.lastIndexOf("-dir=") + 5);
       newNodeLogDir = newNodeLogDir.substring(0, newNodeLogDir.indexOf(" "));
       Log.getLogWriter().info("New node log dir is : " + newNodeLogDir);
-      logDirList.add(newNodeLogDir);
-      startSnappyServerWithRebalance(newNodeLogDir, getLocatorsList("locators"));
+      SnappyBB.getBB().getSharedMap().put("logDir_" + RemoteTestModule.getMyClientName() + "_" +
+          RemoteTestModule.getMyVmid(), newNodeLogDir);
+      new SnappyStartUpTest().regenerateConfigData(newNodeLogDir, "servers", clientName, vmName);
+      Log.getLogWriter().info("nodeLogDir is : " + nodeLogDir);
+      new SnappyStartUpTest().startSnappyServer();
     }
   }
 
