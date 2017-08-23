@@ -1,55 +1,15 @@
-
-## Use these Resources
-1) Current Row store docs : though the flow there is incorrect and is very difficult to understand. Some of the nuanced information like 'user names converted to Identifiers' might be important but should be more like a footnote. 
-2) Current SnappyData security section below (everything here to be included; but, not sufficient)
-3) Security spec for 1.0
-
-- Can Amogh/Vivek take a cut at producing all the content.
-
-## Proposed Outline
-
-### Security features
-#### Features only available in the Enterprise version
-
-### Securing cluster startup
-#### Built-in system user
-#### How members authenticate each other
-#### configuration properties and examples
-
-### Authentication
-#### Authenticating user connections from JDBC, ODBC
-####  Using built in authentication
-#### Using LDAP for authentication
-#### Smart connector authentication
-#### Submitting jobs
-#### (provide examples as much as possible)
-
-### Authorization
-#### Az using JDBC, ODBC
-####  Using built-in Az  (GRANT to individual users)
-####  Best practice: Configure roles using 'create user ...' and grant privileges. 
-####  Using LDAP based Az. 
-####  Anything to say for Smart connector apps ?
-####  Authorizing Jobs submitted to Snappydata cluster
-####  Running user code in Snappydata ?  (UDFs, procedures ... any way to secure? )
-
-### Configuring Network encryption and authentication using SSL, PKCS
-(use Row store documentation)
-
-### Cloud security
-(Lets explore what we can tell users when running in AWS ... Content from redshift docs, Snowflake.... )
-
-
-
------
-
-
-
 # Managing Security
 
-## Launching the Cluster in Secure Mode
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+
+
+## Authentication
+
+### Launching the Cluster in Secure Mode
 
 In the current release, SnappyData only supports LDAP authentication which allows users to authenticate against an existing LDAP directory service in your organization. LDAP (lightweight directory access protocol) provides an open directory access protocol that runs over TCP/IP. </br>This feature provides a quick and secure way for users to use their existing login credentials (usernames and passwords) to access the cluster and data.
+
+SnappyData uses mutual authentication between the RowStore locator and subsequent RowStore members that boot and join the distributed system. 
 
 !!! Note:
 	
@@ -63,6 +23,7 @@ In the current release, SnappyData only supports LDAP authentication which allow
 
 Authentication is the process of verifying someone's identity. When a user tries to log in, that request is forwarded to the specified LDAP directory to verify if the credentials are correct.
 
+### Using LDAP for Authentication
 To enable LDAP authentication, set the following LDAP authentication properties in the [configuration files](../configuring_cluster/configuring_cluster.md) **conf/locators**, **conf/servers**, and **conf/leads** files.
 
 * `auth-provider`: The authentication provider. When you set the `auth-provider` property to `LDAP`, SnappyData uses LDAP for authenticating all distributed system members as well as clients to the distributed system. Therefore, you must supply the user and password properties at startup. <!--If you omit a value for the password property when starting a SnappyData member, then the member prompts you for a password at the command line.-->
@@ -90,6 +51,8 @@ localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.aut
 
 !!! Note: 
 	You must specify `.auth-ldap-` properties as Java system properties.
+    
+### User Names for Authentication, Authorization and Membership
 
 ##  Authorization
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.

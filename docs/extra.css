@@ -185,3 +185,20 @@ th {
     position: relative;
     text-shadow: 0 1px 0 #000;  
 }
+/* Formatting for Enterprise*/
+
+ent {
+  background-color: #FBFEDD; 
+  color: black;
+  margin: 10px 0px;
+  padding:5px 5px 5px 5px;
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  border: #E5E5E4 1px solid;
+  border-radius: 5px; 
+  word-wrap: normal;
+  display: block;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size:14px;
+  font-style: bold; 	
+}
