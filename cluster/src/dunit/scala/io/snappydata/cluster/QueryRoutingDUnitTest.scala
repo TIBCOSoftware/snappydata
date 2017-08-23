@@ -356,6 +356,28 @@ class QueryRoutingDUnitTest(val s: String)
     ps2.close()
   }
 
+  def testSnap1945_putdmlvariation(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    stmt.execute("create table dest(col1 int, col2 int not null primary key) using row options()")
+    stmt.execute("create table source(col1 int, col2 int) using row options()")
+    stmt.executeUpdate("insert into source values (1, 2), (2, 3)")
+    stmt.executeUpdate("put into dest select * from source")
+    stmt.execute("select count(*) from dest")
+    val rs = stmt.getResultSet
+    assert(rs.next())
+    assert(2 == rs.getInt(1))
+    assert(!rs.next())
+    rs.close()
+    stmt.execute("drop table source")
+    stmt.execute("drop table dest")
+    stmt.close()
+    conn.close()
+  }
+
   def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
