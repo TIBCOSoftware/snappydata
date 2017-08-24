@@ -999,7 +999,7 @@ The following isolation levels are supported for row tables:
 
 For more information, see, [SET ISOLATION](./reference/sql_reference/set-isolation.md)
 !!!Note: 
-	* Transactions are not supported on column tables
+	Transactions are not supported for column tables
 
 ### Using Snapshot Isolation for Column Tables
 
@@ -1007,7 +1007,10 @@ Transactions are not supported on column tables. Instead, we provide snapshot is
 <!--Currently, only single statement snapshot isolation (that is, [autocommit](./reference/interactive_commands/autocommit.md) must be set to true) is supported.-->  
 
 !!! Note:
-	If READ_COMMITTED or REPEATABLE_READ isolation level is set and the query is executed on a column table, an error UnSupportedOperationException is reported.
+
+	* An error is reported if READ_COMMITTED or REPEATABLE_READ isolation level is set and the query is executed on a column table.
+
+	* Ensure that you set [AUTOCOMMIT](./reference/interactive_commands/autocommit.md) to **On** for column tables, else an error may be reported during query execution.
 
 
 ## Stream Processing using SQL
