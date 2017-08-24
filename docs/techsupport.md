@@ -2,7 +2,7 @@
 You can contact the SnappyData support team using:
 
 - [chomp@snappydata.io](mailto:chomp@snappydata.io)
-- [suppport@snappydata.io](mailto:suppport@snappydata.io) 
+- [support@snappydata.io](mailto:suppport@snappydata.io) 
 
 # Community
 The following channels are monitored for comments/questions:

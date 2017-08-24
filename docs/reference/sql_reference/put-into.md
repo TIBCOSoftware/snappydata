@@ -32,7 +32,7 @@ PUT INTO TRADE.CUSTOMERS
       VALUES (1, 'User 1', '07-06-2002', 'SnappyData', 1);
 ```
 
-When providing column names with a table, the column names should not include [CONSTRAINT clauses](create-table.md#constraint).
+When specifying columns with table, columns should not have any [CONSTRAINT](create-table.md#constraint), as explained in the following example:
 
 ```pre
 PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID)

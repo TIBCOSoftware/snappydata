@@ -10,12 +10,13 @@ A `ConflictingPersistentDataException` happens when two members compare their me
 
 Trying to merge two independently-created distributed systems into a single distributed system causes a `ConflictingPersistentDataException`. There are a few ways to end up with independently-created systems:
 
--   Configuration problems may cause SnappyData members connect to different locators that are not aware of each other. To avoid this problem, ensure that all locators and data stores always specify the same, complete list of locator addresses at startup (for example, `locators=locator1[10334],locator2[10334],locator3[10334]`). Consider using a single **gemfirexd.properties** file for common configuration items, as described in Steps to Plan and Configure a SnappyData Deployment <mark>Do we need to include?</mark></a>.
+-   Configuration problems may cause SnappyData members connect to different locators that are not aware of each other. To avoid this problem, ensure that all locators and data stores always specify the same, complete list of locator addresses at startup (for example, `locators=locator1[10334],locator2[10334],locator3[10334]`). 
+
 -   All persistent members in a system may be shut down, after which a brand new set of different persistent members attempts to start up.
 
 Trying to merge independent systems by pointing all members to the same set of locators then results in a `ConflictingPersistentDataException`.
 
-SnappyData cannot merge independently-created data for the same table. Instead, you need to export the data from one of the systems and import it into the other system. See Exporting and Importing Data with SnappyData <mark>Do we need to include?</mark>.
+SnappyData cannot merge independently-created data for the same table. Instead, you need to export the data from one of the systems and import it into the other system. See Exporting and Importing Data with SnappyData
 
 **Starting new members first**
 
@@ -37,4 +38,4 @@ In some cases it may be possible to choose between sides of the network partitio
 
 If you receive a `ConflictingPersistentDataException`, you will not be able to start all of your members and have them join the same distributed system.
 
-First, determine if there is one part of the system that you can recover. For example, if you just added some new members to the system, try to start up without including those members. For the remaining members, use the data extractor tool to extract data from the persistence files and import it into a running system. See Recovering Data from Disk Stores <mark>Do we need to include?</mark>.
+First, determine if there is one part of the system that you can recover. For example, if you just added some new members to the system, try to start up without including those members. For the remaining members, use the data extractor tool to extract data from the persistence files and import it into a running system. 

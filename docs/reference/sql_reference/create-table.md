@@ -118,9 +118,9 @@ The disk directories where you want to persist the table data. By default, Snapp
 
 <a id="overflow"></a>
 `OVERFLOW`</br> 
-Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' will overflow the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' will cause the evicted rows to be destroyed in case of eviction event.
+Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' causes the evicted rows to be destroyed in case of eviction event.
 !!! Note: 
-	The default action for OVERFLOW is to destroy the evicted rows.
+	The tables are evicted to disk by default.
 
 <a id="expire"></a>
 `EXPIRE`</br>

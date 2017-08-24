@@ -21,4 +21,4 @@ The following built-in procedures are available:
 
 The following built-in function is available:
 
-* [DSDI](dsdi.md)
+* [DSID](dsid.md)

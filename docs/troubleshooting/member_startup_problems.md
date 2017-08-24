@@ -42,8 +42,11 @@ The above messages for data stores and locators may indicate that some members w
 
 To avoid this type of delayed startup and recovery:
 
-1.  When possible, shut down data store members (shut-down-all) after disk stores have been synchronized in the system. Shut down remaining locator members after the data stores have stopped.
+1.  It is recommended to use the built-in `snappy-start-all.sh` and `snappy-stop-all.sh` scripts to start and stop the cluster. If for some reason those scripts are not used, then when possible, first shut down the data store members after disk stores have been synchronized in the system.</br> Shut down remaining locator members after the data stores have stopped.
 
 2.  Make that that sure all persistent members are restarted properly. See [Recovering from a ConflictingPersistentDataException](recovering_from_a_conflictingpersistentdataexception.md) for more information.
 
-3.  If a member cannot be restarted and it is preventing other data stores from starting, use [revoke-missing-disk-store](../reference/command_line_utilities/store-revoke-missing-disk-stores.md) to revoke the disk stores that are preventing startup. This can cause some loss of data if the revoked disk store actually contains recent changes to the data dictionary or to table data. The revoked disk stores cannot be added back to the system later. If you revoke a disk store on a member you will need to delete the associated disk files from that member in order to start it again. Only use the `revoke-missing-disk-store` command as a last resort.
+3.  If a member cannot be restarted and it is preventing other data stores from starting, then [revoke-missing-disk-store](../reference/command_line_utilities/store-revoke-missing-disk-stores.md) command can be used to revoke the disk stores that are preventing startup. 
+
+	!!!Note
+    	This can cause some loss of data if the revoked disk store actually contains recent changes to the data dictionary or to table data. The revoked disk stores cannot be added back to the system later. If you revoke a disk store on a member you need to delete the associated disk files from that member in order to start it again. Only use the `revoke-missing-disk-store` command as a last resort.  Contact [support@snappydata.io](mailto:support@snappydata.io) if you need to use the `revoke-missing-disk-store` command.

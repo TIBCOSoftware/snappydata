@@ -7,7 +7,6 @@ Change the transaction isolation level for the connection.
 ``` pre
 SET [ CURRENT ] ISOLATION [ = ]
 { 
-UR | DIRTY READ | READ UNCOMMITTED 
 CS | READ COMMITTED
 RS | REPEATABLE READ
 RESET
@@ -17,7 +16,7 @@ RESET
 <a id="set-isolation-description"></a>
 ## Description
 
-The supported isolation levels in SnappyData are NONE, READ COMMITTED, READ UNCOMMITTED, and REPEATABLE READ. The READ UNCOMMITTED level is implicitly upgraded to READ COMMITTED.
+The supported isolation levels in SnappyData are NONE, READ COMMITTED and REPEATABLE READ.
 
 Isolation level NONE indicates no transactional behavior. The RESET clause corresponds to the NONE isolation level.
 
