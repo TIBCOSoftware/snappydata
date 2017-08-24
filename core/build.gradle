@@ -168,7 +168,11 @@ task getApacheSparkDist {
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
-check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
+check.dependsOn test, scalaTest, dunitTest
+if (rootProject.hasProperty('snappydata.enterprise')) {
+  check.dependsOn dunitSecurityTest
+}
+
 
 archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {
