@@ -89,9 +89,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   /**
-   * Set the common hive metastore properties and also initialize the invoke
+   * Set the common hive metastore properties and also invoke
    * the static initialization for Hive with system properties
    * which tries booting default derby otherwise (SNAP-1956, SNAP-1961).
+   *
    * Should be called after all other properties have been filled in.
    *
    * @return the location of hive warehouse (unused but hive creates the directory)
@@ -125,7 +126,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       System.clearProperty(name);
     }
 
-    // set integer properties after the system properties are cleared
+    // set integer properties after the system properties have been used by
+    // Hive static initialization so that these never go into system properties
 
     // every session has own hive client, so a small pool
     metadataConf.set("datanucleus.connectionPool.maxPoolSize", "4");
