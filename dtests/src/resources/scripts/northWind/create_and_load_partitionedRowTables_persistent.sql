@@ -34,7 +34,7 @@ DROP TABLE IF EXISTS staging_customers;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE staging_customers
     USING com.databricks.spark.csv OPTIONS(path ':dataLocation/customers.csv', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE customers USING row OPTIONS(PERSISTENT ':persistenceMode', redundancy '1') AS (SELECT CustomerID, CompanyName, ContactName, ContactTitle,
+CREATE TABLE customers USING row OPTIONS(PERSISTENT ':persistenceMode') AS (SELECT CustomerID, CompanyName, ContactName, ContactTitle,
 Address, City, Region, PostalCode, Country, Phone, Fax FROM staging_customers);
 
 DROP TABLE IF EXISTS orders;
