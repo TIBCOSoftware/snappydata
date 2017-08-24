@@ -388,10 +388,20 @@ object StoreUtils {
     val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
         .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
     val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
+    var overflowAdded = false
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v =>
-        if (v == NONE) EMPTY_STRING else s"$GEM_EVICTION_BY $v ")
-          .getOrElse(defaultEviction))
+        if (v == NONE) {
+          EMPTY_STRING
+        } else {
+          if (hasOverflow) {
+            overflowAdded = true
+            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+          } else {
+            s"$GEM_EVICTION_BY $v "
+          }
+        })
+        .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         if (v.contains(LRUCOUNT)) {
@@ -400,12 +410,17 @@ object StoreUtils {
         } else if (v == NONE) {
           EMPTY_STRING
         } else {
-          s"$GEM_EVICTION_BY $v "
+          if (hasOverflow) {
+            overflowAdded = true
+            s"$GEM_EVICTION_BY $v $GEM_OVERFLOW "
+          } else {
+            s"$GEM_EVICTION_BY $v "
+          }
         }
       }).getOrElse(defaultEviction))
     }
 
-    if (hasOverflow) {
+    if (hasOverflow && !overflowAdded) {
       parameters.remove(OVERFLOW)
       sb.append(s"$GEM_OVERFLOW ")
     }

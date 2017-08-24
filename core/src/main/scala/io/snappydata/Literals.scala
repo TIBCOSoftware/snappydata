@@ -89,7 +89,7 @@ object Constant {
 
   final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR = StoreCallbacks.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
 
-  final val COLUMN_TABLE_INDEX_PREFIX = "SNAPPYSYS_INDEX__"
+  final val COLUMN_TABLE_INDEX_PREFIX = "SNAPPYSYS_INDEX____"
 
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
