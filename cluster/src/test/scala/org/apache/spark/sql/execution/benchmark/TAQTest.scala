@@ -21,7 +21,6 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
-import io.snappydata.gemxd.SnappyDataVersion
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -42,18 +41,12 @@ class TAQTest extends SnappyFunSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val sc = SnappyContext.globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      sc.stop()
-    }
+    stopAll()
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    val sc = SnappyContext.globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      sc.stop()
-    }
+    stopAll()
   }
 
   test("select queries with random data (eviction) - insert") {
@@ -285,7 +278,7 @@ object TAQTest extends Logging with Assertions {
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
     conf.set("snappydata.store.critical-heap-percentage", "95")
-    if (SnappyDataVersion.isEnterpriseEdition) {
+    if (SnappySession.isEnterpriseEdition) {
       conf.set("snappydata.store.memory-size", "1200m")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)

@@ -19,10 +19,10 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import com.pivotal.gemfirexd.Attribute
+
 import scala.collection.JavaConverters._
-
 import io.snappydata.SnappyTableStatsProviderService
-
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -230,8 +230,12 @@ abstract case class JDBCAppendableRelation(
         val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
           dialect, sqlContext)
         if (!tableExists) {
+          val pass = connProperties.connProps.remove(Attribute.PASSWORD_ATTR)
           logInfo(s"Applying DDL (url=${connProperties.url}; " +
               s"props=${connProperties.connProps}): $tableStr")
+          if (pass != null) {
+            connProperties.connProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
+          }
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName,

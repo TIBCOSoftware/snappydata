@@ -115,7 +115,7 @@ class SnappyExecutor(
       false
     } catch {
       case ex: CancelException => true
-      case _ => false
+      case _: Throwable => false
     }
   }
 

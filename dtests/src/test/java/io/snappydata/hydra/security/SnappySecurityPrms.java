@@ -50,6 +50,8 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long dmlOperations;
 
+  public static Long isSecurity;
+
   public static Vector getDmlOps() {
     Long key = dmlOperations;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
@@ -66,7 +68,8 @@ public class SnappySecurityPrms extends SnappyPrms{
     Long key = onSchema;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
-  public static boolean getIsGrant() {
+
+    public static boolean getIsGrant() {
     Long key = isGrant;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }

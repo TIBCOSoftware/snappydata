@@ -26,15 +26,18 @@ import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
+import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, functions => snappydataFunctions}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -108,13 +111,10 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sessionState: SnappySessionState = {
-    try {
-      val clazz = org.apache.spark.util.Utils.classForName(
-        "org.apache.spark.sql.internal.SnappyAQPSessionState")
-      clazz.getConstructor(classOf[SnappySession]).
+    SnappySession.aqpSessionStateClass match {
+      case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
           newInstance(self).asInstanceOf[SnappySessionState]
-    } catch {
-      case NonFatal(_) => new SnappySessionState(this)
+      case None => new SnappySessionState(self)
     }
   }
 
@@ -1746,6 +1746,25 @@ object SnappySession extends Logging {
   private[spark] val INVALID_ID = -1
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
+
+  lazy val isEnterpriseEdition: Boolean = {
+    GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
+    GemFireVersion.isEnterpriseEdition
+  }
+
+  private lazy val aqpSessionStateClass: Option[Class[_]] = {
+    if (isEnterpriseEdition) {
+      try {
+        Some(org.apache.spark.util.Utils.classForName(
+          "org.apache.spark.sql.internal.SnappyAQPSessionState"))
+      } catch {
+        case NonFatal(e) =>
+          // Let the user know if it failed to load AQP classes.
+          logWarning(s"Failed to load AQP classes in Enterprise edition: $e")
+          None
+      }
+    } else None
+  }
 
   private[this] val bucketProfileListener = new ProfileListener {
 
