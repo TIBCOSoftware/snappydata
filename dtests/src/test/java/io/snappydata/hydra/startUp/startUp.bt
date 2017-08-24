@@ -9,6 +9,7 @@ io/snappydata/hydra/startUp/nwTestWithServerHA_clusterRestart.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/startUp/nwTestWithLeadHA_clusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
