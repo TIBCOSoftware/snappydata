@@ -22,6 +22,7 @@ io/snappydata/hydra/startUp/nwTestWithLeadHA_clusterRestart.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -34,6 +35,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterR
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -46,6 +48,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterRestart.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -58,6 +61,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpAfterLocatorStop_ClusterR
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -70,6 +74,7 @@ io/snappydata/hydra/startUp/nwColumnTablesTestWithDdlOpDuringLocatorHA.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/startUp/nwPersistentColumnTablesTestWithDdlOpDuringLocatorHA.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
