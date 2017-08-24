@@ -665,7 +665,6 @@ object NWTestUtil {
       snc.sql(NWQueries.products_table +
           " USING column options (partition_by 'ProductID,SupplierID', buckets '17', redundancy " +
           "'1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
-      snc.sql(NWQueries.categories_table)
       snc.sql(NWQueries.suppliers_table +
           " USING column options (PARTITION_BY 'SupplierID', buckets '123', redundancy '1',  " +
           "PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')")
