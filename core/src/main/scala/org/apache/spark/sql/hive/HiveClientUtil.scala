@@ -29,7 +29,6 @@ import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveCatalog
 import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.hadoop.util.VersionInfo
 import org.apache.log4j.LogManager
 
@@ -130,10 +129,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
   protected[sql] var client: HiveClient = newClientWithLogSetting()
 
 
-  def closeCurrent(): Unit = {
-    Hive.closeCurrent()
-  }
-
   private def newClientWithLogSetting(): HiveClient = {
     val currentLevel = ClientSharedUtils.converToJavaLogLevel(LogManager.getRootLogger.getLevel)
     try {
@@ -173,8 +168,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
         metadataConf.set("datanucleus.generateSchema.database.mode", "none")
       case _ =>
     }
-    val warehouse = SnappyHiveCatalog.setCommonHiveMetastoreProperties(metadataConf)
-    logInfo("Default warehouse location is " + warehouse)
 
     val (dbURL, dbDriver) = resolveMetaStoreDBProps()
     var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
@@ -195,6 +188,9 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
     logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
     metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
+
+    val warehouse = SnappyHiveCatalog.initCommonHiveMetaStoreProperties(metadataConf)
+    logInfo("Default warehouse location is " + warehouse)
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -229,8 +225,6 @@ class HiveClientUtil(val sparkContext: SparkContext) extends Logging {
 
       DriverRegistry.register("io.snappydata.jdbc.EmbeddedDriver")
       DriverRegistry.register("io.snappydata.jdbc.ClientDriver")
-
-      closeCurrent() // Just to ensure no other HiveDB is alive for this thread.
 
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")
