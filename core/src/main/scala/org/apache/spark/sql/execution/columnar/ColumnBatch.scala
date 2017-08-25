@@ -30,7 +30,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, MutatedColumnDecoder, MutatedColumnDecoderBase}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, DeletedColumnDecoder, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.types.StructField
@@ -183,8 +183,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
-  def getMutatedColumnDecoderIfRequired(decoder: ColumnDecoder, field: StructField,
-      columnIndex: Int, skipDelete: Boolean): MutatedColumnDecoderBase = {
+  def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
+      columnIndex: Int): UpdatedColumnDecoderBase = {
     if (currentDeltaStats eq null) null
     else {
       // TODO: SW: check for actual delta stats to see if there are updates
@@ -192,11 +192,17 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
       val delta1 = getColumnBuffer(deltaPosition, throwIfMissing = false)
       val delta2 = getColumnBuffer(deltaPosition - 1, throwIfMissing = false)
       val delta3 = getColumnBuffer(deltaPosition - 2, throwIfMissing = false)
-      val delete = if (skipDelete) null
-      else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX, throwIfMissing = false)
-      if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
-        MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
+      if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null)) {
+        UpdatedColumnDecoder(decoder, field, delta1, delta2, delta3)
       } else null
+    }
+  }
+
+  def getDeletedColumnDecoder: DeletedColumnDecoder = {
+    if (currentDeltaStats eq null) null
+    else getColumnBuffer(ColumnFormatEntry.DELETE_MASK_COL_INDEX, throwIfMissing = false) match {
+      case null => null
+      case deleteBuffer => new DeletedColumnDecoder(deleteBuffer)
     }
   }
 
@@ -317,17 +323,23 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     colBuffers.get(columnIndex + 1)
   }
 
-  def getMutatedColumnDecoderIfRequired(decoder: ColumnDecoder, field: StructField,
-      columnIndex: Int, skipDelete: Boolean): MutatedColumnDecoderBase = {
+  def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
+      columnIndex: Int): UpdatedColumnDecoderBase = {
     val buffers = colBuffers
     val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
     val delta1 = buffers.get(deltaPosition)
     val delta2 = buffers.get(deltaPosition - 1)
     val delta3 = buffers.get(deltaPosition - 2)
-    val delete = if (skipDelete) null else buffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
-    if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null) || (delete ne null)) {
-      MutatedColumnDecoder(decoder, field, delta1, delta2, delta3, delete)
+    if ((delta1 ne null) || (delta2 ne null) || (delta3 ne null)) {
+      UpdatedColumnDecoder(decoder, field, delta1, delta2, delta3)
     } else null
+  }
+
+  def getDeletedColumnDecoder: DeletedColumnDecoder = {
+    colBuffers.get(ColumnFormatEntry.DELETE_MASK_COL_INDEX) match {
+      case null => null
+      case deleteBuffer => new DeletedColumnDecoder(deleteBuffer)
+    }
   }
 
   def getDeletedRowCount: Int = {

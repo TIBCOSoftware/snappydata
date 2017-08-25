@@ -54,12 +54,6 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long, numWords: Int): Long =
     throw new UnsupportedOperationException(s"writeNulls for $toString")
 
-  override protected def initializeNullsBeforeFinish(decoder: ColumnDecoder): Long =
-    throw new UnsupportedOperationException(s"initializeNullsBeforeFinish for $toString")
-
-  override private[sql] def decoderBeforeFinish(cursor: Long): ColumnDecoder =
-    throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
-
   override def writeIsNull(ordinal: Int): Unit =
     throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
 
