@@ -846,12 +846,11 @@ private[sql] final case class ColumnTableScan(
            |    $isNullVar = true;
            |    $numNullsVar = -$numNullsVar;
            |  }
+           |} else if ($updateDecoder.notNull()) {
+           |  $updatedAssign
            |} else {
-           |  if ($updateDecoder.notNull()) $updatedAssign
-           |  else {
-           |    $col = $defaultValue;
-           |    $isNullVar = true;
-           |  }
+           |  $col = $defaultValue;
+           |  $isNullVar = true;
            |}
         """.stripMargin
       ExprCode(code, isNullVar, col)

@@ -94,18 +94,33 @@ abstract class UncompressedDecoderBase(columnDataRef: AnyRef, startCursor: Long,
     Decimal.createUnsafe(ColumnEncoding.readLong(columnBytes,
       baseCursor + (nonNullPosition << 3)), precision, scale)
 
+  private def setCursorAtPosition(columnBytes: AnyRef, nonNullPosition: Int,
+      sizeWidth: Int): Unit = {
+    // check if new position is behind the current, in which case rewind
+    var newPosition = lastNonNullPosition + 1
+    if (nonNullPosition > newPosition) {
+      var cursor = currentCursor
+      do {
+        cursor += sizeWidth + ColumnEncoding.readInt(columnBytes, cursor)
+        newPosition += 1
+      } while (nonNullPosition != newPosition)
+      currentCursor = cursor
+    } else {
+      var cursor = baseCursor
+      newPosition = 0
+      while (nonNullPosition != newPosition) {
+        cursor += sizeWidth + ColumnEncoding.readInt(columnBytes, cursor)
+        newPosition += 1
+      }
+      currentCursor = cursor
+    }
+  }
+
   private def setCursorForVariableWidth(columnBytes: AnyRef, nonNullPosition: Int,
       sizeWidth: Int = 4): Unit = {
     // check sequential calls else skip as much required
-    var lastPosition = lastNonNullPosition
-    if (nonNullPosition != lastPosition + 1) {
-      var cursor = currentCursor
-      lastPosition += 1
-      do {
-        cursor += sizeWidth + ColumnEncoding.readInt(columnBytes, cursor)
-        lastPosition += 1
-      } while (nonNullPosition != lastPosition)
-      currentCursor = cursor
+    if (nonNullPosition != lastNonNullPosition + 1) {
+      setCursorAtPosition(columnBytes, nonNullPosition, sizeWidth)
     }
     lastNonNullPosition = nonNullPosition
   }

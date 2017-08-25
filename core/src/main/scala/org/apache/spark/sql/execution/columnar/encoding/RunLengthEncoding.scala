@@ -103,9 +103,6 @@ abstract class RunLengthDecoderBase(columnBytes: AnyRef, startCursor: Long,
     }
   }
 
-  override final def readDate(columnBytes: AnyRef, nonNullPosition: Int): Int =
-    readInt(columnBytes, nonNullPosition)
-
   override final def readLong(columnBytes: AnyRef, nonNullPosition: Int): Long = {
     if (runLengthEndPosition >= nonNullPosition) {
       currentValueLong

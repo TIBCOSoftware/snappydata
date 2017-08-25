@@ -52,7 +52,7 @@ class BitSetTest extends SnappyFunSuite {
   private var bitsetSize = 0
 
   private def get(bitset: Array[Long], index: Int): Boolean =
-    BitSet.isSet(bitset, baseAddress, index, bitsetSize)
+    BitSet.isSet(bitset, baseAddress, index)
 
   private def set(bitset: Array[Long], index: Int): Unit =
     BitSet.set(bitset, baseAddress, index)

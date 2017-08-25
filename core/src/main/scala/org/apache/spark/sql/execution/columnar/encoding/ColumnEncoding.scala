@@ -1073,10 +1073,10 @@ trait NullableDecoder extends ColumnDecoder {
     // find the next null after given ordinal and recount the nulls till ordinal
     val nullOffset = this.baseNullOffset
     val numBytes = this.numNullBytes
-    nextNullOrdinal = BitSet.nextSetBit(columnBytes, nullOffset,
-      ordinal + 1, numBytes)
     val n = BitSet.cardinality(columnBytes, nullOffset, ordinal, numBytes)
-    if (BitSet.isSet(columnBytes, nullOffset, ordinal, numBytes)) -n - 1 else n
+    val isNull = BitSet.isSet(columnBytes, nullOffset, ordinal, numBytes)
+    nextNullOrdinal = BitSet.nextSetBit(columnBytes, nullOffset, ordinal + 1, numBytes)
+    if (isNull) -n - 1 else n
   }
 
   override final def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int = {

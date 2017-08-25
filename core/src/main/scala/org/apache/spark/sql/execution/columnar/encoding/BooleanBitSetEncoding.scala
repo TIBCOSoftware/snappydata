@@ -21,6 +21,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.sql.types.{BooleanType, DataType, StructField}
+import org.apache.spark.unsafe.bitset.BitSetMethods
 
 trait BooleanBitSetEncoding extends ColumnEncoding {
 
@@ -53,20 +54,11 @@ abstract class BooleanBitSetDecoderBase(columnBytes: AnyRef, startCursor: Long,
     extends ColumnDecoder(columnBytes, startCursor, field,
       initDelta, fromUnfinishedEncoder) with BooleanBitSetEncoding {
 
-  private[this] var currentWord: Long = _
-
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
       dataType: DataType): Long = cursor
 
   override final def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean = {
-    val wordCursor = baseCursor + ((nonNullPosition >> 6) << 3)
-    // currentCursor is initialized to 0 so that it gets initialized on first call
-    if (wordCursor != currentCursor) {
-      currentCursor = wordCursor
-      currentWord = ColumnEncoding.readLong(columnBytes, wordCursor)
-    }
-    // "mask" is mod 64 and shift
-    (currentWord & (1L << (nonNullPosition & 0x3f))) != 0
+    BitSet.isSet(columnBytes, baseCursor, nonNullPosition)
   }
 }
 

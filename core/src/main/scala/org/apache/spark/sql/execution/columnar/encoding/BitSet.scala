@@ -49,16 +49,30 @@ object BitSet {
   }
 
   /**
+   * Returns true if the bit is set at the specified index.
+   */
+  @inline def isSet(baseObject: AnyRef, baseAddress: Long, position: Int): Boolean = {
+    if (position >= 0) {
+      // mod 64 and shift
+      val mask = 1L << (position & 0x3f)
+      // word aligned reads for best performance
+      val wordPosition = (position >> 6) << 3
+      (ColumnEncoding.readLong(baseObject, baseAddress + wordPosition) & mask) != 0
+    } else false
+  }
+
+  /**
    * Returns true if the bit is set at the specified index
    * given maximum size of nulls bitmask in bytes.
+   * Returns true if the bit is set at the specified index.
    */
   def isSet(baseObject: AnyRef, baseAddress: Long, position: Int, maxBytes: Int): Boolean = {
     val byteIndex = position >> 3
     if (byteIndex < maxBytes) {
-      val bytePosition = baseAddress + byteIndex
-      val currentByte = Platform.getByte(baseObject, bytePosition)
       // mod 8 and shift
       val mask = 1 << (position & 0x7)
+      val bytePosition = baseAddress + byteIndex
+      val currentByte = Platform.getByte(baseObject, bytePosition)
       (currentByte & mask) != 0
     }
     else false

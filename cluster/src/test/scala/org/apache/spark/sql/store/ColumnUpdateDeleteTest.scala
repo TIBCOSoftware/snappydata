@@ -33,6 +33,11 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     stopAll()
   }
 
+  override def afterAll(): Unit = {
+    super.afterAll()
+    stopAll()
+  }
+
   override protected def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val conf = new SparkConf()
     conf.setIfMissing("spark.master", "local[*]")
