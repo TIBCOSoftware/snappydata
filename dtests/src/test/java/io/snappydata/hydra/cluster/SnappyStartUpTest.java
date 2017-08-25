@@ -282,6 +282,11 @@ public class SnappyStartUpTest extends SnappyTest {
     }
   }
 
+  public static void HydraTask_AddServerNode_Rebalance() {
+    String clientName = RemoteTestModule.getMyClientName();
+    HydraTask_AddServerNode_Rebalance(clientName, "server");
+  }
+
   private static synchronized Set<String> getNewNodeLogDir() {
     Set<String> logDirList = new HashSet<>();
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
