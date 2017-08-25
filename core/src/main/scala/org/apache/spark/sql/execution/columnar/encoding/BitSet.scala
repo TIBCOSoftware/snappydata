@@ -49,16 +49,30 @@ object BitSet {
   }
 
   /**
+   * Returns true if the bit is set at the specified index.
+   */
+  @inline def isSet(baseObject: AnyRef, baseAddress: Long, position: Int): Boolean = {
+    if (position >= 0) {
+      // mod 64 and shift
+      val mask = 1L << (position & 0x3f)
+      // word aligned reads for best performance
+      val wordPosition = (position >> 6) << 3
+      (ColumnEncoding.readLong(baseObject, baseAddress + wordPosition) & mask) != 0
+    } else false
+  }
+
+  /**
    * Returns true if the bit is set at the specified index
    * given maximum size of nulls bitmask in bytes.
+   * Returns true if the bit is set at the specified index.
    */
   def isSet(baseObject: AnyRef, baseAddress: Long, position: Int, maxBytes: Int): Boolean = {
     val byteIndex = position >> 3
     if (byteIndex < maxBytes) {
-      val bytePosition = baseAddress + byteIndex
-      val currentByte = Platform.getByte(baseObject, bytePosition)
       // mod 8 and shift
       val mask = 1 << (position & 0x7)
+      val bytePosition = baseAddress + byteIndex
+      val currentByte = Platform.getByte(baseObject, bytePosition)
       (currentByte & mask) != 0
     }
     else false
@@ -80,7 +94,7 @@ object BitSet {
 
   /**
    * Returns the index of the first bit that is set to true that occurs on or after
-   * the specified starting index. If no such bit exists then -1 is returned.
+   * the specified starting index. If no such bit exists then Int.MaxValue is returned.
    */
   def nextSetBit(baseObject: AnyRef, baseAddress: Long, startIndex: Int,
       sizeInBytes: Int): Int = {
@@ -107,6 +121,43 @@ object BitSet {
         byteIndex += 8
       }
     }
-    -1
+    Int.MaxValue
+  }
+
+  /**
+   * Number of bits set before given position (exclusive).
+   */
+  def cardinality(baseObject: AnyRef, baseAddress: Long,
+      position: Int, sizeInBytes: Int): Int = {
+    val posNumBytes = position >>> 3
+    var pos = 0
+    val numBytesToCheck = if (sizeInBytes > posNumBytes) {
+      pos = position & 0x3f
+      (posNumBytes >>> 3) << 3
+    } else {
+      // sizeInBytes should be a multiple of 8 so can check all as words
+      if ((sizeInBytes & 0x7) != 0) {
+        throw new IllegalStateException(
+          s"sizeInBytes=$sizeInBytes is not a multiple of 8 (position=$position)")
+      }
+      sizeInBytes
+    }
+    var numNulls = 0
+    var i = 0
+    while (i < numBytesToCheck) {
+      // ignoring endian-ness when getting the full count
+      val word = Platform.getLong(baseObject, baseAddress + i)
+      if (word != 0L) numNulls += java.lang.Long.bitCount(word)
+      i += 8
+    }
+    // last word may remain where position may be in the middle of the word
+    if (pos != 0) {
+      val word = ColumnEncoding.readLong(baseObject, baseAddress + i)
+      if (word != 0) {
+        // mask the bits after or at position
+        numNulls += java.lang.Long.bitCount(word & ((1L << pos.toLong) - 1L))
+      }
+    }
+    numNulls
   }
 }
