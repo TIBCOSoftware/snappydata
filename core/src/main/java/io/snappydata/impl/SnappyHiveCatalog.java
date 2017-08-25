@@ -117,12 +117,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // set the system properties because this can initialize Hive static
     // instance that will try to boot default derby otherwise
     Properties props = metadataConf.getAllProperties();
-    for (String name : props.stringPropertyNames()) {
+    Set<String> propertyNames = props.stringPropertyNames();
+    for (String name : propertyNames) {
       System.setProperty(name, props.getProperty(name));
     }
     Hive.closeCurrent();
     // clear the system properties else it causes trouble with integer values
-    for (String name : props.stringPropertyNames()) {
+    for (String name : propertyNames) {
       System.clearProperty(name);
     }
 
