@@ -56,7 +56,7 @@ localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.aut
     
 	If you use SSL-encrypted LDAP and your LDAP server certificate is not recognized by a valid Certificate Authority (CA), create a local trust store for each SnappyData member and import the LDAP server certificate to the trust store. See the document on [Creating a Keystore]( http://docs.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore) for more information.
     
-### User Names for Authentication, Authorization and Membership
+### User Names for Authentication, Authorization, and Membership
 
 ##  Authorization
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.
@@ -115,7 +115,7 @@ To be precise, the default search filter is:
   (objectClass=groupOfUniqueNames))(|(cn=%GROUP%)(name=%GROUP%)))
 ```
 
-The token "%GROUP%" is replaced by the actual group name in the search pattern. A custom search filter should use the same as a placeholder, for the group name. The default member attribute list is: member,uniqueMember. The LDAP group resolution is recursive, meaning a group can refer to another group (see example below). There is no detection for broken LDAP group definitions having a cycle of group references and such a situation leads to a failure in GRANT or REFRESH_LDAP_GROUP with StackOverflowError.
+The token "%GROUP%" is replaced by the actual group name in the search pattern. A custom search filter should use the same as a placeholder, for the group name. The default member attribute list is member, uniqueMember. The LDAP group resolution is recursive, meaning a group can refer to another group (see example below). There is no detection for broken LDAP group definitions having a cycle of group references and such a situation leads to a failure in GRANT or REFRESH_LDAP_GROUP with StackOverflowError.
 
 An LDAP group entry can look like below:
 
@@ -153,7 +153,7 @@ connect client 'localhost:1527;user=user1;password=user123';
 
 In Smart Connector mode, provide the user credentials as Spark configuration properties named `spark.snappydata.store.user` and `spark.snappydata.store.password`.
 
-**Example**: 
+**Example**</br> 
 In the below example, these properties are set in the `SparkConf` which is used to create `SnappyContext`.
 
 ```
@@ -170,7 +170,8 @@ val sc = SparkContext.getOrCreate(conf)
 val snc = SnappyContext(sc)
 ```
 
-The below example demonstrates how to connect to the cluster via Spark shell using the `--conf` option to specify the properties. 
+**Example**</br> 
+The below example demonstrates how to connect to the cluster via Spark shell using the `--conf` option to specify the properties.
 
 ```
 $ bin/spark-shell  
@@ -178,6 +179,15 @@ $ bin/spark-shell
     --conf spark.snappydata.connection=localhost:1527 
     --conf spark.snappydata.store.user=user1
     --conf spark.snappydata.store.password=user123
+```
+
+Alternatively, you can specify the user credentials in the configuration file. </br>
+To do so, create a copy of the existing template file **spark/conf/spark-defaults.conf.template**, and rename it to **spark-defaults.conf**.
+
+In this file, you can specify:
+``` bash
+--conf spark.snappydata.store.user=<username>
+--conf spark.snappydata.store.password=<password>
 ```
 
 ### Using ODBC Driver
@@ -219,10 +229,10 @@ $ bin/snappy-job.sh submit  \
 
 ## Configuring Network Encryption and Authentication using SSL
 
-Network between the server and cluster can be encrypted uisng SSL. For more information refer to [SSL Setup for Client-Server](http://127.0.0.1:8000/configuring_cluster/ssl_setup/).
+The network between the server and cluster can be encrypted using SSL. For more information refer to [SSL Setup for Client-Server](http://127.0.0.1:8000/configuring_cluster/ssl_setup/).
 
-[^1]: 	User names in the SnappyData system are known as authorization identifiers. The authorization identifier is a string that represents the name of the user, if one was provided in the connection request. 
+[^1]: 	User names in the SnappyData system are known as authorization identifiers. The authorization identifier is a string that represents the name of the user if one was provided in the connection request. 
 
-	After the authorization identifier is passed to the SnappyData system, it becomes an SQL92Identifier. A SQL92Identifier is a kind of identifier that represents a database object such as a table or column. A SQL92Identifier is case-insensitive (it is converted to all caps) unless it is delimited with double quotes. A SQL92Identifier is limited to 128 characters, and has other limitations.
+	After the authorization identifier is passed to the SnappyData system, it becomes an SQL92Identifier. SQL92Identifier is a kind of identifier that represents a database object such as a table or column. A SQL92Identifier is case-insensitive (it is converted to all caps) unless it is delimited with double quotes. A SQL92Identifier is limited to 128 characters and has other limitations.
 
 	All user names must be valid authorization identifiers even if user authentication is turned off, and even if all users are allowed access to all databases.

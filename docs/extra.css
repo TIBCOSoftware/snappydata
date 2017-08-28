@@ -139,7 +139,7 @@ mark {
 
 problem {
     color: black;
-    font-size: 18px;
+    font-size: 14px;
     font-style: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     background: #cc2222
@@ -151,7 +151,7 @@ problem {
 
 solution {
     color: black;
-    font-size: 14px;
+    font-size: 12px;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     word-wrap: normal;
     display: block;
