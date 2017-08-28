@@ -207,5 +207,7 @@ extra_css:
 
 markdown_extensions:
     - admonition:
+    - footnotes
+    
 
 copyright: Copyright &copy; 2017 SnappyData Inc.

@@ -2,14 +2,13 @@
 
 <ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
-
 ## Authentication
 
 ### Launching the Cluster in Secure Mode
 
 In the current release, SnappyData only supports LDAP authentication which allows users to authenticate against an existing LDAP directory service in your organization. LDAP (lightweight directory access protocol) provides an open directory access protocol that runs over TCP/IP. </br>This feature provides a quick and secure way for users to use their existing login credentials (usernames and passwords) to access the cluster and data.
 
-SnappyData uses mutual authentication between the RowStore locator and subsequent RowStore members that boot and join the distributed system. 
+SnappyData uses mutual authentication between the SnappyData locator and subsequent SnappyData members that boot and join the distributed system. 
 
 !!! Note:
 	
@@ -24,6 +23,9 @@ SnappyData uses mutual authentication between the RowStore locator and subsequen
 Authentication is the process of verifying someone's identity. When a user tries to log in, that request is forwarded to the specified LDAP directory to verify if the credentials are correct.
 
 ### Using LDAP for Authentication
+
+To enable user authentication with SnappyData, you must use a SnappyData locator for member discovery. SnappyData uses mutual authentication between the SnappyData locator and subsequent SnappyData members that boot and join the distributed system.
+
 To enable LDAP authentication, set the following LDAP authentication properties in the [configuration files](../configuring_cluster/configuring_cluster.md) **conf/locators**, **conf/servers**, and **conf/leads** files.
 
 * `auth-provider`: The authentication provider. When you set the `auth-provider` property to `LDAP`, SnappyData uses LDAP for authenticating all distributed system members as well as clients to the distributed system. Therefore, you must supply the user and password properties at startup. <!--If you omit a value for the password property when starting a SnappyData member, then the member prompts you for a password at the command line.-->
@@ -51,6 +53,8 @@ localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.aut
 
 !!! Note: 
 	You must specify `.auth-ldap-` properties as Java system properties.
+    
+	If you use SSL-encrypted LDAP and your LDAP server certificate is not recognized by a valid Certificate Authority (CA), create a local trust store for each SnappyData member and import the LDAP server certificate to the trust store. See the document on [Creating a Keystore]( http://docs.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore) for more information.
     
 ### User Names for Authentication, Authorization and Membership
 
@@ -176,6 +180,17 @@ $ bin/spark-shell
     --conf spark.snappydata.store.password=user123
 ```
 
+### Using ODBC Driver
+
+You can also connect to the SnappyData Cluster using SnappyData ODBC Driver using the following command:
+
+```
+Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
+```
+
+For more information refer to, [How to Connect using ODBC Driver](../howto.md#how-to-connect-using-odbc-driver).
+
+
 ### Using Snappy Jobs
 
 When submitting Snappy jobs, using `snappy-job.sh`, provide user credentials through a configuration file using the option `--passfile`. 
@@ -200,3 +215,14 @@ $ bin/snappy-job.sh submit  \
 
 	* The configuration file should be in a secure location with read access only to an authorized user.
 
+	* These user credentials are made available to the Snappy session instance provided to this job.
+
+## Configuring Network Encryption and Authentication using SSL
+
+Network between the server and cluster can be encrypted uisng SSL. For more information refer to [SSL Setup for Client-Server](http://127.0.0.1:8000/configuring_cluster/ssl_setup/).
+
+[^1]: 	User names in the SnappyData system are known as authorization identifiers. The authorization identifier is a string that represents the name of the user, if one was provided in the connection request. 
+
+	After the authorization identifier is passed to the SnappyData system, it becomes an SQL92Identifier. A SQL92Identifier is a kind of identifier that represents a database object such as a table or column. A SQL92Identifier is case-insensitive (it is converted to all caps) unless it is delimited with double quotes. A SQL92Identifier is limited to 128 characters, and has other limitations.
+
+	All user names must be valid authorization identifiers even if user authentication is turned off, and even if all users are allowed access to all databases.
