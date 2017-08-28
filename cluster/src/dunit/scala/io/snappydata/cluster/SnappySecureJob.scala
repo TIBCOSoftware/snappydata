@@ -7,6 +7,8 @@ import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.Constant
 import org.apache.spark.sql.types.{DecimalType, IntegerType, StructField, StructType}
 import org.apache.spark.sql._
+import org.apache.spark.sql.streaming.SnappyStreamingJob
+import org.apache.spark.streaming.SnappyStreamingContext
 
 class SnappySecureJob extends SnappySQLJob {
   private val colTable = "JOB_COLTABLE"
@@ -24,31 +26,12 @@ class SnappySecureJob extends SnappySQLJob {
 
   def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
 
-  private def verifySessionAndConfig(snSession: SnappySession, jobConfig: Config): Unit = {
-    assert(snSession.conf.getOption(Attribute.USERNAME_ATTR).isDefined, "Username not set in conf")
-    assert(snSession.conf.getOption(Attribute.PASSWORD_ATTR).isDefined, "Password not set in conf")
-    try {
-      jobConfig.getString(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-          .Attribute.USERNAME_ATTR)
-      assert(false, "Boot credentials set in job config")
-    } catch {
-      case _: ConfigException.Missing => // expected
-    }
-    try {
-      jobConfig.getString(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-          .Attribute.PASSWORD_ATTR)
-      assert(false, "Boot credentials set in job config")
-    } catch {
-      case _: ConfigException.Missing => // expected
-    }
-  }
-
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val file = jobConfig.getString(outputFile)
     val msg = s"\nCheck ${getCurrentDirectory}/$file file for output of this job"
     pw = new PrintWriter(new FileOutputStream(file), true)
     try {
-      verifySessionAndConfig(snSession, jobConfig)
+      SnappyStreamingSecureJob.verifySessionAndConfig(snSession, jobConfig)
       if (jobConfig.getString(opCode).equalsIgnoreCase("sqlOps")) {
         createPartitionedRowTableUsingSQL(snSession)
         createPartitionedRowTableUsingAPI(snSession)
@@ -63,7 +46,7 @@ class SnappySecureJob extends SnappySQLJob {
   }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = {
-    verifySessionAndConfig(sc, config)
+    SnappyStreamingSecureJob.verifySessionAndConfig(sc, config)
     SnappyJobValid()
   }
 
@@ -214,8 +197,8 @@ class SnappySecureJob extends SnappySQLJob {
         } catch {
           case t: Throwable if (t.getMessage.contains(s"does not have ${op.toUpperCase} " +
               s"permission on") || t.getMessage.contains(s"does not have SELECT permission on")) =>
-            pw.println(s"Expected exception for $s:")
-            t.getStackTrace.foreach(s => pw.println(s"${t.getMessage}\n  ${s.toString}"))
+            pw.println(s"Found expected exception for $s")
+            // t.getStackTrace.foreach(s => pw.println(s"${t.getMessage}\n  ${s.toString}"))
           case t: Throwable => pw.println(s"UNEXPECTED ERROR FOR $s:\n[${t.getMessage}]")
             t.getStackTrace.foreach(s => pw.println(s"  ${s.toString}"))
             throw t
@@ -226,4 +209,35 @@ class SnappySecureJob extends SnappySQLJob {
     pw.println("****Done****")
   }
 
+}
+
+object SnappyStreamingSecureJob extends SnappyStreamingJob {
+
+  def verifySessionAndConfig(snSession: SnappySession, jobConfig: Config): Unit = {
+    assert(snSession.conf.getOption(Attribute.USERNAME_ATTR).isDefined, "Username not set in conf")
+    assert(snSession.conf.getOption(Attribute.PASSWORD_ATTR).isDefined, "Password not set in conf")
+    try {
+      jobConfig.getString(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
+          .Attribute.USERNAME_ATTR)
+      assert(false, "Boot credentials set in job config")
+    } catch {
+      case _: ConfigException.Missing => // expected
+    }
+    try {
+      jobConfig.getString(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
+          .Attribute.PASSWORD_ATTR)
+      assert(false, "Boot credentials set in job config")
+    } catch {
+      case _: ConfigException.Missing => // expected
+    }
+  }
+
+  override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation = {
+    verifySessionAndConfig(sc.snappySession, config)
+    new SnappyJobValid
+  }
+
+  override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
+    verifySessionAndConfig(sc.snappySession, jobConfig)
+  }
 }

@@ -1,9 +1,6 @@
 package org.apache.spark
 
 import java.io.File
-import java.net.URL
-
-import org.apache.spark.TestUtils.JavaSourceFromString
 
 object TestPackageUtils {
 

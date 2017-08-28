@@ -110,6 +110,8 @@ class SplitClusterDUnitSecurityTest(s: String)
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
+  private val jobConfigFile = s"$snappyProductDir/conf/job.config"
+
   protected val productDir =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
@@ -168,7 +170,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
-    FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
+    // FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
   }
 
   def stopLdapTestServer(): Unit = {
@@ -636,67 +638,35 @@ class SplitClusterDUnitSecurityTest(s: String)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
   }
 
-  def getJobJar(className: String): String = {
-    val packageStr = "io/snappydata/cluster/"
+  def getJobJar(className: String, packageStr: String = ""): String = {
     val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
         + s"test/$packageStr")
     assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
         s"not found: $dir")
     val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
-        pathname.getName.contains(className)
+        pathname.getName.contains("SecureJob")
       }
     }).toList, Some(packageStr))
-    assert(!jar.isEmpty, s"No class files found for $className")
+    assert(!jar.isEmpty, s"No class files found for SecureJob")
     jar
   }
 
   def testSnappyJob(): Unit = {
-    // Create config file with credentials
-    val jobConfigFile = s"$snappyProductDir/conf/job.config"
-    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
-
-    val className = "SnappySecureJob"
-    // Run snappy job with credentials in a config file
-    val jobBaseStr = s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className " +
-        s"--class io.snappydata.cluster.SnappySecureJob " +
-        s"--app-jar ${getJobJar(className)}  " +
-        s"--passfile $jobConfigFile"
-
-    var jobOp = "sqlOps"
-    var job = s"$jobBaseStr --conf $opCode=$jobOp --conf $outputFile=SnappyValidJob.out"
-    logInfo(s"Submitting job $job")
-    var consoleLog = job.!!
-    logInfo(consoleLog)
-    var jobId = getJobId(consoleLog)
-    assert(consoleLog.contains("STARTED"), "Job not started")
-
-    val wc = new WaitCriterion {
-      override def done() = {
-        consoleLog = (s"$snappyProductDir/bin/snappy-job.sh status --job-id $jobId " +
-            s" --passfile $jobConfigFile").!!
-        if (consoleLog.contains("FINISHED")) logInfo(s"$jobOp completed. $consoleLog")
-        consoleLog.contains("FINISHED")
-      }
-      override def description() = {
-        logInfo(consoleLog)
-        s"$jobOp job $jobId did not complete in time."
-      }
-    }
-    DistributedTestBase.waitForCriterion(wc, 60000, 1000, true)
+    val jobBaseStr = buildJobBaseStr("io.snappydata.cluster", "SnappySecureJob")
+    submitAndVerifyJob(jobBaseStr, s" --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out")
 
     val colTab = "JOB_COLTAB"
     val rowTab = "JOB_ROWTAB"
     def submitJob(op: String): Unit = {
-      job = s"$jobBaseStr --conf $opCode=$op --conf $otherColTabName=$jdbcUser2.$colTab" +
+      val job = s"$jobBaseStr --conf $opCode=$op --conf $otherColTabName=$jdbcUser2.$colTab" +
           s" --conf $otherRowTabName=$jdbcUser2.$rowTab --conf $outputFile=Snappy${op}Job.out"
       logInfo(s"Submitting job $job")
-      consoleLog = job.!!
+      val consoleLog = job.!!
       logInfo(consoleLog)
-      jobId = getJobId(consoleLog)
+      val jobId = getJobId(consoleLog)
       assert(consoleLog.contains("STARTED"), "Job not started")
-      jobOp = op
-      DistributedTestBase.waitForCriterion(wc, 15000, 1000, true)
+      DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 15000, 1000, true)
     }
 
     user2Conn = getConn(jdbcUser2)
@@ -717,9 +687,62 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
     logInfo(s"Re-submitting job $jobBaseStr with invalid credentials.")
-    consoleLog = s"$jobBaseStr --conf $outputFile=SnappyInvalidJob.out".!!
+    val consoleLog = s"$jobBaseStr --conf $outputFile=SnappyInvalidJob.out".!!
     logInfo(consoleLog)
     assert(consoleLog.contains("The supplied authentication is invalid"), "Job should have failed")
+  }
+
+  def testSnappyStreamingJob(): Unit = {
+    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyStreamingSecureJob"),
+      s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyStreamingValidJob.out")
+  }
+
+  def testSnappyJavaJob(): Unit = {
+    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaSecureJob"),
+      s" --conf $opCode=sqlOps --conf $outputFile=SnappyJavaValidJob.out")
+  }
+
+  def testSnappyJavaStreamingJob(): Unit = {
+    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaStreamingSecureJob"),
+      s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyJavaStreamingValidJob.out")
+  }
+
+  def submitAndVerifyJob(jobBaseStr: String, jobCmdAffix: String): Unit = {
+    // Create config file with credentials
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    val job = s"$jobBaseStr $jobCmdAffix"
+    logInfo(s"Submitting job $job")
+    var consoleLog = job.!!
+    logInfo(consoleLog)
+    val jobId = getJobId(consoleLog)
+    assert(consoleLog.contains("STARTED"), "Job not started")
+
+    val wc = getWaitCriterion(jobId)
+    DistributedTestBase.waitForCriterion(wc, 60000, 1000, true)
+  }
+
+  private def getWaitCriterion(jobId: String): WaitCriterion = {
+    new WaitCriterion {
+      var consoleLog = ""
+      override def done() = {
+        consoleLog = (s"$snappyProductDir/bin/snappy-job.sh status --job-id $jobId " +
+            s" --passfile $jobConfigFile").!!
+        if (consoleLog.contains("FINISHED")) logInfo(s"Job $jobId completed. $consoleLog")
+        consoleLog.contains("FINISHED")
+      }
+      override def description() = {
+        logInfo(consoleLog)
+        s"Job $jobId did not complete in time."
+      }
+    }
+  }
+
+  private def buildJobBaseStr(packageStr: String, className: String): String = {
+    s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className" +
+        s" --class $packageStr.$className" +
+        s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/") + "/")}" +
+        s" --passfile $jobConfigFile"
   }
 
   private def getJobId(str: String): String = {
