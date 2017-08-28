@@ -3107,6 +3107,11 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath();
         String masterFileName = "spark-*.Master-1-*.out";
         String masterFilePath = snappyTest.getUserAppJarLocation(masterFileName, dest);
+        if (masterFilePath == null) {
+          // check the path for smoke tests
+          dest = new File("../../../../../snappy-spark").getCanonicalPath();
+          masterFilePath = snappyTest.getUserAppJarLocation(masterFileName, dest);
+        }
         masterHost = masterFilePath.substring(masterFilePath.lastIndexOf("Master-1-") + 9, masterFilePath.lastIndexOf(".out"));
         SnappyBB.getBB().getSharedMap().put("masterHost", masterHost);
         Log.getLogWriter().info("Master host is : " + SnappyBB.getBB().getSharedMap().get("masterHost"));

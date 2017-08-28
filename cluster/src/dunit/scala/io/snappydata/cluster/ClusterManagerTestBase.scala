@@ -20,7 +20,6 @@ import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
 import scala.language.postfixOps
-import scala.sys.process._
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -121,8 +120,7 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    vm0.invoke(startNode)
-    Array(vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
+    Array(vm0, vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
     // start lead node in this VM
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
@@ -266,9 +264,9 @@ object ClusterManagerTestBase extends Logging {
   def stopSpark(): Unit = {
     // cleanup metastore
     cleanupTestData(null, null)
-    val service = ServiceManager.currentFabricServiceInstance
-    if (service != null) {
-      service.stop(null)
+    val sc = this.sc
+    if (sc ne null) {
+      sc.stop()
     }
   }
 
@@ -310,17 +308,7 @@ object ClusterManagerTestBase extends Logging {
       throwOnTimeout)
   }
 
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
-  }
+  // snappy-spark start/stop should be handled by gradle start/stopSnappySparkCluster
 
   def validateNoActiveSnapshotTX(): Unit = {
     val cache = Misc.getGemFireCache

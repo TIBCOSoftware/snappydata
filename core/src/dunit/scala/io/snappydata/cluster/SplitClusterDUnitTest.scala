@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
 import java.util.Properties
@@ -35,7 +35,6 @@ import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
 
-import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.util.collection.OpenHashSet
 
@@ -88,27 +87,29 @@ class SplitClusterDUnitTest(s: String)
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
+    logInfo(s"Starting snappy cluster in $clusterDir with locator client port $netPort")
 
+    Seq("locator", "lead", "server1", "server2").foreach(new File(clusterDir, _).mkdirs())
     val confDir = s"$snappyProductDir/conf"
-    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
-      s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1",
-      s"$confDir/leads")
+    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort " +
+        s"-dir=$clusterDir/locator", s"$confDir/locators")
+    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1 " +
+        s"-dir=$clusterDir/lead", s"$confDir/leads")
     writeToFile(
-      s"""localhost  -locators=localhost[$port] -client-port=$netPort2
-          |localhost  -locators=localhost[$port] -client-port=$netPort3
+      s"""localhost  -locators=localhost[$port] -client-port=$netPort2 -dir=$clusterDir/server1
+          |localhost  -locators=localhost[$port] -client-port=$netPort3 -dir=$clusterDir/server2
           |""".stripMargin, s"$confDir/servers")
-    (snappyProductDir + "/sbin/snappy-start-all.sh").!!
+    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
     vm3.invoke(getClass, "startSparkCluster", productDir)
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
+    vm3.invoke(getClass, "stopSpark")
     vm3.invoke(getClass, "stopSparkCluster", productDir)
 
-    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
+    logInfo(s"Stopping snappy cluster in $clusterDir")
     (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
@@ -133,7 +134,7 @@ class SplitClusterDUnitTest(s: String)
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
     // perform some operation thru spark-shell
-    val jars = Files.newDirectoryStream(Paths.get(s"$snappyProductDir/../distributions/"),
+    val jars = Files.newDirectoryStream(Paths.get("../../../../../distributions/"),
       "snappydata-core*.jar")
     val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
     // SparkSqlTestCode.txt file contains the commands executed on spark-shell
@@ -148,7 +149,7 @@ class SplitClusterDUnitTest(s: String)
     cwd.mkdirs()
     logInfo(s"about to invoke spark-shell with command: $sparkShellCommand in $cwd")
 
-    Process(sparkShellCommand, cwd).!!
+    Process(sparkShellCommand, cwd).!
     FileUtils.deleteQuietly(cwd)
 
     val conn = testObject.getConnection(locatorClientPort)
@@ -640,18 +641,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
         s"Exception in parsing as JSON: $s", e)
     }
     throw new AssertionError(s"Failed in parsing as JSON: $s")
-  }
-
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
   }
 }
 

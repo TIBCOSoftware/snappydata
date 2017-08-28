@@ -64,16 +64,21 @@ task productExamples(dependsOn: 'jar') << {
 }
 
 scalaTest {
-  dependsOn ':cleanScalaTest'
+  dependsOn ':distTar', ':startSnappySparkCluster'
   doFirst {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)
+    // will have its own copy of product tree to avoid conflicts in parallel runs
+    untar(workingDir, "${rootProject.buildDir}/distributions/snappydata-${version}-bin.tar.gz")
   }
-  testOutput '/dev/tty'
+
+  environment 'SNAPPY_HOME': "${workingDir}/snappydata-${version}-bin"
+
   doLast {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)
   }
 }
 
+check.dependsOn.clear()
 check.dependsOn scalaTest

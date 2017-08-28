@@ -15,10 +15,6 @@
  * LICENSE file.
  */
 
-group 'io.snappydata'
-version '0.1.0-SNAPSHOT'
-
-
 apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
@@ -112,7 +108,7 @@ dependencies {
 
 task buildDtests {
   delete buildDir
-  dependsOn ':cleanScalaTest', ':snappy-store:storeProduct', ':product', packageTests
+  dependsOn ':snappy-store:storeProduct', ':product', packageTests
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
@@ -132,15 +128,15 @@ if (rootProject.hasProperty('enablePublish')) {
 archivesBaseName = 'snappydata-store-scala-tests'
 
 scalaTest {
-    dependsOn buildDtests
+    dependsOn cleanScalaTest, buildDtests, ':startSnappySparkCluster'
     doFirst {
-        // cleanup files since scalatest plugin does not honour workingDir yet
-        cleanIntermediateFiles(project.path)
+      // cleanup files since scalatest plugin does not honour workingDir yet
+      cleanIntermediateFiles(project.path)
     }
-    testOutput '/dev/tty'
+
     doLast {
-        // cleanup files since scalatest plugin does not honour workingDir yet
-        cleanIntermediateFiles(project.path)
+      // cleanup files since scalatest plugin does not honour workingDir yet
+      cleanIntermediateFiles(project.path)
     }
 }
 
@@ -158,3 +154,6 @@ testClasses.doLast {
     }
   }
 }
+
+check.dependsOn.clear()
+check.dependsOn scalaTest

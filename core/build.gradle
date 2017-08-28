@@ -120,7 +120,6 @@ testClasses.doLast {
 }
 
 scalaTest {
-  dependsOn ':cleanScalaTest'
   doFirst {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)
@@ -149,25 +148,32 @@ task getApacheSparkDist {
   outputs.files "${sparkProductDir}.tgz", "${sparkProductDir}/README.md"
 
   doLast {
-    if (osName.isWindows()) {
-      copy {
-        from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
-        into sparkDistDir
-      }
-    } else {
-      // gradle tarTree does not preserve symlinks (GRADLE-2844)
-      exec {
-        executable 'tar'
-        args 'xzf', "${sparkDistName}.tgz"
-        workingDir = sparkDistDir
-      }
-    }
+    untar(sparkDistDir, "${sparkDistDir}/${sparkDistName}.tgz")
   }
 }
 
-test.dependsOn ':cleanJUnit'
-dunitTest.dependsOn getApacheSparkDist
-dunitSecurityTest.dependsOn getApacheSparkDist
+String snappyDistDir = "${testResultsBase}/${project.name}"
+
+task getSnappyDist {
+  dependsOn ':distTar'
+  doLast {
+    delete snappyDistDir
+    file(snappyDistDir).mkdirs()
+    // will have its own copy of product tree to avoid conflicts in parallel runs
+    untar(snappyDistDir, "${rootProject.buildDir}/distributions/snappydata-${version}-bin.tar.gz")
+  }
+}
+
+dunitTest {
+  dependsOn getApacheSparkDist, getSnappyDist
+  environment 'SNAPPY_HOME': "${snappyDistDir}/snappydata-${rootProject.version}-bin"
+}
+
+dunitSecurityTest {
+  dependsOn getApacheSparkDist, getSnappyDist
+  environment 'SNAPPY_HOME': "${snappyDistDir}/snappydata-${rootProject.version}-bin"
+}
+
 check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 
 archivesBaseName = 'snappydata-core_' + scalaBinaryVersion

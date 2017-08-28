@@ -42,14 +42,15 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   override def beforeClass(): Unit = {
     super.beforeClass()
     startNetworkServersOnAllVMs()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    // spark cluster started by gradle startSnappySparkCluster
   }
 
   override def afterClass(): Unit = {
+    vm3.invoke(getClass, "stopSpark")
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     super.afterClass()
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+    // spark cluster stopped by gradle stopSnappySparkCluster
   }
 
   def testReplicatedTableQueries(): Unit = {

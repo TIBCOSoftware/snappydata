@@ -17,19 +17,22 @@
 package io.snappydata.cluster
 
 import java.net.InetAddress
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 import java.sql.Timestamp
 import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
+import scala.sys.process._
 import scala.util.Random
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{ColumnUpdateDeleteTests, Constant}
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
+import io.snappydata.{ColumnUpdateDeleteTests, Constant}
 import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -50,7 +53,6 @@ trait SplitClusterDUnitTestBase extends Logging {
   def vm1: VM
 
   def vm2: VM
-
   def vm3: VM
 
   protected def startArgs: Array[AnyRef]
@@ -64,6 +66,8 @@ trait SplitClusterDUnitTestBase extends Logging {
   protected def locatorClientPort: Int
 
   protected def startNetworkServers(): Unit
+
+  protected val clusterDir: String = new java.io.File(".").getCanonicalPath + "/splitCluster"
 
   def doTestColumnTableCreation(): Unit = {
     // Embedded Cluster Operations
@@ -181,6 +185,50 @@ trait SplitClusterDUnitTestObject extends Logging {
 
   val props = Map.empty[String, String]
 
+  protected lazy val cwd: String = new java.io.File(".").getCanonicalPath
+
+  // use a different port for Spark to avoid conflicts with other tests
+  // that start spark cluster from snappy-spark in parallel test runs
+  def sparkMasterPort: Int = 7079
+
+  def stopSpark(): Unit = {
+    val sc = SnappyContext.globalSparkContext
+    if (sc ne null) {
+      sc.stop()
+    }
+  }
+
+  def startSparkCluster(productDir: String): Unit = {
+    val workDir = new java.io.File(cwd, "sparkCluster")
+    workDir.mkdirs()
+
+    val envFile = s"$productDir/conf/spark-env.sh"
+    val envText =
+      s"""
+         |SPARK_MASTER_PORT=$sparkMasterPort
+         |SPARK_PID_DIR=$workDir
+         |SPARK_LOG_DIR=$workDir/logs
+         |SPARK_WORKER_DIR=$workDir/work
+      """.stripMargin
+    Files.write(Paths.get(envFile), envText.getBytes(StandardCharsets.UTF_8))
+
+    // scalastyle:off println
+    println(s"Starting spark cluster in $workDir")
+    // scalastyle:on println
+    (productDir + "/sbin/start-all.sh").!
+  }
+
+  def stopSparkCluster(productDir: String): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    if (sparkContext != null) sparkContext.stop()
+    // scalastyle:off println
+    println(s"Stopping spark cluster in $cwd/sparkCluster")
+    // scalastyle:on println
+    (productDir + "/sbin/stop-all.sh").!
+    // remove the spark-env.sh
+    new java.io.File(s"$productDir/conf/spark-env.sh").delete()
+  }
+
   def createTablesAndInsertData(tableType: String): Unit
 
   def createComplexTablesAndInsertData(props: Map[String, String]): Unit
@@ -264,7 +312,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       val connectionURL = s"localhost:$locatorClientPort"
       val conf = new SparkConf()
           .setAppName("test Application")
-          .setMaster(s"spark://$hostName:7077")
+          .setMaster(s"spark://$hostName:$sparkMasterPort")
           .set("spark.executor.cores", TestUtils.defaultCores.toString)
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))

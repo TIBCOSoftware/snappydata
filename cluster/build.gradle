@@ -164,9 +164,7 @@ def copyDirs(def srcDir, def destDir) {
   }
 }
 
-test.dependsOn ':cleanJUnit'
 scalaTest {
-  dependsOn ':cleanScalaTest'
   doFirst {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)
@@ -176,5 +174,7 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
+
+dunitTest.dependsOn ':startSnappySparkCluster'
 check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion

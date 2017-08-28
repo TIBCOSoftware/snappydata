@@ -21,14 +21,12 @@ import java.sql.PreparedStatement
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.benchmark.snappy.TPCH_Snappy
 import io.snappydata.benchmark.snappy.tpch.{QueryExecutor, TPCH_Queries}
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
-import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.{Logging, SparkContext}
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
@@ -40,18 +38,16 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     "20", "21", "22")
   override val stopNetServersInTearDown = false
 
-  protected val productDir =
-    SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
-
   override def beforeClass(): Unit = {
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    // spark cluster started by gradle startSnappySparkCluster
     super.beforeClass()
     startNetworkServersOnAllVMs()
   }
 
   override def afterClass(): Unit = {
     try {
-      vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+      vm3.invoke(getClass, "stopSpark")
+      // spark cluster stopped by gradle stopSnappySparkCluster
       Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       ClusterManagerTestBase.stopNetworkServers()
     } finally {
@@ -267,7 +263,9 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       }
       result += row
     }
+    // scalastyle:off println
     println(s"Number of rows : $count")
+    // scalastyle:on println
 
     val expectedFile = sc.textFile(getClass.getResource(
       s"/TPCH/RESULT/Snappy_10.out").getPath)
@@ -439,6 +437,8 @@ object TPCHUtils extends Logging {
 //    queries.foreach(query => TPCH_Snappy.execute(query, snc,
 //      isResultCollection, isSnappy, warmup = warmup,
 //      runsForAverage = runsForAverage, avgPrintStream = System.out))
-    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection, isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage, avgPrintStream = System.out))
+    queries.foreach(query => QueryExecutor.execute(query, snc,
+      isResultCollection, isSnappy, isDynamic = isDynamic,
+      warmup = warmup, runsForAverage = runsForAverage, avgPrintStream = System.out))
   }
 }

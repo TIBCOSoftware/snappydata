@@ -185,41 +185,15 @@ def cleanIntermediateFiles(def projectName) {
     include 'BACKUPGFXD-DEFAULT-DISKSTORE**', 'locator*.dat'
   }
 }
-task cleanScalaTest << {
-  String workingDir = "${testResultsBase}/scalatest"
-  delete workingDir
-  file(workingDir).mkdirs()
-}
-task cleanJUnit << {
-  String workingDir = "${testResultsBase}/junit"
-  delete workingDir
-  file(workingDir).mkdirs()
-}
-task cleanDUnit << {
-  String workingDir = "${testResultsBase}/dunit"
-  delete workingDir
-  file(workingDir).mkdirs()
-  // clean spark cluster directories
-  delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
-}
-task cleanSecurityDUnit << {
-  String workingDir = "${testResultsBase}/dunit-security"
-  delete workingDir
-  file(workingDir).mkdirs()
-  // clean spark cluster directories
-  delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
-}
 task cleanAllReports << {
   String workingDir = "${testResultsBase}/combined-reports"
   delete workingDir
   file(workingDir).mkdirs()
 }
-task cleanQuickstart << {
-  String workingDir = "${testResultsBase}/quickstart"
-  delete workingDir
-  file(workingDir).mkdirs()
+
+clean << {
+  // delete all test output
+  delete testResultsBase
 }
 
 subprojects {
@@ -237,7 +211,37 @@ subprojects {
     jvmArgs '-Xmx2g'
   }
 
+  task cleanScalaTest << {
+    String workingDir = "${testResultsBase}/scalatest/${project.name}"
+    delete workingDir
+    file(workingDir).mkdirs()
+  }
+  task cleanJUnit << {
+    String workingDir = "${testResultsBase}/junit/${project.name}"
+    delete workingDir
+    file(workingDir).mkdirs()
+  }
+  task cleanDUnit << {
+    String workingDir = "${testResultsBase}/dunit/${project.name}"
+    delete workingDir
+    file(workingDir).mkdirs()
+    if (project.name.contains('snappy-core')) {
+      // clean spark cluster directories
+      delete "${sparkProductDir}/work", "${sparkProductDir}/metastore_db", "${sparkProductDir}/logs"
+    }
+  }
+  task cleanSecurityDUnit << {
+    String workingDir = "${testResultsBase}/dunit-security/${project.name}"
+    delete workingDir
+    file(workingDir).mkdirs()
+    if (project.name.contains('snappy-core')) {
+      // clean spark cluster directories
+      delete "${sparkProductDir}/work", "${sparkProductDir}/metastore_db", "${sparkProductDir}/logs"
+    }
+  }
+
   task scalaTest(type: Test) {
+    dependsOn cleanScalaTest
     actions = [ new com.github.maiflai.ScalaTestAction() ]
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
@@ -275,17 +279,21 @@ subprojects {
     if (rootProject.hasProperty('singleSuite')) {
       suite singleSuite
     }
-    workingDir = "${testResultsBase}/scalatest"
+    workingDir = "${testResultsBase}/scalatest/${project.name}"
+    systemProperties 'java.net.preferIPv4Stack': 'true'
+    environment 'SNAPPY_HOME': snappyProductDir
 
     testResult '/dev/tty'
     testOutput "${workingDir}/output.txt"
     testError "${workingDir}/error.txt"
-    binResultsDir = file("${workingDir}/binary/${project.name}")
-    reports.html.destination = file("${workingDir}/html/${project.name}")
+    binResultsDir = file("${workingDir}/binary")
+    reports.html.destination = file("${workingDir}/html")
     reports.junitXml.destination = file(workingDir)
   }
+
   test {
-    maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
+    dependsOn cleanJUnit
+    maxParallelForks = Math.max((int)Math.sqrt(Runtime.getRuntime().availableProcessors()), 2)
     maxHeapSize '2g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
@@ -297,10 +305,12 @@ subprojects {
     exclude '**/*DUnitSingleTest.class'
     exclude '**/*TestBase.class'
 
-    workingDir = "${testResultsBase}/junit"
+    workingDir = "${testResultsBase}/junit/${project.name}"
+    systemProperties 'java.net.preferIPv4Stack': 'true'
+    environment 'SNAPPY_HOME': snappyProductDir
 
-    binResultsDir = file("${workingDir}/binary/${project.name}")
-    reports.html.destination = file("${workingDir}/html/${project.name}")
+    binResultsDir = file("${workingDir}/binary")
+    reports.html.destination = file("${workingDir}/html")
     reports.junitXml.destination = file(workingDir)
 
     doFirst {
@@ -311,9 +321,7 @@ subprojects {
     }
   }
   task dunitTest(type: Test) {
-    dependsOn ':cleanDUnit'
-    dependsOn ':product'
-    dependsOn ':copyShadowJars'
+    dependsOn cleanDUnit, ':product', ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -339,7 +347,7 @@ subprojects {
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
       def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
       if (begin != 0 || end != includeTestFiles.size()) {
-        println("Picking tests :")
+        println("Picking tests: ")
         filteredSet.each { a -> println(a) }
       }
       include filteredSet
@@ -349,14 +357,14 @@ subprojects {
     exclude '**/*Suite.class'
     exclude '**/*DUnitSecurityTest.class'
 
-    workingDir = "${testResultsBase}/dunit"
+    workingDir = "${testResultsBase}/dunit/${project.name}"
 
-    binResultsDir = file("${workingDir}/binary/${project.name}")
-    reports.html.destination = file("${workingDir}/html/${project.name}")
+    binResultsDir = file("${workingDir}/binary")
+    reports.html.destination = file("${workingDir}/html")
     reports.junitXml.destination = file(workingDir)
 
-    systemProperties 'java.net.preferIPv4Stack': 'true',
-                     'SNAPPY_HOME': snappyProductDir
+    systemProperties 'java.net.preferIPv4Stack': 'true'
+    environment 'SNAPPY_HOME': snappyProductDir
 
     doFirst {
       String eol = System.getProperty('line.separator')
@@ -367,9 +375,7 @@ subprojects {
   }
 
   task dunitSecurityTest(type: Test) {
-    dependsOn ':cleanSecurityDUnit'
-    dependsOn ':product'
-    dependsOn ':copyShadowJars'
+    dependsOn cleanSecurityDUnit, ':product', ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -395,7 +401,7 @@ subprojects {
       int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
       def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
       if (begin != 0 || end != includeTestFiles.size()) {
-        println("Picking tests :")
+        println("Picking tests: ")
         filteredSet.each { a -> println(a) }
       }
       include filteredSet
@@ -405,14 +411,14 @@ subprojects {
     exclude '**/*Suite.class'
     exclude '**/*DUnitTest.class'
 
-    workingDir = "${testResultsBase}/dunit-security"
+    workingDir = "${testResultsBase}/dunit-security/${project.name}"
 
-    binResultsDir = file("${workingDir}/binary/${project.name}")
-    reports.html.destination = file("${workingDir}/html/${project.name}")
+    binResultsDir = file("${workingDir}/binary")
+    reports.html.destination = file("${workingDir}/html")
     reports.junitXml.destination = file(workingDir)
 
-    systemProperties 'java.net.preferIPv4Stack': 'true',
-                     'SNAPPY_HOME': snappyProductDir
+    systemProperties 'java.net.preferIPv4Stack': 'true'
+    environment 'SNAPPY_HOME': snappyProductDir
 
     doFirst {
       String eol = System.getProperty('line.separator')
@@ -442,8 +448,7 @@ subprojects {
                            'securityLogLevel'            : logLevel
         }
 
-        environment 'SNAPPY_HOME': snappyProductDir,
-          'APACHE_SPARK_HOME': sparkProductDir,
+        environment 'APACHE_SPARK_HOME': sparkProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
         String eol = System.getProperty('line.separator')
@@ -660,10 +665,15 @@ task generateSources {
   dependsOn ':snappy-store:generateSources'
 }
 
+task cleanAll {
+  dependsOn getTasksByName('clean', true).collect { it.path }
+}
+
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
+  mustRunAfter clean, cleanAll
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def targetProject = clusterProject
@@ -811,6 +821,33 @@ task product(type: Zip) {
   }
 }
 
+task startSnappySparkCluster(type: Exec) {
+  dependsOn product
+  commandLine "${snappyProductDir}/sbin/start-all.sh"
+  doFirst {
+    String workDir = "${testResultsBase}/snappy-spark"
+    delete workDir
+    file(workDir).mkdirs()
+    def envFile = new File("${snappyProductDir}/conf/spark-env.sh")
+    envFile.createNewFile()
+    envFile.text = """
+      SPARK_LOG_DIR=${workDir}/logs
+      SPARK_WORKER_DIR=${workDir}/work
+      SPARK_WORKER_CORES=${Runtime.getRuntime().availableProcessors() * 4}
+    """
+    println("Starting snappy-spark cluster in ${workDir}")
+    // add build listener to stop the cluster at the very end
+    gradle.addListener(new BuildAdapter() {
+      void buildFinished(BuildResult result) {
+        def proc = "${snappyProductDir}/sbin/stop-all.sh".execute()
+        proc.waitForProcessOutput(System.out, System.out)
+        println("Stopped snappy-spark cluster in ${workDir}")
+        new File("${snappyProductDir}/conf/spark-env.sh").delete()
+      }
+    })
+  }
+}
+
 if (rootProject.hasProperty('copyToDir')) {
   task copyProduct(type: Copy, dependsOn: product) {
     from snappyProductDir
@@ -849,6 +886,22 @@ distZip {
   }
 }
 
+def untar(def destDir, String tarFile) {
+  if (osName.isWindows()) {
+    copy {
+      from tarTree(resources.gzip(tarFile))
+      into destDir
+    }
+  } else {
+    // gradle tarTree does not preserve symlinks (GRADLE-2844)
+    exec {
+      executable 'tar'
+      args 'xzf', tarFile
+      workingDir = destDir
+    }
+  }
+}
+
 task copyShadowJars {
   dependsOn ':snappy-store:gemfirexd-client:shadowJar'
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
@@ -877,8 +930,7 @@ task copyShadowJars {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip
-  dependsOn copyShadowJars
+  dependsOn product, copyShadowJars, distTar, distZip
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -911,14 +963,11 @@ task copyResourcesAll << {
   }
 }
 
-task cleanAll {
-  dependsOn getTasksByName('clean', true).collect { it.path }
-}
 task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
-  dependsOn distTar, distZip
+  dependsOn distProduct
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -940,7 +989,7 @@ task checkAll {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
-    dependsOn ':buildDtests', ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+    dependsOn ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
   }
   mustRunAfter buildAll
 }
@@ -1034,10 +1083,6 @@ task sparkPackage {
 
 packagePulse.mustRunAfter product
 packageVSD.mustRunAfter product
-
-distTar.mustRunAfter clean, cleanAll
-distZip.mustRunAfter clean, cleanAll
-distProduct.mustRunAfter clean, cleanAll
 
 task deleteDocsDir(type: Delete) {
   delete "${rootProject.buildDir}/docs"

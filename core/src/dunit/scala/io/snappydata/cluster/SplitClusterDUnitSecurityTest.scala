@@ -21,21 +21,20 @@ import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
 
+import scala.language.{implicitConversions, postfixOps}
+import scala.sys.process.{Process, _}
+
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.LdapTestServer
-import com.pivotal.gemfirexd.security.SecurityTestUtils
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
+
 import org.apache.spark.sql.types.{IntegerType, StructField}
 import org.apache.spark.sql.{Row, SnappyContext, TableNotFoundException}
-
-import scala.language.{implicitConversions, postfixOps}
-import scala.sys.process.Process
-import scala.sys.process._
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -90,7 +89,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   def setSecurityProps(): Unit = {
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
     ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
       adminUser1, getClass.getResource("/auth.ldif").getPath)
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
@@ -118,7 +117,6 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     setSecurityProps()
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
     val port = SplitClusterDUnitSecurityTest.locatorPort
     val netPort = SplitClusterDUnitSecurityTest.locatorNetPort
@@ -126,12 +124,16 @@ class SplitClusterDUnitSecurityTest(s: String)
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val confDir = s"$snappyProductDir/conf"
     val ldapConf = getLdapConf()
-    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort $ldapConf",
-      s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $ldapConf", s"$confDir/leads")
+    logInfo(s"Starting snappy cluster in $clusterDir")
+
+    Seq("locator", "lead", "server1", "server2").foreach(new File(clusterDir, _).mkdirs())
+    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort " +
+        s"-dir=$clusterDir/locator $ldapConf", s"$confDir/locators")
+    val locatorsArg = s"-locators=localhost[$port]"
+    writeToFile(s"localhost  $locatorsArg -dir=$clusterDir/lead $ldapConf", s"$confDir/leads")
     writeToFile(
-      s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $ldapConf
-          |localhost  -locators=localhost[$port] -client-port=$netPort2 $ldapConf
+      s"""localhost  $locatorsArg -client-port=$netPort1 -dir=$clusterDir/server1 $ldapConf
+          |localhost  $locatorsArg -client-port=$netPort2 -dir=$clusterDir/server2 $ldapConf
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
@@ -151,9 +153,10 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
+    testObject.stopSpark()
     SplitClusterDUnitSecurityTest.stopSparkCluster(productDir)
 
-    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
+    logInfo(s"Stopping snappy cluster in $clusterDir")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
 
     stopLdapTestServer()
@@ -162,8 +165,6 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
-    FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
-
   }
 
   def stopLdapTestServer(): Unit = {
@@ -195,7 +196,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   // Test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
     // perform some operation thru spark-shell
-    val jars = Files.newDirectoryStream(Paths.get(s"$snappyProductDir/../distributions/"),
+    val jars = Files.newDirectoryStream(Paths.get("../../../../../distributions/"),
       "snappydata-core*.jar")
     val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
     // SparkSqlTestCode.txt file contains the commands executed on spark-shell
@@ -517,13 +518,13 @@ class SplitClusterDUnitSecurityTest(s: String)
     user2Conn.close()
     adminConn.close()
     snc.sparkContext.stop()
-    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
+    logInfo(s"Stopping snappy cluster in $clusterDir")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
     var waitSeconds = 30
     var status = "stopped"
 
     val wc = new WaitCriterion {
-      override def done() = {
+      override def done(): Boolean = {
         val output = (snappyProductDir + "/sbin/snappy-status-all.sh").!!
         logInfo(s"Status output: \n$output")
         getCount(output, status) == 4
@@ -533,7 +534,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
     DistributedTestBase.waitForCriterion(wc, waitSeconds * 1000, 1000, true)
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
+    logInfo(s"Starting snappy cluster in $clusterDir")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
     waitSeconds = 60
     status = "running"
@@ -683,18 +684,6 @@ object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
 
   private val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    logInfo((productDir + "/sbin/start-all.sh") !!)
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    logInfo((productDir + "/sbin/stop-all.sh") !!)
-  }
 
   override def createTablesAndInsertData(tableType: String): Unit = {}
 

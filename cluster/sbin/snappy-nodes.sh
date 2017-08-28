@@ -123,8 +123,6 @@ fi
 
 MEMBERS_FILE="$SPARK_HOME/work/members.txt"
 
-FIRST_NODE=1
-export FIRST_NODE
 function execute() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
 
@@ -188,10 +186,8 @@ function execute() {
         2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     fi
-    if [ "${RUN_IN_BACKGROUND}" = "0" -o "${FIRST_NODE}" = "1" ]; then
-      if wait $LAST_PID; then
-        FIRST_NODE=0
-      fi
+    if [ "${RUN_IN_BACKGROUND}" = "0" ]; then
+      wait $LAST_PID
     else
       sleep 3
     fi

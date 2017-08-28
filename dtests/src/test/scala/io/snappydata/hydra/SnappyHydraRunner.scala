@@ -18,10 +18,9 @@ package io.snappydata.hydra
 
 import java.io.File
 
-import io.snappydata.SnappyTestRunner
-import org.apache.commons.io.FileUtils
-
 import scala.sys.process._
+
+import io.snappydata.SnappyTestRunner
 
 /**
   * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt
@@ -31,26 +30,23 @@ class SnappyHydraRunner extends SnappyTestRunner {
 
   override def beforeAll(): Unit = {
     snappyHome = System.getenv("SNAPPY_HOME")
-    SNAPPYDATA_SOURCE_DIR = s"$snappyHome/../../.."
     if (snappyHome == null) {
       throw new Exception("SNAPPY_HOME should be set as an environment variable")
     }
     currWorkingDir = System.getProperty("user.dir")
+    SNAPPYDATA_SOURCE_DIR = new File(s"$currWorkingDir/../../../../../..").getCanonicalPath
   }
 
   override def afterAll(): Unit = {
   }
 
   test("smokeBT") {
-    val logDir = new File(s"$snappyHome/tests/snappy/scalatest/smokeBT")
-    if (logDir.exists) {
-      FileUtils.deleteDirectory(logDir)
-    }
+    val logDir = new File(".").getCanonicalFile
     /* val command: String =  s"$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample" +
       s"-runbt.sh $logDir $SNAPPYDATA_SOURCE_DIR -d false io/snappydata/hydra/nwSmoke.bt" */
     val command: String = s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
         s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
-    val (out, err) = executeProcess("smokeBT", command)
+    executeProcess("smokeBT", command)
 
     val c1 = s"grep -r Exception $logDir"
     val c2 = "grep -v  java.net.BindException"

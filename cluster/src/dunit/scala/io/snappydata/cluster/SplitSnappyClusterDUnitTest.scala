@@ -55,13 +55,16 @@ class SplitSnappyClusterDUnitTest(s: String)
   override def beforeClass(): Unit = {
     super.beforeClass()
     startNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    // spark cluster started by gradle startSnappySparkCluster
+    // vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
   }
 
   override def afterClass(): Unit = {
+    vm3.invoke(getClass, "stopSpark")
     Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+    // spark cluster stopped by gradle stopSnappySparkCluster
+    // vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
     super.afterClass()
   }
 
@@ -263,6 +266,9 @@ class SplitSnappyClusterDUnitTest(s: String)
 
 object SplitSnappyClusterDUnitTest
     extends SplitClusterDUnitTestObject with Logging {
+
+  // uses snappy-spark cluster running on default 7077 port
+  override def sparkMasterPort: Int = 7077
 
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 

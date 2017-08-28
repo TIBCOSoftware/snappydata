@@ -20,6 +20,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.InetAddress
 
 import io.snappydata.test.util.TestException
+import io.snappydata.util.TestUtils
 
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -34,6 +35,7 @@ object SmartConnectorFunctions {
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.cores", TestUtils.defaultCores.toString)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
@@ -49,6 +51,7 @@ object SmartConnectorFunctions {
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.cores", TestUtils.defaultCores.toString)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
@@ -71,8 +74,9 @@ object SmartConnectorFunctions {
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.cores", TestUtils.defaultCores.toString)
         .set("spark.executor.extraClassPath",
-          SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)

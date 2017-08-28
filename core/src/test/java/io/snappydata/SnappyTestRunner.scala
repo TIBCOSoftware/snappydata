@@ -30,6 +30,8 @@ import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.parsing.json.JSON
 
+import io.snappydata.util.TestUtils
+
 /**
  * Extensible Abstract test suite to test different shell based commands
  * like submit jobs, snappy shell, spark shell etc.
@@ -84,7 +86,7 @@ with Logging with Retries {
   def stopCluster(): Unit = {
     executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-stop-all.sh")
     new File(s"$snappyHome/conf/servers").deleteOnExit()
-    executeProcess("sparkCluster", s"$snappyHome/sbin/stop-all.sh")
+    // snappy-spark stop handled by gradle stopSnappySparkCluster
   }
 
   def startupCluster(): Unit = {
@@ -92,12 +94,13 @@ with Logging with Retries {
       write(servers)
       close
     }
-    val (out, err) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
+    val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
 
+    logInfo(out)
     if (!out.contains("Distributed system now has 4 members")) {
       throw new Exception(s"Failed to start Snappy cluster")
     }
-    val (out1, err1) = executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
+    // snappy-spark start handled by gradle startSnappySparkCluster
   }
 
   // scalastyle:off println
@@ -111,18 +114,14 @@ with Logging with Retries {
     val stdoutWriter = new PrintStream(teeOut, true)
     val stderrWriter = new PrintStream(teeErr, true)
 
-    val workDir = new File(s"$currWorkingDir/$name")
-    if (!workDir.exists) {
-      workDir.mkdir()
-    }
-
+    val workDir = new File(currWorkingDir)
     val code = Process(command, workDir, "SNAPPY_HOME" -> snappyHome,
       "PYTHONPATH" -> s"$snappyHome/python/lib/py4j-0.10.4-src.zip:$snappyHome/python") !
       ProcessLogger(stdoutWriter.println, stderrWriter.println)
     var stdoutStr = stdoutStream.toString
     if (code != 0) {
       // add an exception to the output to force failure
-      stdoutStr += s"\n***** Exit with Exception code = $code\n"
+      stdoutStr += s"\nExitCode${code}Exception\n"
     }
     (stdoutStr, stderrStream.toString)
   }
@@ -149,7 +148,7 @@ with Logging with Retries {
     val jobCommand: String = s"$jobSubmit --app-name " +
         s"${jobClass}_${System.currentTimeMillis()} --class $jobClass $confStr"
 
-    val (out, err) = executeProcess("snappyCluster", jobCommand)
+    val (out, _) = executeProcess("snappyCluster", jobCommand)
 
     val jobSubmitStr = out
 
@@ -169,7 +168,7 @@ with Logging with Retries {
     while (status == "RUNNING") {
       Thread.sleep(3000)
       val statusCommand = s"$jobStatus $jobID"
-      val (out, err) = executeProcess("snappyCluster", statusCommand)
+      val (out, _) = executeProcess("snappyCluster", statusCommand)
 
       val jobSubmitStatus = out
 
@@ -196,7 +195,8 @@ with Logging with Retries {
     val matcher = exceptionPattern.matcher(output)
     while (matcher.find()) {
       val exceptionStr = matcher.group()
-      if (!exceptionStr.equals("NoSuchObjectException")) {
+      if (!exceptionStr.equals("NoSuchObjectException") &&
+          !exceptionStr.equals("BindException")) {
         println(s"***** FAIL due to $exceptionStr")
         return true
       }
@@ -209,10 +209,14 @@ with Logging with Retries {
                   confs: Seq[String] = Seq.empty[String],
                   appJar: String): Unit = {
 
-    val masterStr = master.getOrElse(s"spark://$localHostName:7077")
+    val (masterStr, executorStr) = master match {
+      case Some(m) => (m, "")
+      case _ => (s"spark://$localHostName:7077", s"--executor-cores ${TestUtils.defaultCores}")
+    }
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
-    val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $masterStr $confStr $appJar"
+    val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $masterStr " +
+        s"$executorStr $confStr $appJar"
     val (out, err) = executeProcess(name, sparkSubmit)
 
     if (checkException(out) || checkException(err)) {
