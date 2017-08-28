@@ -170,7 +170,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
-    // FileUtils.deleteQuietly(new File(s"$snappyProductDir/work"))
+    FileUtils.moveDirectory(new File(s"$snappyProductDir/work"), new File
+    (s"$snappyProductDir/work-snap-1957"))
   }
 
   def stopLdapTestServer(): Unit = {
