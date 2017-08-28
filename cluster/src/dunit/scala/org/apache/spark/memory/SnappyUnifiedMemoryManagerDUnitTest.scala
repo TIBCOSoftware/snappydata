@@ -20,6 +20,7 @@ package org.apache.spark.memory
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
@@ -122,6 +123,13 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     super.tearDown2()
   }
 
+  def runOldEntriesCleanerThreadInAll(): Unit = {
+    val runOldEntriesCleanerThread = new SerializableRunnable() {
+      override def run(): Unit = Misc.getGemFireCache.runOldEntriesCleanerThread()
+    }
+    Array(vm1, vm2).foreach(_.invoke(runOldEntriesCleanerThread))
+  }
+
   // Approximate because we include hash map size also, which can vary across VMs
   def assertApproximate(value1: Long, value2: Long, error: Int = 5): Unit = {
     if (value1 == value2) return
@@ -169,7 +177,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     assertApproximate(vm1_memoryUsed, vm2_memoryUsed)
   }
 
-  def testMemoryUsedInBucketRegions_ColumntTables(): Unit = {
+  def testMemoryUsedInBucketRegions_ColumnTables(): Unit = {
     val snc = newContext()
     val data = for (i <- 1 to 500) yield (Seq(i, (i + 1), (i + 2)))
     val rdd = snc.sparkContext.parallelize(data.toSeq, 2).map(s =>
@@ -181,6 +189,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
+    runOldEntriesCleanerThreadInAll
 
     val vm1_memoryUsed = vm1.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
     val vm2_memoryUsed = vm2.invoke(getClass, "getStorageMemory").asInstanceOf[Long]
@@ -193,7 +202,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     * of GII.
     * Disabled due to SNAP-1781.
     */
-  def DISABLED_testMemoryUsedInColumnTableWithGII(): Unit = {
+  def testMemoryUsedInColumnTableWithGII(): Unit = {
 
     var props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
@@ -215,11 +224,10 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
-    vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(20, getClass)
-    // Setting ignore bytecount as VM doing GII does have a valid value, hence key is kept as null
-    // This decreases the size of entry overhead. @TODO find out why only column table needs this ?
+    vm1.invoke(restartServer(props))
+    runOldEntriesCleanerThreadInAll
+    val waitAssert = new WaitAssert(10, getClass)
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "col__table"),
       waitAssert.exceptionString(),
       20000, 5000, true)
@@ -338,13 +346,16 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
 
-  def _testMemoryAfterRecovery_ColumnTable(): Unit = {
+  def testMemoryAfterRecovery_ColumnTable(): Unit = {
 
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
 
     def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
-      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+      override def run(): Unit = {
+        ClusterManagerTestBase.startSnappyServer(port, props)
+        Thread.sleep(5000) // For executor clean up
+      }
     }
 
     val snc = newContext()
@@ -360,13 +371,12 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     )
     setLocalRegionMaxTempMemory
     dataDF.write.insertInto(col_table)
-    Thread.sleep(10000)
+    runOldEntriesCleanerThreadInAll
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
 
     vm1.invoke(restartServer(props))
-    Thread.sleep(5000)
-    val waitAssert = new WaitAssert(10, getClass) // @TODO identify why so large error
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    val waitAssert = new WaitAssert(10, getClass)
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "col__table"),
       waitAssert.exceptionString(),
       30000, 5000, true)
 
@@ -399,18 +409,21 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(classOf[ClusterManagerTestBase], "stopAny")
     vm1.invoke(restartServer(props))
 
-    val waitAssert = new WaitAssert(2, getClass)
+    val waitAssert = new WaitAssert(10, getClass)
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "rr__table"),
       waitAssert.exceptionString(),
       30000, 5000, true)
   }
 
-  def _testMemoryAfterRebalance_ColumnTable(): Unit = {
+  def testMemoryAfterRebalance_ColumnTable(): Unit = {
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
     val port = ClusterManagerTestBase.locPort
 
     def restartServer(props: Properties): SerializableRunnable = new SerializableRunnable() {
-      override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
+      override def run(): Unit = {
+        ClusterManagerTestBase.startSnappyServer(port, props)
+        Thread.sleep(5 * 1000) // For executor clean up
+      }
     }
 
     def rebalance(conf: ConnectionConf): SerializableRunnable = new SerializableRunnable() {
@@ -431,7 +444,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     val dataDF = snc.createDataFrame(rdd)
 
     val options = "OPTIONS (BUCKETS '5', PARTITION_BY 'Col1'," +
-      " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '1')"
+      " PERSISTENT 'SYNCHRONOUS', REDUNDANCY '2')"
     snc.sql("CREATE TABLE " + col_table + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
       options
     )
@@ -440,12 +453,12 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     dataDF.write.insertInto(col_table)
 
     vm1.invoke(restartServer(props))
-    Thread.sleep(5 * 1000) // For executor clean up
+    runOldEntriesCleanerThreadInAll
     vm1.invoke(rebalance(conf))
 
-    val waitAssert = new WaitAssert(5, getClass)
+    val waitAssert = new WaitAssert(10, getClass)
     // The delete operation takes time to propagate
-    ClusterManagerTestBase.waitForCriterion(waitAssert.assertStorageUsed(vm1, vm2),
+    ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "col__table"),
       waitAssert.exceptionString(),
       30000, 5000, true)
 

@@ -759,7 +759,7 @@ object SnappyUnifiedMemoryManager extends Logging {
 
     val usableMemory = systemMemory - reservedMemory
     // add a cushion for GC before CRITICAL_UP is reached
-    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.92)
+    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.97)
     (usableMemory * memoryFraction).toLong
   }
 
