@@ -36,6 +36,7 @@ object CreateAndLoadNWTablesSparkApp {
     NWQueries.snc = snc
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
+    val createLargeOrderTable = args(2).toBoolean
     // scalastyle:off println
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesSparkApp.out"),
       true));
@@ -44,12 +45,18 @@ object CreateAndLoadNWTablesSparkApp {
     pw.println(s"Create and load ${tableType} tables Test started at : " + System.currentTimeMillis)
     tableType match {
       case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
-      case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc)
-      case "Column" => NWTestUtil.createAndLoadColumnTables(snc)
+      case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc, createLargeOrderTable)
+      case "Column" => NWTestUtil.createAndLoadColumnTables(snc, createLargeOrderTable)
       case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
       case _ => // the default, catch-all
     }
     pw.println(s"Create and load ${tableType} tables Test completed successfully at : " + System
+        .currentTimeMillis)
+    pw.flush()
+    if (createLargeOrderTable) {
+      NWTestUtil.ingestMoreData(snc, 10)
+    }
+    pw.println(s"Loaded more data successfully at : " + System
         .currentTimeMillis)
     pw.close()
   }

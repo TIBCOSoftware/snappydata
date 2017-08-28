@@ -6,6 +6,7 @@ io/snappydata/hydra/northwind/smokeNW1.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/northwind/smokeNW2.conf
   A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
@@ -15,6 +16,7 @@ io/snappydata/hydra/northwind/smokeNW2.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/northwind/smokeNW3.conf
   A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
@@ -24,6 +26,7 @@ io/snappydata/hydra/northwind/smokeNW3.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
 
 io/snappydata/hydra/northwind/smokeNW4.conf
   A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=4
@@ -33,3 +36,4 @@ io/snappydata/hydra/northwind/smokeNW4.conf
   numRowsValidation = false
   fullResultSetValidation = true
   isSmokeRun = true
+  createLargeOrderTable = false
