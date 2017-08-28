@@ -94,7 +94,7 @@ trait SnappySQLJob extends SparkJobBase {
 
   final override def validate(sc: C, config: Config): SparkJobValidation = {
     SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappySession],
-      SnappySessionFactory.cleanJobConfig(config)))
+      SnappySessionFactory.updateCredentials(sc.asInstanceOf[SnappySession], config)))
   }
 
   final override def runJob(sc: C, jobConfig: Config): Any = {
