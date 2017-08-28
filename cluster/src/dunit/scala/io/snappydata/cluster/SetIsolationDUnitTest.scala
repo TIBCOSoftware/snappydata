@@ -31,12 +31,12 @@ class SetIsolationDUnitTest (val s: String)
     val stmt = conn.createStatement()
     stmt.execute("create table rowtable(col1 int, col2 int, col3 int)" +
         " using row options (partition_by 'col1')")
-//    stmt.execute("create table coltable(col1 int, col2 int, col3 int)" +
-//        " using column options (partition_by 'col1')")
+    stmt.execute("create table coltable(col1 int, col2 int, col3 int)" +
+        " using column options (partition_by 'col1')")
 
     for (i <- 1 to 100) {
       stmt.execute(s"insert into rowtable values ($i, $i, $i)")
-//      stmt.execute(s"insert into coltable values ($i, $i, $i)")
+      stmt.execute(s"insert into coltable values ($i, $i, $i)")
     }
   }
 
@@ -46,9 +46,9 @@ class SetIsolationDUnitTest (val s: String)
     assert(rs1.next())
     assert(rs1.getInt(1) == 100, "result mismatch")
 
-//    rs1 = stmt1.executeQuery("select count(*) from coltable")
-//    assert(rs1.next())
-//    assert(rs1.getInt(1) == 100, "result mismatch")
+    rs1 = stmt1.executeQuery("select count(*) from coltable")
+    assert(rs1.next())
+    assert(rs1.getInt(1) == 100, "result mismatch")
   }
 
   // queries not allowed on a column table inside a transaction
@@ -63,48 +63,39 @@ class SetIsolationDUnitTest (val s: String)
     }
   }
 
+  def performOperationsOnTable(conn: Connection, tableName: String): Unit = {
+    val stmt1 = conn.createStatement()
+    var rs1 = stmt1.executeQuery(s"select count(*) from $tableName")
+    assert(rs1.next())
+    assert(rs1.getInt(1) == 100, "result mismatch")
+    // insert data
+    logInfo(s"inserting a row in $tableName")
+    stmt1.execute(s"insert into $tableName values(101, 101, 101)")
+    logInfo(s"select count from $tableName")
+    rs1 = stmt1.executeQuery(s"select count(*) from $tableName")
+    assert(rs1.next())
+    var cnt = rs1.getInt(1)
+    assert(cnt == 101, s"result mismatch. Actual numRows = $cnt. Expect numRows = 101")
+    // delete
+    stmt1.execute(s"delete from $tableName where col1 = 101")
+    rs1 = stmt1.executeQuery(s"select count(*) from $tableName")
+    assert(rs1.next())
+    assert(rs1.getInt(1) == 100, "result mismatch")
+  }
+
   def testSetIsolationLevel(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
 
     createTables(conn)
-    try {
-      // tx not allowed when query routing isn't disabled
-      conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
-      assert(false, "op should have failed as TX is not allowed when query routing is enabled")
-    } catch {
-      case se: SQLException if SQLState.SNAPPY_TX_DISALLOWED_WITH_ROUTE_QUERY_DISABLED.
-          startsWith(se.getSQLState) => // expected
-    }
 
     // transaction none should be allowed
-    conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+    conn.setAutoCommit(true)
+    conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
     validateTableData(conn)
-    conn.close()
-
-    val routeQueryDisabledConn = getANetConnection(netPort1, disableQueryRouting = true)
-    // tx allowed as on row tables as query routing is disabled
-    routeQueryDisabledConn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
-//    routeQueryDisabledConn.setAutoCommit(true)
-
-    val stmt1 = routeQueryDisabledConn.createStatement()
-    var rs1 = stmt1.executeQuery("select count(*) from rowtable")
-    assert(rs1.next())
-    assert(rs1.getInt(1) == 100, "result mismatch")
-    // insert data
-    logInfo("inserting a row in rowtable")
-    stmt1.execute("insert into rowtable values(101, 101, 101)")
-    logInfo("select count from rowtable")
-    rs1 = stmt1.executeQuery("select count(*) from rowtable")
-    assert(rs1.next())
-    var cnt = rs1.getInt(1)
-    assert(cnt == 101, s"result mismatch. Actual numRows = $cnt. Expect numRows = 101")
-    // delete
-    stmt1.execute("delete from rowtable where col1 = 101")
-    rs1 = stmt1.executeQuery("select count(*) from rowtable")
-    assert(rs1.next())
-    assert(rs1.getInt(1) == 100, "result mismatch")
+    performOperationsOnTable(conn, "rowtable")
+    performOperationsOnTable(conn, "columntable")
 
 //    checkTxQueryOnColumnTable(stmt1, "select count(*) from coltable")
 //    checkTxQueryOnColumnTable(stmt1, "insert into coltable values(101, 101, 101)")
