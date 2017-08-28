@@ -88,6 +88,18 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
   }
 
+  private static String setDefaultPath(HiveConf metadataConf,
+      HiveConf.ConfVars var, String path) {
+    String pathUsed = metadataConf.get(var.varname);
+    if (pathUsed == null || pathUsed.isEmpty() ||
+        pathUsed.equals(var.getDefaultExpr())) {
+      // set the path to provided
+      pathUsed = new java.io.File(path).getAbsolutePath();
+      metadataConf.setVar(var, pathUsed);
+    }
+    return pathUsed;
+  }
+
   /**
    * Set the common hive metastore properties and also invoke
    * the static initialization for Hive with system properties
@@ -102,16 +114,22 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE);
     // Tomcat pool has been shown to work best but does not work in split mode
     // because upstream spark does not ship with it (and the one in snappydata-core
-    //   cannot be loaded by datanucleus which should apparently be in its CLASSPATH)
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_POOLING_TYPE, "BONECP");
-    String warehouse = metadataConf.get(HiveConf.ConfVars.METASTOREWAREHOUSE.varname);
-    if (warehouse == null || warehouse.isEmpty() ||
-        warehouse.equals(HiveConf.ConfVars.METASTOREWAREHOUSE.getDefaultExpr())) {
-      // append warehouse to current directory
-      warehouse = new java.io.File("./warehouse").getAbsolutePath();
-      metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse);
-    }
+    //   cannot be loaded by datanucleus which should be in system CLASSPATH).
+    // Using inbuilt DBCP pool which allows setting the max time to wait
+    // for a pool connection else BoneCP hangs if network servers are down, for example,
+    // and the thrift JDBC connection fails since its default timeout is infinite.
+    // The DBCP 1.x versions are thoroughly outdated and should not be used but
+    // the expectation is that the one bundled in datanucleus will be in better shape.
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_POOLING_TYPE,
+        "dbcp-builtin");
+    // set the scratch dir inside current working directory (unused but created)
+    setDefaultPath(metadataConf, HiveConf.ConfVars.SCRATCHDIR, "./hive");
+    // set the warehouse dir inside current working directory (unused but created)
+    String warehouse = setDefaultPath(metadataConf,
+        HiveConf.ConfVars.METASTOREWAREHOUSE, "./warehouse");
     metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///");
+
+    metadataConf.set("datanucleus.connectionPool.testSQL", "VALUES(1)");
 
     // ensure no other Hive instance is alive for this thread but also
     // set the system properties because this can initialize Hive static
@@ -131,8 +149,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // Hive static initialization so that these never go into system properties
 
     // every session has own hive client, so a small pool
-    metadataConf.set("datanucleus.connectionPool.maxPoolSize", "4");
-    metadataConf.set("datanucleus.connectionPool.minPoolSize", "0");
+    // metadataConf.set("datanucleus.connectionPool.maxPoolSize", "4");
+    // metadataConf.set("datanucleus.connectionPool.minPoolSize", "0");
+    metadataConf.set("datanucleus.connectionPool.maxActive", "4");
+    metadataConf.set("datanucleus.connectionPool.maxIdle", "2");
+    metadataConf.set("datanucleus.connectionPool.minIdle", "0");
+    // throw pool exhausted exception after 30s
+    metadataConf.set("datanucleus.connectionPool.maxWait", "30000");
 
     return warehouse;
   }
