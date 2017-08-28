@@ -58,7 +58,7 @@ class SetIsolationDUnitTest (val s: String)
       stmt.execute(query)
       assert(false, "query should have failed as tx on column table is not allowed")
     } catch {
-      case se: SQLException if SQLState.SNAPPY_TX_DISALLOWED_ON_COLUMN_TABLES.
+      case se: SQLException if SQLState.SNAPPY_OP_DISALLOWED_ON_COLUMN_TABLES.
           startsWith(se.getSQLState) => // expected
     }
   }
@@ -90,14 +90,22 @@ class SetIsolationDUnitTest (val s: String)
 
     createTables(conn)
 
-    // transaction none should be allowed
+    // with autocommit true transactions on row and column table are allowed
     conn.setAutoCommit(true)
     conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
     validateTableData(conn)
     performOperationsOnTable(conn, "rowtable")
-    performOperationsOnTable(conn, "columntable")
+    performOperationsOnTable(conn, "coltable")
 
-//    checkTxQueryOnColumnTable(stmt1, "select count(*) from coltable")
+    // with autocommit false transactions allowed on row tables only
+    conn.setAutoCommit(false)
+    conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
+    validateTableData(conn)
+    performOperationsOnTable(conn, "rowtable")
+//    conn.commit()
+
+    val stmt1 = conn.createStatement()
+    checkTxQueryOnColumnTable(stmt1, "select count(*) from coltable")
 //    checkTxQueryOnColumnTable(stmt1, "insert into coltable values(101, 101, 101)")
 //    checkTxQueryOnColumnTable(stmt1, "delete from coltable where col1 = 101")
 //    checkTxQueryOnColumnTable(stmt1, "update coltable set col1 = 101")
