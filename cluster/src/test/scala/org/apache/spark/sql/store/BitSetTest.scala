@@ -52,7 +52,7 @@ class BitSetTest extends SnappyFunSuite {
   private var bitsetSize = 0
 
   private def get(bitset: Array[Long], index: Int): Boolean =
-    BitSet.isSet(bitset, baseAddress, index, bitsetSize)
+    BitSet.isSet(bitset, baseAddress, index)
 
   private def set(bitset: Array[Long], index: Int): Unit =
     BitSet.set(bitset, baseAddress, index)
@@ -66,6 +66,9 @@ class BitSetTest extends SnappyFunSuite {
 
   private def nextSetBit(bitset: Array[Long], index: Int): Int =
     BitSet.nextSetBit(bitset, baseAddress, index, bitsetSize)
+
+  private def cardinality(bitset: Array[Long], index: Int): Int =
+    BitSet.cardinality(bitset, baseAddress, index, bitsetSize)
 
   test("basic set, get and clear") {
     val maxSetBit = 96
@@ -150,6 +153,44 @@ class BitSetTest extends SnappyFunSuite {
     assert(nextSetBit(bitset, 80) === 90)
     assert(nextSetBit(bitset, 91) === 96)
     assert(nextSetBit(bitset, 96) === 96)
-    assert(nextSetBit(bitset, 97) === -1)
+    assert(nextSetBit(bitset, 97) === Int.MaxValue)
+  }
+
+  test("cardinality") {
+    val setBits = Seq(0, 9, 1, 10, 100, 90, 34, 108, 130, 127, 128, 96, 123, 180, 191)
+    val bitset = new Array[Long](3)
+    bitsetSize = 16
+
+    setBits.foreach(set(bitset, _))
+
+    assert(cardinality(bitset, 0) === 0)
+    assert(cardinality(bitset, 1) === 1)
+    assert(cardinality(bitset, 2) === 2)
+    assert(cardinality(bitset, 9) === 2)
+    assert(cardinality(bitset, 10) === 3)
+    assert(cardinality(bitset, 11) === 4)
+    assert(cardinality(bitset, 80) === 5)
+    assert(cardinality(bitset, 91) === 6)
+    assert(cardinality(bitset, 96) === 6)
+    assert(cardinality(bitset, 97) === 7)
+    assert(cardinality(bitset, 100) === 7)
+    assert(cardinality(bitset, 101) === 8)
+    assert(cardinality(bitset, 107) === 8)
+    assert(cardinality(bitset, 108) === 8)
+    assert(cardinality(bitset, 109) === 9)
+    assert(cardinality(bitset, 123) === 9)
+    assert(cardinality(bitset, 124) === 10)
+    assert(cardinality(bitset, 127) === 10)
+    assert(cardinality(bitset, 128) === 11)
+    assert(cardinality(bitset, 130) === 11)
+    assert(cardinality(bitset, 131) === 11)
+    assert(cardinality(bitset, 150) === 11)
+    assert(cardinality(bitset, 180) === 11)
+    assert(cardinality(bitset, 181) === 11)
+    assert(cardinality(bitset, 190) === 11)
+    assert(cardinality(bitset, 191) === 11)
+    assert(cardinality(bitset, 192) === 11)
+    assert(cardinality(bitset, 193) === 11)
+    assert(cardinality(bitset, 298989839) === 11)
   }
 }

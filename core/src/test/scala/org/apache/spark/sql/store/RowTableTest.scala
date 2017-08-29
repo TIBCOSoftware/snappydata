@@ -264,7 +264,7 @@ class RowTableTest
     println("Successful")
   }
 
-  test("Test Creation using SQL with Primary Key and PUT INTO SLECT AS ") {
+  test("Test Creation using SQL with Primary Key and PUT INTO SELECT AS ") {
     snc.sql("CREATE TABLE tempTable  (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options)
 

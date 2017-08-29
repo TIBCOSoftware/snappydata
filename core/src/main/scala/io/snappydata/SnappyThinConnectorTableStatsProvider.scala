@@ -27,10 +27,11 @@ import com.gemstone.gemfire.{CancelException, DataSerializer}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
+
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
-
 import scala.collection.JavaConverters._
+import scala.util.control.NonFatal
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
@@ -93,6 +94,18 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     getStatsStmt.execute()
   }
 
+  private def closeConnection(): Unit = {
+    val c = this.conn
+    if (c ne null) {
+      try {
+        c.close()
+      } catch {
+        case NonFatal(_) => // ignore
+      }
+      conn = null
+    }
+  }
+
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats]) = {
     try {
@@ -102,7 +115,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         logWarning("Warning: unable to retrieve table stats " +
             "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
-        conn = null
+        closeConnection()
         return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats])
     }
     val value = getStatsStmt.getBlob(1)
@@ -113,4 +126,8 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     (regionStats.asScala, Seq.empty[SnappyIndexStats])
   }
 
+  override def stop(): Unit = {
+    super.stop()
+    closeConnection()
+  }
 }

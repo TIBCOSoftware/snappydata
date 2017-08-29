@@ -23,7 +23,7 @@ usage=$'Usage:
        # Create a new context using the provided context factory
        snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>] [--passfile <netrc-file-path-with-credentials>]
        # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
-       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>] [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>] [--passfile <netrc-file-path-with-credentials>]
+       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>] [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>] [--passfile <netrc-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
        # Get status of the job with the given job-id
        snappy-job.sh status --job-id <job-id> [--lead <hostname:port>] [--passfile <netrc-file-path-with-credentials>]
        # Stop a job with the given job-id
@@ -50,6 +50,7 @@ newContext=
 TOK_EMPTY="EMPTY"
 APP_PROPS=$APP_PROPS
 securePart=""
+batchInterval=
 
 while (( "$#" )); do
   param="$1"
@@ -129,6 +130,13 @@ while (( "$#" )); do
       fi
       securePart=" --config ${passwordfile}"
     ;;
+    --batch-interval)
+      shift
+      batchInterval="${1:-$TOK_EMPTY}"
+      if [[ $contextFactory != "org.apache.spark.sql.streaming.SnappyStreamingContextFactory" ]]; then
+        echo "Non Streaming job. Batch interval config parameter will not be used."
+      fi
+    ;;
     *)
       showUsage $1
     ;;
@@ -157,11 +165,11 @@ validateArg() {
  return 1
 }
 
-# command builder 
+# command builder
 cmdLine=
 
 function buildCommand () {
-case $cmd in 
+case $cmd in
   status)
      if validateArg $jobID ; then
        showUsage "--job-id"
@@ -175,7 +183,7 @@ case $cmd in
     elif validateArg $jobClass ; then
       showUsage "--class"
     elif validateOptionalArg $appjar ; then
-        showUsage "--app-jar" 
+        showUsage "--app-jar"
     elif validateOptionalArg $contextName ; then
       showUsage "--context"
     fi
@@ -204,6 +212,10 @@ case $cmd in
       showUsage "--app-name"
     fi
     cmdLine="contexts/${contextName}?context-factory=${contextFactory}"
+
+    if [[ -n $batchInterval ]]; then
+      cmdLine="${cmdLine}&streaming.batch_interval=${batchInterval}"
+    fi
   ;;
 
   listcontexts)
@@ -274,4 +286,3 @@ case $cmd in
     curl -X DELETE ${jobServerURL} $CURL_OPTS  ${securePart}
   ;;
 esac
-

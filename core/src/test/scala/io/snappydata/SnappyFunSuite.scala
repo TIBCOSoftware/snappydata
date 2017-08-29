@@ -168,9 +168,11 @@ abstract class SnappyFunSuite
   }
 
   def stopAll(): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo("Stopping spark context = " + sparkContext)
-    if (sparkContext != null) sparkContext.stop()
+    val sc = SnappyContext.globalSparkContext
+    logInfo("Stopping spark context = " + sc)
+    if (sc != null && !sc.isStopped) {
+      sc.stop()
+    }
     cachedContext = null
   }
 

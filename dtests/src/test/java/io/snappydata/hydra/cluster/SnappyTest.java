@@ -1958,10 +1958,13 @@ public class SnappyTest implements Serializable {
         }
         if (SnappyPrms.hasDynamicAppProps()) {
           APP_PROPS = "\"" + APP_PROPS + "," + dynamicAppProps.get(getMyTid()) + "\"";
+          Log.getLogWriter().info("APP_PROPS : " + APP_PROPS);
         }
         String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
         String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + leadPort + "/jobs?appName=" + appName + "&classPath=" + userJob + "'";
 
+        Log.getLogWriter().info("jar loading cmd: " + curlCommand1);
+        Log.getLogWriter().info("snappy job submit cmd: " + curlCommand2);
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -2964,7 +2967,7 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info(clientName + " restarted successfully...");
   }
 
-  protected void regenerateConfigData(String vmDir, String confFileName, String clientName, String
+  public void regenerateConfigData(String vmDir, String confFileName, String clientName, String
       vmName) {
     generateConfig(confFileName);
     Set<String> fileContent = new LinkedHashSet<String>();
