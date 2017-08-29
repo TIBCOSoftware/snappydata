@@ -146,18 +146,17 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   protected var currentVal: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
   private var currentKeyPartitionId: Int = _
-  private var currentKeyUUID: String = _
+  private var currentKeyUUID: Long = _
   private var currentBucketRegion: BucketRegion = _
   private var batchProcessed = false
   private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
 
-  def getCurrentBatchId: String = currentKeyUUID
+  def getCurrentBatchId: Long = currentKeyUUID
 
   def getCurrentBucketId: Int = currentKeyPartitionId
 
   private def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
-    val key = new ColumnFormatKey(currentKeyPartitionId, columnPosition,
-      currentKeyUUID)
+    val key = new ColumnFormatKey(currentKeyUUID, currentKeyPartitionId, columnPosition)
     val value = if (currentBucketRegion != null) currentBucketRegion.get(key)
     else region.get(key)
     if (value ne null) {

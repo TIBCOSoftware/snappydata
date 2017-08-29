@@ -19,15 +19,12 @@ package org.apache.spark.sql.execution.columnar
 import java.nio.ByteBuffer
 import java.sql.Connection
 
-import scala.reflect.ClassTag
-
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.unsafe.types.UTF8String
 
 trait ExternalStore extends Serializable {
 
@@ -36,18 +33,12 @@ trait ExternalStore extends Serializable {
   def tableName: String
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: Option[String], maxDeltaRows: Int)
-      (implicit c: Option[Connection] = None): Unit
-
-  def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: UTF8String, maxDeltaRows: Int) (conn: Option[Connection]): Unit = {
-    storeColumnBatch(tableName, batch, partitionId,
-      if (batchId ne null) Some(batchId.toString) else None, maxDeltaRows)(conn)
-  }
+      partitionId: Int, batchId: Long, maxDeltaRows: Int,
+      conn: Option[Connection]): Unit
 
   def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: String)
-      (implicit c: Option[Connection] = None): Unit
+      statsData: Array[Byte], partitionId: Int, batchId: Long,
+      conn: Option[Connection]): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, requiredColumns: Array[String],
       prunePartitions: => Int, session: SparkSession, schema: StructType): RDD[Any]
@@ -59,7 +50,7 @@ trait ExternalStore extends Serializable {
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String, closeOnSuccessOrFailure: Boolean = true,
+  def tryExecute[T](tableName: String, closeOnSuccessOrFailure: Boolean = true,
       onExecutor: Boolean = false)(f: Connection => T)
       (implicit c: Option[Connection] = None): T = {
     var success = false
@@ -102,15 +93,14 @@ trait ConnectedExternalStore extends ExternalStore {
     }
   }
 
-  override def tryExecute[T: ClassTag](tableName: String,
+  override def tryExecute[T](tableName: String,
       closeOnSuccess: Boolean = true, onExecutor: Boolean = false)
       (f: Connection => T)
       (implicit c: Option[Connection]): T = {
     assert(!connectedInstance.isClosed)
     val ret = super.tryExecute(tableName,
       closeOnSuccessOrFailure = false /* responsibility of the user to close later */ ,
-      onExecutor)(f)(
-      implicitly, Some(connectedInstance))
+      onExecutor)(f)(Some(connectedInstance))
 
     if (dependentAction.isDefined) {
       assert(!connectedInstance.isClosed)

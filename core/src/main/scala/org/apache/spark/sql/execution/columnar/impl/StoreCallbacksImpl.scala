@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.util.{Collections, UUID}
+import java.util.Collections
 
 import scala.collection.JavaConverters._
 
@@ -56,7 +56,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatEntry.registerTypes()
   }
 
-  override def createColumnBatch(region: BucketRegion, batchID: UUID,
+  override def createColumnBatch(region: BucketRegion, batchID: Long,
       bucketID: Int): java.util.Set[AnyRef] = {
     val pr = region.getPartitionedRegion
     val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
