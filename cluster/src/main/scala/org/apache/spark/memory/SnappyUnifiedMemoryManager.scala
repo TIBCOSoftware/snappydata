@@ -28,6 +28,7 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.pivotal.gemfirexd.internal.engine.Misc
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 
@@ -60,10 +61,12 @@ class SnappyUnifiedMemoryManager private[memory](
       SnappyUnifiedMemoryManager.DEFAULT_STORAGE_FRACTION)).toLong,
     numCores) with StoreUnifiedManager {
 
-  private val managerId = if (!tempManager) "RuntimeManager" else "BootTimeManager"
+  private val managerId = if (!tempManager) "RuntimeMemoryManager" else "BootTimeMemoryManager"
 
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
       conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
+
+  val managerStats = new MemoryManagerStats(Misc.getGemFireCache.getDistributedSystem(), managerId)
 
   /**
    * An estimate of the maximum result size handled by a single partition.
