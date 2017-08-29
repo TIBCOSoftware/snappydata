@@ -52,28 +52,15 @@ class SetIsolationDUnitTest (val s: String)
   }
 
   // queries not allowed on a column table inside a transaction
-  def checkTxQueryOnColumnTable(stmt: Statement, query: String): Unit = {
+  def checkUnsupportedQueries(stmt: Statement, query: String,
+      expectedSqlState: String = SQLState.SNAPPY_OP_DISALLOWED_ON_COLUMN_TABLES): Unit = {
     try {
       // tx not allowed as on column tables
       stmt.execute(query)
       assert(false, "query should have failed as tx on column table is not allowed")
     } catch {
-      case sq: SQLException if SQLState.SNAPPY_OP_DISALLOWED_ON_COLUMN_TABLES.
+      case sq: SQLException if expectedSqlState.
           startsWith(sq.getSQLState) => // expected
-
-//      case e: Throwable =>
-//        var cause = e
-//        var expectedException = false
-//        while(cause != null && !expectedException) {
-//          cause match {
-//            case sq: SQLException if SQLState.SNAPPY_OP_DISALLOWED_ON_COLUMN_TABLES.
-//                startsWith(sq.getSQLState) =>
-//              expectedException = true
-//            case _ =>
-//              cause = cause.getCause
-//          }
-//        }
-//        if (!expectedException) throw e
     }
   }
 
@@ -101,7 +88,7 @@ class SetIsolationDUnitTest (val s: String)
   def testSetIsolationLevel(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
-    val conn = getANetConnection(netPort1)
+    var conn = getANetConnection(netPort1)
 
     logInfo("Creating tables for the test")
     createTables(conn)
@@ -111,23 +98,37 @@ class SetIsolationDUnitTest (val s: String)
     conn.setAutoCommit(true)
     conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
     validateTableData(conn)
-//    performOperationsOnTable(conn, "rowtable")
+    performOperationsOnTable(conn, "rowtable")
     performOperationsOnTable(conn, "coltable")
+    conn.close()
 
     // with autocommit false transactions allowed on row tables only
     logInfo("setting autocommit false")
+    conn = getANetConnection(netPort1)
     conn.setAutoCommit(false)
     conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
     performOperationsOnTable(conn, "rowtable")
+    conn.commit()
 
     val stmt1 = conn.createStatement()
     logInfo("checking unsupported queries on column tables")
-    checkTxQueryOnColumnTable(stmt1, "select count(*) from coltable")
-//    checkTxQueryOnColumnTable(stmt1, "insert into coltable values(101, 101, 101)")
-    checkTxQueryOnColumnTable(stmt1, "delete from coltable where col1 = 101")
-    checkTxQueryOnColumnTable(stmt1, "update coltable set col2 = 101")
-    checkTxQueryOnColumnTable(stmt1, "select rowtable.col1 as rc1, coltable.col1 as cc1" +
-        " from rowtable, coltable where rowtable.col1 = coltable.col1")
+    // queries involving column tables
+    checkUnsupportedQueries(stmt1, "select count(*) from coltable")
+    checkUnsupportedQueries(stmt1, "insert into coltable values(101, 101, 101)")
+    checkUnsupportedQueries(stmt1, "insert into rowtable select col1, col2, col3 from coltable")
+    checkUnsupportedQueries(stmt1, "delete from coltable where col1 = 101")
+    checkUnsupportedQueries(stmt1, "delete from rowtable where col1 in " +
+        "(select col1 from coltable)")
+    checkUnsupportedQueries(stmt1, "update coltable set col2 = 101")
+    checkUnsupportedQueries(stmt1, "update coltable set col2 = 101 where col2 in " +
+        "(select col1 from coltable)")
+
+    // queries involving row tables that should not get routed
+    // (for example is there is a syntax error)
+    logInfo("checking unsupported queries on row tables")
+    checkUnsupportedQueries(stmt1, "select * from rowtable limit 1", SQLState.LANG_SYNTAX_ERROR)
+    checkUnsupportedQueries(stmt1, "select rowtable.col1 as rc1, coltable.col1 as cc1" +
+        " from rowtable, coltable where rowtable.col1 = coltable.col1", SQLState.NOT_COLOCATED_WITH)
     stmt1.close()
     conn.close()
 
