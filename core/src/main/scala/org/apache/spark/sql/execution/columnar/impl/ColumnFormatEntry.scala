@@ -23,7 +23,6 @@ import java.util.concurrent.locks.LockSupport
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.cache.{DiskAccessException, EntryDestroyedException, EntryOperation, Region, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
@@ -31,12 +30,12 @@ import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
-import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, HeapBufferAllocator, InputStreamChannel, OutputStreamChannel, Version}
+import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, ClientSharedUtils, HeapBufferAllocator, InputStreamChannel, OutputStreamChannel, Version}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.store.RegionKey
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
-import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLVarchar}
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
 import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 import org.slf4j.Logger
@@ -75,13 +74,13 @@ object ColumnFormatEntry extends Logging {
 /**
  * Key object in the column store.
  */
-final class ColumnFormatKey(private[columnar] var partitionId: Int,
-    private[columnar] var columnIndex: Int,
-    private[columnar] var uuid: String)
+final class ColumnFormatKey(private[columnar] var uuid: Long,
+    private[columnar] var partitionId: Int,
+    private[columnar] var columnIndex: Int)
     extends GfxdDataSerializable with ColumnBatchKey with RegionKey with Serializable {
 
   // to be used only by deserialization
-  def this() = this(-1, -1, "")
+  def this() = this(-1L, -1, -1)
 
   override def getNumColumnsInTable(columnTableName: String): Int = {
     val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
@@ -113,68 +112,50 @@ final class ColumnFormatKey(private[columnar] var partitionId: Int,
 
   def getColumnIndex: Int = columnIndex
 
-  override def hashCode(): Int = Murmur3_x86_32.hashLong(
-    (columnIndex.toLong << 32L) | (uuid.hashCode & 0xffffffffL), partitionId)
+  override def hashCode(): Int = Murmur3_x86_32.hashInt(
+    ClientResolverUtils.addLongToHashOpt(uuid, columnIndex), partitionId)
 
   override def equals(obj: Any): Boolean = obj match {
-    case k: ColumnFormatKey => partitionId == k.partitionId &&
-        columnIndex == k.columnIndex && uuid.equals(k.uuid)
+    case k: ColumnFormatKey => uuid == k.uuid &&
+        partitionId == k.partitionId && columnIndex == k.columnIndex
     case _ => false
   }
 
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_KEY
 
   override def toData(out: DataOutput): Unit = {
+    out.writeLong(uuid)
     out.writeInt(partitionId)
     out.writeInt(columnIndex)
-    DataSerializer.writeString(uuid, out)
   }
 
   override def fromData(in: DataInput): Unit = {
+    uuid = in.readLong()
     partitionId = in.readInt()
     columnIndex = in.readInt()
-    uuid = DataSerializer.readString(in)
   }
 
   override def getSizeInBytes: Int = {
-    // UUID is shared among all columns so count its overhead only once
-    // in stats row (but the reference overhead will be counted in all)
-    if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
-      // first the char[] size inside String
-      val charSize = Sizeable.PER_OBJECT_OVERHEAD + 4 /* length */ +
-          uuid.length * 2
-      val strSize = Sizeable.PER_OBJECT_OVERHEAD + 4 /* hash */ +
-          REFERENCE_SIZE
-      /* char[] reference */
-      val size = Sizeable.PER_OBJECT_OVERHEAD +
-          REFERENCE_SIZE /* String reference */ +
-          4 /* columnIndex */ + 4 /* partitionId */
-      // align all to 8 bytes assuming 64-bit JVMs
-      alignedSize(size) + alignedSize(charSize) + alignedSize(strSize)
-    } else {
-      // only String reference counted for others
-      alignedSize(Sizeable.PER_OBJECT_OVERHEAD +
-          REFERENCE_SIZE /* String reference */ +
-          4 /* columnIndex */ + 4 /* partitionId */)
-    }
+    alignedSize(Sizeable.PER_OBJECT_OVERHEAD +
+        8 /* uuid */ + 4 /* columnIndex */ + 4 /* partitionId */)
   }
 
   override def nCols(): Int = 3
 
   override def getKeyColumn(index: Int): DataValueDescriptor = index match {
-    case 0 => new SQLVarchar(uuid)
+    case 0 => new SQLLongint(uuid)
     case 1 => new SQLInteger(partitionId)
     case 2 => new SQLInteger(columnIndex)
   }
 
   override def getKeyColumns(keys: Array[DataValueDescriptor]): Unit = {
-    keys(0) = new SQLVarchar(uuid)
+    keys(0) = new SQLLongint(uuid)
     keys(1) = new SQLInteger(partitionId)
     keys(2) = new SQLInteger(columnIndex)
   }
 
   override def getKeyColumns(keys: Array[AnyRef]): Unit = {
-    keys(0) = uuid
+    keys(0) = Long.box(uuid)
     keys(1) = Int.box(partitionId)
     keys(2) = Int.box(columnIndex)
   }

@@ -20,10 +20,10 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.nio.ByteBuffer
 import java.sql.Blob
 
-import com.gemstone.gemfire.internal.cache.RegionEntry
+import com.gemstone.gemfire.internal.cache.{BucketRegion, RegionEntry}
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
-import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLVarchar}
+import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import io.snappydata.thrift.common.BufferedBlob
 import io.snappydata.thrift.internal.ClientBlob
@@ -41,7 +41,7 @@ final class ColumnFormatEncoder extends RowEncoder {
     val batchValue = value.asInstanceOf[ColumnFormatValue]
     // layout the same way as declared in ColumnFormatRelation
     val row = new ValueRow(5)
-    row.setColumn(1, new SQLVarchar(batchKey.uuid))
+    row.setColumn(1, new SQLLongint(batchKey.uuid))
     row.setColumn(2, new SQLInteger(batchKey.partitionId))
     row.setColumn(3, new SQLInteger(batchKey.columnIndex))
     // set value reference which will be released after thrift write
@@ -49,9 +49,16 @@ final class ColumnFormatEncoder extends RowEncoder {
     row
   }
 
+  private def getUUID(row: Array[DataValueDescriptor],
+      container: GemFireContainer): Long = {
+    val uuid = row(0).getLong
+    // check invalid UUID (from smart connector)
+    if (uuid == BucketRegion.INVALID_UUID) container.newUUIDForRegionKey() else uuid
+  }
+
   override def fromRow(row: Array[DataValueDescriptor],
       container: GemFireContainer): java.util.Map.Entry[RegionKey, AnyRef] = {
-    val batchKey = new ColumnFormatKey(uuid = row(0).getString,
+    val batchKey = new ColumnFormatKey(getUUID(row, container),
       partitionId = row(1).getInt, columnIndex = row(2).getInt)
     // transfer buffer from BufferedBlob as is, or copy for others
     val columnBuffer = row(3).getObject match {
@@ -71,6 +78,6 @@ final class ColumnFormatEncoder extends RowEncoder {
 
   override def fromRowToKey(key: Array[DataValueDescriptor],
       container: GemFireContainer): RegionKey =
-    new ColumnFormatKey(uuid = key(0).getString,
+    new ColumnFormatKey(getUUID(key, container),
       partitionId = key(1).getInt, columnIndex = key(2).getInt)
 }

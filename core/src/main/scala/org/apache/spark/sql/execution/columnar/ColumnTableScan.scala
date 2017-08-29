@@ -48,7 +48,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, ColumnStatsSchema, DeletedColumnDecoder, UpdatedColumnDecoderBase}
+import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
@@ -570,13 +570,11 @@ private[sql] final case class ColumnTableScan(
       case (attr, _) if attr.name.startsWith(ColumnDelta.mutableKeyNamePrefix) =>
         ColumnDelta.mutableKeyNames.indexOf(attr.name) match {
           case 0 =>
-            // ordinalId
             ordinalIdTerm = ctx.freshName("ordinalId")
             ExprCode("", "false", ordinalIdTerm)
           case 1 =>
-            // batchId
             columnBatchIdTerm = ctx.freshName("columnBatchId")
-            ExprCode("", s"($columnBatchIdTerm == null)", columnBatchIdTerm)
+            ExprCode("", "false", columnBatchIdTerm)
           case 2 =>
             bucketIdTerm = ctx.freshName("bucketId")
             ExprCode("", "false", bucketIdTerm)
@@ -694,13 +692,13 @@ private[sql] final case class ColumnTableScan(
     val (assignBatchId, assignOrdinalId) = if (ordinalIdTerm ne null) (
         s"""
            |final boolean $inputIsRow = this.$inputIsRow;
-           |final UTF8String $columnBatchIdTerm;
+           |final long $columnBatchIdTerm;
            |final int $bucketIdTerm;
            |if ($inputIsRow) {
-           |  $columnBatchIdTerm = null;
+           |  $columnBatchIdTerm = $invalidUUID;
            |  $bucketIdTerm = -1; // not required for row buffer
            |} else {
-           |  $columnBatchIdTerm = UTF8String.fromString($colInput.getCurrentBatchId());
+           |  $columnBatchIdTerm = $colInput.getCurrentBatchId();
            |  $bucketIdTerm = $colInput.getCurrentBucketId();
            |}
         """.stripMargin,
