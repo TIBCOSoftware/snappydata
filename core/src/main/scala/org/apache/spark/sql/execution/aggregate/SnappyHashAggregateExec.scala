@@ -423,7 +423,7 @@ case class SnappyHashAggregateExec(
        | // do aggregate
        | // common sub-expressions
        | $effectiveCodes
-       | // evaluate aggregate function
+       | // evaluate aggregate functions
        | ${evaluateVariables(aggVals)}
        | // update aggregation buffer
        | ${updates.mkString("\n").trim}
