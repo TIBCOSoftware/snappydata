@@ -31,123 +31,105 @@ trait RunLengthEncoding extends ColumnEncoding {
   }
 }
 
-final class RunLengthDecoder
-    extends RunLengthDecoderBase with NotNullDecoder
+final class RunLengthDecoder(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends RunLengthDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NotNullDecoder
 
-final class RunLengthDecoderNullable
-    extends RunLengthDecoderBase with NullableDecoder
+final class RunLengthDecoderNullable(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long = ColumnEncoding.identityLong,
+    fromUnfinishedEncoder: ColumnEncoder = null)
+    extends RunLengthDecoderBase(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with NullableDecoder
 
-abstract class RunLengthDecoderBase
-    extends ColumnDecoder with RunLengthEncoding {
+abstract class RunLengthDecoderBase(columnBytes: AnyRef, startCursor: Long,
+    field: StructField, initDelta: (AnyRef, Long) => Long, fromUnfinishedEncoder: ColumnEncoder)
+    extends ColumnDecoder(columnBytes, startCursor, field,
+      initDelta, fromUnfinishedEncoder) with RunLengthEncoding {
 
-  private[this] var runLength = 0
-  private[this] var cursorPos = 0L
+  private[this] var runLengthEndPosition = -1
   private[this] var currentValueLong: Long = _
   private[this] var currentValueString: UTF8String = _
 
   override protected[sql] def initializeCursor(columnBytes: AnyRef, cursor: Long,
-      field: StructField): Long = {
-    cursorPos = cursor
-    // use the current count + value for cursor since that will be read and
-    // written most frequently while actual cursor will be less frequently used
-    0L
+      dataType: DataType): Long = {
+    currentCursor = cursor
+    cursor
   }
 
-  override final def nextByte(columnBytes: AnyRef, countValue: Long): Long = {
-    val count = countValue.toInt
-    if (count != runLength) {
-      countValue + 1
+  override final def readByte(columnBytes: AnyRef, nonNullPosition: Int): Byte = {
+    if (runLengthEndPosition >= nonNullPosition) {
+      currentValueLong.toByte
     } else {
-      val cursor = cursorPos
-      val currentValue: Long = Platform.getByte(columnBytes, cursor)
-      runLength = ColumnEncoding.readInt(columnBytes, cursor + 1)
-      cursorPos = cursor + 5
-      // reset count to 1
-      (currentValue << 32) | 1L
+      do {
+        val cursor = currentCursor
+        currentValueLong = Platform.getByte(columnBytes, cursor)
+        runLengthEndPosition += ColumnEncoding.readInt(columnBytes, cursor + 1)
+        currentCursor = cursor + 3
+      } while (runLengthEndPosition < nonNullPosition)
+      currentValueLong.toByte
     }
   }
 
-  override final def readByte(columnBytes: AnyRef, countValue: Long): Byte =
-    (countValue >> 32).toByte
+  override final def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =
+    readByte(columnBytes, nonNullPosition) == 1
 
-  override final def nextBoolean(columnBytes: AnyRef, countValue: Long): Long =
-    this.nextByte(columnBytes, countValue)
-
-  override final def readBoolean(columnBytes: AnyRef,
-      countValue: Long): Boolean =
-    (countValue >> 32) == 1
-
-  override final def nextShort(columnBytes: AnyRef, countValue: Long): Long = {
-    val count = countValue.toInt
-    if (count != runLength) {
-      countValue + 1
+  override final def readShort(columnBytes: AnyRef, nonNullPosition: Int): Short = {
+    if (runLengthEndPosition >= nonNullPosition) {
+      currentValueLong.toShort
     } else {
-      val cursor = cursorPos
-      val currentValue: Long = ColumnEncoding.readShort(columnBytes, cursor)
-      runLength = ColumnEncoding.readInt(columnBytes, cursor + 2)
-      cursorPos = cursor + 6
-      // reset count to 1
-      (currentValue << 32) | 1L
+      do {
+        val cursor = currentCursor
+        currentValueLong = ColumnEncoding.readShort(columnBytes, cursor)
+        runLengthEndPosition += ColumnEncoding.readInt(columnBytes, cursor + 2)
+        currentCursor = cursor + 6
+      } while (runLengthEndPosition < nonNullPosition)
+      currentValueLong.toShort
     }
   }
 
-  override final def readShort(columnBytes: AnyRef, countValue: Long): Short =
-    (countValue >> 32).toShort
-
-  override final def nextInt(columnBytes: AnyRef, countValue: Long): Long = {
-    val count = countValue.toInt
-    if (count != runLength) {
-      countValue + 1
+  override final def readInt(columnBytes: AnyRef, nonNullPosition: Int): Int = {
+    if (runLengthEndPosition >= nonNullPosition) {
+      currentValueLong.toInt
     } else {
-      val cursor = cursorPos
-      val currentValue: Long = ColumnEncoding.readInt(columnBytes, cursor)
-      runLength = ColumnEncoding.readInt(columnBytes, cursor + 4)
-      cursorPos = cursor + 8
-      // reset count to 1
-      (currentValue << 32) | 1L
+      do {
+        val cursor = currentCursor
+        currentValueLong = ColumnEncoding.readInt(columnBytes, cursor)
+        runLengthEndPosition += ColumnEncoding.readInt(columnBytes, cursor + 4)
+        currentCursor = cursor + 8
+      } while (runLengthEndPosition < nonNullPosition)
+      currentValueLong.toInt
     }
   }
 
-  override final def readInt(columnBytes: AnyRef, countValue: Long): Int =
-    (countValue >> 32).toInt
-
-  override final def readDate(columnBytes: AnyRef, countValue: Long): Int =
-    (countValue >> 32).toInt
-
-  override final def nextLong(columnBytes: AnyRef, count: Long): Long = {
-    if (count != runLength) {
-      count + 1
+  override final def readLong(columnBytes: AnyRef, nonNullPosition: Int): Long = {
+    if (runLengthEndPosition >= nonNullPosition) {
+      currentValueLong
     } else {
-      val cursor = cursorPos
-      currentValueLong = ColumnEncoding.readLong(columnBytes, cursor)
-      runLength = ColumnEncoding.readInt(columnBytes, cursor + 8)
-      cursorPos = cursor + 12
-      // reset count to 1
-      1L
+      do {
+        val cursor = currentCursor
+        currentValueLong = ColumnEncoding.readLong(columnBytes, cursor)
+        runLengthEndPosition += ColumnEncoding.readInt(columnBytes, cursor + 8)
+        currentCursor = cursor + 12
+      } while (runLengthEndPosition < nonNullPosition)
+      currentValueLong
     }
   }
 
-  override final def readLong(columnBytes: AnyRef, count: Long): Long =
-    currentValueLong
-
-  override final def readTimestamp(columnBytes: AnyRef, count: Long): Long =
-    currentValueLong
-
-  override final def nextUTF8String(columnBytes: AnyRef, count: Long): Long = {
-    if (count != runLength) {
-      count + 1
+  override final def readUTF8String(columnBytes: AnyRef, nonNullPosition: Int): UTF8String = {
+    if (runLengthEndPosition >= nonNullPosition) {
+      currentValueString
     } else {
-      var cursor = cursorPos
-      val currentValue = ColumnEncoding.readUTF8String(columnBytes, cursor)
-      cursor += (4 + currentValue.numBytes())
-      runLength = ColumnEncoding.readInt(columnBytes, cursor)
-      cursorPos = cursor + 4
-      currentValueString = currentValue
-      // reset count to 1
-      1L
+      do {
+        var cursor = currentCursor
+        val currentValue = ColumnEncoding.readUTF8String(columnBytes, cursor)
+        cursor += (4 + currentValue.numBytes())
+        currentValueString = currentValue
+        runLengthEndPosition += ColumnEncoding.readInt(columnBytes, cursor)
+        currentCursor = cursor + 4
+      } while (runLengthEndPosition < nonNullPosition)
+      currentValueString
     }
   }
-
-  override final def readUTF8String(columnBytes: AnyRef, count: Long): UTF8String =
-    currentValueString
 }

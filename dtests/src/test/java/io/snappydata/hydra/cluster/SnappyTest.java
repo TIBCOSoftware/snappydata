@@ -2967,7 +2967,7 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info(clientName + " restarted successfully...");
   }
 
-  protected void regenerateConfigData(String vmDir, String confFileName, String clientName, String
+  public void regenerateConfigData(String vmDir, String confFileName, String clientName, String
       vmName) {
     generateConfig(confFileName);
     Set<String> fileContent = new LinkedHashSet<String>();
