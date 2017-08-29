@@ -132,6 +132,12 @@ class SetIsolationDUnitTest (val s: String)
     stmt1.close()
     conn.close()
 
+    // user sets route-query=false, query involving column table should error out
+    val queryRoutingDisabledConn = getANetConnection(netPort1, disableQueryRouting = true)
+    val stmt2 = queryRoutingDisabledConn.createStatement()
+    checkUnsupportedQueries(stmt2, "select count(*) from coltable")
+    queryRoutingDisabledConn.close()
+
   }
 
 }
