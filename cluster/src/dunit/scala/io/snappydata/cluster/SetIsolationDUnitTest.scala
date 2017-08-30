@@ -18,7 +18,10 @@
 package io.snappydata.cluster
 
 import java.sql.{Connection, SQLException, Statement}
+import java.util
 
+import com.gemstone.gemfire.cache.ConflictException
+import com.gemstone.gemfire.internal.cache.TXManagerImpl
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.test.dunit.AvailablePortHelper
 
@@ -137,7 +140,102 @@ class SetIsolationDUnitTest (val s: String)
     val stmt2 = queryRoutingDisabledConn.createStatement()
     checkUnsupportedQueries(stmt2, "select count(*) from coltable")
     queryRoutingDisabledConn.close()
-
   }
 
+  var gotConflict = false
+
+  /**
+    * Test conflicts. Copied part of
+    * rowstore test TransactionDUnit#testCommitWithConflicts()
+    */
+  def testCommitWithConflicts() {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn = getANetConnection(netPort1)
+    logInfo(s"testCommitWithConflicts: test with isolation level TRANSACTION_READ_COMMITTED")
+    doTestCommitWithConflicts(netPort1, conn, Connection.TRANSACTION_READ_COMMITTED)
+    conn.close()
+
+    val conn2 = getANetConnection(netPort1)
+    logInfo(s"testCommitWithConflicts: test with isolation level TRANSACTION_REPEATABLE_READ")
+    doTestCommitWithConflicts(netPort1, conn2, Connection.TRANSACTION_REPEATABLE_READ)
+    conn2.close()
+  }
+
+  private def doTestCommitWithConflicts(netPort1: Int, conn: Connection, isolationLevel: Int) = {
+    conn.setAutoCommit(false)
+    val st = conn.createStatement
+//    st.execute("create schema tran")
+    st.execute("Create table tran.t1 (c1 int not null primary key, c2 int not null) using row")
+    conn.commit()
+    this.gotConflict = false
+    logInfo(s"doTestCommitWithConflicts: setting isolation level $isolationLevel")
+
+    conn.setTransactionIsolation(isolationLevel)
+    st.execute("insert into tran.t1 values (10, 10)")
+    st.execute("insert into tran.t1 values (20, 10)")
+    st.execute("insert into tran.t1 values (30, 10)")
+    val otherTxOk = Array[Boolean](false)
+    val otherTx = new Thread(new Runnable() {
+      def run() {
+        try {
+          val otherConn = getANetConnection(netPort1)
+          otherConn.setTransactionIsolation(isolationLevel)
+          otherConn.setAutoCommit(false)
+          val otherSt = otherConn.createStatement
+          try {
+            otherSt.execute("insert into tran.t1 values (10, 20)")
+            otherTxOk(0) = true
+          }
+          catch {
+            case sqle: SQLException => {
+              if ("X0Z02" == sqle.getSQLState) {
+                gotConflict = true
+                otherConn.rollback()
+              }
+              else throw sqle
+            }
+          } finally {
+            otherConn.close()
+          }
+        }
+        catch {
+          case se: SQLException => {
+            gotConflict = false
+            assert(false, s"unexpected exception $se")
+          }
+        }
+      }
+    })
+    otherTx.start()
+    otherTx.join()
+    assert(!otherTxOk(0))
+    assert(this.gotConflict, "expected conflict")
+    this.gotConflict = false
+
+
+    val ps = conn.prepareStatement("select * from tran.t1")
+    conn.commit()
+    // check that the value should be that of first transaction
+    var rs = ps.executeQuery
+    var expectedKeys = Array[Int](10, 20, 30)
+    var numRows = 0
+    while (rs.next) {
+      numRows += 1
+      val key = rs.getInt(1)
+      val index = util.Arrays.binarySearch(expectedKeys, key)
+      assert(index >= 0, "Expected to find the key: ")
+      expectedKeys(index) = Integer.MIN_VALUE + 1
+      util.Arrays.sort(expectedKeys)
+      val v = rs.getInt(2)
+      assert(v == 10, s"Second column should be 10. Actual is $v")
+    }
+    assert(numRows == 3, "ResultSet should have three rows")
+    rs.close()
+    st.close()
+    conn.commit()
+    conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+    conn.createStatement().execute("drop table tran.t1")
+  }
 }
