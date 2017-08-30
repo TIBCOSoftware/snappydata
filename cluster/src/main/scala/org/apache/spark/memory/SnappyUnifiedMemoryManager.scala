@@ -23,7 +23,9 @@ import java.util.function.Consumer
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.gemstone.gemfire.CancelCriterion
 import com.gemstone.gemfire.distributed.internal.DistributionConfig
+import com.gemstone.gemfire.internal.LocalStatisticsFactory
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
@@ -66,7 +68,6 @@ class SnappyUnifiedMemoryManager private[memory](
   private val maxOffHeapStorageSize = (maxOffHeapMemory *
       conf.getDouble("spark.memory.storageMaxFraction", 0.95)).toLong
 
-  val managerStats = new MemoryManagerStats(Misc.getGemFireCache.getDistributedSystem(), managerId)
 
   /**
    * An estimate of the maximum result size handled by a single partition.
@@ -96,6 +97,11 @@ class SnappyUnifiedMemoryManager private[memory](
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
 
+  private[memory] val wrapperStats = new MemoryManagerStatsWrapper
+
+
+
+
   @volatile private[memory] var _memoryForObjectMap:
     Object2LongOpenHashMap[(String, MemoryMode)] = _
 
@@ -124,6 +130,7 @@ class SnappyUnifiedMemoryManager private[memory](
               // TODO: SW: if above fails then this should throw exception
               // and _memoryForObjectMap made null again?
             }
+            initMemoryStats(bootTimeManager.wrapperStats.stats)
             logInfo(s"Total Memory used while booting = " +
                 bootTimeManager.storageMemoryUsed)
             bootTimeMap.clear()
@@ -638,6 +645,16 @@ class SnappyUnifiedMemoryManager private[memory](
     (offHeapStorageMemoryPool.memoryUsed > (maxOffHeapStorageSize * 0.90) ) ||
         (onHeapStorageMemoryPool.memoryUsed > (maxHeapStorageSize * 0.90))
   }
+
+  override def initMemoryStats(stats: MemoryManagerStats): Unit = {
+    stats.incMaxStorageSize(true, maxOffHeapStorageSize)
+    stats.incMaxStorageSize(false, maxHeapStorageSize)
+    stats.incStoragePoolSize(true, offHeapStorageMemoryPool.poolSize)
+    stats.incStoragePoolSize(false, onHeapStorageRegionSize)
+    stats.incStorageMemoryUsed(true, offHeapStorageMemoryPool.memoryUsed)
+    stats.incStorageMemoryUsed(false, onHeapStorageMemoryPool.memoryUsed)
+    wrapperStats.setMemoryManagerStats(stats)
+  }
 }
 
 object SnappyUnifiedMemoryManager extends Logging {
@@ -767,7 +784,6 @@ object SnappyUnifiedMemoryManager extends Logging {
     val memoryFraction = conf.getDouble("spark.memory.fraction", 0.97)
     (usableMemory * memoryFraction).toLong
   }
-
 }
 
 // Test listeners. Should not be used in production code.

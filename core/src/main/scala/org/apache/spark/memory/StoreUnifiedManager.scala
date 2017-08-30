@@ -20,6 +20,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
+import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.util.Utils
@@ -59,6 +60,8 @@ trait StoreUnifiedManager {
   def logStats(): Unit
 
   def shouldStopRecovery(): Boolean
+
+  def initMemoryStats(stats: MemoryManagerStats): Unit
 
   /**
     * Change the off-heap owner to mark it being used for storage.
@@ -124,6 +127,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       allowNonAllocator: Boolean): Unit = {}
 
   override def shouldStopRecovery(): Boolean = false
+
+  override def initMemoryStats(stats: MemoryManagerStats): Unit = {}
 }
 
 object MemoryManagerCallback extends Logging {
