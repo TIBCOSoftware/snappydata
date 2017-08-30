@@ -54,7 +54,10 @@ pages:
 #        - 'Dealing with Many-to-Many Relationships': 'best_practices/design_schema/many_to_many.md'
 - Synopsis Data Engine (SDE): aqp.md
 - Using iSight-Cloud: aqp_aws.md
-- 'Monitoring - SnappyData Pulse': 'monitoring/monitoring.md'
+- 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
+- 'Managing and Monitoring':
+    - 'SnappyData Pulse': 'monitoring/monitoring.md'
+    - 'Configuring High Availability for a Partitioned Table': 'monitoring/redundancy_zone.md'    
 # -- Topic - Reference Guide
 - 'Security': 'security/security.md'
 - 'Reference Guides': 'reference.md'
