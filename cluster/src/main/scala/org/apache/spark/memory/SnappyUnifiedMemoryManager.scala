@@ -89,7 +89,7 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private val evictionFraction = SnappyUnifiedMemoryManager.getStorageEvictionFraction(conf)
 
-  private val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
+  private[memory] val maxHeapStorageSize = (maxHeapMemory * evictionFraction).toLong
 
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
@@ -127,7 +127,7 @@ class SnappyUnifiedMemoryManager private[memory](
               // TODO: SW: if above fails then this should throw exception
               // and _memoryForObjectMap made null again?
             }
-            initMemoryStats(bootTimeManager.wrapperStats.stats)
+            setMemoryManagerStats(bootTimeManager.wrapperStats.stats)
             logInfo(s"Total Memory used while booting = " +
                 bootTimeManager.storageMemoryUsed)
             bootTimeMap.clear()
@@ -697,6 +697,10 @@ class SnappyUnifiedMemoryManager private[memory](
     stats.incExecutionPoolSize(false, onHeapExecutionMemoryPool.poolSize)
     stats.incExecutionMemoryUsed(true, offHeapExecutionMemoryPool.memoryUsed)
     stats.incExecutionMemoryUsed(false, onHeapExecutionMemoryPool.memoryUsed)
+    setMemoryManagerStats(stats)
+  }
+
+  private def setMemoryManagerStats(stats: MemoryManagerStats): Unit = {
     wrapperStats.setMemoryManagerStats(stats)
   }
 }

@@ -97,5 +97,4 @@ class MemoryManagerStatsSuite extends MemoryFunSuite {
 
     assert(stats.getExecutionPoolSize(offHeap) == numBytes)
   }
-
 }
