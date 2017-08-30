@@ -42,7 +42,7 @@ import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
 
-final class SparkShellRDDHelper {
+final class SparkConnectorRDDHelper {
 
   var useLocatorURL: Boolean = false
 
@@ -106,7 +106,7 @@ final class SparkShellRDDHelper {
 //      }
     }
 
-    val txId = SparkShellRDDHelper.snapshotTxIdForRead.get()
+    val txId = SparkConnectorRDDHelper.snapshotTxIdForRead.get()
     if (!txId.equals("null")) {
       statement.execute(
         s"call sys.USE_SNAPSHOT_TXID('$txId')")
@@ -120,7 +120,7 @@ final class SparkShellRDDHelper {
       split: Partition): Connection = {
     val urlsOfNetServerHost = split.asInstanceOf[
         ExecutorMultiBucketLocalShellPartition].hostList
-    useLocatorURL = SparkShellRDDHelper.useLocatorUrl(urlsOfNetServerHost)
+    useLocatorURL = SparkConnectorRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
 
@@ -158,7 +158,7 @@ final class SparkShellRDDHelper {
   }
 }
 
-object SparkShellRDDHelper {
+object SparkConnectorRDDHelper {
 
   var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
   var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]

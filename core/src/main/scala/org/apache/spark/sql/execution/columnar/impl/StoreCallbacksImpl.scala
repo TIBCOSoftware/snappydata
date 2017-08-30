@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.util.{Collections, UUID}
+import java.util.Collections
 
 import scala.collection.JavaConverters._
 
@@ -56,7 +56,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatEntry.registerTypes()
   }
 
-  override def createColumnBatch(region: BucketRegion, batchID: UUID,
+  override def createColumnBatch(region: BucketRegion, batchID: Long,
       bucketID: Int): java.util.Set[AnyRef] = {
     val pr = region.getPartitionedRegion
     val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
@@ -273,8 +273,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def acquireStorageMemory(objectName: String, numBytes: Long,
       buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
     val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
-    MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
-      MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
+    if (numBytes > 0) {
+      return MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
+        MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
+    } else if (numBytes < 0) {
+      MemoryManagerCallback.memoryManager.releaseStorageMemoryForObject(
+        objectName, -numBytes, mode)
+    }
+    true
   }
 
   override def releaseStorageMemory(objectName: String, numBytes: Long,
