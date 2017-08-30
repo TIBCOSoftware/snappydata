@@ -198,7 +198,7 @@ object ExternalStoreUtils {
           case ExternalEmbeddedMode(_, url) =>
             Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
           case LocalMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";" + url
+            Constant.DEFAULT_EMBEDDED_URL + ";" + url + ";internal-connection=true"
           case ExternalClusterMode(_, url) =>
             throw new AnalysisException("Option 'url' not specified for cluster " +
                 url)
