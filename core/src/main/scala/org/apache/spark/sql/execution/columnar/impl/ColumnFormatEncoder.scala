@@ -21,6 +21,7 @@ import java.nio.ByteBuffer
 import java.sql.Blob
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, RegionEntry}
+import com.pivotal.gemfirexd.internal.engine.store.RowEncoder.PreProcessRow
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, SQLInteger, SQLLongint}
@@ -49,16 +50,15 @@ final class ColumnFormatEncoder extends RowEncoder {
     row
   }
 
-  private def getUUID(row: Array[DataValueDescriptor],
-      container: GemFireContainer): Long = {
+  private def getUUID(row: Array[DataValueDescriptor]): Long = {
     val uuid = row(0).getLong
-    // check invalid UUID (from smart connector)
-    if (uuid == BucketRegion.INVALID_UUID) container.newUUIDForRegionKey() else uuid
+    assert(BucketRegion.isValidUUID(uuid), s"Invalid batch UUID in ${row.mkString(" ; ")}")
+    uuid
   }
 
   override def fromRow(row: Array[DataValueDescriptor],
       container: GemFireContainer): java.util.Map.Entry[RegionKey, AnyRef] = {
-    val batchKey = new ColumnFormatKey(getUUID(row, container),
+    val batchKey = new ColumnFormatKey(uuid = getUUID(row),
       partitionId = row(1).getInt, columnIndex = row(2).getInt)
     // transfer buffer from BufferedBlob as is, or copy for others
     val columnBuffer = row(3).getObject match {
@@ -78,6 +78,25 @@ final class ColumnFormatEncoder extends RowEncoder {
 
   override def fromRowToKey(key: Array[DataValueDescriptor],
       container: GemFireContainer): RegionKey =
-    new ColumnFormatKey(getUUID(key, container),
+    new ColumnFormatKey(uuid = getUUID(key),
       partitionId = key(1).getInt, columnIndex = key(2).getInt)
+
+  override def getPreProcessorForRows(
+      container: GemFireContainer): PreProcessRow = new PreProcessRow {
+
+    private var regionUUID: Long = BucketRegion.INVALID_UUID
+
+    override def preProcess(
+        row: Array[DataValueDescriptor]): Array[DataValueDescriptor] = {
+      // check invalid UUID (from smart connector)
+      if (BucketRegion.isValidUUID(row(0).getLong)) row
+      else {
+        if (!BucketRegion.isValidUUID(regionUUID)) {
+          regionUUID = container.newUUIDForRegionKey()
+        }
+        row(0).setValue(regionUUID)
+        row
+      }
+    }
+  }
 }

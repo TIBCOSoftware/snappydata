@@ -29,7 +29,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   var existingSkipSPSCompile = false
 
   override def beforeAll(): Unit = {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
@@ -38,7 +38,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   }
 
   override def afterAll(): Unit = {
-    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
     FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile

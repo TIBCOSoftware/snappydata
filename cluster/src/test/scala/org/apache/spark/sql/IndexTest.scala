@@ -39,7 +39,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
   var existingSkipSPSCompile = false
 
   override def beforeAll(): Unit = {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
@@ -48,7 +48,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
   }
 
   override def afterAll(): Unit = {
-    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
     System.clearProperty("DISABLE_PARTITION_PRUNING")

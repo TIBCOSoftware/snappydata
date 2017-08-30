@@ -41,13 +41,13 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
   val context = new AtomicReference[SnappyContext]
 
   override def beforeAll(): Unit = {
-    System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
+    // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.testing", "true")
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
-    System.clearProperty("org.codehaus.janino.source_debugging.enable")
+    // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.testing")
     super.afterAll()
   }
