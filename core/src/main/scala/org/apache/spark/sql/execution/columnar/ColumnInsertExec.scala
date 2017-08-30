@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import scala.collection.mutable.ArrayBuffer
+
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.TaskContext
@@ -28,7 +30,6 @@ import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.util.TaskCompletionListener
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * Generated code plan for bulk insertion into a column table.
@@ -263,10 +264,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
-       |  if(success)
-       |    $commitSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  else
-       |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  if (success) {
+       |    $commitSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  } else {
+       |    $rollbackSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  }
        |}
        |else {
        |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -388,10 +392,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
-       |  if(success)
-       |    $commitSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  else
-       |    $rollbackSnapshotTx((String)$txIdConnArray[1], new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  if (success) {
+       |    $commitSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  } else {
+       |    $rollbackSnapshotTx((String)$txIdConnArray[1],
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  }
        |}
        |else {
        |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -596,8 +603,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val calculateSize = loop(encoderLoopCode, schema.length)
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
-    val batchUUID = ctx.addReferenceObj("batchUUID", None,
-      classOf[Option[_]].getName)
+    val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
@@ -645,7 +651,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -694,7 +700,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |    $sizeExceededTerm = $sizeTerm >= $columnBatchSize;
        |  }
        |  if ($sizeExceededTerm) {
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs,
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }
@@ -752,8 +759,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val columnBatchClass = classOf[ColumnBatch].getName
     batchIdRef = ctx.references.length
-    val batchUUID = ctx.addReferenceObj("batchUUID", None,
-      classOf[Option[_]].getName)
+    val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
@@ -793,7 +799,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID, $maxDeltaRowsTerm, $conn);
+         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -838,7 +844,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  }
        |  if ($sizeExceededTerm) {
        |    $cursorsArrayCreate
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs, new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs,
+       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }

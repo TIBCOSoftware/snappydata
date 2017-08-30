@@ -71,7 +71,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     super.doProduce(ctx, sql.toString(), () =>
       s"""
          |if ($batchOrdinal > 0) {
-         |  $finishDelete(null, -1); // force a finish
+         |  $finishDelete($invalidUUID, -1); // force a finish
          |}
          |$taskListener.setSuccess();
       """.stripMargin)
@@ -98,7 +98,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     ctx.addMutableState(deleteEncoderClass, deleteEncoder, "")
     ctx.addMutableState("long", cursor, initializeEncoder)
     ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("UTF8String", lastColumnBatchId, "")
+    ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
     ctx.addMutableState("int", lastBucketId, "")
 
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
@@ -129,9 +129,9 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
     ctx.addNewFunction(finishDelete,
       s"""
-         |private void $finishDelete(UTF8String batchId, int bucketId) {
-         |  if (batchId == null || !batchId.equals($lastColumnBatchId)) {
-         |    if ($lastColumnBatchId == null) {
+         |private void $finishDelete(long batchId, int bucketId) {
+         |  if (batchId == $invalidUUID || batchId != $lastColumnBatchId) {
+         |    if ($lastColumnBatchId == $invalidUUID) {
          |      // first call
          |      $lastColumnBatchId = batchId;
          |      $lastBucketId = bucketId;
@@ -141,7 +141,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($cursor);
          |    // delete puts an empty stats row to denote that there are changes
          |    $externalStoreTerm.storeDelete($tableName, buffer, new byte[] { 0, 0, 0, 0 },
-         |        $lastBucketId, $lastColumnBatchId.toString(), new scala.Some($connTerm));
+         |        $lastBucketId, $lastColumnBatchId, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoder
@@ -154,7 +154,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
     s"""
        |$keyVarsCode
-       |if ($batchIdVar != null) {
+       |if ($batchIdVar != $invalidUUID) {
        |  // finish and apply delete if the next column batch ID is seen
        |  if ($batchIdVar != $lastColumnBatchId) {
        |    $finishDelete($batchIdVar, $bucketVar);
