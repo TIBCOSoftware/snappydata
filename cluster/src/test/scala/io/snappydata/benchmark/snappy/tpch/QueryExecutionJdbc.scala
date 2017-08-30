@@ -19,6 +19,7 @@ package io.snappydata.benchmark.snappy.tpch
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{DriverManager, PreparedStatement}
 
+import io.snappydata.benchmark.TPCH_Queries
 import io.snappydata.benchmark.snappy.TPCH_Snappy
 
 object QueryExecutionJdbc {
