@@ -571,15 +571,17 @@ class SnappyUnifiedMemoryManager private[memory](
     logDebug(s"Acquiring $managerId $memoryMode memory " +
       s"for $objectName = $numBytes (evict=$shouldEvict)")
     if (buffer ne null) {
-      if (buffer.freeMemory() > numBytes) {
+      if (buffer.freeMemory() >= numBytes) {
         buffer.incMemoryUsed(numBytes)
         true
       } else {
         val predictedMemory = numBytes * buffer.getTotalOperationsExpected
-        buffer.incAllocatedMemory(predictedMemory)
         val success = askStoragePool(objectName, blockId, predictedMemory, memoryMode, shouldEvict)
-        buffer.setFirstAllocationObject(objectName)
-        buffer.incMemoryUsed(numBytes)
+        if (success){
+          buffer.incAllocatedMemory(predictedMemory)
+          buffer.setFirstAllocationObject(objectName)
+          buffer.incMemoryUsed(numBytes)
+        }
         success
       }
     } else {
@@ -759,7 +761,7 @@ object SnappyUnifiedMemoryManager extends Logging {
 
     val usableMemory = systemMemory - reservedMemory
     // add a cushion for GC before CRITICAL_UP is reached
-    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.92)
+    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.97)
     (usableMemory * memoryFraction).toLong
   }
 
