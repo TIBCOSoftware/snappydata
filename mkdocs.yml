@@ -173,7 +173,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
-    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
+#    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md' 
 - 'Troubleshooting': 'troubleshooting/troubleshooting.md'
@@ -186,7 +186,7 @@ pages:
 - Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
-- Open Source Components: additional_files/open_source_components.md
+- Open Source/ Enterprise Components: additional_files/open_source_components.md
 - License Model: additional_files/license_model.md
 - Release Notes: release_notes/known_issues.md
 - Contact and Support: techsupport.md

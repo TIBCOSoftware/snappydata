@@ -76,7 +76,6 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
 |spark.ui.port|Port for your SnappyData Pulse, which shows tables, memory and workload data. Default is 5050|
 
-
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
 
 ```

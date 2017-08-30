@@ -4,6 +4,7 @@ The SQL type system determines the compile-time and runtime type of an expressio
 The special value NULL, denotes an unassigned or missing value of any of the types (columns that have been assigned as non-nullable using NOT NULL clause or the primary key columns cannot have a NULL value). The supported types are given below:
 
 ## Data Types Supported for Column Tables
+
 | column-data-type | 
 |--------|
 |STRING | 
@@ -31,6 +32,7 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 |VARCHAR  
 
 ## Data Types Supported for Row Tables
+
 | row-data-type | 
 |--------|
 |BIGINT|
