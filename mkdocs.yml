@@ -57,7 +57,7 @@ pages:
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
-    - 'Configuring High Availability for a Partitioned Table': 'monitoring/redundancy_zone.md'    
+    - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
 # -- Topic - Reference Guide
 - 'Security': 'security/security.md'
 - 'Reference Guides': 'reference.md'

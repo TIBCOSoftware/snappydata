@@ -722,7 +722,7 @@ Create table DDL for Row and Column tables allows tables to be partitioned on pr
 ```sql
 CREATE TABLE [IF NOT EXISTS] table_name
    (
-  COLUMN_DEFININTION
+  COLUMN_DEFINITION
    )
 USING row | column
 OPTIONS (
@@ -742,18 +742,7 @@ COLUMN_MAX_DELTA_ROWS '10000',
 
 DROP TABLE [IF EXISTS] table_name
 ```
-Refer to the [How-Tos](howto) section for more information on partitioning and colocating data.
-
-For row format tables column definition can take underlying GemFireXD syntax to create a table. For example, note the PRIMARY KEY clause below.
-
-```scala
-snappy.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
-         USING row options(BUCKETS '5')" )
-```
-For column table it is restricted to Spark syntax for column definition
-```scala
-snappy.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
-```
+Refer to the [How-Tos](howto.md) section for more information on partitioning and colocating data and [CREATE TABLE](reference/sql_reference/create-table.md) for information on creating a row/column table.
 
 You can also define complex types (Map, Array and StructType) as columns for column tables.
 ```scala
@@ -977,10 +966,10 @@ In SnappyData, the column table consists of two components, delta row buffer and
 Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
 Any query on column table also takes into account the row cached buffer. By doing this, it ensures that the query does not miss any data.
 
-#### Catalog in SnappyStore
+<!-- #### Catalog in SnappyStore
 Persistent Hive catalog for all meta data storage is used. All table, schema definition are stored here in a reliable manner. The product intends to quickly recover from driver failover, using GemFireXD itself to store meta information. This gives the ability to query underlying GemFireXD to reconstruct the meta store in case of a driver failover.
 
-<!--<mark>There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. </mark>-->
+<mark>There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. </mark>-->
 
 #### SQL Reference to the Syntax
 
