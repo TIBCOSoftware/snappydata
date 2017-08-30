@@ -86,17 +86,18 @@ class SnappySessionState(snappySession: SnappySession)
       case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
     }
 
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = getExtendedResolutionRules
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
 
     override val extendedCheckRules = getExtendedCheckRules
   }
 
-  def getExtendedResolutionRules: Seq[Rule[LogicalPlan]] =
+  def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
     new PreprocessTableInsertOrPut(conf) ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
         ResolveRelationsExtended ::
-        AnalyzeMutableOperations(snappySession, this) ::
+        AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
@@ -106,7 +107,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = getExtendedResolutionRules
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }

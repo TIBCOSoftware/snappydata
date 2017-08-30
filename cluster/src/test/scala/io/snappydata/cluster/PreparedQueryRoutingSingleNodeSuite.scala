@@ -505,7 +505,6 @@ object PreparedQueryRoutingSingleNodeSuite{
       println(s"$qry row($index) $i $j $s ")
       // scalastyle:on println
       index += 1
-
       assert(results.contains(i))
       if (stresults.length > 0) {
         assert(stresults.contains(s))
@@ -516,6 +515,7 @@ object PreparedQueryRoutingSingleNodeSuite{
     println(s"$qry Number of rows read " + index)
     // scalastyle:on println
     assert(index == results.length)
+    assert(index == stresults.length || 0 == stresults.length)
     rs.close()
 
     // scalastyle:off println
