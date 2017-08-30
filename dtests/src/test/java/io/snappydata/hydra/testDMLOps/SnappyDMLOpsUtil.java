@@ -755,7 +755,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try (Stream<String> lines = Files.lines(Paths.get(csvFilePath + File.separator + csvFileName))) {
       row = lines.skip(insertCounter).findFirst().get();
     } catch (IOException io) {
-      throw new TestException("File not found at specified location.");
+      throw new TestException("File not found at specified location " +
+          (csvFilePath + File.separator + csvFileName));
     }
     return row;
   }
