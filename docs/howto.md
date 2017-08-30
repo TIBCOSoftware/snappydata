@@ -33,9 +33,7 @@ The following topics are covered in this section:
 
 * [How to Create Column Tables and Run Queries](#howto-column)
 
-* [How to Load Data in SnappyData Tables](#howto-load)
-
-* [How to Load Data from External Sources](#howto-external-source)
+* [How to Load Data into SnappyData Tables](#howto-load)
 
 * [How to Perform a Colocated Join](#howto-collacatedJoin)
 
@@ -502,15 +500,29 @@ The same table can be created using SQL as shown below:
 You can execute selected queries on a column table, join the column table with other tables, and append data to it.
 
 <a id="howto-load"></a>
-## How to Load Data in SnappyData Tables
+## How to Load Data into SnappyData Tables
 
-You can use Spark's DataFrameReader API in order to load data into SnappyData tables using different formats (Parquet, CSV, JSON etc.).
+SnappyData relies on the Spark SQL Data Sources API to parallely load data from a wide variety of sources. By integrating the loading mechanism with the Query engine (Catalyst optimizer) it is often possible to push down filters and projections all the way to the data source minimizing data transfer. Here is the list of important features:
 
-**Code Example**
+**Support for many Sources** There is built-in support for many data sources as well as data formats. Data can be accessed from S3, file system, HDFS, Hive, RDB, etc. And the loaders have built-in support to handle CSV, Parquet, ORC, Avro, JSON, Java/Scala Objects, etc as the data formats. 
 
-**Get a SnappySession**
+**Access virtually modern data store ** Virtually all major data providers have a native Spark connector that complies with the Data Sources API. For e.g. you can load data from any RDB like Amazon Redshift, Cassandra, Redis, Elastic Search, Neo4J, etc. While these connectors are not built-in, you can easily deploy these connectors as dependencies into a SnappyData cluster. All the connectors are typically registered in spark-packages.org
+
+**Avoid Schema wrangling ** Spark supports schema inference. Which means, all you need to do is point to the external source in your 'create table' DDL (or Spark SQL API) and schema definition will be learnt by reading in the data. There is no need to explicitly define each column and type. This is extremely useful when dealing with disparate, complex and wide data sets. 
+
+**Read nested, sparse data sets ** When data is accessed from a source, the schema inference occurs by not just reading a header but often by reading the entire data set. For instance, when reading JSON files the structure could change from document to document. The inference engine builds up the schema as it reads each record and keeps unioning them to create a unified schema. This approach allows developers to become very productive with disparate data sets.
+
+**Load using Spark API or SQL ** You can use SQL to point to any data source or use the native Spark Scala/Java API to load. 
+For instance, you can use 'create external table <tablename> using <any Data Source supported> options <options>' and then use it in any SQL query or DDL (e.g. create table snappyTable using column as (select * from externalTable) )
+
+
+**Example - Load from CSV**
+
+You can either explicitly define the schema or infer the schema and the column data types. To infer the column names, we need the CSV header to specify the names. In this example we don't have the names, so we explicitly define the schema. 
+
 
 ```
+    // Get a SnappySession in a local cluster
     val spark: SparkSession = SparkSession
         .builder
         .appName("CreateColumnTable")
@@ -520,7 +532,7 @@ You can use Spark's DataFrameReader API in order to load data into SnappyData ta
     val snSession = new SnappySession(spark.sparkContext)
 ```
 
-**A column table is created as follows**
+We explicitly define the table definition first ....
 
 ```
     snSession.sql("CREATE TABLE CUSTOMER ( " +
@@ -535,7 +547,7 @@ You can use Spark's DataFrameReader API in order to load data into SnappyData ta
         "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 ```
 
-**Load data in the CUSTOMER table from a CSV file by using DataFrameReader API**
+**Load data in the CUSTOMER table from a CSV file by using Data Sources API**
 
 ```
     val tableSchema = snSession.table("CUSTOMER").schema
@@ -543,7 +555,9 @@ You can use Spark's DataFrameReader API in order to load data into SnappyData ta
     customerDF.write.insertInto("CUSTOMER")
 ```
 
-**For Parquet file, use code as given below**
+The Spark SQL programming guide provides a full description of the Data Sources API - https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#data-sources
+
+**Example - Load from Parquet files**
 
 ```
 val customerDF = snSession.read.parquet(s"$dataDir/customer_parquet")
@@ -552,7 +566,7 @@ customerDF.write.insertInto("CUSTOMER")
 
 **Inferring schema from data file**
 
-A schema for the table can be inferred from the data file. In this case, you do not need to create a table before loading the data. In the code snippet below, first DataFrame for a Parquet file is created and then saveAsTable API is used to create a table with data loaded from it.
+A schema for the table can be inferred from the data file. Data is first introspected to learn the schema (column names and types) without requring this input from the user. The example below illustrates reading a parquet data source and creates a new columnar table in SnappyData. The schema is automatically defined when the Parquet data files are read. 
 ```
     val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
     // props1 map specifies the properties for the table to be created
@@ -574,16 +588,23 @@ In the code snippet below a schema is inferred from a CSV file. Column names are
     customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
 ```
 
-The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). Source for the code to load data from a JSON file can be found in [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
+The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). 
 
-<a id="howto-external-source"></a>
-## How to Load Data from External Sources
+** Example - reading JSON documents**
+As mentioned before when dealing with JSON you have two challenges - (1) the data can be highly nested (2) the structure of the documents can keep changing. 
+
+Here is a simple example that loads multiple JSON records that shows dealing with schema changes across documents -   [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
 !!! Note
-	When creating external tables like CSV or Parquet from SnappyData Smart Connector mode, always use the full path of the CSV or Parquet file that is accessible to the connector, SnappyData leaders, and servers.
-    This is required as the path needs to be resolved into an absolute path both in the Connector and SnappyData server, as the relative location of a file will not work.
+When loading data from sources like CSV or Parquet the files would need to be accessible from all the cluster members in SnappyData. Make sure it is NFS mounted or made accessible through the Cloud solution (shared storage like S3). 
 
-### Loading CSV Files from HDFS using API
+
+<a id="howto-external-source"></a>
+## How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) 
+
+SnappyData comes bundled with the libraries to access HDFS (Apache compatible). 
+
+### Example - Loading CSV Files from HDFS using API
 
 The example below demonstrates how you can read CSV files from HDFS using an API:
 ```
@@ -592,14 +613,11 @@ val dataDF=snc.read.option("header","true").csv ("hdfs://localhost:9000/example/
 // drop table if exist
 snc.sql("drop table if exists police_incidents")
 
-// Create column table using api with schema specified using dataframe created using CSV file 
-snc.createTable("police_incidents", "column", dataDF.schema,Map.empty[String, String])
-
-// Load data into above created table
-dataDF.write.mode(SaveMode.Overwrite).saveAsTable("police_incidents")
+// Load data into table
+dataDF.write.saveAsTable("police_incidents")
 ```
 
-### Loading and Enriching CSV Data from HDFS using APIs
+### Example - Loading and Enriching CSV Data from HDFS 
 
 The example below demonstrates how you can load and enrich CSV Data from HDFS:
 ```
@@ -616,18 +634,21 @@ dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y
 //Here X and Y are latitude and longitude columns in raw data frame
 ```
 
-### Connecting to SQL Database and Importing Data using JDBC 
-
-The example below demonstrates how to connect to any SQL database using JDBC:
+### Importing Data using JDBC from a relational DB
 
 !!! Note:
 	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
+
+**TODO: This is a problem- restart the cluster ? Must confirm package installation or at least get install_jar tested for this case. **
+
+The example below demonstrates how to connect to any SQL database using JDBC:
+
 
 1. Verify and load the SQL Driver:
 
 	    Class.forName("com.mysql.jdbc.Driver")
     
-2. Build the parameters into a JDBC URL to pass into the DataFrame APIs:
+2. Specify all the properties to access the database
 
         import java.util.Properties
         val jdbcUsername = "USER_NAME"
@@ -637,13 +658,11 @@ The example below demonstrates how to connect to any SQL database using JDBC:
         val jdbcDatabase ="DATABASE"
         val jdbcUrl = s"jdbc:mysql://${jdbcHostname}:${jdbcPort}/${jdbcDatabase}?user=${jdbcUsername}&password=${jdbcPassword}&relaxAutoCommit=true"
 
-3.  Create a Properties() object to hold the parameters. You can create the JDBC URL without passing the user/password parameters directly:
-
         val connectionProperties = new Properties()
         connectionProperties.put("user", "USERNAME")
         connectionProperties.put("password", "PASSWORD")
 
-4. Create and load a column table with the same schema as that of source table:
+3. Fetch the table meta data from the RDB and creates equivalent column tables 
 
         val connection = DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword)
         connection.isClosed()
@@ -659,11 +678,14 @@ The example below demonstrates how to connect to any SQL database using JDBC:
            df.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
         }
 
-5. Create external table on RDBMS table and query it directly from SnappyData as described below:
+** Using SQL to access external RDB tables **
+You can also use plain SQL to access any external RDB using external tables. Create external table on RDBMS table and query it directly from SnappyData as described below:
 
         snc.sql("drop table if exists external_table")
         snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')")
         snc.sql("select * from external_table").show
+
+Refer to the Spark SQL JDBC source access for how to parallelize access when dealing with large data sets - https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases
 
 
 ### Loading Data from NoSQL store (Cassandra)
@@ -672,7 +694,10 @@ The example below demonstrates how you can load data from a NoSQL store:
 
 !!!Note:
 	Before you begin, you must install the corresponding Spark-Casssandra connector jar. To do so, copy the Spark-Cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
-    
+
+**TODO ** This isn't a single JAR from what I know. The above step needs testing and clarity. 
+
+
 ```
 
 val df = snc.read.format("org.apache.spark.sql.cassandra").options(Map( "table" -> "Police_Department_Incidents", "keyspace" -> "test")) .load
