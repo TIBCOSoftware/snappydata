@@ -634,6 +634,18 @@ dataDF.select($"INCIDNTNUM",$"DAYOFWEEK".substr(1,3).alias("DAYOFWEEK"),$"X",$"Y
 //Here X and Y are latitude and longitude columns in raw data frame
 ```
 
+### Example - Loading from Hive
+As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark, when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with enableHiveSupport set to true). 
+Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to a RDD so it can be passed to a SnappySession to store it in a SnappyData Table. 
+
+```
+val ds = spark.table("hiveTable")
+val rdd = ds.rdd
+val session = new SnappySession(sparkContext)
+val df = session.createDataFrame(rdd, ds.schema)
+df.write.format("column").saveAsTable("columnTable")
+```
+
 ### Importing Data using JDBC from a relational DB
 
 !!! Note:
