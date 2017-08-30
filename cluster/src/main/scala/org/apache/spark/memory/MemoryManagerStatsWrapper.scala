@@ -18,7 +18,10 @@ package org.apache.spark.memory
 
 import com.gemstone.gemfire.internal.snappy.memory.{MemoryManagerStats, MemoryManagerStatsOps}
 
-
+/**
+  * A wrapper class for Split mode.
+  * In case of split mode UMM stats update will be a no-op
+  */
 class MemoryManagerStatsWrapper extends MemoryManagerStatsOps {
 
   private[memory] var stats: MemoryManagerStats = _
@@ -60,12 +63,30 @@ class MemoryManagerStatsWrapper extends MemoryManagerStatsOps {
   override def incNumFailedExecutionRequest(offHeap: Boolean): Unit =
     if (stats ne null) stats.incNumFailedExecutionRequest(offHeap)
 
-  override def incFailedEvictionRequest(offHeap: Boolean): Unit =
-    if (stats ne null) stats.incFailedEvictionRequest(offHeap)
+  override def incNumFailedEvictionRequest(offHeap: Boolean): Unit =
+    if (stats ne null) stats.incNumFailedEvictionRequest(offHeap)
 
   override def incMaxStorageSize(offHeap: Boolean, delta: Long): Unit =
     if (stats ne null) stats.incMaxStorageSize(offHeap, delta)
 
   override def getMaxStorageSize(offHeap: Boolean): Long =
     if (stats ne null) stats.getMaxStorageSize(offHeap) else 0L
+
+  override def getExecutionPoolSize(offHeap: Boolean): Long =
+    if (stats ne null) stats.getExecutionPoolSize(offHeap) else 0L
+
+  override def getStorageMemoryUsed(offHeap: Boolean): Long =
+    if (stats ne null) stats.getStorageMemoryUsed(offHeap) else 0L
+
+  override def getExecutionMemoryUsed(offHeap: Boolean): Long =
+    if (stats ne null) stats.getExecutionMemoryUsed(offHeap) else 0L
+
+  override def getNumFailedStorageRequest(offHeap: Boolean): Int =
+    if (stats ne null) stats.getNumFailedStorageRequest(offHeap) else 0
+
+  override def getNumFailedExecutionRequest(offHeap: Boolean): Int =
+    if (stats ne null) stats.getNumFailedExecutionRequest(offHeap) else 0
+
+  override def getNumFailedEvictionRequest(offHeap: Boolean): Int =
+    if (stats ne null) stats.getNumFailedEvictionRequest(offHeap) else 0
 }

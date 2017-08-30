@@ -103,7 +103,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
       objectName: String,
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {
-    logDebug(s"Releasing DefaultManager meemory for $objectName $numBytes")
+    logDebug(s"Releasing DefaultManager memory for $objectName $numBytes")
     if (SparkEnv.get ne null) {
       SparkEnv.get.memoryManager.releaseStorageMemory(numBytes, memoryMode)
     }
